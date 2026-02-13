@@ -129,24 +129,37 @@ export async function POST(request: NextRequest) {
       rawPayload: JSON.stringify(payload),
     });
 
-    // Process message through controller
-    const result = await freightController.processMessage({
-      phoneNumber: incomingMessage.from,
-      message: incomingMessage.body,
-    });
+    // ─── Generate Stateless TwiML Response (Bypass Session/Controller) ───
+    const MessagingResponse = require('twilio').twiml.MessagingResponse;
+    const twiml = new MessagingResponse();
+    let responseText = '';
 
-    // Generate TwiML response
-    const twiml = twilioProvider.generateTwiMLResponse(result.reply);
+    switch (intent) {
+      case 'quote_request':
+        responseText = 'Perfeito. Para te enviar um orçamento, me diga CEP, cidade/UF e o produto (ou link).';
+        break;
+      case 'price_question':
+        responseText = 'Me diga o produto (ou link) e seu CEP que calculo o frete e o valor.';
+        break;
+      case 'order':
+        responseText = 'Show. Qual produto e quantidade? Envie também CEP para calcular entrega.';
+        break;
+      default:
+        // Default/Unknown intent
+        responseText = 'Oi! Me diga se você quer orçamento, frete ou fazer um pedido 🙂';
+        break;
+    }
+
+    twiml.message(responseText);
 
     const duration = Date.now() - startTime;
-    logger.info('Webhook processed successfully', {
+    logger.info('Webhook processed successfully (stateless)', {
       from: incomingMessage.from,
       duration,
-      success: result.success,
+      intent,
     });
 
-    // Return TwiML response
-    return new NextResponse(twiml, {
+    return new NextResponse(twiml.toString(), {
       status: 200,
       headers: {
         'Content-Type': 'text/xml',
@@ -154,18 +167,14 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-
     logger.error('Webhook processing failed', error as Error, { duration });
 
-    // Generate error response
-    const errorMessage = error instanceof BaseError
-      ? getUserMessage(error)
-      : 'Desculpe, ocorreu um erro. Tente novamente mais tarde.';
+    const MessagingResponse = require('twilio').twiml.MessagingResponse;
+    const twiml = new MessagingResponse();
+    twiml.message('Desculpe, ocorreu um erro. Tente novamente mais tarde.');
 
-    const twiml = twilioProvider.generateTwiMLResponse(errorMessage);
-
-    return new NextResponse(twiml, {
-      status: 200, // Always return 200 to Twilio to avoid retries
+    return new NextResponse(twiml.toString(), {
+      status: 200,
       headers: {
         'Content-Type': 'text/xml',
       },
