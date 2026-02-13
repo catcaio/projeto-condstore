@@ -1,0 +1,39 @@
+{
+  "name": "lojacond-frete-automacao",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+  },
+  "dependencies": {
+    "axios": "latest",
+    "clsx": "latest",
+    "dotenv": "latest",
+    "drizzle-orm": "latest",
+    "lucide-react": "latest",
+    "mysql2": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "tailwind-merge": "latest",
+    "tailwindcss-animate": "^1.0.7",
+    "twilio": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "autoprefixer": "^10.4.24",
+    "cross-env": "^10.1.0",
+    "drizzle-kit": "latest",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "typescript": "latest"
+  }
+}
