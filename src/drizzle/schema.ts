@@ -27,7 +27,7 @@ export const messages = mysqlTable('messages', {
     toPhone: varchar('to_phone', { length: 30 }),
     body: text('body').notNull(),
     direction: varchar('direction', { length: 10 }).notNull().default('inbound'),
-    intent: varchar('intent', { length: 50 }),
+    intent: varchar('intent', { length: 50 }).notNull().default('unknown'),
     rawPayload: text('raw_payload').notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
