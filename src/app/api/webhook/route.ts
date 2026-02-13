@@ -13,6 +13,7 @@ import { logger } from '../../../infra/logger';
 import { BaseError, getUserMessage } from '../../../infra/errors';
 import { checkRateLimit, getThrottleMessage } from '../../../infra/rate-limiter';
 import { sanitizeMessage, validateWebhookPayload } from '../../../lib/validation';
+import { messageRepository } from '../../../infra/repositories/message.repository';
 
 /**
  * POST /api/webhook
@@ -22,25 +23,41 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    // Parse form data from Twilio
-    const formData = await request.formData();
+    // Parse form-urlencoded body from Twilio (preserve raw params for signature validation)
+    const rawBody = await request.text();
+    const params = new URLSearchParams(rawBody);
     const payload: Record<string, string> = {};
-
-    formData.forEach((value, key) => {
-      payload[key] = value.toString();
+    params.forEach((value, key) => {
+      payload[key] = value;
     });
 
     logger.debug('Webhook received', { payload });
 
+    // Build the URL exactly as Twilio sees it (must match the URL configured in the Twilio console).
+    // Priority: TWILIO_WEBHOOK_URL env > x-forwarded-* headers > host header fallback.
+    const webhookUrlOverride = process.env.TWILIO_WEBHOOK_URL;
+    let computedUrl: string;
+    if (webhookUrlOverride) {
+      computedUrl = webhookUrlOverride;
+    } else {
+      const proto = request.headers.get('x-forwarded-proto') || 'https';
+      const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
+      computedUrl = `${proto}://${host}${request.nextUrl.pathname}`;
+    }
+
     // Validate Twilio Signature (enforced in all environments)
     const twilioSignature = request.headers.get('x-twilio-signature');
-    const url = 'https://' + request.headers.get('host') + request.nextUrl.pathname;
+
+    logger.info('Twilio signature validation attempt', {
+      computedUrl,
+      hasSignature: !!twilioSignature,
+    });
 
     if (!twilioSignature) {
       logger.warn('Missing Twilio signature', {
         event: 'INVALID_WEBHOOK_SIGNATURE',
         reason: 'missing_header',
-        url,
+        url: computedUrl,
         ip: request.headers.get('x-forwarded-for') || 'unknown',
       });
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -49,47 +66,67 @@ export async function POST(request: NextRequest) {
     const isValid = validateRequest(
       twilioConfig.authToken,
       twilioSignature,
-      url,
+      computedUrl,
       payload
     );
+
+    logger.info('Twilio signature validation result', {
+      isValid,
+      computedUrl,
+    });
 
     if (!isValid) {
       logger.warn('Invalid Twilio signature', {
         event: 'INVALID_WEBHOOK_SIGNATURE',
         reason: 'signature_mismatch',
-        url,
-        twilioSignature,
+        url: computedUrl,
         ip: request.headers.get('x-forwarded-for') || 'unknown',
       });
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Parse incoming message
-    const incomingMessage = twilioProvider.parseIncomingMessage(payload as any);
-
-    // Rate limiting per phone number
-    const rateLimitResult = await checkRateLimit(incomingMessage.from);
-    if (!rateLimitResult.allowed) {
-      logger.warn('Rate limit exceeded for user', {
-        event: 'RATE_LIMIT_EXCEEDED',
-        from: incomingMessage.from,
-        retryAfterSeconds: rateLimitResult.retryAfterSeconds,
-      });
-      const twiml = twilioProvider.generateTwiMLResponse(getThrottleMessage());
-      return new NextResponse(twiml, {
-        status: 200,
-        headers: { 'Content-Type': 'text/xml' },
-      });
-    }
-
     // Validate and sanitize webhook payload
     validateWebhookPayload(payload);
+
+    // Parse incoming message
+    const incomingMessage = twilioProvider.parseIncomingMessage(payload as any);
     incomingMessage.body = sanitizeMessage(incomingMessage.body);
+
+    // Intent Classification
+    const normalizedBody = (incomingMessage.body || '').toLowerCase();
+    let intent = 'unknown';
+
+    if (
+      normalizedBody.includes('cotação') ||
+      normalizedBody.includes('orcamento') ||
+      normalizedBody.includes('orçamento')
+    ) {
+      intent = 'quote_request';
+    } else if (
+      normalizedBody.includes('preço') ||
+      normalizedBody.includes('valor')
+    ) {
+      intent = 'price_question';
+    } else if (normalizedBody.includes('pedido')) {
+      intent = 'order';
+    }
 
     logger.info('Incoming message parsed', {
       from: incomingMessage.from,
       body: incomingMessage.body,
+      intent,
       messageSid: incomingMessage.messageSid,
+    });
+
+    // ─── Persist inbound message (before rate limit, so throttled messages are also saved) ───
+    await messageRepository.saveInboundMessage({
+      messageSid: incomingMessage.messageSid,
+      fromPhone: incomingMessage.from,
+      toPhone: payload['To'] || null,
+      body: incomingMessage.body,
+      direction: 'inbound',
+      intent,
+      rawPayload: JSON.stringify(payload),
     });
 
     // Process message through controller

@@ -101,6 +101,27 @@ NODE_ENV=production
 
 ---
 
+## 🗄️ Banco de Dados (TiDB Cloud)
+
+O projeto utiliza **TiDB Serverless** como banco de dados MySQL-compatível.
+
+### Configuração do Certificado SSL
+
+1. Acesse o painel do TiDB Cloud e baixe o certificado CA (`ca.pem`).
+2. Coloque o arquivo em `./certs/ca.pem` na raiz do projeto.
+3. O `drizzle.config.ts` lê automaticamente o certificado desse caminho.
+
+> ⚠️ **Não faça commit do `ca.pem`** — ele já está no `.gitignore`.
+
+### Migrações
+
+```bash
+# Aplicar schema no banco
+npx drizzle-kit push
+```
+
+---
+
 ## 📊 Fluxo Conversacional
 
 ```

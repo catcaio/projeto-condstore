@@ -93,6 +93,26 @@ export class SimulationRepository {
             mostUsedCarrier: carrierResult[0]?.carrier || 'N/A'
         };
     }
+
+    async countTotal(): Promise<number> {
+        const db = await getDb();
+        const [result] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(simulations);
+        return Number(result?.count || 0);
+    }
+
+    async countToday(): Promise<number> {
+        const db = await getDb();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const [result] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(simulations)
+            .where(sql`${simulations.createdAt} >= ${today}`);
+        return Number(result?.count || 0);
+    }
 }
 
 export const simulationRepository = new SimulationRepository();
