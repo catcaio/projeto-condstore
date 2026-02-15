@@ -42,8 +42,18 @@ export class MessageRepository {
     /**
      * Save an inbound message with idempotency on messageSid.
      * If the messageSid already exists, the insert is silently skipped (no error).
+     * REQUIRES tenant_id - will not work without it.
      */
     async saveInboundMessage(record: NewMessageRecord): Promise<void> {
+        // Enforce tenant_id requirement
+        if (!record.tenantId) {
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'tenant_id is required to save message',
+                { messageSid: record.messageSid }
+            );
+        }
+
         try {
             const db = await getDb();
 
@@ -57,6 +67,7 @@ export class MessageRepository {
             if (existing.length > 0) {
                 logger.debug('Message already persisted, skipping', {
                     messageSid: record.messageSid,
+                    tenantId: record.tenantId,
                 });
                 return;
             }
@@ -66,16 +77,25 @@ export class MessageRepository {
             logger.info('Inbound message persisted', {
                 messageSid: record.messageSid,
                 fromPhone: record.fromPhone,
+                tenantId: record.tenantId,
             });
         } catch (error) {
             // Log but do NOT throw — message persistence must not break the bot flow
             logger.error('Failed to persist inbound message', error as Error, {
                 messageSid: record.messageSid,
                 fromPhone: record.fromPhone,
+                tenantId: record.tenantId,
             });
         }
     }
-    async getMetricsToday() {
+    async getMetricsToday(tenantId: string) {
+        if (!tenantId) {
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'tenant_id is required to get metrics'
+            );
+        }
+
         const db = await getDb();
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -83,7 +103,7 @@ export class MessageRepository {
         const [totalResult] = await db
             .select({ count: sql<number>`count(*)` })
             .from(messages)
-            .where(sql`${messages.createdAt} >= ${today}`);
+            .where(sql`${messages.createdAt} >= ${today} AND ${messages.tenantId} = ${tenantId}`);
 
         const intentsResult = await db
             .select({
@@ -91,7 +111,7 @@ export class MessageRepository {
                 count: sql<number>`count(*)`,
             })
             .from(messages)
-            .where(sql`${messages.createdAt} >= ${today}`)
+            .where(sql`${messages.createdAt} >= ${today} AND ${messages.tenantId} = ${tenantId}`)
             .groupBy(messages.intent);
 
         const intentsBreakdown: Record<string, number> = {};
@@ -106,12 +126,20 @@ export class MessageRepository {
         };
     }
 
-    async getMetricsTotal() {
+    async getMetricsTotal(tenantId: string) {
+        if (!tenantId) {
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'tenant_id is required to get metrics'
+            );
+        }
+
         const db = await getDb();
 
         const [totalResult] = await db
             .select({ count: sql<number>`count(*)` })
-            .from(messages);
+            .from(messages)
+            .where(eq(messages.tenantId, tenantId));
 
         const intentsResult = await db
             .select({
@@ -119,6 +147,7 @@ export class MessageRepository {
                 count: sql<number>`count(*)`,
             })
             .from(messages)
+            .where(eq(messages.tenantId, tenantId))
             .groupBy(messages.intent);
 
         const intentsBreakdown: Record<string, number> = {};

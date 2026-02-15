@@ -43,25 +43,54 @@ async function getDb() {
 export class SimulationRepository {
     /**
      * Save a simulation record.
+     * REQUIRES tenant_id - will not work without it.
      */
     async saveSimulation(record: NewSimulationRecord): Promise<void> {
+        // Enforce tenant_id requirement
+        if (!record.tenantId) {
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'tenant_id is required to save simulation',
+                { id: record.id }
+            );
+        }
+
         const db = await getDb();
         await db.insert(simulations).values(record);
-        logger.info('Simulation saved', { id: record.id });
+        logger.info('Simulation saved', { id: record.id, tenantId: record.tenantId });
     }
 
     /**
-     * Get recent simulations.
+     * Get recent simulations for a specific tenant.
      */
-    async getRecentSimulations(limit: number = 10): Promise<SimulationRecord[]> {
+    async getRecentSimulations(tenantId: string, limit: number = 10): Promise<SimulationRecord[]> {
+        if (!tenantId) {
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'tenant_id is required to get simulations'
+            );
+        }
+
         const db = await getDb();
-        return await db.select().from(simulations).orderBy(desc(simulations.createdAt)).limit(limit);
+        return await db
+            .select()
+            .from(simulations)
+            .where(eq(simulations.tenantId, tenantId))
+            .orderBy(desc(simulations.createdAt))
+            .limit(limit);
     }
 
     /**
-     * Get basic operational metrics.
+     * Get basic operational metrics for a specific tenant.
      */
-    async getMetrics() {
+    async getMetrics(tenantId: string) {
+        if (!tenantId) {
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'tenant_id is required to get metrics'
+            );
+        }
+
         const db = await getDb();
 
         // Cast to any to avoid complex type issues with aggregations for now
@@ -72,7 +101,8 @@ export class SimulationRepository {
                 avgPrice: sql<number>`avg(${simulations.bestPrice})`,
                 avgMargin: sql<number>`avg(${simulations.bestMargin})`,
             })
-            .from(simulations);
+            .from(simulations)
+            .where(eq(simulations.tenantId, tenantId));
 
         // Simple most used carrier query
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -82,6 +112,7 @@ export class SimulationRepository {
                 count: sql<number>`count(*)`
             })
             .from(simulations)
+            .where(eq(simulations.tenantId, tenantId))
             .groupBy(simulations.bestCarrier)
             .orderBy(desc(sql`count(*)`))
             .limit(1);
@@ -94,15 +125,30 @@ export class SimulationRepository {
         };
     }
 
-    async countTotal(): Promise<number> {
+    async countTotal(tenantId: string): Promise<number> {
+        if (!tenantId) {
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'tenant_id is required to count simulations'
+            );
+        }
+
         const db = await getDb();
         const [result] = await db
             .select({ count: sql<number>`count(*)` })
-            .from(simulations);
+            .from(simulations)
+            .where(eq(simulations.tenantId, tenantId));
         return Number(result?.count || 0);
     }
 
-    async countToday(): Promise<number> {
+    async countToday(tenantId: string): Promise<number> {
+        if (!tenantId) {
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'tenant_id is required to count simulations'
+            );
+        }
+
         const db = await getDb();
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -110,7 +156,7 @@ export class SimulationRepository {
         const [result] = await db
             .select({ count: sql<number>`count(*)` })
             .from(simulations)
-            .where(sql`${simulations.createdAt} >= ${today}`);
+            .where(sql`${simulations.createdAt} >= ${today} AND ${simulations.tenantId} = ${tenantId}`);
         return Number(result?.count || 0);
     }
 }

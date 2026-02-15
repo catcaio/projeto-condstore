@@ -14,6 +14,7 @@ import { ConversationState, type ConversationContext } from './state-machine';
  * Session data stored in Redis.
  */
 export interface SessionData extends ConversationContext {
+  tenantId: string;
   createdAt: number;
   updatedAt: number;
   expiresAt: number;
@@ -67,17 +68,45 @@ class SessionManager {
   }
 
   /**
-   * Get session for a phone number.
+   * Get session for a phone number with tenant context.
+   * Includes compatibility layer for old session keys.
    */
-  async getSession(phoneNumber: string): Promise<SessionData | null> {
+  async getSession(tenantId: string, phoneNumber: string): Promise<SessionData | null> {
+    if (!tenantId) {
+      throw new BusinessError(
+        ErrorCode.VALIDATION_ERROR,
+        'tenant_id is required to get session',
+        { phoneNumber }
+      );
+    }
+
     try {
-      // Try Redis first
+      // Try Redis first with new key format
       if (redisClient.isAvailable()) {
-        const session = await redisClient.get<SessionData>(this.getKey(phoneNumber));
+        const newKey = this.getKey(tenantId, phoneNumber);
+        let session = await redisClient.get<SessionData>(newKey);
 
         if (session) {
-          logger.debug('Session retrieved from Redis', { phoneNumber });
+          logger.debug('Session retrieved from Redis (new key)', { phoneNumber, tenantId });
           return session;
+        }
+
+        // Compatibility layer: check old key format
+        const oldKey = this.getOldKey(phoneNumber);
+        session = await redisClient.get<SessionData>(oldKey);
+
+        if (session) {
+          logger.warn('Session found with old key format, migrating', {
+            phoneNumber,
+            tenantId,
+            event: 'session_reset',
+          });
+
+          // Delete old session
+          await redisClient.delete(oldKey);
+
+          // Return null to force session recreation with new key
+          return null;
         }
 
         return null;
@@ -88,7 +117,7 @@ class SessionManager {
         throw new InfrastructureError(
           ErrorCode.INTERNAL_ERROR,
           'Redis unavailable in production — cannot retrieve session',
-          { phoneNumber }
+          { phoneNumber, tenantId }
         );
       }
 
@@ -96,25 +125,34 @@ class SessionManager {
       const session = this.memoryStore.get(phoneNumber);
 
       if (session) {
-        logger.debug('Session retrieved from memory (dev fallback)', { phoneNumber });
+        logger.debug('Session retrieved from memory (dev fallback)', { phoneNumber, tenantId });
       }
 
       return session;
     } catch (error) {
       if (error instanceof InfrastructureError) throw error;
-      logger.error('Failed to get session', error as Error, { phoneNumber });
+      logger.error('Failed to get session', error as Error, { phoneNumber, tenantId });
       return null;
     }
   }
 
   /**
-   * Create a new session.
+   * Create a new session with tenant context.
    */
-  async createSession(phoneNumber: string): Promise<SessionData> {
+  async createSession(tenantId: string, phoneNumber: string): Promise<SessionData> {
+    if (!tenantId) {
+      throw new BusinessError(
+        ErrorCode.VALIDATION_ERROR,
+        'tenant_id is required to create session',
+        { phoneNumber }
+      );
+    }
+
     const now = Date.now();
     const expiresAt = now + appConfig.session.ttlMs;
 
     const session: SessionData = {
+      tenantId,
       phoneNumber,
       currentState: ConversationState.IDLE,
       createdAt: now,
@@ -123,9 +161,9 @@ class SessionManager {
       errorCount: 0,
     };
 
-    await this.saveSession(phoneNumber, session);
+    await this.saveSession(tenantId, phoneNumber, session);
 
-    logger.info('Session created', { phoneNumber, expiresAt: new Date(expiresAt).toISOString() });
+    logger.info('Session created', { phoneNumber, tenantId, expiresAt: new Date(expiresAt).toISOString() });
 
     return session;
   }
@@ -133,55 +171,64 @@ class SessionManager {
   /**
    * Update an existing session.
    */
-  async updateSession(phoneNumber: string, updates: Partial<ConversationContext>): Promise<SessionData> {
-    let session = await this.getSession(phoneNumber);
+  async updateSession(tenantId: string, phoneNumber: string, updates: Partial<ConversationContext>): Promise<SessionData> {
+    if (!tenantId) {
+      throw new BusinessError(
+        ErrorCode.VALIDATION_ERROR,
+        'tenant_id is required to update session',
+        { phoneNumber }
+      );
+    }
+
+    let session = await this.getSession(tenantId, phoneNumber);
 
     if (!session) {
-      logger.warn('Session not found, creating new session', { phoneNumber });
-      session = await this.createSession(phoneNumber);
+      logger.warn('Session not found, creating new session', { phoneNumber, tenantId });
+      session = await this.createSession(tenantId, phoneNumber);
     }
 
     const updatedSession: SessionData = {
       ...session,
       ...updates,
+      tenantId, // Ensure tenantId is not overwritten
       phoneNumber, // Ensure phoneNumber is not overwritten
       updatedAt: Date.now(),
     };
 
-    await this.saveSession(phoneNumber, updatedSession);
+    await this.saveSession(tenantId, phoneNumber, updatedSession);
 
-    logger.debug('Session updated', { phoneNumber, updates });
+    logger.debug('Session updated', { phoneNumber, tenantId, updates });
 
     return updatedSession;
   }
 
   /**
-   * Save session to storage.
+   * Save session to storage with tenant-scoped key.
    */
-  private async saveSession(phoneNumber: string, session: SessionData): Promise<void> {
+  private async saveSession(tenantId: string, phoneNumber: string, session: SessionData): Promise<void> {
     const ttlSeconds = Math.ceil(appConfig.session.ttlMs / 1000);
 
     // Save to Redis
     if (redisClient.isAvailable()) {
-      const success = await redisClient.set(this.getKey(phoneNumber), session, ttlSeconds);
+      const success = await redisClient.set(this.getKey(tenantId, phoneNumber), session, ttlSeconds);
 
       if (success) {
-        logger.debug('Session saved to Redis', { phoneNumber });
+        logger.debug('Session saved to Redis', { phoneNumber, tenantId });
       } else {
         if (appConfig.env === 'production') {
           throw new InfrastructureError(
             ErrorCode.INTERNAL_ERROR,
             'Failed to save session to Redis in production',
-            { phoneNumber }
+            { phoneNumber, tenantId }
           );
         }
-        logger.warn('Failed to save session to Redis, using memory fallback', { phoneNumber });
+        logger.warn('Failed to save session to Redis, using memory fallback', { phoneNumber, tenantId });
       }
     } else if (appConfig.env === 'production') {
       throw new InfrastructureError(
         ErrorCode.INTERNAL_ERROR,
         'Redis unavailable in production — cannot save session',
-        { phoneNumber }
+        { phoneNumber, tenantId }
       );
     }
 
@@ -194,32 +241,40 @@ class SessionManager {
   /**
    * Delete a session.
    */
-  async deleteSession(phoneNumber: string): Promise<void> {
+  async deleteSession(tenantId: string, phoneNumber: string): Promise<void> {
+    if (!tenantId) {
+      throw new BusinessError(
+        ErrorCode.VALIDATION_ERROR,
+        'tenant_id is required to delete session',
+        { phoneNumber }
+      );
+    }
+
     // Delete from Redis
     if (redisClient.isAvailable()) {
-      await redisClient.delete(this.getKey(phoneNumber));
+      await redisClient.delete(this.getKey(tenantId, phoneNumber));
     }
 
     // Delete from memory
     this.memoryStore.delete(phoneNumber);
 
-    logger.info('Session deleted', { phoneNumber });
+    logger.info('Session deleted', { phoneNumber, tenantId });
   }
 
   /**
    * Check if a session exists and is valid.
    */
-  async sessionExists(phoneNumber: string): Promise<boolean> {
-    const session = await this.getSession(phoneNumber);
+  async sessionExists(tenantId: string, phoneNumber: string): Promise<boolean> {
+    const session = await this.getSession(tenantId, phoneNumber);
     return session !== null;
   }
 
   /**
    * Get session TTL in seconds.
    */
-  async getSessionTTL(phoneNumber: string): Promise<number | null> {
+  async getSessionTTL(tenantId: string, phoneNumber: string): Promise<number | null> {
     if (redisClient.isAvailable()) {
-      return await redisClient.ttl(this.getKey(phoneNumber));
+      return await redisClient.ttl(this.getKey(tenantId, phoneNumber));
     }
 
     const session = this.memoryStore.get(phoneNumber);
@@ -232,27 +287,36 @@ class SessionManager {
   /**
    * Extend session expiration.
    */
-  async extendSession(phoneNumber: string): Promise<void> {
-    const session = await this.getSession(phoneNumber);
+  async extendSession(tenantId: string, phoneNumber: string): Promise<void> {
+    const session = await this.getSession(tenantId, phoneNumber);
 
     if (!session) {
       throw new BusinessError(
         ErrorCode.SESSION_NOT_FOUND,
         'Cannot extend session: session not found',
-        { phoneNumber }
+        { phoneNumber, tenantId }
       );
     }
 
     session.expiresAt = Date.now() + appConfig.session.ttlMs;
-    await this.saveSession(phoneNumber, session);
+    await this.saveSession(tenantId, phoneNumber, session);
 
-    logger.debug('Session extended', { phoneNumber, expiresAt: new Date(session.expiresAt).toISOString() });
+    logger.debug('Session extended', { phoneNumber, tenantId, expiresAt: new Date(session.expiresAt).toISOString() });
   }
 
   /**
-   * Get Redis key for a phone number.
+   * Get Redis key for a phone number with tenant scope.
+   * New format: session:${tenantId}:${phoneNumber}
    */
-  private getKey(phoneNumber: string): string {
+  private getKey(tenantId: string, phoneNumber: string): string {
+    return `session:${tenantId}:${phoneNumber}`;
+  }
+
+  /**
+   * Get old Redis key format for compatibility layer.
+   * Old format: session:${phoneNumber}
+   */
+  private getOldKey(phoneNumber: string): string {
     return `session:${phoneNumber}`;
   }
 

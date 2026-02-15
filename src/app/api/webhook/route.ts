@@ -14,6 +14,7 @@ import { BaseError, getUserMessage } from '../../../infra/errors';
 import { checkRateLimit, getThrottleMessage } from '../../../infra/rate-limiter';
 import { sanitizeMessage, validateWebhookPayload } from '../../../lib/validation';
 import { messageRepository } from '../../../infra/repositories/message.repository';
+import { tenantRepository } from '../../../infra/repositories/tenant.repository';
 
 /**
  * POST /api/webhook
@@ -85,6 +86,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // ─── Resolve Tenant by Twilio Number ───
+    const twilioNumber = payload['To'];
+    if (!twilioNumber) {
+      logger.error('Missing To field in webhook payload');
+      return NextResponse.json({ error: 'Bad Request: Missing To field' }, { status: 400 });
+    }
+
+    const tenant = await tenantRepository.getTenantByTwilioNumber(twilioNumber);
+    if (!tenant) {
+      logger.warn('Unknown Twilio number - tenant not found', {
+        twilioNumber,
+        event: 'UNKNOWN_TENANT',
+        ip: request.headers.get('x-forwarded-for') || 'unknown',
+      });
+      return NextResponse.json(
+        { error: 'Unknown Twilio number' },
+        { status: 400 }
+      );
+    }
+
+    const tenantId = tenant.id;
+    logger.info('Tenant resolved', {
+      twilioNumber,
+      tenantId,
+      tenantName: tenant.name,
+    });
+
     // Validate and sanitize webhook payload
     validateWebhookPayload(payload);
 
@@ -121,6 +149,7 @@ export async function POST(request: NextRequest) {
     // ─── Persist inbound message (before rate limit, so throttled messages are also saved) ───
     await messageRepository.saveInboundMessage({
       messageSid: incomingMessage.messageSid,
+      tenantId,
       fromPhone: incomingMessage.from,
       toPhone: payload['To'] || null,
       body: incomingMessage.body,
