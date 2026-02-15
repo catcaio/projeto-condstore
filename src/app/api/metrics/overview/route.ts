@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { messageRepository } from '@/infra/repositories/message.repository';
 // Import simulationRepository gracefully - if it fails (it shouldn't based on previous checks), we handle it
 import { simulationRepository } from '@/infra/repositories/simulation.repository';
+import { logger } from '@/infra/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
                 simulationRepository.countToday(tenantId)
             ]);
         } catch (err) {
-            console.warn('Simulation metrics failed (table missing?):', err);
+            logger.warn('Simulation metrics failed', { reason: 'table_missing' }, err as Error);
             // Fallback to 0 as requested
         }
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
         }, { status: 200 });
 
     } catch (err) {
-        console.error('Metrics overview failed:', err);
+        logger.error('Metrics overview failed', err as Error);
         return NextResponse.json(
             { error: 'Internal Server Error' },
             { status: 500 }

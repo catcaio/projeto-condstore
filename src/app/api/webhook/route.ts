@@ -32,7 +32,12 @@ export async function POST(request: NextRequest) {
       payload[key] = value;
     });
 
-    logger.debug('Webhook received', { payload });
+    // Sanitized logging - no PII
+    logger.debug('Webhook received', { 
+      messageSid: payload['MessageSid'],
+      hasBody: !!payload['Body'],
+      bodyLength: payload['Body']?.length || 0
+    });
 
     // Build the URL exactly as Twilio sees it (must match the URL configured in the Twilio console).
     // Priority: TWILIO_WEBHOOK_URL env > x-forwarded-* headers > host header fallback.
@@ -147,6 +152,15 @@ export async function POST(request: NextRequest) {
     });
 
     // ─── Persist inbound message (before rate limit, so throttled messages are also saved) ───
+    // Sanitize rawPayload to remove PII before storage
+    const sanitizedPayload = {
+      MessageSid: payload['MessageSid'],
+      AccountSid: payload['AccountSid'],
+      MessagingServiceSid: payload['MessagingServiceSid'],
+      NumMedia: payload['NumMedia'],
+      // Omit From, To, Body and other PII fields
+    };
+
     await messageRepository.saveInboundMessage({
       messageSid: incomingMessage.messageSid,
       tenantId,
@@ -155,7 +169,7 @@ export async function POST(request: NextRequest) {
       body: incomingMessage.body,
       direction: 'inbound',
       intent,
-      rawPayload: JSON.stringify(payload),
+      rawPayload: JSON.stringify(sanitizedPayload),
     });
 
     // ─── Generate Stateless TwiML Response (Bypass Session/Controller) ───

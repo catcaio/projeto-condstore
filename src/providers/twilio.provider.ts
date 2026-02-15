@@ -137,18 +137,6 @@ class TwilioProvider {
     logger.error('Failed to send message via Twilio after retries', lastError!, { to: message.to });
     return false;
   }
-
-  /**
-   * Validate webhook signature (security feature).
-   * Ensures the request actually came from Twilio.
-   */
-  validateWebhookSignature(signature: string, url: string, params: Record<string, string>): boolean {
-    // Implementation would use crypto.createHmac with Twilio auth token
-    // For now, we'll skip this in development
-    // In production, this should be implemented for security
-    logger.debug('Webhook signature validation skipped (implement for production)', { url });
-    return true;
-  }
 }
 
 // Export singleton instance
