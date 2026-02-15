@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Sanitized logging - no PII
-    logger.debug('Webhook received', { 
+    logger.debug('Webhook received', {
       messageSid: payload['MessageSid'],
       hasBody: !!payload['Body'],
       bodyLength: payload['Body']?.length || 0
@@ -51,51 +51,83 @@ export async function POST(request: NextRequest) {
       computedUrl = `${proto}://${host}${request.nextUrl.pathname}`;
     }
 
-    // Validate Twilio Signature (enforced in all environments)
+    // Validate Twilio Signature (can be disabled for development)
     const twilioSignature = request.headers.get('x-twilio-signature');
 
-    logger.info('Twilio signature validation attempt', {
-      computedUrl,
-      hasSignature: !!twilioSignature,
-    });
-
-    if (!twilioSignature) {
-      logger.warn('Missing Twilio signature', {
-        event: 'INVALID_WEBHOOK_SIGNATURE',
-        reason: 'missing_header',
-        url: computedUrl,
-        ip: request.headers.get('x-forwarded-for') || 'unknown',
+    if (twilioConfig.signatureValidationEnabled) {
+      logger.info('Twilio signature validation enabled', {
+        computedUrl,
+        hasSignature: !!twilioSignature,
       });
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
-    const isValid = validateRequest(
-      twilioConfig.authToken,
-      twilioSignature,
-      computedUrl,
-      payload
-    );
+      if (!twilioSignature) {
+        logger.warn('Missing Twilio signature', {
+          event: 'INVALID_WEBHOOK_SIGNATURE',
+          reason: 'missing_header',
+          url: computedUrl,
+          ip: request.headers.get('x-forwarded-for') || 'unknown',
+        });
 
-    logger.info('Twilio signature validation result', {
-      isValid,
-      computedUrl,
-    });
+        // Return TwiML error instead of 403
+        const MessagingResponse = require('twilio').twiml.MessagingResponse;
+        const twiml = new MessagingResponse();
+        twiml.message('Erro de autenticação. Entre em contato com o suporte.');
 
-    if (!isValid) {
-      logger.warn('Invalid Twilio signature', {
-        event: 'INVALID_WEBHOOK_SIGNATURE',
-        reason: 'signature_mismatch',
-        url: computedUrl,
-        ip: request.headers.get('x-forwarded-for') || 'unknown',
+        return new NextResponse(twiml.toString(), {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        });
+      }
+
+      const isValid = validateRequest(
+        twilioConfig.authToken,
+        twilioSignature,
+        computedUrl,
+        payload
+      );
+
+      logger.info('Twilio signature validation result', {
+        isValid,
+        computedUrl,
       });
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+      if (!isValid) {
+        logger.warn('Invalid Twilio signature', {
+          event: 'INVALID_WEBHOOK_SIGNATURE',
+          reason: 'signature_mismatch',
+          url: computedUrl,
+          ip: request.headers.get('x-forwarded-for') || 'unknown',
+        });
+
+        // Return TwiML error instead of 403
+        const MessagingResponse = require('twilio').twiml.MessagingResponse;
+        const twiml = new MessagingResponse();
+        twiml.message('Erro de autenticação. Entre em contato com o suporte.');
+
+        return new NextResponse(twiml.toString(), {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        });
+      }
+    } else {
+      logger.warn('Twilio signature validation DISABLED (development mode)', {
+        env: process.env.NODE_ENV,
+      });
     }
 
     // ─── Resolve Tenant by Twilio Number ───
     const twilioNumber = payload['To'];
     if (!twilioNumber) {
       logger.error('Missing To field in webhook payload');
-      return NextResponse.json({ error: 'Bad Request: Missing To field' }, { status: 400 });
+
+      const MessagingResponse = require('twilio').twiml.MessagingResponse;
+      const twiml = new MessagingResponse();
+      twiml.message('Erro interno. Tente novamente mais tarde.');
+
+      return new NextResponse(twiml.toString(), {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      });
     }
 
     const tenant = await tenantRepository.getTenantByTwilioNumber(twilioNumber);
@@ -105,10 +137,15 @@ export async function POST(request: NextRequest) {
         event: 'UNKNOWN_TENANT',
         ip: request.headers.get('x-forwarded-for') || 'unknown',
       });
-      return NextResponse.json(
-        { error: 'Unknown Twilio number' },
-        { status: 400 }
-      );
+
+      const MessagingResponse = require('twilio').twiml.MessagingResponse;
+      const twiml = new MessagingResponse();
+      twiml.message('Número não configurado. Entre em contato com o suporte.');
+
+      return new NextResponse(twiml.toString(), {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      });
     }
 
     const tenantId = tenant.id;
