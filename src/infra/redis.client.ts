@@ -1,6 +1,6 @@
 /**
  * Redis client for session storage.
- * Provides type-safe operations with automatic retry and error handling.
+ * Uses Upstash REST API with POST to avoid leaking values in URLs.
  */
 
 import { appConfig } from '../config/app.config';
@@ -55,27 +55,30 @@ class RedisClient {
   }
 
   /**
-   * Execute Redis command with retry logic.
+   * Execute Redis command via POST body (never in URL) with retry logic.
    */
   private async execute<T>(
-    command: string,
+    args: string[],
     maxRetries: number = 2
   ): Promise<T | null> {
     if (!this.isAvailable() || !this.config) {
       return null;
     }
 
+    const commandName = args[0];
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const startTime = Date.now();
-        const response = await fetch(`${this.config.url}/${command}`, {
-          method: 'GET',
+        const response = await fetch(this.config.url, {
+          method: 'POST',
           headers: {
             Authorization: `Bearer ${this.config.token}`,
+            'Content-Type': 'application/json',
           },
-          signal: AbortSignal.timeout(5000), // 5s timeout
+          body: JSON.stringify(args),
+          signal: AbortSignal.timeout(5000),
         });
 
         const duration = Date.now() - startTime;
@@ -84,19 +87,19 @@ class RedisClient {
           throw new InfrastructureError(
             ErrorCode.REDIS_OPERATION_ERROR,
             `Redis operation failed: ${response.status}`,
-            { command, status: response.status }
+            { command: commandName, status: response.status }
           );
         }
 
         const data: RedisResponse<T> = await response.json();
 
-        logger.http('GET', `redis/${command}`, response.status, duration);
+        logger.http('POST', `redis/${commandName}`, response.status, duration);
 
         if (data.error) {
           throw new InfrastructureError(
             ErrorCode.REDIS_OPERATION_ERROR,
             `Redis error: ${data.error}`,
-            { command }
+            { command: commandName }
           );
         }
 
@@ -105,14 +108,14 @@ class RedisClient {
         lastError = error as Error;
 
         if (attempt < maxRetries) {
-          const delay = Math.pow(2, attempt) * 500; // Exponential backoff
-          logger.warn(`Redis operation failed, retrying in ${delay}ms`, { attempt, command }, error as Error);
+          const delay = Math.pow(2, attempt) * 500;
+          logger.warn(`Redis operation failed, retrying in ${delay}ms`, { attempt, command: commandName }, error as Error);
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
 
-    logger.error('Redis operation failed after retries', lastError!, { command });
+    logger.error('Redis operation failed after retries', lastError!, { command: commandName });
     return null;
   }
 
@@ -121,7 +124,7 @@ class RedisClient {
    */
   async get<T>(key: string): Promise<T | null> {
     try {
-      const result = await this.execute<string>(`get/${key}`);
+      const result = await this.execute<string>(['GET', key]);
       return result ? JSON.parse(result) : null;
     } catch (error) {
       logger.error('Failed to get value from Redis', error as Error, { key });
@@ -135,12 +138,9 @@ class RedisClient {
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<boolean> {
     try {
       const serialized = JSON.stringify(value);
-      const encodedValue = encodeURIComponent(serialized);
-
       const ttl = ttlSeconds || Math.ceil(appConfig.session.ttlMs / 1000);
-      const command = `set/${key}/${encodedValue}/ex/${ttl}`;
 
-      const result = await this.execute<string>(command);
+      const result = await this.execute<string>(['SET', key, serialized, 'EX', String(ttl)]);
       return result === 'OK';
     } catch (error) {
       logger.error('Failed to set value in Redis', error as Error, { key });
@@ -153,7 +153,7 @@ class RedisClient {
    */
   async delete(key: string): Promise<boolean> {
     try {
-      const result = await this.execute<number>(`del/${key}`);
+      const result = await this.execute<number>(['DEL', key]);
       return result === 1;
     } catch (error) {
       logger.error('Failed to delete key from Redis', error as Error, { key });
@@ -166,7 +166,7 @@ class RedisClient {
    */
   async exists(key: string): Promise<boolean> {
     try {
-      const result = await this.execute<number>(`exists/${key}`);
+      const result = await this.execute<number>(['EXISTS', key]);
       return result === 1;
     } catch (error) {
       logger.error('Failed to check key existence in Redis', error as Error, { key });
@@ -179,7 +179,7 @@ class RedisClient {
    */
   async ttl(key: string): Promise<number | null> {
     try {
-      const result = await this.execute<number>(`ttl/${key}`);
+      const result = await this.execute<number>(['TTL', key]);
       return result !== null && result >= 0 ? result : null;
     } catch (error) {
       logger.error('Failed to get TTL from Redis', error as Error, { key });
@@ -192,7 +192,7 @@ class RedisClient {
    */
   async ping(): Promise<boolean> {
     try {
-      const result = await this.execute<string>('ping');
+      const result = await this.execute<string>(['PING']);
       return result === 'PONG';
     } catch (error) {
       logger.error('Redis ping failed', error as Error);
