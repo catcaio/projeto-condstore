@@ -1,0 +1,60 @@
+###
+# Tenant Guards Smoke Test
+# Tests tenant authentication on protected endpoints
+# Base URL: http://localhost:3000
+#
+# Prerequisites:
+# - Server running: npm run dev
+# - Replace <TENANT_ID> with a valid tenant ID from database
+# - Replace <INTERNAL_TOKEN> with INTERNAL_API_TOKEN from .env (if set)
+###
+
+### 1. POST /api/simulate WITHOUT headers
+# Expected: 400 (Missing x-tenant-id header)
+POST http://localhost:3000/api/simulate
+Content-Type: application/json
+
+{
+  "destinationCep": "01001000",
+  "quantity": 5
+}
+
+### 2. POST /api/simulate WITH tenant headers
+# Expected: 200 (Success with freight calculation)
+POST http://localhost:3000/api/simulate
+Content-Type: application/json
+x-tenant-id: <TENANT_ID>
+x-internal-token: <INTERNAL_TOKEN>
+
+{
+  "destinationCep": "01001000",
+  "quantity": 5
+}
+
+### 3. GET /api/history WITHOUT headers
+# Expected: 400 (Missing x-tenant-id header)
+GET http://localhost:3000/api/history
+
+### 4. GET /api/history WITH tenant headers
+# Expected: 200 (Success with simulation history)
+GET http://localhost:3000/api/history
+x-tenant-id: <TENANT_ID>
+x-internal-token: <INTERNAL_TOKEN>
+
+### 5. GET /api/metrics/overview WITHOUT headers
+# Expected: 400 (Missing x-tenant-id header)
+GET http://localhost:3000/api/metrics/overview
+
+### 6. GET /api/metrics/overview WITH tenant headers
+# Expected: 200 (Success with metrics data)
+GET http://localhost:3000/api/metrics/overview
+x-tenant-id: <TENANT_ID>
+x-internal-token: <INTERNAL_TOKEN>
+
+###
+# Notes:
+# - x-internal-token is optional (only if INTERNAL_API_TOKEN is set in .env)
+# - All protected endpoints validate tenant context via getTenantContext()
+# - Invalid tenant IDs will return 400 (Tenant not found)
+# - Cache keys include tenant ID for proper isolation
+###
