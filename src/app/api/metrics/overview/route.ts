@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
-        // Tenant from session (via middleware headers) - never from query param
+        // Tenant from verified session cookie - never from query param
         const { tenantId } = await getTenantContext(request);
 
         // 1. Message Metrics (Today + Total + Breakdown)

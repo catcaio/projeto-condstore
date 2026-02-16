@@ -54,23 +54,14 @@ export async function middleware(request: NextRequest) {
 
         const userId = payload.sub as string;
         const tenantId = payload.tenantId as string;
-        const role = payload.role as string;
 
         if (!userId || !tenantId) {
             return handleUnauthenticated(request, pathname);
         }
 
-        // Set auth context headers for route handlers (no PII)
-        const requestHeaders = new Headers(request.headers);
-        requestHeaders.set('x-user-id', userId);
-        requestHeaders.set('x-tenant-id', tenantId);
-        requestHeaders.set('x-user-role', role);
-
-        const response = NextResponse.next({
-            request: { headers: requestHeaders },
-        });
-
-        return addSecurityHeaders(response);
+        // Auth context is derived from the session cookie directly in
+        // getTenantContext() — no x-user-* headers are propagated.
+        return addSecurityHeaders(NextResponse.next());
     } catch {
         return handleUnauthenticated(request, pathname);
     }

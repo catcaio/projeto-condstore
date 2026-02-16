@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    // 1. Get tenant from session (via middleware headers)
+    // 1. Get tenant from verified session cookie
     const { tenantId } = await getTenantContext(request);
 
     // 2. Validate input
