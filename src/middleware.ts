@@ -19,7 +19,7 @@ function isPublicPath(pathname: string): boolean {
 function getSecret(): Uint8Array {
     const secret = process.env.AUTH_SECRET;
     if (!secret) {
-        return new TextEncoder().encode('dev-only-fallback-secret-do-not-use-in-prod');
+        throw new Error('AUTH_SECRET environment variable is required. Application cannot start without it.');
     }
     return new TextEncoder().encode(secret);
 }
@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
 
     // Verify JWT
     try {
-        const { payload } = await jwtVerify(token, getSecret());
+        const { payload } = await jwtVerify(token, getSecret(), { algorithms: ['HS256'] });
 
         const userId = payload.sub as string;
         const email = payload.email as string;

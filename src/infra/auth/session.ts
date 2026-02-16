@@ -1,6 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
-import { logger } from '../logger';
 
 export const COOKIE_NAME = 'condstore_session';
 const TOKEN_EXPIRY = '8h';
@@ -15,8 +14,7 @@ export interface SessionPayload {
 export function getSecret(): Uint8Array {
     const secret = process.env.AUTH_SECRET;
     if (!secret) {
-        logger.warn('AUTH_SECRET not set, using dev fallback -- sessions will not survive restarts');
-        return new TextEncoder().encode('dev-only-fallback-secret-do-not-use-in-prod');
+        throw new Error('AUTH_SECRET environment variable is required. Application cannot start without it.');
     }
     return new TextEncoder().encode(secret);
 }
@@ -37,7 +35,7 @@ export async function createSessionToken(user: {
 
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
     try {
-        const { payload } = await jwtVerify(token, getSecret());
+        const { payload } = await jwtVerify(token, getSecret(), { algorithms: ['HS256'] });
         return {
             sub: payload.sub as string,
             email: payload.email as string,
