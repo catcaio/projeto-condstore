@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { messageRepository } from '@/infra/repositories/message.repository';
-// Import simulationRepository gracefully - if it fails (it shouldn't based on previous checks), we handle it
 import { simulationRepository } from '@/infra/repositories/simulation.repository';
+import { getTenantContext } from '@/infra/auth/tenant-context';
 import { logger } from '@/infra/logger';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
-        // Require tenant_id query parameter
-        const tenantId = request.nextUrl.searchParams.get('tenant_id');
-        if (!tenantId) {
-            return NextResponse.json(
-                { error: 'tenant_id query parameter is required' },
-                { status: 400 }
-            );
-        }
+        // Tenant from session (via middleware headers) - never from query param
+        const { tenantId } = await getTenantContext(request);
 
         // 1. Message Metrics (Today + Total + Breakdown)
         const [msgsToday, msgsTotal] = await Promise.all([
@@ -23,7 +17,7 @@ export async function GET(request: NextRequest) {
             messageRepository.getMetricsTotal(tenantId),
         ]);
 
-        // 2. Simulation Metrics (Try/Catch wrapper in case table missing/error)
+        // 2. Simulation Metrics
         let totalSimulations = 0;
         let simulationsToday = 0;
         try {
@@ -33,7 +27,6 @@ export async function GET(request: NextRequest) {
             ]);
         } catch (err) {
             logger.warn('Simulation metrics failed', { reason: 'table_missing' }, err as Error);
-            // Fallback to 0 as requested
         }
 
         // 3. Construct Response
