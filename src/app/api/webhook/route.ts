@@ -17,6 +17,11 @@ import { messageRepository } from '../../../infra/repositories/message.repositor
 import { tenantRepository } from '../../../infra/repositories/tenant.repository';
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from '../../../lib/normalize';
 import { redisClient } from '../../../infra/redis.client';
+import {
+  loadConversation,
+  saveConversation,
+  maskFrom,
+} from '../../../core/conversation/conversation-store';
 
 /** TTL for idempotency keys (10 minutes covers Twilio's retry window). */
 const IDEMPOTENCY_TTL_SECONDS = 600;
@@ -193,21 +198,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate and sanitize webhook payload
-    logger.debug('[STEP 3] Validating webhook payload');
     validateWebhookPayload(payload);
 
     // Parse incoming message
-    logger.debug('[STEP 4] Parsing incoming message');
     const incomingMessage = twilioProvider.parseIncomingMessage(payload as any);
     incomingMessage.body = sanitizeMessage(incomingMessage.body);
 
-    // Intent Classification
-    // FIX: Ensure body is lowercased and trimmed for comparison
-    const normalizedBody = (incomingMessage.body || '').trim().toLowerCase();
+    // ─── Load conversation state from Redis ───
+    const fromRaw = payload['From'] || incomingMessage.from;
+    const normalizedFrom = normalizeWhatsAppNumber(fromRaw);
+    const maskedFrom = maskFrom(normalizedFrom);
+    const convState = await loadConversation(tenantId, normalizedFrom);
+    const previousState = convState.currentState;
 
-    logger.debug('Intent classification', {
-      bodyLength: normalizedBody.length,
+    logger.info('Conversation loaded', {
+      from: maskedFrom,
+      currentState: previousState,
+      tenantId,
     });
+
+    // Intent classification (unchanged)
+    const normalizedBody = (incomingMessage.body || '').trim().toLowerCase();
 
     let intent = 'unknown';
 
@@ -220,7 +231,7 @@ export async function POST(request: NextRequest) {
     } else if (
       normalizedBody.includes('preço') ||
       normalizedBody.includes('valor') ||
-      normalizedBody.includes('frete') // ADDED: Specific support for 'frete'
+      normalizedBody.includes('frete')
     ) {
       intent = 'price_question';
     } else if (normalizedBody.includes('pedido')) {
@@ -230,17 +241,15 @@ export async function POST(request: NextRequest) {
     logger.info('Incoming message parsed', {
       intent,
       messageSid: incomingMessage.messageSid,
+      from: maskedFrom,
     });
 
-    // ─── Persist inbound message (before rate limit, so throttled messages are also saved) ───
-    logger.debug('[STEP 5] Persisting inbound message to database');
-    // Sanitize rawPayload to remove PII before storage
+    // ─── Persist inbound message ───
     const sanitizedPayload = {
       MessageSid: payload['MessageSid'],
       AccountSid: payload['AccountSid'],
       MessagingServiceSid: payload['MessagingServiceSid'],
       NumMedia: payload['NumMedia'],
-      // Omit From, To, Body and other PII fields
     };
 
     await messageRepository.saveInboundMessage({
@@ -253,10 +262,8 @@ export async function POST(request: NextRequest) {
       intent,
       rawPayload: JSON.stringify(sanitizedPayload),
     });
-    logger.debug('[STEP 5.1] Message persisted successfully');
 
-    // ─── Generate Stateless TwiML Response (Bypass Session/Controller) ───
-    logger.debug('[STEP 6] Generating TwiML response');
+    // ─── Generate TwiML Response (original switch, unchanged) ───
     const MessagingResponse = require('twilio').twiml.MessagingResponse;
     const twiml = new MessagingResponse();
     let responseText = '';
@@ -272,13 +279,36 @@ export async function POST(request: NextRequest) {
         responseText = 'Show. Qual produto e quantidade? Envie também CEP para calcular entrega.';
         break;
       default:
-        // Default/Unknown intent
         responseText = 'Oi! Me diga se você quer orçamento, frete ou fazer um pedido 🙂';
         break;
     }
 
     twiml.message(responseText);
-    logger.debug('[STEP 6.1] TwiML response generated', { responseText });
+
+    // ─── Update and save conversation state ───
+    convState.currentState = intent === 'unknown' ? convState.currentState : intent;
+
+    // Collect CEP/qty if present in the message
+    const cepMatch = normalizedBody.match(/\b(\d{5})-?(\d{3})\b/);
+    if (cepMatch) {
+      convState.collectedData.cep = cepMatch[1] + cepMatch[2];
+    }
+    const qtyMatch = normalizedBody.match(/\b(\d{1,4})\b/);
+    if (qtyMatch && !cepMatch) {
+      const qty = parseInt(qtyMatch[1], 10);
+      if (qty > 0 && qty < 10000) {
+        convState.collectedData.qty = qty;
+      }
+    }
+
+    await saveConversation(tenantId, normalizedFrom, convState);
+
+    logger.info('Conversation state saved', {
+      from: maskedFrom,
+      previousState,
+      newState: convState.currentState,
+      tenantId,
+    });
 
     const duration = Date.now() - startTime;
     logger.info('Webhook processed successfully', {
@@ -290,9 +320,7 @@ export async function POST(request: NextRequest) {
 
     return new NextResponse(twiml.toString(), {
       status: 200,
-      headers: {
-        'Content-Type': 'text/xml',
-      },
+      headers: { 'Content-Type': 'text/xml' },
     });
   } catch (error) {
     const duration = Date.now() - startTime;
