@@ -16,8 +16,6 @@ import type {
   WeightDecision,
 } from './freight.types';
 import { redisClient } from '../../infra/redis.client';
-import { simulationRepository } from '../../infra/repositories/simulation.repository';
-import { randomUUID } from 'crypto';
 
 // Import tabela provider (we'll need to create this)
 interface TabelaQuote {
@@ -105,17 +103,8 @@ class FreightService {
         totalWeight,
       });
 
-      // Persist simulation (awaited with error propagation)
-      await this.persistSimulation({
-        cep: request.destinationCep,
-        weight: totalWeight,
-        quantity: request.quantity,
-        bestCarrier: bestOption.carrier,
-        bestService: bestOption.service,
-        bestPrice: bestOption.price,
-        bestMargin: bestMargin,
-        strategy: decision.strategy,
-      });
+      // Persistence is handled by callers (route handlers) with proper tenant context.
+      // FreightService remains calc-focused.
 
       // Cache the result
       await this.cacheResult(request, totalWeight, options);
@@ -333,42 +322,6 @@ class FreightService {
     await redisClient.set(key, result, 600); // 10 minutes TTL
   }
 
-  /**
-   * Persist simulation to database.
-   */
-  private async persistSimulation(data: {
-    cep: string;
-    weight: number;
-    quantity: number;
-    bestCarrier: string;
-    bestService: string;
-    bestPrice: number;
-    bestMargin: number;
-    strategy: string;
-  }): Promise<void> {
-    try {
-      await simulationRepository.saveSimulation({
-        id: randomUUID(),
-        cep: data.cep,
-        weight: data.weight.toString(),
-        quantity: data.quantity,
-        bestCarrier: data.bestCarrier,
-        bestService: data.bestService,
-        bestPrice: data.bestPrice.toString(),
-        bestMargin: data.bestMargin.toString(),
-        strategy: data.strategy,
-        productCost: '0.00',
-        sellingPrice: '0.00',
-      });
-    } catch (err) {
-      logger.error('Failed to persist simulation', err as Error, { cep: data.cep });
-      throw new BusinessError(
-        ErrorCode.FREIGHT_CALCULATION_ERROR,
-        'Failed to persist simulation result',
-        { cep: data.cep }
-      );
-    }
-  }
 }
 
 // Export singleton instance

@@ -1,15 +1,13 @@
-
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { simulationRepository } from '../../../infra/repositories/simulation.repository';
+import { getTenantContext } from '../../../infra/auth/tenant-context';
 import { logger } from '../../../infra/logger';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
-        const simulations = await simulationRepository.getRecentSimulations(10);
+        const { tenantId } = await getTenantContext(request);
 
-        // Transform DB record to Frontend Simulation type if necessary
-        // Current Simulation type in frontend expects simulation.input.cep etc.
-        // Our DB has records as flat objects.
+        const simulations = await simulationRepository.getRecentSimulations(tenantId, 10);
 
         const formattedHistory = simulations.map(s => ({
             id: s.id,
@@ -24,9 +22,9 @@ export async function GET() {
                     carrier: s.bestCarrier,
                     service: s.bestService,
                     price: Number(s.bestPrice),
-                    deliveryTime: 0, // Not stored in detail, but carrier/price are the main history items
+                    deliveryTime: 0,
                 },
-                options: [] // Detail not needed for history list
+                options: []
             }
         }));
 
