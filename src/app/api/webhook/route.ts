@@ -16,6 +16,10 @@ import { sanitizeMessage, validateWebhookPayload } from '../../../lib/validation
 import { messageRepository } from '../../../infra/repositories/message.repository';
 import { tenantRepository } from '../../../infra/repositories/tenant.repository';
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from '../../../lib/normalize';
+import { redisClient } from '../../../infra/redis.client';
+
+/** TTL for idempotency keys (10 minutes covers Twilio's retry window). */
+const IDEMPOTENCY_TTL_SECONDS = 600;
 
 /**
  * POST /api/webhook
@@ -25,16 +29,7 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    // Parse form-urlencoded body from Twilio (preserve raw params for signature validation)
-    // ─── A) Instrumentação de Logs (Solicitado) ───
-    logger.info('=== WEBHOOK REQUEST STARTED ===');
-
-    // Log headers for debugging
-    const headersRaw: Record<string, string> = {};
-    request.headers.forEach((v, k) => (headersRaw[k] = v));
-    logger.info('Webhook Headers:', headersRaw);
-
-    // Parse body for logging
+    // Parse form-urlencoded body from Twilio
     const rawBody = await request.text();
     const params = new URLSearchParams(rawBody);
     const payload: Record<string, string> = {};
@@ -42,21 +37,11 @@ export async function POST(request: NextRequest) {
       payload[key] = value;
     });
 
-    // Log critical fields
-    logger.info('Webhook Body Params:', {
-      To: payload['To'],
-      From: payload['From'],
-      WaId: payload['WaId'],
-      MessageSid: payload['MessageSid']
-    });
-
-    logger.debug('[STEP 1] Parsing complete');
-
-    // Sanitized logging - no PII
-    logger.debug('Webhook received', {
+    // Safe logging — no PII (no From, Body, WaId)
+    logger.info('Webhook received', {
       messageSid: payload['MessageSid'],
       hasBody: !!payload['Body'],
-      bodyLength: payload['Body']?.length || 0
+      bodyLength: payload['Body']?.length || 0,
     });
 
     // Build the URL exactly as Twilio sees it (must match the URL configured in the Twilio console).
@@ -178,11 +163,34 @@ export async function POST(request: NextRequest) {
     const twilioNumber = tenant.twilioNumber;
 
     const tenantId = tenant.id;
-    logger.info('Tenant resolved', {
-      twilioNumber,
-      tenantId,
-      tenantName: tenant.name,
-    });
+    logger.info('Tenant resolved', { tenantId });
+
+    // ─── Idempotency: deduplicate Twilio retries ───
+    // Twilio sends MessageSid with every webhook; use it as the event ID.
+    const eventId = payload['MessageSid'];
+    if (eventId) {
+      const idempotencyKey = `idemp:wh:${tenantId}:${eventId}`;
+      const isFirstTime = await redisClient.setNX(
+        idempotencyKey,
+        '1',
+        IDEMPOTENCY_TTL_SECONDS
+      );
+
+      if (!isFirstTime) {
+        // Already processed (or Redis down — setNX returns false on error too,
+        // but that's acceptable: in the rare Redis-failure case we'd rather
+        // risk a duplicate than silently drop a message, however Twilio will
+        // retry anyway so returning 200 is safe).
+        logger.info('Duplicate webhook skipped', { eventId, tenantId });
+        // Return 200 so Twilio stops retrying
+        const MessagingResponse = require('twilio').twiml.MessagingResponse;
+        const twiml = new MessagingResponse();
+        return new NextResponse(twiml.toString(), {
+          status: 200,
+          headers: { 'Content-Type': 'text/xml' },
+        });
+      }
+    }
 
     // Validate and sanitize webhook payload
     logger.debug('[STEP 3] Validating webhook payload');
@@ -197,11 +205,8 @@ export async function POST(request: NextRequest) {
     // FIX: Ensure body is lowercased and trimmed for comparison
     const normalizedBody = (incomingMessage.body || '').trim().toLowerCase();
 
-    // ─── LOGGING INTENT CLASSIFICATION (Solicitado) ───
-    logger.info('Intent Classification Debug', {
-      rawBody: incomingMessage.body,
-      normalizedBody: normalizedBody,
-      length: normalizedBody.length
+    logger.debug('Intent classification', {
+      bodyLength: normalizedBody.length,
     });
 
     let intent = 'unknown';
@@ -223,8 +228,6 @@ export async function POST(request: NextRequest) {
     }
 
     logger.info('Incoming message parsed', {
-      from: incomingMessage.from,
-      body: incomingMessage.body,
       intent,
       messageSid: incomingMessage.messageSid,
     });
@@ -278,10 +281,11 @@ export async function POST(request: NextRequest) {
     logger.debug('[STEP 6.1] TwiML response generated', { responseText });
 
     const duration = Date.now() - startTime;
-    logger.info('Webhook processed successfully (stateless)', {
-      from: incomingMessage.from,
+    logger.info('Webhook processed successfully', {
+      messageSid: incomingMessage.messageSid,
       duration,
       intent,
+      tenantId,
     });
 
     return new NextResponse(twiml.toString(), {

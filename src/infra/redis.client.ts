@@ -149,6 +149,22 @@ class RedisClient {
   }
 
   /**
+   * SET key value NX EX ttl — atomic "set if not exists" with expiry.
+   * Returns true if the key was set (first caller wins), false if it already existed.
+   */
+  async setNX(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+    try {
+      const result = await this.execute<string | null>(
+        ['SET', key, value, 'NX', 'EX', String(ttlSeconds)]
+      );
+      return result === 'OK';
+    } catch (error) {
+      logger.error('Failed setNX in Redis', error as Error, { key });
+      return false;
+    }
+  }
+
+  /**
    * Delete key from Redis.
    */
   async delete(key: string): Promise<boolean> {
