@@ -20,6 +20,7 @@ import { redisClient } from '../../../infra/redis.client';
 import {
   loadConversation,
   saveConversation,
+  clearConversation,
   maskFrom,
 } from '../../../core/conversation/conversation-store';
 
@@ -217,9 +218,25 @@ export async function POST(request: NextRequest) {
       tenantId,
     });
 
-    // Intent classification (unchanged)
     const normalizedBody = (incomingMessage.body || '').trim().toLowerCase();
 
+    // ─── Reset command: clear state and short-circuit ───
+    const isReset = /\b(reset|reiniciar|recomecar|recomeçar|comecar de novo)\b/.test(normalizedBody);
+    if (isReset) {
+      await clearConversation(tenantId, normalizedFrom);
+      logger.info('Conversation reset by user', { from: maskedFrom, tenantId });
+
+      const MessagingResponse = require('twilio').twiml.MessagingResponse;
+      const twiml = new MessagingResponse();
+      twiml.message('Conversa reiniciada! Me diga se quer orçamento, frete ou fazer um pedido.');
+
+      return new NextResponse(twiml.toString(), {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      });
+    }
+
+    // Intent classification (unchanged)
     let intent = 'unknown';
 
     if (
@@ -299,6 +316,12 @@ export async function POST(request: NextRequest) {
       if (qty > 0 && qty < 10000) {
         convState.collectedData.qty = qty;
       }
+    }
+
+    // Auto-reset after quote delivered — next message starts fresh
+    if (intent === 'quote_request') {
+      convState.currentState = 'IDLE';
+      convState.collectedData = {};
     }
 
     await saveConversation(tenantId, normalizedFrom, convState);

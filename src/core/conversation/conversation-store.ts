@@ -86,6 +86,23 @@ export async function loadConversation(
 }
 
 /**
+ * Delete conversation state from Redis (hard reset).
+ */
+export async function clearConversation(
+  tenantId: string,
+  from: string,
+): Promise<void> {
+  const key = buildKey(tenantId, from);
+
+  try {
+    await redisClient.delete(key);
+    logger.debug('Conversation state cleared', { key });
+  } catch (err) {
+    logger.error('Failed to clear conversation state', err as Error, { key });
+  }
+}
+
+/**
  * Save conversation state to Redis with 7-day TTL.
  */
 export async function saveConversation(
