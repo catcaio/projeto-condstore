@@ -53,7 +53,6 @@ export async function middleware(request: NextRequest) {
         const { payload } = await jwtVerify(token, getSecret(), { algorithms: ['HS256'] });
 
         const userId = payload.sub as string;
-        const email = payload.email as string;
         const tenantId = payload.tenantId as string;
         const role = payload.role as string;
 
@@ -61,10 +60,9 @@ export async function middleware(request: NextRequest) {
             return handleUnauthenticated(request, pathname);
         }
 
-        // Set auth context headers for route handlers
+        // Set auth context headers for route handlers (no PII)
         const requestHeaders = new Headers(request.headers);
         requestHeaders.set('x-user-id', userId);
-        requestHeaders.set('x-user-email', email);
         requestHeaders.set('x-tenant-id', tenantId);
         requestHeaders.set('x-user-role', role);
 

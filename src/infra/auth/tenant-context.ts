@@ -5,7 +5,6 @@ import { BusinessError, ErrorCode } from '../errors';
 
 export interface AuthenticatedContext {
     userId: string;
-    email: string;
     tenantId: string;
     role: string;
     tenant: TenantRecord;
@@ -13,7 +12,6 @@ export interface AuthenticatedContext {
 
 export async function getTenantContext(request: NextRequest): Promise<AuthenticatedContext> {
     const userId = request.headers.get('x-user-id');
-    const email = request.headers.get('x-user-email');
     const tenantId = request.headers.get('x-tenant-id');
     const role = request.headers.get('x-user-role');
 
@@ -32,5 +30,5 @@ export async function getTenantContext(request: NextRequest): Promise<Authentica
         );
     }
 
-    return { userId, email: email!, tenantId, role: role!, tenant };
+    return { userId, tenantId, role: role!, tenant };
 }
