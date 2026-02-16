@@ -49,3 +49,17 @@ export const messages = mysqlTable('messages', {
 
 export type MessageRecord = typeof messages.$inferSelect;
 export type NewMessageRecord = typeof messages.$inferInsert;
+
+// --- Users (Authentication) ---
+
+export const users = mysqlTable('users', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    email: varchar('email', { length: 255 }).notNull().unique(),
+    passwordHash: varchar('password_hash', { length: 512 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    role: varchar('role', { length: 20 }).notNull().default('operator'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type UserRecord = typeof users.$inferSelect;
+export type NewUserRecord = typeof users.$inferInsert;

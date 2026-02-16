@@ -27,6 +27,10 @@ export enum ErrorCode {
   NO_FREIGHT_OPTIONS = 'NO_FREIGHT_OPTIONS',
   FREIGHT_CALCULATION_ERROR = 'FREIGHT_CALCULATION_ERROR',
 
+  // Auth errors
+  UNAUTHORIZED = 'UNAUTHORIZED',
+  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
+
   // Generic errors
   UNKNOWN_ERROR = 'UNKNOWN_ERROR',
   VALIDATION_ERROR = 'VALIDATION_ERROR',
@@ -111,6 +115,8 @@ export const userFacingMessages: Record<ErrorCode, string> = {
   [ErrorCode.UNKNOWN_ERROR]: 'Ocorreu um erro inesperado. Tente novamente mais tarde.',
   [ErrorCode.VALIDATION_ERROR]: 'Dados inválidos. Verifique e tente novamente.',
   [ErrorCode.INTERNAL_ERROR]: 'Erro interno do sistema. Tente novamente.',
+  [ErrorCode.UNAUTHORIZED]: 'Sessão expirada. Faça login novamente.',
+  [ErrorCode.INVALID_CREDENTIALS]: 'Email ou senha inválidos.',
 };
 
 /**
