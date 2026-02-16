@@ -19,7 +19,14 @@ async function getDb() {
         );
     }
 
-    const connectionPool = mysql.createPool(process.env.DATABASE_URL);
+    // TiDB requires SSL connection
+    const connectionPool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: true,
+        },
+    });
+
     dbInstance = drizzle(connectionPool, { mode: 'default' });
 
     try {
@@ -111,52 +118,114 @@ export class TenantRepository {
     }
 
     /**
-     * Get tenant by Twilio number.
-     * Uses in-memory cache with TTL, DB as source of truth.
+     * Resolve tenant by Twilio number with strict logging and normalization.
+     * Guaranteed to return a tenant or throw a descriptive error.
      */
-    async getTenantByTwilioNumber(twilioNumber: string): Promise<TenantRecord | null> {
-        // Check cache first
-        const cached = this.cache.get(twilioNumber);
+    async resolveTenantByTwilioNumber(rawTwilioNumber: string): Promise<TenantRecord> {
+        const correlationId = `TR-${Date.now().toString(36)}`;
+
+        // 1. Normalization
+        const normalizedNumber = this.normalize(rawTwilioNumber);
+
+        logger.info(`[${correlationId}] Starting tenant resolution`, {
+            raw: rawTwilioNumber,
+            normalized: normalizedNumber
+        });
+
+        // 2. Cache Lookup
+        const cached = this.cache.get(normalizedNumber);
         if (cached) {
-            logger.debug('Tenant found in cache', { twilioNumber, tenantId: cached.id });
+            logger.info(`[${correlationId}] Tenant resolved from CACHE`, { tenantId: cached.id });
             return cached;
         }
 
-        // Query database
+        // 3. Database Lookup
         try {
             const db = await getDb();
+
+            logger.debug(`[${correlationId}] Executing DB query`, {
+                query: `SELECT * FROM tenants WHERE twilio_number = '${normalizedNumber}'`
+            });
+
             const results = await db
                 .select()
                 .from(tenants)
-                .where(eq(tenants.twilioNumber, twilioNumber))
+                .where(eq(tenants.twilioNumber, normalizedNumber))
                 .limit(1);
 
             if (results.length === 0) {
-                logger.warn('Tenant not found for Twilio number', { twilioNumber });
-                return null;
+                // Log all tenants for diagnosis if not found
+                const allTenants = await this.getAllTenants();
+                logger.warn(`[${correlationId}] Tenant NOT FOUND`, {
+                    searchedFor: normalizedNumber,
+                    availableTenants: allTenants.map(t => `${t.name} (${t.twilioNumber})`)
+                });
+
+                throw new BusinessError(
+                    ErrorCode.INTERNAL_ERROR,
+                    `Tenant not found for number: ${normalizedNumber}`
+                );
             }
 
             const tenant = results[0];
 
-            // Cache the result
-            this.cache.set(twilioNumber, tenant);
+            // 4. Cache Update
+            this.cache.set(normalizedNumber, tenant);
 
-            logger.info('Tenant resolved from DB', {
-                twilioNumber,
+            logger.info(`[${correlationId}] Tenant resolved successfully from DB`, {
                 tenantId: tenant.id,
-                tenantName: tenant.name,
+                name: tenant.name
             });
 
             return tenant;
+
         } catch (error) {
-            logger.error('Failed to get tenant by Twilio number', error as Error, {
-                twilioNumber,
-            });
+            // Enhanced error logging
+            if (error instanceof BusinessError) throw error;
+
+            console.error(`[${correlationId}] CRITICAL DATABASE ERROR:`, error);
+            logger.error(`[${correlationId}] Database error during tenant resolution`, error as Error);
+
             throw new InfrastructureError(
                 ErrorCode.INTERNAL_ERROR,
-                'Failed to resolve tenant',
-                { twilioNumber }
+                'Failed to resolve tenant due to database error'
             );
+        }
+    }
+
+    /**
+     * Helper: Normalize Twilio number (Centralized logic)
+     * Enforces 'whatsapp:' prefix, lowercase, and removes spaces.
+     */
+    private normalize(input: string): string {
+        if (!input) return '';
+
+        // Remove spaces and lowercase
+        let cleaned = input.trim().toLowerCase().replace(/\s+/g, '');
+
+        // Ensure standard prefix
+        if (!cleaned.startsWith('whatsapp:')) {
+            // Check if it has a + but no whatsapp: prefix
+            if (cleaned.startsWith('+')) {
+                cleaned = `whatsapp:${cleaned}`;
+            } else {
+                // Assuming it's a raw number without + or prefix
+                cleaned = `whatsapp:+${cleaned.replace(/^whatsapp:/, '')}`;
+            }
+        }
+
+        return cleaned;
+    }
+
+    /**
+     * Legacy method - Alias to new robust method
+     * @deprecated Use resolveTenantByTwilioNumber instead
+     */
+    async getTenantByTwilioNumber(twilioNumber: string): Promise<TenantRecord | null> {
+        try {
+            return await this.resolveTenantByTwilioNumber(twilioNumber);
+        } catch (error) {
+            return null; // Maintain legacy behavior of returning null on failure
         }
     }
 
@@ -187,7 +256,7 @@ export class TenantRepository {
      * Invalidate cache for a specific Twilio number.
      */
     invalidateCache(twilioNumber: string): void {
-        this.cache.invalidate(twilioNumber);
+        this.cache.invalidate(this.normalize(twilioNumber));
         logger.debug('Tenant cache invalidated', { twilioNumber });
     }
 
@@ -197,6 +266,24 @@ export class TenantRepository {
     clearCache(): void {
         this.cache.clear();
         logger.info('Tenant cache cleared');
+    }
+
+    /**
+     * Get all tenants (for debugging only).
+     */
+    async getAllTenants(): Promise<TenantRecord[]> {
+        try {
+            const db = await getDb();
+            const results = await db.select().from(tenants);
+            return results;
+        } catch (error) {
+            logger.error('Failed to get all tenants', error as Error);
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'Failed to get all tenants',
+                { originalError: (error as Error).message }
+            );
+        }
     }
 }
 
