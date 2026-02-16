@@ -19,7 +19,13 @@ async function getDb() {
         );
     }
 
-    const connectionPool = mysql.createPool(process.env.DATABASE_URL);
+    // TiDB requires SSL connection
+    const connectionPool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: true,
+        },
+    });
     dbInstance = drizzle(connectionPool, { mode: 'default' });
 
     try {

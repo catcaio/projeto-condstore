@@ -9,23 +9,54 @@ import { redisClient } from '../../../infra/redis.client';
 import { logger } from '../../../infra/logger';
 
 /**
- * Check database connectivity with a lightweight query.
+ * Database diagnostic information.
  */
-async function checkDatabase(): Promise<boolean> {
+interface DatabaseDiagnostics {
+    connected: boolean;
+    databaseName?: string;
+    tenantCount?: number;
+    error?: string;
+}
+
+/**
+ * Check database connectivity and gather diagnostics.
+ */
+async function checkDatabase(): Promise<DatabaseDiagnostics> {
     try {
         if (!process.env.DATABASE_URL) {
-            return false;
+            return { connected: false, error: 'DATABASE_URL not configured' };
         }
 
         // Dynamic import to avoid loading MySQL driver at module level
         const mysql = await import('mysql2/promise');
-        const connection = await mysql.default.createConnection(process.env.DATABASE_URL);
-        await connection.execute('SELECT 1');
+        const connection = await mysql.default.createConnection({
+            uri: process.env.DATABASE_URL,
+            ssl: {
+                rejectUnauthorized: true,
+            },
+        });
+
+        // Get database name
+        const [dbNameRows] = await connection.execute<any[]>('SELECT DATABASE() as db_name');
+        const databaseName = dbNameRows[0]?.db_name || 'unknown';
+
+        // Get tenant count
+        const [countRows] = await connection.execute<any[]>('SELECT COUNT(*) as count FROM tenants');
+        const tenantCount = countRows[0]?.count || 0;
+
         await connection.end();
-        return true;
+
+        return {
+            connected: true,
+            databaseName,
+            tenantCount,
+        };
     } catch (error) {
         logger.error('Health check: DB connection failed', error as Error);
-        return false;
+        return {
+            connected: false,
+            error: (error as Error).message,
+        };
     }
 }
 
@@ -46,21 +77,26 @@ async function checkRedis(): Promise<boolean> {
 
 /**
  * GET /api/health
- * Returns system health status.
+ * Returns system health status with database diagnostics.
  */
 export async function GET() {
-    const [dbHealthy, redisHealthy] = await Promise.all([
+    const [dbDiagnostics, redisHealthy] = await Promise.all([
         checkDatabase(),
         checkRedis(),
     ]);
 
-    const allHealthy = dbHealthy && redisHealthy;
+    const allHealthy = dbDiagnostics.connected && redisHealthy;
 
     const response = {
         status: allHealthy ? 'healthy' : 'degraded',
         checks: {
-            db: dbHealthy,
+            db: dbDiagnostics.connected,
             redis: redisHealthy,
+        },
+        database: {
+            name: dbDiagnostics.databaseName || null,
+            tenantCount: dbDiagnostics.tenantCount ?? null,
+            error: dbDiagnostics.error || null,
         },
         timestamp: new Date().toISOString(),
     };
@@ -68,6 +104,7 @@ export async function GET() {
     logger.info('Health check performed', {
         status: response.status,
         checks: response.checks,
+        database: response.database,
     });
 
     return NextResponse.json(response, {
