@@ -1,207 +1,85 @@
-# Lojacond Frete Automação
+# Projeto CondStore - Automação de Entregas
 
-**Framework Conversacional Profissional para WhatsApp**
+Sistema de automação logística via WhatsApp para cotação de fretes e pedidos, integrado com TiDB e Twilio.
 
-Automação de cotações de frete via WhatsApp (Twilio) com arquitetura modular, escalável e production-ready.
+## 🚀 Funcionalidades
 
----
+- **Webhook WhatsApp (Twilio):** Recebe mensagens, resolve o tenant e classifica a intenção.
+- **Resolução de Tenant:** Identifica a loja/cliente com base no número de destino (Twilio Number).
+- **Classificação de Intenção:** Detecta se o usuário quer "Cotação", "Preço/Frete" ou "Pedido".
+- **Painel Logístico:** Interface para simulação manual de fretes.
 
-## 🚀 Características
+## 🛠️ Stack Tecnológico
 
-✅ **Arquitetura Limpa**: Separação clara de responsabilidades em camadas.  
-✅ **State Machine Formal**: Fluxo conversacional previsível e extensível.  
-✅ **Providers Desacoplados**: Twilio e Melhor Envio isolados e substituíveis.  
-✅ **Sessão Persistente**: Upstash Redis + fallback em memória.  
-✅ **Logging Estruturado**: JSON logs para observabilidade.  
-✅ **Tratamento de Erros**: Sistema de erros tipado com mensagens amigáveis.  
-✅ **Retry Automático**: Exponential backoff em todas as chamadas externas.  
-✅ **Tipagem Forte**: TypeScript para prevenir erros em tempo de compilação.  
-✅ **Testes Unitários**: Cobertura de componentes críticos.  
-✅ **Extensível**: Pronto para rastreamento, pagamento e atendimento humano.
+- **Framework:** Next.js 14+ (App Router)
+- **Banco de Dados:** TiDB (MySQL Compatible)
+- **ORM:** Drizzle ORM
+- **Integrações:** Twilio API (WhatsApp)
+- **Infra:** Vercel (Frontend/API) + Upstash (Redis - Opcional)
 
----
+## ⚙️ Configuração Local
 
-## 📁 Estrutura do Projeto
+### 1. Pré-requisitos
+- Node.js 18+
+- Conta no Twilio (Sandbox ou Produção)
+- Cluster TiDB Serverless
 
-```
-src/
-├── app/api/webhook/          # Entry point (Twilio webhook)
-├── core/conversation/        # Motor conversacional
-│   ├── state-machine.ts      # Máquina de estados
-│   ├── session-manager.ts    # Gerenciamento de sessão
-│   └── intent-classifier.ts  # Classificador de intenções
-├── modules/freight/          # Módulo de frete
-│   ├── freight.controller.ts # Orquestração
-│   ├── freight.service.ts    # Lógica de negócio
-│   └── freight.types.ts      # Tipos
-├── providers/                # Providers externos
-│   ├── twilio.provider.ts    # Twilio WhatsApp
-│   └── melhorenvio.provider.ts # Melhor Envio API
-├── infra/                    # Infraestrutura
-│   ├── redis.client.ts       # Cliente Redis
-│   ├── logger.ts             # Logger estruturado
-│   └── errors.ts             # Sistema de erros
-└── config/                   # Configuração central
-    ├── app.config.ts
-    ├── twilio.config.ts
-    └── melhorenvio.config.ts
-```
-
----
-
-## 🛠️ Instalação
-
+### 2. Instalação
 ```bash
 # Instalar dependências
-pnpm install
+npm install
 
 # Configurar variáveis de ambiente
 cp .env.example .env
-# Editar .env com suas credenciais
-
-# Executar em desenvolvimento
-pnpm dev
-
-# Executar testes
-pnpm test
-
-# Verificar TypeScript
-pnpm check
-
-# Build para produção
-pnpm build
 ```
 
----
+### 3. Configuração do .env
+Edite o arquivo `.env` preenchendo os campos obrigatórios marcados com `*`.
 
-## 🔧 Variáveis de Ambiente
-
-```env
-# Twilio
-TWILIO_ACCOUNT_SID=your_account_sid
-TWILIO_AUTH_TOKEN=your_auth_token
-TWILIO_PHONE_NUMBER=whatsapp:+14155238886
-
-# Melhor Envio
-MELHORENVIO_TOKEN=your_token
-MELHORENVIO_API_URL=https://sandbox.melhorenvio.com.br/api/v2
-
-# Redis (Upstash)
-UPSTASH_REDIS_REST_URL=your_redis_url
-UPSTASH_REDIS_REST_TOKEN=your_redis_token
-
-# Configuração
-ORIGIN_CEP=01001000
-DEFAULT_UNIT_WEIGHT=0.3
-MAX_FREIGHT_OPTIONS=3
-SESSION_TTL_MS=1800000
-LOG_LEVEL=info
-NODE_ENV=production
+```properties
+DATABASE_URL=mysql://usuario:senha@host:port/db?ssl={"rejectUnauthorized":true}
+TWILIO_ACCOUNT_SID=...
+TWILIO_AUTH_TOKEN=...
+TWILIO_WHATSAPP_NUMBER=whatsapp:+1415...
 ```
 
----
-
-## 🗄️ Banco de Dados (TiDB Cloud)
-
-O projeto utiliza **TiDB Serverless** como banco de dados MySQL-compatível.
-
-### Configuração do Certificado SSL
-
-1. Acesse o painel do TiDB Cloud e baixe o certificado CA (`ca.pem`).
-2. Coloque o arquivo em `./certs/ca.pem` na raiz do projeto.
-3. O `drizzle.config.ts` lê automaticamente o certificado desse caminho.
-
-> ⚠️ **Não faça commit do `ca.pem`** — ele já está no `.gitignore`.
-
-### Migrações
-
+### 4. Executar
 ```bash
-# Aplicar schema no banco
-npx drizzle-kit push
+# Rodar servidor de desenvolvimento
+npm run dev
 ```
 
----
+O projeto estará rodando em `http://localhost:3000`.
 
-## 📊 Fluxo Conversacional
+## 📡 Webhooks e Endpoints
 
-```
-Usuário: "frete"
-Bot: "Olá! Vou ajudar você a calcular o frete. Qual é o CEP de destino?"
-
-Usuário: "01001-000"
-Bot: "CEP recebido! Agora, quantas unidades você deseja?"
-
-Usuário: "5"
-Bot: "Aqui estão as melhores opções de frete:
-
-1. Loggi Express - R$ 10,41 - Prazo: 3 dias
-2. Jadlog .Package - R$ 14,91 - Prazo: 6 dias
-3. JeT Standard - R$ 15,40 - Prazo: 2 dias"
-```
-
----
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/api/webhook` | Recebe mensagens do Twilio. |
+| GET | `/api/health` | Status do sistema (DB, Redis). |
+| POST | `/api/painel-logistico` | API do painel de cotação. |
+| GET | `/api/debug/tenants` | Lista tenants (apenas DEV). |
 
 ## 🧪 Testes
 
+### Verificação de Webhook
+Use o script de diagnóstico para validar a resolução de tenant sem precisar do Twilio:
 ```bash
-# Executar todos os testes
-pnpm test
-
-# Executar testes em watch mode
-pnpm test --watch
-
-# Executar testes com cobertura
-pnpm test --coverage
+npx tsx scripts/debug-tenant-resolution.ts
 ```
 
----
-
-## 🚢 Deploy
-
-### Vercel (Recomendado)
-
-1. Conectar repositório GitHub à Vercel.
-2. Configurar variáveis de ambiente no painel da Vercel.
-3. Deploy automático a cada push na branch `main`.
-
-### Webhook URL
-
-Após o deploy, configurar a URL do webhook no Twilio:
-```
-https://your-app.vercel.app/api/webhook
+### Teste de Painel
+```bash
+npx tsx scripts/test-panel-api.ts
 ```
 
----
+## 📁 Estrutura de Pastas
 
-## 📖 Documentação
-
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)**: Documentação completa da arquitetura.
-- **[TODO.md](./todo.md)**: Checklist de implementação.
-
----
-
-## 🔮 Roadmap
-
-- [ ] Rastreamento de pedidos
-- [ ] Status de pagamento
-- [ ] Segunda via de boleto
-- [ ] Atendimento humano
-- [ ] Dashboard de métricas
-- [ ] Integração com WooCommerce
-- [ ] Suporte a múltiplos idiomas
+- `/src/app/api`: Rotas da API (Webhook, Health, etc).
+- `/src/infra`: Repositórios, Configuração de DB e Loggers.
+- `/src/lib`: Utilitários (Normalização, Engine de Frete).
+- `/scripts`: Scripts de manutenção e teste.
+- `/docs`: Documentação e relatórios de projeto.
 
 ---
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Por favor, abra uma issue ou pull request.
-
----
-
-## 📄 Licença
-
-MIT
-
----
-
-**Desenvolvido com ❤️ por Manus AI**
+**Desenvolvido para Lojacond**

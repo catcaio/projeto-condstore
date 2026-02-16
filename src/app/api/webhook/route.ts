@@ -15,6 +15,7 @@ import { checkRateLimit, getThrottleMessage } from '../../../infra/rate-limiter'
 import { sanitizeMessage, validateWebhookPayload } from '../../../lib/validation';
 import { messageRepository } from '../../../infra/repositories/message.repository';
 import { tenantRepository } from '../../../infra/repositories/tenant.repository';
+import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from '../../../lib/normalize';
 
 /**
  * POST /api/webhook
@@ -25,12 +26,31 @@ export async function POST(request: NextRequest) {
 
   try {
     // Parse form-urlencoded body from Twilio (preserve raw params for signature validation)
+    // ─── A) Instrumentação de Logs (Solicitado) ───
+    logger.info('=== WEBHOOK REQUEST STARTED ===');
+
+    // Log headers for debugging
+    const headersRaw: Record<string, string> = {};
+    request.headers.forEach((v, k) => (headersRaw[k] = v));
+    logger.info('Webhook Headers:', headersRaw);
+
+    // Parse body for logging
     const rawBody = await request.text();
     const params = new URLSearchParams(rawBody);
     const payload: Record<string, string> = {};
     params.forEach((value, key) => {
       payload[key] = value;
     });
+
+    // Log critical fields
+    logger.info('Webhook Body Params:', {
+      To: payload['To'],
+      From: payload['From'],
+      WaId: payload['WaId'],
+      MessageSid: payload['MessageSid']
+    });
+
+    logger.debug('[STEP 1] Parsing complete');
 
     // Sanitized logging - no PII
     logger.debug('Webhook received', {
@@ -116,37 +136,46 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── Resolve Tenant by Twilio Number ───
-    const twilioNumber = payload['To'];
-    if (!twilioNumber) {
+    logger.debug('[STEP 2] Resolving tenant by Twilio number');
+
+    // Use raw 'To' field - repository handles normalization and logging
+    const twilioNumberRaw = payload['To'];
+
+    if (!twilioNumberRaw) {
       logger.error('Missing To field in webhook payload');
 
       const MessagingResponse = require('twilio').twiml.MessagingResponse;
       const twiml = new MessagingResponse();
-      twiml.message('Erro interno. Tente novamente mais tarde.');
-
+      twiml.message('Erro interno');
       return new NextResponse(twiml.toString(), {
         status: 200,
         headers: { 'Content-Type': 'text/xml' },
       });
     }
 
-    const tenant = await tenantRepository.getTenantByTwilioNumber(twilioNumber);
-    if (!tenant) {
-      logger.warn('Unknown Twilio number - tenant not found', {
-        twilioNumber,
-        event: 'UNKNOWN_TENANT',
-        ip: request.headers.get('x-forwarded-for') || 'unknown',
-      });
-
+    let tenant;
+    try {
+      // New robust resolution method
+      tenant = await tenantRepository.resolveTenantByTwilioNumber(twilioNumberRaw);
+    } catch (error) {
+      // Tenant not found or DB error - log handled in repository, return friendly error to Twilio
       const MessagingResponse = require('twilio').twiml.MessagingResponse;
       const twiml = new MessagingResponse();
-      twiml.message('Número não configurado. Entre em contato com o suporte.');
+
+      if (process.env.NODE_ENV === 'development') {
+        twiml.message(`[DEV] Erro de resolução: ${(error as Error).message}`);
+      } else {
+        twiml.message('Serviço indisponível temporariamente.');
+      }
 
       return new NextResponse(twiml.toString(), {
         status: 200,
         headers: { 'Content-Type': 'text/xml' },
       });
     }
+
+    // Tenant is guaranteed to be present if no error was thrown
+    const twilioNumber = tenant.twilioNumber;
 
     const tenantId = tenant.id;
     logger.info('Tenant resolved', {
@@ -156,14 +185,25 @@ export async function POST(request: NextRequest) {
     });
 
     // Validate and sanitize webhook payload
+    logger.debug('[STEP 3] Validating webhook payload');
     validateWebhookPayload(payload);
 
     // Parse incoming message
+    logger.debug('[STEP 4] Parsing incoming message');
     const incomingMessage = twilioProvider.parseIncomingMessage(payload as any);
     incomingMessage.body = sanitizeMessage(incomingMessage.body);
 
     // Intent Classification
-    const normalizedBody = (incomingMessage.body || '').toLowerCase();
+    // FIX: Ensure body is lowercased and trimmed for comparison
+    const normalizedBody = (incomingMessage.body || '').trim().toLowerCase();
+
+    // ─── LOGGING INTENT CLASSIFICATION (Solicitado) ───
+    logger.info('Intent Classification Debug', {
+      rawBody: incomingMessage.body,
+      normalizedBody: normalizedBody,
+      length: normalizedBody.length
+    });
+
     let intent = 'unknown';
 
     if (
@@ -174,7 +214,8 @@ export async function POST(request: NextRequest) {
       intent = 'quote_request';
     } else if (
       normalizedBody.includes('preço') ||
-      normalizedBody.includes('valor')
+      normalizedBody.includes('valor') ||
+      normalizedBody.includes('frete') // ADDED: Specific support for 'frete'
     ) {
       intent = 'price_question';
     } else if (normalizedBody.includes('pedido')) {
@@ -189,6 +230,7 @@ export async function POST(request: NextRequest) {
     });
 
     // ─── Persist inbound message (before rate limit, so throttled messages are also saved) ───
+    logger.debug('[STEP 5] Persisting inbound message to database');
     // Sanitize rawPayload to remove PII before storage
     const sanitizedPayload = {
       MessageSid: payload['MessageSid'],
@@ -208,8 +250,10 @@ export async function POST(request: NextRequest) {
       intent,
       rawPayload: JSON.stringify(sanitizedPayload),
     });
+    logger.debug('[STEP 5.1] Message persisted successfully');
 
     // ─── Generate Stateless TwiML Response (Bypass Session/Controller) ───
+    logger.debug('[STEP 6] Generating TwiML response');
     const MessagingResponse = require('twilio').twiml.MessagingResponse;
     const twiml = new MessagingResponse();
     let responseText = '';
@@ -231,6 +275,7 @@ export async function POST(request: NextRequest) {
     }
 
     twiml.message(responseText);
+    logger.debug('[STEP 6.1] TwiML response generated', { responseText });
 
     const duration = Date.now() - startTime;
     logger.info('Webhook processed successfully (stateless)', {
@@ -247,11 +292,30 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error('Webhook processing failed', error as Error, { duration });
+
+    // Enhanced error logging with full details
+    const errorDetails = {
+      duration,
+      errorName: (error as Error).name,
+      errorMessage: (error as Error).message,
+      errorStack: (error as Error).stack,
+      errorCode: (error as any).code,
+      errorContext: (error as any).context,
+    };
+
+    logger.error('Webhook processing failed', error as Error, errorDetails);
 
     const MessagingResponse = require('twilio').twiml.MessagingResponse;
     const twiml = new MessagingResponse();
-    twiml.message('Desculpe, ocorreu um erro. Tente novamente mais tarde.');
+
+    // In development, expose detailed error for debugging
+    if (process.env.NODE_ENV === 'development' || process.env.LOG_LEVEL === 'debug') {
+      const errorMsg = (error as Error).message || 'Unknown error';
+      const errorCode = (error as any).code || 'UNKNOWN';
+      twiml.message(`[DEV] Erro: ${errorCode} - ${errorMsg}`);
+    } else {
+      twiml.message('Desculpe, ocorreu um erro. Tente novamente mais tarde.');
+    }
 
     return new NextResponse(twiml.toString(), {
       status: 200,

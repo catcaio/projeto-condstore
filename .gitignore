@@ -111,3 +111,26 @@ temp/
 
 # Certificates (do not commit)
 certs/*.pem
+
+# Media and Design Artifacts
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+screenshots/
+
+# System Dumps and Exports
+*.dump
+*.sql
+exports/
+umps/
+
+# Local Database
+*.sqlite
+*.db
+
+# Ngrok
+ngrok.exe
+ngrok.yml
+
