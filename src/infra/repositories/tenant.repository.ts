@@ -162,7 +162,7 @@ export class TenantRepository {
                 });
 
                 throw new BusinessError(
-                    ErrorCode.INTERNAL_ERROR,
+                    ErrorCode.TENANT_NOT_FOUND,
                     `Tenant not found for number: ${normalizedNumber}`
                 );
             }
