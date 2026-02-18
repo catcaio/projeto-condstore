@@ -1,175 +1,89 @@
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
 import { CockpitMetrics } from './_components/CockpitMetrics';
 
-interface MetricsData {
-    totalMessages: number;
-    totalSimulations: number;
-    messagesToday: number;
-    simulationsToday: number;
-    intentsBreakdownToday: Record<string, number>;
-    intentsBreakdownTotal: Record<string, number>;
-}
-
-const INTENT_LABELS: Record<string, string> = {
-    quote_request: '📦 Cotação',
-    price_question: '💰 Preço',
-    order: '🛒 Pedido',
-    unknown: '❓ Outros',
-};
-
-function IntentBadge({ intent, count }: { intent: string; count: number }) {
-    const label = INTENT_LABELS[intent] || intent;
-    const colors: Record<string, string> = {
-        quote_request: 'bg-blue-50 text-blue-700 border-blue-200',
-        price_question: 'bg-amber-50 text-amber-700 border-amber-200',
-        order: 'bg-green-50 text-green-700 border-green-200',
-        unknown: 'bg-slate-50 text-slate-600 border-slate-200',
-    };
-    const color = colors[intent] || colors.unknown;
-
-    return (
-        <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${color}`}>
-            <span className="font-semibold text-sm">{label}</span>
-            <span className="text-lg font-bold">{count}</span>
-        </div>
-    );
-}
-
-function StatCard({ title, value, subtitle }: { title: string; value: number; subtitle?: string }) {
-    return (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-1">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{title}</span>
-            <span className="text-3xl font-bold text-slate-900">{value.toLocaleString('pt-BR')}</span>
-            {subtitle && <span className="text-xs text-slate-500 mt-1">{subtitle}</span>}
-        </div>
-    );
-}
-
 export default function CockpitPage() {
-    const [data, setData] = useState<MetricsData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-
-    const fetchMetrics = useCallback(async () => {
-        try {
-            const res = await fetch('/api/metrics/overview');
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json: MetricsData = await res.json();
-            setData(json);
-            setError('');
-            setLastUpdate(new Date());
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erro ao carregar métricas');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchMetrics();
-        const interval = setInterval(fetchMetrics, 10_000);
-        return () => clearInterval(interval);
-    }, [fetchMetrics]);
-
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+        <div className="space-y-8">
             {/* Header */}
-            <header className="bg-white border-b border-slate-200">
-                <div className="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">🎛️ Cockpit</h1>
-                        <p className="text-slate-500 text-sm">Métricas em tempo real</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        {lastUpdate && (
-                            <span className="text-xs text-slate-400">
-                                Atualizado: {lastUpdate.toLocaleTimeString('pt-BR')}
-                            </span>
-                        )}
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-[10px] font-bold text-green-600 border border-green-100">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                            LIVE
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--cockpit-text))]">
+                    Cockpit
+                </h1>
+                <div className="bg-[hsl(var(--cockpit-surface))] border border-[hsl(var(--cockpit-border))] rounded px-3 py-1.5 text-xs text-[hsl(var(--cockpit-text-muted))]">
+                    Ultima atualização: Agora
+                </div>
+            </div>
+
+            {/* Real metrics grid — fetches from /api/cockpit/metrics (skeleton + error states) */}
+            <CockpitMetrics />
+
+            {/* Recent Activity Mock */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 rounded-lg border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] overflow-hidden">
+                    <div className="px-6 py-4 border-b border-[hsl(var(--cockpit-border))] flex justify-between items-center">
+                        <h3 className="font-semibold text-[hsl(var(--cockpit-text))]">
+                            Atividade Recente
+                        </h3>
+                        <span className="text-xs text-[hsl(var(--cockpit-accent))] cursor-pointer hover:underline">
+                            Ver tudo
                         </span>
                     </div>
+                    <div className="divide-y divide-[hsl(var(--cockpit-border))]">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div
+                                key={i}
+                                className="px-6 py-3 flex items-center justify-between hover:bg-[hsl(var(--cockpit-bg))]/50 transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="h-2 w-2 rounded-full bg-[hsl(var(--cockpit-accent))]"></div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-[hsl(var(--cockpit-text))]">
+                                            Novo pedido via WhatsApp
+                                        </span>
+                                        <span className="text-xs text-[hsl(var(--cockpit-text-muted))]">
+                                            Tenant: Lojacond • Ref: #ORD-{1000 + i}
+                                        </span>
+                                    </div>
+                                </div>
+                                <span className="text-xs text-[hsl(var(--cockpit-text-muted))]">
+                                    {i * 5} min atrás
+                                </span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-            </header>
 
-            <main className="max-w-5xl mx-auto px-6 py-8">
-                {/* Loading */}
-                {loading && !data && (
-                    <div className="flex items-center justify-center h-64 text-slate-400">
-                        <div className="text-center">
-                            <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-3" />
-                            <p className="text-sm">Carregando métricas...</p>
+                {/* System Status Mock */}
+                <div className="rounded-lg border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] p-6 space-y-4">
+                    <h3 className="font-semibold text-[hsl(var(--cockpit-text))] mb-4">
+                        Status do Sistema
+                    </h3>
+
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-[hsl(var(--cockpit-text-muted))]">Twilio Webhook</span>
+                            <span className="text-[hsl(var(--cockpit-accent))]">Operacional</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-[hsl(var(--cockpit-text-muted))]">Banco de Dados</span>
+                            <span className="text-[hsl(var(--cockpit-accent))]">Operacional</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-[hsl(var(--cockpit-text-muted))]">Redis Cache</span>
+                            <span className="text-[hsl(var(--cockpit-accent))]">Operacional</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-[hsl(var(--cockpit-text-muted))]">Motor de Frete</span>
+                            <span className="text-[hsl(var(--cockpit-accent))]">Operacional</span>
                         </div>
                     </div>
-                )}
 
-                {/* Error */}
-                {error && (
-                    <div className="mb-6 rounded-xl bg-red-50 border border-red-100 p-4 text-red-700 text-sm font-medium">
-                        ⚠️ {error}
+                    <div className="mt-6 pt-4 border-t border-[hsl(var(--cockpit-border))]">
+                        <button className="w-full py-2 rounded border border-[hsl(var(--cockpit-border))] text-xs font-medium text-[hsl(var(--cockpit-text-muted))] hover:bg-[hsl(var(--cockpit-bg))] transition-colors">
+                            Ver logs do sistema
+                        </button>
                     </div>
-                )}
-
-                {data && (
-                    <div className="space-y-8 animate-in fade-in duration-500">
-                        {/* Metric Cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <StatCard title="Mensagens Total" value={data.totalMessages} />
-                            <StatCard title="Mensagens Hoje" value={data.messagesToday} />
-                            <StatCard title="Simulações Total" value={data.totalSimulations} />
-                            <StatCard title="Simulações Hoje" value={data.simulationsToday} />
-                        </div>
-
-                        {/* Intent Breakdowns */}
-                        <div className="grid md:grid-cols-2 gap-6">
-                            {/* Today */}
-                            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                                <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">
-                                    🕐 Intents Hoje
-                                </h2>
-                                <div className="space-y-2">
-                                    {Object.keys(data.intentsBreakdownToday).length === 0 ? (
-                                        <p className="text-sm text-slate-400 text-center py-4">Nenhum registro hoje</p>
-                                    ) : (
-                                        Object.entries(data.intentsBreakdownToday)
-                                            .sort(([, a], [, b]) => b - a)
-                                            .map(([intent, count]) => (
-                                                <IntentBadge key={intent} intent={intent} count={count} />
-                                            ))
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Total */}
-                            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                                <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">
-                                    📊 Intents Total
-                                </h2>
-                                <div className="space-y-2">
-                                    {Object.keys(data.intentsBreakdownTotal).length === 0 ? (
-                                        <p className="text-sm text-slate-400 text-center py-4">Nenhum registro</p>
-                                    ) : (
-                                        Object.entries(data.intentsBreakdownTotal)
-                                            .sort(([, a], [, b]) => b - a)
-                                            .map(([intent, count]) => (
-                                                <IntentBadge key={intent} intent={intent} count={count} />
-                                            ))
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                {/* Operational metrics — /api/cockpit/metrics */}
-                <section className="mt-8">
-                    <CockpitMetrics />
-                </section>
-            </main>
+                </div>
+            </div>
         </div>
     );
 }

@@ -35,7 +35,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const cacheKey = `cockpit:metrics:${tenantId}`;
 
   try {
-    // --- Cache read (gracefully skipped if Redis unavailable) ---
+    // Cache read (skip if Redis unavailable)
     if (redisClient.isAvailable()) {
       const cached = await redisClient.get<CockpitMetrics>(cacheKey);
       if (cached) {
@@ -47,33 +47,27 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // --- Real DB queries in parallel (tenant-isolated) ---
+    // Real DB queries in parallel (tenant-isolated)
     const [msgMetrics, cotacoesHoje] = await Promise.all([
-      // messages table: count inbound messages for this tenant since UTC midnight
       messageRepository.getMetricsToday(tenantId),
-      // simulations table: count freight quote simulations for this tenant since UTC midnight
       simulationRepository.countToday(tenantId),
     ]);
 
     const payload: CockpitMetrics = {
-      mensagensHoje: msgMetrics.total,
-      cotacoesHoje,
-      // TODO: plug orders table when available (no `orders` table in schema yet)
-      pedidosHoje: 0,
-      // TODO: plug error_log table when available (no `error_log` table in schema yet)
-      erros24h: 0,
+      mensagensHoje: Number(msgMetrics.total ?? 0),
+      cotacoesHoje: Number(cotacoesHoje ?? 0),
+      pedidosHoje: 0, // TODO: orders table
+      erros24h: 0,    // TODO: error_log table
     };
 
-    // --- Cache write (fire-and-forget — never blocks the response) ---
+    // Cache write (fire-and-forget)
     if (redisClient.isAvailable()) {
-      redisClient
-        .set<CockpitMetrics>(cacheKey, payload, CACHE_TTL_SECONDS)
-        .catch((err: unknown) => {
-          logger.warn('cockpit/metrics: cache write failed', { tenantId }, err as Error);
-        });
+      redisClient.set<CockpitMetrics>(cacheKey, payload, CACHE_TTL_SECONDS).catch((err: unknown) => {
+        logger.warn('cockpit/metrics: cache write failed', { tenantId }, err as Error);
+      });
     }
 
-    logger.info('cockpit/metrics: served from DB', {
+    logger.info('cockpit/metrics: served', {
       tenantId,
       mensagensHoje: payload.mensagensHoje,
       cotacoesHoje: payload.cotacoesHoje,
