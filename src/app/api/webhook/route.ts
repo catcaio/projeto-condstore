@@ -88,15 +88,11 @@ export async function POST(request: NextRequest) {
           ip: request.headers.get('x-forwarded-for') || 'unknown',
         });
 
-        // Return TwiML error instead of 403
-        const MessagingResponse = require('twilio').twiml.MessagingResponse;
-        const twiml = new MessagingResponse();
-        twiml.message('Erro de autenticação. Entre em contato com o suporte.');
-
-        return new NextResponse(twiml.toString(), {
-          status: 200,
-          headers: { 'Content-Type': 'text/xml' },
-        });
+        // Return 403 Forbidden
+        return NextResponse.json(
+          { error: 'Missing Twilio signature' },
+          { status: 403 }
+        );
       }
 
       const isValid = validateRequest(
@@ -119,15 +115,11 @@ export async function POST(request: NextRequest) {
           ip: request.headers.get('x-forwarded-for') || 'unknown',
         });
 
-        // Return TwiML error instead of 403
-        const MessagingResponse = require('twilio').twiml.MessagingResponse;
-        const twiml = new MessagingResponse();
-        twiml.message('Erro de autenticação. Entre em contato com o suporte.');
-
-        return new NextResponse(twiml.toString(), {
-          status: 200,
-          headers: { 'Content-Type': 'text/xml' },
-        });
+        // Return 403 Forbidden
+        return NextResponse.json(
+          { error: 'Invalid Twilio signature' },
+          { status: 403 }
+        );
       }
     } else {
       logger.warn('Twilio signature validation DISABLED (development mode)', {
@@ -158,7 +150,16 @@ export async function POST(request: NextRequest) {
       // New robust resolution method
       tenant = await tenantRepository.resolveTenantByTwilioNumber(twilioNumberRaw);
     } catch (error) {
-      // Tenant not found or DB error - log handled in repository, return friendly error to Twilio
+      // Security boundary: Tenant not found -> 403
+      if ((error as any).code === 'TENANT_NOT_FOUND') {
+        logger.warn('Webhook rejected: Tenant not found', { twilioNumber: twilioNumberRaw });
+        return NextResponse.json(
+          { error: 'Tenant not found' },
+          { status: 403 }
+        );
+      }
+
+      // Other errors (DB offline, etc) -> Return friendly error to Twilio (200 OK) to avoid retries
       const MessagingResponse = require('twilio').twiml.MessagingResponse;
       const twiml = new MessagingResponse();
 
