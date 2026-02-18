@@ -15,6 +15,7 @@ import { sanitizeMessage, validateWebhookPayload } from '../../../lib/validation
 import { messageRepository } from '../../../infra/repositories/message.repository';
 import { tenantRepository } from '../../../infra/repositories/tenant.repository';
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from '../../../lib/normalize';
+import { findProductByMessage } from '@/core/catalog';
 
 /**
  * POST /api/webhook
@@ -196,6 +197,20 @@ export async function POST(request: NextRequest) {
     // Intent Classification
     // FIX: Ensure body is lowercased and trimmed for comparison
     const normalizedBody = (incomingMessage.body || '').trim().toLowerCase();
+
+    const matchedProduct = findProductByMessage(normalizedBody);
+
+    if (matchedProduct) {
+      const MessagingResponse = require('twilio').twiml.MessagingResponse;
+      const twiml = new MessagingResponse();
+
+      twiml.message(matchedProduct.baseReply);
+
+      return new NextResponse(twiml.toString(), {
+        status: 200,
+        headers: { 'Content-Type': 'text/xml' },
+      });
+    }
 
     // ─── LOGGING INTENT CLASSIFICATION (Solicitado) ───
     logger.info('Intent Classification Debug', {
