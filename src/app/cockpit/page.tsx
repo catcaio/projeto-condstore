@@ -5,15 +5,13 @@ export default function CockpitPage() {
         <div className="space-y-8">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--cockpit-text))]">
-                    Cockpit
-                </h1>
-                <div className="bg-[hsl(var(--cockpit-surface))] border border-[hsl(var(--cockpit-border))] rounded px-3 py-1.5 text-xs text-[hsl(var(--cockpit-text-muted))]">
-                    Ultima atualização: Agora
-                </div>
+                <h1 className="text-2xl font-semibold">Cockpit</h1>
+                <span className="text-sm text-muted-foreground">
+                    Última atualização: Agora
+                </span>
             </div>
 
-            {/* Real metrics grid — fetches from /api/cockpit/metrics (skeleton + error states) */}
+            {/* Real metrics — /api/cockpit/metrics (skeleton + error + 30s auto-refresh) */}
             <CockpitMetrics />
 
             {/* Recent Activity Mock */}
