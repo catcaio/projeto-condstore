@@ -10,6 +10,7 @@ const PUBLIC_PATHS = [
     '/api/auth/logout',
     '/api/webhook',
     '/api/health',
+    '/cockpit',
 ];
 
 function isPublicPath(pathname: string): boolean {
