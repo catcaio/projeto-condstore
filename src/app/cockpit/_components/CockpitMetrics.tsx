@@ -1,12 +1,19 @@
 'use client';
 
 /**
- * CockpitMetrics — smart component.
- * Fetches GET /api/cockpit/metrics and renders a 4-card grid with:
- *   - skeleton loading (animate-pulse, no spinner)
- *   - compact error state (red accent, one-line)
- *   - 30s auto-refresh (silent, no skeleton flash)
- *   - manual refresh button (shows skeletons while re-fetching)
+ * CockpitMetrics — smart component for real-time operational metrics.
+ *
+ * Fetches GET /api/cockpit/metrics (tenant-scoped, Redis-cached 30s) and renders
+ * a 4-card grid:
+ *   mensagensHoje | cotacoesHoje | pedidosHoje | erros24h
+ *
+ * Refresh controls:
+ *   - Initial load: skeletons (animate-pulse) until first response
+ *   - Auto-refresh: every 30s, silent (no skeleton flash, data updates in place)
+ *   - Manual "↻ Atualizar" button: disabled while loading, shows skeletons on click
+ *
+ * Error state: compact one-line red banner; cards fall back to 0.
+ * No page.tsx changes needed — this component is fully self-contained.
  */
 
 import { useState, useEffect, useCallback } from 'react';
