@@ -14,6 +14,7 @@ export enum ErrorCode {
   MELHORENVIO_API_ERROR = 'MELHORENVIO_API_ERROR',
   MELHORENVIO_TIMEOUT = 'MELHORENVIO_TIMEOUT',
   TABELA_CSV_ERROR = 'TABELA_CSV_ERROR',
+  TENANT_NOT_FOUND = 'TENANT_NOT_FOUND',
 
   // Business logic errors
   INVALID_CEP = 'INVALID_CEP',
@@ -26,10 +27,6 @@ export enum ErrorCode {
   // Freight errors
   NO_FREIGHT_OPTIONS = 'NO_FREIGHT_OPTIONS',
   FREIGHT_CALCULATION_ERROR = 'FREIGHT_CALCULATION_ERROR',
-
-  // Auth errors
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
 
   // Generic errors
   UNKNOWN_ERROR = 'UNKNOWN_ERROR',
@@ -114,9 +111,8 @@ export const userFacingMessages: Record<ErrorCode, string> = {
   [ErrorCode.FREIGHT_CALCULATION_ERROR]: 'Erro ao calcular frete. Tente novamente.',
   [ErrorCode.UNKNOWN_ERROR]: 'Ocorreu um erro inesperado. Tente novamente mais tarde.',
   [ErrorCode.VALIDATION_ERROR]: 'Dados inválidos. Verifique e tente novamente.',
+  [ErrorCode.TENANT_NOT_FOUND]: 'Empresa não encontrada ou inativa.',
   [ErrorCode.INTERNAL_ERROR]: 'Erro interno do sistema. Tente novamente.',
-  [ErrorCode.UNAUTHORIZED]: 'Sessão expirada. Faça login novamente.',
-  [ErrorCode.INVALID_CREDENTIALS]: 'Email ou senha inválidos.',
 };
 
 /**
