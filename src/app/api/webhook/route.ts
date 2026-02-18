@@ -15,6 +15,7 @@ import { sanitizeMessage, validateWebhookPayload } from '../../../lib/validation
 import { messageRepository } from '../../../infra/repositories/message.repository';
 import { tenantRepository } from '../../../infra/repositories/tenant.repository';
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from '../../../lib/normalize';
+import { freightController } from '../../../legacy/freight.controller';
 
 /**
  * POST /api/webhook
@@ -252,36 +253,25 @@ export async function POST(request: NextRequest) {
     });
     logger.debug('[STEP 5.1] Message persisted successfully');
 
-    // ─── Generate Stateless TwiML Response (Bypass Session/Controller) ───
-    logger.debug('[STEP 6] Generating TwiML response');
+    // ─── Call FreightController (stateful conversation via StateMachine) ───
+    logger.debug('[STEP 6] Calling FreightController with tenant context');
+    const controllerResponse = await freightController.processMessage({
+      tenantId,
+      phoneNumber: incomingMessage.from,
+      message: incomingMessage.body,
+    });
+
     const MessagingResponse = require('twilio').twiml.MessagingResponse;
     const twiml = new MessagingResponse();
-    let responseText = '';
-
-    switch (intent) {
-      case 'quote_request':
-        responseText = 'Perfeito. Para te enviar um orçamento, me diga CEP, cidade/UF e o produto (ou link).';
-        break;
-      case 'price_question':
-        responseText = 'Me diga o produto (ou link) e seu CEP que calculo o frete e o valor.';
-        break;
-      case 'order':
-        responseText = 'Show. Qual produto e quantidade? Envie também CEP para calcular entrega.';
-        break;
-      default:
-        // Default/Unknown intent
-        responseText = 'Oi! Me diga se você quer orçamento, frete ou fazer um pedido 🙂';
-        break;
-    }
-
-    twiml.message(responseText);
-    logger.debug('[STEP 6.1] TwiML response generated', { responseText });
+    twiml.message(controllerResponse.reply);
+    logger.debug('[STEP 6.1] Controller response generated', { reply: controllerResponse.reply });
 
     const duration = Date.now() - startTime;
-    logger.info('Webhook processed successfully (stateless)', {
+    logger.info('Webhook processed successfully', {
       from: incomingMessage.from,
       duration,
       intent,
+      controllerSuccess: controllerResponse.success,
     });
 
     return new NextResponse(twiml.toString(), {

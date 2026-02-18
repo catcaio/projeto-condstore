@@ -14,6 +14,7 @@ import { freightService } from './freight.service';
 import type { FreightRequest } from './freight.types';
 
 export interface ProcessMessageRequest {
+  tenantId: string;
   phoneNumber: string;
   message: string;
 }
@@ -29,16 +30,16 @@ class FreightController {
    * This is the main entry point for the conversation flow.
    */
   async processMessage(request: ProcessMessageRequest): Promise<ProcessMessageResponse> {
-    const { phoneNumber, message } = request;
+    const { tenantId, phoneNumber, message } = request;
 
     try {
-      logger.info('Processing message', { phoneNumber, message });
+      logger.info('Processing message', { tenantId, phoneNumber, message });
 
       // Get or create session
-      let session = await sessionManager.getSession(phoneNumber);
+      let session = await sessionManager.getSession(tenantId, phoneNumber);
 
       if (!session) {
-        session = await sessionManager.createSession(phoneNumber);
+        session = await sessionManager.createSession(tenantId, phoneNumber);
       }
 
       // Classify intent
@@ -46,13 +47,14 @@ class FreightController {
 
       logger.debug('Intent classified', {
         phoneNumber,
+        tenantId,
         intent: intentResult.intent,
         confidence: intentResult.confidence,
         currentState: session.currentState,
       });
 
       // Handle intent
-      const reply = await this.handleIntent(phoneNumber, session.currentState, intentResult.intent, message, intentResult.extractedData);
+      const reply = await this.handleIntent(tenantId, phoneNumber, session.currentState, intentResult.intent, message, intentResult.extractedData);
 
       return {
         reply,
@@ -77,6 +79,7 @@ class FreightController {
    * Handle classified intent and return response.
    */
   private async handleIntent(
+    tenantId: string,
     phoneNumber: string,
     currentState: ConversationState,
     intent: UserIntent,
@@ -85,7 +88,7 @@ class FreightController {
   ): Promise<string> {
     // Handle reset/cancel
     if (intent === UserIntent.RESET || intent === UserIntent.CANCEL) {
-      await sessionManager.deleteSession(phoneNumber);
+      await sessionManager.deleteSession(tenantId, phoneNumber);
       return 'Conversa reiniciada. Digite "frete" para começar uma nova cotação.';
     }
 
@@ -96,17 +99,17 @@ class FreightController {
 
     // Handle freight query
     if (intent === UserIntent.FREIGHT_QUERY) {
-      return await this.startFreightQuery(phoneNumber);
+      return await this.startFreightQuery(tenantId, phoneNumber);
     }
 
     // Handle CEP provision
     if (intent === UserIntent.PROVIDE_CEP && extractedData?.cep) {
-      return await this.handleCEP(phoneNumber, extractedData.cep as string);
+      return await this.handleCEP(tenantId, phoneNumber, extractedData.cep as string);
     }
 
     // Handle quantity provision
     if (intent === UserIntent.PROVIDE_QUANTITY && extractedData?.quantity) {
-      return await this.handleQuantity(phoneNumber, extractedData.quantity as number);
+      return await this.handleQuantity(tenantId, phoneNumber, extractedData.quantity as number);
     }
 
     // Handle future intents
@@ -129,8 +132,8 @@ class FreightController {
   /**
    * Start freight query flow.
    */
-  private async startFreightQuery(phoneNumber: string): Promise<string> {
-    const session = await sessionManager.getSession(phoneNumber);
+  private async startFreightQuery(tenantId: string, phoneNumber: string): Promise<string> {
+    const session = await sessionManager.getSession(tenantId, phoneNumber);
 
     if (!session) {
       throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session not found');
@@ -142,7 +145,7 @@ class FreightController {
       ConversationEvent.START_FREIGHT_QUERY
     );
 
-    await sessionManager.updateSession(phoneNumber, newContext);
+    await sessionManager.updateSession(tenantId, phoneNumber, newContext);
 
     return 'Olá! Vou ajudar você a calcular o frete. Qual é o CEP de destino?';
   }
@@ -150,8 +153,8 @@ class FreightController {
   /**
    * Handle CEP provision.
    */
-  private async handleCEP(phoneNumber: string, cep: string): Promise<string> {
-    const session = await sessionManager.getSession(phoneNumber);
+  private async handleCEP(tenantId: string, phoneNumber: string, cep: string): Promise<string> {
+    const session = await sessionManager.getSession(tenantId, phoneNumber);
 
     if (!session) {
       throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session not found');
@@ -166,7 +169,7 @@ class FreightController {
       ConversationEvent.CEP_PROVIDED
     );
 
-    await sessionManager.updateSession(phoneNumber, newContext);
+    await sessionManager.updateSession(tenantId, phoneNumber, newContext);
 
     return 'CEP recebido! Agora, quantas unidades você deseja?';
   }
@@ -174,8 +177,8 @@ class FreightController {
   /**
    * Handle quantity provision and calculate freight.
    */
-  private async handleQuantity(phoneNumber: string, quantity: number): Promise<string> {
-    const session = await sessionManager.getSession(phoneNumber);
+  private async handleQuantity(tenantId: string, phoneNumber: string, quantity: number): Promise<string> {
+    const session = await sessionManager.getSession(tenantId, phoneNumber);
 
     if (!session || !session.cep) {
       throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session or CEP not found');
@@ -190,7 +193,7 @@ class FreightController {
       ConversationEvent.QUANTITY_PROVIDED
     );
 
-    await sessionManager.updateSession(phoneNumber, calculatingContext);
+    await sessionManager.updateSession(tenantId, phoneNumber, calculatingContext);
 
     try {
       // Calculate freight
@@ -207,10 +210,10 @@ class FreightController {
         ConversationEvent.CALCULATION_SUCCESS
       );
 
-      await sessionManager.updateSession(phoneNumber, completedContext);
+      await sessionManager.updateSession(tenantId, phoneNumber, completedContext);
 
       // Clear session after completion
-      await sessionManager.deleteSession(phoneNumber);
+      await sessionManager.deleteSession(tenantId, phoneNumber);
 
       // Format and return response
       return freightService.formatOptionsForUser(result.options);
