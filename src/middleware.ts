@@ -19,6 +19,31 @@ const PUBLIC_PATHS = [
   '/api/health',
 ];
 
+// ---------------------------------------------------------------------------
+// RBAC — route-level access rules
+// Each entry: { prefix, allowedRoles }
+// Rules are evaluated top-to-bottom; first match wins.
+// Routes not listed here require only a valid session (any role).
+// ---------------------------------------------------------------------------
+const RBAC_RULES: Array<{ prefix: string; allowedRoles: string[] }> = [
+  { prefix: '/cockpit/tenants', allowedRoles: ['admin'] },
+  { prefix: '/cockpit',         allowedRoles: ['admin', 'manager'] },
+];
+
+/**
+ * Returns true when `role` is permitted to access `pathname`.
+ * Evaluates rules top-to-bottom; first matching prefix determines the result.
+ * If no rule matches, access is allowed (any authenticated role).
+ */
+function isRoleAllowed(pathname: string, role: string): boolean {
+  for (const rule of RBAC_RULES) {
+    if (pathname === rule.prefix || pathname.startsWith(rule.prefix + '/') || pathname.startsWith(rule.prefix + '?')) {
+      return rule.allowedRoles.includes(role);
+    }
+  }
+  return true; // no matching rule → any authenticated role is fine
+}
+
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 }
@@ -63,13 +88,18 @@ export async function middleware(request: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, getSecret());
 
-    const userId = payload.sub as string;
-    const email = payload.email as string;
+    const userId   = payload.sub as string;
+    const email    = payload.email as string;
     const tenantId = payload.tenantId as string;
-    const role = payload.role as string;
+    const role     = payload.role as string;
 
     if (!userId || !tenantId) {
       return handleUnauthenticated(request, pathname);
+    }
+
+    // RBAC check — runs after authentication, before forwarding
+    if (!isRoleAllowed(pathname, role ?? '')) {
+      return handleForbidden(request, pathname);
     }
 
     // Set auth context headers for route handlers
@@ -95,6 +125,17 @@ function handleUnauthenticated(request: NextRequest, pathname: string): NextResp
   // UI routes: redirect to login
   const loginUrl = new URL('/login', request.url);
   return addSecurityHeaders(NextResponse.redirect(loginUrl));
+}
+
+function handleForbidden(request: NextRequest, pathname: string): NextResponse {
+  // API routes: return 403 JSON
+  if (pathname.startsWith('/api/')) {
+    return addSecurityHeaders(NextResponse.json({ error: 'Forbidden' }, { status: 403 }));
+  }
+
+  // UI routes: redirect to /cockpit (safe fallback — already authenticated)
+  const cockpitUrl = new URL('/cockpit', request.url);
+  return addSecurityHeaders(NextResponse.redirect(cockpitUrl));
 }
 
 export const config = {
