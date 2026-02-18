@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { CockpitMetrics } from './_components/CockpitMetrics';
 
 interface MetricsData {
     totalMessages: number;
@@ -164,6 +165,10 @@ export default function CockpitPage() {
                         </div>
                     </div>
                 )}
+                {/* Operational metrics — /api/cockpit/metrics */}
+                <section className="mt-8">
+                    <CockpitMetrics />
+                </section>
             </main>
         </div>
     );
