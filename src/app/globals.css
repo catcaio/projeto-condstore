@@ -47,6 +47,17 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
   }
+
+  .cockpit-theme {
+    --cockpit-bg: 222 47% 11%;
+    --cockpit-surface: 217 33% 17%;
+    --cockpit-border: 217 33% 25%;
+    --cockpit-text: 210 40% 98%;
+    --cockpit-text-muted: 215 20% 65%;
+    --cockpit-accent: 221 83% 53%; /* Blue primary */
+    --cockpit-accent-fg: 210 40% 98%;
+    --cockpit-danger: 0 84% 60%;
+  }
 }
 
 @layer base {
