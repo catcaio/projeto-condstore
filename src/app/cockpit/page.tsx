@@ -1,5 +1,3 @@
-import MetricCard from './_components/metric-card';
-
 export default function CockpitPage() {
     return (
         <div className="space-y-8">
@@ -11,14 +9,6 @@ export default function CockpitPage() {
                 <div className="bg-[hsl(var(--cockpit-surface))] border border-[hsl(var(--cockpit-border))] rounded px-3 py-1.5 text-xs text-[hsl(var(--cockpit-text-muted))]">
                     Ultima atualização: Agora
                 </div>
-            </div>
-
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard label="Mensagens Hoje" value="1,248" trend="+12%" trendUp={true} />
-                <MetricCard label="Cotações" value="86" trend="-5%" trendUp={false} />
-                <MetricCard label="Pedidos" value="24" trend="+8%" trendUp={true} />
-                <MetricCard label="Erros (24h)" value="0" trend="Estável" trendUp={true} />
             </div>
 
             {/* Recent Activity Mock */}
