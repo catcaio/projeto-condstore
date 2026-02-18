@@ -3,7 +3,7 @@
 This document serves as proof of normalization for the **catcaio/projeto-condstore** project.
 
 ## 1. Canonical Repository
-**Path:** `C:\repos\projeto-condstore`
+**Canonical Local Path (example):** `C:\repos\projeto-condstore`
 **Status:** **ACTIVE / CANONICAL**
 **Tech Stack:** Next.js 16.1.6 (Turbopack), Drizzle ORM, Multi-tenant Architecture.
 **Evidence:** Contains the latest security hardening (403 boundaries), strict TypeScript build gate (`tsconfig.build.json`), and full infrastructure for tenant-scoped message processing.
@@ -37,5 +37,5 @@ This document serves as proof of normalization for the **catcaio/projeto-condsto
 ## 4. Final Confirmation
 Only `C:\repos\projeto-condstore` shall be used for development and production. All other clones or extractions in `Downloads` or `temp` directories are for historical reference only and should be considered **STALE**.
 
-**Current SHA:** `da477a61463e6c62ca2b69289608d2e902f009fe`
+**Current SHA:** See `git log -1 --oneline`
 **Branch:** `chore/typecheck-gate`
