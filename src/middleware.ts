@@ -30,6 +30,13 @@ const RBAC_RULES: Array<{ prefix: string; allowedRoles: string[] }> = [
   { prefix: '/cockpit',         allowedRoles: ['admin', 'manager'] },
 ];
 
+/** Returns true when `pathname` is at or under `prefix`. */
+function pathnameMatchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix
+    || pathname.startsWith(prefix + '/')
+    || pathname.startsWith(prefix + '?');
+}
+
 /**
  * Returns true when `role` is permitted to access `pathname`.
  * Evaluates rules top-to-bottom; first matching prefix determines the result.
@@ -37,7 +44,7 @@ const RBAC_RULES: Array<{ prefix: string; allowedRoles: string[] }> = [
  */
 function isRoleAllowed(pathname: string, role: string): boolean {
   for (const rule of RBAC_RULES) {
-    if (pathname === rule.prefix || pathname.startsWith(rule.prefix + '/') || pathname.startsWith(rule.prefix + '?')) {
+    if (pathnameMatchesPrefix(pathname, rule.prefix)) {
       return rule.allowedRoles.includes(role);
     }
   }
@@ -111,7 +118,8 @@ export async function middleware(request: NextRequest) {
 
     const response = NextResponse.next({ request: { headers: requestHeaders } });
     return addSecurityHeaders(response);
-  } catch {
+  } catch (_err) {
+    // JWT verification failed (expired, tampered, malformed) — treat as unauthenticated
     return handleUnauthenticated(request, pathname);
   }
 }
