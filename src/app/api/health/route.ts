@@ -80,6 +80,17 @@ async function checkRedis(): Promise<boolean> {
  * Returns system health status with database diagnostics.
  */
 export async function GET() {
+    // Security: Only allow in development
+    const isDev = process.env.NODE_ENV === 'development';
+
+    // Simple protection for health check in non-dev
+    if (!isDev) {
+        return NextResponse.json(
+            { status: 'ok', service: 'lojacond-frete-automacao' }, // Minimal info in prod
+            { status: 200 }
+        );
+    }
+
     const [dbDiagnostics, redisHealthy] = await Promise.all([
         checkDatabase(),
         checkRedis(),
