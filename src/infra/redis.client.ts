@@ -188,6 +188,23 @@ class RedisClient {
   }
 
   /**
+   * Set key with value "1" only if it does not exist (NX), with TTL.
+   * Returns true if key was set (first time), false if key already existed.
+   * Used for idempotency checks.
+   */
+  async setNX(key: string, ttlSeconds: number): Promise<boolean> {
+    try {
+      const command = `set/${key}/1/nx/ex/${ttlSeconds}`;
+      const result = await this.execute<string>(command);
+      return result === 'OK';
+    } catch (error) {
+      logger.error('Failed to setNX in Redis', error as Error, { key });
+      // On error, allow processing (fail-open to avoid blocking messages)
+      return true;
+    }
+  }
+
+  /**
    * Ping Redis to check connection.
    */
   async ping(): Promise<boolean> {

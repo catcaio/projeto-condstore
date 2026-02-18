@@ -11,6 +11,7 @@ import { twilioConfig } from '../../../config/twilio.config';
 import { logger } from '../../../infra/logger';
 import { BaseError, getUserMessage } from '../../../infra/errors';
 import { checkRateLimit, getThrottleMessage } from '../../../infra/rate-limiter';
+import { redisClient } from '../../../infra/redis.client';
 import { sanitizeMessage, validateWebhookPayload } from '../../../lib/validation';
 import { messageRepository } from '../../../infra/repositories/message.repository';
 import { tenantRepository } from '../../../infra/repositories/tenant.repository';
@@ -183,6 +184,23 @@ export async function POST(request: NextRequest) {
       tenantId,
       tenantName: tenant.name,
     });
+
+    // ─── Idempotency Check ───
+    // Prevent duplicate processing of the same Twilio message.
+    // Key: idemp:{tenantId}:{MessageSid} — TTL: 24h
+    const messageSidForIdemp = payload['MessageSid'];
+    if (messageSidForIdemp && redisClient.isAvailable()) {
+      const idempKey = `idemp:${tenantId}:${messageSidForIdemp}`;
+      const isNew = await redisClient.setNX(idempKey, 86400);
+      if (!isNew) {
+        logger.info('Duplicate webhook ignored (idempotency)', {
+          tenantId,
+          messageSid: messageSidForIdemp,
+          idempKey,
+        });
+        return NextResponse.json({ status: 'duplicate' }, { status: 200 });
+      }
+    }
 
     // Validate and sanitize webhook payload
     logger.debug('[STEP 3] Validating webhook payload');
