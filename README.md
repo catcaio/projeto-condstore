@@ -2,14 +2,14 @@
 
 Sistema de automação logística via WhatsApp para cotação de fretes e pedidos, integrado com TiDB e Twilio.
 
-## 🚀 Funcionalidades
+##  Funcionalidades
 
 - **Webhook WhatsApp (Twilio):** Recebe mensagens, resolve o tenant e classifica a intenção.
 - **Resolução de Tenant:** Identifica a loja/cliente com base no número de destino (Twilio Number).
 - **Classificação de Intenção:** Detecta se o usuário quer "Cotação", "Preço/Frete" ou "Pedido".
 - **Painel Logístico:** Interface para simulação manual de fretes.
 
-## 🛠️ Stack Tecnológico
+##  Stack Tecnológico
 
 - **Framework:** Next.js 14+ (App Router)
 - **Banco de Dados:** TiDB (MySQL Compatible)
@@ -17,7 +17,7 @@ Sistema de automação logística via WhatsApp para cotação de fretes e pedido
 - **Integrações:** Twilio API (WhatsApp)
 - **Infra:** Vercel (Frontend/API) + Upstash (Redis - Opcional)
 
-## ⚙️ Configuração Local
+##  Configuração Local
 
 ### 1. Pré-requisitos
 - Node.js 18+
@@ -51,7 +51,7 @@ npm run dev
 
 O projeto estará rodando em `http://localhost:3000`.
 
-## 📡 Webhooks e Endpoints
+##  Webhooks e Endpoints
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
@@ -60,7 +60,7 @@ O projeto estará rodando em `http://localhost:3000`.
 | POST | `/api/painel-logistico` | API do painel de cotação. |
 | GET | `/api/debug/tenants` | Lista tenants (apenas DEV). |
 
-## 🧪 Testes
+##  Testes
 
 ### Verificação de Webhook
 Use o script de diagnóstico para validar a resolução de tenant sem precisar do Twilio:
@@ -73,7 +73,7 @@ npx tsx scripts/debug-tenant-resolution.ts
 npx tsx scripts/test-panel-api.ts
 ```
 
-## 📁 Estrutura de Pastas
+##  Estrutura de Pastas
 
 - `/src/app/api`: Rotas da API (Webhook, Health, etc).
 - `/src/infra`: Repositórios, Configuração de DB e Loggers.
