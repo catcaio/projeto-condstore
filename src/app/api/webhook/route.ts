@@ -6,7 +6,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { validateRequest } from 'twilio';
-import { freightController } from '../../../modules/freight/freight.controller';
 import { twilioProvider } from '../../../providers/twilio.provider';
 import { twilioConfig } from '../../../config/twilio.config';
 import { logger } from '../../../infra/logger';

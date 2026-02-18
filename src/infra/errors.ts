@@ -8,6 +8,7 @@ export enum ErrorCode {
   REDIS_CONNECTION_ERROR = 'REDIS_CONNECTION_ERROR',
   REDIS_OPERATION_ERROR = 'REDIS_OPERATION_ERROR',
   INTERNAL_ERROR = 'INTERNAL_ERROR',
+  UNAUTHORIZED = 'UNAUTHORIZED',
 
   // Provider errors
   TWILIO_API_ERROR = 'TWILIO_API_ERROR',
@@ -113,6 +114,7 @@ export const userFacingMessages: Record<ErrorCode, string> = {
   [ErrorCode.VALIDATION_ERROR]: 'Dados inválidos. Verifique e tente novamente.',
   [ErrorCode.TENANT_NOT_FOUND]: 'Empresa não encontrada ou inativa.',
   [ErrorCode.INTERNAL_ERROR]: 'Erro interno do sistema. Tente novamente.',
+  [ErrorCode.UNAUTHORIZED]: 'Acesso não autorizado.',
 };
 
 /**
