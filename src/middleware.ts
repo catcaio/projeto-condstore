@@ -6,11 +6,13 @@ const COOKIE_NAME = 'condstore_session';
 
 const PUBLIC_PATHS = [
     '/login',
+    '/robots.txt',
+    '/sitemap.xml',
     '/api/auth/login',
     '/api/auth/logout',
     '/api/webhook',
     '/api/health',
-    '/cockpit',
+    // '/cockpit' removed - it must be protected
 ];
 
 function isPublicPath(pathname: string): boolean {
