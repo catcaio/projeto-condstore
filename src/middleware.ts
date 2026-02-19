@@ -27,7 +27,7 @@ const PUBLIC_PATHS = [
 // ---------------------------------------------------------------------------
 const RBAC_RULES: Array<{ prefix: string; allowedRoles: string[] }> = [
   { prefix: '/cockpit/tenants', allowedRoles: ['admin'] },
-  { prefix: '/cockpit',         allowedRoles: ['admin', 'manager'] },
+  { prefix: '/cockpit', allowedRoles: ['admin', 'manager'] },
 ];
 
 /** Returns true when `pathname` is at or under `prefix`. */
@@ -95,10 +95,10 @@ export async function middleware(request: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, getSecret());
 
-    const userId   = payload.sub as string;
-    const email    = payload.email as string;
+    const userId = payload.sub as string;
+    const email = payload.email as string;
     const tenantId = payload.tenantId as string;
-    const role     = payload.role as string;
+    const role = payload.role as string;
 
     if (!userId || !tenantId) {
       return handleUnauthenticated(request, pathname);
@@ -111,6 +111,14 @@ export async function middleware(request: NextRequest) {
 
     // Set auth context headers for route handlers
     const requestHeaders = new Headers(request.headers);
+
+    // SECURITY: Strip potentially spoofed headers from client
+    requestHeaders.delete('x-user-id');
+    requestHeaders.delete('x-user-email');
+    requestHeaders.delete('x-tenant-id');
+    requestHeaders.delete('x-user-role');
+
+    // Inject verified headers from JWT
     requestHeaders.set('x-user-id', userId);
     if (email) requestHeaders.set('x-user-email', email);
     requestHeaders.set('x-tenant-id', tenantId);
