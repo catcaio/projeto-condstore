@@ -140,6 +140,7 @@ export async function POST(request: NextRequest) {
       phoneNumber: fromNormalized,
       message: incomingMessage.body ?? "",
       tenantId,
+      messageSid: payload["MessageSid"] as string | undefined,
     });
 
     const replyText = controllerResult?.reply?.trim() || 'Desculpe, não entendi. Digite "frete" para começar.';
@@ -197,4 +198,3 @@ function twimlOk(message: string) {
     headers: { "Content-Type": "text/xml" },
   });
 }
-
