@@ -1,20 +1,19 @@
 /**
  * Twilio WhatsApp Webhook.
  * Entry point for incoming WhatsApp messages.
- * Thin layer that delegates to the freight controller.
+ * Thin layer that delegates to the freight controller (state machine).
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { twilioProvider } from '../../../providers/twilio.provider';
-import { twilioConfig } from '../../../config/twilio.config';
-import { logger } from '../../../infra/logger';
-import { BaseError, getUserMessage } from '../../../infra/errors';
-import { checkRateLimit, getThrottleMessage } from '../../../infra/rate-limiter';
-import { sanitizeMessage, validateWebhookPayload } from '../../../lib/validation';
-import { messageRepository } from '../../../infra/repositories/message.repository';
-import { tenantRepository } from '../../../infra/repositories/tenant.repository';
-import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from '../../../lib/normalize';
-import { verifyTwilioRequest, getPublicUrl } from '../../../server/twilio/verifyWebhook';
+import { NextRequest, NextResponse } from "next/server";
+import { twilioProvider } from "../../../providers/twilio.provider";
+import { twilioConfig } from "../../../config/twilio.config";
+import { logger } from "../../../infra/logger";
+import { sanitizeMessage, validateWebhookPayload } from "../../../lib/validation";
+import { messageRepository } from "../../../infra/repositories/message.repository";
+import { tenantRepository } from "../../../infra/repositories/tenant.repository";
+import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from "../../../lib/normalize";
+import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
+import { freightController } from "../../../legacy/freight.controller";
 
 /**
  * POST /api/webhook
@@ -23,286 +22,155 @@ import { verifyTwilioRequest, getPublicUrl } from '../../../server/twilio/verify
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
-  try {
-    // ─── A) Instrumentação de Logs (Solicitado) ───
-    logger.info('=== WEBHOOK REQUEST STARTED ===');
-
-    // Log headers for debugging
-    const headersRaw: Record<string, string> = {};
-    request.headers.forEach((v, k) => (headersRaw[k] = v));
-    logger.info('Webhook Headers:', headersRaw);
-
-    // Read raw body once — used for both signature validation and param parsing.
-    // req.text() consumes the stream; everything downstream uses rawBody.
-    const rawBody = await request.text();
-    const contentType = request.headers.get('content-type') ?? '';
-
-    // Parse form params (used for form-urlencoded signature validation and business logic).
-    // For JSON requests this will be empty — JSON is parsed from rawBody after validation.
-    const params = new URLSearchParams(
-      contentType.includes('application/json') ? '' : rawBody
+  // 1) Enforce form-urlencoded only (Twilio WhatsApp default)
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    return NextResponse.json(
+      { error: "Unsupported Media Type. Use application/x-www-form-urlencoded." },
+      { status: 415 }
     );
-    const payload: Record<string, string> = {};
-    params.forEach((value, key) => {
-      payload[key] = value;
-    });
+  }
 
-    // Log critical fields
-    logger.info('Webhook Body Params:', {
-      To: payload['To'],
-      From: payload['From'],
-      WaId: payload['WaId'],
-      MessageSid: payload['MessageSid'],
-    });
+  // 2) Read raw body once
+  const rawBody = await request.text();
 
-    logger.debug('[STEP 1] Parsing complete');
+  // 3) Parse form params
+  const params = new URLSearchParams(rawBody);
+  const payload: Record<string, string> = {};
+  params.forEach((value, key) => {
+    payload[key] = value;
+  });
 
-    // Sanitized logging - no PII
-    logger.debug('Webhook received', {
-      messageSid: payload['MessageSid'],
-      hasBody: !!payload['Body'],
-      bodyLength: payload['Body']?.length || 0,
-    });
+  // Safe log context (NO PII)
+  const safeCtx = {
+    requestId: request.headers.get("x-vercel-id") ?? undefined,
+    messageSid: payload["MessageSid"] ?? undefined,
+    accountSid: payload["AccountSid"] ?? undefined,
+    hasBody: !!payload["Body"],
+    bodyLength: payload["Body"]?.length ?? 0,
+    durationMs: 0 as number,
+  };
 
-    // ─── Signature Validation ──────────────────────────────────────────────
-    // Must run BEFORE any business logic, including LLM calls.
-    // Disabled only when TWILIO_SIGNATURE_VALIDATION_ENABLED=false (dev only).
+  try {
+    // 4) Twilio signature verification (fail closed when enabled)
     if (twilioConfig.signatureValidationEnabled) {
-      logger.info('Twilio signature validation enabled', {
-        url: getPublicUrl(request),
-        hasSignature: !!request.headers.get('x-twilio-signature'),
-      });
-
-      const signatureMissing = !request.headers.get('x-twilio-signature');
-      if (signatureMissing) {
-        logger.warn('Missing Twilio signature', {
-          event: 'INVALID_WEBHOOK_SIGNATURE',
-          reason: 'missing_header',
-          url: getPublicUrl(request),
-          ip: request.headers.get('x-forwarded-for') ?? 'unknown',
+      const ok = verifyTwilioRequest(request, rawBody, payload);
+      if (!ok) {
+        logger.warn("Webhook rejected: invalid/missing Twilio signature", {
+          event: "INVALID_WEBHOOK_SIGNATURE",
+          ...safeCtx,
         });
-        return new Response('Forbidden', { status: 403 });
+        return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
       }
-
-      const isValid = verifyTwilioRequest(request, rawBody, payload);
-
-      logger.info('Twilio signature validation result', {
-        isValid,
-        url: getPublicUrl(request),
-      });
-
-      if (!isValid) {
-        logger.warn('Invalid Twilio signature', {
-          event: 'INVALID_WEBHOOK_SIGNATURE',
-          reason: 'signature_mismatch',
-          url: getPublicUrl(request),
-          ip: request.headers.get('x-forwarded-for') ?? 'unknown',
-        });
-        return new Response('Forbidden', { status: 403 });
-      }
-    } else {
-      logger.warn('Twilio signature validation DISABLED (development mode)', {
-        env: process.env.NODE_ENV,
-      });
     }
 
-    // ─── Resolve Tenant by Twilio Number ───
-    logger.debug('[STEP 2] Resolving tenant by Twilio number');
-
-    // Use raw 'To' field - repository handles normalization and logging
-    const twilioNumberRaw = payload['To'];
-
+    // 5) Resolve tenant by Twilio number ("To")
+    const twilioNumberRaw = payload["To"];
     if (!twilioNumberRaw) {
-      logger.error('Missing To field in webhook payload');
-
-      const MessagingResponse = require('twilio').twiml.MessagingResponse;
-      const twiml = new MessagingResponse();
-      twiml.message('Erro interno');
-      return new NextResponse(twiml.toString(), {
-        status: 200,
-        headers: { 'Content-Type': 'text/xml' },
+      logger.warn("Webhook rejected: missing To field", {
+        event: "WEBHOOK_MISSING_TO",
+        ...safeCtx,
       });
+      return twimlOk("Erro interno: payload inválido.");
     }
 
     let tenant;
     try {
-      // New robust resolution method
       tenant = await tenantRepository.resolveTenantByTwilioNumber(twilioNumberRaw);
-    } catch (error) {
-      // Security boundary: Tenant not found -> 403
-      if ((error as any).code === 'TENANT_NOT_FOUND') {
-        logger.warn('Webhook rejected: Tenant not found', { twilioNumber: twilioNumberRaw });
-        return NextResponse.json(
-          { error: 'Tenant not found' },
-          { status: 403 }
-        );
+    } catch (err) {
+      if ((err as any)?.code === "TENANT_NOT_FOUND") {
+        logger.warn("Webhook rejected: tenant not found", {
+          event: "TENANT_NOT_FOUND",
+          ...safeCtx,
+        });
+        return NextResponse.json({ error: "Tenant not found" }, { status: 403 });
       }
 
-      // Other errors (DB offline, etc) -> Return friendly error to Twilio (200 OK) to avoid retries
-      const MessagingResponse = require('twilio').twiml.MessagingResponse;
-      const twiml = new MessagingResponse();
-
-      if (process.env.NODE_ENV === 'development') {
-        twiml.message(`[DEV] Erro de resolução: ${(error as Error).message}`);
-      } else {
-        twiml.message('Serviço indisponível temporariamente.');
-      }
-
-      return new NextResponse(twiml.toString(), {
-        status: 200,
-        headers: { 'Content-Type': 'text/xml' },
+      logger.error("Tenant resolution failed", err as Error, {
+        event: "TENANT_RESOLUTION_ERROR",
+        ...safeCtx,
       });
+
+      // return 200 to Twilio to avoid retries storm
+      return twimlOk("Serviço indisponível temporariamente.");
     }
 
-    // Tenant is guaranteed to be present if no error was thrown
-    const twilioNumber = tenant.twilioNumber;
-
     const tenantId = tenant.id;
-    logger.info('Tenant resolved', {
-      twilioNumber,
-      tenantId,
-      tenantName: tenant.name,
-    });
+    logger.info("Webhook tenant resolved", { tenantId, ...safeCtx });
 
-    // Validate and sanitize webhook payload
-    logger.debug('[STEP 3] Validating webhook payload');
+    // 6) Validate and sanitize payload
     validateWebhookPayload(payload);
 
-    // Parse incoming message
-    logger.debug('[STEP 4] Parsing incoming message');
+    // 7) Parse incoming message
     const incomingMessage = twilioProvider.parseIncomingMessage(payload as any);
     incomingMessage.body = sanitizeMessage(incomingMessage.body);
 
-    // Intent Classification
-    // FIX: Ensure body is lowercased and trimmed for comparison
-    const normalizedBody = (incomingMessage.body || '').trim().toLowerCase();
-
-    // ─── LOGGING INTENT CLASSIFICATION (Solicitado) ───
-    logger.info('Intent Classification Debug', {
-      rawBody: incomingMessage.body,
-      normalizedBody: normalizedBody,
-      length: normalizedBody.length,
-    });
-
-    let intent = 'unknown';
-
-    if (
-      normalizedBody.includes('cotação') ||
-      normalizedBody.includes('orcamento') ||
-      normalizedBody.includes('orçamento')
-    ) {
-      intent = 'quote_request';
-    } else if (
-      normalizedBody.includes('preço') ||
-      normalizedBody.includes('valor') ||
-      normalizedBody.includes('frete') // ADDED: Specific support for 'frete'
-    ) {
-      intent = 'price_question';
-    } else if (normalizedBody.includes('pedido')) {
-      intent = 'order';
+    const fromNormalized = normalizeWhatsAppNumber(incomingMessage.from);
+    if (!isValidWhatsAppNumber(fromNormalized)) {
+      logger.warn("Webhook rejected: invalid From number format", {
+        event: "INVALID_FROM_NUMBER",
+        tenantId,
+        ...safeCtx,
+      });
+      return twimlOk("Número inválido. Tente novamente.");
     }
 
-    logger.info('Incoming message parsed', {
-      from: incomingMessage.from,
-      body: incomingMessage.body,
-      intent,
-      messageSid: incomingMessage.messageSid,
-    });
-
-    // ─── Persist inbound message (before rate limit, so throttled messages are also saved) ───
-    logger.debug('[STEP 5] Persisting inbound message to database');
-    // Sanitize rawPayload to remove PII before storage
+    // 8) Persist inbound message (rawPayload WITHOUT PII)
     const sanitizedPayload = {
-      MessageSid: payload['MessageSid'],
-      AccountSid: payload['AccountSid'],
-      MessagingServiceSid: payload['MessagingServiceSid'],
-      NumMedia: payload['NumMedia'],
-      // Omit From, To, Body and other PII fields
+      MessageSid: payload["MessageSid"],
+      AccountSid: payload["AccountSid"],
+      MessagingServiceSid: payload["MessagingServiceSid"],
+      NumMedia: payload["NumMedia"],
+      // intentionally omit From/To/Body/WaId/ProfileName
     };
 
     await messageRepository.saveInboundMessage({
       messageSid: incomingMessage.messageSid,
       tenantId,
-      fromPhone: incomingMessage.from,
-      toPhone: payload['To'] || null,
-      body: incomingMessage.body,
-      direction: 'inbound',
-      intent,
+      fromPhone: fromNormalized,          // stored (PII) for ops; do NOT log
+      toPhone: payload["To"] || null,     // stored (PII) for ops; do NOT log
+      body: incomingMessage.body,         // stored (PII) for ops; do NOT log
+      direction: "inbound",
+      intent: "freight_flow",             // avoid PII-heavy classifier logs here
       rawPayload: JSON.stringify(sanitizedPayload),
     });
-    logger.debug('[STEP 5.1] Message persisted successfully');
 
-    // ─── Generate Stateless TwiML Response (Bypass Session/Controller) ───
-    logger.debug('[STEP 6] Generating TwiML response');
-    const MessagingResponse = require('twilio').twiml.MessagingResponse;
-    const twiml = new MessagingResponse();
-    let responseText = '';
+    // 9) Delegate to FreightController (stateful flow)
+    const controllerResult = await freightController.processMessage({
+      phoneNumber: fromNormalized,
+      message: incomingMessage.body ?? "",
+      tenantId,
+    });
 
-    switch (intent) {
-      case 'quote_request':
-        responseText = 'Perfeito. Para te enviar um orçamento, me diga CEP, cidade/UF e o produto (ou link).';
-        break;
-      case 'price_question':
-        responseText = 'Me diga o produto (ou link) e seu CEP que calculo o frete e o valor.';
-        break;
-      case 'order':
-        responseText = 'Show. Qual produto e quantidade? Envie também CEP para calcular entrega.';
-        break;
-      default:
-        // Default/Unknown intent
-        responseText = 'Oi! Me diga se você quer orçamento, frete ou fazer um pedido 🙂';
-        break;
+    const replyText = controllerResult?.reply?.trim() || 'Desculpe, não entendi. Digite "frete" para começar.';
+
+    // 10) Respond TwiML
+    const durationMs = Date.now() - startTime;
+    safeCtx.durationMs = durationMs;
+
+    logger.info("Webhook processed successfully", {
+      event: "WEBHOOK_OK",
+      tenantId,
+      success: controllerResult?.success ?? true,
+      ...safeCtx,
+    });
+
+    return twimlOk(replyText);
+  } catch (err) {
+    const durationMs = Date.now() - startTime;
+    safeCtx.durationMs = durationMs;
+
+    logger.error("Webhook processing failed", err as Error, {
+      event: "WEBHOOK_ERROR",
+      ...safeCtx,
+    });
+
+    // Always return 200 TwiML to avoid Twilio retry storms
+    if (process.env.NODE_ENV === "development" || process.env.LOG_LEVEL === "debug") {
+      return twimlOk(`[DEV] Erro: ${(err as Error)?.message ?? "Unknown"}`);
     }
 
-    twiml.message(responseText);
-    logger.debug('[STEP 6.1] TwiML response generated', { responseText });
-
-    const duration = Date.now() - startTime;
-    logger.info('Webhook processed successfully (stateless)', {
-      from: incomingMessage.from,
-      duration,
-      intent,
-    });
-
-    return new NextResponse(twiml.toString(), {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/xml',
-      },
-    });
-  } catch (error) {
-    const duration = Date.now() - startTime;
-
-    // Enhanced error logging with full details
-    const errorDetails = {
-      duration,
-      errorName: (error as Error).name,
-      errorMessage: (error as Error).message,
-      errorStack: (error as Error).stack,
-      errorCode: (error as any).code,
-      errorContext: (error as any).context,
-    };
-
-    logger.error('Webhook processing failed', error as Error, errorDetails);
-
-    const MessagingResponse = require('twilio').twiml.MessagingResponse;
-    const twiml = new MessagingResponse();
-
-    // In development, expose detailed error for debugging
-    if (process.env.NODE_ENV === 'development' || process.env.LOG_LEVEL === 'debug') {
-      const errorMsg = (error as Error).message || 'Unknown error';
-      const errorCode = (error as any).code || 'UNKNOWN';
-      twiml.message(`[DEV] Erro: ${errorCode} - ${errorMsg}`);
-    } else {
-      twiml.message('Desculpe, ocorreu um erro. Tente novamente mais tarde.');
-    }
-
-    return new NextResponse(twiml.toString(), {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/xml',
-      },
-    });
+    return twimlOk("Desculpe, ocorreu um erro. Tente novamente mais tarde.");
   }
 }
 
@@ -312,8 +180,21 @@ export async function POST(request: NextRequest) {
  */
 export async function GET() {
   return NextResponse.json({
-    status: 'ok',
-    service: 'lojacond-frete-automacao',
+    status: "ok",
+    service: "lojacond-frete-automacao",
     timestamp: new Date().toISOString(),
   });
 }
+
+function twimlOk(message: string) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const MessagingResponse = require("twilio").twiml.MessagingResponse;
+  const twiml = new MessagingResponse();
+  twiml.message(message);
+
+  return new NextResponse(twiml.toString(), {
+    status: 200,
+    headers: { "Content-Type": "text/xml" },
+  });
+}
+
