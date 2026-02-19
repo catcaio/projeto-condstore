@@ -13,6 +13,8 @@ import { stateMachine } from '../core/conversation/state-machine';
 import { intentClassifier, UserIntent } from '../core/conversation/intent-classifier';
 import { freightService } from '../modules/freight/freight.service';
 import type { FreightRequest } from '../modules/freight/freight.types';
+import { simulationRepository } from '../infra/repositories/simulation.repository';
+import crypto from 'crypto';
 
 export interface ProcessMessageRequest {
   phoneNumber: string;
@@ -217,6 +219,40 @@ class FreightController {
 
       // Format and return response
       // freightService.formatOptionsForUser now returns the single string requested
+      const bestOption = result.options[0]; // Options are already sorted by price/time
+
+      // 3. Metrics Hook: Persist Simulation
+      if (bestOption) {
+        try {
+          await simulationRepository.saveSimulation({
+            id: crypto.randomUUID(),
+            tenantId,
+            cep: session.cep,
+            weight: (result.totalWeight || 0).toString(),
+            quantity: quantity,
+            bestCarrier: bestOption.carrier,
+            bestService: bestOption.service,
+            bestPrice: bestOption.price.toString(),
+            bestMargin: (bestOption.price * 0.2).toString(), // Placeholder margin logic
+            strategy: 'BEST_OPTION', // Default strategy
+          });
+
+          // 4. Metrics Hook: structured log
+          logger.info('Freight quoted successfully', {
+            event: 'FREIGHT_QUOTED',
+            tenantId,
+            cep: session.cep,
+            value: bestOption.price,
+            carrier: bestOption.carrier,
+            deadlineDays: bestOption.deliveryTime,
+            durationMs: Date.now() - session.createdAt, // Approx duration
+          });
+        } catch (metricsError) {
+          // Do not fail the flow if metrics fail
+          logger.error('Failed to save metrics', metricsError as Error, { tenantId, phoneNumber });
+        }
+      }
+
       return freightService.formatOptionsForUser(result.options);
     } catch (error) {
       // Transition to ERROR
