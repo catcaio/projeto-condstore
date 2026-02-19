@@ -28,7 +28,7 @@ export default function LoginPage() {
                 return;
             }
 
-            window.location.href = '/painel-logistico';
+            window.location.href = '/cockpit';
         } catch {
             setError('Erro de conexão. Tente novamente.');
         } finally {
