@@ -32,11 +32,22 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.text();
     const contentType = request.headers.get('content-type') ?? '';
 
-    // Parse form params (used for form-urlencoded signature validation and business logic).
-    // For JSON requests this will be empty — JSON is parsed from rawBody after validation.
-    const params = new URLSearchParams(
-      contentType.includes('application/json') ? '' : rawBody
-    );
+    // Twilio WhatsApp webhooks always send application/x-www-form-urlencoded.
+    // Reject JSON bodies explicitly — they are not sent by Twilio and likely
+    // indicate a misconfigured caller or a spoofing attempt.
+    if (contentType.includes('application/json')) {
+      logger.warn('Webhook rejected: unsupported Content-Type', {
+        event: 'UNSUPPORTED_CONTENT_TYPE',
+        contentType,
+      });
+      return new Response(
+        'Unsupported Media Type: Twilio webhooks must be application/x-www-form-urlencoded',
+        { status: 415 }
+      );
+    }
+
+    // Parse form-urlencoded params for signature validation and business logic.
+    const params = new URLSearchParams(rawBody);
     const payload: Record<string, string> = {};
     params.forEach((value, key) => {
       payload[key] = value;

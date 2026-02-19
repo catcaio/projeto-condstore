@@ -67,11 +67,11 @@ Todo request recebido em `POST /api/webhook` tem sua assinatura HMAC-SHA1 do Twi
 
 A lógica vive em `src/server/twilio/verifyWebhook.ts`:
 - **`getPublicUrl(req)`** — reconstrói a URL exata usada pelo Twilio, respeitando proxies.
-- **`verifyTwilioSignature({ req, rawBody, formParams })`** — valida o header `X-Twilio-Signature`:
-  - `application/x-www-form-urlencoded` → `validateRequest(authToken, sig, url, params)`
-  - `application/json` → `validateRequestWithBody(authToken, sig, url, rawBody)` (inclui verificação do `bodySHA256`)
+- **`verifyTwilioRequest(req, rawBody, formParams)`** — valida o header `X-Twilio-Signature` para payloads `application/x-www-form-urlencoded` (único formato aceito).
 - Retorna `false` (nunca lança) em caso de token ausente, header ausente ou HMAC inválido.
 - Em caso de falha, loga apenas diagnóstico (proto/host/path) — **nunca o auth token**.
+
+> **Nota:** O webhook `/api/webhook` aceita **somente** `application/x-www-form-urlencoded`, que é o formato padrão enviado pelo Twilio WhatsApp. Requisições com `Content-Type: application/json` são rejeitadas com `415 Unsupported Media Type`.
 
 ### Desenvolvimento local com ngrok
 
