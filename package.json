@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
+    "test": "vitest run",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {
@@ -36,6 +37,7 @@
     "drizzle-kit": "latest",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
-    "typescript": "latest"
+    "typescript": "latest",
+    "vitest": "^4.0.18"
   }
 }
