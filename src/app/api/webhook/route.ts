@@ -14,7 +14,7 @@ import { sanitizeMessage, validateWebhookPayload } from '../../../lib/validation
 import { messageRepository } from '../../../infra/repositories/message.repository';
 import { tenantRepository } from '../../../infra/repositories/tenant.repository';
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from '../../../lib/normalize';
-import { verifyTwilioSignature, getPublicUrl } from '../../../server/twilio/verifyWebhook';
+import { verifyTwilioRequest, getPublicUrl } from '../../../server/twilio/verifyWebhook';
 
 /**
  * POST /api/webhook
@@ -84,11 +84,7 @@ export async function POST(request: NextRequest) {
         return new Response('Forbidden', { status: 403 });
       }
 
-      const isValid = verifyTwilioSignature({
-        req: request,
-        rawBody,
-        formParams: payload,
-      });
+      const isValid = verifyTwilioRequest(request, rawBody, payload);
 
       logger.info('Twilio signature validation result', {
         isValid,

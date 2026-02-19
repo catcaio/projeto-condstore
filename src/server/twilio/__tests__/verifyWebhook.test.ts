@@ -1,7 +1,7 @@
 /**
  * Tests for src/server/twilio/verifyWebhook.ts
  *
- * We test getPublicUrl and the guard conditions of verifyTwilioSignature
+ * We test getPublicUrl and the guard conditions of verifyTwilioRequest
  * using minimal NextRequest-like mocks so we don't need a live server.
  *
  * Real HMAC validation is covered by the twilio library's own tests;
@@ -10,13 +10,13 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { NextRequest } from "next/server";
-import { getPublicUrl, verifyTwilioSignature } from "../verifyWebhook";
+import { getPublicUrl, verifyTwilioRequest } from "../verifyWebhook";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 /**
  * Build a minimal NextRequest mock. We only need the properties accessed
- * by getPublicUrl and verifyTwilioSignature.
+ * by getPublicUrl and verifyTwilioRequest.
  */
 function makeRequest({
   pathname = "/api/webhook",
@@ -95,7 +95,6 @@ describe("getPublicUrl", () => {
   it("defaults to https://localhost:3000 when no headers are present", () => {
     delete process.env.TWILIO_WEBHOOK_BASE_URL;
     const req = makeRequest({ pathname: "/api/webhook" });
-    // No proto or host headers → should default gracefully
     expect(getPublicUrl(req)).toContain("/api/webhook");
     expect(getPublicUrl(req)).toMatch(/^https?:\/\//);
   });
@@ -111,9 +110,9 @@ describe("getPublicUrl", () => {
   });
 });
 
-// ── verifyTwilioSignature — guard conditions ────────────────────────────────
+// ── verifyTwilioRequest — guard conditions ──────────────────────────────────
 
-describe("verifyTwilioSignature", () => {
+describe("verifyTwilioRequest", () => {
   const ORIGINAL_ENV = { ...process.env };
 
   beforeEach(() => {
@@ -130,11 +129,11 @@ describe("verifyTwilioSignature", () => {
 
   it("returns false when X-Twilio-Signature header is missing", () => {
     const req = makeRequest({ headers: {} }); // no x-twilio-signature
-    const result = verifyTwilioSignature({
+    const result = verifyTwilioRequest(
       req,
-      rawBody: "From=whatsapp%3A%2B5511&Body=oi",
-      formParams: { From: "whatsapp:+5511", Body: "oi" },
-    });
+      "From=whatsapp%3A%2B5511&Body=oi",
+      { From: "whatsapp:+5511", Body: "oi" }
+    );
     expect(result).toBe(false);
   });
 
@@ -143,11 +142,11 @@ describe("verifyTwilioSignature", () => {
     const req = makeRequest({
       headers: { "x-twilio-signature": "some-sig" },
     });
-    const result = verifyTwilioSignature({
+    const result = verifyTwilioRequest(
       req,
-      rawBody: "From=whatsapp%3A%2B5511&Body=oi",
-      formParams: { From: "whatsapp:+5511", Body: "oi" },
-    });
+      "From=whatsapp%3A%2B5511&Body=oi",
+      { From: "whatsapp:+5511", Body: "oi" }
+    );
     expect(result).toBe(false);
   });
 
@@ -160,11 +159,11 @@ describe("verifyTwilioSignature", () => {
         "content-type": "application/x-www-form-urlencoded",
       },
     });
-    const result = verifyTwilioSignature({
+    const result = verifyTwilioRequest(
       req,
-      rawBody: "From=whatsapp%3A%2B5511999999999&Body=oi",
-      formParams: { From: "whatsapp:+5511999999999", Body: "oi" },
-    });
+      "From=whatsapp%3A%2B5511999999999&Body=oi",
+      { From: "whatsapp:+5511999999999", Body: "oi" }
+    );
     expect(result).toBe(false);
   });
 
@@ -178,31 +177,32 @@ describe("verifyTwilioSignature", () => {
         "content-type": "application/json",
       },
     });
-    const result = verifyTwilioSignature({
-      req,
-      rawBody: jsonBody,
-      formParams: {},
-    });
+    const result = verifyTwilioRequest(req, jsonBody, {});
     expect(result).toBe(false);
   });
 
   it("does not throw when the twilio library throws internally (returns false)", () => {
-    // Simulate a malformed signature that causes the library to throw.
     process.env.TWILIO_WEBHOOK_BASE_URL = "https://example.com";
     const req = makeRequest({
       pathname: "/api/webhook",
       headers: {
-        // Deliberately malformed base64 that might cause crypto errors in some envs
         "x-twilio-signature": "!!!not-base64!!!",
         "content-type": "application/x-www-form-urlencoded",
       },
     });
     expect(() =>
-      verifyTwilioSignature({
+      verifyTwilioRequest(
         req,
-        rawBody: "From=whatsapp%3A%2B5511&Body=oi",
-        formParams: { From: "whatsapp:+5511", Body: "oi" },
-      })
+        "From=whatsapp%3A%2B5511&Body=oi",
+        { From: "whatsapp:+5511", Body: "oi" }
+      )
     ).not.toThrow();
+  });
+
+  it("accepts call with no rawBody or formParams (uses defaults)", () => {
+    const req = makeRequest({ headers: {} }); // missing signature → false
+    // Should not throw even with defaults
+    expect(() => verifyTwilioRequest(req)).not.toThrow();
+    expect(verifyTwilioRequest(req)).toBe(false);
   });
 });
