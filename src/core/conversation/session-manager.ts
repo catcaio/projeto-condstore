@@ -125,13 +125,13 @@ class SessionManager {
       const session = this.memoryStore.get(phoneNumber);
 
       if (session) {
-        logger.debug('Session retrieved from memory (dev fallback)', { phoneNumber, tenantId });
+        logger.debug('Session retrieved from memory (dev fallback)', { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
       }
 
       return session;
     } catch (error) {
       if (error instanceof InfrastructureError) throw error;
-      logger.error('Failed to get session', error as Error, { phoneNumber, tenantId });
+      logger.error('Failed to get session', error as Error, { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
       return null;
     }
   }
@@ -163,7 +163,7 @@ class SessionManager {
 
     await this.saveSession(tenantId, phoneNumber, session);
 
-    logger.info('Session created', { phoneNumber, tenantId, expiresAt: new Date(expiresAt).toISOString() });
+    logger.info('Session created', { phoneNumber: logger.maskPhone(phoneNumber), tenantId, expiresAt: new Date(expiresAt).toISOString() });
 
     return session;
   }
@@ -183,7 +183,7 @@ class SessionManager {
     let session = await this.getSession(tenantId, phoneNumber);
 
     if (!session) {
-      logger.warn('Session not found, creating new session', { phoneNumber, tenantId });
+      logger.warn('Session not found, creating new session', { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
       session = await this.createSession(tenantId, phoneNumber);
     }
 
@@ -197,7 +197,7 @@ class SessionManager {
 
     await this.saveSession(tenantId, phoneNumber, updatedSession);
 
-    logger.debug('Session updated', { phoneNumber, tenantId, updates });
+    logger.debug('Session updated', { phoneNumber: logger.maskPhone(phoneNumber), tenantId, updates });
 
     return updatedSession;
   }
@@ -213,22 +213,22 @@ class SessionManager {
       const success = await redisClient.set(this.getKey(tenantId, phoneNumber), session, ttlSeconds);
 
       if (success) {
-        logger.debug('Session saved to Redis', { phoneNumber, tenantId });
+        logger.debug('Session saved to Redis', { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
       } else {
         if (appConfig.env === 'production') {
           throw new InfrastructureError(
             ErrorCode.INTERNAL_ERROR,
             'Failed to save session to Redis in production',
-            { phoneNumber, tenantId }
+            { phoneNumber: logger.maskPhone(phoneNumber), tenantId }
           );
         }
-        logger.warn('Failed to save session to Redis, using memory fallback', { phoneNumber, tenantId });
+        logger.warn('Failed to save session to Redis, using memory fallback', { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
       }
     } else if (appConfig.env === 'production') {
       throw new InfrastructureError(
         ErrorCode.INTERNAL_ERROR,
         'Redis unavailable in production — cannot save session',
-        { phoneNumber, tenantId }
+        { phoneNumber: logger.maskPhone(phoneNumber), tenantId }
       );
     }
 
@@ -258,7 +258,7 @@ class SessionManager {
     // Delete from memory
     this.memoryStore.delete(phoneNumber);
 
-    logger.info('Session deleted', { phoneNumber, tenantId });
+    logger.info('Session deleted', { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
   }
 
   /**
@@ -301,7 +301,7 @@ class SessionManager {
     session.expiresAt = Date.now() + appConfig.session.ttlMs;
     await this.saveSession(tenantId, phoneNumber, session);
 
-    logger.debug('Session extended', { phoneNumber, tenantId, expiresAt: new Date(session.expiresAt).toISOString() });
+    logger.debug('Session extended', { phoneNumber: logger.maskPhone(phoneNumber), tenantId, expiresAt: new Date(session.expiresAt).toISOString() });
   }
 
   /**

@@ -28,6 +28,7 @@ const PUBLIC_PATHS = [
 const RBAC_RULES: Array<{ prefix: string; allowedRoles: string[] }> = [
   { prefix: '/cockpit/tenants', allowedRoles: ['admin'] },
   { prefix: '/cockpit', allowedRoles: ['admin', 'manager'] },
+  { prefix: '/api/cockpit', allowedRoles: ['admin', 'manager'] },
 ];
 
 /** Returns true when `pathname` is at or under `prefix`. */
@@ -58,6 +59,9 @@ function isPublicPath(pathname: string): boolean {
 function getSecret(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
   if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('AUTH_SECRET is not set in production');
+    }
     return new TextEncoder().encode('dev-only-fallback-secret-do-not-use-in-prod');
   }
   return new TextEncoder().encode(secret);

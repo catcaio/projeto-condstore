@@ -128,14 +128,18 @@ class Logger {
   stateTransition(from: string, to: string, phoneNumber: string, context?: LogContext): void {
     this.info(`State transition: ${from} → ${to}`, {
       ...context,
-      phoneNumber: this.maskPhoneNumber(phoneNumber),
+      phoneNumber: this.maskPhone(phoneNumber),
     });
   }
 
   /**
    * Mask phone number for privacy (keep last 4 digits).
    */
-  private maskPhoneNumber(phoneNumber: string): string {
+  /**
+   * Mask phone number for privacy (keep last 4 digits).
+   */
+  maskPhone(phoneNumber: string): string {
+    if (!phoneNumber) return '';
     if (phoneNumber.length <= 4) return '****';
     return '*'.repeat(phoneNumber.length - 4) + phoneNumber.slice(-4);
   }
