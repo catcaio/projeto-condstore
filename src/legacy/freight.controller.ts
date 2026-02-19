@@ -1,17 +1,18 @@
+// @ts-nocheck
 /**
- * Freight Controller.
- * Orchestrates the freight calculation flow.
- * Coordinates between state machine, session manager, and freight service.
+ * Freight Controller (legacy).
+ * Kept for reference only — not imported by any active route.
+ * Excluded from typecheck via tsconfig.build.json.
  */
 
-import { BusinessError, ErrorCode, getUserMessage } from '../../infra/errors';
-import { logger } from '../../infra/logger';
-import { ConversationEvent, ConversationState } from '../../core/conversation/state-machine';
-import { sessionManager } from '../../core/conversation/session-manager';
-import { stateMachine } from '../../core/conversation/state-machine';
-import { intentClassifier, UserIntent } from '../../core/conversation/intent-classifier';
-import { freightService } from './freight.service';
-import type { FreightRequest } from './freight.types';
+import { BusinessError, ErrorCode, getUserMessage } from '../infra/errors';
+import { logger } from '../infra/logger';
+import { ConversationEvent, ConversationState } from '../core/conversation/state-machine';
+import { sessionManager } from '../core/conversation/session-manager';
+import { stateMachine } from '../core/conversation/state-machine';
+import { intentClassifier, UserIntent } from '../core/conversation/intent-classifier';
+import { freightService } from '../modules/freight/freight.service';
+import type { FreightRequest } from '../modules/freight/freight.types';
 
 export interface ProcessMessageRequest {
   phoneNumber: string;
