@@ -9,6 +9,7 @@
 export interface FreightRequest {
   destinationCep: string;
   quantity: number;
+  tenantId?: string;
   unitWeight?: number; // kg (optional, uses default if not provided)
   dimensions?: {
     width: number; // cm
