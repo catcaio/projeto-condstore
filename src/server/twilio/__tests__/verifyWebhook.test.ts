@@ -167,17 +167,23 @@ describe("verifyTwilioRequest", () => {
     expect(result).toBe(false);
   });
 
-  it("returns false for a mismatched signature on JSON body", () => {
+  it("returns false for a mismatched signature (content-type is ignored, always uses form validation)", () => {
+    // Route rejects application/json with 415 before calling verifyTwilioRequest.
+    // This test confirms the function still returns false for any invalid signature,
+    // regardless of which Content-Type header is present.
     process.env.TWILIO_WEBHOOK_BASE_URL = "https://example.com";
-    const jsonBody = JSON.stringify({ From: "whatsapp:+5511", Body: "oi" });
     const req = makeRequest({
       pathname: "/api/webhook",
       headers: {
         "x-twilio-signature": "INVALID_SIGNATURE_NOT_VALID_BASE64==",
-        "content-type": "application/json",
+        "content-type": "application/x-www-form-urlencoded",
       },
     });
-    const result = verifyTwilioRequest(req, jsonBody, {});
+    const result = verifyTwilioRequest(
+      req,
+      "From=whatsapp%3A%2B5511&Body=oi",
+      { From: "whatsapp:+5511", Body: "oi" }
+    );
     expect(result).toBe(false);
   });
 
