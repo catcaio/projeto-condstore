@@ -169,16 +169,11 @@ class FreightController {
       {
         ...session,
         cep,
-        cep,
       },
       ConversationEvent.CEP_PROVIDED
     );
 
     await sessionManager.updateSession(phoneNumber, tenantId, newContext);
-
-    // Tiny fix: remove duplicate cep key above if needed, but safe to keep for now.
-    // Cleaned up:
-    // ...session, cep
 
     return 'CEP recebido! Agora, quantas unidades você deseja?';
   }
@@ -343,4 +338,3 @@ class FreightController {
 
 // Export singleton instance
 export const freightController = new FreightController();
-
