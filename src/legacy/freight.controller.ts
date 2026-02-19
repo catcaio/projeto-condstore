@@ -13,7 +13,7 @@ import { stateMachine } from '../core/conversation/state-machine';
 import { intentClassifier, UserIntent } from '../core/conversation/intent-classifier';
 import { freightService } from '../modules/freight/freight.service';
 import type { FreightRequest } from '../modules/freight/freight.types';
-import { simulationRepository } from '../infra/repositories/simulation.repository';
+import { metricsRepository } from '../modules/metrics/metrics.repository';
 import crypto from 'crypto';
 
 export interface ProcessMessageRequest {
@@ -224,7 +224,7 @@ class FreightController {
       // 3. Metrics Hook: Persist Simulation
       if (bestOption) {
         try {
-          await simulationRepository.saveSimulation({
+          await metricsRepository.saveFreightQuoted({
             id: crypto.randomUUID(),
             tenantId,
             cep: session.cep,

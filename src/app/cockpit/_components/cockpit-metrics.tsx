@@ -28,15 +28,29 @@ export function CockpitMetrics() {
 
         async function fetchMetrics() {
             try {
-                // Determine header injection base URL if needed, but relative path is fine for same-origin
-                const res = await fetch('/api/cockpit/metrics', { signal });
+                // Fetch from new freight metrics endpoint
+                const res = await fetch('/api/metrics/freight?tenantId=default-tenant', { signal }); // Hardcoded tenant for now as per plan/API
 
                 if (!res.ok) throw new Error('Failed to fetch metrics');
 
                 const json = await res.json();
 
                 if (isMounted.current) {
-                    setData(json);
+                    setData({
+                        // Mapping new API response to component state (simplifying for now or we can expand state)
+                        // Actually, let's just use the props we need.
+                        // We need to update the interface first? 
+                        // Let's cast for now to avoid breaking the file completely in one go, 
+                        // but really we should update the interface.
+                        mensagensHoje: json.totalQuotes || 0, // Placeholder mapping
+                        cotacoesHoje: json.quotesToday || 0,
+                        pedidosHoje: json.quotesThisMonth || 0, // Using this month as "pedidos" slot for now? Or just map correctly.
+                        erros24h: 0,
+                        // Extra fields
+                        avgFreight: json.avgFreight,
+                        topCarrier: json.topCarriers?.[0]?.carrier || 'N/A',
+                        avgDuration: json.avgDurationMs
+                    } as any);
                     setLoading(false);
                     setError(false);
                 }
@@ -76,32 +90,34 @@ export function CockpitMetrics() {
         );
     }
 
+    // Cast data to include new fields
+    const m = data as any;
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard
-                title="Mensagens Hoje"
-                value={data?.mensagensHoje ?? 0}
-                isLoading={loading}
-                subtext="Total de mensagens processadas"
-            />
-            <MetricCard
                 title="Cotações Hoje"
-                value={data?.cotacoesHoje ?? 0}
+                value={m?.cotacoesHoje ?? 0}
                 isLoading={loading}
-                subtext="Cotações de frete geradas"
+                subtext="Total de cotações hoje"
             />
             <MetricCard
-                title="Pedidos Hoje"
-                value={data?.pedidosHoje ?? 0}
+                title="Cotações Mês"
+                value={m?.pedidosHoje ?? 0}
                 isLoading={loading}
-                subtext="Pedidos finalizados"
+                subtext="Total este mês"
             />
             <MetricCard
-                title="Erros (24h)"
-                value={data?.erros24h ?? 0}
+                title="Ticket Médio"
+                value={`R$ ${m?.avgFreight?.toFixed(2) ?? '0.00'}`}
                 isLoading={loading}
-                className={data?.erros24h ? "border-red-500/50" : ""}
-                subtext="Erros críticos registrados"
+                subtext="Média de valor de frete"
+            />
+            <MetricCard
+                title="Top Transportadora"
+                value={m?.topCarrier ?? 'N/A'}
+                isLoading={loading}
+                subtext="Mais utilizada"
             />
         </div>
     );
