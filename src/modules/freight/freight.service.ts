@@ -16,43 +16,9 @@ import type {
   WeightDecision,
 } from './freight.types';
 import { redisClient } from '../../infra/redis.client';
+import { freightTableProvider } from '../../infra/freight-table';
 
-// Import tabela provider (we'll need to create this)
-interface TabelaQuote {
-  id: string;
-  carrier: string;
-  service: string;
-  price: number;
-  deliveryTime: number;
-}
 
-/**
- * Simple tabela provider (placeholder for now).
- * In production, this would fetch from CSV or database.
- */
-class TabelaProvider {
-  async calculateShipping(totalWeight: number): Promise<TabelaQuote[]> {
-    // Mock implementation - replace with actual CSV fetch
-    logger.debug('Calculating shipping from tabela', { totalWeight });
-
-    // Simulate tabela quotes
-    const quotes: TabelaQuote[] = [];
-
-    if (totalWeight <= 30) {
-      quotes.push({
-        id: 'tabela-1',
-        carrier: 'Transportadora Local',
-        service: 'Rodoviário',
-        price: 45.0 + totalWeight * 2.5,
-        deliveryTime: 5,
-      });
-    }
-
-    return quotes;
-  }
-}
-
-const tabelaProvider = new TabelaProvider();
 
 class FreightService {
   /**
@@ -210,14 +176,22 @@ class FreightService {
 
       // Fetch from Tabela
       if (strategy === 'TABELA_ONLY' || strategy === 'BOTH') {
-        const tabelaQuotes = await tabelaProvider.calculateShipping(totalWeight);
+        try {
+          const quote = await freightTableProvider.getFreightByCep(request.destinationCep, totalWeight);
 
-        options.push(
-          ...tabelaQuotes.map((q) => ({
-            ...q,
-            source: 'tabela' as const,
-          }))
-        );
+          if (quote) {
+            options.push({
+              id: `tabela-${quote.cep_inicio}-${quote.cep_fim}`,
+              carrier: 'Transportadora Econômica',
+              service: 'Standard',
+              price: quote.valor,
+              deliveryTime: quote.prazo,
+              source: 'tabela'
+            });
+          }
+        } catch (err) {
+          logger.warn('Failed to get table quote', {}, err as Error);
+        }
       }
 
       if (options.length === 0) {
