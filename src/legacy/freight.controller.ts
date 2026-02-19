@@ -182,7 +182,11 @@ class FreightController {
    * Handle quantity provision and calculate freight.
    */
   private async handleQuantity(phoneNumber: string, tenantId: string, quantity: number, messageSid?: string): Promise<string> {
+<<<<<<< HEAD
     const session = await sessionManager.getSession(tenantId, phoneNumber);
+=======
+    const session = await sessionManager.getSession(phoneNumber, tenantId);
+>>>>>>> origin/main
 
     if (!session || !session.cep) {
       throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session or CEP not found');
