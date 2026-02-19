@@ -13,7 +13,7 @@ import { messageRepository } from "../../../infra/repositories/message.repositor
 import { tenantRepository } from "../../../infra/repositories/tenant.repository";
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from "../../../lib/normalize";
 import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
-import { freightController } from "../../../legacy/freight.controller";
+import { freightControllerLegacy as freightController } from "../../../legacy/freight.controller";
 import { checkRateLimit, getThrottleMessage } from "../../../infra/rate-limiter";
 
 /**

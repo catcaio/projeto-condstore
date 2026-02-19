@@ -7,7 +7,7 @@
 
 import { BusinessError, ErrorCode, getUserMessage } from '../infra/errors';
 import { logger } from '../infra/logger';
-import { ConversationEvent, ConversationState } from '../core/conversation/state-machine';
+import { ConversationEvent, ConversationState, stateMachine } from '../core/conversation/state-machine';
 import { sessionManager } from '../core/conversation/session-manager';
 import type { FreightRequest } from '../modules/freight/freight.types';
 import { freightService } from '../modules/freight/freight.service';
@@ -182,6 +182,60 @@ export class FreightControllerLegacy {
     const onlyDigits = String(input ?? '').replace(/[^\d]/g, '');
     if (onlyDigits.length !== 8) return null;
     return onlyDigits;
+  }
+  async processMessage(params: {
+    phoneNumber: string;
+    message: string;
+    tenantId: string;
+    messageSid?: string;
+  }): Promise<{ reply: string; success: boolean }> {
+    const { phoneNumber, message, tenantId, messageSid } = params;
+
+    try {
+      // Load session
+      const session = await sessionManager.getSession(tenantId, phoneNumber);
+
+      // If no session, initialize flow
+      if (!session) {
+        const reply = await this.startFreightQuery(phoneNumber, tenantId);
+        return { reply, success: true };
+      }
+
+      // Route by state
+      let reply: string;
+      switch (session.state) {
+        case ConversationState.WAITING_CEP:
+          reply = await this.handleCEP(phoneNumber, tenantId, message, messageSid);
+          break;
+
+        case ConversationState.WAITING_QUANTITY:
+          reply = await this.handleQuantity(
+            phoneNumber,
+            tenantId,
+            this.parseQuantity(message),
+            messageSid
+          );
+          break;
+
+        default:
+          // Reset on unknown state
+          await sessionManager.deleteSession(tenantId, phoneNumber);
+          reply = await this.startFreightQuery(phoneNumber, tenantId);
+          break;
+      }
+
+      return { reply, success: true };
+    } catch (err) {
+      logger.warn('legacy.freight.process_failed', {
+        tenantId,
+        messageSid: messageSid ? '[present]' : '[missing]',
+        error: (err as Error).message,
+      });
+      return {
+        reply: 'Não consegui processar sua mensagem. Tente novamente.',
+        success: false,
+      };
+    }
   }
 }
 
