@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
     const result = await freightService.calculateFreight({
       destinationCep,
       quantity,
+      tenantId,
       unitWeight,
       dimensions,
     });
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     // 4. Persist simulation with tenant context in route handler
     if (result.success && result.options.length > 0) {
       const bestOption = result.options[0];
+
       try {
         await simulationRepository.saveSimulation({
           id: randomUUID(),

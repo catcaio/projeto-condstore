@@ -12,7 +12,7 @@ vi.mock('../../../infra/logger', () => ({
 }));
 
 // Mock DB dependency
-const mockDb = {
+const mockDb = vi.hoisted(() => ({
     insert: vi.fn().mockReturnThis(),
     values: vi.fn().mockResolvedValue(undefined),
     select: vi.fn().mockReturnThis(),
@@ -21,19 +21,12 @@ const mockDb = {
     groupBy: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
-};
-
-// Mock mysql/drizzle (partial)
-vi.mock('mysql2/promise', () => ({
-    default: {
-        createPool: vi.fn(() => ({
-            getConnection: vi.fn().mockResolvedValue({ release: vi.fn() }),
-        })),
-    },
+    execute: vi.fn(),
 }));
 
-vi.mock('drizzle-orm/mysql2', () => ({
-    drizzle: vi.fn(() => mockDb),
+// Mock infra/db
+vi.mock('../../../infra/db', () => ({
+    getDb: vi.fn().mockResolvedValue(mockDb),
 }));
 
 describe('MetricsRepository', () => {
