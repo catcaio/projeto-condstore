@@ -58,7 +58,10 @@ describe('MetricsRepository', () => {
         const record = { id: '123', tenantId: 'tenant-1' } as any;
         await repository.saveFreightQuoted(record);
         expect(mockDb.insert).toHaveBeenCalled();
-        expect(mockDb.values).toHaveBeenCalledWith(record);
+        expect(mockDb.values).toHaveBeenCalledWith(expect.objectContaining({
+            ...record,
+            event: 'FREIGHT_QUOTED'
+        }));
     });
 
     it('should throw error if tenantId is missing on getFreightMetrics', async () => {
