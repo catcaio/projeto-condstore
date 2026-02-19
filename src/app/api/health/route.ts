@@ -1,58 +1,35 @@
 /**
  * Health Check Endpoint.
  * Verifies database and Redis connectivity.
- * Returns structured JSON with individual check results.
+ *
+ * Public response: minimal status only (no internal details).
+ * Detailed response: only when a valid HEALTHCHECK_TOKEN is provided
+ * via the `x-health-token` request header.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { redisClient } from '../../../infra/redis.client';
 import { logger } from '../../../infra/logger';
-
-/**
- * Database diagnostic information.
- */
-interface DatabaseDiagnostics {
-    connected: boolean;
-    databaseName?: string;
-    tenantCount?: number;
-    error?: string;
-}
-
 import { getDb } from '../../../infra/db';
 import { sql } from 'drizzle-orm';
 
-/**
- * Check database connectivity and gather diagnostics.
- */
+interface DatabaseDiagnostics {
+    connected: boolean;
+    error?: string;
+}
+
 async function checkDatabase(): Promise<DatabaseDiagnostics> {
     try {
         const db = await getDb();
-
-        // Get database name (using raw query via drizzle)
-        const [dbNameRows] = await db.execute<any>(sql`SELECT DATABASE() as db_name`);
-        const databaseName = (dbNameRows as unknown as any[])[0]?.db_name || 'unknown';
-
-        // Get tenant count
-        const [countRows] = await db.execute<any>(sql`SELECT COUNT(*) as count FROM tenants`);
-        const tenantCount = (countRows as unknown as any[])[0]?.count || 0;
-
-        return {
-            connected: true,
-            databaseName,
-            tenantCount,
-        };
+        // Simple connectivity probe — no sensitive data returned
+        await db.execute(sql`SELECT 1`);
+        return { connected: true };
     } catch (error) {
         logger.error('Health check: DB connection failed', error as Error);
-        return {
-            connected: false,
-            error: (error as Error).message,
-        };
+        return { connected: false, error: 'DB unreachable' };
     }
 }
 
-/**
- * Check Redis connectivity.
- */
 async function checkRedis(): Promise<boolean> {
     try {
         if (!redisClient.isAvailable()) {
@@ -67,37 +44,35 @@ async function checkRedis(): Promise<boolean> {
 
 /**
  * GET /api/health
- * Returns system health status with database diagnostics.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     const [dbDiagnostics, redisHealthy] = await Promise.all([
         checkDatabase(),
         checkRedis(),
     ]);
 
     const allHealthy = dbDiagnostics.connected && redisHealthy;
+    const status = allHealthy ? 'healthy' : 'degraded';
+    const httpStatus = allHealthy ? 200 : 503;
 
-    const response = {
-        status: allHealthy ? 'healthy' : 'degraded',
-        checks: {
-            db: dbDiagnostics.connected,
-            redis: redisHealthy,
-        },
-        database: {
-            name: dbDiagnostics.databaseName || null,
-            tenantCount: dbDiagnostics.tenantCount ?? null,
-            error: dbDiagnostics.error || null,
-        },
-        timestamp: new Date().toISOString(),
-    };
+    logger.info('Health check performed', { status, db: dbDiagnostics.connected, redis: redisHealthy });
 
-    logger.info('Health check performed', {
-        status: response.status,
-        checks: response.checks,
-        database: response.database,
-    });
+    // Detailed diagnostics only for authenticated callers with HEALTHCHECK_TOKEN.
+    const expectedToken = process.env.HEALTHCHECK_TOKEN;
+    const providedToken = request.headers.get('x-health-token');
 
-    return NextResponse.json(response, {
-        status: allHealthy ? 200 : 503,
-    });
+    if (expectedToken && providedToken === expectedToken) {
+        return NextResponse.json(
+            {
+                status,
+                checks: { db: dbDiagnostics.connected, redis: redisHealthy },
+                database: { connected: dbDiagnostics.connected, error: dbDiagnostics.error ?? null },
+                timestamp: new Date().toISOString(),
+            },
+            { status: httpStatus }
+        );
+    }
+
+    // Public callers: status + timestamp only.
+    return NextResponse.json({ status, timestamp: new Date().toISOString() }, { status: httpStatus });
 }

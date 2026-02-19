@@ -1,27 +1,17 @@
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        return NextResponse.json({
-            ok: true,
-            received: body,
-            message: 'Logistics Panel API is online',
-            timestamp: new Date().toISOString(),
-        });
-    } catch (error) {
-        return NextResponse.json({
-            ok: false,
-            error: 'Invalid JSON body',
-            timestamp: new Date().toISOString(),
-        }, { status: 400 });
-    }
+// This legacy endpoint has been decommissioned to reduce attack surface.
+// All logistics panel functionality is available via /api/cockpit/* (requires auth).
+
+const GONE_RESPONSE = NextResponse.json(
+    { error: 'Gone', message: 'This endpoint has been decommissioned. Use /api/cockpit/* instead.' },
+    { status: 410 }
+);
+
+export function GET() {
+    return GONE_RESPONSE;
 }
 
-export async function GET() {
-    return NextResponse.json({
-        ok: true,
-        message: 'Logistics Panel API (GET)',
-        timestamp: new Date().toISOString()
-    })
+export function POST() {
+    return GONE_RESPONSE;
 }

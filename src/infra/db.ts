@@ -14,7 +14,7 @@ if (!globalForDb.conn) {
     globalForDb.conn = mysql.createPool({
         uri: process.env.DATABASE_URL,
         connectionLimit: 10,
-        multipleStatements: true,
+        multipleStatements: false,
         timezone: 'Z',
     });
 }

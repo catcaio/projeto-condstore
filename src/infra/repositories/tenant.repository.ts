@@ -1,5 +1,5 @@
 import { getDb } from '../db';
-import { eq, or, like } from 'drizzle-orm';
+import { eq, or, like, count } from 'drizzle-orm';
 import { tenants, type TenantRecord } from '../../drizzle/schema';
 import { logger } from '../logger';
 import { ErrorCode, InfrastructureError, BusinessError } from '../errors';
@@ -102,9 +102,7 @@ export class TenantRepository {
         try {
             const db = await getDb();
 
-            logger.debug(`[${correlationId}] Executing DB query`, {
-                query: `SELECT * FROM tenants WHERE twilio_number = '${normalizedNumber}'`
-            });
+            logger.debug(`[${correlationId}] Executing DB query for tenant resolution`);
 
             const results = await db
                 .select()
@@ -113,11 +111,13 @@ export class TenantRepository {
                 .limit(1);
 
             if (results.length === 0) {
-                // Log all tenants for diagnosis if not found
-                const allTenants = await this.getAllTenants();
+                // Log only a suffix of the searched number (never full PII) and total count
+                const [{ totalTenantsCount }] = await db
+                    .select({ totalTenantsCount: count() })
+                    .from(tenants);
                 logger.warn(`[${correlationId}] Tenant NOT FOUND`, {
-                    searchedFor: normalizedNumber,
-                    availableTenants: allTenants.map(t => `${t.name} (${t.twilioNumber})`)
+                    searchedSuffix: '***' + normalizedNumber.slice(-4),
+                    totalTenantsCount,
                 });
 
                 throw new BusinessError(
@@ -133,7 +133,6 @@ export class TenantRepository {
 
             logger.info(`[${correlationId}] Tenant resolved successfully from DB`, {
                 tenantId: tenant.id,
-                name: tenant.name
             });
 
             return tenant;
