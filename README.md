@@ -51,6 +51,40 @@ npm run dev
 
 O projeto estará rodando em `http://localhost:3000`.
 
+## Segurança — Validação de Assinatura do Webhook
+
+Todo request recebido em `POST /api/webhook` tem sua assinatura HMAC-SHA1 do Twilio validada antes de qualquer processamento. Isso bloqueia spoofing de webhook.
+
+### Variáveis necessárias
+
+| Variável | Obrigatória | Descrição |
+|----------|-------------|-----------|
+| `TWILIO_AUTH_TOKEN` | **Sim** | Token de autenticação da sua conta Twilio. |
+| `TWILIO_WEBHOOK_BASE_URL` | Recomendada | URL base pública do deploy (ex: `https://yourapp.vercel.app`). Se não definida, a URL é montada a partir dos headers `x-forwarded-proto`/`x-forwarded-host`. Deve coincidir com a URL configurada no painel Twilio. |
+| `TWILIO_SIGNATURE_VALIDATION_ENABLED` | Não | `false` desativa a validação (apenas dev local). **Nunca use `false` em produção.** |
+
+### Como funciona
+
+A lógica vive em `src/server/twilio/verifyWebhook.ts`:
+- **`getPublicUrl(req)`** — reconstrói a URL exata usada pelo Twilio, respeitando proxies.
+- **`verifyTwilioSignature({ req, rawBody, formParams })`** — valida o header `X-Twilio-Signature`:
+  - `application/x-www-form-urlencoded` → `validateRequest(authToken, sig, url, params)`
+  - `application/json` → `validateRequestWithBody(authToken, sig, url, rawBody)` (inclui verificação do `bodySHA256`)
+- Retorna `false` (nunca lança) em caso de token ausente, header ausente ou HMAC inválido.
+- Em caso de falha, loga apenas diagnóstico (proto/host/path) — **nunca o auth token**.
+
+### Desenvolvimento local com ngrok
+
+```bash
+# 1. Inicie o túnel ngrok
+ngrok http 3000
+
+# 2. Configure no .env:
+TWILIO_WEBHOOK_BASE_URL=https://<seu-id>.ngrok-free.app
+# ou, para desativar a validação localmente:
+TWILIO_SIGNATURE_VALIDATION_ENABLED=false
+```
+
 ##  Webhooks e Endpoints
 
 | Método | Endpoint | Descrição |
