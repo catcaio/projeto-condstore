@@ -63,14 +63,17 @@ export class MessageRepository {
         try {
             const db = await getDb();
 
-            // Check if message already exists (idempotency)
-            const existing = await db
-                .select({ messageSid: messages.messageSid })
-                .from(messages)
-                .where(eq(messages.messageSid, record.messageSid))
-                .limit(1);
+            // Idempotency via unique constraint (messageSid is PK)
+            await db.insert(messages).values(record);
 
-            if (existing.length > 0) {
+            logger.info('Inbound message persisted', {
+                messageSid: record.messageSid,
+                // fromPhone removed for PII
+                tenantId: record.tenantId,
+            });
+        } catch (error: any) {
+            // Handle duplicate entry (idempotency)
+            if (error.code === 'ER_DUP_ENTRY' || error.message?.includes('Duplicate entry')) {
                 logger.debug('Message already persisted, skipping', {
                     messageSid: record.messageSid,
                     tenantId: record.tenantId,
@@ -78,18 +81,10 @@ export class MessageRepository {
                 return;
             }
 
-            await db.insert(messages).values(record);
-
-            logger.info('Inbound message persisted', {
-                messageSid: record.messageSid,
-                fromPhone: record.fromPhone,
-                tenantId: record.tenantId,
-            });
-        } catch (error) {
             // Log but do NOT throw — message persistence must not break the bot flow
             logger.error('Failed to persist inbound message', error as Error, {
                 messageSid: record.messageSid,
-                fromPhone: record.fromPhone,
+                // fromPhone removed for PII
                 tenantId: record.tenantId,
             });
         }

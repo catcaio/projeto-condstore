@@ -40,10 +40,10 @@ class FreightController {
       logger.info('Processing message', { phoneNumber, message, tenantId, messageSid });
 
       // Get or create session
-      let session = await sessionManager.getSession(phoneNumber, tenantId);
+      let session = await sessionManager.getSession(tenantId, phoneNumber);
 
       if (!session) {
-        session = await sessionManager.createSession(phoneNumber, tenantId);
+        session = await sessionManager.createSession(tenantId, phoneNumber);
       }
 
       // Classify intent
@@ -92,7 +92,7 @@ class FreightController {
   ): Promise<string> {
     // Handle reset/cancel
     if (intent === UserIntent.RESET || intent === UserIntent.CANCEL) {
-      await sessionManager.deleteSession(phoneNumber, tenantId);
+      await sessionManager.deleteSession(tenantId, phoneNumber);
       return 'Conversa reiniciada. Digite "frete" para começar uma nova cotação.';
     }
 
@@ -137,7 +137,7 @@ class FreightController {
    * Start freight query flow.
    */
   private async startFreightQuery(phoneNumber: string, tenantId: string): Promise<string> {
-    const session = await sessionManager.getSession(phoneNumber, tenantId);
+    const session = await sessionManager.getSession(tenantId, phoneNumber);
 
     if (!session) {
       throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session not found');
@@ -149,7 +149,7 @@ class FreightController {
       ConversationEvent.START_FREIGHT_QUERY
     );
 
-    await sessionManager.updateSession(phoneNumber, tenantId, newContext);
+    await sessionManager.updateSession(tenantId, phoneNumber, newContext);
 
     return 'Olá! Vou ajudar você a calcular o frete. Qual é o CEP de destino?';
   }
@@ -158,7 +158,7 @@ class FreightController {
    * Handle CEP provision.
    */
   private async handleCEP(phoneNumber: string, tenantId: string, cep: string): Promise<string> {
-    const session = await sessionManager.getSession(phoneNumber, tenantId);
+    const session = await sessionManager.getSession(tenantId, phoneNumber);
 
     if (!session) {
       throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session not found');
@@ -173,7 +173,7 @@ class FreightController {
       ConversationEvent.CEP_PROVIDED
     );
 
-    await sessionManager.updateSession(phoneNumber, tenantId, newContext);
+    await sessionManager.updateSession(tenantId, phoneNumber, newContext);
 
     return 'CEP recebido! Agora, quantas unidades você deseja?';
   }
@@ -182,7 +182,7 @@ class FreightController {
    * Handle quantity provision and calculate freight.
    */
   private async handleQuantity(phoneNumber: string, tenantId: string, quantity: number, messageSid?: string): Promise<string> {
-    const session = await sessionManager.getSession(phoneNumber, tenantId);
+    const session = await sessionManager.getSession(tenantId, phoneNumber);
 
     if (!session || !session.cep) {
       throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session or CEP not found');
@@ -197,7 +197,7 @@ class FreightController {
       ConversationEvent.QUANTITY_PROVIDED
     );
 
-    await sessionManager.updateSession(phoneNumber, tenantId, calculatingContext);
+    await sessionManager.updateSession(tenantId, phoneNumber, calculatingContext);
 
     try {
       // Calculate freight
@@ -227,10 +227,10 @@ class FreightController {
         ConversationEvent.CALCULATION_SUCCESS
       );
 
-      await sessionManager.updateSession(phoneNumber, tenantId, completedContext);
+      await sessionManager.updateSession(tenantId, phoneNumber, completedContext);
 
       // Clear session after completion
-      await sessionManager.deleteSession(phoneNumber, tenantId);
+      await sessionManager.deleteSession(tenantId, phoneNumber);
 
       // Format and return response
       const bestOption = result.options[0]; // Options are already sorted by price/time
