@@ -1,3 +1,5 @@
+import { CockpitMetrics } from './_components/cockpit-metrics';
+
 export default function CockpitPage() {
     return (
         <div className="space-y-8">
@@ -11,7 +13,10 @@ export default function CockpitPage() {
                 </div>
             </div>
 
-            {/* Recent Activity Mock */}
+            {/* Metrics Grid */}
+            <CockpitMetrics />
+
+            {/* Recent Activity Mock (To be refactored later) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 rounded-lg border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] overflow-hidden">
                     <div className="px-6 py-4 border-b border-[hsl(var(--cockpit-border))] flex justify-between items-center">
@@ -47,7 +52,6 @@ export default function CockpitPage() {
                     </div>
                 </div>
 
-                {/* System Status Mock */}
                 <div className="rounded-lg border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] p-6 space-y-4">
                     <h3 className="font-semibold text-[hsl(var(--cockpit-text))] mb-4">
                         Status do Sistema
@@ -64,10 +68,6 @@ export default function CockpitPage() {
                         </div>
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-[hsl(var(--cockpit-text-muted))]">Redis Cache</span>
-                            <span className="text-[hsl(var(--cockpit-accent))]">Operacional</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-[hsl(var(--cockpit-text-muted))]">Motor de Frete</span>
                             <span className="text-[hsl(var(--cockpit-accent))]">Operacional</span>
                         </div>
                     </div>
