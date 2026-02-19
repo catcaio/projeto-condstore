@@ -5,7 +5,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { validateRequest } from 'twilio';
 import { twilioProvider } from '../../../providers/twilio.provider';
 import { twilioConfig } from '../../../config/twilio.config';
 import { logger } from '../../../infra/logger';
@@ -15,6 +14,7 @@ import { sanitizeMessage, validateWebhookPayload } from '../../../lib/validation
 import { messageRepository } from '../../../infra/repositories/message.repository';
 import { tenantRepository } from '../../../infra/repositories/tenant.repository';
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from '../../../lib/normalize';
+import { verifyTwilioRequest, getPublicUrl } from '../../../server/twilio/verifyWebhook';
 
 /**
  * POST /api/webhook
@@ -24,7 +24,6 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    // Parse form-urlencoded body from Twilio (preserve raw params for signature validation)
     // ─── A) Instrumentação de Logs (Solicitado) ───
     logger.info('=== WEBHOOK REQUEST STARTED ===');
 
@@ -33,9 +32,16 @@ export async function POST(request: NextRequest) {
     request.headers.forEach((v, k) => (headersRaw[k] = v));
     logger.info('Webhook Headers:', headersRaw);
 
-    // Parse body for logging
+    // Read raw body once — used for both signature validation and param parsing.
+    // req.text() consumes the stream; everything downstream uses rawBody.
     const rawBody = await request.text();
-    const params = new URLSearchParams(rawBody);
+    const contentType = request.headers.get('content-type') ?? '';
+
+    // Parse form params (used for form-urlencoded signature validation and business logic).
+    // For JSON requests this will be empty — JSON is parsed from rawBody after validation.
+    const params = new URLSearchParams(
+      contentType.includes('application/json') ? '' : rawBody
+    );
     const payload: Record<string, string> = {};
     params.forEach((value, key) => {
       payload[key] = value;
@@ -46,7 +52,7 @@ export async function POST(request: NextRequest) {
       To: payload['To'],
       From: payload['From'],
       WaId: payload['WaId'],
-      MessageSid: payload['MessageSid']
+      MessageSid: payload['MessageSid'],
     });
 
     logger.debug('[STEP 1] Parsing complete');
@@ -55,70 +61,44 @@ export async function POST(request: NextRequest) {
     logger.debug('Webhook received', {
       messageSid: payload['MessageSid'],
       hasBody: !!payload['Body'],
-      bodyLength: payload['Body']?.length || 0
+      bodyLength: payload['Body']?.length || 0,
     });
 
-    // Build the URL exactly as Twilio sees it (must match the URL configured in the Twilio console).
-    // Priority: TWILIO_WEBHOOK_URL env > x-forwarded-* headers > host header fallback.
-    const webhookUrlOverride = process.env.TWILIO_WEBHOOK_URL;
-    let computedUrl: string;
-    if (webhookUrlOverride) {
-      computedUrl = webhookUrlOverride;
-    } else {
-      const proto = request.headers.get('x-forwarded-proto') || 'https';
-      const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000';
-      computedUrl = `${proto}://${host}${request.nextUrl.pathname}`;
-    }
-
-    // Validate Twilio Signature (can be disabled for development)
-    const twilioSignature = request.headers.get('x-twilio-signature');
-
+    // ─── Signature Validation ──────────────────────────────────────────────
+    // Must run BEFORE any business logic, including LLM calls.
+    // Disabled only when TWILIO_SIGNATURE_VALIDATION_ENABLED=false (dev only).
     if (twilioConfig.signatureValidationEnabled) {
       logger.info('Twilio signature validation enabled', {
-        computedUrl,
-        hasSignature: !!twilioSignature,
+        url: getPublicUrl(request),
+        hasSignature: !!request.headers.get('x-twilio-signature'),
       });
 
-      if (!twilioSignature) {
+      const signatureMissing = !request.headers.get('x-twilio-signature');
+      if (signatureMissing) {
         logger.warn('Missing Twilio signature', {
           event: 'INVALID_WEBHOOK_SIGNATURE',
           reason: 'missing_header',
-          url: computedUrl,
-          ip: request.headers.get('x-forwarded-for') || 'unknown',
+          url: getPublicUrl(request),
+          ip: request.headers.get('x-forwarded-for') ?? 'unknown',
         });
-
-        // Return 403 Forbidden
-        return NextResponse.json(
-          { error: 'Missing Twilio signature' },
-          { status: 403 }
-        );
+        return new Response('Forbidden', { status: 403 });
       }
 
-      const isValid = validateRequest(
-        twilioConfig.authToken,
-        twilioSignature,
-        computedUrl,
-        payload
-      );
+      const isValid = verifyTwilioRequest(request, rawBody, payload);
 
       logger.info('Twilio signature validation result', {
         isValid,
-        computedUrl,
+        url: getPublicUrl(request),
       });
 
       if (!isValid) {
         logger.warn('Invalid Twilio signature', {
           event: 'INVALID_WEBHOOK_SIGNATURE',
           reason: 'signature_mismatch',
-          url: computedUrl,
-          ip: request.headers.get('x-forwarded-for') || 'unknown',
+          url: getPublicUrl(request),
+          ip: request.headers.get('x-forwarded-for') ?? 'unknown',
         });
-
-        // Return 403 Forbidden
-        return NextResponse.json(
-          { error: 'Invalid Twilio signature' },
-          { status: 403 }
-        );
+        return new Response('Forbidden', { status: 403 });
       }
     } else {
       logger.warn('Twilio signature validation DISABLED (development mode)', {
@@ -201,7 +181,7 @@ export async function POST(request: NextRequest) {
     logger.info('Intent Classification Debug', {
       rawBody: incomingMessage.body,
       normalizedBody: normalizedBody,
-      length: normalizedBody.length
+      length: normalizedBody.length,
     });
 
     let intent = 'unknown';
