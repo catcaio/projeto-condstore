@@ -13,7 +13,8 @@ import { messageRepository } from "../../../infra/repositories/message.repositor
 import { tenantRepository } from "../../../infra/repositories/tenant.repository";
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from "../../../lib/normalize";
 import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
-import { freightController } from "../../../legacy/freight.controller";
+import { freightControllerLegacy as freightController } from "../../../legacy/freight.controller";
+import { checkRateLimit, getThrottleMessage } from "../../../infra/rate-limiter";
 
 /**
  * POST /api/webhook
@@ -97,6 +98,24 @@ export async function POST(request: NextRequest) {
 
     const tenantId = tenant.id;
     logger.info("Webhook tenant resolved", { tenantId, ...safeCtx });
+
+    // 5.5) Rate Limit (Tenant + Sender)
+    // Normalize "From" for consistent limits
+    const rawFrom = payload["From"] || "";
+    const fromNormalizedRL = normalizeWhatsAppNumber(rawFrom);
+
+    // Limit: 20 messages per minute per user (generous but safe)
+    const rateLimit = await checkRateLimit(`webhook:${tenantId}:${fromNormalizedRL}`, 20, 60);
+
+    if (!rateLimit.allowed) {
+      logger.warn("Webhook rejected: rate limit exceeded", {
+        event: "RATE_LIMIT_EXCEEDED",
+        tenantId,
+        from: fromNormalizedRL,
+        ...safeCtx,
+      });
+      return twimlOk(getThrottleMessage());
+    }
 
     // 6) Validate and sanitize payload
     validateWebhookPayload(payload);

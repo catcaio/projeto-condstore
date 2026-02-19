@@ -128,8 +128,8 @@ export class TenantRepository {
         const normalizedNumber = this.normalize(rawTwilioNumber);
 
         logger.info(`[${correlationId}] Starting tenant resolution`, {
-            raw: rawTwilioNumber,
-            normalized: normalizedNumber
+            raw: '***' + rawTwilioNumber.slice(-4), // Simple mask here as logger.maskPhone might not be available or I should use it if I export it. logger is imported.
+            normalized: '***' + normalizedNumber.slice(-4)
         });
 
         // 2. Cache Lookup
