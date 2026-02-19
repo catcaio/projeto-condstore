@@ -8,6 +8,13 @@
       "when": 1771524432920,
       "tag": "0000_rich_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1771533550106,
+      "tag": "0001_freight_simulation_logs",
+      "breakpoints": true
     }
   ]
 }

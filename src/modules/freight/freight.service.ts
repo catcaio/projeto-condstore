@@ -17,6 +17,7 @@ import type {
 } from './freight.types';
 import { redisClient } from '../../infra/redis.client';
 import { freightTableProvider } from '../../infra/freight-table';
+import { freightSimulationLogRepository } from '../../infra/repositories/freight-simulation-log.repository';
 
 
 
@@ -60,17 +61,20 @@ class FreightService {
       const sortedOptions = this.sortAndLimitOptions(options);
       const bestOption = sortedOptions[0];
 
-      // Calculate margin (placeholder logic for now, as requested to be added in previous turns but we are focusing on persistence here)
-      // Assuming naive margin calculation if not present.
-      const bestMargin = bestOption.price * 0.2; // Example: 20% margin
-
       logger.info('Freight calculation completed', {
         optionsCount: sortedOptions.length,
         totalWeight,
       });
 
-      // Persistence is handled by callers (route handlers) with proper tenant context.
-      // FreightService remains calc-focused.
+      if (request.tenantId && bestOption) {
+        void freightSimulationLogRepository.saveMetricInBackground({
+          tenantId: request.tenantId,
+          destinationCep: request.destinationCep,
+          totalWeight,
+          bestPrice: bestOption.price,
+          bestDeliveryTime: bestOption.deliveryTime,
+        });
+      }
 
       // Cache the result
       await this.cacheResult(request, totalWeight, options);
