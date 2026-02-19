@@ -18,33 +18,23 @@ interface DatabaseDiagnostics {
     error?: string;
 }
 
+import { getDb } from '../../../infra/db';
+import { sql } from 'drizzle-orm';
+
 /**
  * Check database connectivity and gather diagnostics.
  */
 async function checkDatabase(): Promise<DatabaseDiagnostics> {
     try {
-        if (!process.env.DATABASE_URL) {
-            return { connected: false, error: 'DATABASE_URL not configured' };
-        }
+        const db = await getDb();
 
-        // Dynamic import to avoid loading MySQL driver at module level
-        const mysql = await import('mysql2/promise');
-        const connection = await mysql.default.createConnection({
-            uri: process.env.DATABASE_URL,
-            ssl: {
-                rejectUnauthorized: true,
-            },
-        });
-
-        // Get database name
-        const [dbNameRows] = await connection.execute<any[]>('SELECT DATABASE() as db_name');
-        const databaseName = dbNameRows[0]?.db_name || 'unknown';
+        // Get database name (using raw query via drizzle)
+        const [dbNameRows] = await db.execute<any>(sql`SELECT DATABASE() as db_name`);
+        const databaseName = (dbNameRows as unknown as any[])[0]?.db_name || 'unknown';
 
         // Get tenant count
-        const [countRows] = await connection.execute<any[]>('SELECT COUNT(*) as count FROM tenants');
-        const tenantCount = countRows[0]?.count || 0;
-
-        await connection.end();
+        const [countRows] = await db.execute<any>(sql`SELECT COUNT(*) as count FROM tenants`);
+        const tenantCount = (countRows as unknown as any[])[0]?.count || 0;
 
         return {
             connected: true,
