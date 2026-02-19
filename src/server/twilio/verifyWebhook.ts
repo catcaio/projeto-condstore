@@ -2,8 +2,8 @@
  * Twilio Webhook Signature Verification Helper.
  *
  * Provides two functions:
- *  - getPublicUrl   — reconstructs the exact URL Twilio used to call the webhook.
- *  - verifyTwilioSignature — validates X-Twilio-Signature for form and JSON bodies.
+ *  - getPublicUrl       — reconstructs the exact URL Twilio used to call the webhook.
+ *  - verifyTwilioRequest — validates X-Twilio-Signature for form and JSON bodies.
  *
  * References:
  *  https://www.twilio.com/docs/usage/webhooks/webhooks-security
@@ -42,41 +42,34 @@ export function getPublicUrl(req: NextRequest): string {
   return `${proto}://${host}${pathWithQuery}`;
 }
 
-interface VerifyOptions {
-  /** The incoming Next.js request object. */
-  req: NextRequest;
-  /**
-   * The raw request body as a string (already consumed once by the caller).
-   * - For form-urlencoded: the encoded query string (e.g. "From=whatsapp%3A%2B55...&Body=hi")
-   * - For JSON: the raw JSON string
-   */
-  rawBody: string;
-  /**
-   * Parsed form parameters as a flat key→value map.
-   * Required for form-urlencoded validation; ignored for JSON validation.
-   */
-  formParams: Record<string, string>;
-}
-
 /**
  * Verify the X-Twilio-Signature header on an incoming webhook request.
  *
- * - Reads TWILIO_AUTH_TOKEN from environment (never from a config default).
- * - Dispatches to the correct Twilio library function:
- *     • application/json  → validateRequestWithBody(authToken, sig, url, rawBody)
- *       Twilio appends ?bodySHA256=<hash> to the URL; include the full URL with search.
- *     • form-urlencoded   → validateRequest(authToken, sig, url, formParams)
- * - Returns false (never throws) on any failure:
- *     • missing auth token (logs a warning)
- *     • missing X-Twilio-Signature header
- *     • HMAC mismatch or body-hash mismatch
- * - On unexpected errors logs only diagnostic info (proto/host/path), never the token.
+ * @param req        - The incoming Next.js request object.
+ * @param rawBody    - Raw request body string (already read with req.text()).
+ *                     For form-urlencoded: the encoded query string.
+ *                     For JSON: the raw JSON string.
+ *                     Defaults to "" when not provided.
+ * @param formParams - Parsed form parameters as flat key→value map.
+ *                     Required for form-urlencoded validation; ignored for JSON.
+ *                     Defaults to {} when not provided.
+ *
+ * Dispatches to the correct Twilio library function:
+ *   • application/json  → validateRequestWithBody(authToken, sig, url, rawBody)
+ *     Twilio appends ?bodySHA256=<hash> to the URL; the full URL with search is used.
+ *   • form-urlencoded   → validateRequest(authToken, sig, url, formParams)
+ *
+ * Returns false (never throws) on any failure:
+ *   • missing TWILIO_AUTH_TOKEN (logs a warning — never logs the token value)
+ *   • missing X-Twilio-Signature header
+ *   • HMAC mismatch or body-hash mismatch
+ *   • unexpected internal error (logs only proto/host/path for diagnosis)
  */
-export function verifyTwilioSignature({
-  req,
-  rawBody,
-  formParams,
-}: VerifyOptions): boolean {
+export function verifyTwilioRequest(
+  req: NextRequest,
+  rawBody: string = "",
+  formParams: Record<string, string> = {}
+): boolean {
   const authToken = process.env.TWILIO_AUTH_TOKEN;
 
   if (!authToken) {
