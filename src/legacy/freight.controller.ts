@@ -204,6 +204,7 @@ class FreightController {
       const freightRequest: FreightRequest = {
         destinationCep: session.cep,
         quantity,
+        tenantId,
       };
 
       // 1. Metrics Hook: REQUESTED
