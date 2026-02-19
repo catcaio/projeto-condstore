@@ -1,31 +1,36 @@
+import { cn } from "@/lib/utils"
+
 interface MetricCardProps {
-    label: string;
-    value: string;
-    trend?: string;
-    trendUp?: boolean;
+    title: string
+    value: string | number
+    subtext?: string
+    isLoading?: boolean
+    className?: string
 }
 
-export default function MetricCard({ label, value, trend, trendUp }: MetricCardProps) {
+export function MetricCard({ title, value, subtext, isLoading, className }: MetricCardProps) {
     return (
-        <div className="p-5 rounded-lg border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] hover:translate-y-[-2px] transition-transform duration-200">
-            <h3 className="text-xs font-semibold text-[hsl(var(--cockpit-text-muted))] uppercase tracking-wider mb-2">
-                {label}
+        <div className={cn(
+            "rounded-lg border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] p-6 space-y-2",
+            className
+        )}>
+            <h3 className="text-sm font-medium text-[hsl(var(--cockpit-text-muted))]">
+                {title}
             </h3>
-            <div className="flex items-end justify-between">
-                <span className="text-2xl font-bold text-[hsl(var(--cockpit-text))]">
+
+            {isLoading ? (
+                <div className="h-8 w-24 animate-pulse bg-[hsl(var(--cockpit-border))] rounded" />
+            ) : (
+                <div className="text-3xl font-bold text-[hsl(var(--cockpit-text))]">
                     {value}
-                </span>
-                {trend && (
-                    <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded ${trendUp
-                                ? 'text-[hsl(var(--cockpit-accent))] bg-[hsl(var(--cockpit-accent))]/10'
-                                : 'text-[hsl(var(--cockpit-danger))] bg-[hsl(var(--cockpit-danger))]/10'
-                            }`}
-                    >
-                        {trend}
-                    </span>
-                )}
-            </div>
+                </div>
+            )}
+
+            {subtext && (
+                <p className="text-xs text-[hsl(var(--cockpit-text-muted))]">
+                    {subtext}
+                </p>
+            )}
         </div>
-    );
+    )
 }
