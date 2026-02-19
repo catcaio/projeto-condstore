@@ -1,4 +1,5 @@
 import { CockpitMetrics } from './_components/cockpit-metrics';
+import { FreightMetricsDashboard } from './_components/freight-metrics-dashboard';
 
 export default function CockpitPage() {
     return (
@@ -15,6 +16,8 @@ export default function CockpitPage() {
 
             {/* Metrics Grid */}
             <CockpitMetrics />
+
+            <FreightMetricsDashboard />
 
             {/* Recent Activity Mock (To be refactored later) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
