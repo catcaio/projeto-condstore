@@ -192,6 +192,31 @@ class RedisClient {
       return false;
     }
   }
+  /**
+   * Increment key value (atomic).
+   */
+  async incr(key: string): Promise<number | null> {
+    try {
+      const result = await this.execute<number>(`incr/${key}`);
+      return result;
+    } catch (error) {
+      logger.error('Failed to incr key in Redis', error as Error, { key });
+      return null;
+    }
+  }
+
+  /**
+   * Set expiration for a key.
+   */
+  async expire(key: string, seconds: number): Promise<boolean> {
+    try {
+      const result = await this.execute<number>(`expire/${key}/${seconds}`);
+      return result === 1;
+    } catch (error) {
+      logger.error('Failed to expire key in Redis', error as Error, { key });
+      return false;
+    }
+  }
 }
 
 // Export singleton instance

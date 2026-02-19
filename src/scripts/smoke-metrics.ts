@@ -1,5 +1,5 @@
 
-import { freightController } from '../legacy/freight.controller';
+import { freightControllerLegacy as freightController } from '../legacy/freight.controller';
 import { metricsRepository } from '../modules/metrics/metrics.repository';
 import { randomUUID } from 'crypto';
 
