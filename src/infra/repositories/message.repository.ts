@@ -1,48 +1,8 @@
-import { drizzle } from 'drizzle-orm/mysql2';
-import mysql from 'mysql2/promise';
-import { eq, sql } from 'drizzle-orm';
+import { getDb } from '../db';
+import { eq, desc, and, sql } from 'drizzle-orm';
 import { messages, type NewMessageRecord } from '../../drizzle/schema';
 import { logger } from '../logger';
 import { ErrorCode, InfrastructureError } from '../errors';
-
-// Reuse the same DB singleton pattern as simulation.repository.ts
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let dbInstance: any = null;
-
-async function getDb() {
-    if (dbInstance) return dbInstance;
-
-    if (!process.env.DATABASE_URL) {
-        throw new InfrastructureError(
-            ErrorCode.INTERNAL_ERROR,
-            'DATABASE_URL is not defined'
-        );
-    }
-
-    // TiDB requires SSL connection
-    const connectionPool = mysql.createPool({
-        uri: process.env.DATABASE_URL,
-        ssl: {
-            rejectUnauthorized: true,
-        },
-    });
-    dbInstance = drizzle(connectionPool, { mode: 'default' });
-
-    try {
-        const conn = await connectionPool.getConnection();
-        logger.info('MessageRepository: DB connected successfully');
-        conn.release();
-    } catch (err) {
-        logger.error('MessageRepository: DB connection failed', err as Error);
-        throw new InfrastructureError(
-            ErrorCode.INTERNAL_ERROR,
-            'Database connection verification failed',
-            { error: (err as Error).message }
-        );
-    }
-
-    return dbInstance;
-}
 
 export class MessageRepository {
     /**
