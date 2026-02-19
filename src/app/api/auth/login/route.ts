@@ -4,6 +4,7 @@ import { userRepository } from '@/infra/repositories/user.repository';
 import { verifyPassword } from '@/infra/auth/password';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
+import { checkRateLimit } from '@/infra/rate-limiter';
 
 const loginSchema = z.object({
     email: z.string().email('Email inválido'),
@@ -23,6 +24,20 @@ export async function POST(request: NextRequest) {
         }
 
         const { email, password } = validation.data;
+
+        // Rate Limit: 5 attempts per minute per IP+Email
+        const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+        const rateLimitKey = `login:${ip}:${email}`;
+
+        const rateLimit = await checkRateLimit(rateLimitKey, 5, 60);
+
+        if (!rateLimit.allowed) {
+            logger.warn('Login rate limit exceeded', { email, ip });
+            return NextResponse.json(
+                { success: false, error: 'Muitas tentativas. Tente novamente em alguns minutos.' },
+                { status: 429 }
+            );
+        }
 
         const user = await userRepository.getUserByEmail(email);
         if (!user) {
