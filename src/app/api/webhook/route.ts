@@ -139,6 +139,7 @@ export async function POST(request: NextRequest) {
     const controllerResult = await freightController.processMessage({
       phoneNumber: fromNormalized,
       message: incomingMessage.body ?? "",
+      tenantId,
     });
 
     const replyText = controllerResult?.reply?.trim() || 'Desculpe, não entendi. Digite "frete" para começar.';
