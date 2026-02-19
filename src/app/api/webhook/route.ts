@@ -15,6 +15,7 @@ import { messageRepository } from '../../../infra/repositories/message.repositor
 import { tenantRepository } from '../../../infra/repositories/tenant.repository';
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from '../../../lib/normalize';
 import { verifyTwilioRequest, getPublicUrl } from '../../../server/twilio/verifyWebhook';
+import { safeWebhookContext, isDebugEnabled } from '../../../server/logging/safeLog';
 
 /**
  * POST /api/webhook
@@ -24,13 +25,7 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    // ─── A) Instrumentação de Logs (Solicitado) ───
-    logger.info('=== WEBHOOK REQUEST STARTED ===');
-
-    // Log headers for debugging
-    const headersRaw: Record<string, string> = {};
-    request.headers.forEach((v, k) => (headersRaw[k] = v));
-    logger.info('Webhook Headers:', headersRaw);
+    logger.debug('Webhook request received');
 
     // Read raw body once — used for both signature validation and param parsing.
     // req.text() consumes the stream; everything downstream uses rawBody.
@@ -47,22 +42,11 @@ export async function POST(request: NextRequest) {
       payload[key] = value;
     });
 
-    // Log critical fields
-    logger.info('Webhook Body Params:', {
-      To: payload['To'],
-      From: payload['From'],
-      WaId: payload['WaId'],
-      MessageSid: payload['MessageSid'],
-    });
-
-    logger.debug('[STEP 1] Parsing complete');
-
-    // Sanitized logging - no PII
-    logger.debug('Webhook received', {
+    logger.debug('Webhook received', safeWebhookContext({
       messageSid: payload['MessageSid'],
       hasBody: !!payload['Body'],
-      bodyLength: payload['Body']?.length || 0,
-    });
+      bodyLength: payload['Body']?.length ?? 0,
+    }));
 
     // ─── Signature Validation ──────────────────────────────────────────────
     // Must run BEFORE any business logic, including LLM calls.
@@ -131,7 +115,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       // Security boundary: Tenant not found -> 403
       if ((error as any).code === 'TENANT_NOT_FOUND') {
-        logger.warn('Webhook rejected: Tenant not found', { twilioNumber: twilioNumberRaw });
+        logger.warn('Webhook rejected: Tenant not found for the received Twilio number');
         return NextResponse.json(
           { error: 'Tenant not found' },
           { status: 403 }
@@ -158,11 +142,7 @@ export async function POST(request: NextRequest) {
     const twilioNumber = tenant.twilioNumber;
 
     const tenantId = tenant.id;
-    logger.info('Tenant resolved', {
-      twilioNumber,
-      tenantId,
-      tenantName: tenant.name,
-    });
+    logger.info('Tenant resolved', { tenantId });
 
     // Validate and sanitize webhook payload
     logger.debug('[STEP 3] Validating webhook payload');
@@ -177,12 +157,12 @@ export async function POST(request: NextRequest) {
     // FIX: Ensure body is lowercased and trimmed for comparison
     const normalizedBody = (incomingMessage.body || '').trim().toLowerCase();
 
-    // ─── LOGGING INTENT CLASSIFICATION (Solicitado) ───
-    logger.info('Intent Classification Debug', {
-      rawBody: incomingMessage.body,
-      normalizedBody: normalizedBody,
-      length: normalizedBody.length,
-    });
+    if (isDebugEnabled()) {
+      logger.debug('Intent classification input', safeWebhookContext({
+        hasBody: normalizedBody.length > 0,
+        bodyLength: normalizedBody.length,
+      }));
+    }
 
     let intent = 'unknown';
 
@@ -202,12 +182,12 @@ export async function POST(request: NextRequest) {
       intent = 'order';
     }
 
-    logger.info('Incoming message parsed', {
-      from: incomingMessage.from,
-      body: incomingMessage.body,
-      intent,
+    logger.info('Incoming message parsed', safeWebhookContext({
       messageSid: incomingMessage.messageSid,
-    });
+      intent,
+      hasBody: !!incomingMessage.body,
+      bodyLength: incomingMessage.body?.length ?? 0,
+    }));
 
     // ─── Persist inbound message (before rate limit, so throttled messages are also saved) ───
     logger.debug('[STEP 5] Persisting inbound message to database');
@@ -258,11 +238,12 @@ export async function POST(request: NextRequest) {
     logger.debug('[STEP 6.1] TwiML response generated', { responseText });
 
     const duration = Date.now() - startTime;
-    logger.info('Webhook processed successfully (stateless)', {
-      from: incomingMessage.from,
-      duration,
+    logger.info('Webhook processed successfully', safeWebhookContext({
+      messageSid: incomingMessage.messageSid,
+      tenantId,
       intent,
-    });
+      durationMs: duration,
+    }));
 
     return new NextResponse(twiml.toString(), {
       status: 200,
