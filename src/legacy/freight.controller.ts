@@ -13,11 +13,14 @@ import { stateMachine } from '../core/conversation/state-machine';
 import { intentClassifier, UserIntent } from '../core/conversation/intent-classifier';
 import { freightService } from '../modules/freight/freight.service';
 import type { FreightRequest } from '../modules/freight/freight.types';
+import { metricsRepository } from '../modules/metrics/metrics.repository';
+import crypto from 'crypto';
 
 export interface ProcessMessageRequest {
   phoneNumber: string;
   message: string;
   tenantId: string;
+  messageSid?: string;
 }
 
 export interface ProcessMessageResponse {
@@ -31,10 +34,10 @@ class FreightController {
    * This is the main entry point for the conversation flow.
    */
   async processMessage(request: ProcessMessageRequest): Promise<ProcessMessageResponse> {
-    const { phoneNumber, message, tenantId } = request;
+    const { phoneNumber, message, tenantId, messageSid } = request;
 
     try {
-      logger.info('Processing message', { phoneNumber, message, tenantId });
+      logger.info('Processing message', { phoneNumber, message, tenantId, messageSid });
 
       // Get or create session
       let session = await sessionManager.getSession(phoneNumber, tenantId);
@@ -54,7 +57,7 @@ class FreightController {
       });
 
       // Handle intent
-      const reply = await this.handleIntent(phoneNumber, tenantId, session.currentState, intentResult.intent, message, intentResult.extractedData);
+      const reply = await this.handleIntent(phoneNumber, tenantId, session.currentState, intentResult.intent, message, intentResult.extractedData, messageSid);
 
       return {
         reply,
@@ -84,7 +87,8 @@ class FreightController {
     currentState: ConversationState,
     intent: UserIntent,
     message: string,
-    extractedData?: Record<string, unknown>
+    extractedData?: Record<string, unknown>,
+    messageSid?: string
   ): Promise<string> {
     // Handle reset/cancel
     if (intent === UserIntent.RESET || intent === UserIntent.CANCEL) {
@@ -109,7 +113,7 @@ class FreightController {
 
     // Handle quantity provision
     if (intent === UserIntent.PROVIDE_QUANTITY && extractedData?.quantity) {
-      return await this.handleQuantity(phoneNumber, tenantId, extractedData.quantity as number);
+      return await this.handleQuantity(phoneNumber, tenantId, extractedData.quantity as number, messageSid);
     }
 
     // Handle future intents
@@ -177,7 +181,7 @@ class FreightController {
   /**
    * Handle quantity provision and calculate freight.
    */
-  private async handleQuantity(phoneNumber: string, tenantId: string, quantity: number): Promise<string> {
+  private async handleQuantity(phoneNumber: string, tenantId: string, quantity: number, messageSid?: string): Promise<string> {
     const session = await sessionManager.getSession(phoneNumber, tenantId);
 
     if (!session || !session.cep) {
@@ -202,6 +206,19 @@ class FreightController {
         quantity,
       };
 
+      // 1. Metrics Hook: REQUESTED
+      try {
+        await metricsRepository.saveFreightEvent({
+          id: crypto.randomUUID(),
+          tenantId,
+          cep: session.cep,
+          weight: '0', // Unknown yet
+          quantity,
+          strategy: 'REQUESTED',
+          event: 'FREIGHT_QUOTE_REQUESTED'
+        } as any);
+      } catch (e) { logger.warn('Failed to save REQUESTED metric', e); }
+
       const result = await freightService.calculateFreight(freightRequest);
 
       // Transition to COMPLETED
@@ -216,7 +233,53 @@ class FreightController {
       await sessionManager.deleteSession(phoneNumber, tenantId);
 
       // Format and return response
-      // freightService.formatOptionsForUser now returns the single string requested
+      const bestOption = result.options[0]; // Options are already sorted by price/time
+
+      // 3. Metrics Hook: QUOTED (Persist Simulation)
+      if (bestOption) {
+        try {
+          // Idempotency Key: tenantId:messageSid:carrier:price
+          // If messageSid is missing, fallback to sessionId (session.id doesn't exist on interface, so use phoneNumber + approx time? Or just random if fallback).
+          // Requirement says: `${tenantId}:${messageSid ?? sessionId}:${carrier}:${price}`
+          // We don't have sessionId in session object explicitly? session is ConversationContext.
+          // Let's use phoneNumber as proxy for session ID if messageSid is missing? Or just omit if missing.
+          // Ideally messageSid is always present in Webhook.
+
+          const uniqueId = messageSid || phoneNumber;
+          const idempotencyKey = `${tenantId}:${uniqueId}:${bestOption.carrier}:${bestOption.price}`;
+
+          await metricsRepository.saveFreightEvent({
+            id: crypto.randomUUID(),
+            tenantId,
+            cep: session.cep,
+            weight: (result.totalWeight || 0).toString(),
+            quantity: quantity,
+            bestCarrier: bestOption.carrier,
+            bestService: bestOption.service,
+            bestPrice: bestOption.price.toString(),
+            bestMargin: (bestOption.price * 0.2).toString(), // Placeholder margin logic
+            strategy: 'BEST_OPTION',
+            idempotencyKey,
+            event: 'FREIGHT_QUOTED'
+          });
+
+          // 4. Metrics Hook: structured log
+          logger.info('Freight quoted successfully', {
+            event: 'FREIGHT_QUOTED',
+            tenantId,
+            cep: session.cep,
+            value: bestOption.price,
+            carrier: bestOption.carrier,
+            deadlineDays: bestOption.deliveryTime,
+            durationMs: Date.now() - session.createdAt, // Approx duration
+            idempotencyKey
+          });
+        } catch (metricsError) {
+          // Do not fail the flow if metrics fail
+          logger.error('Failed to save metrics', metricsError as Error, { tenantId, phoneNumber });
+        }
+      }
+
       return freightService.formatOptionsForUser(result.options);
     } catch (error) {
       // Transition to ERROR
@@ -224,6 +287,19 @@ class FreightController {
         calculatingContext,
         ConversationEvent.CALCULATION_ERROR
       );
+
+      // Metrics Hook: FAILED
+      try {
+        await metricsRepository.saveFreightEvent({
+          id: crypto.randomUUID(),
+          tenantId,
+          cep: session.cep,
+          quantity,
+          weight: '0',
+          strategy: 'FAILED',
+          event: 'FREIGHT_QUOTE_FAILED'
+        } as any);
+      } catch (e) { logger.warn('Failed to save FAILED metric', e); }
 
       throw error;
     }
@@ -262,4 +338,3 @@ class FreightController {
 
 // Export singleton instance
 export const freightController = new FreightController();
-

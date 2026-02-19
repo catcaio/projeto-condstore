@@ -27,6 +27,8 @@ export const simulations = mysqlTable('simulations', {
     bestPrice: decimal('best_price', { precision: 10, scale: 2 }),
     bestMargin: decimal('best_margin', { precision: 10, scale: 2 }),
     strategy: varchar('strategy', { length: 50 }),
+    idempotencyKey: varchar('idempotency_key', { length: 255 }).unique(),
+    event: varchar('event', { length: 50 }).notNull().default('FREIGHT_QUOTED'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
