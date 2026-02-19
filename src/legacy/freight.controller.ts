@@ -17,6 +17,7 @@ import type { FreightRequest } from '../modules/freight/freight.types';
 export interface ProcessMessageRequest {
   phoneNumber: string;
   message: string;
+  tenantId: string;
 }
 
 export interface ProcessMessageResponse {
@@ -30,16 +31,16 @@ class FreightController {
    * This is the main entry point for the conversation flow.
    */
   async processMessage(request: ProcessMessageRequest): Promise<ProcessMessageResponse> {
-    const { phoneNumber, message } = request;
+    const { phoneNumber, message, tenantId } = request;
 
     try {
-      logger.info('Processing message', { phoneNumber, message });
+      logger.info('Processing message', { phoneNumber, message, tenantId });
 
       // Get or create session
-      let session = await sessionManager.getSession(phoneNumber);
+      let session = await sessionManager.getSession(phoneNumber, tenantId);
 
       if (!session) {
-        session = await sessionManager.createSession(phoneNumber);
+        session = await sessionManager.createSession(phoneNumber, tenantId);
       }
 
       // Classify intent
@@ -53,7 +54,7 @@ class FreightController {
       });
 
       // Handle intent
-      const reply = await this.handleIntent(phoneNumber, session.currentState, intentResult.intent, message, intentResult.extractedData);
+      const reply = await this.handleIntent(phoneNumber, tenantId, session.currentState, intentResult.intent, message, intentResult.extractedData);
 
       return {
         reply,
@@ -79,6 +80,7 @@ class FreightController {
    */
   private async handleIntent(
     phoneNumber: string,
+    tenantId: string,
     currentState: ConversationState,
     intent: UserIntent,
     message: string,
@@ -86,7 +88,7 @@ class FreightController {
   ): Promise<string> {
     // Handle reset/cancel
     if (intent === UserIntent.RESET || intent === UserIntent.CANCEL) {
-      await sessionManager.deleteSession(phoneNumber);
+      await sessionManager.deleteSession(phoneNumber, tenantId);
       return 'Conversa reiniciada. Digite "frete" para começar uma nova cotação.';
     }
 
@@ -97,17 +99,17 @@ class FreightController {
 
     // Handle freight query
     if (intent === UserIntent.FREIGHT_QUERY) {
-      return await this.startFreightQuery(phoneNumber);
+      return await this.startFreightQuery(phoneNumber, tenantId);
     }
 
     // Handle CEP provision
     if (intent === UserIntent.PROVIDE_CEP && extractedData?.cep) {
-      return await this.handleCEP(phoneNumber, extractedData.cep as string);
+      return await this.handleCEP(phoneNumber, tenantId, extractedData.cep as string);
     }
 
     // Handle quantity provision
     if (intent === UserIntent.PROVIDE_QUANTITY && extractedData?.quantity) {
-      return await this.handleQuantity(phoneNumber, extractedData.quantity as number);
+      return await this.handleQuantity(phoneNumber, tenantId, extractedData.quantity as number);
     }
 
     // Handle future intents
@@ -130,8 +132,8 @@ class FreightController {
   /**
    * Start freight query flow.
    */
-  private async startFreightQuery(phoneNumber: string): Promise<string> {
-    const session = await sessionManager.getSession(phoneNumber);
+  private async startFreightQuery(phoneNumber: string, tenantId: string): Promise<string> {
+    const session = await sessionManager.getSession(phoneNumber, tenantId);
 
     if (!session) {
       throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session not found');
@@ -143,7 +145,7 @@ class FreightController {
       ConversationEvent.START_FREIGHT_QUERY
     );
 
-    await sessionManager.updateSession(phoneNumber, newContext);
+    await sessionManager.updateSession(phoneNumber, tenantId, newContext);
 
     return 'Olá! Vou ajudar você a calcular o frete. Qual é o CEP de destino?';
   }
@@ -151,8 +153,8 @@ class FreightController {
   /**
    * Handle CEP provision.
    */
-  private async handleCEP(phoneNumber: string, cep: string): Promise<string> {
-    const session = await sessionManager.getSession(phoneNumber);
+  private async handleCEP(phoneNumber: string, tenantId: string, cep: string): Promise<string> {
+    const session = await sessionManager.getSession(phoneNumber, tenantId);
 
     if (!session) {
       throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session not found');
@@ -167,7 +169,7 @@ class FreightController {
       ConversationEvent.CEP_PROVIDED
     );
 
-    await sessionManager.updateSession(phoneNumber, newContext);
+    await sessionManager.updateSession(phoneNumber, tenantId, newContext);
 
     return 'CEP recebido! Agora, quantas unidades você deseja?';
   }
@@ -175,8 +177,8 @@ class FreightController {
   /**
    * Handle quantity provision and calculate freight.
    */
-  private async handleQuantity(phoneNumber: string, quantity: number): Promise<string> {
-    const session = await sessionManager.getSession(phoneNumber);
+  private async handleQuantity(phoneNumber: string, tenantId: string, quantity: number): Promise<string> {
+    const session = await sessionManager.getSession(phoneNumber, tenantId);
 
     if (!session || !session.cep) {
       throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session or CEP not found');
@@ -191,7 +193,7 @@ class FreightController {
       ConversationEvent.QUANTITY_PROVIDED
     );
 
-    await sessionManager.updateSession(phoneNumber, calculatingContext);
+    await sessionManager.updateSession(phoneNumber, tenantId, calculatingContext);
 
     try {
       // Calculate freight
@@ -208,12 +210,13 @@ class FreightController {
         ConversationEvent.CALCULATION_SUCCESS
       );
 
-      await sessionManager.updateSession(phoneNumber, completedContext);
+      await sessionManager.updateSession(phoneNumber, tenantId, completedContext);
 
       // Clear session after completion
-      await sessionManager.deleteSession(phoneNumber);
+      await sessionManager.deleteSession(phoneNumber, tenantId);
 
       // Format and return response
+      // freightService.formatOptionsForUser now returns the single string requested
       return freightService.formatOptionsForUser(result.options);
     } catch (error) {
       // Transition to ERROR
@@ -259,3 +262,4 @@ class FreightController {
 
 // Export singleton instance
 export const freightController = new FreightController();
+
