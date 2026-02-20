@@ -110,6 +110,59 @@ class RedisClient {
   }
 
   /**
+   * Execute a pipeline of Redis commands in a single HTTP round-trip (Upstash REST).
+   *
+   * Commands are batched via POST /pipeline — processed sequentially in order.
+   * Unlike execute(), this method THROWS on failure so callers can handle fail-closed.
+   *
+   * @param commands Array of Redis commands, each as an array of string/number args.
+   *                 Example: [["SET", key, "0", "NX", "EX", "60"], ["INCR", key]]
+   * @returns Array of { result, error? } matching the command order.
+   */
+  async pipeline(commands: (string | number)[][]): Promise<Array<{ result: unknown; error?: string }>> {
+    if (!this.isAvailable() || !this.config) {
+      throw new InfrastructureError(
+        ErrorCode.REDIS_OPERATION_ERROR,
+        'Redis unavailable for pipeline operation'
+      );
+    }
+
+    let lastError: Error | null = null;
+
+    // One retry for transient network failures.
+    for (let attempt = 0; attempt <= 1; attempt++) {
+      try {
+        const response = await fetch(`${this.config.url}/pipeline`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.config.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(commands),
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (!response.ok) {
+          throw new InfrastructureError(
+            ErrorCode.REDIS_OPERATION_ERROR,
+            `Redis pipeline HTTP error: ${response.status}`,
+            { status: response.status }
+          );
+        }
+
+        return (await response.json()) as Array<{ result: unknown; error?: string }>;
+      } catch (error) {
+        lastError = error as Error;
+        if (attempt < 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
+    }
+
+    throw lastError ?? new InfrastructureError(ErrorCode.REDIS_OPERATION_ERROR, 'Redis pipeline failed');
+  }
+
+  /**
    * Get value from Redis.
    */
   async get<T>(key: string): Promise<T | null> {
