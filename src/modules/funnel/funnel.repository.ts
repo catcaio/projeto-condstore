@@ -1,17 +1,17 @@
-
 import { createHash, randomUUID } from 'crypto';
 import { getDb } from '../../infra/db';
-import { conversationFunnelEvents } from '../../drizzle/schema';
+import { freightFunnelEvents } from '../../drizzle/schema';
 import { logger } from '../../infra/logger';
 import { sql } from 'drizzle-orm';
 
 export enum FunnelStage {
     FLOW_STARTED = 'FLOW_STARTED',
+    INTENT_DETECTED = 'INTENT_DETECTED',
+    ASKED_CEP = 'ASKED_CEP',
     CEP_PROVIDED = 'CEP_PROVIDED',
     QUANTITY_PROVIDED = 'QUANTITY_PROVIDED',
     FREIGHT_QUOTED = 'FREIGHT_QUOTED',
-    // ORDER_CREATED - Reserved for future use
-    FLOW_ABORTED = 'FLOW_ABORTED',
+    FLOW_ABORTED = 'FLOW_ABORTED'
 }
 
 export interface SaveFunnelEventInput {
@@ -30,16 +30,15 @@ export class FunnelRepository {
     async saveEvent(input: SaveFunnelEventInput): Promise<void> {
         try {
             const db = await getDb();
-            const phoneHash = this.hashPhone(input.phoneNumber);
 
             await db
-                .insert(conversationFunnelEvents)
+                .insert(freightFunnelEvents)
                 .values({
                     id: randomUUID(),
                     tenantId: input.tenantId,
-                    phoneHash,
+                    phoneNumber: input.phoneNumber,
+                    sessionId: input.messageSid || randomUUID(),
                     stage: input.stage,
-                    messageSid: input.messageSid,
                 })
                 .onDuplicateKeyUpdate({
                     set: {
@@ -56,10 +55,6 @@ export class FunnelRepository {
                 error: (error as Error).message,
             });
         }
-    }
-
-    private hashPhone(phoneNumber: string): string {
-        return createHash('sha256').update(phoneNumber).digest('hex');
     }
 }
 

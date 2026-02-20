@@ -1,7 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { funnelRepository, FunnelStage } from '../funnel.repository';
-import { conversationFunnelEvents } from '../../../drizzle/schema';
+import { freightFunnelEvents } from '../../../drizzle/schema';
 
 // Mock dependencies
 const mockDb = {
@@ -30,7 +30,7 @@ describe('FunnelRepository', () => {
         vi.clearAllMocks();
     });
 
-    it('should save a funnel event with hashed phone number', async () => {
+    it('should save a funnel event with phone number and session', async () => {
         const input = {
             tenantId: 'tenant-123',
             phoneNumber: '5511999999999',
@@ -40,13 +40,12 @@ describe('FunnelRepository', () => {
 
         await funnelRepository.saveEvent(input);
 
-        expect(mockDb.insert).toHaveBeenCalledWith(conversationFunnelEvents);
+        expect(mockDb.insert).toHaveBeenCalledWith(freightFunnelEvents);
         expect(mockDb.values).toHaveBeenCalledWith(expect.objectContaining({
             tenantId: input.tenantId,
             stage: input.stage,
-            messageSid: input.messageSid,
-            // Phone hash verification (sha256 of 5511999999999)
-            phoneHash: expect.any(String),
+            phoneNumber: input.phoneNumber,
+            sessionId: input.messageSid,
         }));
         expect(mockDb.onDuplicateKeyUpdate).toHaveBeenCalled();
     });
