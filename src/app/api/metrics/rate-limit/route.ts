@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRedis } from "@/infra/redis.client";
+import { redisClient } from "@/infra/redis.client";
 
 export const runtime = "nodejs";
 
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "tenant required" }, { status: 400 });
   }
 
-  const redis = getRedis();
+  const redis = redisClient;
   if (!redis) {
     return NextResponse.json({ error: "redis unavailable" }, { status: 503 });
   }

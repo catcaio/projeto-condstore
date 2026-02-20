@@ -17,7 +17,7 @@ async function getDb() {
 }
 import { freightFunnelEvents } from '@/drizzle/schema';
 import { sql, and, gte, eq } from 'drizzle-orm';
-import { getRedis } from "@/infra/redis.client";
+import { redisClient } from "@/infra/redis.client";
 export enum FunnelStage {
     FLOW_STARTED = 'FLOW_STARTED',
     INTENT_DETECTED = 'INTENT_DETECTED',
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
         // 2. Try Cache
         const cacheKey = `cockpit:metrics:funnel:${tenantId}`;
-        const cachedData = await getRedis().get(cacheKey);
+        const cachedData = await redisClient.get(cacheKey);
         if (cachedData) {
             return NextResponse.json(cachedData, {
                 headers: {
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
         };
 
         // 5. Cache Result
-        await getRedis().set(cacheKey, responseData, CACHE_TTL_SECONDS);
+        await redisClient.set(cacheKey, responseData, CACHE_TTL_SECONDS);
 
         return NextResponse.json(responseData, {
             headers: {

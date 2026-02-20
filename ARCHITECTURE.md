@@ -449,7 +449,7 @@ pnpm test
 # Twilio
 TWILIO_ACCOUNT_SID=your_account_sid
 TWILIO_AUTH_TOKEN=your_auth_token
-TWILIO_PHONE_NUMBER=whatsapp:+14155238886
+TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
 
 # Melhor Envio
 MELHORENVIO_TOKEN=your_token
