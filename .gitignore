@@ -138,3 +138,5 @@ ngrok.yml
 
 .claude/
 .claude/worktrees/
+.vercel
+.env*.local

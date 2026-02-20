@@ -71,8 +71,7 @@ const MIGRATIONS = [
 
 async function handler(request: NextRequest) {
     try {
-        const url = new URL(request.url);
-        const token = request.headers.get('x-seed-token') || url.searchParams.get('token');
+        const token = request.headers.get('x-seed-token');
 
         if (!token || token !== process.env.SEED_TOKEN) {
             return NextResponse.json({ success: false, error: 'Unauthorized: missing or invalid seed token' }, { status: 401 });
