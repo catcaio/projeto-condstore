@@ -19,8 +19,8 @@ export async function rateLimitTenant(tenantId: string) {
 
   if (current > MAX_REQUESTS) {
     return NextResponse.json(
-      { error: "Rate limit exceeded", code: "RATE_LIMIT" },
-      { status: 429, headers: { "Retry-After": String(WINDOW_SECONDS) } }
+      { success: false, error: "Too Many Requests" },
+      { status: 429 }
     );
   }
 
