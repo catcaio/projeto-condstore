@@ -4,7 +4,7 @@
  * Serverless-compatible — uses Upstash REST API.
  */
 
-import { getRedis() } from './redis.client';
+import { getRedis } from './redis.client';
 import { logger } from './logger';
 
 interface RateLimitResult {
@@ -87,3 +87,4 @@ export async function checkRateLimit(identifier: string, limit: number = MAX_REQ
 export function getThrottleMessage(): string {
     return 'Você está enviando muitas mensagens. Por favor, aguarde um momento antes de tentar novamente.';
 }
+
