@@ -101,3 +101,29 @@ export const freightSimulationLogs = mysqlTable('freight_simulation_logs', {
 export type FreightSimulationLogRecord = typeof freightSimulationLogs.$inferSelect;
 export type NewFreightSimulationLogRecord = typeof freightSimulationLogs.$inferInsert;
 
+// --- Project Evolution Reports ---
+
+export const projectReports = mysqlTable('project_reports', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    moduleKey: varchar('module_key', { length: 100 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    summary: text('summary').notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('done'), // planned, in_progress, done, blocked
+    changes: text('changes'), // JSON string list
+    metrics: text('metrics'), // JSON string object
+    risks: text('risks'), // JSON string list
+    nextActions: text('next_actions'), // JSON string list
+    tags: text('tags'), // JSON string list
+    source: varchar('source', { length: 20 }).notNull().default('manual'), // manual, automation
+    contentHash: varchar('content_hash', { length: 64 }).notNull(),
+}, (table) => {
+    return {
+        idxModule: index('idx_report_module').on(table.moduleKey),
+        idxHash: uniqueIndex('idx_report_hash').on(table.contentHash),
+    };
+});
+
+export type ProjectReportRecord = typeof projectReports.$inferSelect;
+export type NewProjectReportRecord = typeof projectReports.$inferInsert;
+
