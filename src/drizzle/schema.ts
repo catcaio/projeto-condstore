@@ -85,3 +85,19 @@ export const freightFunnelEvents = mysqlTable('freight_funnel_events', {
 
 export type FreightFunnelEventRecord = typeof freightFunnelEvents.$inferSelect;
 export type NewFreightFunnelEventRecord = typeof freightFunnelEvents.$inferInsert;
+
+// --- Freight Simulation Logs (metrics/audit) ---
+
+export const freightSimulationLogs = mysqlTable('freight_simulation_logs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 100 }).notNull(),
+    uf: varchar('uf', { length: 2 }).notNull(),
+    peso: decimal('peso', { precision: 10, scale: 2 }).notNull(),
+    valor: decimal('valor', { precision: 10, scale: 2 }).notNull(),
+    prazo: int('prazo').notNull(),
+    cepHash: varchar('cep_hash', { length: 64 }).notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type FreightSimulationLogRecord = typeof freightSimulationLogs.$inferSelect;
+export type NewFreightSimulationLogRecord = typeof freightSimulationLogs.$inferInsert;
