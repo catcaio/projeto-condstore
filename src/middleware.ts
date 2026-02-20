@@ -19,6 +19,7 @@ const PUBLIC_PATHS = [
   '/api/health',
   '/evolution',
   '/api/reports/ingest',
+  '/api/auth/seed-admin',
 ];
 
 // ---------------------------------------------------------------------------
