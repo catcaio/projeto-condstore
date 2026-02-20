@@ -17,6 +17,8 @@ const PUBLIC_PATHS = [
   '/api/auth/logout',
   '/api/webhook',
   '/api/health',
+  '/evolution',
+  '/api/reports/ingest',
 ];
 
 // ---------------------------------------------------------------------------
