@@ -11,8 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
     try {
-        const url = new URL(request.url);
-        const token = request.headers.get('x-seed-token') || url.searchParams.get('token');
+        const token = request.headers.get('x-seed-token');
 
         if (!token || token !== process.env.SEED_TOKEN) {
             return NextResponse.json({ success: false, error: 'Unauthorized: missing or invalid seed token' }, { status: 401 });
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest) {
         const existingAdmin = await db.select().from(users).where(eq(users.email, adminEmail)).limit(1);
 
         if (existingAdmin.length === 0) {
-            const passwordHash = hashPassword('Condstore@123');
+            const passwordHash = hashPassword(process.env.ADMIN_SEED_PASSWORD || 'Condstore@123');
 
             await db.insert(users).values({
                 id: randomUUID(),

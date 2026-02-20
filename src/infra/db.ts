@@ -39,7 +39,7 @@ if (!globalForDb.conn) {
     globalForDb.conn = mysql.createPool({
         uri: dbUrl,
         connectionLimit: 10,
-        multipleStatements: true,
+        multipleStatements: false,
         timezone: 'Z',
         ssl: { rejectUnauthorized: true },
     });

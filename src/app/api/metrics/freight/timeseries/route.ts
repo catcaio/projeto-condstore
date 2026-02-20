@@ -6,7 +6,7 @@ import { logger } from '../../../../../infra/logger';
 export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
-        let tenantId = request.headers.get('x-tenant-id') || searchParams.get('tenantId');
+        let tenantId = request.headers.get('x-tenant-id');
         const range = searchParams.get('range') === '30d' ? '30d' : '7d';
 
         if (!tenantId) {

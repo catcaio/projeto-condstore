@@ -262,7 +262,8 @@ class FreightService {
   private async getCachedResult(request: FreightRequest): Promise<FreightResult | null> {
     const unitWeight = request.unitWeight || appConfig.freight.defaultUnitWeight;
     const totalWeight = unitWeight * request.quantity;
-    const key = `v1:freight:${request.destinationCep}:${totalWeight}:${request.quantity}`;
+    const tenantKey = request.tenantId || 'global';
+    const key = `v1:freight:${tenantKey}:${request.destinationCep.replace(/\D/g, '')}:${totalWeight}:${request.quantity}`;
 
     const cached = await redisClient.get<FreightResult>(key);
 
@@ -286,7 +287,8 @@ class FreightService {
     totalWeight: number,
     options: FreightOption[]
   ): Promise<void> {
-    const key = `v1:freight:${request.destinationCep}:${totalWeight}:${request.quantity}`;
+    const tenantKey = request.tenantId || 'global';
+    const key = `v1:freight:${tenantKey}:${request.destinationCep.replace(/\D/g, '')}:${totalWeight}:${request.quantity}`;
     const result: FreightResult = {
       success: true,
       options: this.sortAndLimitOptions(options),
