@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { randomUUID } from 'crypto';
 import { getDb } from '@/infra/db';
 import { users } from '@/drizzle/schema';
@@ -6,8 +6,29 @@ import { hashPassword } from '@/infra/auth/password';
 import { sql, eq } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 
-export async function GET() {
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
     try {
+        const url = new URL(request.url);
+        const token = request.headers.get('x-seed-token') || url.searchParams.get('token');
+
+        if (!token || token !== process.env.SEED_TOKEN) {
+            return NextResponse.json({ success: false, error: 'Unauthorized: missing or invalid seed token' }, { status: 401 });
+        }
+
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) {
+            return NextResponse.json({ success: false, error: 'DATABASE_URL missing' }, { status: 500 });
+        }
+        if (!dbUrl.includes('/lojacond')) {
+            return NextResponse.json({ success: false, error: 'DATABASE_URL missing database name' }, { status: 500 });
+        }
+
+        const urlObj = new URL(dbUrl);
+        console.log(`Connecting to DB: Host=${urlObj.hostname}, Database=${urlObj.pathname.replace('/', '')}`);
+
         const db = await getDb();
         const adminEmail = 'admin@condstore.local';
 
@@ -44,8 +65,8 @@ export async function GET() {
         }
 
         return NextResponse.json({ success: true, message: 'Admin user already exists.' });
-    } catch (error) {
-        logger.error('Failed to seed admin', error as Error);
-        return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+    } catch (error: any) {
+        console.error("[/api/auth/seed-admin] error", error);
+        return NextResponse.json({ success: false, error: error?.message ?? String(error) }, { status: 500 });
     }
 }

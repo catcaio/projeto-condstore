@@ -1,5 +1,7 @@
 import React from 'react';
 import pkg from '../../../package.json';
+import { getDb } from '@/infra/db';
+import { sql } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic'; // Ensure server time and latest commits are fresh
 
@@ -35,9 +37,28 @@ async function getCommits(): Promise<GitHubCommit[]> {
         return [];
     }
 }
+async function getReports() {
+    try {
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl || (!dbUrl.includes('/lojacond') && !dbUrl.includes('localhost'))) {
+            return { data: [], error: 'DB offline (Invalid Connection)' };
+        }
+
+        const db = await getDb();
+        const reports = await db.execute(sql`SELECT title, summary, status, created_at FROM project_reports ORDER BY created_at DESC LIMIT 10`);
+        const data = Array.isArray(reports) && Array.isArray(reports[0]) ? reports[0] : reports;
+        return { data: data as any[], error: null };
+    } catch (err) {
+        console.error('Failed to fetch reports:', err);
+        return { data: [], error: 'DB offline' };
+    }
+}
 
 export default async function EvolutionPage() {
-    const commits = await getCommits();
+    const commitsPromise = getCommits();
+    const reportsPromise = getReports();
+
+    const [commits, { data: reports, error: dbError }] = await Promise.all([commitsPromise, reportsPromise]);
     const currentEnv = process.env.VERCEL_ENV || 'development';
     const serverTime = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
@@ -76,6 +97,40 @@ export default async function EvolutionPage() {
                         <p className="text-xs text-gray-500 mt-1">Horário de Brasília</p>
                     </div>
                 </div>
+
+                {/* Reports List */}
+                <section className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mb-8">
+                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                        <h2 className="text-lg font-semibold text-gray-900">Reports do Projeto</h2>
+                        {dbError && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                {dbError}
+                            </span>
+                        )}
+                    </div>
+                    <ul className="divide-y divide-gray-100">
+                        {reports.length > 0 ? (
+                            reports.map((r: any, idx: number) => (
+                                <li key={idx} className="p-6 hover:bg-gray-50 transition-colors">
+                                    <div className="flex flex-col space-y-2">
+                                        <div className="flex items-start justify-between">
+                                            <span className="text-sm font-medium text-gray-900">{r.title}</span>
+                                            <span className="text-xs font-mono text-gray-400 shrink-0 capitalize">{r.status}</span>
+                                        </div>
+                                        <p className="text-sm text-gray-500">{r.summary}</p>
+                                        <span className="text-xs text-gray-400">
+                                            {new Date(r.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
+                                        </span>
+                                    </div>
+                                </li>
+                            ))
+                        ) : (
+                            <li className="p-6 text-sm text-gray-500 text-center">
+                                {dbError ? 'Não foi possível carregar os reports devido a falha no banco de dados.' : 'Nenhum report encontrado.'}
+                            </li>
+                        )}
+                    </ul>
+                </section>
 
                 {/* Commits List */}
                 <section className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
