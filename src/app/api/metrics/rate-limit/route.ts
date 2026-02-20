@@ -16,13 +16,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "redis unavailable" }, { status: 503 });
   }
 
-  const keys = await redis.keys(`rl:metrics:${tenantId}:*`);
+  const indexKey = `rl:metrics:index:${tenantId}`;
+  const buckets = await redis.smembers(indexKey);
 
   const data: Record<string, number> = {};
 
-  for (const key of keys) {
-    const bucket = key.split(":")[3];
-    const value = await redis.get(key);
+  for (const bucket of buckets) {
+    const value = await redis.get(`rl:metrics:${tenantId}:${bucket}`);
     data[bucket] = Number(value ?? 0);
   }
 

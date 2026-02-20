@@ -28,6 +28,7 @@ export async function rateLimitCheck(params: {
 
   const key = `rl:${tenantId}:${bucket}`;
   const metricsKey = `rl:metrics:${tenantId}:${bucket}`;
+  const indexKey = `rl:metrics:index:${tenantId}`;
 
   const current = await redis.incr(key);
 
@@ -35,9 +36,13 @@ export async function rateLimitCheck(params: {
     await redis.expire(key, windowSeconds);
   }
 
-  // 🔥 métrica acumulada diária
+  // 🔥 métrica acumulada
   await redis.incr(metricsKey);
   await redis.expire(metricsKey, 86400);
+
+  // 🔥 registrar bucket no índice (SET, não KEYS)
+  await redis.sadd(indexKey, bucket);
+  await redis.expire(indexKey, 86400);
 
   const ttl = await redis.ttl(key);
   const resetAt = Date.now() + (ttl ?? windowSeconds) * 1000;
