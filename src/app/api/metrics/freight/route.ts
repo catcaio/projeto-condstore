@@ -18,8 +18,7 @@ export async function GET(request: NextRequest) {
         // TODO: Integrate with real Auth Middleware once stabilized
         // For now, accepting x-tenant-id header for internal cockpit usage if auth middleware passes it
         // Or just a query param for testing easily.
-        const searchParams = request.nextUrl.searchParams;
-        let tenantId = request.headers.get('x-tenant-id') || searchParams.get('tenantId');
+        let tenantId = request.headers.get('x-tenant-id');
 
         if (!tenantId) {
             // Fallback for dev/demo if needed, or error
