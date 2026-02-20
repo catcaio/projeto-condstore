@@ -7,7 +7,7 @@
 import { appConfig } from '../../config/app.config';
 import { BusinessError, ErrorCode, InfrastructureError } from '../../infra/errors';
 import { logger } from '../../infra/logger';
-import { redisClient } from '../../infra/redis.client';
+import { getRedis() } from '../../infra/redis.client';
 import { ConversationState, type ConversationContext } from './state-machine';
 
 /**
@@ -82,9 +82,9 @@ class SessionManager {
 
     try {
       // Try Redis first with new key format
-      if (redisClient.isAvailable()) {
+      if (getRedis().isAvailable()) {
         const newKey = this.getKey(tenantId, phoneNumber);
-        let session = await redisClient.get<SessionData>(newKey);
+        let session = await getRedis().get<SessionData>(newKey);
 
         if (session) {
           logger.debug('Session retrieved from Redis (new key)', { phoneNumber, tenantId });
@@ -93,7 +93,7 @@ class SessionManager {
 
         // Compatibility layer: check old key format
         const oldKey = this.getOldKey(phoneNumber);
-        session = await redisClient.get<SessionData>(oldKey);
+        session = await getRedis().get<SessionData>(oldKey);
 
         if (session) {
           logger.warn('Session found with old key format, migrating', {
@@ -103,7 +103,7 @@ class SessionManager {
           });
 
           // Delete old session
-          await redisClient.delete(oldKey);
+          await getRedis().delete(oldKey);
 
           // Return null to force session recreation with new key
           return null;
@@ -209,8 +209,8 @@ class SessionManager {
     const ttlSeconds = Math.ceil(appConfig.session.ttlMs / 1000);
 
     // Save to Redis
-    if (redisClient.isAvailable()) {
-      const success = await redisClient.set(this.getKey(tenantId, phoneNumber), session, ttlSeconds);
+    if (getRedis().isAvailable()) {
+      const success = await getRedis().set(this.getKey(tenantId, phoneNumber), session, ttlSeconds);
 
       if (success) {
         logger.debug('Session saved to Redis', { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
@@ -251,8 +251,8 @@ class SessionManager {
     }
 
     // Delete from Redis
-    if (redisClient.isAvailable()) {
-      await redisClient.delete(this.getKey(tenantId, phoneNumber));
+    if (getRedis().isAvailable()) {
+      await getRedis().delete(this.getKey(tenantId, phoneNumber));
     }
 
     // Delete from memory
@@ -273,8 +273,8 @@ class SessionManager {
    * Get session TTL in seconds.
    */
   async getSessionTTL(tenantId: string, phoneNumber: string): Promise<number | null> {
-    if (redisClient.isAvailable()) {
-      return await redisClient.ttl(this.getKey(tenantId, phoneNumber));
+    if (getRedis().isAvailable()) {
+      return await getRedis().ttl(this.getKey(tenantId, phoneNumber));
     }
 
     const session = this.memoryStore.get(phoneNumber);
