@@ -93,8 +93,9 @@ export default async function EvolutionPage() {
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline line-clamp-2"
+                                                title={c.commit.message}
                                             >
-                                                {c.commit.message}
+                                                {c.commit.message.split('\n')[0]}
                                             </a>
                                             <span className="text-xs font-mono text-gray-400 ml-4 shrink-0">
                                                 {c.sha.substring(0, 7)}
