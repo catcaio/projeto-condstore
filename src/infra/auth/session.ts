@@ -15,6 +15,9 @@ export interface SessionPayload {
 export function getSecret(): Uint8Array {
     const secret = process.env.AUTH_SECRET;
     if (!secret) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('AUTH_SECRET is not set in production');
+        }
         logger.warn('AUTH_SECRET not set, using dev fallback -- sessions will not survive restarts');
         return new TextEncoder().encode('dev-only-fallback-secret-do-not-use-in-prod');
     }

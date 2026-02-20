@@ -22,9 +22,16 @@ const WINDOW_SECONDS = 60;
  * Uses Redis INCR with TTL to track request counts.
  * If Redis is unavailable, allows the request (graceful degradation — don't block users).
  */
-export async function checkRateLimit(identifier: string): Promise<RateLimitResult> {
+/**
+ * Check rate limit for a given identifier.
+ * Uses atomic Redis INCR + EXPIRE.
+ * 
+ * @param identifier Unique key (e.g. "webhook:tenant:phone" or "login:ip:email")
+ * @param limit Max requests per window (default 10)
+ * @param windowSeconds Window duration in seconds (default 60)
+ */
+export async function checkRateLimit(identifier: string, limit: number = MAX_REQUESTS_PER_MINUTE, windowSeconds: number = WINDOW_SECONDS): Promise<RateLimitResult> {
     const key = `ratelimit:${identifier}`;
-    const limit = MAX_REQUESTS_PER_MINUTE;
 
     try {
         if (!redisClient.isAvailable()) {
@@ -32,11 +39,20 @@ export async function checkRateLimit(identifier: string): Promise<RateLimitResul
             return { allowed: true, remaining: limit, limit };
         }
 
-        // Use Redis GET + SET pattern via the existing client
-        const currentRaw = await redisClient.get<number>(key);
-        const current = currentRaw ?? 0;
+        // Atomic increment
+        const current = await redisClient.incr(key);
 
-        if (current >= limit) {
+        if (current === null) {
+            // Fallback if INCR fails
+            return { allowed: true, remaining: limit, limit };
+        }
+
+        // If this is the first request, set expiration
+        if (current === 1) {
+            await redisClient.expire(key, windowSeconds);
+        }
+
+        if (current > limit) {
             const ttl = await redisClient.ttl(key);
             logger.warn('Rate limit exceeded', {
                 event: 'RATE_LIMIT_EXCEEDED',
@@ -49,16 +65,13 @@ export async function checkRateLimit(identifier: string): Promise<RateLimitResul
                 allowed: false,
                 remaining: 0,
                 limit,
-                retryAfterSeconds: ttl ?? WINDOW_SECONDS,
+                retryAfterSeconds: ttl ?? windowSeconds,
             };
         }
 
-        // Increment counter
-        await redisClient.set(key, current + 1, WINDOW_SECONDS);
-
         return {
             allowed: true,
-            remaining: limit - (current + 1),
+            remaining: Math.max(0, limit - current),
             limit,
         };
     } catch (error) {

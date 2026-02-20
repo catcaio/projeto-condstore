@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, decimal, int, timestamp, text } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, decimal, int, timestamp, text, index, uniqueIndex } from 'drizzle-orm/mysql-core';
 import { sql } from 'drizzle-orm';
 
 // --- Tenants (Multi-Tenant Support) ---
@@ -27,6 +27,8 @@ export const simulations = mysqlTable('simulations', {
     bestPrice: decimal('best_price', { precision: 10, scale: 2 }),
     bestMargin: decimal('best_margin', { precision: 10, scale: 2 }),
     strategy: varchar('strategy', { length: 50 }),
+    idempotencyKey: varchar('idempotency_key', { length: 255 }).unique(),
+    event: varchar('event', { length: 50 }).notNull().default('FREIGHT_QUOTED'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
@@ -63,3 +65,23 @@ export const users = mysqlTable('users', {
 
 export type UserRecord = typeof users.$inferSelect;
 export type NewUserRecord = typeof users.$inferInsert;
+
+// --- Funnel Events (Instrumented WhatsApp Flow) ---
+
+export const freightFunnelEvents = mysqlTable('freight_funnel_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    phoneNumber: varchar('phone_number', { length: 30 }).notNull(),
+    sessionId: varchar('session_id', { length: 36 }).notNull(),
+    stage: varchar('stage', { length: 50 }).notNull(), // INTENT_DETECTED, ASKED_CEP, CEP_RECEIVED, QUOTE_SENT, ABANDONED
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        // Unique Constraint: One event per stage per session
+        uniqueStage: uniqueIndex('idx_funnel_unique_stage').on(table.sessionId, table.stage),
+        idxTenantTime: index('idx_funnel_tenant_time').on(table.tenantId, table.createdAt),
+    };
+});
+
+export type FreightFunnelEventRecord = typeof freightFunnelEvents.$inferSelect;
+export type NewFreightFunnelEventRecord = typeof freightFunnelEvents.$inferInsert;

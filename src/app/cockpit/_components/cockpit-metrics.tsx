@@ -4,10 +4,10 @@ import { useEffect, useState, useRef } from 'react';
 import { MetricCard } from './metric-card';
 
 interface CockpitMetricsData {
-    mensagensHoje: number;
-    cotacoesHoje: number;
-    pedidosHoje: number;
-    erros24h: number;
+    flowStarted: number;
+    cepProvided: number;
+    quantityProvided: number;
+    freightQuoted: number;
 }
 
 const POLL_INTERVAL_MS = 30000; // 30s
@@ -28,15 +28,19 @@ export function CockpitMetrics() {
 
         async function fetchMetrics() {
             try {
-                // Determine header injection base URL if needed, but relative path is fine for same-origin
-                const res = await fetch('/api/cockpit/metrics', { signal });
+                const res = await fetch('/api/cockpit/metrics/funnel', { signal });
 
                 if (!res.ok) throw new Error('Failed to fetch metrics');
 
                 const json = await res.json();
 
                 if (isMounted.current) {
-                    setData(json);
+                    setData({
+                        flowStarted: json.window_7d?.counts?.flow_started || 0,
+                        cepProvided: json.window_7d?.counts?.cep_provided || 0,
+                        quantityProvided: json.window_7d?.counts?.quantity_provided || 0,
+                        freightQuoted: json.window_7d?.counts?.freight_quoted || 0,
+                    });
                     setLoading(false);
                     setError(false);
                 }
@@ -76,32 +80,41 @@ export function CockpitMetrics() {
         );
     }
 
+    if (!loading && !error && (!data || (data.flowStarted === 0 && data.freightQuoted === 0))) {
+        return (
+            <div className="grid grid-cols-1 gap-6">
+                <div className="p-6 rounded-lg border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] text-[hsl(var(--cockpit-text-muted))]">
+                    Nenhum evento de funil registrado.
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard
-                title="Mensagens Hoje"
-                value={data?.mensagensHoje ?? 0}
+                title="Flows Iniciados"
+                value={data?.flowStarted ?? 0}
                 isLoading={loading}
-                subtext="Total de mensagens processadas"
+                subtext="Total de interações (7d)"
             />
             <MetricCard
-                title="Cotações Hoje"
-                value={data?.cotacoesHoje ?? 0}
+                title="CEP Informado"
+                value={data?.cepProvided ?? 0}
                 isLoading={loading}
-                subtext="Cotações de frete geradas"
+                subtext="Passos de CEP (7d)"
             />
             <MetricCard
-                title="Pedidos Hoje"
-                value={data?.pedidosHoje ?? 0}
+                title="Qtd Informada"
+                value={data?.quantityProvided ?? 0}
                 isLoading={loading}
-                subtext="Pedidos finalizados"
+                subtext="Passos de quantidade (7d)"
             />
             <MetricCard
-                title="Erros (24h)"
-                value={data?.erros24h ?? 0}
+                title="Cotações de Frete"
+                value={data?.freightQuoted ?? 0}
                 isLoading={loading}
-                className={data?.erros24h ? "border-red-500/50" : ""}
-                subtext="Erros críticos registrados"
+                subtext="Cotações finalizadas (7d)"
             />
         </div>
     );
