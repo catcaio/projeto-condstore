@@ -1,103 +1,60 @@
-/**
- * Health Check Endpoint.
- * Verifies database and Redis connectivity.
- * Returns structured JSON with individual check results.
- */
+import { NextResponse } from "next/server";
+import { getRedis } from "@/infra/redis.client";
 
-import { NextResponse } from 'next/server';
-import { redisClient } from '../../../infra/redis.client';
-import { logger } from '../../../infra/logger';
+export const runtime = "nodejs";
 
-/**
- * Database diagnostic information.
- */
-interface DatabaseDiagnostics {
-    connected: boolean;
-    databaseName?: string;
-    tenantCount?: number;
-    error?: string;
+function requiredEnv(name: string) {
+  const v = process.env[name];
+  return { name, ok: !!v, value: v ? "set" : "missing" };
 }
 
-import { getDb } from '../../../infra/db';
-import { sql } from 'drizzle-orm';
-
-/**
- * Check database connectivity and gather diagnostics.
- */
-async function checkDatabase(): Promise<DatabaseDiagnostics> {
-    try {
-        const db = await getDb();
-
-        // Get database name (using raw query via drizzle)
-        const [dbNameRows] = await db.execute<any>(sql`SELECT DATABASE() as db_name`);
-        const databaseName = (dbNameRows as unknown as any[])[0]?.db_name || 'unknown';
-
-        // Get tenant count
-        const [countRows] = await db.execute<any>(sql`SELECT COUNT(*) as count FROM tenants`);
-        const tenantCount = (countRows as unknown as any[])[0]?.count || 0;
-
-        return {
-            connected: true,
-            databaseName,
-            tenantCount,
-        };
-    } catch (error) {
-        logger.error('Health check: DB connection failed', error as Error);
-        return {
-            connected: false,
-            error: (error as Error).message,
-        };
-    }
-}
-
-/**
- * Check Redis connectivity.
- */
-async function checkRedis(): Promise<boolean> {
-    try {
-        if (!redisClient.isAvailable()) {
-            return false;
-        }
-        return await redisClient.ping();
-    } catch (error) {
-        logger.error('Health check: Redis connection failed', error as Error);
-        return false;
-    }
-}
-
-/**
- * GET /api/health
- * Returns system health status with database diagnostics.
- */
 export async function GET() {
-    const [dbDiagnostics, redisHealthy] = await Promise.all([
-        checkDatabase(),
-        checkRedis(),
-    ]);
+  const startedAt = Date.now();
 
-    const allHealthy = dbDiagnostics.connected && redisHealthy;
+  // 🔥 Ajusta aqui se quiser exigir mais variáveis
+  const env = [
+    requiredEnv("TIDB_HOST"),
+    requiredEnv("TIDB_USER"),
+    requiredEnv("TIDB_PASSWORD"),
+    requiredEnv("TIDB_DATABASE"),
+    requiredEnv("REDIS_URL"), // pode ser opcional em preview
+    requiredEnv("TWILIO_ACCOUNT_SID"),
+    requiredEnv("TWILIO_AUTH_TOKEN"),
+  ];
 
-    const response = {
-        status: allHealthy ? 'healthy' : 'degraded',
-        checks: {
-            db: dbDiagnostics.connected,
-            redis: redisHealthy,
-        },
-        database: {
-            name: dbDiagnostics.databaseName || null,
-            tenantCount: dbDiagnostics.tenantCount ?? null,
-            error: dbDiagnostics.error || null,
-        },
-        timestamp: new Date().toISOString(),
-    };
+  const envOk = env.filter(e => e.name !== "REDIS_URL").every(e => e.ok);
 
-    logger.info('Health check performed', {
-        status: response.status,
-        checks: response.checks,
-        database: response.database,
-    });
+  // Redis: ok / degraded / down
+  let redisStatus: "ok" | "degraded" | "down" = "degraded";
+  let redisError: string | null = null;
 
-    return NextResponse.json(response, {
-        status: allHealthy ? 200 : 503,
-    });
+  try {
+    const redis = getRedis();
+    if (!redis) {
+      redisStatus = "degraded"; // preview/local sem REDIS_URL
+    } else {
+      const pong = await redis.ping();
+      redisStatus = pong === "PONG" ? "ok" : "down";
+      if (redisStatus === "down") redisError = `ping=${pong}`;
+    }
+  } catch (err: any) {
+    redisStatus = "down";
+    redisError = err?.message ?? String(err);
+  }
+
+  const ok = envOk && redisStatus !== "down";
+
+  return NextResponse.json(
+    {
+      ok,
+      service: "projeto-condstore",
+      ts: new Date().toISOString(),
+      latencyMs: Date.now() - startedAt,
+      checks: {
+        env: { ok: envOk, items: env },
+        redis: { status: redisStatus, error: redisError },
+      },
+    },
+    { status: ok ? 200 : 503 }
+  );
 }
