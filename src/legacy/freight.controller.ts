@@ -11,6 +11,7 @@ import { ConversationEvent, ConversationState, stateMachine } from '../core/conv
 import { sessionManager } from '../core/conversation/session-manager';
 import type { FreightRequest } from '../modules/freight/freight.types';
 import { freightService } from '../modules/freight/freight.service';
+import { funnelRepository, FunnelStage } from '../modules/funnel/funnel.repository';
 
 type TwilioIncoming = {
   Body?: string;
@@ -90,6 +91,16 @@ export class FreightControllerLegacy {
 
     await sessionManager.updateSession(tenantId, phoneNumber, session);
 
+    // Funnel: FLOW_STARTED
+    // "startFreightQuery" is the unique entry point for the freight flow
+    // We use a generated UUID for messageSid since this is often a system-initiated response or initial state
+    void funnelRepository.saveEvent({
+      tenantId,
+      phoneNumber,
+      stage: FunnelStage.FLOW_STARTED,
+      messageSid: `init-${Date.now()}`,
+    });
+
     return 'Olá! Vou ajudar você a calcular o frete. Qual é o CEP de destino?';
   }
 
@@ -118,6 +129,15 @@ export class FreightControllerLegacy {
 
     await sessionManager.updateSession(tenantId, phoneNumber, newContext);
 
+    // Funnel: CEP_PROVIDED
+    // Triggered only after successful validation and state transition
+    void funnelRepository.saveEvent({
+      tenantId,
+      phoneNumber,
+      stage: FunnelStage.CEP_PROVIDED,
+      messageSid: messageSid,
+    });
+
     return 'CEP recebido! Agora, quantas unidades você deseja?';
   }
 
@@ -142,6 +162,15 @@ export class FreightControllerLegacy {
 
     await sessionManager.updateSession(tenantId, phoneNumber, calculatingContext);
 
+    // Funnel: QUANTITY_PROVIDED
+    // Triggered after successful validation
+    void funnelRepository.saveEvent({
+      tenantId,
+      phoneNumber,
+      stage: FunnelStage.QUANTITY_PROVIDED,
+      messageSid: messageSid,
+    });
+
     try {
       // Calculate freight
       const freightRequest: FreightRequest = {
@@ -156,6 +185,15 @@ export class FreightControllerLegacy {
 
       // Cleanup session after success
       await sessionManager.deleteSession(tenantId, phoneNumber);
+
+      // Funnel: FREIGHT_QUOTED
+      // Triggered after successful calculation
+      void funnelRepository.saveEvent({
+        tenantId,
+        phoneNumber,
+        stage: FunnelStage.FREIGHT_QUOTED, // Funnel ends here for now
+        messageSid: messageSid,
+      });
 
       // Return best option message
       return result.reply;

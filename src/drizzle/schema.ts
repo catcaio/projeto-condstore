@@ -85,7 +85,6 @@ export const freightFunnelEvents = mysqlTable('freight_funnel_events', {
 
 export type FreightFunnelEventRecord = typeof freightFunnelEvents.$inferSelect;
 export type NewFreightFunnelEventRecord = typeof freightFunnelEvents.$inferInsert;
-
 // --- Freight Simulation Logs (metrics/audit) ---
 
 export const freightSimulationLogs = mysqlTable('freight_simulation_logs', {
@@ -101,3 +100,4 @@ export const freightSimulationLogs = mysqlTable('freight_simulation_logs', {
 
 export type FreightSimulationLogRecord = typeof freightSimulationLogs.$inferSelect;
 export type NewFreightSimulationLogRecord = typeof freightSimulationLogs.$inferInsert;
+
