@@ -66,6 +66,25 @@ export const users = mysqlTable('users', {
 export type UserRecord = typeof users.$inferSelect;
 export type NewUserRecord = typeof users.$inferInsert;
 
+// --- Funnel Events (Instrumented WhatsApp Flow) ---
+
+export const freightFunnelEvents = mysqlTable('freight_funnel_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    phoneNumber: varchar('phone_number', { length: 30 }).notNull(),
+    sessionId: varchar('session_id', { length: 36 }).notNull(),
+    stage: varchar('stage', { length: 50 }).notNull(), // INTENT_DETECTED, ASKED_CEP, CEP_RECEIVED, QUOTE_SENT, ABANDONED
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        // Unique Constraint: One event per stage per session
+        uniqueStage: uniqueIndex('idx_funnel_unique_stage').on(table.sessionId, table.stage),
+        idxTenantTime: index('idx_funnel_tenant_time').on(table.tenantId, table.createdAt),
+    };
+});
+
+export type FreightFunnelEventRecord = typeof freightFunnelEvents.$inferSelect;
+export type NewFreightFunnelEventRecord = typeof freightFunnelEvents.$inferInsert;
 // --- Freight Simulation Logs (metrics/audit) ---
 
 export const freightSimulationLogs = mysqlTable('freight_simulation_logs', {
@@ -82,23 +101,3 @@ export const freightSimulationLogs = mysqlTable('freight_simulation_logs', {
 export type FreightSimulationLogRecord = typeof freightSimulationLogs.$inferSelect;
 export type NewFreightSimulationLogRecord = typeof freightSimulationLogs.$inferInsert;
 
-// --- Funnel Events (Instrumented WhatsApp Flow) ---
-
-export const conversationFunnelEvents = mysqlTable('conversation_funnel_events', {
-    id: varchar('id', { length: 36 }).primaryKey().notNull(),
-    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    phoneHash: varchar('phone_hash', { length: 64 }).notNull(),
-    stage: varchar('stage', { length: 50 }).notNull(), // FLOW_STARTED, CEP_PROVIDED, QUANTITY_PROVIDED, FREIGHT_QUOTED, ORDER_CREATED (future), FLOW_ABORTED
-    messageSid: varchar('message_sid', { length: 64 }),
-    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
-}, (table) => {
-    return {
-        // Idempotency constraint: avoid duplicate events for same message and stage
-        uniqueEvent: uniqueIndex('idx_unique_event').on(table.tenantId, table.messageSid, table.stage),
-        // Performance index for funnel queries (tenant + time)
-        idxTenantTime: index('idx_tenant_time').on(table.tenantId, table.createdAt),
-    };
-});
-
-export type ConversationFunnelEventRecord = typeof conversationFunnelEvents.$inferSelect;
-export type NewConversationFunnelEventRecord = typeof conversationFunnelEvents.$inferInsert;

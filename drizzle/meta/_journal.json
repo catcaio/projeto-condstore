@@ -15,13 +15,6 @@
       "when": 1771533550106,
       "tag": "0001_freight_simulation_logs",
       "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1771540774810,
-      "tag": "0002_foamy_thanos",
-      "breakpoints": true
     }
   ]
 }

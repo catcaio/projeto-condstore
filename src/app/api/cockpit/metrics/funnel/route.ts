@@ -1,23 +1,60 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '../../../../../infra/auth/session';
-import { getDb } from '../../../../../infra/db';
-import { conversationFunnelEvents } from '../../../../../drizzle/schema';
+import { getSessionUser } from '@/infra/auth/session';
+import { drizzle } from 'drizzle-orm/mysql2';
+import mysql from 'mysql2/promise';
+
+let dbInstance: any = null;
+async function getDb() {
+    if (dbInstance) return dbInstance;
+    if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not defined');
+    const connectionPool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: true },
+    });
+    dbInstance = drizzle(connectionPool, { mode: 'default' });
+    return dbInstance;
+}
+import { freightFunnelEvents } from '@/drizzle/schema';
 import { sql, and, gte, eq } from 'drizzle-orm';
-import { redisClient } from '../../../../../infra/redis.client';
-import { FunnelStage } from '../../../../../modules/funnel/funnel.repository';
+import { redisClient } from '@/infra/redis.client';
+export enum FunnelStage {
+    FLOW_STARTED = 'FLOW_STARTED',
+    INTENT_DETECTED = 'INTENT_DETECTED',
+    ASKED_CEP = 'ASKED_CEP',
+    CEP_PROVIDED = 'CEP_PROVIDED',
+    QUANTITY_PROVIDED = 'QUANTITY_PROVIDED',
+    FREIGHT_QUOTED = 'FREIGHT_QUOTED',
+    FLOW_ABORTED = 'FLOW_ABORTED'
+}
 
 // Cache TTL: 60 seconds
 const CACHE_TTL_SECONDS = 60;
 
 export async function GET(request: NextRequest) {
     try {
-        // 1. Authenticate and get Tenant ID
-        const user = await getSessionUser(request);
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        let tenantId: string;
+
+        // DEV bypass: allow testing metrics endpoints
+        if (
+            process.env.NODE_ENV === 'development' &&
+            process.env.COCKPIT_METRICS_DEV_BYPASS === '1'
+        ) {
+            // Get the first available tenant for DEV bypass testing
+            const db = await getDb();
+            const firstTenant = await db.select().from(require('@/drizzle/schema').tenants).limit(1);
+            if (!firstTenant || firstTenant.length === 0) {
+                return NextResponse.json({ error: 'No tenants found for dev bypass' }, { status: 400 });
+            }
+            tenantId = firstTenant[0].id;
+        } else {
+            // 1. Authenticate and get Tenant ID normally
+            const user = await getSessionUser(request);
+            if (!user) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+            tenantId = user.tenantId;
         }
-        const tenantId = user.tenantId;
 
         // 2. Try Cache
         const cacheKey = `cockpit:metrics:funnel:${tenantId}`;
@@ -39,17 +76,17 @@ export async function GET(request: NextRequest) {
         // Aggregate counts by stage for the last 7 days
         const result = await db
             .select({
-                stage: conversationFunnelEvents.stage,
+                stage: freightFunnelEvents.stage,
                 count: sql<number>`count(*)`,
             })
-            .from(conversationFunnelEvents)
+            .from(freightFunnelEvents)
             .where(
                 and(
-                    eq(conversationFunnelEvents.tenantId, tenantId),
-                    gte(conversationFunnelEvents.createdAt, sevenDaysAgo)
+                    eq(freightFunnelEvents.tenantId, tenantId),
+                    gte(freightFunnelEvents.createdAt, sevenDaysAgo)
                 )
             )
-            .groupBy(conversationFunnelEvents.stage);
+            .groupBy(freightFunnelEvents.stage);
 
         // Map results to counts object
         const counts = {
@@ -60,10 +97,10 @@ export async function GET(request: NextRequest) {
             [FunnelStage.FLOW_ABORTED]: 0,
         };
 
-        result.forEach((row) => {
+        result.forEach((row: any) => {
             const stage = row.stage as FunnelStage;
-            if (counts.hasOwnProperty(stage)) {
-                counts[stage] = Number(row.count);
+            if (stage in counts) {
+                counts[stage as keyof typeof counts] = Number(row.count);
             }
         });
 

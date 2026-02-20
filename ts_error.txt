@@ -1,0 +1,2 @@
+src/app/api/cockpit/metrics/funnel/route.ts(4,23): error TS2307: Cannot find module '../../../../../infra/db' or its corresponding type declarations.
+src/app/api/cockpit/metrics/funnel/route.ts(71,25): error TS7006: Parameter 'row' implicitly has an 'any' type.
