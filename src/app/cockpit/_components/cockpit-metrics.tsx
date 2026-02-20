@@ -4,10 +4,10 @@ import { useEffect, useState, useRef } from 'react';
 import { MetricCard } from './metric-card';
 
 interface CockpitMetricsData {
-    mensagensHoje: number;
-    cotacoesHoje: number;
-    pedidosHoje: number;
-    erros24h: number;
+    flowStarted: number;
+    cepProvided: number;
+    quantityProvided: number;
+    freightQuoted: number;
 }
 
 const POLL_INTERVAL_MS = 30000; // 30s
@@ -28,8 +28,7 @@ export function CockpitMetrics() {
 
         async function fetchMetrics() {
             try {
-                // Fetch from new freight metrics endpoint
-                const res = await fetch('/api/metrics/freight?tenantId=default-tenant', { signal }); // Hardcoded tenant for now as per plan/API
+                const res = await fetch('/api/cockpit/metrics/funnel', { signal });
 
                 if (!res.ok) throw new Error('Failed to fetch metrics');
 
@@ -37,20 +36,11 @@ export function CockpitMetrics() {
 
                 if (isMounted.current) {
                     setData({
-                        // Mapping new API response to component state (simplifying for now or we can expand state)
-                        // Actually, let's just use the props we need.
-                        // We need to update the interface first? 
-                        // Let's cast for now to avoid breaking the file completely in one go, 
-                        // but really we should update the interface.
-                        mensagensHoje: json.totalQuotes || 0, // Placeholder mapping
-                        cotacoesHoje: json.quotesToday || 0,
-                        pedidosHoje: json.quotesThisMonth || 0, // Using this month as "pedidos" slot for now? Or just map correctly.
-                        erros24h: 0,
-                        // Extra fields
-                        avgFreight: json.avgFreight,
-                        topCarrier: json.topCarriers?.[0]?.carrier || 'N/A',
-                        avgDuration: json.avgDurationMs
-                    } as any);
+                        flowStarted: json.window_7d?.counts?.flow_started || 0,
+                        cepProvided: json.window_7d?.counts?.cep_provided || 0,
+                        quantityProvided: json.window_7d?.counts?.quantity_provided || 0,
+                        freightQuoted: json.window_7d?.counts?.freight_quoted || 0,
+                    });
                     setLoading(false);
                     setError(false);
                 }
@@ -90,34 +80,41 @@ export function CockpitMetrics() {
         );
     }
 
-    // Cast data to include new fields
-    const m = data as any;
+    if (!loading && !error && (!data || (data.flowStarted === 0 && data.freightQuoted === 0))) {
+        return (
+            <div className="grid grid-cols-1 gap-6">
+                <div className="p-6 rounded-lg border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] text-[hsl(var(--cockpit-text-muted))]">
+                    Nenhum evento de funil registrado.
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard
-                title="Cotações Hoje"
-                value={m?.cotacoesHoje ?? 0}
+                title="Flows Iniciados"
+                value={data?.flowStarted ?? 0}
                 isLoading={loading}
-                subtext="Total de cotações hoje"
+                subtext="Total de interações (7d)"
             />
             <MetricCard
-                title="Cotações Mês"
-                value={m?.pedidosHoje ?? 0}
+                title="CEP Informado"
+                value={data?.cepProvided ?? 0}
                 isLoading={loading}
-                subtext="Total este mês"
+                subtext="Passos de CEP (7d)"
             />
             <MetricCard
-                title="Ticket Médio"
-                value={`R$ ${m?.avgFreight?.toFixed(2) ?? '0.00'}`}
+                title="Qtd Informada"
+                value={data?.quantityProvided ?? 0}
                 isLoading={loading}
-                subtext="Média de valor de frete"
+                subtext="Passos de quantidade (7d)"
             />
             <MetricCard
-                title="Top Transportadora"
-                value={m?.topCarrier ?? 'N/A'}
+                title="Cotações de Frete"
+                value={data?.freightQuoted ?? 0}
                 isLoading={loading}
-                subtext="Mais utilizada"
+                subtext="Cotações finalizadas (7d)"
             />
         </div>
     );

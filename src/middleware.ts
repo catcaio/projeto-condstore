@@ -83,6 +83,15 @@ export async function middleware(request: NextRequest) {
     return addSecurityHeaders(NextResponse.next());
   }
 
+  // DEV bypass: allow testing metrics endpoints
+  if (
+    process.env.NODE_ENV === 'development' &&
+    process.env.COCKPIT_METRICS_DEV_BYPASS === '1' &&
+    pathname.startsWith('/api/cockpit/metrics')
+  ) {
+    return addSecurityHeaders(NextResponse.next());
+  }
+
   // Public paths: skip auth
   if (isPublicPath(pathname)) {
     return addSecurityHeaders(NextResponse.next());
