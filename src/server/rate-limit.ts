@@ -1,28 +1,38 @@
-import { getRedis } from "@/infra/redis.client";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { rateLimitCheck } from "@/server/rate-limit.service";
 
-const WINDOW_SECONDS = 60;
-const MAX_REQUESTS = 60;
+export const runtime = "nodejs";
 
-export async function rateLimitTenant(tenantId: string) {
-  const redis = getRedis();
+export async function POST(req: NextRequest) {
+  const tenantId = req.headers.get("x-tenant-id");
 
-  // Preview/local sem REDIS_URL -> não bloquear
-  if (!redis) return null;
-
-  const key = `rl:${tenantId}`;
-  const current = await redis.incr(key);
-
-  if (current === 1) {
-    await redis.expire(key, WINDOW_SECONDS);
-  }
-
-  if (current > MAX_REQUESTS) {
+  if (!tenantId) {
     return NextResponse.json(
-      { success: false, error: "Too Many Requests" },
-      { status: 429 }
+      { error: "Missing tenant id" },
+      { status: 400 }
     );
   }
 
-  return null;
+  const result = await rateLimitCheck({
+    tenantId,
+    bucket: "api",
+    maxRequests: 60,
+    windowSeconds: 60
+  });
+
+  if (!result.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded", code: "RATE_LIMIT" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(
+            Math.ceil((result.resetAt - Date.now()) / 1000)
+          )
+        }
+      }
+    );
+  }
+
+  return NextResponse.json({ ok: true });
 }
