@@ -18,8 +18,14 @@ const PUBLIC_PATHS = [
   '/api/webhook',
   '/api/health',
   '/evolution',
+  '/api/evolution',
   '/api/reports/ingest',
+];
+
+const TOKEN_PROTECTED_PATHS = [
   '/api/auth/seed-admin',
+  '/api/reports/seed',
+  '/api/db/migrate',
 ];
 
 // ---------------------------------------------------------------------------
@@ -97,6 +103,11 @@ export async function middleware(request: NextRequest) {
 
   // Public paths: skip auth
   if (isPublicPath(pathname)) {
+    return addSecurityHeaders(NextResponse.next());
+  }
+
+  // Token protected paths: skip JWT auth, they validate their own SEED_TOKEN in the handler
+  if (TOKEN_PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
     return addSecurityHeaders(NextResponse.next());
   }
 
