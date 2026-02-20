@@ -15,10 +15,9 @@ export async function rateLimitCheck(params: {
 }): Promise<RateLimitResult> {
 
   const { tenantId, bucket, maxRequests, windowSeconds } = params;
-
   const redis = getRedis();
+
   if (!redis) {
-    // fallback permissivo (não quebra preview)
     return {
       allowed: true,
       current: 0,
@@ -28,11 +27,17 @@ export async function rateLimitCheck(params: {
   }
 
   const key = `rl:${tenantId}:${bucket}`;
+  const metricsKey = `rl:metrics:${tenantId}:${bucket}`;
+
   const current = await redis.incr(key);
 
   if (current === 1) {
     await redis.expire(key, windowSeconds);
   }
+
+  // 🔥 métrica acumulada diária
+  await redis.incr(metricsKey);
+  await redis.expire(metricsKey, 86400);
 
   const ttl = await redis.ttl(key);
   const resetAt = Date.now() + (ttl ?? windowSeconds) * 1000;
