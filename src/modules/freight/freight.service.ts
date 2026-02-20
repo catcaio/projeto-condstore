@@ -15,7 +15,7 @@ import type {
   FreightStrategy,
   WeightDecision,
 } from './freight.types';
-import { getRedis() } from '../../infra/redis.client';
+import { getRedis } from '../../infra/redis.client';
 import { freightTableProvider } from '../../infra/freight-table';
 import { freightSimulationLogRepository } from '../../infra/repositories/freight-simulation-log.repository';
 
@@ -304,3 +304,4 @@ class FreightService {
 
 // Export singleton instance
 export const freightService = new FreightService();
+

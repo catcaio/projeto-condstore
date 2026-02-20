@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { freightTableProvider } from '../freight-table';
-import { getRedis() } from '../redis.client';
+import { getRedis } from '../redis.client';
 import { logger } from '../logger';
 
 // Mock dependnecies
@@ -181,3 +181,4 @@ RJ;20000-000;23999-999;5.0;25,00;4
         expect(rule).toBeNull();
     });
 });
+

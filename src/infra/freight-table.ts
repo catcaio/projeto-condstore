@@ -1,5 +1,5 @@
 import { logger } from './logger';
-import { getRedis() } from './redis.client';
+import { getRedis } from './redis.client';
 import { appConfig } from '../config/app.config';
 
 /**
@@ -298,3 +298,4 @@ class FreightTableProvider {
 }
 
 export const freightTableProvider = new FreightTableProvider();
+
