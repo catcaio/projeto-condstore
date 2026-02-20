@@ -1,8 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
     title: 'Painel Logístico - LojaCond',
@@ -16,7 +13,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="pt-BR">
-            <body className={inter.className}>
+            <body style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 <div className="min-h-screen bg-background">
                     {children}
                 </div>

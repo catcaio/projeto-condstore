@@ -30,14 +30,7 @@ class RedisClient {
     const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
     if (!url || !token) {
-      if (process.env.NODE_ENV === 'production') {
-        throw new InfrastructureError(
-          ErrorCode.INTERNAL_ERROR,
-          'Redis credentials not found in production environment',
-          { url: !!url, token: !!token }
-        );
-      }
-      logger.warn('Redis credentials not found. Session storage will be disabled.');
+      logger.warn('Redis credentials not found. Session storage will use in-memory fallback.');
       this.isConnected = false;
       return;
     }
@@ -196,6 +189,31 @@ class RedisClient {
       return result === 'PONG';
     } catch (error) {
       logger.error('Redis ping failed', error as Error);
+      return false;
+    }
+  }
+  /**
+   * Increment key value (atomic).
+   */
+  async incr(key: string): Promise<number | null> {
+    try {
+      const result = await this.execute<number>(`incr/${key}`);
+      return result;
+    } catch (error) {
+      logger.error('Failed to incr key in Redis', error as Error, { key });
+      return null;
+    }
+  }
+
+  /**
+   * Set expiration for a key.
+   */
+  async expire(key: string, seconds: number): Promise<boolean> {
+    try {
+      const result = await this.execute<number>(`expire/${key}/${seconds}`);
+      return result === 1;
+    } catch (error) {
+      logger.error('Failed to expire key in Redis', error as Error, { key });
       return false;
     }
   }

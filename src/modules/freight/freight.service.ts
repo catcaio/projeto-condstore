@@ -272,12 +272,10 @@ class FreightService {
       return 'Desculpe, não conseguimos calcular o frete para esse CEP.';
     }
 
-    const lines = options.map(
-      (opt, index) =>
-        `${index + 1}. ${opt.carrier} - R$ ${opt.price.toFixed(2)} - Prazo: ${opt.deliveryTime} dias`
-    );
-
-    return `Aqui estão as melhores opções de frete:\n\n${lines.join('\n')}`;
+    const best = options[0];
+    // "Frete R$X, prazo Y dias. Quer fechar?"
+    const formattedPrice = best.price.toFixed(2).replace('.', ',');
+    return `Frete R$${formattedPrice}, prazo ${best.deliveryTime} dias. Quer fechar?`;
   }
 
   /**
