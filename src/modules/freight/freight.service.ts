@@ -15,7 +15,7 @@ import type {
   FreightStrategy,
   WeightDecision,
 } from './freight.types';
-import { redisClient } from '../../infra/redis.client';
+import { getRedis() } from '../../infra/redis.client';
 import { freightTableProvider } from '../../infra/freight-table';
 import { freightSimulationLogRepository } from '../../infra/repositories/freight-simulation-log.repository';
 
@@ -265,7 +265,7 @@ class FreightService {
     const tenantKey = request.tenantId || 'global';
     const key = `v1:freight:${tenantKey}:${request.destinationCep.replace(/\D/g, '')}:${totalWeight}:${request.quantity}`;
 
-    const cached = await redisClient.get<FreightResult>(key);
+    const cached = await getRedis().get<FreightResult>(key);
 
     if (cached) {
       logger.info('Freight cache hit', { key });
@@ -297,7 +297,7 @@ class FreightService {
       calculatedAt: new Date(),
     };
 
-    await redisClient.set(key, result, 600); // 10 minutes TTL
+    await getRedis().set(key, result, 600); // 10 minutes TTL
   }
 
 }
