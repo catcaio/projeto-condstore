@@ -7,21 +7,9 @@ import { logger } from '../../infra/logger';
 import { ErrorCode, InfrastructureError } from '../../infra/errors';
 import { toZonedTime } from 'date-fns-tz';
 
-// Reuse DB connection logic
-let dbInstance: any = null;
+import { getDb } from '../../infra/db';
 
-async function getDb() {
-    if (dbInstance) return dbInstance;
-    if (!process.env.DATABASE_URL) {
-        throw new InfrastructureError(ErrorCode.INTERNAL_ERROR, 'DATABASE_URL is not defined');
-    }
-    const connectionPool = mysql.createPool({
-        uri: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: true },
-    });
-    dbInstance = drizzle(connectionPool, { mode: 'default' });
-    return dbInstance;
-}
+// Removed local getDb implementation and dbInstance variable
 
 export enum FreightEvent {
     REQUESTED = 'FREIGHT_QUOTE_REQUESTED',
@@ -186,7 +174,7 @@ export class MetricsRepository {
         `);
 
         // Drizzle execute returns [rows, fields]
-        const rows = result[0] as any[];
+        const rows = result[0] as unknown as any[];
 
         return {
             range,
