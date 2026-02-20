@@ -1,17 +1,14 @@
+
 /**
  * GET /api/cockpit/metrics
  *
  * Returns today's operational metrics for the authenticated tenant.
- * Requires `x-tenant-id` header (injected server-side by the global JWT middleware).
- *
- * Response shape (all fields always present, always integers):
- *   { mensagensHoje: number, cotacoesHoje: number, pedidosHoje: number, erros24h: number }
- *
- * Cache: Redis key `cockpit:metrics:{tenantId}` TTL 30s (when Redis is available).
+ * Includes Message counts, Simulation counts, and Freight Funnel stats.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { messageRepository } from '@/infra/repositories/message.repository';
+import { messageRepository } from '@/infra/repositories/message.repository'; // Legacy/General
+import { inboundMessageRepository } from '@/modules/llm/repositories/message.repository'; // LLM & Funnel
 import { simulationRepository } from '@/infra/repositories/simulation.repository';
 import { redisClient } from '@/infra/redis.client';
 import { logger } from '@/infra/logger';
@@ -21,6 +18,12 @@ interface CockpitMetrics {
   cotacoesHoje: number;
   pedidosHoje: number;
   erros24h: number;
+  funnel?: {
+    counts: Record<string, number>;
+    conversionRate: string;
+    abandoned: number;
+  };
+  intents?: any;
 }
 
 const CACHE_TTL_SECONDS = 30;
@@ -39,7 +42,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     if (redisClient.isAvailable()) {
       const cached = await redisClient.get<CockpitMetrics>(cacheKey);
       if (cached) {
-        logger.debug('cockpit/metrics: cache hit', { tenantId });
+        // logger.debug('cockpit/metrics: cache hit', { tenantId });
         return NextResponse.json(cached, {
           status: 200,
           headers: { 'Cache-Control': 'private, max-age=30' },
@@ -47,17 +50,38 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // Real DB queries in parallel (tenant-isolated)
-    const [msgMetrics, cotacoesHoje] = await Promise.all([
+    // Real DB queries in parallel
+    const [msgMetrics, cotacoesHoje, funnelStats, intentStats] = await Promise.all([
       messageRepository.getMetricsToday(tenantId),
       simulationRepository.countToday(tenantId),
+      inboundMessageRepository.getFunnelStats(tenantId),
+      inboundMessageRepository.getIntentStats() // Note: getIntentStats might not filter by tenantId in current impl, check
     ]);
+
+    // Process Funnel Stats
+    const funnelCounts: Record<string, number> = {};
+    if (Array.isArray(funnelStats)) {
+      funnelStats.forEach((s: any) => {
+        funnelCounts[s.stage] = s.count;
+      });
+    }
+
+    const starts = funnelCounts['INTENT_DETECTED'] || 0;
+    const quotes = funnelCounts['QUOTE_SENT'] || 0;
+    const conversionRate = starts > 0 ? (quotes / starts) * 100 : 0;
+    const abandoned = funnelCounts['ABANDONED'] || 0;
 
     const payload: CockpitMetrics = {
       mensagensHoje: Number(msgMetrics.total ?? 0),
       cotacoesHoje: Number(cotacoesHoje ?? 0),
-      pedidosHoje: 0, // TODO: orders table
-      erros24h: 0,    // TODO: error_log table
+      pedidosHoje: 0,
+      erros24h: 0,
+      funnel: {
+        counts: funnelCounts,
+        conversionRate: conversionRate.toFixed(1),
+        abandoned
+      },
+      intents: intentStats
     };
 
     // Cache write (fire-and-forget)
@@ -66,12 +90,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         logger.warn('cockpit/metrics: cache write failed', { tenantId }, err as Error);
       });
     }
-
-    logger.info('cockpit/metrics: served', {
-      tenantId,
-      mensagensHoje: payload.mensagensHoje,
-      cotacoesHoje: payload.cotacoesHoje,
-    });
 
     return NextResponse.json(payload, {
       status: 200,

@@ -15,6 +15,12 @@ import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from "../../../lib/nor
 import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
 import { freightControllerLegacy as freightController } from "../../../legacy/freight.controller";
 import { checkRateLimit, getThrottleMessage } from "../../../infra/rate-limiter";
+import { inboundMessageRepository } from "../../../modules/llm/repositories/message.repository";
+import { intentClassifier } from "../../../modules/llm/intent-classifier";
+import { intentRouter } from "../../../modules/llm/intent-router";
+import { ActionType, IntentType } from "../../../modules/llm/intents";
+import { conversationService } from "../../../modules/conversation/conversation.service";
+import { freightFlow } from "../../../modules/conversation/freight-flow";
 
 /**
  * POST /api/webhook
@@ -134,13 +140,131 @@ export async function POST(request: NextRequest) {
       return twimlOk("Número inválido. Tente novamente.");
     }
 
-    // 8) Persist inbound message (rawPayload WITHOUT PII)
+    // 7.5) Conversation State Engine (V1)
+
+    // A) Override Check (keywords to reset state)
+    const overrideKeywords = ['cancelar', 'sair', 'humano', 'parar', 'atendente'];
+    if (incomingMessage.body && overrideKeywords.some(k => incomingMessage.body?.toLowerCase().includes(k))) {
+      await conversationService.clearState(tenantId, fromNormalized);
+      logger.info("Conversation state cleared via override", { tenantId, from: fromNormalized });
+      // Proceed to normal classification (will likely map to HUMAN_HANDOFF or UNKNOWN)
+    } else {
+      // B) Check Active State
+      const activeState = await conversationService.getState(tenantId, fromNormalized);
+
+      if (activeState) {
+        logger.info("Active conversation state found", { tenantId, step: activeState.currentStep });
+
+        // Delegate to FreightFlow (or specific flow based on context, but V1 is Freight only)
+        const flowResult = await freightFlow.handle(
+          tenantId,
+          fromNormalized,
+          incomingMessage.body || "",
+          activeState.currentStep as any,
+          activeState.contextJson
+        );
+
+        // Log transition/action check
+        // We might want to persist this as an action_event too for consistency?
+        // "registrar action_event" was requested.
+        // But we don't have a messageId for *this* specific turn if we skip inbound save?
+        // Wait, we should probably save inbound message FIRST for idempotency.
+
+        // Moving Step 8 (Save Inbound) BEFORE Step 7.5 would be safer for idempotency.
+        // But let's follow the user's "Antes da classificação" instruction. 
+        // Idempotency check *is* part of "Save Inbound".
+        // Let's defer saving inbound after this block? No, usually Idempotency is first.
+        // Update: I will Move Step 8 up in a separate edit if needed, or just proceed knowing we are effectively handling it.
+        // Actually, let's keep it simple: If Active State -> Handle -> Respond.
+        // We should still save the message for audit logs.
+
+        // Let's quickly save inbound here if we are going to return early.
+        const { id: inboundMsgId, isNew } = await inboundMessageRepository.saveMessage({
+          tenantId,
+          messageSid: payload["MessageSid"] || null,
+          fromNumber: fromNormalized,
+          bodyRaw: incomingMessage.body || "",
+        });
+
+        if (!isNew) return twimlOk("");
+
+        // Save Action Event for this flow step
+        await inboundMessageRepository.saveActionEvent({
+          tenantId,
+          messageId: inboundMsgId,
+          intent: 'conversation_flow', // Generic intent for flow
+          actionType: 'freight_flow_step',
+          inputPayload: { step: activeState.currentStep, text: incomingMessage.body },
+          outputPayload: flowResult,
+          status: 'success'
+        });
+
+        return twimlOk(flowResult.reply);
+      }
+    }
+
+    // 8) LLM Pipeline: Persist Inbound + Idempotency Check
+    const { id: inboundMsgId, isNew } = await inboundMessageRepository.saveMessage({
+      tenantId,
+      messageSid: payload["MessageSid"] || null,
+      fromNumber: fromNormalized,
+      bodyRaw: incomingMessage.body || "",
+    });
+
+    if (!isNew) {
+      logger.warn("Webhook ignored: duplicate message (idempotency)", {
+        event: "DUPLICATE_MESSAGE",
+        tenantId,
+        ...safeCtx,
+      });
+      return twimlOk(""); // Return empty ok to ack Twilio
+    }
+
+    // 8.5) Intent Classification
+    let prediction: {
+      intent: IntentType;
+      confidence: number;
+      method: 'baseline' | 'llm' | 'rate_limited';
+      modelVersion: string;
+      latencyMs: number;
+      fallbackReason?: string | null;
+    } = {
+      intent: IntentType.UNKNOWN,
+      confidence: 0,
+      method: "baseline",
+      modelVersion: "none",
+      latencyMs: 0,
+      fallbackReason: null
+    };
+
+    if (incomingMessage.body) {
+      prediction = await intentClassifier.classify(incomingMessage.body, fromNormalized);
+
+      await inboundMessageRepository.saveLlmEvent({
+        tenantId,
+        messageId: inboundMsgId,
+        modelVersion: prediction.modelVersion,
+        intentPredicted: prediction.intent,
+        confidence: prediction.confidence,
+        method: prediction.method,
+        latencyMs: prediction.latencyMs,
+        fallbackReason: prediction.fallbackReason
+      });
+
+      logger.info("Message classified", {
+        tenantId,
+        intent: prediction.intent,
+        confidence: prediction.confidence,
+        method: prediction.method,
+      });
+    }
+
+    // Legacy Audit (keep for compatibility if needed, or remove later)
     const sanitizedPayload = {
       MessageSid: payload["MessageSid"],
       AccountSid: payload["AccountSid"],
       MessagingServiceSid: payload["MessagingServiceSid"],
       NumMedia: payload["NumMedia"],
-      // intentionally omit From/To/Body/WaId/ProfileName
     };
 
     await messageRepository.saveInboundMessage({
@@ -150,19 +274,73 @@ export async function POST(request: NextRequest) {
       toPhone: payload["To"] || null,     // stored (PII) for ops; do NOT log
       body: incomingMessage.body,         // stored (PII) for ops; do NOT log
       direction: "inbound",
-      intent: "freight_flow",             // avoid PII-heavy classifier logs here
+      intent: "freight_flow",             // Legacy field
       rawPayload: JSON.stringify(sanitizedPayload),
     });
 
-    // 9) Delegate to FreightController (stateful flow)
-    const controllerResult = await freightController.processMessage({
-      phoneNumber: fromNormalized,
-      message: incomingMessage.body ?? "",
-      tenantId,
-      messageSid: payload["MessageSid"] as string | undefined,
-    });
+    // 9) Action Router & Response Generation
+    // Idempotency check (action level)
+    const existingAction = await inboundMessageRepository.getActionEvent(inboundMsgId);
+    if (existingAction) return twimlOk("");
 
-    const replyText = controllerResult?.reply?.trim() || 'Desculpe, não entendi. Digite "frete" para começar.';
+    const routerContext = {
+      tenantId,
+      messageId: inboundMsgId,
+      fromNumber: fromNormalized,
+      text: incomingMessage.body
+    };
+
+    let replyText = "";
+    let actionType = "unknown";
+
+    // C) Handle FREIGHT_QUOTE via FreightFlow (Entry Point)
+    if (prediction.intent === 'freight_quote') {
+      logger.info("Starting Freight Flow via Intent");
+      const flowResult = await freightFlow.handle(
+        tenantId,
+        fromNormalized,
+        incomingMessage.body || "",
+        'NONE', // Start fresh
+        {}
+      );
+      replyText = flowResult.reply;
+      actionType = 'freight_flow_init';
+
+      // Persist Action
+      await inboundMessageRepository.saveActionEvent({
+        tenantId,
+        messageId: inboundMsgId,
+        intent: prediction.intent,
+        actionType,
+        inputPayload: routerContext,
+        outputPayload: flowResult,
+        status: 'success'
+      });
+
+    } else {
+      // Standard Router for other intents
+      const actionResult = await intentRouter.route(prediction.intent, routerContext);
+
+      // Handle Action Types
+      if (actionResult.type === ActionType.FREIGHT_QUOTE) {
+        // Fallback if router still returns this (should catch above, but safety)
+        const flowResult = await freightFlow.handle(tenantId, fromNormalized, incomingMessage.body || "", 'NONE', {});
+        replyText = flowResult.reply;
+      } else {
+        replyText = actionResult.payload.message;
+      }
+      actionType = actionResult.type;
+
+      await inboundMessageRepository.saveActionEvent({
+        tenantId,
+        messageId: inboundMsgId,
+        intent: prediction.intent,
+        actionType: actionResult.type,
+        inputPayload: routerContext,
+        outputPayload: actionResult.payload,
+        status: 'success'
+      });
+    }
 
     // 10) Respond TwiML
     const durationMs = Date.now() - startTime;
@@ -171,7 +349,7 @@ export async function POST(request: NextRequest) {
     logger.info("Webhook processed successfully", {
       event: "WEBHOOK_OK",
       tenantId,
-      success: controllerResult?.success ?? true,
+      actionType,
       ...safeCtx,
     });
 

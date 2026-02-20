@@ -22,9 +22,9 @@ export class FreightSimulationLogRepository {
       id: randomUUID(),
       tenantId: input.tenantId,
       uf,
-      peso: input.totalWeight.toFixed(2),
-      valor: input.bestPrice.toFixed(2),
-      prazo: input.bestDeliveryTime,
+      weight: input.totalWeight.toFixed(2),
+      price: input.bestPrice.toFixed(2),
+      deliveryTime: input.bestDeliveryTime,
       cepHash: this.hashCep(input.destinationCep),
     });
   }

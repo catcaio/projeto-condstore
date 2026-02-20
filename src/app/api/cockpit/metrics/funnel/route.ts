@@ -2,10 +2,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '../../../../../infra/auth/session';
 import { getDb } from '../../../../../infra/db';
-import { conversationFunnelEvents } from '../../../../../drizzle/schema';
+import { freightFunnelEvents } from '../../../../../drizzle/schema';
 import { sql, and, gte, eq } from 'drizzle-orm';
 import { redisClient } from '../../../../../infra/redis.client';
-import { FunnelStage } from '../../../../../modules/funnel/funnel.repository';
+export enum FunnelStage {
+    FLOW_STARTED = 'FLOW_STARTED',
+    INTENT_DETECTED = 'INTENT_DETECTED',
+    ASKED_CEP = 'ASKED_CEP',
+    CEP_PROVIDED = 'CEP_PROVIDED',
+    QUANTITY_PROVIDED = 'QUANTITY_PROVIDED',
+    FREIGHT_QUOTED = 'FREIGHT_QUOTED',
+    FLOW_ABORTED = 'FLOW_ABORTED'
+}
 
 // Cache TTL: 60 seconds
 const CACHE_TTL_SECONDS = 60;
@@ -39,17 +47,17 @@ export async function GET(request: NextRequest) {
         // Aggregate counts by stage for the last 7 days
         const result = await db
             .select({
-                stage: conversationFunnelEvents.stage,
+                stage: freightFunnelEvents.stage,
                 count: sql<number>`count(*)`,
             })
-            .from(conversationFunnelEvents)
+            .from(freightFunnelEvents)
             .where(
                 and(
-                    eq(conversationFunnelEvents.tenantId, tenantId),
-                    gte(conversationFunnelEvents.createdAt, sevenDaysAgo)
+                    eq(freightFunnelEvents.tenantId, tenantId),
+                    gte(freightFunnelEvents.createdAt, sevenDaysAgo)
                 )
             )
-            .groupBy(conversationFunnelEvents.stage);
+            .groupBy(freightFunnelEvents.stage);
 
         // Map results to counts object
         const counts = {
@@ -62,8 +70,8 @@ export async function GET(request: NextRequest) {
 
         result.forEach((row) => {
             const stage = row.stage as FunnelStage;
-            if (counts.hasOwnProperty(stage)) {
-                counts[stage] = Number(row.count);
+            if (stage in counts) {
+                counts[stage as keyof typeof counts] = Number(row.count);
             }
         });
 

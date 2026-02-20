@@ -3,6 +3,8 @@ import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
 import { logger } from './logger';
 
+import * as schema from '../drizzle/schema';
+
 // Prevent multiple pools in development due to HMR
 const globalForDb = globalThis as unknown as {
     conn: mysql.Pool | undefined;
@@ -21,5 +23,5 @@ if (!globalForDb.conn) {
 
 export async function getDb() {
     // Return drizzle instance using the singleton pool
-    return drizzle(globalForDb.conn!, { mode: 'default' });
+    return drizzle(globalForDb.conn!, { schema, mode: 'default' });
 }

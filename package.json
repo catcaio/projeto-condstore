@@ -10,7 +10,8 @@
     "lint": "next lint",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "llm:eval": "tsx scripts/llm-eval.ts"
   },
   "dependencies": {
     "axios": "1.13.5",

@@ -1,0 +1,10 @@
+{"text": "bom dia, tudo bem?", "intent": "greeting"}
+{"text": "queria saber o preço do frete para 12345-678", "intent": "freight_quote"}
+{"text": "onde está meu pedido?", "intent": "order_status"}
+{"text": "quero falar com um atendente", "intent": "human_handoff"}
+{"text": "qual o valor da entrega?", "intent": "freight_quote"}
+{"text": "rastrear minha encomenda", "intent": "order_status"}
+{"text": "oi", "intent": "greeting"}
+{"text": "cotação de envio", "intent": "freight_quote"}
+{"text": "socorro preciso de ajuda", "intent": "human_handoff"}
+{"text": "nada a ver", "intent": "unknown"}
