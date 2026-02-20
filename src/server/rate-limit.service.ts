@@ -49,3 +49,18 @@ export async function rateLimitCheck(params: {
     resetAt
   };
 }
+
+const RL_ALERT_THRESHOLD = Number(process.env.RATE_LIMIT_ALERT_THRESHOLD ?? "0.9");
+
+async function rlAlertDedupe(key: string, seconds: number): Promise<boolean> {
+  // fallback: se redis indisponível, não alerta
+  try {
+    const redis = getRedis();
+    if (!redis) return false;
+    // SET NX com EX
+    const res = await redis.set(key, "1", "EX", seconds, "NX");
+    return res === "OK";
+  } catch {
+    return false;
+  }
+}
