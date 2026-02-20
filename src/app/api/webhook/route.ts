@@ -3,6 +3,7 @@
  * Entry point for incoming WhatsApp messages.
  * Thin layer that delegates to the freight controller (state machine).
  */
+export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { twilioProvider } from "../../../providers/twilio.provider";
