@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { freightTableProvider } from '../freight-table';
-import { redisClient } from '../redis.client';
+import { getRedis() } from '../redis.client';
 import { logger } from '../logger';
 
 // Mock dependnecies
 vi.mock('../redis.client', () => ({
-    redisClient: {
+    getRedis(): {
         get: vi.fn(),
         set: vi.fn().mockResolvedValue(true),
     }
@@ -51,7 +51,7 @@ RJ;20000-000;23999-999;5.0;25,00;4
         });
 
         // Ensure cache miss
-        vi.mocked(redisClient.get).mockResolvedValue(null);
+        vi.mocked(getRedis().get).mockResolvedValue(null);
         // Force memory expiration
         const dateSpy = vi.spyOn(Date, 'now').mockReturnValue(new Date('2030-01-01').getTime());
 
@@ -66,13 +66,13 @@ RJ;20000-000;23999-999;5.0;25,00;4
         });
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
-        expect(redisClient.set).toHaveBeenCalled();
+        expect(getRedis().set).toHaveBeenCalled();
 
         dateSpy.mockRestore();
     });
 
     it('should return null if UF not found', async () => {
-        vi.mocked(redisClient.get).mockResolvedValue(null);
+        vi.mocked(getRedis().get).mockResolvedValue(null);
         mockFetch.mockResolvedValue({ ok: true, text: () => Promise.resolve(validCsv) });
         vi.spyOn(Date, 'now').mockReturnValue(new Date('2030-01-02').getTime());
 
@@ -81,7 +81,7 @@ RJ;20000-000;23999-999;5.0;25,00;4
     });
 
     it('should return null if weight exceeds max', async () => {
-        vi.mocked(redisClient.get).mockResolvedValue(null);
+        vi.mocked(getRedis().get).mockResolvedValue(null);
         mockFetch.mockResolvedValue({ ok: true, text: () => Promise.resolve(validCsv) });
         vi.spyOn(Date, 'now').mockReturnValue(new Date('2030-01-03').getTime());
 
@@ -93,7 +93,7 @@ RJ;20000-000;23999-999;5.0;25,00;4
         const cachedTable = {
             'SP': [{ cep_inicio: 1, cep_fim: 99999999, peso_max: 100, valor: 10, prazo: 1 }]
         };
-        vi.mocked(redisClient.get).mockResolvedValue(cachedTable);
+        vi.mocked(getRedis().get).mockResolvedValue(cachedTable);
         vi.spyOn(Date, 'now').mockReturnValue(new Date('2030-01-04').getTime());
 
         const rule = await freightTableProvider.getFreight('SP', '12345678', 50);
@@ -108,7 +108,7 @@ RJ;20000-000;23999-999;5.0;25,00;4
         // But vitest isolates.
         // We'll manually populate first.
 
-        vi.mocked(redisClient.get).mockResolvedValue(null);
+        vi.mocked(getRedis().get).mockResolvedValue(null);
         mockFetch.mockResolvedValue({ ok: true, text: () => Promise.resolve(validCsv) });
 
         // Use a fixed time
@@ -129,7 +129,7 @@ RJ;20000-000;23999-999;5.0;25,00;4
 
     it('should fallback to stale memory if fetch fails', async () => {
         // Populate memory first
-        vi.mocked(redisClient.get).mockResolvedValue(null);
+        vi.mocked(getRedis().get).mockResolvedValue(null);
         mockFetch.mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(validCsv) });
 
         const start = 2000000000000;
@@ -156,7 +156,7 @@ RJ;20000-000;23999-999;5.0;25,00;4
     });
 
     it('should lookup by CEP using getFreightByCep when UF is unknown', async () => {
-        vi.mocked(redisClient.get).mockResolvedValue(null);
+        vi.mocked(getRedis().get).mockResolvedValue(null);
         mockFetch.mockResolvedValue({ ok: true, text: () => Promise.resolve(validCsv) });
         vi.spyOn(Date, 'now').mockReturnValue(new Date('2030-01-05').getTime());
 
@@ -173,7 +173,7 @@ RJ;20000-000;23999-999;5.0;25,00;4
     });
 
     it('should return null if getFreightByCep finds nothing', async () => {
-        vi.mocked(redisClient.get).mockResolvedValue(null);
+        vi.mocked(getRedis().get).mockResolvedValue(null);
         mockFetch.mockResolvedValue({ ok: true, text: () => Promise.resolve(validCsv) });
         vi.spyOn(Date, 'now').mockReturnValue(new Date('2030-01-06').getTime());
 
