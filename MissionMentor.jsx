@@ -601,7 +601,7 @@ const App = () => {
                   <div className="flex flex-col items-center justify-center py-16 text-center bg-slate-900 border border-slate-800 rounded-2xl">
                     <PlusCircle size={40} className="text-slate-600 mb-4" />
                     <p className="text-slate-400 font-medium">Sem tarefas ainda.</p>
-                    <p className="text-slate-500 text-sm mt-1">Clica em "Sugerir com Explicação" para começar.</p>
+                    <p className="text-slate-500 text-sm mt-1">Clica em &ldquo;Sugerir com Explicação&rdquo; para começar.</p>
                   </div>
                 ) : (
                   tasks.map((task) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { GroupedSection, SectionDivider } from "@/components/ui/GroupedSection";
 import { ValueRow } from "@/components/ui/ValueRow";
 
@@ -36,20 +36,16 @@ const THEME_OPTIONS: { value: Theme; label: string }[] = [
  * Componente cliente para gerenciar o tema do OS.
  */
 export function ThemeToggleSection() {
-  const [theme, setTheme] = useState<Theme>("system");
-
-  useEffect(() => {
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system";
     try {
       const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
-      if (saved === "light" || saved === "dark") {
-        setTheme(saved);
-      } else {
-        setTheme("system");
-      }
+      if (saved === "light" || saved === "dark") return saved;
     } catch {
-      // ignore
+      // ignore storage errors
     }
-  }, []);
+    return "system";
+  });
 
   const handleSelect = (next: Theme) => {
     setTheme(next);
