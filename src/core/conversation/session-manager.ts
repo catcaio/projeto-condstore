@@ -7,7 +7,7 @@
 import { appConfig } from '../../config/app.config';
 import { BusinessError, ErrorCode, InfrastructureError } from '../../infra/errors';
 import { logger } from '../../infra/logger';
-import { getRedis() } from '../../infra/redis.client';
+import { getRedis } from '../../infra/redis.client';
 import { ConversationState, type ConversationContext } from './state-machine';
 
 /**
@@ -344,3 +344,4 @@ class SessionManager {
 
 // Export singleton instance
 export const sessionManager = new SessionManager();
+

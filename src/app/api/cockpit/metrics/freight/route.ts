@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { getDb } from '../../../../../infra/db';
 import { getSessionUser } from '../../../../../infra/auth/session';
 import { logger } from '../../../../../infra/logger';
-import { getRedis() } from '../../../../../infra/redis.client';
+import { getRedis } from '../../../../../infra/redis.client';
 
 interface FreightMetricsResponse {
   total_simulations_7d: number;
@@ -204,3 +204,4 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
   }
 }
+
