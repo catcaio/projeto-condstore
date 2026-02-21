@@ -15,11 +15,24 @@ export async function GET(req: NextRequest) {
     try {
         const subscription = await getSubscription(userId);
 
+        const cookieOptions = {
+            path: '/',
+            maxAge: 86400,
+            httpOnly: true,
+            sameSite: 'lax' as const,
+            secure: process.env.NODE_ENV === 'production'
+        };
+
         if (!subscription) {
-            return NextResponse.json({ status: 'none' });
+            const res = NextResponse.json({ status: 'none' });
+            res.cookies.set('entitled', '0', cookieOptions);
+            return res;
         }
 
-        return NextResponse.json(subscription);
+        const isEntitled = ['active', 'trialing'].includes(subscription.status);
+        const res = NextResponse.json(subscription);
+        res.cookies.set('entitled', isEntitled ? '1' : '0', cookieOptions);
+        return res;
     } catch (error: any) {
         console.error('Failed to fetch billing subscription:', error);
         return NextResponse.json(

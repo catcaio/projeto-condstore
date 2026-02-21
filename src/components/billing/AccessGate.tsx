@@ -24,6 +24,22 @@ export const AccessGate = ({ requiredLayer, fallback, children }: AccessGateProp
 
     useEffect(() => {
         const verifyAccess = async () => {
+            const getCookieValue = (name: string) => (
+                document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || null
+            );
+
+            const entitledCookie = getCookieValue('entitled');
+
+            if (entitledCookie === '1') {
+                cachedAccessResult = true;
+                setIsAllowed(true);
+                setIsChecking(false);
+                return;
+            } else if (entitledCookie === '0') {
+                // If explicitly 0 and TTL is fresh, we can fast fail, but generally 
+                // we might want to re-check if they just upgraded. Let's do TTL check.
+            }
+
             if (cachedAccessResult !== null && (Date.now() - lastCheckTime) < CACHE_TTL) {
                 setIsAllowed(cachedAccessResult);
                 setIsChecking(false);
@@ -31,7 +47,7 @@ export const AccessGate = ({ requiredLayer, fallback, children }: AccessGateProp
             }
 
             const userId = getOrCreateClientUserId();
-            const sub = await fetchSubscription(userId);
+            const sub = await fetchSubscription(userId); // This sets the cookie securely via API response
 
             let allowed = false;
 
@@ -39,8 +55,6 @@ export const AccessGate = ({ requiredLayer, fallback, children }: AccessGateProp
                 const active = ['active', 'trialing'].includes(sub.status);
 
                 if (active) {
-                    // Very simple hierarchical entitlement logic for PoC:
-                    // pro > premium > basic
                     const hierarchy = { basic: 1, premium: 2, pro: 3 };
                     const userLevel = hierarchy[sub.planId as keyof typeof hierarchy] || 0;
                     const requiredLevel = hierarchy[requiredLayer as keyof typeof hierarchy] || 99;
@@ -49,13 +63,6 @@ export const AccessGate = ({ requiredLayer, fallback, children }: AccessGateProp
                         allowed = true;
                     }
                 }
-            }
-
-            // Sync with cookie cache for middleware placeholder enforcement
-            if (allowed) {
-                document.cookie = "entitled=1; path=/; max-age=3600"; // 1 hour
-            } else {
-                document.cookie = "entitled=0; path=/; max-age=3600";
             }
 
             cachedAccessResult = allowed;

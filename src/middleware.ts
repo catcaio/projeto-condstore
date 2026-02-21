@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith('/app/premium')) {
     const entitled = req.cookies.get('entitled');
     if (entitled?.value !== '1') {
-      return NextResponse.redirect(new URL('/pricing', req.url));
+      return NextResponse.redirect(new URL('/pricing?blocked=1', req.url));
     }
   }
 

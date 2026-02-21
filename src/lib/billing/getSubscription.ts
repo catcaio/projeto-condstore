@@ -11,6 +11,7 @@ export async function fetchSubscription(userId: string): Promise<SubscriptionRec
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include'
         });
 
         if (!response.ok) {
