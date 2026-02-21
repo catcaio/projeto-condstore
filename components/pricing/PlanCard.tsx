@@ -4,6 +4,7 @@ import { Stack } from "../../ui/primitives/Stack"
 import { Button } from "../../ui/primitives/Button"
 import { Pressable } from "../../ui/primitives/Pressable"
 import { PricingPlan } from "./planData"
+import { track } from "../../utils/track"
 
 const CheckIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -21,8 +22,13 @@ export interface PlanCardProps {
 
 export const PlanCard = ({ plan, onSelect, isSelected }: PlanCardProps) => {
     return (
-        <Pressable className="w-full text-left" onClick={() => onSelect?.(plan.id)}>
-            <Card variant={plan.recommended ? "recommended" : "default"} className={`relative overflow-hidden transition-all ${isSelected ? 'ring-2 ring-[var(--brand-blue)] ring-offset-2' : ''}`}>
+        <Pressable
+            className="w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--brand-blue)] focus-visible:outline-offset-2 rounded-[var(--radius-card)]"
+            onClick={() => onSelect?.(plan.id)}
+            aria-pressed={isSelected}
+            aria-label={`Selecionar plano ${plan.name}`}
+        >
+            <Card variant={plan.recommended ? "recommended" : "default"} className={`relative overflow-hidden transition-all ${isSelected ? 'ring-2 ring-[var(--brand-blue)] ring-offset-2 bg-[var(--surface-muted)]' : 'bg-[var(--surface-elevated)]'}`}>
 
                 {plan.recommended && (
                     <div className="absolute top-0 right-0 py-1 px-3 bg-[var(--brand-blue)] text-white text-[var(--text-tertiary)] font-bold rounded-bl-[var(--radius-card)]">
@@ -56,8 +62,15 @@ export const PlanCard = ({ plan, onSelect, isSelected }: PlanCardProps) => {
                     </Stack>
 
                     {plan.extraDetails.length > 0 && (
-                        <details className="group border-t border-[var(--surface-muted)] pt-4 mt-2">
-                            <summary className="text-[var(--brand-blue)] font-medium text-[var(--text-base)] cursor-pointer outline-none list-none flex items-center gap-2 select-none">
+                        <details
+                            className="group border-t border-[var(--surface-muted)] pt-4 mt-2"
+                            onToggle={(e) => {
+                                if ((e.target as HTMLDetailsElement).open) {
+                                    track("plan_expand_details", { plan: plan.id })
+                                }
+                            }}
+                        >
+                            <summary className="text-[var(--brand-blue)] font-medium text-[var(--text-base)] cursor-pointer outline-none list-none flex items-center gap-2 select-none focus-visible:ring-2 focus-visible:ring-[var(--brand-blue)] focus-visible:ring-offset-2 rounded-sm p-1 -ml-1">
                                 <span>Ver detalhes</span>
                                 <span className="transition-transform group-open:rotate-180">↓</span>
                             </summary>

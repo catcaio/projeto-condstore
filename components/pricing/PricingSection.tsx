@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { track } from "../../utils/track"
 import { Section } from "../../ui/primitives/Section"
 import { Stack } from "../../ui/primitives/Stack"
 import { PlanCard } from "./PlanCard"
@@ -10,15 +11,21 @@ import { planData } from "./planData"
 
 export const PricingSection = () => {
     // Simple state to track selected plan for CTA dynamics
-    const [selectedPlanId, setSelectedPlanId] = useState<string>("basic")
+    const [selectedPlanId, setSelectedPlanId] = useState<string>("premium")
 
     const selectedPlan = planData.find(p => p.id === selectedPlanId) || planData[0]
 
+    useEffect(() => {
+        track("pricing_view")
+    }, [])
+
     const handleSelectPlan = (planId: string) => {
         setSelectedPlanId(planId)
+        track("plan_select", { plan: planId })
     }
 
     const handleCTAPress = () => {
+        track("checkout_start", { plan: selectedPlanId })
         // Analytics/Checkout integration would go here
         console.log(`Proceeding to checkout with plan: ${selectedPlanId}`)
     }

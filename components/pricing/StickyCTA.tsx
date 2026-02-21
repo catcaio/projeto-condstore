@@ -14,6 +14,7 @@ export const StickyCTA = ({ buttonLabel = "Selecionar plano", onPress, disabled 
                 variant="primary"
                 onClick={onPress}
                 disabled={disabled}
+                aria-label={buttonLabel}
             >
                 {buttonLabel}
             </Button>
