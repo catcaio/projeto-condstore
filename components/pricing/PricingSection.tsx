@@ -8,6 +8,7 @@ import { Stack } from "../../ui/primitives/Stack"
 import { PlanCard } from "./PlanCard"
 import { StickyCTA } from "./StickyCTA"
 import { planData } from "./planData"
+import { createCheckoutSession } from "../../src/lib/pricing/checkout"
 
 const ShieldIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>;
 const ZapIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
@@ -26,6 +27,7 @@ export const PricingSection = () => {
     const [selectedPlanId, setSelectedPlanId] = useState<string>("premium")
     const [showOtherPlans, setShowOtherPlans] = useState(false);
     const [hasScrolledPastPremium, setHasScrolledPastPremium] = useState(false);
+    const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
     // refs
     const premiumRef = React.useRef<HTMLDivElement>(null);
@@ -75,10 +77,27 @@ export const PricingSection = () => {
         track("pricing_expand_options");
     }
 
-    const handleCTAPress = () => {
-        track("checkout_start", { plan: selectedPlanId })
-        // Analytics/Checkout integration would go here
-        console.log(`Proceeding to checkout with plan: ${selectedPlanId}`)
+    const handleCTAPress = async () => {
+        if (isCheckoutLoading) return;
+        setIsCheckoutLoading(true);
+        track("checkout_start", { plan: selectedPlanId });
+
+        try {
+            // Generate stable anon id if not logged in
+            let userId = localStorage.getItem('anon_user_id');
+            if (!userId) {
+                userId = crypto.randomUUID();
+                localStorage.setItem('anon_user_id', userId);
+            }
+
+            const checkoutUrl = await createCheckoutSession(selectedPlanId, userId);
+            track("checkout_redirect", { plan: selectedPlanId });
+            window.location.href = checkoutUrl;
+        } catch (error) {
+            console.error("Checkout failed:", error);
+            track("checkout_error", { plan: selectedPlanId, error: String(error) });
+            setIsCheckoutLoading(false);
+        }
     }
 
     return (
@@ -149,6 +168,7 @@ export const PricingSection = () => {
                 buttonLabel={`Assinar o ${selectedPlan.name}`}
                 onPress={handleCTAPress}
                 hasScrolled={hasScrolledPastPremium}
+                loading={isCheckoutLoading}
             />
         </div>
     )
