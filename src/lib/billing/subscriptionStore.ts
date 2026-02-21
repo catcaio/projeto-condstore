@@ -47,3 +47,11 @@ export async function getSubscription(userId: string): Promise<SubscriptionRecor
     const store = readStore();
     return store[userId] || null;
 }
+
+/**
+ * Retrieves all subscription records (for admin metrics).
+ */
+export async function getAllSubscriptions(): Promise<SubscriptionRecord[]> {
+    const store = readStore();
+    return Object.values(store);
+}
