@@ -19,7 +19,7 @@ export async function middleware(req: NextRequest) {
   const sessionCookie = req.cookies.get('session');
   let decodedUser: any = null;
   if (sessionCookie) {
-    decodedUser = verify(sessionCookie.value);
+    decodedUser = await verify(sessionCookie.value);
   }
 
   const res = NextResponse.next();

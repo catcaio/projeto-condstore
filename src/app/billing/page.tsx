@@ -16,8 +16,8 @@ export default function BillingPage() {
         track("billing_view");
 
         const loadData = async () => {
-            const userId = getOrCreateClientUserId();
-            const data = await fetchSubscription(userId);
+            const userId = getOrCreateClientUserId(); // still useful for tracking or other side effects if any, or we can just keep it or remove
+            const data = await fetchSubscription();
 
             if ('status' in data && data.status !== 'none' && 'planId' in data) {
                 setSubscription(data as SubscriptionRecord);

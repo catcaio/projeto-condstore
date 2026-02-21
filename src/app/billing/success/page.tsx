@@ -31,7 +31,7 @@ function BillingSuccessInner() {
 
             try {
                 const userId = getOrCreateClientUserId();
-                const sub = await fetchSubscription(userId);
+                const sub = await fetchSubscription();
 
                 if (sub && 'status' in sub && ['active', 'trialing'].includes(sub.status)) {
                     setIsActivated(true);

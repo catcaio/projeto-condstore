@@ -11,7 +11,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_123', {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const body = await req.json();
         const { planId } = body;
 
         // Validating planId and user via cookies
@@ -28,7 +27,7 @@ export async function POST(req: Request) {
 
         const store = await cookies();
         const token = store.get('session')?.value;
-        const decoded = verify(token || '');
+        const decoded = await verify(token || '');
         if (!decoded || !decoded.userId) {
             return NextResponse.json({ error: 'Unauthorized: Please login to checkout.' }, { status: 401 });
         }

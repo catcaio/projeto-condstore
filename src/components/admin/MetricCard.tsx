@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card } from '../../ui/primitives/Card';
+import { Card } from '../../../ui/primitives/Card';
 
 interface MetricCardProps {
     label: string;
@@ -23,8 +23,8 @@ export const MetricCard = ({ label, value, delta }: MetricCardProps) => {
                 {delta && (
                     <span
                         className={`text-xs font-semibold ${delta.type === 'positive' ? 'text-green-600' :
-                                delta.type === 'negative' ? 'text-red-600' :
-                                    'text-gray-500'
+                            delta.type === 'negative' ? 'text-red-600' :
+                                'text-gray-500'
                             }`}
                     >
                         {delta.type === 'positive' && '+'}

@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 export async function GET(req: NextRequest) {
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get('session')?.value;
-    const decoded = verify(sessionToken || '');
+    const decoded = await verify(sessionToken || '');
 
     if (!decoded || !decoded.userId) {
         return NextResponse.json(

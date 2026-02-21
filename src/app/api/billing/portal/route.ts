@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     try {
         const store = await cookies();
         const sessionToken = store.get('session')?.value;
-        const decoded = verify(sessionToken || '');
+        const decoded = await verify(sessionToken || '');
 
         if (!decoded || !decoded.userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

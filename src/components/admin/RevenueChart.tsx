@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card } from '../../ui/primitives/Card';
+import { Card } from '../../../ui/primitives/Card';
 
 interface RevenueChartProps {
     data: number[]; // Array of values (e.g., 30 days)

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
         const user = await createUser(userId, email.toLowerCase(), hashedPassword);
 
-        const token = sign({ userId: user.id });
+        const token = await sign({ userId: user.id });
         await setAuthCookie(token);
 
         return NextResponse.json({ ok: true });

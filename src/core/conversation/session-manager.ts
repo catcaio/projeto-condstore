@@ -12,6 +12,12 @@ import { ConversationState, type ConversationContext } from './state-machine';
 
 let hasLoggedProdWarning = false;
 
+/** Returns SESSION_SLA_TIMEOUT_MINUTES from env; default 60. */
+function getSlaTtlMs(): number {
+  const mins = parseInt(process.env.SESSION_SLA_TIMEOUT_MINUTES || '60', 10);
+  return (isNaN(mins) ? 60 : mins) * 60 * 1000;
+}
+
 /**
  * Session data stored in Redis.
  */
@@ -117,6 +123,12 @@ class SessionManager {
         return null;
       }
 
+      // SLA idle check (Redis path)
+      const slaMs = getSlaTtlMs();
+      if (slaMs > 0 && !redisClient.isAvailable()) {
+        // handled per path below
+      }
+
       // Redis unavailable
       if (appConfig.env === 'production' && !hasLoggedProdWarning) {
         logger.error('CRITICAL: Redis is unavailable in production! Falling back to in-memory store. This will cause session loss across Serverless functions.', new Error('Missing Redis in Production'), { event: 'REDIS_MISSING_PROD' });
@@ -127,6 +139,17 @@ class SessionManager {
       const session = this.memoryStore.get(phoneNumber);
 
       if (session) {
+        // SLA expiry check (memory fallback path)
+        const slaMs = getSlaTtlMs();
+        if (slaMs > 0 && (Date.now() - session.updatedAt > slaMs)) {
+          logger.info('Session expired by SLA timeout, resetting to IDLE', {
+            phoneNumber: logger.maskPhone(phoneNumber),
+            tenantId,
+            idleMinutes: Math.round((Date.now() - session.updatedAt) / 60000),
+          });
+          this.memoryStore.delete(phoneNumber);
+          return null;
+        }
         logger.debug('Session retrieved from memory (dev fallback)', { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
       }
 
