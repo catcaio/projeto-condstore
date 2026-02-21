@@ -10,12 +10,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_123', {
 
 export async function POST(req: NextRequest) {
     try {
-        // ── Auth: userId MUST come from the verified session, never from the body ──
+        // ── Auth: tenantId MUST come from the verified session, never from the body ──
         const session = await getSessionUser(req);
-        if (!session?.sub) {
+        if (!session?.tenantId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-        const userId = session.sub;
+        const tenantId = session.tenantId;
 
         const body = await req.json();
         const { planId } = body; // planId from body is safe — it's just a plan selector
@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
 
         const stripeSession = await stripe.checkout.sessions.create({
-            client_reference_id: userId,
-            metadata: { userId },
+            client_reference_id: `tenant:${tenantId}`,
+            metadata: { tenantId },
             line_items: [{ price: plan.stripePriceId, quantity: 1 }],
             mode: 'subscription',
             success_url: `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,

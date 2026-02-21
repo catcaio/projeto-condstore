@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSubscription } from '../../../../lib/billing/subscriptionStore';
 import { getSessionUser } from '../../../../infra/auth/session';
+import { getDb } from '../../../../infra/db';
+import { tenants } from '../../../../drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
-    // ── Auth: userId MUST come from the verified session, never from query params ──
+    // ── Auth: tenantId MUST come from the verified session, never from query params ──
     const session = await getSessionUser(req);
-    if (!session?.sub) {
+    if (!session?.tenantId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const userId = session.sub;
+    const tenantId = session.tenantId;
 
     try {
-        const subscription = await getSubscription(userId);
+        const db = await getDb();
+        const results = await db.select({
+            stripeCustomerId: tenants.stripeCustomerId,
+            stripeSubscriptionId: tenants.stripeSubscriptionId,
+            plan: tenants.plan,
+            planStatus: tenants.planStatus,
+            planCurrentPeriodEnd: tenants.planCurrentPeriodEnd
+        }).from(tenants).where(eq(tenants.id, tenantId)).limit(1);
 
         const cookieOptions = {
             path: '/',
@@ -21,14 +30,23 @@ export async function GET(req: NextRequest) {
             secure: process.env.NODE_ENV === 'production',
         };
 
-        if (!subscription) {
-            const res = NextResponse.json({ status: 'none' });
+        if (results.length === 0 || !results[0].planStatus) {
+            const res = NextResponse.json({ status: 'none', plan: results[0]?.plan || 'FREE' });
             res.cookies.set('entitled', '0', cookieOptions);
             return res;
         }
 
-        const isEntitled = ['active', 'trialing'].includes(subscription.status);
-        const res = NextResponse.json(subscription);
+        const subscription = results[0];
+        const isEntitled = ['active', 'trialing'].includes(subscription.planStatus || '');
+
+        // Match the expected response shape of the frontend
+        const res = NextResponse.json({
+            status: subscription.planStatus,
+            planId: subscription.plan?.toLowerCase() || 'free',
+            stripeCustomerId: subscription.stripeCustomerId,
+            currentPeriodEnd: subscription.planCurrentPeriodEnd ? Math.floor(subscription.planCurrentPeriodEnd.getTime() / 1000) : 0
+        });
+
         res.cookies.set('entitled', isEntitled ? '1' : '0', cookieOptions);
         return res;
     } catch (error: any) {

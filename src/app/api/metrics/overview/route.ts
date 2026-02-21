@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { messageRepository } from '@/infra/repositories/message.repository';
 import { simulationRepository } from '@/infra/repositories/simulation.repository';
-import { getSessionUser } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
+import { requireActivePlan } from '@/modules/billing/requireActivePlan';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
-        // Tenant from verified JWT session — never from spoofable headers
-        const session = await getSessionUser(request);
-        if (!session?.tenantId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        // 1) Auth / tenant resolution + Plan Entitlement
+        const entitlement = await requireActivePlan(request);
+        if (entitlement.errorResponse) {
+            return entitlement.errorResponse;
         }
-        const tenantId = session.tenantId;
+        const tenantId = entitlement.tenantId!;
 
         const [msgsToday, msgsTotal] = await Promise.all([
             messageRepository.getMetricsToday(tenantId),

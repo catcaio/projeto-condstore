@@ -3,15 +3,15 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from 'next/server';
 import { metricsRepository } from '../../../../modules/metrics/metrics.repository';
 import { logger } from '../../../../infra/logger';
-import { getSessionUser } from '../../../../infra/auth/session';
+import { requireActivePlan } from '../../../../modules/billing/requireActivePlan';
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await getSessionUser(request);
-        if (!session?.tenantId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const entitlement = await requireActivePlan(request);
+        if (entitlement.errorResponse) {
+            return entitlement.errorResponse;
         }
-        const tenantId = session.tenantId;
+        const tenantId = entitlement.tenantId!;
 
         const metrics = await metricsRepository.getFreightMetrics(tenantId);
         return NextResponse.json(metrics);

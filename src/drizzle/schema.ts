@@ -50,6 +50,10 @@ export const simulations = mysqlTable('simulations', {
     idempotencyKey: varchar('idempotency_key', { length: 255 }).unique(),
     event: varchar('event', { length: 50 }).notNull().default('FREIGHT_QUOTED'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdCreatedAtIndex: index('idx_simulations_tenant_created_at').on(table.tenantId, table.createdAt),
+    };
 });
 
 export type SimulationRecord = typeof simulations.$inferSelect;
@@ -67,6 +71,10 @@ export const messages = mysqlTable('messages', {
     intent: varchar('intent', { length: 50 }).notNull().default('unknown'),
     rawPayload: text('raw_payload').notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdCreatedAtIndex: index('idx_messages_tenant_created_at').on(table.tenantId, table.createdAt),
+    };
 });
 
 export type MessageRecord = typeof messages.$inferSelect;
@@ -117,6 +125,10 @@ export const freightSimulationLogs = mysqlTable('freight_simulation_logs', {
     prazo: int('prazo').notNull(),
     cepHash: varchar('cep_hash', { length: 64 }).notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdCreatedAtIndex: index('idx_freight_sim_logs_tenant_created_at').on(table.tenantId, table.createdAt),
+    };
 });
 
 export type FreightSimulationLogRecord = typeof freightSimulationLogs.$inferSelect;

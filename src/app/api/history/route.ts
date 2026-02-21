@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { simulationRepository } from '../../../infra/repositories/simulation.repository';
-import { getSessionUser } from '../../../infra/auth/session';
+import { requireActivePlan } from '../../../modules/billing/requireActivePlan';
 import { logger } from '../../../infra/logger';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
-    // 1) Auth / tenant resolution — from verified JWT session, never from headers
-    const session = await getSessionUser(request);
-    if (!session?.tenantId) {
-        return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    // 1) Auth / tenant resolution + Plan Entitlement
+    const entitlement = await requireActivePlan(request);
+    if (entitlement.errorResponse) {
+        return entitlement.errorResponse;
     }
-    const tenantId = session.tenantId;
+    const tenantId = entitlement.tenantId!;
 
     // 2) Fetch data
     try {

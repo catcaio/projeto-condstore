@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { requireActivePlan } from '../../../modules/billing/requireActivePlan';
 import { auditService } from '../../../modules/audit/audit.service';
+import { checkRateLimit } from '../../../infra/rate-limiter';
 
 export const runtime = 'nodejs';
 
@@ -33,6 +34,16 @@ export async function POST(request: NextRequest) {
       return entitlement.errorResponse;
     }
     tenantId = entitlement.tenantId!;
+
+    // 1.5) Tenant-level rate limit (e.g. 30 per minute) to prevent API scraping abuse
+    const rateLimit = await checkRateLimit(`simulate:t:${tenantId}`, 30, 60);
+    if (!rateLimit.allowed) {
+      logger.warn('Simulate rate limit exceeded', { tenantId });
+      return NextResponse.json(
+        { success: false, error: 'Muitas consultas. Tente novamente em alguns minutos.' },
+        { status: 429 }
+      );
+    }
 
     // 2. Validate input
     const body = await request.json();
