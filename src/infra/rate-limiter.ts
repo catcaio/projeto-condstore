@@ -87,3 +87,4 @@ export async function checkRateLimit(identifier: string, limit: number = MAX_REQ
 export function getThrottleMessage(): string {
     return 'Você está enviando muitas mensagens. Por favor, aguarde um momento antes de tentar novamente.';
 }
+

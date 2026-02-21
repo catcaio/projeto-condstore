@@ -3,11 +3,14 @@ import { freightTableProvider } from '../freight-table';
 import { redisClient } from '../redis.client';
 import { logger } from '../logger';
 
-// Mock dependnecies
+// Mock dependencies
 vi.mock('../redis.client', () => ({
     redisClient: {
+        isAvailable: vi.fn().mockReturnValue(true),
         get: vi.fn(),
-        set: vi.fn().mockResolvedValue(true),
+        set: vi.fn().mockResolvedValue(undefined),
+        del: vi.fn().mockResolvedValue(undefined),
+        ping: vi.fn().mockResolvedValue(true),
     }
 }));
 
@@ -181,3 +184,4 @@ RJ;20000-000;23999-999;5.0;25,00;4
         expect(rule).toBeNull();
     });
 });
+

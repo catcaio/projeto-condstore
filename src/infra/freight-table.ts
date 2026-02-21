@@ -298,3 +298,4 @@ class FreightTableProvider {
 }
 
 export const freightTableProvider = new FreightTableProvider();
+

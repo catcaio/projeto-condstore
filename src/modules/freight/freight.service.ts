@@ -304,3 +304,4 @@ class FreightService {
 
 // Export singleton instance
 export const freightService = new FreightService();
+
