@@ -7,6 +7,7 @@ import { verifyPassword } from '@/infra/auth/password';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
 import { checkRateLimit } from '@/infra/rate-limiter';
+import { auditService } from '@/modules/audit/audit.service';
 
 const loginSchema = z.object({
     email: z.string().email('Email inválido'),
@@ -72,6 +73,8 @@ export async function POST(request: NextRequest) {
         const valid = verifyPassword(password, user.passwordHash);
         if (!valid) {
             logger.warn('Invalid password attempt', { email });
+            // Audit trailing requires a tenant, which we have from the user object
+            await auditService.logEvent(user.tenantId, 'LOGIN_FAILED', { email });
             return NextResponse.json(
                 { success: false, error: 'Email ou senha inválidos' },
                 { status: 401 }
@@ -87,6 +90,10 @@ export async function POST(request: NextRequest) {
         });
 
         logger.info('User logged in', { email: user.email, tenantId: user.tenantId });
+        await auditService.logEvent(user.tenantId, 'LOGIN_SUCCESS', {
+            email: user.email,
+            ip: request.headers.get("x-forwarded-for") ?? "unknown"
+        });
 
         const response = NextResponse.json({
             success: true,

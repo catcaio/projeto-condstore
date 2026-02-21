@@ -7,11 +7,31 @@ export const tenants = mysqlTable('tenants', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     name: varchar('name', { length: 255 }).notNull(),
     twilioNumber: varchar('twilio_number', { length: 30 }).notNull().unique(),
+    stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+    stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+    plan: varchar('plan', { length: 50 }),
+    planStatus: varchar('plan_status', { length: 50 }),
+    planCurrentPeriodEnd: timestamp('plan_current_period_end'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export type TenantRecord = typeof tenants.$inferSelect;
 export type NewTenantRecord = typeof tenants.$inferInsert;
+
+export const tenantEvents = mysqlTable('tenant_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(),
+    payload: text('payload'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdCreatedAtIndex: index('idx_tenant_events_tenant_created_at').on(table.tenantId, table.createdAt),
+    };
+});
+
+export type TenantEventRecord = typeof tenantEvents.$inferSelect;
+export type NewTenantEventRecord = typeof tenantEvents.$inferInsert;
 
 
 export const simulations = mysqlTable('simulations', {
