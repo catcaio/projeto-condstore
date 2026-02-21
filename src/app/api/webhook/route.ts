@@ -14,8 +14,8 @@ import { messageRepository } from "../../../infra/repositories/message.repositor
 import { tenantRepository } from "../../../infra/repositories/tenant.repository";
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from "../../../lib/normalize";
 import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
-import { freightControllerLegacy as freightController } from "../../../legacy/freight.controller";
 import { checkRateLimit, getThrottleMessage } from "../../../infra/rate-limiter";
+import { freightController } from "../../../modules/freight/freight.controller";
 
 /**
  * POST /api/webhook
@@ -155,28 +155,27 @@ export async function POST(request: NextRequest) {
       rawPayload: JSON.stringify(sanitizedPayload),
     });
 
-    // 9) Delegate to FreightController (stateful flow)
-    const controllerResult = await freightController.processMessage({
-      phoneNumber: fromNormalized,
-      message: incomingMessage.body ?? "",
-      tenantId,
-      messageSid: payload["MessageSid"] as string | undefined,
-    });
+    // Initialize and run freight logic
+    logger.debug('Passing to Freight Controller (State Machine)');
+    const tenantIdStr = tenant.id.toString();
+    const senderNumber = fromNormalized;
+    const messageText = incomingMessage.body ?? "";
+    const messageSid = payload["MessageSid"] as string | undefined;
 
-    const replyText = controllerResult?.reply?.trim() || 'Desculpe, não entendi. Digite "frete" para começar.';
+    const replyMessage = await freightController.handleIncoming(tenantIdStr, senderNumber, messageText, messageSid);
 
-    // 10) Respond TwiML
-    const durationMs = Date.now() - startTime;
-    safeCtx.durationMs = durationMs;
+    const timeMs = Date.now() - startTime;
+    safeCtx.durationMs = timeMs;
 
-    logger.info("Webhook processed successfully", {
+    logger.info('Webhook processed successfully', {
       event: "WEBHOOK_OK",
-      tenantId,
-      success: controllerResult?.success ?? true,
-      ...safeCtx,
+      tenantId: tenantIdStr,
+      sender: logger.maskPhone(senderNumber),
+      responseLength: replyMessage.length,
+      ...safeCtx, // This already contains messageSid
     });
 
-    return twimlOk(replyText);
+    return twimlOk(replyMessage);
   } catch (err) {
     const durationMs = Date.now() - startTime;
     safeCtx.durationMs = durationMs;
