@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { freightService } from '../../../modules/freight/freight.service';
 import { simulationRepository } from '../../../infra/repositories/simulation.repository';
-import { getTenantContext } from '../../../infra/auth/tenant-context';
+import { getSessionUser } from '../../../infra/auth/session';
 import { BusinessError, getUserMessage } from '../../../infra/errors';
 import { logger } from '../../../infra/logger';
 import { z } from 'zod';
@@ -22,8 +22,12 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    // 1. Get tenant from session (via middleware headers)
-    const { tenantId } = await getTenantContext(request);
+    // 1. Get tenant from verified JWT session — not from spoofable headers
+    const session = await getSessionUser(request);
+    if (!session?.tenantId) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const tenantId = session.tenantId;
 
     // 2. Validate input
     const body = await request.json();
