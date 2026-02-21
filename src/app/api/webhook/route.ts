@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
     const messageText = incomingMessage.body ?? "";
     const messageSid = payload["MessageSid"] as string | undefined;
 
-    const replyMessage = await freightController.handleIncoming(tenantIdStr, senderNumber, messageText, messageSid);
+    const { replyMessage, sessionInfo } = await freightController.handleIncoming(tenantIdStr, senderNumber, messageText, messageSid);
 
     const timeMs = Date.now() - startTime;
     safeCtx.durationMs = timeMs;
@@ -177,6 +177,10 @@ export async function POST(request: NextRequest) {
       tenantId: tenantIdStr,
       sender: logger.maskPhone(senderNumber),
       responseLength: replyMessage.length,
+      sessionId: sessionInfo?.sessionId,
+      currentState: sessionInfo?.currentState,
+      nextState: sessionInfo?.nextState,
+      outcome: sessionInfo?.outcome,
       ...safeCtx, // This already contains messageSid
     });
 

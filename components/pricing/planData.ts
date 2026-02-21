@@ -11,6 +11,8 @@ export type PricingPlan = {
     features: PlanFeature[]
     extraDetails: string[]
     recommended?: boolean
+    oldPrice?: string
+    savingsBadge?: string
 }
 
 export const planData: PricingPlan[] = [
@@ -36,6 +38,8 @@ export const planData: PricingPlan[] = [
         id: "premium",
         name: "Premium",
         price: "R$ 149/mês",
+        oldPrice: "R$ 179/mês",
+        savingsBadge: "Economize 20%",
         description: "Para quem precisa de alta performance e automações.",
         features: [
             { name: "Pedidos ilimitados", included: true },

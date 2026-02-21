@@ -42,8 +42,20 @@ export const PlanCard = ({ plan, onSelect, isSelected }: PlanCardProps) => {
                         <p className="text-[var(--text-muted)] mt-1">{plan.description}</p>
                     </div>
 
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-[var(--text-hero)] font-bold text-[var(--brand-black)] tracking-tight">{plan.price}</span>
+                    <div className="flex flex-col gap-1">
+                        {plan.savingsBadge && (
+                            <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-[12px] font-bold rounded w-fit mb-1">
+                                {plan.savingsBadge}
+                            </span>
+                        )}
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                            <span className="text-[var(--text-hero)] font-bold text-[var(--brand-black)] tracking-tight">{plan.price}</span>
+                            {plan.oldPrice && (
+                                <span className="text-[var(--text-secondary)] text-[var(--text-muted)] line-through">
+                                    {plan.oldPrice}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     <Stack space={16}>
