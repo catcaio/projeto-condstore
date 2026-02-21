@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
             email: user.email,
             tenantId: user.tenantId,
             role: user.role,
+            sessionVersion: user.sessionVersion,
         });
 
         logger.info('User logged in', { email: user.email, tenantId: user.tenantId });

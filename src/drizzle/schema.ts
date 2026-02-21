@@ -60,6 +60,7 @@ export const users = mysqlTable('users', {
     passwordHash: varchar('password_hash', { length: 512 }).notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
     role: varchar('role', { length: 20 }).notNull().default('operator'),
+    sessionVersion: int('session_version').notNull().default(1),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
