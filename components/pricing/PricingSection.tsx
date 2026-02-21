@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import { useState } from "react"
-import { Section } from "@/ui/primitives/Section"
-import { Stack } from "@/ui/primitives/Stack"
+import { Section } from "../../ui/primitives/Section"
+import { Stack } from "../../ui/primitives/Stack"
 import { PlanCard } from "./PlanCard"
 import { StickyCTA } from "./StickyCTA"
 import { planData } from "./planData"

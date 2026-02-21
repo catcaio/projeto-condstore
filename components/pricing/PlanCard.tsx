@@ -1,8 +1,8 @@
 import * as React from "react"
-import { Card } from "@/ui/primitives/Card"
-import { Stack } from "@/ui/primitives/Stack"
-import { Button } from "@/ui/primitives/Button"
-import { Pressable } from "@/ui/primitives/Pressable"
+import { Card } from "../../ui/primitives/Card"
+import { Stack } from "../../ui/primitives/Stack"
+import { Button } from "../../ui/primitives/Button"
+import { Pressable } from "../../ui/primitives/Pressable"
 import { PricingPlan } from "./planData"
 
 const CheckIcon = ({ className }: { className?: string }) => (
@@ -44,9 +44,9 @@ export const PlanCard = ({ plan, onSelect, isSelected }: PlanCardProps) => {
                         {plan.features.map((feature, i) => (
                             <div key={i} className="flex items-center gap-3">
                                 {feature.included ? (
-                                    <Check className="w-5 h-5 text-[var(--brand-blue)] shrink-0" strokeWidth={3} />
+                                    <CheckIcon className="w-5 h-5 text-[var(--brand-blue)] shrink-0" />
                                 ) : (
-                                    <X className="w-5 h-5 text-[var(--text-muted)] opacity-50 shrink-0" />
+                                    <XIcon className="w-5 h-5 text-[var(--text-muted)] opacity-50 shrink-0" />
                                 )}
                                 <span className={`text-[var(--text-base)] ${feature.included ? 'text-[var(--text-body)]' : 'text-[var(--text-muted)] line-through opacity-70'}`}>
                                     {feature.name}

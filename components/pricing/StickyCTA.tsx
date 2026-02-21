@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Button } from "@/ui/primitives/Button"
+import { Button } from "../../ui/primitives/Button"
 
 export interface StickyCTAProps {
     buttonLabel?: string;
