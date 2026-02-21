@@ -1,4 +1,4 @@
-import { getRedis } from "@/infra/redis.client";
+import { redisClient } from "@/infra/redis.client";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -15,7 +15,7 @@ export async function rateLimitCheck(params: {
 }): Promise<RateLimitResult> {
 
   const { tenantId, bucket, maxRequests, windowSeconds } = params;
-  const redis = getRedis();
+  const redis = redisClient;
 
   if (!redis) {
     return {
@@ -55,11 +55,13 @@ const RL_ALERT_THRESHOLD = Number(process.env.RATE_LIMIT_ALERT_THRESHOLD ?? "0.9
 async function rlAlertDedupe(key: string, seconds: number): Promise<boolean> {
   // fallback: se redis indisponível, não alerta
   try {
-    const redis = getRedis();
-    if (!redis) return false;
-    // SET NX com EX
-    const res = await redis.set(key, "1", "EX", seconds, "NX");
-    return res === "OK";
+    const redis = redisClient;
+    if (!redis.isAvailable()) return false;
+    // Simulate NX behavior (good enough for alerts)
+    const existing = await redis.get(key);
+    if (existing) return false;
+    await redis.set(key, "1", seconds);
+    return true;
   } catch {
     return false;
   }

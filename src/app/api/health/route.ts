@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRedis } from "@/infra/redis.client";
+import { redisClient } from "@/infra/redis.client";
 
 export const runtime = "nodejs";
 
@@ -13,10 +13,7 @@ export async function GET() {
 
   // 🔥 Ajusta aqui se quiser exigir mais variáveis
   const env = [
-    requiredEnv("TIDB_HOST"),
-    requiredEnv("TIDB_USER"),
-    requiredEnv("TIDB_PASSWORD"),
-    requiredEnv("TIDB_DATABASE"),
+    requiredEnv("DATABASE_URL"),
     requiredEnv("REDIS_URL"), // pode ser opcional em preview
     requiredEnv("TWILIO_ACCOUNT_SID"),
     requiredEnv("TWILIO_AUTH_TOKEN"),
@@ -29,13 +26,13 @@ export async function GET() {
   let redisError: string | null = null;
 
   try {
-    const redis = getRedis();
-    if (!redis) {
+    const redis = redisClient;
+    if (!redis.isAvailable()) {
       redisStatus = "degraded"; // preview/local sem REDIS_URL
     } else {
       const pong = await redis.ping();
-      redisStatus = pong === "PONG" ? "ok" : "down";
-      if (redisStatus === "down") redisError = `ping=${pong}`;
+      redisStatus = pong ? "ok" : "down";
+      if (redisStatus === "down") redisError = `ping failed`;
     }
   } catch (err: any) {
     redisStatus = "down";

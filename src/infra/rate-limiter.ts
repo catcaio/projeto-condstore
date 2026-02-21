@@ -4,7 +4,7 @@
  * Serverless-compatible — uses Upstash REST API.
  */
 
-import { getRedis } from './redis.client';
+import { redisClient } from './redis.client';
 import { logger } from './logger';
 
 interface RateLimitResult {
@@ -34,13 +34,13 @@ export async function checkRateLimit(identifier: string, limit: number = MAX_REQ
     const key = `ratelimit:${identifier}`;
 
     try {
-        if (!getRedis().isAvailable()) {
+        if (!redisClient.isAvailable()) {
             logger.warn('Rate limiter: Redis unavailable, allowing request', { identifier });
             return { allowed: true, remaining: limit, limit };
         }
 
         // Atomic increment
-        const current = await getRedis().incr(key);
+        const current = await redisClient.incr(key);
 
         if (current === null) {
             // Fallback if INCR fails
@@ -49,11 +49,11 @@ export async function checkRateLimit(identifier: string, limit: number = MAX_REQ
 
         // If this is the first request, set expiration
         if (current === 1) {
-            await getRedis().expire(key, windowSeconds);
+            await redisClient.expire(key, windowSeconds);
         }
 
         if (current > limit) {
-            const ttl = await getRedis().ttl(key);
+            const ttl = await redisClient.ttl(key);
             logger.warn('Rate limit exceeded', {
                 event: 'RATE_LIMIT_EXCEEDED',
                 identifier,
