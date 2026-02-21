@@ -9,9 +9,9 @@ CREATE TABLE `freight_simulation_logs` (
 	`created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT `freight_simulation_logs_id` PRIMARY KEY(`id`)
 );
-
+--> statement-breakpoint
 CREATE INDEX `idx_freight_logs_tenant_created_at`
 ON `freight_simulation_logs` (`tenant_id`,`created_at`);
-
+--> statement-breakpoint
 CREATE INDEX `idx_freight_logs_tenant_uf_created_at`
 ON `freight_simulation_logs` (`tenant_id`,`uf`,`created_at`);
