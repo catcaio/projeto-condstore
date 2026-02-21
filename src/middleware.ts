@@ -1,42 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rateLimitCheck } from "@/server/rate-limit.service";
 
 export const config = {
   matcher: [
-    "/api/:path*",
+    '/cockpit/:path*',
+    '/api/cockpit/:path*'
   ],
 };
 
 export async function middleware(req: NextRequest) {
-  const tenantId = req.headers.get("x-tenant-id");
-
-  if (!tenantId) {
-    return NextResponse.json(
-      { error: "Missing tenant id" },
-      { status: 400 }
-    );
-  }
-
-  const result = await rateLimitCheck({
-    tenantId,
-    bucket: "global",
-    maxRequests: 120,
-    windowSeconds: 60,
-  });
-
-  if (!result.allowed) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded", code: "RATE_LIMIT" },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(
-            Math.ceil((result.resetAt - Date.now()) / 1000)
-          ),
-        },
-      }
-    );
-  }
+  // Authentication/tenant checks for cockpit are now handled via getSessionUser 
+  // in the respective pages and API routes.
+  // Rate limiting via Redis has been removed from Edge middleware as requested.
 
   return NextResponse.next();
 }

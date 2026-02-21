@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { messageRepository } from '@/infra/repositories/message.repository';
 import { simulationRepository } from '@/infra/repositories/simulation.repository';
-import { getRedis } from "@/infra/redis.client";
+import { redisClient } from "@/infra/redis.client";
 import { logger } from '@/infra/logger';
 
 interface CockpitMetrics {
@@ -25,19 +25,22 @@ interface CockpitMetrics {
 
 const CACHE_TTL_SECONDS = 30;
 
+import { getSessionUser } from '@/infra/auth/session';
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const tenantId = request.headers.get('x-tenant-id');
+  const user = await getSessionUser(request);
+  const tenantId = user?.tenantId;
 
   if (!tenantId) {
-    return NextResponse.json({ error: 'Missing tenant' }, { status: 400 });
+    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   }
 
   const cacheKey = `cockpit:metrics:${tenantId}`;
 
   try {
     // Cache read (skip if Redis unavailable)
-    if (getRedis().isAvailable()) {
-      const cached = await getRedis().get<CockpitMetrics>(cacheKey);
+    if (redisClient.isAvailable()) {
+      const cached = await redisClient.get<CockpitMetrics>(cacheKey);
       if (cached) {
         logger.debug('cockpit/metrics: cache hit', { tenantId });
         return NextResponse.json(cached, {
@@ -61,8 +64,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     };
 
     // Cache write (fire-and-forget)
-    if (getRedis().isAvailable()) {
-      getRedis().set<CockpitMetrics>(cacheKey, payload, CACHE_TTL_SECONDS).catch((err: unknown) => {
+    if (redisClient.isAvailable()) {
+      redisClient.set<CockpitMetrics>(cacheKey, payload, CACHE_TTL_SECONDS).catch((err: unknown) => {
         logger.warn('cockpit/metrics: cache write failed', { tenantId }, err as Error);
       });
     }

@@ -1,5 +1,5 @@
 import { logger } from './logger';
-import { getRedis() } from './redis.client';
+import { redisClient } from './redis.client';
 import { appConfig } from '../config/app.config';
 
 /**
@@ -107,7 +107,7 @@ class FreightTableProvider {
 
         // 2. Check L2 Redis Cache
         try {
-            const cachedRedis = await getRedis().get<FreightTable>(REDIS_KEY);
+            const cachedRedis = await redisClient.get<FreightTable>(REDIS_KEY);
             if (cachedRedis) {
                 logger.info('Freight table loaded from Redis cache');
                 this.updateMemoryCache(cachedRedis);
@@ -125,7 +125,7 @@ class FreightTableProvider {
             this.updateMemoryCache(table);
 
             // Don't await Redis set to avoid blocking, but log errors
-            getRedis().set(REDIS_KEY, table, REDIS_TTL_SEC).catch(err => {
+            redisClient.set(REDIS_KEY, table, REDIS_TTL_SEC).catch(err => {
                 logger.error('Failed to update Redis cache for freight table', err as Error);
             });
 
@@ -298,3 +298,4 @@ class FreightTableProvider {
 }
 
 export const freightTableProvider = new FreightTableProvider();
+

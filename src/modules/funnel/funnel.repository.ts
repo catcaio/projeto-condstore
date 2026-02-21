@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import { getDb } from '../../infra/db';
 import { freightFunnelEvents } from '../../drizzle/schema';
 import { logger } from '../../infra/logger';
@@ -11,20 +11,29 @@ export enum FunnelStage {
     CEP_PROVIDED = 'CEP_PROVIDED',
     QUANTITY_PROVIDED = 'QUANTITY_PROVIDED',
     FREIGHT_QUOTED = 'FREIGHT_QUOTED',
-    FLOW_ABORTED = 'FLOW_ABORTED'
+    FLOW_ABORTED = 'FLOW_ABORTED',
+    REENGAGED = 'REENGAGED',
 }
 
+/**
+ * Input contract for saving a funnel event.
+ *
+ * `sessionId` is MANDATORY — must come from `session.sessionId`.
+ * `messageSid` is OPTIONAL — used for message-level tracing only.
+ * Never generate or fall back to a random UUID for sessionId here.
+ */
 export interface SaveFunnelEventInput {
     tenantId: string;
     phoneNumber: string;
+    sessionId: string;      // Required: always pass session.sessionId explicitly
     stage: FunnelStage;
-    messageSid?: string;
+    messageSid?: string;    // Optional: Twilio MessageSid for tracing
 }
 
 export class FunnelRepository {
     /**
      * Save a funnel event to the database.
-     * Handles idempotency via unique constraint on (tenantId, messageSid, stage).
+     * Handles idempotency via unique constraint on (sessionId, stage).
      * Swallows errors to avoid blocking the main flow, logging them as warnings.
      */
     async saveEvent(input: SaveFunnelEventInput): Promise<void> {
@@ -37,7 +46,7 @@ export class FunnelRepository {
                     id: randomUUID(),
                     tenantId: input.tenantId,
                     phoneNumber: input.phoneNumber,
-                    sessionId: input.messageSid || randomUUID(),
+                    sessionId: input.sessionId,   // Must be explicit — no fallback
                     stage: input.stage,
                 })
                 .onDuplicateKeyUpdate({
@@ -52,6 +61,7 @@ export class FunnelRepository {
             logger.warn('Failed to persist funnel event', {
                 tenantId: input.tenantId,
                 stage: input.stage,
+                messageSid: input.messageSid,
                 error: (error as Error).message,
             });
         }
