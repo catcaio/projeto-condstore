@@ -6,7 +6,7 @@ interface LogPublicEventParams {
     anonId: string;
     event: string;
     path: string;
-    props?: string;
+    props?: Record<string, unknown> | null;
     userAgent?: string;
 }
 
@@ -22,12 +22,17 @@ export const analyticsService = {
             const db = await getDb();
             const eventId = crypto.randomUUID();
 
+            const safeProps =
+                params.props && Object.keys(params.props).length > 0
+                    ? JSON.stringify(params.props)
+                    : null;
+
             await db.insert(publicEvents).values({
                 id: eventId,
                 anonId: params.anonId,
                 event: params.event,
                 path: params.path,
-                props: params.props ?? null,
+                props: safeProps,
                 userAgent: params.userAgent ?? null,
             });
 

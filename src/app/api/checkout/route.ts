@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { planData } from '../../../../components/pricing/planData';
 import { getSessionUser } from '../../../infra/auth/session';
 import { logger } from '../../../infra/logger';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_123', {
-    apiVersion: '2025-01-27.acacia' as any,
-});
+import { createStripeCheckoutSession } from '../../../lib/billing/stripe';
 
 export async function POST(req: NextRequest) {
     try {
@@ -35,13 +31,11 @@ export async function POST(req: NextRequest) {
 
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
 
-        const stripeSession = await stripe.checkout.sessions.create({
-            client_reference_id: `tenant:${tenantId}`,
-            metadata: { tenantId },
-            line_items: [{ price: plan.stripePriceId, quantity: 1 }],
-            mode: 'subscription',
-            success_url: `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${appUrl}/pricing?canceled=1`,
+        const stripeSession = await createStripeCheckoutSession({
+            tenantId,
+            stripePriceId: plan.stripePriceId,
+            successUrl: `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancelUrl: `${appUrl}/pricing?canceled=1`,
         });
 
         logger.info('Stripe checkout session created', {
