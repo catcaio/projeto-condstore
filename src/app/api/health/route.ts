@@ -11,17 +11,24 @@ function requiredEnv(name: string) {
 export async function GET() {
   const startedAt = Date.now();
 
-  const hasDb = !!process.env.DATABASE_URL;
-  const hasTwilio = !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN;
+  // 🔥 Ajusta aqui se quiser exigir mais variáveis
+  const env = [
+    requiredEnv("DATABASE_URL"),
+    requiredEnv("REDIS_URL"), // pode ser opcional em preview
+    requiredEnv("TWILIO_ACCOUNT_SID"),
+    requiredEnv("TWILIO_AUTH_TOKEN"),
+  ];
 
-  // Redis: ok / degraded / down / missing
-  let redisStatus: "ok" | "degraded" | "down" | "missing" = "degraded";
+  const envOk = env.filter(e => e.name !== "REDIS_URL").every(e => e.ok);
+
+  // Redis: ok / degraded / down
+  let redisStatus: "ok" | "degraded" | "down" = "degraded";
   let redisError: string | null = null;
 
   try {
     const redis = redisClient;
     if (!redis.isAvailable()) {
-      redisStatus = process.env.NODE_ENV === 'production' ? "missing" : "degraded";
+      redisStatus = "degraded"; // preview/local sem REDIS_URL
     } else {
       const pong = await redis.ping();
       redisStatus = pong ? "ok" : "down";
@@ -32,7 +39,7 @@ export async function GET() {
     redisError = err?.message ?? String(err);
   }
 
-  const ok = hasDb && hasTwilio && redisStatus !== "down";
+  const ok = envOk && redisStatus !== "down";
 
   return NextResponse.json(
     {
@@ -41,9 +48,8 @@ export async function GET() {
       ts: new Date().toISOString(),
       latencyMs: Date.now() - startedAt,
       checks: {
-        db: hasDb ? "ok" : "missing",
-        redis: redisStatus,
-        twilio: hasTwilio,
+        env: { ok: envOk, items: env },
+        redis: { status: redisStatus, error: redisError },
       },
     },
     { status: ok ? 200 : 503 }

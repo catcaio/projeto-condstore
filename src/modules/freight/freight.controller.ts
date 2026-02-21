@@ -7,7 +7,7 @@ import { funnelRepository, FunnelStage } from '../funnel/funnel.repository';
 import { appConfig } from '../../config/app.config';
 
 export class FreightController {
-    async handleIncoming(tenantId: string, phoneNumber: string, message: string, messageSid?: string): Promise<{ replyMessage: string, sessionInfo: any }> {
+    async handleIncoming(tenantId: string, phoneNumber: string, message: string, messageSid?: string): Promise<string> {
         try {
             let session = await sessionManager.getSession(tenantId, phoneNumber);
 
@@ -17,10 +17,10 @@ export class FreightController {
 
             switch (session.currentState) {
                 case ConversationState.AWAITING_CEP:
-                    return await this.handleCEP(tenantId, phoneNumber, message, session, messageSid);
+                    return await this.handleCEP(tenantId, phoneNumber, message, messageSid);
 
                 case ConversationState.AWAITING_QUANTITY:
-                    return await this.handleQuantity(tenantId, phoneNumber, message, session, messageSid);
+                    return await this.handleQuantity(tenantId, phoneNumber, message, messageSid);
 
                 default:
                     await sessionManager.deleteSession(tenantId, phoneNumber);
@@ -28,14 +28,11 @@ export class FreightController {
             }
         } catch (error) {
             logger.error('Error handling freight incoming message', error as Error, { tenantId, phoneNumber });
-            return {
-                replyMessage: 'Desculpe, ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.',
-                sessionInfo: { outcome: 'error_caught' }
-            };
+            return 'Desculpe, ocorreu um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.';
         }
     }
 
-    private async startFreightQuery(tenantId: string, phoneNumber: string, messageSid?: string): Promise<{ replyMessage: string, sessionInfo: any }> {
+    private async startFreightQuery(tenantId: string, phoneNumber: string, messageSid?: string): Promise<string> {
         // Generate new session (initially IDLE, then transition to AWAITING_CEP)
         let session = await sessionManager.createSession(tenantId, phoneNumber);
 
@@ -63,32 +60,16 @@ export class FreightController {
             stage: FunnelStage.ASKED_CEP,
         });
 
-        return {
-            replyMessage: 'Olá! Vou ajudar você a calcular o frete. Qual é o CEP de destino? (Apenas números)',
-            sessionInfo: {
-                sessionId: session.sessionId,
-                currentState: ConversationState.IDLE,
-                nextState: session.currentState,
-                outcome: 'started_flow'
-            }
-        };
+        return 'Olá! Vou ajudar você a calcular o frete. Qual é o CEP de destino? (Apenas números)';
     }
 
-    private async handleCEP(tenantId: string, phoneNumber: string, message: string, currentSession: any, messageSid?: string): Promise<{ replyMessage: string, sessionInfo: any }> {
+    private async handleCEP(tenantId: string, phoneNumber: string, message: string, messageSid?: string): Promise<string> {
         const session = await sessionManager.getSession(tenantId, phoneNumber);
         if (!session) throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session not found');
 
         const cep = message.replace(/\D/g, '');
         if (cep.length !== 8) {
-            return {
-                replyMessage: 'CEP inválido. Por favor, envie os 8 números do seu CEP.',
-                sessionInfo: {
-                    sessionId: session.sessionId,
-                    currentState: currentSession.currentState,
-                    nextState: currentSession.currentState,
-                    outcome: 'invalid_cep_input'
-                }
-            };
+            return 'CEP inválido. Por favor, envie os 8 números do seu CEP.';
         }
 
         const newContext = await stateMachine.transition(
@@ -104,45 +85,21 @@ export class FreightController {
             stage: FunnelStage.CEP_PROVIDED,
         });
 
-        return {
-            replyMessage: 'Perfeito! E qual quantidade de produtos você deseja cotar? (apenas números, exemplo: "1" ou "5")',
-            sessionInfo: {
-                sessionId: session.sessionId,
-                currentState: currentSession.currentState,
-                nextState: newContext.currentState,
-                outcome: 'cep_accepted'
-            }
-        };
+        return 'Perfeito! E qual quantidade de produtos você deseja cotar? (apenas números, exemplo: "1" ou "5")';
     }
 
-    private async handleQuantity(tenantId: string, phoneNumber: string, message: string, currentSession: any, messageSid?: string): Promise<{ replyMessage: string, sessionInfo: any }> {
+    private async handleQuantity(tenantId: string, phoneNumber: string, message: string, messageSid?: string): Promise<string> {
         const session = await sessionManager.getSession(tenantId, phoneNumber);
         if (!session || !session.cep) throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session/CEP not found');
 
         const amountMatches = message.match(/\d+/);
         if (!amountMatches) {
-            return {
-                replyMessage: 'Quantidade inválida. Por favor, digite apenas números informando quantas unidades deseja.',
-                sessionInfo: {
-                    sessionId: session.sessionId,
-                    currentState: currentSession.currentState,
-                    nextState: currentSession.currentState,
-                    outcome: 'invalid_quantity_input'
-                }
-            };
+            return 'Quantidade inválida. Por favor, digite apenas números informando quantas unidades deseja.';
         }
 
         const quantity = parseInt(amountMatches[0], 10);
         if (quantity <= 0 || quantity > 500) {
-            return {
-                replyMessage: 'Por favor, informe uma quantidade válida (entre 1 e 500).',
-                sessionInfo: {
-                    sessionId: session.sessionId,
-                    currentState: currentSession.currentState,
-                    nextState: currentSession.currentState,
-                    outcome: 'quantity_out_of_bounds'
-                }
-            };
+            return 'Por favor, informe uma quantidade válida (entre 1 e 500).';
         }
 
         void funnelRepository.saveEvent({
@@ -188,15 +145,7 @@ export class FreightController {
                 stage: FunnelStage.FREIGHT_QUOTED,
             });
 
-            return {
-                replyMessage: reply,
-                sessionInfo: {
-                    sessionId: session.sessionId,
-                    currentState: currentSession.currentState,
-                    nextState: completedSession.currentState,
-                    outcome: 'freight_quoted_success'
-                }
-            };
+            return reply;
 
         } catch (err) {
             logger.error('Freight calculation failed', err as Error, { tenantId, phoneNumber, cep: session.cep, quantity });
@@ -211,15 +160,7 @@ export class FreightController {
                 stage: FunnelStage.FLOW_ABORTED,
             });
 
-            return {
-                replyMessage: 'Houve um problema ao calcular o frete para este CEP e quantidade. Por favor, verifique os dados e tente novamente mais tarde.',
-                sessionInfo: {
-                    sessionId: session.sessionId,
-                    currentState: currentSession.currentState,
-                    nextState: errorSession.currentState,
-                    outcome: 'freight_calculation_failed'
-                }
-            };
+            return 'Houve um problema ao calcular o frete para este CEP e quantidade. Por favor, verifique os dados e tente novamente mais tarde.';
         }
     }
 }

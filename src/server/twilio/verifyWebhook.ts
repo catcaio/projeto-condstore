@@ -26,20 +26,11 @@ import { logger } from "../../infra/logger";
  * ?bodySHA256=<hash> to the URL for JSON webhooks before signing.
  */
 export function getPublicUrl(req: NextRequest): string {
+  const base = process.env.TWILIO_WEBHOOK_BASE_URL?.replace(/\/$/, "");
   const pathWithQuery = req.nextUrl.pathname + req.nextUrl.search;
 
-  if (process.env.NODE_ENV === 'production') {
-    const base = process.env.APP_BASE_URL;
-    if (!base) {
-      throw new Error("APP_BASE_URL is required in production");
-    }
-    return base.replace(/\/$/, "") + pathWithQuery;
-  }
-
-  const base = process.env.APP_BASE_URL || process.env.TWILIO_WEBHOOK_BASE_URL;
-
   if (base) {
-    return base.replace(/\/$/, "") + pathWithQuery;
+    return base + pathWithQuery;
   }
 
   const proto = req.headers.get("x-forwarded-proto") ?? "https";

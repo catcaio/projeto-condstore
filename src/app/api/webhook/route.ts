@@ -22,11 +22,6 @@ import { freightController } from "../../../modules/freight/freight.controller";
  * Handles incoming WhatsApp messages from Twilio.
  */
 export async function POST(request: NextRequest) {
-  if (process.env.NODE_ENV === 'production' && !process.env.APP_BASE_URL) {
-    logger.error('CRITICAL: APP_BASE_URL is missing in production. Cannot verify Twilio Webhook URL securely.', new Error('Missing APP_BASE_URL'));
-    return NextResponse.json({ error: "Configuration Error" }, { status: 500 });
-  }
-
   const startTime = Date.now();
 
   // 1) Enforce form-urlencoded only (Twilio WhatsApp default)
@@ -167,7 +162,7 @@ export async function POST(request: NextRequest) {
     const messageText = incomingMessage.body ?? "";
     const messageSid = payload["MessageSid"] as string | undefined;
 
-    const { replyMessage, sessionInfo } = await freightController.handleIncoming(tenantIdStr, senderNumber, messageText, messageSid);
+    const replyMessage = await freightController.handleIncoming(tenantIdStr, senderNumber, messageText, messageSid);
 
     const timeMs = Date.now() - startTime;
     safeCtx.durationMs = timeMs;
@@ -177,10 +172,6 @@ export async function POST(request: NextRequest) {
       tenantId: tenantIdStr,
       sender: logger.maskPhone(senderNumber),
       responseLength: replyMessage.length,
-      sessionId: sessionInfo?.sessionId,
-      currentState: sessionInfo?.currentState,
-      nextState: sessionInfo?.nextState,
-      outcome: sessionInfo?.outcome,
       ...safeCtx, // This already contains messageSid
     });
 
