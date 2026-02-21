@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 export default async function RoadmapPage() {
     const reports = await projectReportRepository.getAllReports();
     
-    // Group by moduleKey and get latest status
     const modules: Record<string, { status: string, count: number, latestTitle: string }> = {};
     
     reports.forEach(r => {
@@ -20,37 +19,48 @@ export default async function RoadmapPage() {
     const moduleList = Object.entries(modules);
 
     return (
-        <div className="min-h-screen bg-[#F2F2F7] dark:bg-black text-black dark:text-white font-sans p-4 md:p-8">
-            <div className="max-w-2xl mx-auto">
-                <header className="mb-8">
-                    <Link href="/evolution" className="text-blue-600 dark:text-blue-400 text-sm font-medium mb-4 inline-block active:opacity-50">
+        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100">
+            <div className="max-w-3xl mx-auto px-6 py-16 md:py-24">
+                <header className="mb-16">
+                    <Link href="/evolution" className="inline-flex items-center text-sm font-bold text-blue-600 mb-12 hover:gap-2 transition-all">
                         ← Voltar para Timeline
                     </Link>
-                    <h1 className="text-3xl font-bold tracking-tight">Roadmap de Evolução</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Progresso por módulo do sistema</p>
+                    <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 mb-4">Roadmap Estratégico</h1>
+                    <p className="text-lg text-slate-500 leading-relaxed">Visão consolidada do progresso por módulo do sistema.</p>
                 </header>
 
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-6">
                     {moduleList.length === 0 ? (
-                        <p className="text-center text-slate-500 py-12">Nenhum dado de roadmap disponível.</p>
+                        <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+                            <p className="text-slate-400 font-medium">Nenhum dado de roadmap disponível.</p>
+                        </div>
                     ) : (
                         moduleList.map(([key, data]) => (
-                            <div key={key} className="bg-white dark:bg-[#1C1C1E] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-                                <div className="flex justify-between items-center mb-3">
-                                    <h3 className="font-bold text-lg">{key}</h3>
+                            <div key={key} className="group bg-white p-8 rounded-3xl border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:shadow-blue-50/50 transition-all duration-300">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-black text-xl tracking-tight text-slate-900">{key}</h3>
                                     <StatusBadge status={data.status} />
                                 </div>
-                                <p className="text-xs text-slate-500 mb-4">Última atualização: {data.latestTitle}</p>
                                 
-                                <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                                    <div 
-                                        className={`h-full ${data.status === 'done' ? 'bg-green-500' : 'bg-blue-500'}`} 
-                                        style={{ width: data.status === 'done' ? '100%' : '60%' }}
-                                    />
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-end">
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Progresso Atual</p>
+                                        <p className="text-sm font-black text-slate-900">{data.status === 'done' ? '100%' : '75%'}</p>
+                                    </div>
+                                    <div className="w-full bg-slate-50 h-3 rounded-full overflow-hidden p-0.5 border border-slate-100">
+                                        <div 
+                                            className={`h-full rounded-full transition-all duration-1000 ${data.status === 'done' ? 'bg-emerald-500' : 'bg-blue-600'}`} 
+                                            style={{ width: data.status === 'done' ? '100%' : '75%' }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="flex justify-between mt-2">
-                                    <span className="text-[10px] text-slate-400 uppercase font-bold">{data.count} Relatórios</span>
-                                    <span className="text-[10px] text-slate-400 uppercase font-bold">{data.status === 'done' ? '100%' : '60%'}</span>
+
+                                <div className="mt-8 pt-6 border-t border-slate-50 flex justify-between items-center">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-blue-600" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{data.count} Atualizações</span>
+                                    </div>
+                                    <p className="text-[10px] font-medium text-slate-400 italic">Última: {data.latestTitle}</p>
                                 </div>
                             </div>
                         ))
@@ -63,15 +73,15 @@ export default async function RoadmapPage() {
 
 function StatusBadge({ status }: { status: string }) {
     const colors: Record<string, string> = {
-        done: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-        in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-        planned: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400',
-        blocked: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+        done: 'text-emerald-600 bg-emerald-50',
+        in_progress: 'text-blue-600 bg-blue-50',
+        planned: 'text-slate-500 bg-slate-50',
+        blocked: 'text-rose-600 bg-rose-50',
     };
 
     return (
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${colors[status] || colors.planned}`}>
-            {status.toUpperCase()}
+        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md ${colors[status] || colors.planned}`}>
+            {status}
         </span>
     );
 }
