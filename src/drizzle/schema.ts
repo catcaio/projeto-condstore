@@ -7,6 +7,7 @@ export const tenants = mysqlTable('tenants', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     name: varchar('name', { length: 255 }).notNull(),
     twilioNumber: varchar('twilio_number', { length: 30 }).notNull().unique(),
+    plan: varchar('plan', { length: 20 }).notNull().default('FREE'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 

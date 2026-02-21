@@ -16,6 +16,8 @@ import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from "../../../lib/nor
 import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
 import { checkRateLimit, getThrottleMessage } from "../../../infra/rate-limiter";
 import { freightController } from "../../../modules/freight/freight.controller";
+import { featureGateService } from "../../../modules/billing/feature-gate.service";
+import { ErrorCode } from "../../../infra/errors";
 
 /**
  * POST /api/webhook
@@ -161,6 +163,21 @@ export async function POST(request: NextRequest) {
     const senderNumber = fromNormalized;
     const messageText = incomingMessage.body ?? "";
     const messageSid = payload["MessageSid"] as string | undefined;
+
+    // Enforce per-plan message limit (backend gate — never trust frontend)
+    try {
+      await featureGateService.assertWithinMessageLimit(tenantIdStr);
+    } catch (gateErr: any) {
+      if (gateErr?.code === ErrorCode.PLAN_LIMIT_EXCEEDED) {
+        logger.warn('Webhook: message limit exceeded, blocking request', {
+          tenantId: tenantIdStr,
+          event: 'PLAN_LIMIT_EXCEEDED',
+          ...safeCtx,
+        });
+        return twimlOk('Limite do plano atingido. Faça upgrade para continuar.');
+      }
+      throw gateErr;
+    }
 
     const replyMessage = await freightController.handleIncoming(tenantIdStr, senderNumber, messageText, messageSid);
 

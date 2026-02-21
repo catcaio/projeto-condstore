@@ -32,6 +32,10 @@ export enum ErrorCode {
   // Generic errors
   UNKNOWN_ERROR = 'UNKNOWN_ERROR',
   VALIDATION_ERROR = 'VALIDATION_ERROR',
+
+  // Feature gating
+  PLAN_LIMIT_EXCEEDED = 'PLAN_LIMIT_EXCEEDED',
+  FEATURE_DISABLED = 'FEATURE_DISABLED',
 }
 
 export interface ErrorContext {
@@ -115,6 +119,8 @@ export const userFacingMessages: Record<ErrorCode, string> = {
   [ErrorCode.TENANT_NOT_FOUND]: 'Empresa não encontrada ou inativa.',
   [ErrorCode.INTERNAL_ERROR]: 'Erro interno do sistema. Tente novamente.',
   [ErrorCode.UNAUTHORIZED]: 'Acesso não autorizado.',
+  [ErrorCode.PLAN_LIMIT_EXCEEDED]: 'Limite do plano atingido. Faça upgrade para continuar.',
+  [ErrorCode.FEATURE_DISABLED]: 'Funcionalidade não disponível no plano atual. Faça upgrade para desbloquear.',
 };
 
 /**

@@ -18,6 +18,8 @@ import type {
 import { redisClient } from '../../infra/redis.client';
 import { freightTableProvider } from '../../infra/freight-table';
 import { freightSimulationLogRepository } from '../../infra/repositories/freight-simulation-log.repository';
+import { featureGateService } from '../billing/feature-gate.service';
+
 
 
 
@@ -29,6 +31,11 @@ class FreightService {
     try {
       // Validate request
       this.validateRequest(request);
+
+      // Enforce plan simulation limit (backend gate — never trust frontend)
+      if (request.tenantId) {
+        await featureGateService.assertWithinSimulationLimit(request.tenantId);
+      }
 
       // Check cache first
       const cached = await this.getCachedResult(request);
