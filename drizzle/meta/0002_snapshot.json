@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "8c06335b-8f5b-478f-a962-262093d4b4f9",
+  "id": "39f69639-a459-456d-a5fc-5132523d8363",
   "prevId": "04c59682-f29c-44cd-9191-be6e4f32d1ae",
   "tables": {
     "freight_funnel_events": {

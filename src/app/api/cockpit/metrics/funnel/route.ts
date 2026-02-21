@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 
->>>>>>> 8dc98d7e813b57a0e001017f33ec8cb68a702b24
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/infra/auth/session';
 import { getDb } from '@/infra/db';
@@ -25,16 +22,6 @@ const CACHE_TTL_SECONDS = 60;
 
 export async function GET(request: NextRequest) {
     try {
-<<<<<<< HEAD
-        // 1. Authenticate and get Tenant ID securely
-        const user = await getSessionUser(request);
-        if (!user?.tenantId) {
-            return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-        }
-        const tenantId = user.tenantId;
-
-        // 2. Try Cache
-=======
         let tenantId: string;
 
         // DEV bypass: allow testing metrics endpoints without session
@@ -61,7 +48,6 @@ export async function GET(request: NextRequest) {
         }
 
         // 2. Try Redis Cache (with availability guard)
->>>>>>> 8dc98d7e813b57a0e001017f33ec8cb68a702b24
         const cacheKey = `cockpit:metrics:funnel:${tenantId}`;
         try {
             if (redisClient.isAvailable()) {
@@ -75,13 +61,8 @@ export async function GET(request: NextRequest) {
                     });
                 }
             }
-<<<<<<< HEAD
-        } catch (error) {
-            logger.warn('Failed to read funnel cache', undefined, error as Error);
-=======
         } catch (cacheErr) {
             logger.warn('Failed to read funnel cache', undefined, cacheErr as Error);
->>>>>>> 8dc98d7e813b57a0e001017f33ec8cb68a702b24
         }
 
         // 3. Query DB
@@ -122,11 +103,7 @@ export async function GET(request: NextRequest) {
             }
         });
 
-<<<<<<< HEAD
-        // 4. Calculate Rates (Sequential)
-=======
         // 4. Calculate Rates (full granular pipeline)
->>>>>>> 8dc98d7e813b57a0e001017f33ec8cb68a702b24
         const intentRate = counts[FunnelStage.FLOW_STARTED] > 0
             ? counts[FunnelStage.INTENT_DETECTED] / counts[FunnelStage.FLOW_STARTED]
             : 0;
@@ -147,11 +124,7 @@ export async function GET(request: NextRequest) {
             ? counts[FunnelStage.FREIGHT_QUOTED] / counts[FunnelStage.QUANTITY_PROVIDED]
             : 0;
 
-<<<<<<< HEAD
-        // Response Payload
-=======
         // 5. Build Response Payload
->>>>>>> 8dc98d7e813b57a0e001017f33ec8cb68a702b24
         const responseData = {
             window_7d: {
                 counts: {
@@ -174,20 +147,12 @@ export async function GET(request: NextRequest) {
             timeseries_14d: [],
         };
 
-<<<<<<< HEAD
-        // 5. Cache Result
-=======
         // 6. Cache Result (fire-and-forget with availability guard)
->>>>>>> 8dc98d7e813b57a0e001017f33ec8cb68a702b24
         try {
             if (redisClient.isAvailable()) {
                 redisClient.set(cacheKey, responseData, CACHE_TTL_SECONDS).catch(() => { });
             }
-<<<<<<< HEAD
-        } catch (e) { }
-=======
         } catch (_) { }
->>>>>>> 8dc98d7e813b57a0e001017f33ec8cb68a702b24
 
         return NextResponse.json(responseData, {
             headers: {
