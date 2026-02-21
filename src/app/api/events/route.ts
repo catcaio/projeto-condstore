@@ -20,12 +20,13 @@ export async function POST(request: NextRequest) {
         const { event, path, props } = parseResult.data;
 
         // 🔒 Validate 4KB limits strictly to avoid payload bloat
-        let propsString: string | undefined = undefined;
-        if (props) {
-            propsString = JSON.stringify(props);
-            if (propsString.length > 4096) {
-                return NextResponse.json({ ok: false, error: 'Payload limits exceeded (Max 4096 chars)' }, { status: 400 });
-            }
+        const safeProps =
+            props && Object.keys(props).length > 0
+                ? JSON.stringify(props)
+                : null;
+
+        if (safeProps && safeProps.length > 4096) {
+            return NextResponse.json({ ok: false, error: 'Payload limits exceeded (Max 4096 chars)' }, { status: 400 });
         }
 
         // 🔒 Anonymous Identity Management (Strict crypto.randomUUID implementation constraint)
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
             anonId,
             event,
             path,
-            props: propsString,
+            props: props ?? null,
             userAgent
         });
 

@@ -10,7 +10,9 @@
     "lint": "next lint",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "seed:analytics:local": "node scripts/seed-analytics-local.mjs",
+    "seed:dev": "node scripts/seed-dev-admin.mjs"
   },
   "dependencies": {
     "axios": "1.13.5",

@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import { verifyStripeSignature } from '../../../../lib/billing/signature';
-import { upsertSubscription } from '../../../../lib/billing/subscriptionStore';
+import { verifyStripeSignature, StripeEvent } from '../../../../lib/billing/signature';
 import { planData } from '../../../../../components/pricing/planData';
-import { SubscriptionRecord, SubscriptionStatus } from '../../../../lib/billing/types';
-import Stripe from 'stripe';
+import { SubscriptionStatus } from '../../../../lib/billing/types';
 import { getDb } from '../../../../infra/db';
 import { tenants } from '../../../../drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -20,7 +18,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 });
         }
 
-        let event: Stripe.Event;
+        let event: StripeEvent;
         try {
             event = verifyStripeSignature(rawBody, signature);
         } catch (err: any) {
@@ -46,17 +44,35 @@ export async function POST(req: Request) {
     }
 }
 
-async function handleSubscriptionEvent(event: Stripe.Event) {
-    let subscription: Stripe.Subscription;
+type StripeCheckoutSession = {
+    id: string;
+    mode?: string;
+    client_reference_id?: string | null;
+    metadata?: Record<string, string>;
+    customer?: string | { id?: string };
+    subscription?: string | { id?: string } | null;
+};
+
+type StripeSubscription = {
+    id: string;
+    customer: string | { id: string };
+    status: string;
+    metadata?: Record<string, string>;
+    items: { data: Array<{ price: { id: string } }> };
+    current_period_end?: number;
+    cancel_at_period_end?: boolean;
+};
+
+async function handleSubscriptionEvent(event: StripeEvent) {
+    let subscription: StripeSubscription;
     let tenantIdStr: string = '';
     let customerId = '';
     let status: SubscriptionStatus = 'incomplete';
     let currentPeriodEnd = 0;
-    let cancelAtPeriodEnd = false;
     let priceId = '';
 
     if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object as StripeCheckoutSession;
         if (session.mode !== 'subscription') return; // Only process subscriptions
 
         // Extract tenantId from metadata or client_reference_id
@@ -95,12 +111,10 @@ async function handleSubscriptionEvent(event: Stripe.Event) {
         return;
     } else {
         // customer.subscription.created | .updated | .deleted
-        subscription = event.data.object as Stripe.Subscription;
+        subscription = event.data.object as StripeSubscription;
         customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
         status = subscription.status as SubscriptionStatus;
         currentPeriodEnd = (subscription as any).current_period_end || 0;
-        cancelAtPeriodEnd = (subscription as any).cancel_at_period_end || false;
-
         // Assume single item subscription for simplicity
         const item = subscription.items.data[0];
         if (item) {
@@ -136,7 +150,7 @@ async function handleSubscriptionEvent(event: Stripe.Event) {
             console.log(`[Stripe Webhook] Updated subscription for tenant ${tenantIdStr} to status ${status}`);
         } else {
             // Fallback: update tenant by stripeCustomerId
-            const results = await db.update(tenants)
+            await db.update(tenants)
                 .set({
                     stripeSubscriptionId: subscription.id,
                     plan: planName,
