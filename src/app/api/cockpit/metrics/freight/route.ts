@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { getDb } from '../../../../../infra/db';
 import { getSessionUser } from '../../../../../infra/auth/session';
 import { logger } from '../../../../../infra/logger';
-import { getRedis() } from '../../../../../infra/redis.client';
+import { redisClient } from '../../../../../infra/redis.client';
 
 interface FreightMetricsResponse {
   total_simulations_7d: number;
@@ -42,8 +42,8 @@ function unwrapRows<T>(result: unknown): T[] {
 
 async function readFromCache(cacheKey: string, tenantId: string): Promise<FreightMetricsResponse | null> {
   try {
-    if (getRedis().isAvailable()) {
-      const cached = await getRedis().get<FreightMetricsResponse>(cacheKey);
+    if (redisClient.isAvailable()) {
+      const cached = await redisClient.get<FreightMetricsResponse>(cacheKey);
       if (cached) {
         logger.info('cockpit/metrics/freight: cache_hit', { tenantId, cache: 'redis' });
         return cached;
@@ -76,8 +76,8 @@ async function readFromCache(cacheKey: string, tenantId: string): Promise<Freigh
 }
 
 function writeToCache(cacheKey: string, tenantId: string, payload: FreightMetricsResponse): void {
-  if (getRedis().isAvailable()) {
-    getRedis().set<FreightMetricsResponse>(cacheKey, payload, CACHE_TTL_SECONDS).catch((error: unknown) => {
+  if (redisClient.isAvailable()) {
+    redisClient.set<FreightMetricsResponse>(cacheKey, payload, CACHE_TTL_SECONDS).catch((error: unknown) => {
       logger.warn('cockpit/metrics/freight: cache write failed', { tenantId, cache: 'redis' }, error as Error);
     });
     return;
@@ -204,3 +204,4 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
   }
 }
+

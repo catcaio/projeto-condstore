@@ -1,0 +1,63 @@
+/* Mobile-first tokens */
+:root {
+  /* Spacing: 8px scale */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+  --space-8: 64px;
+
+  /* Brand accents */
+  --brand-blue: #007aff;
+  --brand-red: #ff3b30;
+  --brand-black: #1c1c1e;
+
+  /* Warm neutral surfaces */
+  --surface-base: #fdfaf8;
+  --surface-muted: #f2efe9;
+  --surface-elevated: #ffffff;
+  
+  /* Text */
+  --text-body: #333333;
+  --text-muted: #666666;
+
+  /* Radii */
+  --radius-card: 16px;
+  --radius-large: 24px;
+  --radius-pill: 9999px;
+
+  /* Typography scale */
+  --text-tertiary: 14px;
+  --text-base: 16px;
+  --text-secondary: 18px;
+  --text-primary: 29px;
+  --text-hero: 47px;
+
+  /* Motion tokens */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 240ms;
+
+  /* Shadows */
+  --shadow-recommended: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.dark {
+  --brand-black: #ffffff;
+  --surface-base: #1c1c1e;
+  --surface-muted: #2c2c2e;
+  --surface-elevated: #2c2c2e;
+  --text-body: #fdfaf8;
+  --text-muted: rgba(235, 235, 245, 0.6);
+  --shadow-recommended: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+}
