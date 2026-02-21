@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSubscription } from '../../../../lib/billing/subscriptionStore';
+import { getSessionUser } from '../../../../infra/auth/session';
 
 export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-        return NextResponse.json(
-            { error: 'userId is required' },
-            { status: 400 }
-        );
+    // ── Auth: userId MUST come from the verified session, never from query params ──
+    const session = await getSessionUser(req);
+    if (!session?.sub) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const userId = session.sub;
 
     try {
         const subscription = await getSubscription(userId);
@@ -20,7 +18,7 @@ export async function GET(req: NextRequest) {
             maxAge: 86400,
             httpOnly: true,
             sameSite: 'lax' as const,
-            secure: process.env.NODE_ENV === 'production'
+            secure: process.env.NODE_ENV === 'production',
         };
 
         if (!subscription) {
