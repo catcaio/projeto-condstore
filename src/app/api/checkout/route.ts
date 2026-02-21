@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { planData } from '../../../../components/pricing/planData';
+import { verify } from '../../../lib/auth/jwt';
+import { cookies } from 'next/headers';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_123', {
     apiVersion: '2025-01-27.acacia' as any,
@@ -9,7 +11,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_123', {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { planId, userId } = body;
+        const body = await req.json();
+        const { planId } = body;
+
+        // Validating planId and user via cookies
 
         // Validate planId
         const plan = planData.find(p => p.id === planId);
@@ -20,6 +25,15 @@ export async function POST(req: Request) {
                 { status: 400 }
             );
         }
+
+        const store = await cookies();
+        const token = store.get('session')?.value;
+        const decoded = verify(token || '');
+        if (!decoded || !decoded.userId) {
+            return NextResponse.json({ error: 'Unauthorized: Please login to checkout.' }, { status: 401 });
+        }
+
+        const userId = decoded.userId;
 
         if (!process.env.STRIPE_SECRET_KEY) {
             return NextResponse.json({ url: `https://checkout.stripe.com/pay/${plan.stripePriceId}` });

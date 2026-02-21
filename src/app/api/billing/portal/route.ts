@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '../../../../lib/billing/stripe';
 import { getSubscription } from '../../../../lib/billing/subscriptionStore';
+import { verify } from '../../../../lib/auth/jwt';
+import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const { userId } = body;
+        const store = await cookies();
+        const sessionToken = store.get('session')?.value;
+        const decoded = verify(sessionToken || '');
 
-        if (!userId) {
-            return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+        if (!decoded || !decoded.userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const userId = decoded.userId;
 
         const subscription = await getSubscription(userId);
 

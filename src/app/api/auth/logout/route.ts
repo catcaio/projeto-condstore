@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
-import { COOKIE_NAME } from '@/infra/auth/session';
+import { clearAuthCookie } from '../../../../lib/auth/session';
 
 export async function POST() {
-    const response = NextResponse.json({ success: true });
-
-    response.cookies.set(COOKIE_NAME, '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 0,
-    });
-
-    return response;
+    try {
+        await clearAuthCookie();
+        return NextResponse.json({ ok: true });
+    } catch (error: any) {
+        console.error('Logout error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
 }

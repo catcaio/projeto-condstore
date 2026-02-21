@@ -1,6 +1,6 @@
 import React from 'react';
-import { Section } from '../../../ui/primitives/Section';
-import { Stack } from '../../../ui/primitives/Stack';
+import { Section } from '../../../../ui/primitives/Section';
+import { Stack } from '../../../../ui/primitives/Stack';
 import { MetricCard } from '../../../components/admin/MetricCard';
 import { RevenueChart } from '../../../components/admin/RevenueChart';
 import { computeBillingMetrics } from '../../../lib/metrics/billingMetrics';

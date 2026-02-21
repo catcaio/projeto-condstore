@@ -1,12 +1,8 @@
 import { SubscriptionRecord } from './types';
 
-export async function fetchSubscription(userId: string): Promise<SubscriptionRecord | { status: 'none' }> {
-    if (!userId) {
-        return { status: 'none' };
-    }
-
+export async function fetchSubscription(): Promise<SubscriptionRecord | { status: 'none' }> {
     try {
-        const response = await fetch(`/api/billing/subscription?userId=${encodeURIComponent(userId)}`, {
+        const response = await fetch('/api/billing/subscription', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'

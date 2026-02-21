@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState, ReactNode } from 'react';
-import { getOrCreateClientUserId } from '../../lib/billing/clientUserId';
 import { fetchSubscription } from '../../lib/billing/getSubscription';
 import { Card } from '../../../ui/primitives/Card';
 import { Button } from '../../../ui/primitives/Button';
@@ -46,8 +45,7 @@ export const AccessGate = ({ requiredLayer, fallback, children }: AccessGateProp
                 return;
             }
 
-            const userId = getOrCreateClientUserId();
-            const sub = await fetchSubscription(userId); // This sets the cookie securely via API response
+            const sub = await fetchSubscription(); // Cookie handles auth on server
 
             let allowed = false;
 

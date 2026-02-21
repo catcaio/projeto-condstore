@@ -1,5 +1,5 @@
 import { getAllSubscriptions } from '../billing/subscriptionStore';
-import { planData } from '../../components/pricing/planData';
+import { planData } from '../../../components/pricing/planData';
 
 export interface BillingMetrics {
     activeCount: number;
@@ -39,7 +39,7 @@ export async function computeBillingMetrics(): Promise<BillingMetrics> {
         }
 
         if (['active', 'trialing'].includes(sub.status)) {
-            const plan = planData.find(p => p.id === sub.planId);
+            const plan = planData.find((p: any) => p.id === sub.planId);
             if (plan) {
                 // Extract numeric value from "R$ 149/mês"
                 const priceMatch = plan.price.match(/\d+(\.\d+)?/);

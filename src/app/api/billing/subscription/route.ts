@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSubscription } from '../../../../lib/billing/subscriptionStore';
+import { verify } from '../../../../lib/auth/jwt';
+import { cookies } from 'next/headers';
 
 export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('session')?.value;
+    const decoded = verify(sessionToken || '');
 
-    if (!userId) {
+    if (!decoded || !decoded.userId) {
         return NextResponse.json(
-            { error: 'userId is required' },
-            { status: 400 }
+            { error: 'Unauthorized' },
+            { status: 401 }
         );
     }
+
+    const userId = decoded.userId;
 
     try {
         const subscription = await getSubscription(userId);

@@ -5,7 +5,6 @@ import { Section } from '../../../../ui/primitives/Section';
 import { Card } from '../../../../ui/primitives/Card';
 import { Stack } from '../../../../ui/primitives/Stack';
 import { Button } from '../../../../ui/primitives/Button';
-import { getOrCreateClientUserId } from '../../../lib/billing/clientUserId';
 import { track } from '../../../../utils/track';
 
 export default function ManageBillingPage() {
@@ -16,11 +15,9 @@ export default function ManageBillingPage() {
         track('billing_portal_open');
 
         try {
-            const userId = getOrCreateClientUserId();
             const res = await fetch('/api/billing/portal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId }),
             });
 
             if (!res.ok) {
