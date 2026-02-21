@@ -22,6 +22,11 @@ import { freightController } from "../../../modules/freight/freight.controller";
  * Handles incoming WhatsApp messages from Twilio.
  */
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production' && !process.env.APP_BASE_URL) {
+    logger.error('CRITICAL: APP_BASE_URL is missing in production. Cannot verify Twilio Webhook URL securely.', new Error('Missing APP_BASE_URL'));
+    return NextResponse.json({ error: "Configuration Error" }, { status: 500 });
+  }
+
   const startTime = Date.now();
 
   // 1) Enforce form-urlencoded only (Twilio WhatsApp default)
