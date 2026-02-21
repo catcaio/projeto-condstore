@@ -25,11 +25,14 @@ interface CockpitMetrics {
 
 const CACHE_TTL_SECONDS = 30;
 
+import { getSessionUser } from '@/infra/auth/session';
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const tenantId = request.headers.get('x-tenant-id');
+  const user = await getSessionUser(request);
+  const tenantId = user?.tenantId;
 
   if (!tenantId) {
-    return NextResponse.json({ error: 'Missing tenant' }, { status: 400 });
+    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   }
 
   const cacheKey = `cockpit:metrics:${tenantId}`;

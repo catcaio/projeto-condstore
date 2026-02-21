@@ -42,8 +42,22 @@ export class FreightController {
         void funnelRepository.saveEvent({
             tenantId,
             phoneNumber,
+            sessionId: session.sessionId,
             stage: FunnelStage.FLOW_STARTED,
-            messageSid: messageSid || `init-${Date.now()}`,
+        });
+
+        void funnelRepository.saveEvent({
+            tenantId,
+            phoneNumber,
+            sessionId: session.sessionId,
+            stage: FunnelStage.INTENT_DETECTED,
+        });
+
+        void funnelRepository.saveEvent({
+            tenantId,
+            phoneNumber,
+            sessionId: session.sessionId,
+            stage: FunnelStage.ASKED_CEP,
         });
 
         return 'Olá! Vou ajudar você a calcular o frete. Qual é o CEP de destino? (Apenas números)';
@@ -67,8 +81,8 @@ export class FreightController {
         void funnelRepository.saveEvent({
             tenantId,
             phoneNumber,
+            sessionId: session.sessionId,
             stage: FunnelStage.CEP_PROVIDED,
-            messageSid,
         });
 
         return 'Perfeito! E qual quantidade de produtos você deseja cotar? (apenas números, exemplo: "1" ou "5")';
@@ -88,6 +102,13 @@ export class FreightController {
             return 'Por favor, informe uma quantidade válida (entre 1 e 500).';
         }
 
+        void funnelRepository.saveEvent({
+            tenantId,
+            phoneNumber,
+            sessionId: session.sessionId,
+            stage: FunnelStage.QUANTITY_PROVIDED,
+        });
+
         // Move to CALCULATING
         let calculatingSession = await stateMachine.transition(
             { ...session, quantity },
@@ -100,6 +121,7 @@ export class FreightController {
             const result = await freightService.calculateFreight({
                 destinationCep: session.cep,
                 quantity,
+                tenantId // Ensure simulation logging happens
             });
 
             // Format result message
@@ -119,8 +141,8 @@ export class FreightController {
             void funnelRepository.saveEvent({
                 tenantId,
                 phoneNumber,
+                sessionId: session.sessionId,
                 stage: FunnelStage.FREIGHT_QUOTED,
-                messageSid,
             });
 
             return reply;
@@ -130,6 +152,13 @@ export class FreightController {
 
             const errorSession = await stateMachine.transition(calculatingSession, ConversationEvent.CALCULATION_ERROR);
             await sessionManager.updateSession(tenantId, phoneNumber, Object.assign(calculatingSession, errorSession) as any);
+
+            void funnelRepository.saveEvent({
+                tenantId,
+                phoneNumber,
+                sessionId: session.sessionId,
+                stage: FunnelStage.FLOW_ABORTED,
+            });
 
             return 'Houve um problema ao calcular o frete para este CEP e quantidade. Por favor, verifique os dados e tente novamente mais tarde.';
         }
