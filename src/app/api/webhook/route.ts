@@ -165,20 +165,14 @@ export async function POST(request: NextRequest) {
     const replyMessage = await freightController.handleIncoming(tenantIdStr, senderNumber, messageText, messageSid);
 
     const timeMs = Date.now() - startTime;
+    safeCtx.durationMs = timeMs;
+
     logger.info('Webhook processed successfully', {
+      event: "WEBHOOK_OK",
       tenantId: tenantIdStr,
       sender: logger.maskPhone(senderNumber),
-      messageSid,
       responseLength: replyMessage.length,
-      timeMs,
-    });
-
-    // 10) Respond TwiML
-    safeCtx.durationMs = timeMs; // Update safeCtx with actual duration
-
-    logger.info("Webhook processed successfully", {
-      event: "WEBHOOK_OK",
-      tenantId,
+      ...safeCtx, // This already contains messageSid
     });
 
     return twimlOk(replyMessage);

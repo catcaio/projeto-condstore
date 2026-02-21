@@ -17,8 +17,8 @@ export enum FunnelStage {
 export interface SaveFunnelEventInput {
     tenantId: string;
     phoneNumber: string;
+    sessionId: string;
     stage: FunnelStage;
-    messageSid?: string;
 }
 
 export class FunnelRepository {
@@ -37,7 +37,7 @@ export class FunnelRepository {
                     id: randomUUID(),
                     tenantId: input.tenantId,
                     phoneNumber: input.phoneNumber,
-                    sessionId: input.messageSid || randomUUID(),
+                    sessionId: input.sessionId,
                     stage: input.stage,
                 })
                 .onDuplicateKeyUpdate({
