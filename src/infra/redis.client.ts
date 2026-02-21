@@ -13,31 +13,16 @@ class RedisService {
 
   constructor() {
     this.initRedis();
-    // Previne memory-leak no fallback local após expirações
-    if (process.env.NODE_ENV !== 'test') {
-      setInterval(() => this.cleanupMemory(), 60 * 1000).unref();
-    }
-  }
-
-  private cleanupMemory() {
-    const now = Date.now();
-    for (const [key, entry] of this.inMemoryCache.entries()) {
-      if (entry.expiresAt !== null && now > entry.expiresAt) {
-        this.inMemoryCache.delete(key);
-      }
-    }
   }
 
   private initRedis() {
     if (process.env.REDIS_URL && !this.redisInstance && !this.isConnecting) {
       this.isConnecting = true;
       try {
-        const url = process.env.REDIS_URL;
-        this.redisInstance = new Redis(url, {
+        this.redisInstance = new Redis(process.env.REDIS_URL, {
           lazyConnect: true,
           connectTimeout: 5000,
-          maxRetriesPerRequest: 1,
-          tls: url.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
+          maxRetriesPerRequest: 1
         });
         this.redisInstance.on('error', (err: Error) => {
           logger.error('Redis connection error', err);
@@ -58,11 +43,7 @@ class RedisService {
   async ping(): Promise<boolean> {
     if (this.isAvailable()) {
       try {
-        const pingPromise = this.redisInstance!.ping();
-        const timeoutPromise = new Promise<string>((_, reject) =>
-          setTimeout(() => reject(new Error('ping timeout')), 2000)
-        );
-        const res = await Promise.race([pingPromise, timeoutPromise]);
+        const res = await this.redisInstance!.ping();
         return res === 'PONG';
       } catch (e) {
         return false;
