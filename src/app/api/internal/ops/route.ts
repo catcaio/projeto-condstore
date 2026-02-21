@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser } from "@/infra/auth/session";
 import { getDb } from "@/infra/db";
 import { sql } from "drizzle-orm";
 import { freightFunnelEvents } from "@/drizzle/schema";

@@ -13,11 +13,13 @@ export type PricingPlan = {
     recommended?: boolean
     oldPrice?: string
     savingsBadge?: string
+    stripePriceId: string
 }
 
 export const planData: PricingPlan[] = [
     {
         id: "basic",
+        stripePriceId: "price_basic_placeholder",
         name: "Basic",
         price: "R$ 49/mês",
         description: "Ideal para começar a gerenciar suas integrações.",
@@ -36,6 +38,7 @@ export const planData: PricingPlan[] = [
     },
     {
         id: "premium",
+        stripePriceId: "price_premium_placeholder",
         name: "Premium",
         price: "R$ 149/mês",
         oldPrice: "R$ 179/mês",
@@ -58,6 +61,7 @@ export const planData: PricingPlan[] = [
     },
     {
         id: "pro",
+        stripePriceId: "price_pro_placeholder",
         name: "Pro",
         price: "R$ 299/mês",
         description: "Solução enterprise com gerente exclusivo.",
