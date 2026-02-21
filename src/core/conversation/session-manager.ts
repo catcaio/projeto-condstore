@@ -14,6 +14,7 @@ import { ConversationState, type ConversationContext } from './state-machine';
  * Session data stored in Redis.
  */
 export interface SessionData extends ConversationContext {
+  sessionId: string;
   tenantId: string;
   createdAt: number;
   updatedAt: number;
@@ -154,6 +155,7 @@ class SessionManager {
     const expiresAt = now + appConfig.session.ttlMs;
 
     const session: SessionData = {
+      sessionId: crypto.randomUUID(),
       tenantId,
       phoneNumber,
       currentState: ConversationState.IDLE,
@@ -192,6 +194,7 @@ class SessionManager {
     const updatedSession: SessionData = {
       ...session,
       ...updates,
+      sessionId: session.sessionId, // Preserve sessionId
       tenantId, // Ensure tenantId is not overwritten
       phoneNumber, // Ensure phoneNumber is not overwritten
       updatedAt: Date.now(),
