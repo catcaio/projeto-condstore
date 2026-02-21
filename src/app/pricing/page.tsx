@@ -180,7 +180,7 @@ function StickyCTA({
     loading: boolean;
 }) {
     return (
-        <div className="fixed bottom-0 left-0 w-full p-md pt-sm pb-[calc(1.5rem+env(safe-area-inset-bottom))] bg-surface-base/80 backdrop-blur-md border-t border-edge-subtle z-50">
+        <div className="fixed bottom-0 left-0 w-full p-md pt-sm pb-[calc(1.5rem+env(safe-area-inset-bottom))] bg-surface-base/80 backdrop-blur-sm border-t border-edge-subtle shadow-[0_-8px_24px_rgba(0,0,0,0.25)] z-50">
             <button
                 type="button"
                 disabled={loading}
@@ -232,15 +232,22 @@ export default function PricingPage() {
                 return;
             }
 
+            if (!resp.ok) {
+                throw new Error(`Falha ao iniciar checkout API. Status: ${resp.status}`);
+            }
+
             const data = await resp.json();
             if (data.url) {
                 window.location.href = data.url;
             } else {
-                throw new Error('No checkout URL');
+                throw new Error('No checkout URL devolvida pela API');
             }
         } catch (err) {
-            console.error('Checkout error:', err);
-            alert('Erro ao processar assinatura. Tente novamente.');
+            console.error('Checkout error [Pricing]:', {
+                message: err instanceof Error ? err.message : String(err),
+                action: 'handleCheckout',
+                planInfo: selectedPlan
+            });
         } finally {
             setLoading(false);
         }
