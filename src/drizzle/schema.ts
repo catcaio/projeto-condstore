@@ -160,3 +160,22 @@ export const projectReports = mysqlTable('project_reports', {
 export type ProjectReportRecord = typeof projectReports.$inferSelect;
 export type NewProjectReportRecord = typeof projectReports.$inferInsert;
 
+// --- Public Conversion Tracking (Landing & Pricing Analytics) ---
+
+export const publicEvents = mysqlTable('public_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    anonId: varchar('anon_id', { length: 128 }).notNull(),
+    event: varchar('event', { length: 64 }).notNull(),
+    path: varchar('path', { length: 200 }).notNull(),
+    props: text('props'), // JSON stringified up to 4096 chars evaluated at runtime
+    userAgent: text('user_agent'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        eventTimeIdx: index('idx_public_events_event_time').on(table.event, table.createdAt),
+        anonIdTimeIdx: index('idx_public_events_anon_time').on(table.anonId, table.createdAt),
+    };
+});
+
+export type PublicEventRecord = typeof publicEvents.$inferSelect;
+export type NewPublicEventRecord = typeof publicEvents.$inferInsert;

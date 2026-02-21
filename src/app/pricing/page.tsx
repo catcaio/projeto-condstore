@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { track, useScrollTracker } from '../../lib/analytics';
 
 // -- COMPONENTES INTERNOS ----------------------------------------------------
 
@@ -213,8 +214,17 @@ export default function PricingPage() {
     const [selectedPlan, setSelectedPlan] = useState<'basic' | 'pro'>('pro');
     const [loading, setLoading] = useState(false);
 
+    // -- Analytics Hooks
+    useScrollTracker('pricing');
+
+    useEffect(() => {
+        track('pricing_view');
+    }, []);
+
     const handleCheckout = async () => {
         setLoading(true);
+        track('pricing_click_checkout', { plan: selectedPlan });
+
         // Simulated Checkout API Call
         try {
             const resp = await fetch('/api/checkout', {
@@ -228,6 +238,7 @@ export default function PricingPage() {
 
             if (resp.status === 401) {
                 // Not authenticated
+                track('pricing_redirect_login', { from: '/pricing' });
                 router.push('/login?redirect=/pricing');
                 return;
             }
@@ -243,6 +254,7 @@ export default function PricingPage() {
                 throw new Error('No checkout URL devolvida pela API');
             }
         } catch (err) {
+            track('pricing_checkout_error', { plan: selectedPlan });
             console.error('Checkout error [Pricing]:', {
                 message: err instanceof Error ? err.message : String(err),
                 action: 'handleCheckout',
@@ -269,7 +281,10 @@ export default function PricingPage() {
                         ]}
                         isPremium={false}
                         isSelected={selectedPlan === 'basic'}
-                        onSelect={() => setSelectedPlan('basic')}
+                        onSelect={() => {
+                            track('pricing_select_basic');
+                            setSelectedPlan('basic');
+                        }}
                     />
                     <PlanCard
                         title="Growth"
@@ -282,7 +297,10 @@ export default function PricingPage() {
                         ]}
                         isPremium={true}
                         isSelected={selectedPlan === 'pro'}
-                        onSelect={() => setSelectedPlan('pro')}
+                        onSelect={() => {
+                            track('pricing_select_growth');
+                            setSelectedPlan('pro');
+                        }}
                     />
                 </div>
 

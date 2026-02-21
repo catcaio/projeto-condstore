@@ -1,7 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { track, useScrollTracker } from '../lib/analytics';
 
 // -- COMPONENTES INTERNOS ----------------------------------------------------
 
@@ -40,6 +41,13 @@ function CheckIcon() {
 export default function LandingPage() {
     const router = useRouter();
 
+    // -- Analytics Hooks
+    useScrollTracker('landing');
+
+    useEffect(() => {
+        track('landing_view');
+    }, []);
+
     return (
         <div className="min-h-screen bg-surface-base text-ink-body font-sans">
             {/* 1) HERO (acima da dobra) */}
@@ -54,13 +62,19 @@ export default function LandingPage() {
 
                     <div className="pt-sm space-y-sm flex flex-col items-center">
                         <button
-                            onClick={() => router.push('/pricing')}
+                            onClick={() => {
+                                track('landing_click_hero_primary');
+                                router.push('/pricing');
+                            }}
                             className="w-full max-w-xs h-14 rounded-token-pill bg-brand-primary text-ink-hero font-bold text-body-lg transition-all duration-200 ease-spring active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-primary outline-none ring-offset-background"
                         >
                             Começar Agora
                         </button>
                         <button
-                            onClick={() => router.push('/pricing')}
+                            onClick={() => {
+                                track('landing_click_hero_secondary');
+                                router.push('/pricing');
+                            }}
                             className="w-full max-w-xs h-12 rounded-token-pill text-ink-muted font-medium text-body-sm transition-all duration-200 ease-spring active:scale-[0.98] outline-none"
                         >
                             Ver Planos
@@ -126,7 +140,10 @@ export default function LandingPage() {
                     </div>
 
                     <button
-                        onClick={() => router.push('/pricing')}
+                        onClick={() => {
+                            track('landing_click_final_cta');
+                            router.push('/pricing');
+                        }}
                         className="w-full max-w-sm mx-auto h-14 rounded-token-pill bg-brand-premium text-ink-hero font-bold text-body-lg transition-all duration-200 ease-spring active:scale-[0.98] shadow-token-glow outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-premium ring-offset-background"
                     >
                         Quero Automatizar Meu Frete
