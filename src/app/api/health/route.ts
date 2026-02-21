@@ -14,14 +14,14 @@ export async function GET() {
   const hasDb = !!process.env.DATABASE_URL;
   const hasTwilio = !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN;
 
-  // Redis: ok / degraded / down
-  let redisStatus: "ok" | "degraded" | "down" = "degraded";
+  // Redis: ok / degraded / down / missing
+  let redisStatus: "ok" | "degraded" | "down" | "missing" = "degraded";
   let redisError: string | null = null;
 
   try {
     const redis = redisClient;
     if (!redis.isAvailable()) {
-      redisStatus = "degraded"; // preview/local sem REDIS_URL
+      redisStatus = process.env.NODE_ENV === 'production' ? "missing" : "degraded";
     } else {
       const pong = await redis.ping();
       redisStatus = pong ? "ok" : "down";

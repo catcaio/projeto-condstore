@@ -34,10 +34,7 @@ export async function checkRateLimit(identifier: string, limit: number = MAX_REQ
     const key = `ratelimit:${identifier}`;
 
     try {
-        if (!redisClient.isAvailable()) {
-            logger.warn('Rate limiter: Redis unavailable, allowing request', { identifier });
-            return { allowed: true, remaining: limit, limit };
-        }
+
 
         // Atomic increment
         const current = await redisClient.incr(key);

@@ -10,6 +10,8 @@ import { logger } from '../../infra/logger';
 import { redisClient } from '../../infra/redis.client';
 import { ConversationState, type ConversationContext } from './state-machine';
 
+let hasLoggedProdWarning = false;
+
 /**
  * Session data stored in Redis.
  */
@@ -116,12 +118,9 @@ class SessionManager {
       }
 
       // Redis unavailable
-      if (appConfig.env === 'production') {
-        throw new InfrastructureError(
-          ErrorCode.INTERNAL_ERROR,
-          'Redis unavailable in production — cannot retrieve session',
-          { phoneNumber, tenantId }
-        );
+      if (appConfig.env === 'production' && !hasLoggedProdWarning) {
+        logger.error('CRITICAL: Redis is unavailable in production! Falling back to in-memory store. This will cause session loss across Serverless functions.', new Error('Missing Redis in Production'), { event: 'REDIS_MISSING_PROD' });
+        hasLoggedProdWarning = true;
       }
 
       // Fallback to memory (development/test only)
@@ -217,16 +216,13 @@ class SessionManager {
     if (redisClient.isAvailable()) {
       await redisClient.set(this.getKey(tenantId, phoneNumber), session, ttlSeconds);
       logger.debug('Session saved to Redis', { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
-    } else if (appConfig.env === 'production') {
-      throw new InfrastructureError(
-        ErrorCode.INTERNAL_ERROR,
-        'Redis unavailable in production — cannot save session',
-        { phoneNumber: logger.maskPhone(phoneNumber), tenantId }
-      );
+    } else if (appConfig.env === 'production' && !hasLoggedProdWarning) {
+      logger.error('CRITICAL: Redis is unavailable in production! Falling back to in-memory store. This will cause session loss across Serverless functions.', new Error('Missing Redis in Production'), { event: 'REDIS_MISSING_PROD' });
+      hasLoggedProdWarning = true;
     }
 
-    // Save to memory only in development/test
-    if (appConfig.env !== 'production') {
+    // Always fallback/save to memory if Redis is down (even in production to process the immediate request)
+    if (!redisClient.isAvailable() || appConfig.env !== 'production') {
       this.memoryStore.set(phoneNumber, session);
     }
   }
