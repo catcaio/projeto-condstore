@@ -12,7 +12,12 @@ export type AnalyticsEvent =
     | 'pricing_anchor_visible'
     | 'checkout_error'
     | 'checkout_redirect'
-    | 'checkout_success';
+    | 'checkout_success'
+    | 'admin_login_attempt'
+    | 'admin_login_success'
+    | 'admin_login_fail'
+    | 'billing_portal_open'
+    | 'billing_portal_error';
 
 export function track(event: AnalyticsEvent | string, payload?: object) {
     // In a real application, this might map to Mixpanel, Segment, GA4, etc.

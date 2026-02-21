@@ -5,8 +5,38 @@ import { Section } from '../../../../ui/primitives/Section';
 import { Card } from '../../../../ui/primitives/Card';
 import { Stack } from '../../../../ui/primitives/Stack';
 import { Button } from '../../../../ui/primitives/Button';
+import { getOrCreateClientUserId } from '../../../lib/billing/clientUserId';
+import { track } from '../../../../utils/track';
 
 export default function ManageBillingPage() {
+    const [isLoading, setIsLoading] = React.useState(false);
+
+    const handleOpenPortal = async () => {
+        setIsLoading(true);
+        track('billing_portal_open');
+
+        try {
+            const userId = getOrCreateClientUserId();
+            const res = await fetch('/api/billing/portal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId }),
+            });
+
+            if (!res.ok) {
+                throw new Error('Failed to create portal session');
+            }
+
+            const { url } = await res.json();
+            window.location.href = url;
+        } catch (error: any) {
+            console.error(error);
+            track('billing_portal_error', { error: error.message });
+            alert("Erro ao abrir portal de pagamentos. Tente novamente mais tarde.");
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[var(--surface-base)] pb-[env(safe-area-inset-bottom,24px)]">
             <Section>
@@ -25,10 +55,21 @@ export default function ManageBillingPage() {
                             <div className="pt-4">
                                 <Button
                                     variant="primary"
-                                    className="w-full justify-center h-[56px]"
-                                    onClick={() => alert("Portal Stripe integration coming soon.")}
+                                    className="w-full justify-center h-[56px] relative"
+                                    onClick={handleOpenPortal}
+                                    disabled={isLoading}
                                 >
-                                    Abrir Portal de Pagamentos
+                                    <span className={`transition-opacity ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+                                        Abrir Portal de Pagamentos
+                                    </span>
+                                    {isLoading && (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </div>
+                                    )}
                                 </Button>
                                 <div className="mt-4 text-center">
                                     <a href="/billing" className="text-[var(--text-muted)] hover:text-[var(--brand-blue)] font-medium underline text-sm">
