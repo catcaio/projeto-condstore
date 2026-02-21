@@ -8,16 +8,8 @@ export const config = {
 };
 
 export async function middleware(req: NextRequest) {
-  const tenantId = req.headers.get("x-tenant-id");
-
-  if (!tenantId) {
-    return NextResponse.json(
-      { error: "Missing tenant id" },
-      { status: 400 }
-    );
-  }
-
-  // Authentication/tenant checks for cockpit can go here.
+  // Authentication/tenant checks for cockpit are now handled via getSessionUser 
+  // in the respective pages and API routes.
   // Rate limiting via Redis has been removed from Edge middleware as requested.
 
   return NextResponse.next();
