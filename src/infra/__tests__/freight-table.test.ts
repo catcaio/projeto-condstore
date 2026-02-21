@@ -3,11 +3,14 @@ import { freightTableProvider } from '../freight-table';
 import { redisClient } from '../redis.client';
 import { logger } from '../logger';
 
-// Mock dependnecies
+// Mock dependencies
 vi.mock('../redis.client', () => ({
-    getRedis(): {
+    redisClient: {
+        isAvailable: vi.fn().mockReturnValue(true),
         get: vi.fn(),
-        set: vi.fn().mockResolvedValue(true),
+        set: vi.fn().mockResolvedValue(undefined),
+        del: vi.fn().mockResolvedValue(undefined),
+        ping: vi.fn().mockResolvedValue(true),
     }
 }));
 
