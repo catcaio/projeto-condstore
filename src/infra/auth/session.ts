@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
 import { logger } from '../logger';
+import { userRepository } from '../repositories/user.repository';
 
 export const COOKIE_NAME = 'condstore_session';
 const TOKEN_EXPIRY = '8h';
@@ -10,6 +11,7 @@ export interface SessionPayload {
     email: string;
     tenantId: string;
     role: string;
+    sv: number;
 }
 
 export function getSecret(): Uint8Array {
@@ -29,8 +31,9 @@ export async function createSessionToken(user: {
     email: string;
     tenantId: string;
     role: string;
+    sessionVersion: number;
 }): Promise<string> {
-    return new SignJWT({ email: user.email, tenantId: user.tenantId, role: user.role })
+    return new SignJWT({ email: user.email, tenantId: user.tenantId, role: user.role, sv: user.sessionVersion })
         .setProtectedHeader({ alg: 'HS256' })
         .setSubject(user.id)
         .setIssuedAt()
@@ -46,6 +49,7 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
             email: payload.email as string,
             tenantId: payload.tenantId as string,
             role: payload.role as string,
+            sv: payload.sv as number,
         };
     } catch {
         return null;
@@ -55,5 +59,18 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 export async function getSessionUser(request: NextRequest): Promise<SessionPayload | null> {
     const token = request.cookies.get(COOKIE_NAME)?.value;
     if (!token) return null;
-    return verifySessionToken(token);
+
+    const payload = await verifySessionToken(token);
+    if (!payload) return null;
+
+    try {
+        const user = await userRepository.getUserById(payload.sub);
+        if (!user || user.sessionVersion !== payload.sv) {
+            return null; // Session invalidated or user deleted
+        }
+        return payload;
+    } catch (error) {
+        logger.error('Failed to validate session user', error as Error, { userId: payload.sub });
+        return null;
+    }
 }

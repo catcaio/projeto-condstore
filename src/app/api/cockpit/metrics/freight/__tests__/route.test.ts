@@ -14,10 +14,10 @@ vi.mock('../../../../../../infra/auth/session', () => ({
 }));
 
 vi.mock('../../../../../../infra/redis.client', () => ({
-  getRedis(): {
+  redisClient: {
     isAvailable: vi.fn().mockReturnValue(false),
-    get: vi.fn(),
-    set: vi.fn().mockResolvedValue(true),
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
   },
 }));
 

@@ -2,9 +2,9 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
     content: [
-        './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-        './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-        './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+        './src/**/*.{js,ts,jsx,tsx,mdx}',
+        './components/**/*.{js,ts,jsx,tsx,mdx}',
+        './ui/**/*.{js,ts,jsx,tsx,mdx}',
     ],
     theme: {
         extend: {
@@ -47,11 +47,61 @@ const config: Config = {
                     DEFAULT: 'hsl(var(--card))',
                     foreground: 'hsl(var(--card-foreground))',
                 },
+                // PREMIUM SAAS TOKENS
+                surface: {
+                    base: 'hsl(var(--surface-base))',
+                    card: 'hsl(var(--surface-card))',
+                    elevated: 'hsl(var(--surface-elevated))',
+                },
+                edge: {
+                    subtle: 'hsl(var(--border-subtle))',
+                    focus: 'hsl(var(--border-focus))',
+                },
+                ink: {
+                    hero: 'hsl(var(--text-hero))',
+                    body: 'hsl(var(--text-body))',
+                    muted: 'hsl(var(--text-muted))',
+                },
+                brand: {
+                    primary: 'hsl(var(--brand-primary))',
+                    premium: 'hsl(var(--brand-premium))',
+                },
+                success: {
+                    base: 'hsl(var(--success-base))',
+                }
+            },
+            spacing: {
+                '3xs': 'var(--space-3xs)',
+                '2xs': 'var(--space-2xs)',
+                'xs': 'var(--space-xs)',
+                'sm': 'var(--space-sm)',
+                'md': 'var(--space-md)',
+                'lg': 'var(--space-lg)',
+                'xl': 'var(--space-xl)',
+            },
+            fontSize: {
+                'body-sm': ['14px', '20px'],
+                'body-md': ['16px', '24px'],
+                'body-lg': ['18px', '28px'],
+                'heading-sm': ['29px', '36px'],
+                'heading-hero': ['47px', '52px'],
             },
             borderRadius: {
                 lg: 'var(--radius)',
                 md: 'calc(var(--radius) - 2px)',
                 sm: 'calc(var(--radius) - 4px)',
+                'token-sm': 'var(--radius-sm)',
+                'token-md': 'var(--radius-md)',
+                'token-lg': 'var(--radius-lg)',
+                'token-pill': 'var(--radius-pill)',
+            },
+            boxShadow: {
+                'token-1': 'var(--elevation-1)',
+                'token-glow': 'var(--elevation-glow)',
+            },
+            transitionTimingFunction: {
+                'spring': 'var(--motion-spring)',
+                'smooth': 'var(--motion-smooth)',
             },
         },
     },
