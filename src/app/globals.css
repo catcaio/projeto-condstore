@@ -25,7 +25,7 @@
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
   }
- 
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -54,9 +54,41 @@
     --cockpit-border: 217 33% 25%;
     --cockpit-text: 210 40% 98%;
     --cockpit-text-muted: 215 20% 65%;
-    --cockpit-accent: 221 83% 53%; /* Blue primary */
+    --cockpit-accent: 221 83% 53%;
+    /* Blue primary */
     --cockpit-accent-fg: 210 40% 98%;
     --cockpit-danger: 0 84% 60%;
+  }
+
+  /* PREMIUM SAAS MOBILE-FIRST DESIGN TOKENS */
+  :root {
+    --surface-base: 222 47% 4%;
+    --surface-card: 217 33% 12%;
+    --surface-elevated: 217 33% 17%;
+    --border-subtle: 217 33% 20%;
+    --border-focus: 221 83% 53%;
+    --text-hero: 0 0% 100%;
+    --text-body: 215 20% 75%;
+    --text-muted: 215 20% 55%;
+    --brand-primary: 221 83% 53%;
+    --brand-premium: 267 100% 65%;
+    --success-base: 142 71% 45%;
+
+    --space-3xs: 0.25rem;
+    --space-2xs: 0.5rem;
+    --space-xs: 0.75rem;
+    --space-sm: 1rem;
+    --space-md: 1.5rem;
+    --space-lg: 2rem;
+    --space-xl: 3rem;
+
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-pill: 9999px;
+
+    --elevation-1: 0 4px 14px 0 rgba(0, 0, 0, 0.3);
+    --elevation-glow: 0 0 24px -4px hsla(267, 100%, 65%, 0.4);
   }
 }
 
@@ -64,7 +96,19 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { freightService } from '../../../modules/freight/freight.service';
 import { simulationRepository } from '../../../infra/repositories/simulation.repository';
-import { getTenantContext } from '../../../infra/auth/tenant-context';
-import { BusinessError, getUserMessage } from '../../../infra/errors';
+import { getSessionUser } from '../../../infra/auth/session';
+import { BusinessError, ErrorCode, getUserMessage } from '../../../infra/errors';
 import { logger } from '../../../infra/logger';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
+import { requireActivePlan } from '../../../modules/billing/requireActivePlan';
+import { auditService } from '../../../modules/audit/audit.service';
+import { checkRateLimit } from '../../../infra/rate-limiter';
+
+export const runtime = 'nodejs';
 
 const simulateSchema = z.object({
   destinationCep: z.string().regex(/^\d{8}$/, 'CEP deve ter 8 dígitos'),
@@ -20,10 +25,25 @@ const simulateSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
+  let tenantId: string | undefined;
 
   try {
-    // 1. Get tenant from session (via middleware headers)
-    const { tenantId } = await getTenantContext(request);
+    // 1) Auth / tenant resolution + Plan Entitlement
+    const entitlement = await requireActivePlan(request);
+    if (entitlement.errorResponse) {
+      return entitlement.errorResponse;
+    }
+    tenantId = entitlement.tenantId!;
+
+    // 1.5) Tenant-level rate limit (e.g. 30 per minute) to prevent API scraping abuse
+    const rateLimit = await checkRateLimit(`simulate:t:${tenantId}`, 30, 60);
+    if (!rateLimit.allowed) {
+      logger.warn('Simulate rate limit exceeded', { tenantId });
+      return NextResponse.json(
+        { success: false, error: 'Muitas consultas. Tente novamente em alguns minutos.' },
+        { status: 429 }
+      );
+    }
 
     // 2. Validate input
     const body = await request.json();
@@ -57,21 +77,31 @@ export async function POST(request: NextRequest) {
     if (result.success && result.options.length > 0) {
       const bestOption = result.options[0];
 
+      const simulationRecord = {
+        id: randomUUID(),
+        tenantId,
+        cep: destinationCep,
+        weight: result.totalWeight.toString(),
+        quantity,
+        bestCarrier: bestOption.carrier,
+        bestService: bestOption.service,
+        bestPrice: bestOption.price.toString(),
+        bestMargin: (bestOption.price * 0.2).toString(),
+        strategy: 'PORTAL',
+        productCost: '0.00',
+        sellingPrice: '0.00',
+      };
+
       try {
-        await simulationRepository.saveSimulation({
-          id: randomUUID(),
-          tenantId,
+        await simulationRepository.saveSimulation(simulationRecord);
+
+        await auditService.logEvent(tenantId, 'SIMULATION_CREATED', {
+          simulationId: simulationRecord.id,
           cep: destinationCep,
-          weight: result.totalWeight.toString(),
-          quantity,
-          bestCarrier: bestOption.carrier,
-          bestService: bestOption.service,
-          bestPrice: bestOption.price.toString(),
-          bestMargin: (bestOption.price * 0.2).toString(),
-          strategy: 'PORTAL',
-          productCost: '0.00',
-          sellingPrice: '0.00',
+          weight: result.totalWeight,
+          bestPrice: bestOption.price
         });
+
       } catch (err) {
         logger.error('Failed to persist portal simulation', err as Error, { tenantId });
         // Don't fail the response if persistence fails - the user still gets their quote
@@ -84,8 +114,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
 
   } catch (error) {
-    const duration = Date.now() - startTime;
-    logger.error('Freight simulation failed', error as Error, { duration });
+    const durationMs = Date.now() - startTime;
+    logger.error('Freight API Simulation Error', error as Error, { tenantId, durationMs });
+
+    // Try to safely extract a tenantId if possible for the audit trail
+    // Since we throw before tenantId is set if entitlement fails, we only audit if we have it
+    if (typeof tenantId === 'string') {
+      await auditService.logEvent(tenantId, 'SIMULATION_FAILED', {
+        errorMessage: String(error),
+        errorCode: error instanceof BusinessError ? error.code : 'UNKNOWN_ERROR'
+      });
+    }
 
     if (error instanceof BusinessError) {
       return NextResponse.json(

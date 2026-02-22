@@ -1,27 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { simulationRepository } from '../../../infra/repositories/simulation.repository';
-import { getTenantContext } from '../../../infra/auth/tenant-context';
+import { requireActivePlan } from '../../../modules/billing/requireActivePlan';
 import { logger } from '../../../infra/logger';
-import { BaseError, ErrorCode } from '../../../infra/errors';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
-    // 1) Auth / tenant resolution
-    let tenantId: string;
-    try {
-        const ctx = await getTenantContext(request);
-        tenantId = ctx.tenantId;
-    } catch (error) {
-        if (error instanceof BaseError && error.code === ErrorCode.UNAUTHORIZED) {
-            return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-        }
-        if (error instanceof BaseError && error.code === ErrorCode.TENANT_NOT_FOUND) {
-            return NextResponse.json({ error: 'MISSING_TENANT' }, { status: 400 });
-        }
-        logger.error('Unexpected auth error in /api/history', error as Error);
-        return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    // 1) Auth / tenant resolution + Plan Entitlement
+    const entitlement = await requireActivePlan(request);
+    if (entitlement.errorResponse) {
+        return entitlement.errorResponse;
     }
+    const tenantId = entitlement.tenantId!;
 
     // 2) Fetch data
     try {
@@ -48,19 +38,12 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             items,
-            meta: {
-                count: items.length,
-                tenantId,
-            },
+            meta: { count: items.length, tenantId },
         });
     } catch (error: any) {
         logger.error('DB error in /api/history', error as Error, { tenantId });
         return NextResponse.json(
-            {
-                error: 'DB_ERROR',
-                message: error?.message ?? 'Unknown database error',
-                code: error?.code ?? undefined,
-            },
+            { error: 'DB_ERROR', message: error?.message ?? 'Unknown database error' },
             { status: 500 }
         );
     }
