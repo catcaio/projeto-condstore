@@ -8,11 +8,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "node scripts/patch-next-lint.mjs",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
-    "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate",
-    "seed:analytics:local": "node scripts/seed-analytics-local.mjs",
-    "seed:dev": "node scripts/seed-dev-admin.mjs"
+    "test": "cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe vitest run",
+    "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {
     "axios": "1.13.5",
