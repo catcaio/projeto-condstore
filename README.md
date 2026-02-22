@@ -1,6 +1,39 @@
 # Projeto CondStore - Automação de Entregas
 
 Sistema de automação logística via WhatsApp para cotação de fretes e pedidos, integrado com TiDB e Twilio.
+Este README é o documento oficial do **Condstore OS**, refletindo a arquitetura SaaS multi-tenant com camada de IA (Frank).
+
+## Condstore OS Architecture Overview
+
+- **Multi-tenant foundation:** isolamento lógico por `tenant_id`, configuração e dados segregados, com execução e métricas por tenant.
+- **WhatsApp Processing Pipeline:** ingestão Twilio → validação de assinatura → resolução de tenant → classificação de intenção → roteamento para fluxo correto.
+- **Tool Execution Layer:** camada padronizada de execução de ferramentas com contratos explícitos, validação de entrada/saída e guardrails.
+- **Frank (AI Engine):** orquestração LLM tool-first com saída estruturada obrigatória e RAG por tenant.
+- **Cockpit & Observability:** UI operacional, métricas, auditoria e trilhas de decisão para diagnósticos e compliance.
+- **Billing & SaaS Layer:** medição de uso, planos, limites, cobrança e governança de consumo por tenant.
+
+## Frank (AI Engine)
+
+- **Abstração de providers:** suporta `shared`, `dedicated` e `customer-hosted`, permitindo troca de vendor sem impacto no domínio.
+- **Structured output obrigatório:** respostas em JSON com schema validado, reduzindo ambiguidade e garantindo compatibilidade com tools.
+- **RAG por tenant:** índices e vetores segregados por `tenant_id`, com políticas de retenção e atualização independentes.
+- **Tool orchestration:** seleção e execução de tools em cadeia com contratos explícitos, retries controlados e fallback.
+- **Decision logging:** trilhas de decisão com entradas/saídas, versões de prompts e metadata para auditoria.
+
+## Multi-Tenant Isolation Guarantees
+
+- `tenant_id` obrigatório em toda rota, job, evento e execução de tool.
+- Consultas sempre escopadas (`tenant_id` como filtro obrigatório) e acesso negado por default.
+- Rate limiting por tenant para proteger recursos e garantir fairness.
+- Audit logging por tenant com imutabilidade e retenção configurável.
+
+## Roadmap v2 — Multi-Tenant AI Ready
+
+- AI Gateway abstraction.
+- `tenant_ai_provider` table.
+- RAG infrastructure.
+- AI observability.
+- Enterprise isolation.
 
 ##  Funcionalidades
 
@@ -16,6 +49,13 @@ Sistema de automação logística via WhatsApp para cotação de fretes e pedido
 - **ORM:** Drizzle ORM
 - **Integrações:** Twilio API (WhatsApp)
 - **Infra:** Vercel (Frontend/API) + Upstash (Redis - Opcional)
+
+## Getting Started
+
+1. **Instalar dependências:** `npm install`.
+1. **Configurar `.env`:** `cp .env.example .env` e preencher variáveis obrigatórias.
+1. **Rodar migrations:** `npm run db:push`.
+1. **Rodar dev server:** `npm run dev`.
 
 ##  Configuração Local
 
