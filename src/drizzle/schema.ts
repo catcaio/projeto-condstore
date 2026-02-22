@@ -18,6 +18,25 @@ export const tenants = mysqlTable('tenants', {
 export type TenantRecord = typeof tenants.$inferSelect;
 export type NewTenantRecord = typeof tenants.$inferInsert;
 
+export const tenantAiProviders = mysqlTable('tenant_ai_providers', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    providerType: varchar('provider_type', { length: 30 }).notNull(),
+    baseUrl: varchar('base_url', { length: 255 }).notNull(),
+    model: varchar('model', { length: 255 }).notNull(),
+    embedModel: varchar('embed_model', { length: 255 }).notNull(),
+    apiKey: varchar('api_key', { length: 512 }),
+    timeoutMs: int('timeout_ms').notNull().default(20000),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdIndex: index('idx_tenant_ai_providers_tenant_id').on(table.tenantId),
+    };
+});
+
+export type TenantAIProviderRecord = typeof tenantAiProviders.$inferSelect;
+export type NewTenantAIProviderRecord = typeof tenantAiProviders.$inferInsert;
+
 export const tenantEvents = mysqlTable('tenant_events', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),

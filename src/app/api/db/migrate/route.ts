@@ -67,6 +67,24 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
         ],
     },
+    {
+        name: "create_tenant_ai_providers_table",
+        sql: [
+            `CREATE TABLE IF NOT EXISTS \`tenant_ai_providers\` (
+        \`id\` varchar(36) NOT NULL,
+        \`tenant_id\` varchar(36) NOT NULL,
+        \`provider_type\` varchar(30) NOT NULL,
+        \`base_url\` varchar(255) NOT NULL,
+        \`model\` varchar(255) NOT NULL,
+        \`embed_model\` varchar(255) NOT NULL,
+        \`api_key\` varchar(512) DEFAULT NULL,
+        \`timeout_ms\` int NOT NULL DEFAULT 20000,
+        \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (\`id\`),
+        KEY \`idx_tenant_ai_providers_tenant_id\` (\`tenant_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+        ],
+    },
 ];
 
 async function handler(request: NextRequest) {
