@@ -7,11 +7,31 @@ export const tenants = mysqlTable('tenants', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     name: varchar('name', { length: 255 }).notNull(),
     twilioNumber: varchar('twilio_number', { length: 30 }).notNull().unique(),
+    stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+    stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+    plan: varchar('plan', { length: 50 }),
+    planStatus: varchar('plan_status', { length: 50 }),
+    planCurrentPeriodEnd: timestamp('plan_current_period_end'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export type TenantRecord = typeof tenants.$inferSelect;
 export type NewTenantRecord = typeof tenants.$inferInsert;
+
+export const tenantEvents = mysqlTable('tenant_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(),
+    payload: text('payload'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdCreatedAtIndex: index('idx_tenant_events_tenant_created_at').on(table.tenantId, table.createdAt),
+    };
+});
+
+export type TenantEventRecord = typeof tenantEvents.$inferSelect;
+export type NewTenantEventRecord = typeof tenantEvents.$inferInsert;
 
 
 export const simulations = mysqlTable('simulations', {
@@ -30,6 +50,10 @@ export const simulations = mysqlTable('simulations', {
     idempotencyKey: varchar('idempotency_key', { length: 255 }).unique(),
     event: varchar('event', { length: 50 }).notNull().default('FREIGHT_QUOTED'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdCreatedAtIndex: index('idx_simulations_tenant_created_at').on(table.tenantId, table.createdAt),
+    };
 });
 
 export type SimulationRecord = typeof simulations.$inferSelect;
@@ -47,6 +71,10 @@ export const messages = mysqlTable('messages', {
     intent: varchar('intent', { length: 50 }).notNull().default('unknown'),
     rawPayload: text('raw_payload').notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdCreatedAtIndex: index('idx_messages_tenant_created_at').on(table.tenantId, table.createdAt),
+    };
 });
 
 export type MessageRecord = typeof messages.$inferSelect;
@@ -60,6 +88,7 @@ export const users = mysqlTable('users', {
     passwordHash: varchar('password_hash', { length: 512 }).notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
     role: varchar('role', { length: 20 }).notNull().default('operator'),
+    sessionVersion: int('session_version').notNull().default(1),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
@@ -96,6 +125,10 @@ export const freightSimulationLogs = mysqlTable('freight_simulation_logs', {
     prazo: int('prazo').notNull(),
     cepHash: varchar('cep_hash', { length: 64 }).notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdCreatedAtIndex: index('idx_freight_sim_logs_tenant_created_at').on(table.tenantId, table.createdAt),
+    };
 });
 
 export type FreightSimulationLogRecord = typeof freightSimulationLogs.$inferSelect;
@@ -127,3 +160,22 @@ export const projectReports = mysqlTable('project_reports', {
 export type ProjectReportRecord = typeof projectReports.$inferSelect;
 export type NewProjectReportRecord = typeof projectReports.$inferInsert;
 
+// --- Public Conversion Tracking (Landing & Pricing Analytics) ---
+
+export const publicEvents = mysqlTable('public_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    anonId: varchar('anon_id', { length: 128 }).notNull(),
+    event: varchar('event', { length: 64 }).notNull(),
+    path: varchar('path', { length: 200 }).notNull(),
+    props: text('props'), // JSON stringified up to 4096 chars evaluated at runtime
+    userAgent: text('user_agent'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        eventTimeIdx: index('idx_public_events_event_time').on(table.event, table.createdAt),
+        anonIdTimeIdx: index('idx_public_events_anon_time').on(table.anonId, table.createdAt),
+    };
+});
+
+export type PublicEventRecord = typeof publicEvents.$inferSelect;
+export type NewPublicEventRecord = typeof publicEvents.$inferInsert;

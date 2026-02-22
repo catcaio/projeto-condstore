@@ -35,7 +35,7 @@ describe('FunnelRepository', () => {
             tenantId: 'tenant-123',
             phoneNumber: '5511999999999',
             stage: FunnelStage.FLOW_STARTED,
-            messageSid: 'msg-123',
+            sessionId: 'session-abc-123',
         };
 
         await funnelRepository.saveEvent(input);
@@ -45,7 +45,7 @@ describe('FunnelRepository', () => {
             tenantId: input.tenantId,
             stage: input.stage,
             phoneNumber: input.phoneNumber,
-            sessionId: input.messageSid,
+            sessionId: input.sessionId,
         }));
         expect(mockDb.onDuplicateKeyUpdate).toHaveBeenCalled();
     });
@@ -57,6 +57,7 @@ describe('FunnelRepository', () => {
             tenantId: 'tenant-123',
             phoneNumber: '5511999999999',
             stage: FunnelStage.FLOW_STARTED,
+            sessionId: 'session-error-test',
         };
 
         await expect(funnelRepository.saveEvent(input)).resolves.not.toThrow();
