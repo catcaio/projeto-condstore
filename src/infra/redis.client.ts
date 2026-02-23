@@ -104,6 +104,30 @@ class RedisService {
     }
   }
 
+  async setNx<T>(key: string, value: T, ttlSeconds?: number): Promise<boolean> {
+    if (this.isAvailable()) {
+      try {
+        const serialized = JSON.stringify(value);
+        if (ttlSeconds) {
+          const result = await (this.redisInstance as any).set(key, serialized, 'EX', ttlSeconds, 'NX');
+          return result === 'OK';
+        }
+        const result = await (this.redisInstance as any).set(key, serialized, 'NX');
+        return result === 'OK';
+      } catch (e) {
+        logger.error('Redis SET NX error', e as Error, { key });
+        return false;
+      }
+    } else {
+      const existing = await this.get<T>(key);
+      if (existing !== null) {
+        return false;
+      }
+      await this.set(key, value, ttlSeconds);
+      return true;
+    }
+  }
+
   async del(key: string): Promise<void> {
     if (this.isAvailable()) {
       try {
