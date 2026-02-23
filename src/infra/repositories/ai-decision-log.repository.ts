@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { getDb } from '../db';
-import { aiDecisionLogs } from '../../drizzle/schema';
+import { aiDecisionLogs, type NewAiDecisionLogRecord } from '../../drizzle/schema';
 import { logger } from '../logger';
 
 export interface SaveDecisionLogInput {
@@ -34,7 +34,7 @@ export class AiDecisionLogRepository {
 
     try {
       const db = await getDb();
-      await db.insert(aiDecisionLogs).values({
+      const record: NewAiDecisionLogRecord = {
         id: randomUUID(),
         tenantId: input.tenantId,
         messageId: input.messageId,
@@ -49,7 +49,9 @@ export class AiDecisionLogRepository {
         tokensOut: input.tokensOut ?? null,
         latencyMs: input.latencyMs ?? null,
         responseType: input.responseType,
-      });
+      };
+
+      await db.insert(aiDecisionLogs).values(record);
     } catch (error) {
       logger.error('Failed to persist AI decision log', error as Error, {
         tenantId: input.tenantId,
