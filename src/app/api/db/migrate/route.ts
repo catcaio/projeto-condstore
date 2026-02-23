@@ -85,6 +85,14 @@ const MIGRATIONS = [
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
         ],
     },
+    {
+        name: "alter_tenant_ai_providers_v2",
+        sql: [
+            "ALTER TABLE `tenant_ai_providers` ADD COLUMN IF NOT EXISTS `api_key_encrypted` varchar(512) DEFAULT NULL",
+            "ALTER TABLE `tenant_ai_providers` ADD COLUMN IF NOT EXISTS `is_enabled` int NOT NULL DEFAULT 1",
+            "ALTER TABLE `tenant_ai_providers` ADD COLUMN IF NOT EXISTS `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+        ],
+    },
 ];
 
 async function handler(request: NextRequest) {
