@@ -8,7 +8,7 @@ vi.mock('../../logger', () => ({
   },
 }));
 
-const mockDb = {
+const mockDb = vi.hoisted(() => ({
   select: vi.fn().mockReturnThis(),
   from: vi.fn().mockReturnThis(),
   where: vi.fn().mockReturnThis(),
@@ -17,7 +17,7 @@ const mockDb = {
   values: vi.fn(),
   update: vi.fn().mockReturnThis(),
   set: vi.fn().mockReturnThis(),
-};
+}));
 
 vi.mock('../../db', () => ({
   getDb: vi.fn().mockResolvedValue(mockDb),
@@ -59,7 +59,6 @@ describe('TenantAIProviderRepository', () => {
 
   it('updates config when one already exists', async () => {
     mockDb.limit.mockResolvedValueOnce([{ id: 'existing' }]);
-    mockDb.where.mockResolvedValueOnce(undefined);
 
     await repository.upsertProviderConfig('tenant-3', {
       providerType: 'dedicated',
