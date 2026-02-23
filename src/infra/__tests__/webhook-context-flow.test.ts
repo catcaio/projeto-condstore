@@ -49,6 +49,7 @@ vi.mock('../repositories/ai-decision-log.repository', () => ({
 // ── Imports (after mocks) ──────────────────────────────────────────────────────
 
 import { getContext, appendMessage } from '../context-cache';
+import { redisClient } from '../redis.client';
 import { FrankOrchestrator } from '../../core/ai/frank-orchestrator';
 import { getAIProviderWithMeta } from '../../core/ai/llm-gateway';
 import { normalizeAndHash } from '../../lib/phone';
@@ -81,6 +82,7 @@ function makeMsg(body: string, confidence: number | null = 0.95): ContextMessage
 describe('E2E: webhook → persist → cache append → getContext', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        redisClient.__resetForTests();
         mockDbChain.limit.mockResolvedValue([]);
     });
 

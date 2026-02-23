@@ -194,6 +194,10 @@ class RedisService {
       return remainingMs > 0 ? Math.ceil(remainingMs / 1000) : -2;
     }
   }
+
+  __resetForTests(): void {
+    this.inMemoryCache.clear();
+  }
 }
 
 export const redisClient = new RedisService();
