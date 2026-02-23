@@ -31,8 +31,12 @@ vi.mock('../logger', () => ({
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function msg(body: string, direction: 'inbound' | 'outbound' = 'inbound'): ContextMessage {
-    return { body, direction, intent: 'FREIGHT_QUERY', createdAt: new Date().toISOString() };
+function msg(
+    body: string,
+    direction: 'inbound' | 'outbound' = 'inbound',
+    intentConfidence: number | null = 0.9,
+): ContextMessage {
+    return { body, direction, intent: 'FREIGHT_QUERY', intentConfidence, createdAt: new Date().toISOString() };
 }
 
 // ── Import AFTER mocks are registered ─────────────────────────────────────────
@@ -125,12 +129,13 @@ describe('appendMessage', () => {
 
     it('appends a message to an empty cache entry', async () => {
         mockRedis.get.mockResolvedValueOnce(null);
+        const m = msg('hello');
 
-        await appendMessage('t1', 'hash-1', msg('hello'));
+        await appendMessage('t1', 'hash-1', m);
 
         expect(mockRedis.set).toHaveBeenCalledWith(
             'ctx:t1:hash-1',
-            [msg('hello')],
+            [m],
             expect.any(Number),
         );
     });

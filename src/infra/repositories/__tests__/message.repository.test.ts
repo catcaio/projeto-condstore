@@ -24,11 +24,12 @@ vi.mock('../../logger', () => ({
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function makeRow(body: string, offsetMs: number) {
+function makeRow(body: string, offsetMs: number, intentConfidence: string | null = '0.9000') {
     return {
         body,
         direction: 'inbound',
         intent: 'FREIGHT_QUERY',
+        intentConfidence,
         createdAt: new Date(1_700_000_000_000 + offsetMs),
     };
 }
@@ -41,7 +42,6 @@ describe('MessageRepository.getLastMessages', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         repo = new MessageRepository();
-        // Reset the limit mock to return empty by default
         mockDb.limit.mockResolvedValue([]);
     });
 
@@ -64,7 +64,6 @@ describe('MessageRepository.getLastMessages', () => {
     });
 
     it('issues a single query and respects limit', async () => {
-        // DB returns 3 rows (already at limit)
         const dbRows = [
             makeRow('msg C', 3000),
             makeRow('msg B', 2000),
@@ -100,14 +99,35 @@ describe('MessageRepository.getLastMessages', () => {
 
         await repo.getLastMessages('tenant-A', '+5511999', 5);
 
-        // The where clause must have been called (it receives the AND condition).
-        // We verify the chain was executed exactly once for this tenant.
         expect(mockDb.where).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns intentConfidence as number when DB returns decimal string', async () => {
+        mockDb.limit.mockResolvedValueOnce([makeRow('hi', 1000, '0.9500')]);
+
+        const result = await repo.getLastMessages('tenant-1', '+5511999', 1);
+
+        expect(result[0].intentConfidence).toBe(0.95);
+        expect(typeof result[0].intentConfidence).toBe('number');
+    });
+
+    it('returns intentConfidence as null when DB returns null', async () => {
+        mockDb.limit.mockResolvedValueOnce([makeRow('hi', 1000, null)]);
+
+        const result = await repo.getLastMessages('tenant-1', '+5511999', 1);
+
+        expect(result[0].intentConfidence).toBeNull();
     });
 
     it('converts Date objects to ISO strings', async () => {
         const ts = new Date('2024-01-15T10:00:00.000Z');
-        mockDb.limit.mockResolvedValueOnce([{ body: 'hi', direction: 'inbound', intent: 'UNKNOWN', createdAt: ts }]);
+        mockDb.limit.mockResolvedValueOnce([{
+            body: 'hi',
+            direction: 'inbound',
+            intent: 'UNKNOWN',
+            intentConfidence: null,
+            createdAt: ts,
+        }]);
 
         const result = await repo.getLastMessages('tenant-1', '+5511999', 1);
 

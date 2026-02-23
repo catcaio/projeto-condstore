@@ -12,6 +12,8 @@ export interface ContextMessage {
     body: string;
     direction: 'inbound' | 'outbound';
     intent: string;
+    /** Classifier confidence in [0, 1].  null when no classifier ran. */
+    intentConfidence: number | null;
     createdAt: string; // ISO-8601 string (serialisation-safe)
 }
 
@@ -139,6 +141,7 @@ export class MessageRepository {
                     body: messages.body,
                     direction: messages.direction,
                     intent: messages.intent,
+                    intentConfidence: messages.intentConfidence,
                     createdAt: messages.createdAt,
                 })
                 .from(messages)
@@ -151,6 +154,9 @@ export class MessageRepository {
                 body: r.body,
                 direction: r.direction as 'inbound' | 'outbound',
                 intent: r.intent,
+                intentConfidence: r.intentConfidence !== null && r.intentConfidence !== undefined
+                    ? Number(r.intentConfidence)
+                    : null,
                 createdAt: r.createdAt instanceof Date
                     ? r.createdAt.toISOString()
                     : new Date(String(r.createdAt)).toISOString(),
