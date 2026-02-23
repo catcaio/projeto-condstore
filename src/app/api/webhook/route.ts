@@ -23,9 +23,11 @@ import { messageRepository } from "../../../infra/repositories/message.repositor
 import { tenantRepository } from "../../../infra/repositories/tenant.repository";
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from "../../../lib/normalize";
 import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
-import { checkRateLimit } from "../../../infra/rate-limiter";
+import { checkRedisRateLimit } from "../../../infra/rate-limit/redis-rate-limiter";
+import { acquireIdempotency, markIdempotencyDone } from "../../../infra/idempotency/redis-idempotency";
 import { freightController } from "../../../modules/freight/freight.controller";
 import { hashPhone } from "../../../lib/hash";
+import { intentClassifier } from "../../../core/conversation/intent-classifier";
 import {
   isCircuitOpen,
   recordSuccess,
@@ -86,9 +88,10 @@ export async function POST(request: NextRequest) {
   const payload: Record<string, string> = {};
   params.forEach((value, key) => { payload[key] = value; });
 
+  const requestId = request.headers.get("x-vercel-id") ?? undefined;
   // Safe log context (NO PII)
   const safeCtx = {
-    requestId: request.headers.get("x-vercel-id") ?? undefined,
+    requestId,
     messageSid: payload["MessageSid"] ?? undefined,
     accountSid: payload["AccountSid"] ?? undefined,
     hasBody: !!payload["Body"],
@@ -159,14 +162,33 @@ export async function POST(request: NextRequest) {
     }
 
     const tenantId = tenant.id.toString();
-
-    // ── 8. Dual rate limits ──────────────────────────────────────────────────
     const rawFrom = payload["From"] || "";
     const phoneHash = hashPhone(rawFrom);
 
-    // 8a. Per-phone: 10 messages / 60s
-    const phoneLimitKey = `webhook:phone:${phoneHash}`;
-    const phoneLimit = await checkRateLimit(phoneLimitKey, 10, 60);
+    // ── 8. Idempotency (Redis) ───────────────────────────────────────────────
+    const idemKey = `idem:${tenantId}:webhook.twilio:${messageSid}`;
+    const acquired = await acquireIdempotency(idemKey, undefined, requestId);
+    if (!acquired) {
+      logger.info("Webhook duplicate ignored (idempotency)", {
+        event: "webhook_idem_duplicate",
+        tenantId,
+        phoneHash,
+        providerEventId: messageSid,
+        ...safeCtx,
+      });
+      return twimlEmpty();
+    }
+
+    // ── 9. Dual rate limits ──────────────────────────────────────────────────
+
+    // 9a. Per-phone: 10 messages / 60s
+    const phoneLimit = await checkRedisRateLimit({
+      tenantId,
+      scope: `webhook.twilio.phone:${phoneHash}`,
+      limit: 10,
+      windowSeconds: 60,
+      requestId,
+    });
     if (!phoneLimit.allowed) {
       logger.warn("Webhook rate limited: phone threshold", {
         event: "webhook_rate_limited",
@@ -180,9 +202,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 8b. Per-tenant: 200 messages / 3600s (1h)
-    const tenantLimitKey = `webhook:tenant:${tenantId}`;
-    const tenantLimit = await checkRateLimit(tenantLimitKey, 200, 3600);
+    // 9b. Per-tenant: 200 messages / 3600s (1h)
+    const tenantLimit = await checkRedisRateLimit({
+      tenantId,
+      scope: "webhook.twilio.tenant",
+      limit: 200,
+      windowSeconds: 3600,
+      requestId,
+    });
     if (!tenantLimit.allowed) {
       logger.warn("Webhook rate limited: tenant threshold", {
         event: "webhook_rate_limited",
@@ -226,11 +253,18 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 11. Persist inbound message (sanitized, no PII in payload) ───────────
+    const messageText = incomingMessage.body ?? "";
+    const intentResult = intentClassifier.classify(messageText);
+    const intent = intentResult.intent;
+    const confidence = intentResult.confidence;
+
     const sanitizedPayload = {
       MessageSid: payload["MessageSid"],
       AccountSid: payload["AccountSid"],
       MessagingServiceSid: payload["MessagingServiceSid"],
       NumMedia: payload["NumMedia"],
+      intent,
+      confidence,
     };
 
     await messageRepository.saveInboundMessage({
@@ -240,14 +274,12 @@ export async function POST(request: NextRequest) {
       toPhone: payload["To"] || null,
       body: incomingMessage.body,
       direction: "inbound",
-      intent: "freight_flow",
+      intent,
       rawPayload: JSON.stringify(sanitizedPayload),
     });
 
     // ── 12. Business logic ────────────────────────────────────────────────────
     logger.debug("Delegating to FreightController (state machine)");
-    const messageText = incomingMessage.body ?? "";
-
     const replyMessage = await freightController.handleIncoming(
       tenantId,
       fromNormalized,
@@ -263,7 +295,8 @@ export async function POST(request: NextRequest) {
       tenantId,
       phoneHash,
       providerEventId: messageSid,
-      intent: "freight_flow",
+      intent,
+      confidence,
       state: "handled",
       responseType: "twiml_ok",
       latencyMs,
@@ -271,6 +304,7 @@ export async function POST(request: NextRequest) {
 
     // Circuit breaker: mark success
     recordSuccess();
+    await markIdempotencyDone(idemKey, { status: "ok" }, undefined, requestId);
 
     return twimlOk(replyMessage);
   } catch (err) {

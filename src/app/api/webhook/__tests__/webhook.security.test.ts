@@ -24,9 +24,13 @@ vi.mock("../../../../server/twilio/verifyWebhook", () => ({
     verifyTwilioRequest: vi.fn(),
 }));
 
-vi.mock("../../../../infra/rate-limiter", () => ({
-    checkRateLimit: vi.fn(),
-    getThrottleMessage: vi.fn(() => "Throttled"),
+vi.mock("../../../../infra/rate-limit/redis-rate-limiter", () => ({
+    checkRedisRateLimit: vi.fn(),
+}));
+
+vi.mock("../../../../infra/idempotency/redis-idempotency", () => ({
+    acquireIdempotency: vi.fn(),
+    markIdempotencyDone: vi.fn(),
 }));
 
 vi.mock("../../../../infra/repositories/message.repository", () => ({
@@ -74,7 +78,8 @@ vi.mock("../../../../infra/circuit-breaker", () => ({
 
 // ── Import mocked modules ─────────────────────────────────────────────────────
 import { verifyTwilioRequest } from "../../../../server/twilio/verifyWebhook";
-import { checkRateLimit } from "../../../../infra/rate-limiter";
+import { checkRedisRateLimit } from "../../../../infra/rate-limit/redis-rate-limiter";
+import { acquireIdempotency } from "../../../../infra/idempotency/redis-idempotency";
 import { messageRepository } from "../../../../infra/repositories/message.repository";
 import { tenantRepository } from "../../../../infra/repositories/tenant.repository";
 import { freightController } from "../../../../modules/freight/freight.controller";
@@ -111,8 +116,8 @@ function mockTenant() {
 }
 
 function mockAllowedRateLimit() {
-    (checkRateLimit as ReturnType<typeof vi.fn>).mockResolvedValue({
-        allowed: true, remaining: 9, limit: 10,
+    (checkRedisRateLimit as ReturnType<typeof vi.fn>).mockResolvedValue({
+        allowed: true, remaining: 9, resetAt: Date.now() + 60000,
     });
 }
 
@@ -139,6 +144,7 @@ describe("POST /api/webhook — security hardening", () => {
         vi.clearAllMocks();
         process.env.TWILIO_AUTH_TOKEN = "test-token-abc";
         (isCircuitOpen as ReturnType<typeof vi.fn>).mockReturnValue(false);
+        (acquireIdempotency as ReturnType<typeof vi.fn>).mockResolvedValue(true);
     });
 
     afterEach(() => {
@@ -172,6 +178,7 @@ describe("POST /api/webhook — security hardening", () => {
         (verifyTwilioRequest as ReturnType<typeof vi.fn>).mockReturnValue(true);
         mockTenant();
         mockAllowedRateLimit();
+        (acquireIdempotency as ReturnType<typeof vi.fn>).mockResolvedValue(true);
         mockNotDuplicate();
         mockHappyPath();
 
@@ -216,10 +223,11 @@ describe("POST /api/webhook — security hardening", () => {
     it("returns 200 TwiML and skips controller when phone rate limit exceeded", async () => {
         (verifyTwilioRequest as ReturnType<typeof vi.fn>).mockReturnValue(true);
         mockTenant();
+        (acquireIdempotency as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
         // Phone limit exceeded on first call
-        (checkRateLimit as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-            allowed: false, remaining: 0, limit: 10, retryAfterSeconds: 30,
+        (checkRedisRateLimit as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+            allowed: false, remaining: 0, resetAt: Date.now() + 30000,
         });
 
         const res = await POST(makeRequest());
@@ -234,11 +242,12 @@ describe("POST /api/webhook — security hardening", () => {
     it("returns 200 TwiML and skips controller when tenant rate limit exceeded", async () => {
         (verifyTwilioRequest as ReturnType<typeof vi.fn>).mockReturnValue(true);
         mockTenant();
+        (acquireIdempotency as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
         // Phone OK, tenant exceeded
-        (checkRateLimit as ReturnType<typeof vi.fn>)
-            .mockResolvedValueOnce({ allowed: true, remaining: 9, limit: 10 })      // phone
-            .mockResolvedValueOnce({ allowed: false, remaining: 0, limit: 200 });   // tenant
+        (checkRedisRateLimit as ReturnType<typeof vi.fn>)
+            .mockResolvedValueOnce({ allowed: true, remaining: 9, resetAt: Date.now() + 60000 })      // phone
+            .mockResolvedValueOnce({ allowed: false, remaining: 0, resetAt: Date.now() + 3600000 });   // tenant
 
         const res = await POST(makeRequest());
 
@@ -253,10 +262,7 @@ describe("POST /api/webhook — security hardening", () => {
         (verifyTwilioRequest as ReturnType<typeof vi.fn>).mockReturnValue(true);
         mockTenant();
         mockAllowedRateLimit();
-
-        // Duplicate — already processed
-        (messageRepository.existsByMessageSid as ReturnType<typeof vi.fn>)
-            .mockResolvedValue(true);
+        (acquireIdempotency as ReturnType<typeof vi.fn>).mockResolvedValue(false);
 
         const res = await POST(makeRequest());
 
@@ -266,5 +272,47 @@ describe("POST /api/webhook — security hardening", () => {
         // Empty Response — no <Message> tag
         expect(text).not.toContain("<Message>");
         expect(freightController.handleIncoming).not.toHaveBeenCalled();
+    });
+
+    it("persists intent PROVIDE_CEP for CEP body", async () => {
+        (verifyTwilioRequest as ReturnType<typeof vi.fn>).mockReturnValue(true);
+        mockTenant();
+        mockAllowedRateLimit();
+        mockNotDuplicate();
+
+        (twilioProvider.parseIncomingMessage as ReturnType<typeof vi.fn>)
+            .mockReturnValue({ messageSid: "SM123", from: "whatsapp:+5511987654321", body: "12345-678" });
+        (freightController.handleIncoming as ReturnType<typeof vi.fn>)
+            .mockResolvedValue("ok");
+        (messageRepository.saveInboundMessage as ReturnType<typeof vi.fn>)
+            .mockResolvedValue(undefined);
+
+        const res = await POST(makeRequest("MessageSid=SM123&From=whatsapp%3A%2B5511987654321&To=whatsapp%3A%2B5511999999999&Body=12345-678"));
+
+        expect(res.status).toBe(200);
+        expect(messageRepository.saveInboundMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ intent: "PROVIDE_CEP" })
+        );
+    });
+
+    it("persists intent FREIGHT_QUERY for freight request body", async () => {
+        (verifyTwilioRequest as ReturnType<typeof vi.fn>).mockReturnValue(true);
+        mockTenant();
+        mockAllowedRateLimit();
+        mockNotDuplicate();
+
+        (twilioProvider.parseIncomingMessage as ReturnType<typeof vi.fn>)
+            .mockReturnValue({ messageSid: "SM123", from: "whatsapp:+5511987654321", body: "quero calcular frete" });
+        (freightController.handleIncoming as ReturnType<typeof vi.fn>)
+            .mockResolvedValue("ok");
+        (messageRepository.saveInboundMessage as ReturnType<typeof vi.fn>)
+            .mockResolvedValue(undefined);
+
+        const res = await POST(makeRequest("MessageSid=SM123&From=whatsapp%3A%2B5511987654321&To=whatsapp%3A%2B5511999999999&Body=quero+calcular+frete"));
+
+        expect(res.status).toBe(200);
+        expect(messageRepository.saveInboundMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ intent: "FREIGHT_QUERY" })
+        );
     });
 });
