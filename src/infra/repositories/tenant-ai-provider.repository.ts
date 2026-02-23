@@ -11,9 +11,15 @@ export interface UpsertTenantAIProviderInput {
   embedModel: string;
   apiKey?: string | null;
   timeoutMs?: number;
+  isEnabled?: boolean;
 }
 
 const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.DEFAULT_AI_TIMEOUT_MS || '20000', 10);
+
+function encryptApiKey(raw: string): string {
+  // TODO: replace with KMS/Envelope encryption.
+  return raw;
+}
 
 export class TenantAIProviderRepository {
   async getProviderConfig(tenantId: string): Promise<TenantAIProviderRecord | null> {
@@ -57,6 +63,7 @@ export class TenantAIProviderRepository {
 
     const db = await getDb();
     const timeoutMs = payload.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    const isEnabled = payload.isEnabled ?? true;
 
     const existing = await db
       .select({ id: tenantAiProviders.id })
@@ -73,6 +80,8 @@ export class TenantAIProviderRepository {
           model: payload.model,
           embedModel: payload.embedModel,
           apiKey: payload.apiKey ?? null,
+          apiKeyEncrypted: payload.apiKey ? encryptApiKey(payload.apiKey) : null,
+          isEnabled: isEnabled ? 1 : 0,
           timeoutMs,
         })
         .where(eq(tenantAiProviders.tenantId, tenantId));
@@ -93,6 +102,8 @@ export class TenantAIProviderRepository {
       model: payload.model,
       embedModel: payload.embedModel,
       apiKey: payload.apiKey ?? null,
+      apiKeyEncrypted: payload.apiKey ? encryptApiKey(payload.apiKey) : null,
+      isEnabled: isEnabled ? 1 : 0,
       timeoutMs,
     });
 
@@ -100,6 +111,42 @@ export class TenantAIProviderRepository {
       tenantId,
       providerType: payload.providerType,
     });
+  }
+
+  async rotateApiKey(tenantId: string, apiKey: string): Promise<void> {
+    if (!tenantId) {
+      throw new Error('tenantId is required');
+    }
+
+    if (!apiKey) {
+      throw new Error('apiKey is required');
+    }
+
+    const db = await getDb();
+    await db
+      .update(tenantAiProviders)
+      .set({
+        apiKey: apiKey,
+        apiKeyEncrypted: encryptApiKey(apiKey),
+        isEnabled: 1,
+      })
+      .where(eq(tenantAiProviders.tenantId, tenantId));
+
+    logger.info('Tenant AI provider api key rotated', { tenantId });
+  }
+
+  async disableProvider(tenantId: string): Promise<void> {
+    if (!tenantId) {
+      throw new Error('tenantId is required');
+    }
+
+    const db = await getDb();
+    await db
+      .update(tenantAiProviders)
+      .set({ isEnabled: 0 })
+      .where(eq(tenantAiProviders.tenantId, tenantId));
+
+    logger.info('Tenant AI provider disabled', { tenantId });
   }
 }
 
