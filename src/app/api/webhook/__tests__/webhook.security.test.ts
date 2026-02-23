@@ -69,9 +69,13 @@ vi.mock("../../../../providers/twilio.provider", () => ({
     },
 }));
 
-vi.mock("../../../../lib/normalize", () => ({
-    normalizeWhatsAppNumber: vi.fn((n: string) => n),
-    isValidWhatsAppNumber: vi.fn(() => true),
+vi.mock("../../../../lib/phone", () => ({
+    normalizeAndHash: vi.fn((n: string) => ({ normalized: n, hash: `hash-of-${n}` })),
+    isValidPhone: vi.fn(() => true),
+}));
+
+vi.mock("../../../../infra/context-cache", () => ({
+    appendMessage: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../../../../infra/circuit-breaker", () => ({

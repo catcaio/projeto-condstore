@@ -22,13 +22,13 @@ import { sanitizeMessage, validateWebhookPayload } from "../../../lib/validation
 import { messageRepository } from "../../../infra/repositories/message.repository";
 import { tenantRepository } from "../../../infra/repositories/tenant.repository";
 import { aiDecisionLogRepository } from "../../../infra/repositories/ai-decision-log.repository";
-import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from "../../../lib/normalize";
 import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
 import { checkRedisRateLimit } from "../../../infra/rate-limit/redis-rate-limiter";
 import { acquireIdempotency, markIdempotencyDone } from "../../../infra/idempotency/redis-idempotency";
 import { freightController } from "../../../modules/freight/freight.controller";
-import { hashPhone } from "../../../lib/hash";
+import { normalizeAndHash, isValidPhone } from "../../../lib/phone";
 import { intentClassifier } from "../../../core/conversation/intent-classifier";
+import { appendMessage } from "../../../infra/context-cache";
 import {
   isCircuitOpen,
   recordSuccess,
@@ -163,8 +163,10 @@ export async function POST(request: NextRequest) {
     }
 
     const tenantId = tenant.id.toString();
-    const rawFrom = payload["From"] || "";
-    const phoneHash = hashPhone(rawFrom);
+    // Pre-compute hash from payload["From"] so rate-limit and idempotency logs
+    // use a stable key before the full parse step.  The normalised form used for
+    // DB storage is derived again from the parsed incomingMessage below.
+    const phoneHash = normalizeAndHash(payload["From"] || "").hash;
 
     // ── 8. Idempotency (Redis) ───────────────────────────────────────────────
     const idemKey = `idem:${tenantId}:webhook.twilio:${messageSid}`;
@@ -243,8 +245,11 @@ export async function POST(request: NextRequest) {
     const incomingMessage = twilioProvider.parseIncomingMessage(payload as any);
     incomingMessage.body = sanitizeMessage(incomingMessage.body);
 
-    const fromNormalized = normalizeWhatsAppNumber(incomingMessage.from);
-    if (!isValidWhatsAppNumber(fromNormalized)) {
+    // Re-normalise from the parsed message body (may differ slightly from rawFrom).
+    // We use phoneFromNormalized (from the "From" header) as the canonical DB value
+    // because incomingMessage.from could carry the same whitespace/case variations.
+    const fromNormalized = normalizeAndHash(incomingMessage.from).normalized;
+    if (!isValidPhone(fromNormalized)) {
       logger.warn("Webhook rejected: invalid From number format", {
         event: "webhook_invalid_from",
         tenantId,
@@ -276,7 +281,20 @@ export async function POST(request: NextRequest) {
       body: incomingMessage.body,
       direction: "inbound",
       intent,
+      intentConfidence: confidence ?? null,
       rawPayload: JSON.stringify(sanitizedPayload),
+    });
+
+    // ── 11b. Update context cache (fire-and-forget, non-blocking) ─────────────
+    // Keeps the Redis snapshot fresh so Frank has conversation history on the
+    // next request without hitting the DB.  Failures are silently swallowed
+    // inside appendMessage — they must never break the webhook flow.
+    void appendMessage(tenantId, phoneHash, {
+      body: messageText,
+      direction: "inbound",
+      intent,
+      intentConfidence: confidence ?? null,
+      createdAt: new Date().toISOString(),
     });
 
     // ── 12. Business logic ────────────────────────────────────────────────────

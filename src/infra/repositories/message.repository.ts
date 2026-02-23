@@ -4,6 +4,19 @@ import { messages, type NewMessageRecord } from '../../drizzle/schema';
 import { logger } from '../logger';
 import { ErrorCode, InfrastructureError } from '../errors';
 
+/**
+ * Compact message snapshot used by the context cache and Frank orchestrator.
+ * Intentionally small — only fields relevant for conversation context.
+ */
+export interface ContextMessage {
+    body: string;
+    direction: 'inbound' | 'outbound';
+    intent: string;
+    /** Classifier confidence in [0, 1].  null when no classifier ran. */
+    intentConfidence: number | null;
+    createdAt: string; // ISO-8601 string (serialisation-safe)
+}
+
 export class MessageRepository {
     /**
      * Save an inbound message with idempotency on messageSid.
@@ -106,6 +119,52 @@ export class MessageRepository {
             total: Number(totalResult?.count || 0),
             breakdown: intentsBreakdown,
         };
+    }
+
+    /**
+     * Return the last `limit` messages sent by `phoneNumber` within `tenantId`,
+     * in chronological order (oldest → newest).
+     *
+     * Single query, filtered by (tenantId, fromPhone), ordered DESC then reversed
+     * so the caller always receives history in conversation order.
+     *
+     * Returns an empty array (never throws) so callers can safely ignore failures
+     * in the hot path.
+     */
+    async getLastMessages(tenantId: string, phoneNumber: string, limit: number): Promise<ContextMessage[]> {
+        if (!tenantId || !phoneNumber || limit <= 0) return [];
+
+        try {
+            const db = await getDb();
+            const rows = await db
+                .select({
+                    body: messages.body,
+                    direction: messages.direction,
+                    intent: messages.intent,
+                    intentConfidence: messages.intentConfidence,
+                    createdAt: messages.createdAt,
+                })
+                .from(messages)
+                .where(and(eq(messages.tenantId, tenantId), eq(messages.fromPhone, phoneNumber)))
+                .orderBy(desc(messages.createdAt))
+                .limit(limit);
+
+            // Reverse so the result is oldest-first (natural conversation order)
+            return rows.reverse().map(r => ({
+                body: r.body,
+                direction: r.direction as 'inbound' | 'outbound',
+                intent: r.intent,
+                intentConfidence: r.intentConfidence !== null && r.intentConfidence !== undefined
+                    ? Number(r.intentConfidence)
+                    : null,
+                createdAt: r.createdAt instanceof Date
+                    ? r.createdAt.toISOString()
+                    : new Date(String(r.createdAt)).toISOString(),
+            }));
+        } catch (err) {
+            logger.error('getLastMessages query failed', err as Error, { tenantId });
+            return [];
+        }
     }
 
     async getMetricsTotal(tenantId: string) {

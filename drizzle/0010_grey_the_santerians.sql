@@ -1,0 +1,1 @@
+ALTER TABLE `messages` ADD `intent_confidence` decimal(5,4);
