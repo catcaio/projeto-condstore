@@ -29,6 +29,7 @@ import { acquireIdempotency, markIdempotencyDone } from "../../../infra/idempote
 import { freightController } from "../../../modules/freight/freight.controller";
 import { hashPhone } from "../../../lib/hash";
 import { intentClassifier } from "../../../core/conversation/intent-classifier";
+import { appendMessage } from "../../../infra/context-cache";
 import {
   isCircuitOpen,
   recordSuccess,
@@ -277,6 +278,17 @@ export async function POST(request: NextRequest) {
       direction: "inbound",
       intent,
       rawPayload: JSON.stringify(sanitizedPayload),
+    });
+
+    // ── 11b. Update context cache (fire-and-forget, non-blocking) ─────────────
+    // Keeps the Redis snapshot fresh so Frank has conversation history on the
+    // next request without hitting the DB.  Failures are silently swallowed
+    // inside appendMessage — they must never break the webhook flow.
+    void appendMessage(tenantId, phoneHash, {
+      body: messageText,
+      direction: "inbound",
+      intent,
+      createdAt: new Date().toISOString(),
     });
 
     // ── 12. Business logic ────────────────────────────────────────────────────
