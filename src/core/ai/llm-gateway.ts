@@ -2,7 +2,7 @@ import { tenantAiProviderRepository } from '../../infra/repositories/tenant-ai-p
 import { logger } from '../../infra/logger';
 import type { AIProvider, ChatInput, ChatOutput, EmbeddingsInput, EmbeddingsOutput } from './provider.interface';
 import { OpenAICompatibleProvider } from './providers/openai-compatible.provider';
-import { checkTenantRateLimit } from './tenant-rate-limit';
+import { checkRedisRateLimit } from '../../infra/rate-limit/redis-rate-limiter';
 
 const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.DEFAULT_AI_TIMEOUT_MS || '20000', 10);
 
@@ -67,13 +67,16 @@ class ObservedProvider implements AIProvider {
   ) {}
 
   async chat(input: ChatInput): Promise<ChatOutput> {
-    const rate = checkTenantRateLimit(this.meta.tenantId);
+    const rate = await checkRedisRateLimit({
+      tenantId: this.meta.tenantId,
+      scope: 'ai.chat',
+    });
     if (!rate.allowed) {
       logger.warn('ai_rate_limit', {
         tenant_id: this.meta.tenantId,
         provider_type: this.meta.providerType,
         model: this.meta.model,
-        retry_after_ms: rate.retryAfterMs,
+        reset_at: rate.resetAt,
       });
       throw new Error('AI_RATE_LIMIT');
     }
@@ -106,13 +109,16 @@ class ObservedProvider implements AIProvider {
   }
 
   async embeddings(input: EmbeddingsInput): Promise<EmbeddingsOutput> {
-    const rate = checkTenantRateLimit(this.meta.tenantId);
+    const rate = await checkRedisRateLimit({
+      tenantId: this.meta.tenantId,
+      scope: 'ai.embed',
+    });
     if (!rate.allowed) {
       logger.warn('ai_rate_limit', {
         tenant_id: this.meta.tenantId,
         provider_type: this.meta.providerType,
         model: this.meta.embedModel,
-        retry_after_ms: rate.retryAfterMs,
+        reset_at: rate.resetAt,
       });
       throw new Error('AI_RATE_LIMIT');
     }

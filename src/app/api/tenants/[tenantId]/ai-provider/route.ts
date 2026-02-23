@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tenantAiProviderRepository, type UpsertTenantAIProviderInput } from '../../../../../infra/repositories/tenant-ai-provider.repository';
+import { checkRedisRateLimit } from '../../../../../infra/rate-limit/redis-rate-limiter';
 
 export const runtime = 'nodejs';
 
@@ -10,6 +11,31 @@ function extractTenantId(request: NextRequest): string {
     throw new Error('tenantId is required');
   }
   return segments[idx + 1];
+}
+
+function getActorId(request: NextRequest): string {
+  return (
+    request.headers.get('x-user-id') ||
+    request.headers.get('x-forwarded-for') ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
+async function enforceRateLimit(request: NextRequest, tenantId: string): Promise<NextResponse | null> {
+  const requestId = request.headers.get('x-vercel-id') ?? undefined;
+  const actorId = getActorId(request);
+  const result = await checkRedisRateLimit({
+    tenantId,
+    scope: `admin.ai-provider:${actorId}`,
+    requestId,
+  });
+
+  if (!result.allowed) {
+    return NextResponse.json({ error: 'rate_limited', resetAt: result.resetAt }, { status: 429 });
+  }
+
+  return null;
 }
 
 function toBoolean(value: unknown): boolean | undefined {
@@ -24,6 +50,8 @@ function toBoolean(value: unknown): boolean | undefined {
 export async function GET(request: NextRequest) {
   try {
     const tenantId = extractTenantId(request);
+    const rateLimited = await enforceRateLimit(request, tenantId);
+    if (rateLimited) return rateLimited;
     const config = await tenantAiProviderRepository.getProviderConfig(tenantId);
 
     if (!config) {
@@ -51,6 +79,8 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const tenantId = extractTenantId(request);
+    const rateLimited = await enforceRateLimit(request, tenantId);
+    if (rateLimited) return rateLimited;
     const payload = (await request.json()) as Partial<UpsertTenantAIProviderInput> & {
       isEnabled?: boolean | string;
     };
