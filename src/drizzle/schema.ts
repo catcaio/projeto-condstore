@@ -91,6 +91,7 @@ export const messages = mysqlTable('messages', {
     body: text('body').notNull(),
     direction: varchar('direction', { length: 10 }).notNull().default('inbound'),
     intent: varchar('intent', { length: 50 }).notNull().default('unknown'),
+    intentConfidence: decimal('intent_confidence', { precision: 5, scale: 4 }),
     rawPayload: text('raw_payload').notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => {

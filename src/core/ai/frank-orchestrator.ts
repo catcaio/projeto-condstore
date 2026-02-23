@@ -107,6 +107,7 @@ export class FrankOrchestrator {
           body: input.message,
           direction: 'inbound',
           intent,
+          intentConfidence: confidence ?? null,
           createdAt: new Date().toISOString(),
         });
       }
