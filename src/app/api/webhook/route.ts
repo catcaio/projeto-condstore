@@ -21,6 +21,7 @@ import { logger } from "../../../infra/logger";
 import { sanitizeMessage, validateWebhookPayload } from "../../../lib/validation";
 import { messageRepository } from "../../../infra/repositories/message.repository";
 import { tenantRepository } from "../../../infra/repositories/tenant.repository";
+import { aiDecisionLogRepository } from "../../../infra/repositories/ai-decision-log.repository";
 import { normalizeWhatsAppNumber, isValidWhatsAppNumber } from "../../../lib/normalize";
 import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
 import { checkRedisRateLimit } from "../../../infra/rate-limit/redis-rate-limiter";
@@ -288,6 +289,20 @@ export async function POST(request: NextRequest) {
     );
 
     const latencyMs = Date.now() - startTime;
+
+    if (intent !== "UNKNOWN") {
+      void aiDecisionLogRepository.saveDecisionLog({
+        tenantId,
+        messageId: messageSid,
+        providerEventId: messageSid,
+        provider: "intent_classifier",
+        model: "rules-v1",
+        intent,
+        confidence,
+        responseType: "twiml_ok",
+        latencyMs,
+      });
+    }
 
     // ── 13. Structured audit log ──────────────────────────────────────────────
     logger.info("Webhook processed", {

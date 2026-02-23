@@ -40,6 +40,12 @@ vi.mock("../../../../infra/repositories/message.repository", () => ({
     },
 }));
 
+vi.mock("../../../../infra/repositories/ai-decision-log.repository", () => ({
+    aiDecisionLogRepository: {
+        saveDecisionLog: vi.fn(),
+    },
+}));
+
 vi.mock("../../../../infra/repositories/tenant.repository", () => ({
     tenantRepository: {
         resolveTenantByTwilioNumber: vi.fn(),
@@ -81,6 +87,7 @@ import { verifyTwilioRequest } from "../../../../server/twilio/verifyWebhook";
 import { checkRedisRateLimit } from "../../../../infra/rate-limit/redis-rate-limiter";
 import { acquireIdempotency } from "../../../../infra/idempotency/redis-idempotency";
 import { messageRepository } from "../../../../infra/repositories/message.repository";
+import { aiDecisionLogRepository } from "../../../../infra/repositories/ai-decision-log.repository";
 import { tenantRepository } from "../../../../infra/repositories/tenant.repository";
 import { freightController } from "../../../../modules/freight/freight.controller";
 import { twilioProvider } from "../../../../providers/twilio.provider";
@@ -293,6 +300,7 @@ describe("POST /api/webhook — security hardening", () => {
         expect(messageRepository.saveInboundMessage).toHaveBeenCalledWith(
             expect.objectContaining({ intent: "PROVIDE_CEP" })
         );
+        expect(aiDecisionLogRepository.saveDecisionLog).toHaveBeenCalledTimes(1);
     });
 
     it("persists intent FREIGHT_QUERY for freight request body", async () => {
@@ -314,5 +322,6 @@ describe("POST /api/webhook — security hardening", () => {
         expect(messageRepository.saveInboundMessage).toHaveBeenCalledWith(
             expect.objectContaining({ intent: "FREIGHT_QUERY" })
         );
+        expect(aiDecisionLogRepository.saveDecisionLog).toHaveBeenCalledTimes(1);
     });
 });
