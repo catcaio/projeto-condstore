@@ -2,9 +2,7 @@ import { defineConfig } from "vitest/config";
 import path from "path";
 import fs from "fs";
 
-const isWindows = process.platform === "win32";
-
-if (isWindows && !process.env.ESBUILD_BINARY_PATH) {
+if (process.platform === "win32" && !process.env.ESBUILD_BINARY_PATH) {
   const esbuildPath = path.resolve(
     "node_modules",
     "vite",
@@ -24,7 +22,6 @@ const templateRoot = path.resolve(import.meta.dirname);
 export default defineConfig({
   root: templateRoot,
   resolve: {
-    preserveSymlinks: true,
     alias: {
       "@": path.resolve(templateRoot, "client", "src"),
       "@shared": path.resolve(templateRoot, "shared"),
@@ -33,15 +30,6 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    ...(isWindows
-      ? {
-          pool: "threads",
-          maxThreads: 1,
-          minThreads: 1,
-          fileParallelism: false,
-          sequence: { concurrent: false },
-        }
-      : {}),
     include: [
       "src/**/*.test.ts",
       "src/**/*.spec.ts",
