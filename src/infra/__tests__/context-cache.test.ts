@@ -17,6 +17,17 @@ const mockLogger = vi.hoisted(() => ({
     info: vi.fn(),
 }));
 
+const mockContextCacheMetrics = vi.hoisted(() => ({
+    trackCacheHit: vi.fn(),
+    trackCacheMiss: vi.fn(),
+    trackDbFallbackOk: vi.fn(),
+    trackDbFallbackFail: vi.fn(),
+    trackRewarmOk: vi.fn(),
+    trackRewarmFail: vi.fn(),
+    trackAppendOk: vi.fn(),
+    trackAppendFail: vi.fn(),
+}));
+
 vi.mock('../redis.client', () => ({
     redisClient: mockRedis,
 }));
@@ -28,6 +39,8 @@ vi.mock('../repositories/message.repository', () => ({
 vi.mock('../logger', () => ({
     logger: mockLogger,
 }));
+
+vi.mock('../../modules/metrics/context-cache.metrics', () => mockContextCacheMetrics);
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +71,8 @@ describe('getContext', () => {
 
         expect(result).toEqual(cached);
         expect(mockMessageRepo.getLastMessages).not.toHaveBeenCalled();
+        expect(mockContextCacheMetrics.trackCacheHit).toHaveBeenCalledWith({ tenantId: 't1', source: 'redis' });
+        expect(mockContextCacheMetrics.trackCacheMiss).not.toHaveBeenCalled();
     });
 
     it('returns at most `limit` messages from cache', async () => {
@@ -82,6 +97,18 @@ describe('getContext', () => {
         expect(mockMessageRepo.getLastMessages).toHaveBeenCalledWith('t1', '+5511', 5);
         expect(mockRedis.set).toHaveBeenCalledWith('ctx:t1:hash-1', dbMsgs, expect.any(Number));
         expect(result).toEqual(dbMsgs);
+        expect(mockContextCacheMetrics.trackCacheMiss).toHaveBeenCalledWith({
+            tenantId: 't1',
+            source: 'redis',
+            reason: 'miss',
+        });
+        expect(mockContextCacheMetrics.trackDbFallbackOk).toHaveBeenCalledWith(
+            expect.objectContaining({
+                tenantId: 't1',
+                source: 'db',
+            }),
+        );
+        expect(mockContextCacheMetrics.trackRewarmOk).toHaveBeenCalledWith({ tenantId: 't1', source: 'redis' });
     });
 
     it('returns empty array when both Redis and DB fail', async () => {
@@ -92,6 +119,16 @@ describe('getContext', () => {
 
         expect(result).toEqual([]);
         expect(mockLogger.error).toHaveBeenCalledTimes(2);
+        expect(mockContextCacheMetrics.trackCacheMiss).toHaveBeenCalledWith({
+            tenantId: 't1',
+            source: 'redis',
+            reason: 'redis_error',
+        });
+        expect(mockContextCacheMetrics.trackDbFallbackFail).toHaveBeenCalledWith({
+            tenantId: 't1',
+            source: 'db',
+            reason: 'db_error',
+        });
     });
 
     it('enforces tenant isolation — key includes tenantId', async () => {
@@ -119,6 +156,24 @@ describe('getContext', () => {
         // Result still comes from DB even though cache write failed
         expect(result).toHaveLength(1);
         expect(mockLogger.error).toHaveBeenCalledTimes(1);
+        expect(mockContextCacheMetrics.trackRewarmFail).toHaveBeenCalledWith({
+            tenantId: 't1',
+            source: 'redis',
+            reason: 'redis_error',
+        });
+    });
+
+    it('does not break getContext when metrics tracking throws', async () => {
+        const cached = [msg('cached msg')];
+        mockRedis.get.mockResolvedValueOnce(cached);
+        mockContextCacheMetrics.trackCacheHit.mockImplementationOnce(() => {
+            throw new Error('metrics failed');
+        });
+
+        const result = await getContext('t1', 'hash-1', '+5511', 5);
+
+        expect(result).toEqual(cached);
+        expect(mockMessageRepo.getLastMessages).not.toHaveBeenCalled();
     });
 });
 
@@ -138,6 +193,10 @@ describe('appendMessage', () => {
             [m],
             expect.any(Number),
         );
+        expect(mockContextCacheMetrics.trackAppendOk).toHaveBeenCalledWith({
+            tenantId: 't1',
+            source: 'redis',
+        });
     });
 
     it('appends to existing messages and trims to MAX (5)', async () => {
@@ -158,5 +217,20 @@ describe('appendMessage', () => {
 
         await expect(appendMessage('t1', 'hash-1', msg('x'))).resolves.toBeUndefined();
         expect(mockLogger.error).toHaveBeenCalledTimes(1);
+        expect(mockContextCacheMetrics.trackAppendFail).toHaveBeenCalledWith({
+            tenantId: 't1',
+            source: 'redis',
+            reason: 'redis_error',
+        });
+    });
+
+    it('does not break appendMessage when metrics tracking throws', async () => {
+        mockRedis.get.mockResolvedValueOnce(null);
+        mockContextCacheMetrics.trackAppendOk.mockImplementationOnce(() => {
+            throw new Error('metrics failed');
+        });
+
+        await expect(appendMessage('t1', 'hash-1', msg('x'))).resolves.toBeUndefined();
+        expect(mockRedis.set).toHaveBeenCalledTimes(1);
     });
 });
