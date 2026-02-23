@@ -18,6 +18,7 @@
 import { redisClient } from './redis.client';
 import { messageRepository, type ContextMessage } from './repositories/message.repository';
 import { logger } from './logger';
+import { metrics } from '../modules/metrics/metrics';
 
 export type { ContextMessage };
 
@@ -50,32 +51,106 @@ export async function getContext(
     limit: number = MAX_CONTEXT_MESSAGES,
 ): Promise<ContextMessage[]> {
     const key = cacheKey(tenantId, phoneHash);
+    const metricTagsBase = { tenantId, limit, source: 'redis' as const };
 
     // ── L1: Redis ──────────────────────────────────────────────────────────────
     try {
         const cached = await redisClient.get<ContextMessage[]>(key);
         if (cached !== null) {
+            metrics.increment('context_cache_hit', { ...metricTagsBase, reason: 'hit' });
+            logger.debug('context-cache: cache hit', {
+                tenantId,
+                phoneHash,
+                limit,
+                source: 'redis',
+                reason: 'hit',
+            });
             // Snapshot may hold more than `limit` entries if MAX changed; trim.
             return cached.slice(-limit);
         }
+        metrics.increment('context_cache_miss', { ...metricTagsBase, reason: 'miss' });
+        logger.debug('context-cache: cache miss', {
+            tenantId,
+            phoneHash,
+            limit,
+            source: 'redis',
+            reason: 'miss',
+        });
     } catch (err) {
-        logger.error('context-cache: Redis GET failed, falling back to DB', err as Error, { tenantId });
+        metrics.increment('context_cache_miss', { ...metricTagsBase, reason: 'redis_error' });
+        logger.error('context-cache: Redis GET failed, falling back to DB', err as Error, {
+            tenantId,
+            phoneHash,
+            limit,
+            source: 'redis',
+            reason: 'redis_error',
+        });
     }
 
     // ── L2: DB fallback ────────────────────────────────────────────────────────
     try {
         const msgs = await messageRepository.getLastMessages(tenantId, phoneNumber, limit);
+        metrics.increment('context_cache_db_fallback_ok', {
+            tenantId,
+            limit,
+            source: 'db',
+            reason: 'miss',
+        });
+        logger.info('context-cache: DB fallback ok', {
+            tenantId,
+            phoneHash,
+            limit,
+            source: 'db',
+            reason: 'miss',
+        });
 
         // Re-warm the cache (best-effort — don't let a Redis error block the caller)
         try {
             await redisClient.set(key, msgs, CONTEXT_TTL_SECONDS);
+            metrics.increment('context_cache_rewarm_ok', {
+                tenantId,
+                limit,
+                source: 'redis',
+                reason: 'miss',
+            });
+            logger.debug('context-cache: rewarm ok', {
+                tenantId,
+                phoneHash,
+                limit,
+                source: 'redis',
+                reason: 'miss',
+            });
         } catch (cacheErr) {
-            logger.error('context-cache: Redis SET failed after DB fallback', cacheErr as Error, { tenantId });
+            metrics.increment('context_cache_rewarm_fail', {
+                tenantId,
+                limit,
+                source: 'redis',
+                reason: 'redis_error',
+            });
+            logger.error('context-cache: Redis SET failed after DB fallback', cacheErr as Error, {
+                tenantId,
+                phoneHash,
+                limit,
+                source: 'redis',
+                reason: 'redis_error',
+            });
         }
 
         return msgs;
     } catch (err) {
-        logger.error('context-cache: DB fallback failed', err as Error, { tenantId });
+        metrics.increment('context_cache_db_fallback_fail', {
+            tenantId,
+            limit,
+            source: 'db',
+            reason: 'db_error',
+        });
+        logger.error('context-cache: DB fallback failed', err as Error, {
+            tenantId,
+            phoneHash,
+            limit,
+            source: 'db',
+            reason: 'db_error',
+        });
         return [];
     }
 }
@@ -100,8 +175,33 @@ export async function appendMessage(
         const existing = (await redisClient.get<ContextMessage[]>(key)) ?? [];
         const updated = [...existing, msg].slice(-MAX_CONTEXT_MESSAGES);
         await redisClient.set(key, updated, CONTEXT_TTL_SECONDS);
+        metrics.increment('context_cache_append_ok', {
+            tenantId,
+            limit: MAX_CONTEXT_MESSAGES,
+            source: 'redis',
+            reason: existing.length === 0 ? 'empty' : 'miss',
+        });
+        logger.debug('context-cache: append ok', {
+            tenantId,
+            phoneHash,
+            limit: MAX_CONTEXT_MESSAGES,
+            source: 'redis',
+            reason: existing.length === 0 ? 'empty' : 'miss',
+        });
     } catch (err) {
+        metrics.increment('context_cache_append_fail', {
+            tenantId,
+            limit: MAX_CONTEXT_MESSAGES,
+            source: 'redis',
+            reason: 'redis_error',
+        });
         // Non-fatal: a stale/missing cache entry is recovered on the next getContext call.
-        logger.error('context-cache: appendMessage failed', err as Error, { tenantId });
+        logger.error('context-cache: appendMessage failed', err as Error, {
+            tenantId,
+            phoneHash,
+            limit: MAX_CONTEXT_MESSAGES,
+            source: 'redis',
+            reason: 'redis_error',
+        });
     }
 }

@@ -15,6 +15,11 @@ const mockMessageRepo = vi.hoisted(() => ({
 const mockLogger = vi.hoisted(() => ({
     error: vi.fn(),
     info: vi.fn(),
+    debug: vi.fn(),
+}));
+
+const mockMetrics = vi.hoisted(() => ({
+    increment: vi.fn(),
 }));
 
 vi.mock('../redis.client', () => ({
@@ -27,6 +32,10 @@ vi.mock('../repositories/message.repository', () => ({
 
 vi.mock('../logger', () => ({
     logger: mockLogger,
+}));
+
+vi.mock('../../modules/metrics/metrics', () => ({
+    metrics: mockMetrics,
 }));
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -58,6 +67,13 @@ describe('getContext', () => {
 
         expect(result).toEqual(cached);
         expect(mockMessageRepo.getLastMessages).not.toHaveBeenCalled();
+        expect(mockMetrics.increment).toHaveBeenCalledTimes(1);
+        expect(mockMetrics.increment).toHaveBeenCalledWith('context_cache_hit', {
+            tenantId: 't1',
+            limit: 5,
+            source: 'redis',
+            reason: 'hit',
+        });
     });
 
     it('returns at most `limit` messages from cache', async () => {
@@ -82,6 +98,24 @@ describe('getContext', () => {
         expect(mockMessageRepo.getLastMessages).toHaveBeenCalledWith('t1', '+5511', 5);
         expect(mockRedis.set).toHaveBeenCalledWith('ctx:t1:hash-1', dbMsgs, expect.any(Number));
         expect(result).toEqual(dbMsgs);
+        expect(mockMetrics.increment).toHaveBeenNthCalledWith(1, 'context_cache_miss', {
+            tenantId: 't1',
+            limit: 5,
+            source: 'redis',
+            reason: 'miss',
+        });
+        expect(mockMetrics.increment).toHaveBeenNthCalledWith(2, 'context_cache_db_fallback_ok', {
+            tenantId: 't1',
+            limit: 5,
+            source: 'db',
+            reason: 'miss',
+        });
+        expect(mockMetrics.increment).toHaveBeenNthCalledWith(3, 'context_cache_rewarm_ok', {
+            tenantId: 't1',
+            limit: 5,
+            source: 'redis',
+            reason: 'miss',
+        });
     });
 
     it('returns empty array when both Redis and DB fail', async () => {
@@ -119,6 +153,24 @@ describe('getContext', () => {
         // Result still comes from DB even though cache write failed
         expect(result).toHaveLength(1);
         expect(mockLogger.error).toHaveBeenCalledTimes(1);
+        expect(mockMetrics.increment).toHaveBeenNthCalledWith(1, 'context_cache_miss', {
+            tenantId: 't1',
+            limit: 5,
+            source: 'redis',
+            reason: 'miss',
+        });
+        expect(mockMetrics.increment).toHaveBeenNthCalledWith(2, 'context_cache_db_fallback_ok', {
+            tenantId: 't1',
+            limit: 5,
+            source: 'db',
+            reason: 'miss',
+        });
+        expect(mockMetrics.increment).toHaveBeenNthCalledWith(3, 'context_cache_rewarm_fail', {
+            tenantId: 't1',
+            limit: 5,
+            source: 'redis',
+            reason: 'redis_error',
+        });
     });
 });
 
@@ -158,5 +210,11 @@ describe('appendMessage', () => {
 
         await expect(appendMessage('t1', 'hash-1', msg('x'))).resolves.toBeUndefined();
         expect(mockLogger.error).toHaveBeenCalledTimes(1);
+        expect(mockMetrics.increment).toHaveBeenCalledWith('context_cache_append_fail', {
+            tenantId: 't1',
+            limit: 5,
+            source: 'redis',
+            reason: 'redis_error',
+        });
     });
 });

@@ -36,6 +36,14 @@ vi.mock('../logger', () => ({
     logger: { error: vi.fn(), info: vi.fn(), debug: vi.fn(), warn: vi.fn() },
 }));
 
+const mockMetrics = vi.hoisted(() => ({
+    increment: vi.fn(),
+}));
+
+vi.mock('../../modules/metrics/metrics', () => ({
+    metrics: mockMetrics,
+}));
+
 vi.mock('../../core/ai/llm-gateway', () => ({
     getAIProviderWithMeta: vi.fn(),
 }));
