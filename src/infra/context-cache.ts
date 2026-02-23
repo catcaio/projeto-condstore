@@ -1,7 +1,7 @@
 /**
  * Conversation context cache — wraps Redis with a DB fallback.
  *
- * Key schema : ctx:{tenantId}:{phoneHash}
+ * Key schema : ctx:{NODE_ENV}:{APP_NAME}:{tenantId}:{phoneHash}
  * Value      : JSON array of ContextMessage (compact, serialisation-safe)
  * TTL        : CONTEXT_TTL_SECONDS (6 h by default)
  *
@@ -28,8 +28,15 @@ const CONTEXT_TTL_SECONDS = 6 * 60 * 60; // 21 600 s
 /** Maximum number of messages kept in a single context snapshot. */
 const MAX_CONTEXT_MESSAGES = 5;
 
+const APP_NAME = 'condstore-core';
+
+export function buildContextKey({ tenantId, phoneHash }: { tenantId: string; phoneHash: string }): string {
+    const nodeEnv = process.env.NODE_ENV || 'dev';
+    return `ctx:${nodeEnv}:${APP_NAME}:${tenantId}:${phoneHash}`;
+}
+
 function cacheKey(tenantId: string, phoneHash: string): string {
-    return `ctx:${tenantId}:${phoneHash}`;
+    return buildContextKey({ tenantId, phoneHash });
 }
 
 /**

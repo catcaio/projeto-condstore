@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ContextMessage } from '../context-cache';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
@@ -50,13 +50,14 @@ function msg(
 
 // ── Import AFTER mocks are registered ─────────────────────────────────────────
 
-const { getContext, appendMessage } = await import('../context-cache');
+const { getContext, appendMessage, buildContextKey } = await import('../context-cache');
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe('getContext', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        delete process.env.NODE_ENV;
     });
 
     it('returns cached messages on cache HIT (does not call DB)', async () => {
@@ -96,7 +97,11 @@ describe('getContext', () => {
         const result = await getContext('t1', 'hash-1', '+5511', 5);
 
         expect(mockMessageRepo.getLastMessages).toHaveBeenCalledWith('t1', '+5511', 5);
-        expect(mockRedis.set).toHaveBeenCalledWith('ctx:t1:hash-1', dbMsgs, expect.any(Number));
+        expect(mockRedis.set).toHaveBeenCalledWith(
+            buildContextKey({ tenantId: 't1', phoneHash: 'hash-1' }),
+            dbMsgs,
+            expect.any(Number),
+        );
         expect(result).toEqual(dbMsgs);
         expect(mockMetrics.increment).toHaveBeenNthCalledWith(1, 'context_cache_miss', {
             tenantId: 't1',
@@ -136,8 +141,8 @@ describe('getContext', () => {
         await getContext('tenant-B', 'same-hash', '+5511', 5);
 
         const calls = mockRedis.get.mock.calls.map(c => c[0] as string);
-        expect(calls[0]).toBe('ctx:tenant-A:same-hash');
-        expect(calls[1]).toBe('ctx:tenant-B:same-hash');
+        expect(calls[0]).toBe(buildContextKey({ tenantId: 'tenant-A', phoneHash: 'same-hash' }));
+        expect(calls[1]).toBe(buildContextKey({ tenantId: 'tenant-B', phoneHash: 'same-hash' }));
         // DB was called once per tenant with their specific tenantId
         expect(mockMessageRepo.getLastMessages.mock.calls[0][0]).toBe('tenant-A');
         expect(mockMessageRepo.getLastMessages.mock.calls[1][0]).toBe('tenant-B');
@@ -186,7 +191,7 @@ describe('appendMessage', () => {
         await appendMessage('t1', 'hash-1', m);
 
         expect(mockRedis.set).toHaveBeenCalledWith(
-            'ctx:t1:hash-1',
+            buildContextKey({ tenantId: 't1', phoneHash: 'hash-1' }),
             [m],
             expect.any(Number),
         );
@@ -216,5 +221,46 @@ describe('appendMessage', () => {
             source: 'redis',
             reason: 'redis_error',
         });
+    });
+});
+
+describe('buildContextKey', () => {
+    const originalEnv = process.env.NODE_ENV;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        if (originalEnv === undefined) {
+            delete process.env.NODE_ENV;
+        } else {
+            process.env.NODE_ENV = originalEnv;
+        }
+    });
+
+    it('isolates keys by environment', () => {
+        process.env.NODE_ENV = 'dev';
+        const devKey = buildContextKey({ tenantId: 't1', phoneHash: 'h1' });
+        process.env.NODE_ENV = 'prod';
+        const prodKey = buildContextKey({ tenantId: 't1', phoneHash: 'h1' });
+
+        expect(devKey).not.toBe(prodKey);
+    });
+
+    it('isolates keys by tenant', () => {
+        process.env.NODE_ENV = 'dev';
+        const keyA = buildContextKey({ tenantId: 'tenant-A', phoneHash: 'h1' });
+        const keyB = buildContextKey({ tenantId: 'tenant-B', phoneHash: 'h1' });
+
+        expect(keyA).not.toBe(keyB);
+    });
+
+    it('isolates keys by app name', () => {
+        process.env.NODE_ENV = 'dev';
+        const key = buildContextKey({ tenantId: 't1', phoneHash: 'h1' });
+        const otherAppKey = `ctx:dev:other-app:t1:h1`;
+
+        expect(key).not.toBe(otherAppKey);
     });
 });

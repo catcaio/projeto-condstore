@@ -55,9 +55,9 @@ describe('normalizeAndHash', () => {
     it('tenant + normalised phone always maps to the same cache key', () => {
         const tenantId = 'tenant-xyz';
         const { hash } = normalizeAndHash('WhatsApp: +55 11 98765-4321');
-        const key = `ctx:${tenantId}:${hash}`;
+        const key = `ctx:dev:condstore-core:${tenantId}:${hash}`;
         // Key is stable across multiple calls
-        expect(key).toBe(`ctx:${tenantId}:${normalizeAndHash('whatsapp:+5511987654321').hash}`);
+        expect(key).toBe(`ctx:dev:condstore-core:${tenantId}:${normalizeAndHash('whatsapp:+5511987654321').hash}`);
     });
 });
 

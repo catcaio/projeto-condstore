@@ -52,7 +52,7 @@ export function phoneHash(normalized: string): string {
  * @example
  * const { normalized, hash } = normalizeAndHash(payload["From"]);
  * // normalized → store in messages.from_phone
- * // hash       → Redis key segment ctx:{tenantId}:{hash}
+ * // hash       → Redis key segment ctx:{NODE_ENV}:{APP_NAME}:{tenantId}:{hash}
  */
 export function normalizeAndHash(raw: string | null | undefined): { normalized: string; hash: string } {
     const normalized = normalizePhone(raw);
