@@ -26,8 +26,11 @@ export const tenantAiProviders = mysqlTable('tenant_ai_providers', {
     model: varchar('model', { length: 255 }).notNull(),
     embedModel: varchar('embed_model', { length: 255 }).notNull(),
     apiKey: varchar('api_key', { length: 512 }),
+    apiKeyEncrypted: varchar('api_key_encrypted', { length: 512 }),
+    isEnabled: int('is_enabled').notNull().default(1),
     timeoutMs: int('timeout_ms').notNull().default(20000),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 }, (table) => {
     return {
         tenantIdIndex: index('idx_tenant_ai_providers_tenant_id').on(table.tenantId),
