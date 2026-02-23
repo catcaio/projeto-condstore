@@ -1,6 +1,6 @@
-import { defineConfig } from "vitest/config";
-import path from "path";
-import fs from "fs";
+const { defineConfig } = require("vitest/config");
+const path = require("node:path");
+const fs = require("node:fs");
 
 const isWindows = process.platform === "win32";
 
@@ -19,9 +19,9 @@ if (isWindows && !process.env.ESBUILD_BINARY_PATH) {
   }
 }
 
-const templateRoot = path.resolve(import.meta.dirname);
+const templateRoot = path.resolve(__dirname);
 
-export default defineConfig({
+module.exports = defineConfig({
   root: templateRoot,
   resolve: {
     preserveSymlinks: true,
