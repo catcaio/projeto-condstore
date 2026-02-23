@@ -102,6 +102,33 @@ export const messages = mysqlTable('messages', {
 export type MessageRecord = typeof messages.$inferSelect;
 export type NewMessageRecord = typeof messages.$inferInsert;
 
+// --- AI Decision Logs (Frank audit trail) ---
+
+export const aiDecisionLogs = mysqlTable('ai_decision_logs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    messageId: varchar('message_id', { length: 64 }).notNull(),
+    providerEventId: varchar('provider_event_id', { length: 64 }),
+    provider: varchar('provider', { length: 30 }).notNull(),
+    model: varchar('model', { length: 255 }).notNull(),
+    intent: varchar('intent', { length: 50 }).notNull(),
+    confidence: decimal('confidence', { precision: 5, scale: 4 }),
+    toolUsed: varchar('tool_used', { length: 100 }),
+    toolPayload: text('tool_payload'),
+    tokensIn: int('tokens_in'),
+    tokensOut: int('tokens_out'),
+    latencyMs: int('latency_ms'),
+    responseType: varchar('response_type', { length: 30 }).notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdCreatedAtIndex: index('idx_ai_decision_logs_tenant_created_at').on(table.tenantId, table.createdAt),
+    };
+});
+
+export type AiDecisionLogRecord = typeof aiDecisionLogs.$inferSelect;
+export type NewAiDecisionLogRecord = typeof aiDecisionLogs.$inferInsert;
+
 // --- Users (Authentication) ---
 
 export const users = mysqlTable('users', {

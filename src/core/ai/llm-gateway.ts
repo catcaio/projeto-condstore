@@ -13,6 +13,13 @@ interface DefaultsConfig {
   timeoutMs: number;
 }
 
+export interface AIProviderMeta {
+  tenantId: string;
+  providerType: string;
+  model: string;
+  embedModel: string;
+}
+
 function getDefaults(): DefaultsConfig {
   const baseUrl = process.env.DEFAULT_LMSTUDIO_BASE_URL;
   const model = process.env.DEFAULT_LMSTUDIO_MODEL;
@@ -63,7 +70,7 @@ class DualModelProvider implements AIProvider {
 class ObservedProvider implements AIProvider {
   constructor(
     private readonly provider: AIProvider,
-    private readonly meta: { tenantId: string; providerType: string; model: string; embedModel: string }
+    private readonly meta: AIProviderMeta
   ) {}
 
   async chat(input: ChatInput): Promise<ChatOutput> {
@@ -152,6 +159,11 @@ class ObservedProvider implements AIProvider {
 }
 
 export async function getAIProvider(tenantId: string): Promise<AIProvider> {
+  const { provider } = await getAIProviderWithMeta(tenantId);
+  return provider;
+}
+
+export async function getAIProviderWithMeta(tenantId: string): Promise<{ provider: AIProvider; meta: AIProviderMeta }> {
   if (!tenantId) {
     throw new Error('tenantId is required to resolve AI provider');
   }
@@ -183,10 +195,15 @@ export async function getAIProvider(tenantId: string): Promise<AIProvider> {
     timeoutMs,
   });
 
-  return new ObservedProvider(new DualModelProvider(chatProvider, embeddingsProvider), {
+  const meta: AIProviderMeta = {
     tenantId,
     providerType,
     model,
     embedModel: embedModel || model,
-  });
+  };
+
+  return {
+    provider: new ObservedProvider(new DualModelProvider(chatProvider, embeddingsProvider), meta),
+    meta,
+  };
 }
