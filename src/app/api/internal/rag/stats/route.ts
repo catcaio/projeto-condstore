@@ -6,6 +6,7 @@ import { eq, sql } from 'drizzle-orm';
 import { frankEvents } from '@/drizzle/schema';
 import { getDb } from '@/infra/db';
 import { countPoints, getQdrantCollectionName } from '@/infra/vector/qdrant.client';
+import { withRequestTrace } from '@/infra/http/request-trace';
 
 function parseEnabledTenants(): string[] {
   return String(process.env.RAG_ENABLED_TENANTS || '')
@@ -28,7 +29,7 @@ function parseConfig() {
   };
 }
 
-export async function GET(request: NextRequest) {
+async function handler(request: NextRequest): Promise<NextResponse> {
   const tenantId = request.nextUrl.searchParams.get('tenantId')?.trim();
   if (!tenantId) {
     return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });
@@ -74,3 +75,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withRequestTrace(handler);

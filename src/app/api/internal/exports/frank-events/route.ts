@@ -5,6 +5,7 @@ import { getDb } from '@/infra/db';
 import { logger } from '@/infra/logger';
 import { sanitizeFrankPayload } from '@/core/ai/frank-event-sanitize';
 import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { makeRequestId } from '@/infra/http/request-trace';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,14 +42,6 @@ function normalizeOptionalString(value: string | null | undefined): string | nul
   return trimmed ? trimmed : null;
 }
 
-function makeRequestId(request: NextRequest): string {
-  return (
-    request.headers.get('x-request-id')?.trim() ||
-    request.headers.get('x-vercel-id')?.trim() ||
-    crypto.randomUUID?.() ||
-    `${Date.now()}`
-  );
-}
 
 function parseDateParam(value: string | null | undefined, field: 'from' | 'to'): Date | undefined | NextResponse {
   const raw = typeof value === 'string' ? value.trim() : '';
@@ -251,12 +244,26 @@ function serializeFrankRowToNdjson(
 
 export async function GET(request: NextRequest) {
   const requestId = makeRequestId(request);
+  const startTime = Date.now();
+
+  logger.info('api_request_start', {
+    requestId,
+    method: 'GET',
+    path: '/api/internal/exports/frank-events',
+  });
+
   try {
     getInternalExportTokenOrThrow();
   } catch (error) {
+    const latencyMs = Date.now() - startTime;
+    logger.error('frank_events_export_failed', error instanceof Error ? error : new Error(String(error)), {
+      requestId,
+      latencyMs,
+      phase: 'token_validation',
+    });
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'INTERNAL_EXPORT_TOKEN not configured', requestId },
-      { status: 500 },
+      { status: 500, headers: { 'X-Request-Id': requestId } },
     );
   }
   const token = request.headers.get('x-internal-token');
@@ -426,6 +433,13 @@ export async function GET(request: NextRequest) {
         }
       }
     },
+  });
+
+  const latencyMs = Date.now() - startTime;
+  logger.info('api_request_end', {
+    requestId,
+    status: 200,
+    latencyMs,
   });
 
   return new Response(stream, {

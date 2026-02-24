@@ -1,9 +1,10 @@
 export const runtime = "nodejs";
 
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { ensureCollection, getQdrantConfig, qdrantHealth } from "@/infra/vector/qdrant.client";
+import { withRequestTrace } from "@/infra/http/request-trace";
 
-export async function GET() {
+async function handler(request: NextRequest): Promise<NextResponse> {
   const cfg = getQdrantConfig();
 
   try {
@@ -47,4 +48,6 @@ export async function GET() {
     );
   }
 }
+
+export const GET = withRequestTrace(handler);
 
