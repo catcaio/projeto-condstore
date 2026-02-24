@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, decimal, int, timestamp, text, index, uniqueIndex } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, decimal, int, timestamp, text, index, uniqueIndex, json } from 'drizzle-orm/mysql-core';
 import { sql } from 'drizzle-orm';
 
 // --- Tenants (Multi-Tenant Support) ---
@@ -129,6 +129,32 @@ export const aiDecisionLogs = mysqlTable('ai_decision_logs', {
 
 export type AiDecisionLogRecord = typeof aiDecisionLogs.$inferSelect;
 export type NewAiDecisionLogRecord = typeof aiDecisionLogs.$inferInsert;
+
+// --- Frank Events (LLM observability/audit) ---
+
+export const frankEvents = mysqlTable('frank_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 100 }).notNull(),
+    sessionId: varchar('session_id', { length: 100 }),
+    correlationId: varchar('correlation_id', { length: 100 }),
+    kind: varchar('kind', { length: 50 }).notNull(),
+    payloadJson: json('payload_json').notNull(),
+    provider: varchar('provider', { length: 50 }).notNull(),
+    model: varchar('model', { length: 100 }).notNull(),
+    latencyMs: int('latency_ms').notNull(),
+    tokensPrompt: int('tokens_prompt'),
+    tokensCompletion: int('tokens_completion'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdIndex: index('idx_frank_events_tenant_id').on(table.tenantId),
+        correlationIdIndex: index('idx_frank_events_correlation_id').on(table.correlationId),
+        createdAtIndex: index('idx_frank_events_created_at').on(table.createdAt),
+    };
+});
+
+export type FrankEventRecord = typeof frankEvents.$inferSelect;
+export type NewFrankEventRecord = typeof frankEvents.$inferInsert;
 
 // --- Users (Authentication) ---
 

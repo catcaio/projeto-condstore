@@ -132,6 +132,7 @@ umps/
 # Local Database
 *.sqlite
 *.db
+qdrant_data/
 
 # Ngrok
 ngrok.exe
