@@ -25,11 +25,15 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'DATABASE_URL missing database name' }, { status: 500 });
         }
 
-        const urlObj = new URL(dbUrl);
-        console.log(`Connecting to DB: Host=${urlObj.hostname}, Database=${urlObj.pathname.replace('/', '')}`);
-
         const db = await getDb();
         const adminEmail = 'admin@condstore.local';
+        const adminSeedPassword = process.env.ADMIN_SEED_PASSWORD;
+        if (!adminSeedPassword) {
+            return NextResponse.json(
+                { success: false, error: 'ADMIN_SEED_PASSWORD missing' },
+                { status: 500 }
+            );
+        }
 
         // Ensure tenant exists for admin user to link to
         // We'll insert a fallback default tenant if none exists, or fetch the first one.
@@ -50,7 +54,7 @@ export async function GET(request: NextRequest) {
         const existingAdmin = await db.select().from(users).where(eq(users.email, adminEmail)).limit(1);
 
         if (existingAdmin.length === 0) {
-            const passwordHash = hashPassword(process.env.ADMIN_SEED_PASSWORD || 'Condstore@123');
+            const passwordHash = hashPassword(adminSeedPassword);
 
             await db.insert(users).values({
                 id: randomUUID(),
@@ -65,7 +69,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({ success: true, message: 'Admin user already exists.' });
     } catch (error: any) {
-        console.error("[/api/auth/seed-admin] error", error);
+        logger.error('seed_admin.failed', error as Error);
         return NextResponse.json({ success: false, error: error?.message ?? String(error) }, { status: 500 });
     }
 }
