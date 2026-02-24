@@ -9,9 +9,10 @@
  */
 export const runtime = "nodejs";
 
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { withRequestTrace } from "@/infra/http/request-trace";
 
-export async function GET() {
+async function handler(request: NextRequest): Promise<NextResponse> {
   const baseUrl =
     process.env.DEFAULT_LMSTUDIO_BASE_URL ??
     process.env.DEFAULT_CLOUD_BASE_URL;
@@ -57,3 +58,5 @@ export async function GET() {
     );
   }
 }
+
+export const GET = withRequestTrace(handler);

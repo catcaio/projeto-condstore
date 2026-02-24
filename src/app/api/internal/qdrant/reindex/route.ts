@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { runQdrantReindex } from '@/infra/vector/qdrant-reindex';
 import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { withRequestTrace } from '@/infra/http/request-trace';
 
 interface ReindexBody {
   tenantId?: string;
@@ -21,7 +22,7 @@ function isAuthorized(request: NextRequest): boolean {
   return isInternalTokenAuthorized(token);
 }
 
-function parseBody(body: ReindexBody) {
+function parseBody(body: ReindexBody): { error: NextResponse } | { input: { tenantId: string; docs?: boolean; chat?: boolean; sinceHours?: number; full: boolean } } {
   const tenantId = String(body?.tenantId || '').trim();
   if (!tenantId) {
     return { error: NextResponse.json({ error: 'tenantId is required' }, { status: 400 }) };
@@ -42,7 +43,7 @@ function parseBody(body: ReindexBody) {
   };
 }
 
-export async function POST(request: NextRequest) {
+async function handler(request: NextRequest): Promise<NextResponse> {
   try {
     // In dev this generates an ephemeral token (logged once); in prod it throws if missing.
     getInternalExportTokenOrThrow();
@@ -80,3 +81,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRequestTrace(handler);

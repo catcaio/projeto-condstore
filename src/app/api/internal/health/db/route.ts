@@ -12,29 +12,25 @@ export const runtime = "nodejs";
 import { NextResponse, NextRequest } from "next/server";
 import { sql } from "drizzle-orm";
 import { getDb } from "@/infra/db";
-import { makeRequestId, respondInfraError } from "@/infra/http/infra-error";
+import { respondInfraError } from "@/infra/http/infra-error";
+import { withRequestTrace } from "@/infra/http/request-trace";
 
-export async function GET(request: NextRequest) {
-  const requestId = makeRequestId();
+async function handler(request: NextRequest): Promise<NextResponse> {
   const start = Date.now();
   try {
     const db = await getDb();
     await db.execute(sql`SELECT 1`);
     const latencyMs = Date.now() - start;
 
-    return NextResponse.json(
-      {
-        ok: true,
-        latencyMs,
-        timestamp: new Date().toISOString(),
-      },
-      {
-        headers: {
-          'X-Request-Id': requestId,
-        },
-      }
-    );
+    return NextResponse.json({
+      ok: true,
+      latencyMs,
+      timestamp: new Date().toISOString(),
+    });
   } catch (err) {
-    return respondInfraError(err, requestId);
+    // requestId will be added by withRequestTrace wrapper
+    return respondInfraError(err, "");
   }
 }
+
+export const GET = withRequestTrace(handler);

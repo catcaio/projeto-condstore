@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { analyticsService } from '../../../modules/analytics/analytics.service';
 import { z } from 'zod';
 import { getSessionUser } from '@/infra/auth/session';
+import { withRequestTrace } from '@/infra/http/request-trace';
 
 const eventSchema = z.object({
     event: z.string().min(1).max(64),
@@ -9,7 +10,7 @@ const eventSchema = z.object({
     props: z.record(z.string(), z.any()).optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function handler(request: NextRequest): Promise<NextResponse> {
     try {
         const session = await getSessionUser(request);
         const tenantId = session?.tenantId?.trim();
@@ -77,3 +78,5 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: false, error: 'Internal Ingest Error' }, { status: 500 });
     }
 }
+
+export const POST = withRequestTrace(handler);

@@ -18,6 +18,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { twilioProvider } from "../../../providers/twilio.provider";
 import { logger } from '@/infra/logger';
+import { makeRequestId } from "@/infra/http/request-trace";
 import { sanitizeMessage, validateWebhookPayload } from "../../../lib/validation";
 import { messageRepository } from "../../../infra/repositories/message.repository";
 import { tenantRepository } from "../../../infra/repositories/tenant.repository";
@@ -38,21 +39,25 @@ import {
 
 // ─── TwiML helpers ────────────────────────────────────────────────────────────
 
-function twimlOk(message: string): NextResponse {
+function twimlOk(message: string, requestId?: string): NextResponse {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const MessagingResponse = require("twilio").twiml.MessagingResponse;
   const twiml = new MessagingResponse();
   twiml.message(message);
+  const headers: Record<string, string> = { "Content-Type": "text/xml" };
+  if (requestId) headers['X-Request-Id'] = requestId;
   return new NextResponse(twiml.toString(), {
     status: 200,
-    headers: { "Content-Type": "text/xml" },
+    headers,
   });
 }
 
-function twimlEmpty(): NextResponse {
+function twimlEmpty(requestId?: string): NextResponse {
+  const headers: Record<string, string> = { "Content-Type": "text/xml" };
+  if (requestId) headers['X-Request-Id'] = requestId;
   return new NextResponse(
     '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
-    { status: 200, headers: { "Content-Type": "text/xml" } }
+    { status: 200, headers }
   );
 }
 
@@ -60,26 +65,40 @@ function twimlEmpty(): NextResponse {
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
+  const requestId = makeRequestId(request);
+
+  logger.info('webhook_request_start', {
+    requestId,
+    method: 'POST',
+    path: '/api/webhook',
+  });
 
   // ── 1. Guard: content-type ──────────────────────────────────────────────────
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
+    const latencyMs = Date.now() - startTime;
+    logger.warn('webhook_invalid_content_type', {
+      requestId,
+      latencyMs,
+      contentType,
+    });
     return NextResponse.json(
       { error: "Unsupported Media Type. Use application/x-www-form-urlencoded." },
-      { status: 415 }
+      { status: 415, headers: { 'X-Request-Id': requestId } }
     );
   }
 
   // ── 2. Guard: TWILIO_AUTH_TOKEN must be configured ─────────────────────────
   if (!process.env.TWILIO_AUTH_TOKEN) {
+    const latencyMs = Date.now() - startTime;
     logger.error(
       "TWILIO_AUTH_TOKEN is not configured — webhook cannot verify signatures",
       new Error("TWILIO_AUTH_TOKEN missing"),
-      { event: "webhook_misconfigured" }
+      { event: "webhook_misconfigured", requestId, latencyMs }
     );
     return NextResponse.json(
       { error: "Webhook not properly configured." },
-      { status: 500 }
+      { status: 500, headers: { 'X-Request-Id': requestId } }
     );
   }
 
@@ -88,8 +107,6 @@ export async function POST(request: NextRequest) {
   const params = new URLSearchParams(rawBody);
   const payload: Record<string, string> = {};
   params.forEach((value, key) => { payload[key] = value; });
-
-  const requestId = request.headers.get("x-vercel-id") ?? undefined;
   // Safe log context (NO PII)
   const safeCtx = {
     requestId,
@@ -97,6 +114,13 @@ export async function POST(request: NextRequest) {
     accountSid: payload["AccountSid"] ?? undefined,
     hasBody: !!payload["Body"],
   };
+
+  // Log early context
+  logger.info('webhook_payload_received', {
+    requestId,
+    hasSid: !!payload["MessageSid"],
+    hasTo: !!payload["To"],
+  });
 
   // ── 4. Signature verification — always mandatory, no bypass ────────────────
   const signatureValid = verifyTwilioRequest(request, rawBody, payload);
@@ -114,7 +138,7 @@ export async function POST(request: NextRequest) {
       event: "webhook_circuit_open",
       ...safeCtx,
     });
-    return twimlOk(CIRCUIT_FALLBACK_MESSAGE);
+    return twimlOk(CIRCUIT_FALLBACK_MESSAGE, requestId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -141,7 +165,7 @@ export async function POST(request: NextRequest) {
         event: "webhook_missing_to",
         ...safeCtx,
       });
-      return twimlOk("Erro interno: payload inválido.");
+      return twimlOk("Erro interno: payload inválido.", requestId);
     }
 
     let tenant: Awaited<ReturnType<typeof tenantRepository.resolveTenantByTwilioNumber>>;
@@ -179,7 +203,7 @@ export async function POST(request: NextRequest) {
         providerEventId: messageSid,
         ...safeCtx,
       });
-      return twimlEmpty();
+      return twimlEmpty(requestId);
     }
 
     // ── 9. Dual rate limits ──────────────────────────────────────────────────
@@ -201,7 +225,8 @@ export async function POST(request: NextRequest) {
         ...safeCtx,
       });
       return twimlOk(
-        "Muitas mensagens enviadas. Por favor, aguarde um momento antes de tentar novamente."
+        "Muitas mensagens enviadas. Por favor, aguarde um momento antes de tentar novamente.",
+        requestId
       );
     }
 
@@ -222,7 +247,8 @@ export async function POST(request: NextRequest) {
         ...safeCtx,
       });
       return twimlOk(
-        "Muitas mensagens recebidas no momento. Tente novamente em breve."
+        "Muitas mensagens recebidas no momento. Tente novamente em breve.",
+        requestId
       );
     }
 
@@ -236,7 +262,7 @@ export async function POST(request: NextRequest) {
         providerEventId: messageSid,
         ...safeCtx,
       });
-      return twimlEmpty();
+      return twimlEmpty(requestId);
     }
 
     // ── 10. Validate and sanitize payload ────────────────────────────────────
@@ -255,7 +281,7 @@ export async function POST(request: NextRequest) {
         tenantId,
         ...safeCtx,
       });
-      return twimlOk("Número inválido. Tente novamente.");
+      return twimlOk("Número inválido. Tente novamente.", requestId);
     }
 
     // ── 11. Persist inbound message (sanitized, no PII in payload) ───────────
@@ -341,20 +367,34 @@ export async function POST(request: NextRequest) {
     recordSuccess();
     await markIdempotencyDone(idemKey, { status: "ok" }, undefined, requestId);
 
-    return twimlOk(replyMessage);
+    const successLatencyMs = Date.now() - startTime;
+    logger.info('webhook_request_end', {
+      requestId,
+      status: 200,
+      latencyMs: successLatencyMs,
+      tenantId,
+    });
+
+    return twimlOk(replyMessage, requestId);
   } catch (err) {
-    const latencyMs = Date.now() - startTime;
+    const errorLatencyMs = Date.now() - startTime;
 
     logger.error("Webhook processing failed", err as Error, {
       event: "webhook_error",
-      latencyMs,
+      latencyMs: errorLatencyMs,
       ...safeCtx,
     });
 
     // Circuit breaker: mark failure
     recordFailure();
 
-    return twimlOk("Desculpe, ocorreu um erro. Tente novamente mais tarde.");
+    logger.info('webhook_request_end', {
+      requestId,
+      status: 200,
+      latencyMs: errorLatencyMs,
+    });
+
+    return twimlOk("Desculpe, ocorreu um erro. Tente novamente mais tarde.", requestId);
   }
 }
 
@@ -363,10 +403,18 @@ export async function POST(request: NextRequest) {
 /**
  * Minimal liveness check (use /api/internal/health/webhook for deep health).
  */
-export async function GET() {
-  return NextResponse.json({
-    status: "ok",
-    service: "lojacond-frete-automacao",
-    timestamp: new Date().toISOString(),
-  });
+export async function GET(request: NextRequest) {
+  const requestId = makeRequestId(request);
+  return NextResponse.json(
+    {
+      status: "ok",
+      service: "lojacond-frete-automacao",
+      timestamp: new Date().toISOString(),
+    },
+    {
+      headers: {
+        'X-Request-Id': requestId,
+      },
+    }
+  );
 }
