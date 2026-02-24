@@ -15,6 +15,8 @@ import { messageRepository } from '@/infra/repositories/message.repository';
 import { simulationRepository } from '@/infra/repositories/simulation.repository';
 import { redisClient } from "@/infra/redis.client";
 import { logger } from '@/infra/logger';
+import { getSessionUser } from '@/infra/auth/session';
+import { makeRequestId, respondInfraError } from '@/infra/http/infra-error';
 
 interface CockpitMetrics {
   mensagensHoje: number;
@@ -25,14 +27,13 @@ interface CockpitMetrics {
 
 const CACHE_TTL_SECONDS = 30;
 
-import { getSessionUser } from '@/infra/auth/session';
-
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const requestId = makeRequestId();
   const user = await getSessionUser(request);
   const tenantId = user?.tenantId;
 
   if (!tenantId) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    return NextResponse.json({ error: 'UNAUTHORIZED', requestId }, { status: 401, headers: { 'X-Request-Id': requestId } });
   }
 
   const cacheKey = `cockpit:metrics:${tenantId}`;
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         logger.debug('cockpit/metrics: cache hit', { tenantId });
         return NextResponse.json(cached, {
           status: 200,
-          headers: { 'Cache-Control': 'private, max-age=30' },
+          headers: { 'Cache-Control': 'private, max-age=30', 'X-Request-Id': requestId },
         });
       }
     }
@@ -78,10 +79,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(payload, {
       status: 200,
-      headers: { 'Cache-Control': 'private, max-age=30' },
+      headers: { 'Cache-Control': 'private, max-age=30', 'X-Request-Id': requestId },
     });
   } catch (error) {
-    logger.error('cockpit/metrics: unexpected error', error as Error, { tenantId });
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return respondInfraError(error, requestId);
   }
 }

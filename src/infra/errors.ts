@@ -5,6 +5,7 @@
 
 export enum ErrorCode {
   // Infrastructure errors
+  DATABASE_URL_MISSING = 'DATABASE_URL_MISSING',
   REDIS_CONNECTION_ERROR = 'REDIS_CONNECTION_ERROR',
   REDIS_OPERATION_ERROR = 'REDIS_OPERATION_ERROR',
   INTERNAL_ERROR = 'INTERNAL_ERROR',
@@ -96,6 +97,7 @@ export class BusinessError extends BaseError {
  * Maps error codes to friendly messages for end users.
  */
 export const userFacingMessages: Record<ErrorCode, string> = {
+  [ErrorCode.DATABASE_URL_MISSING]: 'Serviço de banco de dados indisponível. Tente novamente em alguns minutos.',
   [ErrorCode.REDIS_CONNECTION_ERROR]: 'Serviço temporariamente indisponível. Tente novamente em alguns minutos.',
   [ErrorCode.REDIS_OPERATION_ERROR]: 'Erro ao processar sua solicitação. Tente novamente.',
   [ErrorCode.TWILIO_API_ERROR]: 'Erro ao enviar mensagem. Tente novamente.',
