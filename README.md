@@ -131,6 +131,7 @@ TWILIO_SIGNATURE_VALIDATION_ENABLED=false
 |--------|----------|-----------|
 | POST | `/api/webhook` | Recebe mensagens do Twilio. |
 | GET | `/api/health` | Status do sistema (DB, Redis). |
+| GET | `/api/internal/health/ai` | Health check da camada de IA (LM Studio `/v1/models`). |
 | POST | `/api/painel-logistico` | API do painel de cotação. |
 | GET | `/api/debug/tenants` | Lista tenants (apenas DEV). |
 
