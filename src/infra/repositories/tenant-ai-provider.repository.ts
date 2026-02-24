@@ -52,6 +52,17 @@ export class TenantAIProviderRepository {
       }
 
       const row = results[0];
+      if (row.apiKeyEncrypted && row.apiKey) {
+        // Hygiene: if encrypted key exists, immediately clear legacy plaintext.
+        await db
+          .update(tenantAiProviders)
+          .set({ apiKey: null })
+          .where(eq(tenantAiProviders.id, row.id));
+        row.apiKey = null;
+        logger.warn('Tenant AI provider plaintext api_key cleared because encrypted key exists', {
+          tenantId,
+        });
+      }
 
       logger.info('Tenant AI provider config retrieved', {
         tenantId,

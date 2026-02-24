@@ -400,8 +400,11 @@ class ObservedProvider implements AIProvider {
         provider: this.meta.providerType,
         model: this.meta.model,
         latencyMs: modelLatencyMs,
-        tokensPrompt: typeof tokenCounts.prompt_tokens === 'number' ? tokenCounts.prompt_tokens : undefined,
-        tokensCompletion: typeof tokenCounts.completion_tokens === 'number' ? tokenCounts.completion_tokens : undefined,
+        tokensPrompt: typeof tokenCounts.prompt_tokens === 'number' ? tokenCounts.prompt_tokens : 0,
+        tokensCompletion: typeof tokenCounts.completion_tokens === 'number' ? tokenCounts.completion_tokens : 0,
+        ragUsed: ragLog.enabled,
+        ragChunks: ragLog.chunks,
+        ragLatencyMs: ragLog.latencyMs,
       });
       return result;
     } catch (error) {
