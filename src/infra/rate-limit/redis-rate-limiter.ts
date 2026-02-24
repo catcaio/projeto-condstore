@@ -19,6 +19,9 @@ interface RateLimitInput {
 const DEFAULT_WINDOW_SECONDS = Number.parseInt(process.env.RATE_LIMIT_DEFAULT_WINDOW_SECONDS || '60', 10);
 const DEFAULT_MAX = Number.parseInt(process.env.RATE_LIMIT_DEFAULT_MAX || '60', 10);
 
+// Dedup: loga redis_unavailable apenas 1x por scope (evita spam por requisição).
+const _unavailableLogged = new Set<string>();
+
 function hashKey(key: string): string {
   return createHash('sha256').update(key).digest('hex').slice(0, 16);
 }
@@ -40,12 +43,16 @@ export async function checkRedisRateLimit(input: RateLimitInput): Promise<RedisR
   const keyHash = hashKey(key);
 
   if (!redisClient.isAvailable()) {
-    logger.warn('rate_limit.redis_unavailable', {
-      tenantId: input.tenantId,
-      scope: input.scope,
-      key_hash: keyHash,
-      requestId: input.requestId,
-    });
+    const logKey = `${input.tenantId}:${input.scope}`;
+    if (!_unavailableLogged.has(logKey)) {
+      _unavailableLogged.add(logKey);
+      logger.warn('rate_limit.redis_unavailable', {
+        tenantId: input.tenantId,
+        scope: input.scope,
+        key_hash: keyHash,
+        requestId: input.requestId,
+      });
+    }
     return { allowed: true, remaining: limit, resetAt };
   }
 

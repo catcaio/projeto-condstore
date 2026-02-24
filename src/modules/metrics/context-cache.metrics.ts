@@ -34,7 +34,7 @@ function emit(event: ContextCacheMetricEvent, payload: ContextCacheMetricPayload
   };
 
   try {
-    logger.info('context-cache-metric', metric);
+    logger.info('context-cache-metric', (metric as unknown as Record<string, unknown>));
   } catch {
     // Fail-open: metrics must never break the request flow.
   }

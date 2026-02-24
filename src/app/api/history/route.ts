@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { simulationRepository } from '../../../infra/repositories/simulation.repository';
 import { requireActivePlan } from '../../../modules/billing/requireActivePlan';
-import { logger } from '../../../infra/logger';
+import { logger } from '@/infra/logger';
 
 export const runtime = 'nodejs';
 

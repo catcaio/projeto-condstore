@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '../../../../infra/auth/session';
-import { getDb } from '../../../../infra/db';
+import { getSessionUser } from '@/infra/auth/session';
+import { getDb } from '@/infra/db';
 import { tenants } from '../../../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 

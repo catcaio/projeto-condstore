@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '../../../../infra/auth/session';
+import { getSessionUser } from '@/infra/auth/session';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const session = await getSessionUser(request);

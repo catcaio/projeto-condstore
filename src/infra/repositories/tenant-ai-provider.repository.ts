@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db';
 import { logger } from '../logger';
 import { tenantAiProviders, type TenantAIProviderRecord } from '../../drizzle/schema';
+import { encryptApiKey, decryptApiKey } from '../crypto/api-key.crypto';
 
 export interface UpsertTenantAIProviderInput {
   providerType: 'shared' | 'dedicated' | 'customer_hosted' | 'cloud';
@@ -14,15 +15,25 @@ export interface UpsertTenantAIProviderInput {
   isEnabled?: boolean;
 }
 
+export type TenantAIProviderWithKey = TenantAIProviderRecord & {
+  /** apiKey decriptada em memória — nunca persistida como campo separado */
+  resolvedApiKey: string | null;
+};
+
 const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.DEFAULT_AI_TIMEOUT_MS || '20000', 10);
 
-function encryptApiKey(raw: string): string {
-  // TODO: replace with KMS/Envelope encryption.
-  return raw;
+/**
+ * Resolve a API key em memória: decripta v1:... ou usa plaintext legado.
+ * Nunca loga o valor decriptado.
+ */
+function resolveApiKey(row: TenantAIProviderRecord): string | null {
+  const raw = row.apiKeyEncrypted ?? row.apiKey ?? null;
+  if (!raw) return null;
+  return decryptApiKey(raw);
 }
 
 export class TenantAIProviderRepository {
-  async getProviderConfig(tenantId: string): Promise<TenantAIProviderRecord | null> {
+  async getProviderConfig(tenantId: string): Promise<TenantAIProviderWithKey | null> {
     if (!tenantId) {
       throw new Error('tenantId is required');
     }
@@ -40,12 +51,15 @@ export class TenantAIProviderRepository {
         return null;
       }
 
+      const row = results[0];
+
       logger.info('Tenant AI provider config retrieved', {
         tenantId,
-        providerType: results[0].providerType,
+        providerType: row.providerType,
+        hasKey: !!(row.apiKeyEncrypted || row.apiKey),
       });
 
-      return results[0];
+      return { ...row, resolvedApiKey: resolveApiKey(row) };
     } catch (error) {
       logger.error('Failed to get tenant AI provider config', error as Error, { tenantId });
       throw error;
@@ -65,6 +79,9 @@ export class TenantAIProviderRepository {
     const timeoutMs = payload.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const isEnabled = payload.isEnabled ?? true;
 
+    // Criptografia: nunca persiste plaintext
+    const apiKeyEncrypted = payload.apiKey ? (encryptApiKey(payload.apiKey) ?? null) : null;
+
     const existing = await db
       .select({ id: tenantAiProviders.id })
       .from(tenantAiProviders)
@@ -79,8 +96,8 @@ export class TenantAIProviderRepository {
           baseUrl: payload.baseUrl,
           model: payload.model,
           embedModel: payload.embedModel,
-          apiKey: payload.apiKey ?? null,
-          apiKeyEncrypted: payload.apiKey ? encryptApiKey(payload.apiKey) : null,
+          apiKey: null,             // apaga plaintext legado
+          apiKeyEncrypted,
           isEnabled: isEnabled ? 1 : 0,
           timeoutMs,
         })
@@ -101,8 +118,8 @@ export class TenantAIProviderRepository {
       baseUrl: payload.baseUrl,
       model: payload.model,
       embedModel: payload.embedModel,
-      apiKey: payload.apiKey ?? null,
-      apiKeyEncrypted: payload.apiKey ? encryptApiKey(payload.apiKey) : null,
+      apiKey: null,             // nunca persistir plaintext
+      apiKeyEncrypted,
       isEnabled: isEnabled ? 1 : 0,
       timeoutMs,
     });
@@ -122,12 +139,17 @@ export class TenantAIProviderRepository {
       throw new Error('apiKey is required');
     }
 
+    const apiKeyEncrypted = encryptApiKey(apiKey);
+    if (!apiKeyEncrypted) {
+      throw new Error('Não é possível rotacionar apiKey sem PROVIDER_SECRETS_KEY configurada');
+    }
+
     const db = await getDb();
     await db
       .update(tenantAiProviders)
       .set({
-        apiKey: apiKey,
-        apiKeyEncrypted: encryptApiKey(apiKey),
+        apiKey: null,           // apaga plaintext
+        apiKeyEncrypted,
         isEnabled: 1,
       })
       .where(eq(tenantAiProviders.tenantId, tenantId));

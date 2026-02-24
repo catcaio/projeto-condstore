@@ -17,10 +17,10 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { getDb } from "../../../../../infra/db";
-import { redisClient } from "../../../../../infra/redis.client";
+import { getDb } from '@/infra/db';
+import { redisClient } from '@/infra/redis.client';
 import { getCircuitBreakerStatus } from "../../../../../infra/circuit-breaker";
-import { logger } from "../../../../../infra/logger";
+import { logger } from '@/infra/logger';
 
 type ComponentStatus = "ok" | "error";
 
