@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyticsService } from '../../../modules/analytics/analytics.service';
 import { z } from 'zod';
+import { getSessionUser } from '@/infra/auth/session';
 
 const eventSchema = z.object({
     event: z.string().min(1).max(64),
@@ -10,6 +11,12 @@ const eventSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
+        const session = await getSessionUser(request);
+        const tenantId = session?.tenantId?.trim();
+        if (!tenantId) {
+            return NextResponse.json({ ok: false, error: 'UNAUTHORIZED' }, { status: 401 });
+        }
+
         const bodyObj = await request.json();
         const parseResult = eventSchema.safeParse(bodyObj);
 
@@ -42,6 +49,7 @@ export async function POST(request: NextRequest) {
 
         // Async fire-and-forget logic (Resilient - won't throw out to surface)
         await analyticsService.logEvent({
+            tenantId,
             anonId,
             event,
             path,

@@ -42,6 +42,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (entitlement.errorResponse) {
     return entitlement.errorResponse;
   }
+  const tenantId = entitlement.tenantId!;
 
   const searchParams = request.nextUrl.searchParams;
   const event = searchParams.get('event');
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid limit. Maximum allowed is 500.' }, { status: 400 });
   }
 
-  const filters = [];
+  const filters = [eq(publicEvents.tenantId, tenantId)];
 
   if (event) {
     filters.push(eq(publicEvents.event, event));
@@ -92,6 +93,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
   } catch (error) {
     logger.error('cockpit/analytics/events: failed to load events', error as Error, {
+      tenantId,
       event,
       anonId,
       limit: parsedLimit,
