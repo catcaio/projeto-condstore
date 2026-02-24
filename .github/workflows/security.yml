@@ -34,8 +34,9 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
   lint:
-    name: Lint
+    name: Lint & Release Check
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,3 +59,6 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Release Check
+        run: npm run release:check
