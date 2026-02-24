@@ -108,6 +108,12 @@ function getRagChatMinScore(): number {
   return Math.max(0, Math.min(value, 1));
 }
 
+function getRagMinAvgScore(): number {
+  const value = Number.parseFloat(process.env.RAG_MIN_AVG_SCORE || '0.78');
+  if (!Number.isFinite(value)) return 0.78;
+  return Math.max(0, Math.min(value, 1));
+}
+
 function truncateRagChunkText(text: string, maxLen = 500): string {
   const clean = String(text || '').trim();
   if (clean.length <= maxLen) return clean;
@@ -207,6 +213,8 @@ class ObservedProvider implements AIProvider {
       cacheHit: false,
       docsChunks: 0,
       chatChunks: 0,
+      avgScore: 0,
+      qualityGateFailed: false,
     };
     let providerStartedAt = 0;
 
@@ -225,11 +233,16 @@ class ObservedProvider implements AIProvider {
           const docsChunks = ragResult.docs.filter((chunk) => chunk.score >= docsMinScore);
           const chatChunks = ragResult.chat.filter((chunk) => chunk.score >= chatMinScore);
           const scoredChunks = [...docsChunks, ...chatChunks];
-          const filteredOut = ragResult.chunks.length > 0 && scoredChunks.length === 0;
+          const avgScore = scoredChunks.length > 0
+            ? (scoredChunks.reduce((sum, chunk) => sum + chunk.score, 0) / scoredChunks.length)
+            : 0;
+          const minAvgScore = getRagMinAvgScore();
+          const qualityGateFailed = scoredChunks.length > 0 && avgScore < minAvgScore;
+          const filteredOut = (ragResult.chunks.length > 0 && scoredChunks.length === 0) || qualityGateFailed;
           const ragText = buildContextTextV2(docsChunks, chatChunks);
           const trimmed = ragText.slice(0, getRagMaxContextChars());
           const ragLatencyMs = Date.now() - ragStartedAt;
-          const shouldInject = Boolean(trimmed);
+          const shouldInject = Boolean(trimmed) && !qualityGateFailed;
 
           ragLog = {
             enabled: shouldInject,
@@ -240,6 +253,8 @@ class ObservedProvider implements AIProvider {
             cacheHit: ragResult.cacheHit === true,
             docsChunks: docsChunks.length,
             chatChunks: chatChunks.length,
+            avgScore,
+            qualityGateFailed,
           };
 
           finalInput = {
@@ -256,6 +271,8 @@ class ObservedProvider implements AIProvider {
               ragLatencyMs: ragResult.cacheHit ? 0 : ragLatencyMs,
               ragCacheHit: ragResult.cacheHit === true,
               ragFilteredOut: filteredOut,
+              ragAvgScore: Number(avgScore.toFixed(4)),
+              ragQualityGateFailed: qualityGateFailed,
             },
           };
         } catch (error) {
@@ -268,6 +285,8 @@ class ObservedProvider implements AIProvider {
             cacheHit: false,
             docsChunks: 0,
             chatChunks: 0,
+            avgScore: 0,
+            qualityGateFailed: false,
           };
           finalInput = {
             ...input,
@@ -305,6 +324,8 @@ class ObservedProvider implements AIProvider {
         'rag.cache_hit': ragLog.cacheHit,
         'rag.docs_chunks': ragLog.docsChunks,
         'rag.chat_chunks': ragLog.chatChunks,
+        'rag.avg_score': Number(ragLog.avgScore.toFixed(4)),
+        'rag.quality_gate_failed': ragLog.qualityGateFailed,
         ...tokenCounts,
       });
       logger.info('ai_chat_metrics', {
@@ -316,6 +337,8 @@ class ObservedProvider implements AIProvider {
         ragCacheHit: ragLog.cacheHit,
         ragDocsChunks: ragLog.docsChunks,
         ragChatChunks: ragLog.chatChunks,
+        ragAvgScore: Number(ragLog.avgScore.toFixed(4)),
+        ragQualityGateFailed: ragLog.qualityGateFailed,
         modelLatencyMs,
         totalLatencyMs,
         tokensPrompt: typeof tokenCounts.prompt_tokens === 'number' ? tokenCounts.prompt_tokens : null,
@@ -369,6 +392,8 @@ class ObservedProvider implements AIProvider {
         'rag.cache_hit': ragLog.cacheHit,
         'rag.docs_chunks': ragLog.docsChunks,
         'rag.chat_chunks': ragLog.chatChunks,
+        'rag.avg_score': Number(ragLog.avgScore.toFixed(4)),
+        'rag.quality_gate_failed': ragLog.qualityGateFailed,
         status: 'error',
         error_code: (error as Error).name || 'UNKNOWN',
       });
