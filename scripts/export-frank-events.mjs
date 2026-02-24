@@ -13,6 +13,13 @@ function getArgFlag(name) {
   return value;
 }
 
+function normalizeOptionalDateArg(value) {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === '-') return undefined;
+  return trimmed;
+}
+
 const [tenantId, fromArg, toArg, outFileArg] = process.argv.slice(2);
 
 if (!tenantId || !outFileArg) {
@@ -23,8 +30,8 @@ if (!tenantId || !outFileArg) {
 const internalToken = String(process.env.INTERNAL_EXPORT_TOKEN ?? '').trim();
 
 const baseUrl = process.env.INTERNAL_EXPORT_BASE_URL ?? 'http://127.0.0.1:3000';
-const from = fromArg && fromArg !== '-' ? fromArg : undefined;
-const to = toArg && toArg !== '-' ? toArg : undefined;
+const from = normalizeOptionalDateArg(fromArg);
+const to = normalizeOptionalDateArg(toArg);
 const outFile = path.resolve(outFileArg);
 const datasetVersion = getArgFlag('dataset-version') || process.env.DATASET_VERSION || 'frank-events/v1';
 const modelIdOverride = getArgFlag('model-id') || process.env.DEFAULT_LMSTUDIO_MODEL || null;
@@ -83,10 +90,19 @@ const headers = {};
 if (internalToken) {
   headers['x-internal-token'] = internalToken;
 }
-const response = await fetch(url, {
-  method: 'GET',
-  headers,
-});
+let response;
+try {
+  response = await fetch(url, {
+    method: 'GET',
+    headers,
+  });
+} catch (error) {
+  console.error('EXPORT_FAILED', JSON.stringify({
+    reason: 'request_failed',
+    error: String(error?.message ?? error),
+  }, null, 2));
+  process.exit(1);
+}
 
 if (!response.ok || !response.body) {
   const errorBody = await response.text().catch(() => '');
@@ -124,6 +140,18 @@ for await (const line of rl) {
       reason: 'invalid_jsonl_from_export_endpoint',
       line: lineCount + 1,
       error: String(error?.message ?? error),
+    }, null, 2));
+    process.exit(1);
+  }
+
+  if (row && typeof row === 'object' && row.ok === false && typeof row.error === 'string') {
+    out.destroy();
+    await fs.promises.rm(tmpOutFile, { force: true }).catch(() => {});
+    console.error('EXPORT_FAILED', JSON.stringify({
+      reason: 'export_stream_failed',
+      error: row.error,
+      requestId: row.requestId ?? null,
+      line: lineCount + 1,
     }, null, 2));
     process.exit(1);
   }
