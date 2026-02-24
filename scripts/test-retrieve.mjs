@@ -31,6 +31,12 @@ function getChannelMinScore(name, fallback) {
   return Math.max(0, Math.min(n, 1));
 }
 
+function getRagMinAvgScore() {
+  const n = Number.parseFloat(process.env.RAG_MIN_AVG_SCORE || '0.78');
+  if (!Number.isFinite(n)) return 0.78;
+  return Math.max(0, Math.min(n, 1));
+}
+
 async function main() {
   const tenantId = process.argv[2] ?? 'lojacond-default';
   const query = process.argv[3] ?? 'ping';
@@ -40,6 +46,7 @@ async function main() {
   const chatMinScore = getChannelMinScore('RAG_CHAT_MIN_SCORE', minScore);
   const docsLimit = Math.max(0, Number.parseInt(process.env.RAG_DOCS_MAX_CHUNKS || '3', 10) || 3);
   const chatLimit = Math.max(0, Number.parseInt(process.env.RAG_CHAT_MAX_CHUNKS || '2', 10) || 2);
+  const minAvgScore = getRagMinAvgScore();
   const { retrieveContextMulti } = await import('../src/core/ai/retrieval/retrieve-context.ts');
 
   console.log('TEST_RETRIEVE_CONFIG', JSON.stringify({
@@ -51,6 +58,7 @@ async function main() {
     chatLimit,
     docsMinScore,
     chatMinScore,
+    minAvgScore,
     qdrantUrl: process.env.QDRANT_URL || 'http://127.0.0.1:6333',
     collection: process.env.QDRANT_COLLECTION || 'condstore_docs',
     embedBaseUrl: process.env.DEFAULT_LMSTUDIO_BASE_URL || 'http://127.0.0.1:1234/v1',
@@ -65,7 +73,12 @@ async function main() {
   const docsChunks = rawDocs.filter((chunk) => chunk.score >= docsMinScore);
   const chatChunks = rawChat.filter((chunk) => chunk.score >= chatMinScore);
   const rawChunks = [...rawDocs, ...rawChat];
-  const chunks = [...docsChunks, ...chatChunks].slice(0, limit);
+  const preGateChunks = [...docsChunks, ...chatChunks].slice(0, limit);
+  const avgScore = preGateChunks.length > 0
+    ? preGateChunks.reduce((sum, chunk) => sum + chunk.score, 0) / preGateChunks.length
+    : 0;
+  const avgGateFailed = preGateChunks.length > 0 && avgScore < minAvgScore;
+  const chunks = avgGateFailed ? [] : preGateChunks;
 
   console.log('RETRIEVE_STATS', JSON.stringify({
     firstCacheHit: first.cacheHit === true,
@@ -79,6 +92,9 @@ async function main() {
     chatThresholdApplied: chatMinScore,
     docsThresholdChunks: docsChunks.length,
     chatThresholdChunks: chatChunks.length,
+    avgScore: Number(avgScore.toFixed(4)),
+    minAvgScore,
+    avgGateFailed,
     thresholdZeroChunks: rawChunks.length > 0 && chunks.length === 0,
   }, null, 2));
 
