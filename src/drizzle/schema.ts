@@ -159,6 +159,31 @@ export const frankEvents = mysqlTable('frank_events', {
 export type FrankEventRecord = typeof frankEvents.$inferSelect;
 export type NewFrankEventRecord = typeof frankEvents.$inferInsert;
 
+// --- Frank Rollout Decisions (scheduler audit) ---
+
+export const frankRolloutDecisions = mysqlTable('frank_rollout_decisions', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 100 }).notNull(),
+    baseline: varchar('baseline', { length: 50 }).notNull(),
+    candidate: varchar('candidate', { length: 50 }).notNull(),
+    decision: varchar('decision', { length: 30 }).notNull(), // PASS | FAIL | INSUFFICIENT_DATA
+    applied: int('applied').notNull().default(0), // 0/1
+    dryRun: int('dry_run').notNull().default(1), // 0/1
+    reasonsJson: json('reasons_json'),
+    metricsJson: json('metrics_json'),
+    requestId: varchar('request_id', { length: 50 }).notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantIdIndex: index('idx_frank_rollout_decisions_tenant_id').on(table.tenantId),
+        requestIdIndex: index('idx_frank_rollout_decisions_request_id').on(table.requestId),
+        createdAtIndex: index('idx_frank_rollout_decisions_created_at').on(table.createdAt),
+    };
+});
+
+export type FrankRolloutDecisionRecord = typeof frankRolloutDecisions.$inferSelect;
+export type NewFrankRolloutDecisionRecord = typeof frankRolloutDecisions.$inferInsert;
+
 // --- Users (Authentication) ---
 
 export const users = mysqlTable('users', {
