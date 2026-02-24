@@ -87,6 +87,7 @@ jspm_packages/
 
 # Next.js build output
 .next
+.next-ready*
 
 # Nuxt.js build / generate output
 .nuxt
@@ -127,6 +128,9 @@ screenshots/
 *.dump
 *.sql
 exports/
+!src/app/api/internal/exports/
+!src/app/api/internal/exports/frank-events/
+!src/app/api/internal/exports/frank-events/route.ts
 umps/
 
 # Local Database
