@@ -66,6 +66,25 @@ function isRagEnabledDefault(): boolean {
   return String(process.env.RAG_ENABLED_DEFAULT || 'false').toLowerCase() === 'true';
 }
 
+function parseRagEnabledTenants(): Set<string> {
+  return new Set(
+    String(process.env.RAG_ENABLED_TENANTS || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+function resolveRagEnabledForTenant(tenantId: string): { enabled: boolean; source?: 'default' | 'tenants' } {
+  if (parseRagEnabledTenants().has(tenantId)) {
+    return { enabled: true, source: 'tenants' };
+  }
+  if (isRagEnabledDefault()) {
+    return { enabled: true, source: 'default' };
+  }
+  return { enabled: false };
+}
+
 function getRagMaxChunks(): number {
   const value = Number.parseInt(process.env.RAG_MAX_CHUNKS || '5', 10);
   if (!Number.isFinite(value) || value <= 0) return 5;
@@ -215,11 +234,14 @@ class ObservedProvider implements AIProvider {
       chatChunks: 0,
       avgScore: 0,
       qualityGateFailed: false,
+      enabledSource: undefined as undefined | 'default' | 'tenants',
     };
     let providerStartedAt = 0;
 
     try {
-      if (isRagEnabledDefault()) {
+      const ragActivation = resolveRagEnabledForTenant(this.meta.tenantId);
+      ragLog.enabledSource = ragActivation.source;
+      if (ragActivation.enabled) {
         const ragStartedAt = Date.now();
         try {
           const ragResult = await retrieveContextMulti({
@@ -255,6 +277,7 @@ class ObservedProvider implements AIProvider {
             chatChunks: chatChunks.length,
             avgScore,
             qualityGateFailed,
+            enabledSource: ragActivation.source,
           };
 
           finalInput = {
@@ -287,6 +310,7 @@ class ObservedProvider implements AIProvider {
             chatChunks: 0,
             avgScore: 0,
             qualityGateFailed: false,
+            enabledSource: ragActivation.source,
           };
           finalInput = {
             ...input,
@@ -326,6 +350,7 @@ class ObservedProvider implements AIProvider {
         'rag.chat_chunks': ragLog.chatChunks,
         'rag.avg_score': Number(ragLog.avgScore.toFixed(4)),
         'rag.quality_gate_failed': ragLog.qualityGateFailed,
+        'rag.enabled_source': ragLog.enabledSource,
         ...tokenCounts,
       });
       logger.info('ai_chat_metrics', {
@@ -339,6 +364,7 @@ class ObservedProvider implements AIProvider {
         ragChatChunks: ragLog.chatChunks,
         ragAvgScore: Number(ragLog.avgScore.toFixed(4)),
         ragQualityGateFailed: ragLog.qualityGateFailed,
+        ragEnabledSource: ragLog.enabledSource ?? null,
         modelLatencyMs,
         totalLatencyMs,
         tokensPrompt: typeof tokenCounts.prompt_tokens === 'number' ? tokenCounts.prompt_tokens : null,
@@ -394,6 +420,7 @@ class ObservedProvider implements AIProvider {
         'rag.chat_chunks': ragLog.chatChunks,
         'rag.avg_score': Number(ragLog.avgScore.toFixed(4)),
         'rag.quality_gate_failed': ragLog.qualityGateFailed,
+        'rag.enabled_source': ragLog.enabledSource,
         status: 'error',
         error_code: (error as Error).name || 'UNKNOWN',
       });
