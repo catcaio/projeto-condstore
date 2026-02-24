@@ -117,9 +117,12 @@ export type RolloutSource = 'default' | 'tenant_override';
 
 /**
  * Resolve Frank model version for a specific tenant.
- * Checks for tenant-specific overrides first, then falls back to default.
+ * Checks for tenant-specific overrides first (Redis → env var), then falls back to default.
  *
  * Returns [FrankModelVersion, RolloutSource] tuple.
+ *
+ * WARNING: This is async-unsafe (synchronous function that uses async Redis).
+ * Use resolveFrankModelVersionAsync for async contexts.
  */
 export function resolveFrankModelVersion(tenantId: string): [FrankModelVersion, RolloutSource] {
   const overrides = parseTenantOverrides();
@@ -149,4 +152,42 @@ export function resolveFrankModelVersion(tenantId: string): [FrankModelVersion, 
   }
 
   return [getActiveFrankModel(), 'default'];
+}
+
+/**
+ * Async version: resolves Frank model version with Redis override support.
+ * Checks Redis first, then falls back to env var, then default.
+ */
+export async function resolveFrankModelVersionAsync(
+  tenantId: string,
+): Promise<[FrankModelVersion, RolloutSource]> {
+  // Try Redis override first (for runtime rollback)
+  try {
+    const { getTenantOverride } = await import('@/infra/frank/frank-override-store');
+    const redisOverride = await getTenantOverride(tenantId);
+    if (redisOverride) {
+      const defaultModel = getActiveFrankModel();
+      if (defaultModel.id === redisOverride) {
+        return [defaultModel, 'tenant_override'];
+      }
+
+      return [
+        {
+          id: redisOverride,
+          modelId: defaultModel.modelId,
+          embedModelId: defaultModel.embedModelId,
+          datasetVersion: defaultModel.datasetVersion,
+          gitCommit: defaultModel.gitCommit,
+          createdAt: defaultModel.createdAt,
+          notes: `Tenant override (Redis) for ${tenantId}`,
+        },
+        'tenant_override',
+      ];
+    }
+  } catch {
+    // Fall through to env var
+  }
+
+  // Fall back to synchronous version (env var + default)
+  return resolveFrankModelVersion(tenantId);
 }
