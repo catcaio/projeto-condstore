@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { planData } from '../../../../components/pricing/planData';
-import { getSessionUser } from '../../../infra/auth/session';
-import { logger } from '../../../infra/logger';
+import { getSessionUser } from '@/infra/auth/session';
+import { logger } from '@/infra/logger';
 import { createStripeCheckoutSession } from '../../../lib/billing/stripe';
 
 export async function POST(req: NextRequest) {

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { freightService } from '../../../modules/freight/freight.service';
 import { simulationRepository } from '../../../infra/repositories/simulation.repository';
-import { getSessionUser } from '../../../infra/auth/session';
+import { getSessionUser } from '@/infra/auth/session';
 import { BusinessError, ErrorCode, getUserMessage } from '../../../infra/errors';
-import { logger } from '../../../infra/logger';
+import { logger } from '@/infra/logger';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { requireActivePlan } from '../../../modules/billing/requireActivePlan';

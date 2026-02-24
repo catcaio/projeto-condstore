@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
-import { getDb } from '../../../../../infra/db';
+import { getDb } from '@/infra/db';
 import { requireActivePlan } from '../../../../../modules/billing/requireActivePlan';
-import { logger } from '../../../../../infra/logger';
+import { logger } from '@/infra/logger';
 
 export const runtime = 'nodejs';
 

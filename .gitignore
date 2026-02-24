@@ -101,6 +101,8 @@ jspm_packages/
 # Temporary folders
 tmp/
 temp/
+.tmp-smoke/
+.npm-cache-2/
 
 # Database
 *.db

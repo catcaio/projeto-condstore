@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '../../../../infra/logger';
+import { logger } from '@/infra/logger';
 import { verifyTwilioRequest } from '../../../../server/twilio/verifyWebhook';
 
 export const runtime = "nodejs";

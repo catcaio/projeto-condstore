@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, desc, eq } from 'drizzle-orm';
-import { getDb } from '../../../../../infra/db';
+import { getDb } from '@/infra/db';
 import { publicEvents } from '../../../../../drizzle/schema';
 import { requireActivePlan } from '../../../../../modules/billing/requireActivePlan';
-import { logger } from '../../../../../infra/logger';
+import { logger } from '@/infra/logger';
 
 export const runtime = 'nodejs';
 

@@ -17,7 +17,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { twilioProvider } from "../../../providers/twilio.provider";
-import { logger } from "../../../infra/logger";
+import { logger } from '@/infra/logger';
 import { sanitizeMessage, validateWebhookPayload } from "../../../lib/validation";
 import { messageRepository } from "../../../infra/repositories/message.repository";
 import { tenantRepository } from "../../../infra/repositories/tenant.repository";
@@ -273,6 +273,8 @@ export async function POST(request: NextRequest) {
       confidence,
     };
 
+    const confidenceDecimal = typeof confidence === 'number' ? confidence.toFixed(4) : null;
+
     await messageRepository.saveInboundMessage({
       messageSid: incomingMessage.messageSid,
       tenantId,
@@ -281,7 +283,7 @@ export async function POST(request: NextRequest) {
       body: incomingMessage.body,
       direction: "inbound",
       intent,
-      intentConfidence: confidence ?? null,
+      intentConfidence: confidenceDecimal,
       rawPayload: JSON.stringify(sanitizedPayload),
     });
 
@@ -293,7 +295,7 @@ export async function POST(request: NextRequest) {
       body: messageText,
       direction: "inbound",
       intent,
-      intentConfidence: confidence ?? null,
+      intentConfidence: (typeof confidence === 'number' ? confidence : null),
       createdAt: new Date().toISOString(),
     });
 

@@ -42,7 +42,7 @@ export class AiDecisionLogRepository {
         provider: input.provider,
         model: input.model,
         intent: input.intent,
-        confidence: input.confidence ?? null,
+        confidence: (typeof input.confidence === 'number' ? input.confidence.toFixed(4) : null),
         toolUsed: input.toolUsed ?? null,
         toolPayload: input.toolPayload ?? null,
         tokensIn: input.tokensIn ?? null,
