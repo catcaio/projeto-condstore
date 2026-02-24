@@ -6,6 +6,7 @@ import { OpenAICompatibleProvider } from './providers/openai-compatible.provider
 import { checkRedisRateLimit } from '../../infra/rate-limit/redis-rate-limiter';
 import { sanitizeFrankPayload } from './frank-event-sanitize';
 import { retrieveContextMulti } from './retrieval/retrieve-context';
+import { getFrankModelVersionId } from './model-registry';
 
 const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.DEFAULT_AI_TIMEOUT_MS || '20000', 10);
 
@@ -388,6 +389,7 @@ class ObservedProvider implements AIProvider {
           responseFormat: finalInput.responseFormat,
           temperature: finalInput.temperature,
           maxTokens: finalInput.maxTokens,
+          modelVersionId: getFrankModelVersionId(),
         },
       };
 
