@@ -147,6 +147,26 @@ npx tsx scripts/debug-tenant-resolution.ts
 npx tsx scripts/test-panel-api.ts
 ```
 
+### RAG Local (Qdrant + Corpus de Docs)
+Para testar retrieval com documentos estáveis do repositório (README/docs), use:
+
+```bash
+# 1) Subir Qdrant local
+docker compose -f docker-compose.qdrant.yml up -d
+
+# 2) Configurar embeddings locais (LM Studio) no .env
+# DEFAULT_LMSTUDIO_BASE_URL=http://127.0.0.1:1234/v1
+# DEFAULT_EMBED_MODEL=text-embedding-nomic-embed-text-v1.5
+
+# 3) Ingerir docs do repo no Qdrant (multi-tenant)
+node scripts/ingest-docs-to-qdrant.mjs --tenantId lojacond-default --paths README.md,docs --chunkSize 800 --overlap 120
+
+# 4) Testar retrieval (mostrar top-k + context pack)
+RAG_MIN_SCORE=0 npx tsx scripts/test-retrieve.mjs lojacond-default "Como rodar o projeto" 5
+```
+
+O ingest é idempotente por `tenantId + path + chunk_index` (point id determinístico no Qdrant).
+
 ##  Estrutura de Pastas
 
 - `/src/app/api`: Rotas da API (Webhook, Health, etc).

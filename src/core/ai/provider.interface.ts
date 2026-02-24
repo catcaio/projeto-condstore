@@ -5,6 +5,12 @@ export interface ChatInput {
   temperature?: number;
   maxTokens?: number;
   responseFormat?: 'text' | 'json';
+  sessionId?: string;
+  correlationId?: string;
+  route?: string;
+  metadata?: Record<string, unknown>;
+  messagesCount?: number;
+  toolCalls?: unknown;
 }
 
 export interface ChatOutput {

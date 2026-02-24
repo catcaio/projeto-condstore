@@ -82,6 +82,14 @@ export class FrankOrchestrator {
         system: systemPrompt,
         user: input.message,
         responseFormat: 'text',
+        sessionId: input.phoneHash,
+        correlationId: input.providerEventId ?? messageId,
+        route: 'frank-orchestrator.run',
+        metadata: {
+          messageId,
+          providerEventId: input.providerEventId ?? null,
+          hasHistory: Boolean(systemPrompt),
+        },
       });
       const latencyMs = Date.now() - startedAt;
       const tokenCounts = extractTokenCounts(response.raw);
