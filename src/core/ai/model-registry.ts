@@ -89,3 +89,64 @@ export function getActiveFrankModel(): FrankModelVersion {
 export function getFrankModelVersionId(): string {
   return getActiveFrankModel().id;
 }
+
+/**
+ * Parse tenant overrides from environment.
+ * Format: tenantA:frank-v2,tenantB:frank-v1.5,tenantC:frank-v1
+ *
+ * Returns map of tenantId → modelVersionId
+ */
+function parseTenantOverrides(): Map<string, string> {
+  const overridesStr = process.env.FRANK_MODEL_TENANT_OVERRIDES?.trim();
+  if (!overridesStr) return new Map();
+
+  const overrides = new Map<string, string>();
+  const pairs = overridesStr.split(',').map((p) => p.trim()).filter(Boolean);
+
+  for (const pair of pairs) {
+    const [tenantId, modelId] = pair.split(':').map((s) => s.trim());
+    if (tenantId && modelId) {
+      overrides.set(tenantId, modelId);
+    }
+  }
+
+  return overrides;
+}
+
+export type RolloutSource = 'default' | 'tenant_override';
+
+/**
+ * Resolve Frank model version for a specific tenant.
+ * Checks for tenant-specific overrides first, then falls back to default.
+ *
+ * Returns [FrankModelVersion, RolloutSource] tuple.
+ */
+export function resolveFrankModelVersion(tenantId: string): [FrankModelVersion, RolloutSource] {
+  const overrides = parseTenantOverrides();
+  const overrideModelId = overrides.get(tenantId);
+
+  if (overrideModelId) {
+    // Find the model version matching the override ID
+    const defaultModel = getActiveFrankModel();
+    if (defaultModel.id === overrideModelId) {
+      return [defaultModel, 'tenant_override'];
+    }
+
+    // For now, return a custom model version object with the override ID
+    // In production, you'd load from a version registry
+    return [
+      {
+        id: overrideModelId,
+        modelId: defaultModel.modelId,
+        embedModelId: defaultModel.embedModelId,
+        datasetVersion: defaultModel.datasetVersion,
+        gitCommit: defaultModel.gitCommit,
+        createdAt: defaultModel.createdAt,
+        notes: `Tenant override for ${tenantId}`,
+      },
+      'tenant_override',
+    ];
+  }
+
+  return [getActiveFrankModel(), 'default'];
+}
