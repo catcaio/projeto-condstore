@@ -1,30 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tenantAiProviderRepository } from '../../../../../../infra/repositories/tenant-ai-provider.repository';
 import { checkRedisRateLimit } from '../../../../../../infra/rate-limit/redis-rate-limiter';
+import {
+  extractTenantIdFromTenantRoute,
+  requireSessionTenantMatch,
+} from '../../../../../../infra/auth/tenant-route-guard';
 
 export const runtime = 'nodejs';
 
-function extractTenantId(request: NextRequest): string {
-  const segments = request.nextUrl.pathname.split('/').filter(Boolean);
-  const idx = segments.indexOf('tenants');
-  if (idx === -1 || !segments[idx + 1]) {
-    throw new Error('tenantId is required');
-  }
-  return segments[idx + 1];
-}
-
-function getActorId(request: NextRequest): string {
-  return (
-    request.headers.get('x-user-id') ||
-    request.headers.get('x-forwarded-for') ||
-    request.headers.get('x-real-ip') ||
-    'unknown'
-  );
-}
-
-async function enforceRateLimit(request: NextRequest, tenantId: string): Promise<NextResponse | null> {
+async function enforceRateLimit(actorId: string, request: NextRequest, tenantId: string): Promise<NextResponse | null> {
   const requestId = request.headers.get('x-vercel-id') ?? undefined;
-  const actorId = getActorId(request);
   const result = await checkRedisRateLimit({
     tenantId,
     scope: `admin.ai-provider:${actorId}`,
@@ -40,8 +25,11 @@ async function enforceRateLimit(request: NextRequest, tenantId: string): Promise
 
 export async function POST(request: NextRequest) {
   try {
-    const tenantId = extractTenantId(request);
-    const rateLimited = await enforceRateLimit(request, tenantId);
+    const tenantId = extractTenantIdFromTenantRoute(request);
+    const guard = await requireSessionTenantMatch(request, tenantId);
+    if (!guard.ok) return guard.response;
+
+    const rateLimited = await enforceRateLimit(guard.sessionUser.sub, request, guard.tenantId);
     if (rateLimited) return rateLimited;
     const payload = (await request.json()) as { apiKey?: string };
 
@@ -49,8 +37,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'apiKey is required' }, { status: 400 });
     }
 
-    await tenantAiProviderRepository.rotateApiKey(tenantId, payload.apiKey);
-    return NextResponse.json({ tenantId, rotated: true });
+    await tenantAiProviderRepository.rotateApiKey(guard.tenantId, payload.apiKey);
+    return NextResponse.json({ tenantId: guard.tenantId, rotated: true });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
   }

@@ -240,6 +240,7 @@ export type NewProjectReportRecord = typeof projectReports.$inferInsert;
 
 export const publicEvents = mysqlTable('public_events', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
     anonId: varchar('anon_id', { length: 128 }).notNull(),
     event: varchar('event', { length: 64 }).notNull(),
     path: varchar('path', { length: 200 }).notNull(),
@@ -248,6 +249,7 @@ export const publicEvents = mysqlTable('public_events', {
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => {
     return {
+        tenantTimeIdx: index('idx_public_events_tenant_created_at').on(table.tenantId, table.createdAt),
         eventTimeIdx: index('idx_public_events_event_time').on(table.event, table.createdAt),
         anonIdTimeIdx: index('idx_public_events_anon_time').on(table.anonId, table.createdAt),
     };

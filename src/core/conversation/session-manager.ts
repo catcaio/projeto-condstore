@@ -25,37 +25,80 @@ export interface SessionData extends ConversationContext {
  * In-memory session storage (fallback when Redis is unavailable).
  */
 class InMemorySessionStore {
-  private store: Map<string, SessionData> = new Map();
+  private sessionsByTenantSessionKey: Map<string, SessionData> = new Map();
+  private phoneIndex: Map<string, string> = new Map();
+  private reversePhoneIndex: Map<string, string> = new Map();
 
-  get(phoneNumber: string): SessionData | null {
-    const session = this.store.get(phoneNumber);
+  get(tenantId: string, phoneNumber: string): SessionData | null {
+    const phoneKey = this.getTenantPhoneKey(tenantId, phoneNumber);
+    const tenantSessionKey = this.phoneIndex.get(phoneKey);
+    if (!tenantSessionKey) return null;
 
-    if (!session) return null;
+    const session = this.sessionsByTenantSessionKey.get(tenantSessionKey);
+
+    if (!session) {
+      this.phoneIndex.delete(phoneKey);
+      return null;
+    }
 
     // Check expiration
     if (Date.now() > session.expiresAt) {
-      this.store.delete(phoneNumber);
+      this.deleteByTenantSessionKey(tenantSessionKey);
       return null;
     }
 
     return session;
   }
 
-  set(phoneNumber: string, session: SessionData): void {
-    this.store.set(phoneNumber, session);
+  set(tenantId: string, phoneNumber: string, session: SessionData): void {
+    const phoneKey = this.getTenantPhoneKey(tenantId, phoneNumber);
+    const tenantSessionKey = this.getTenantSessionKey(tenantId, session.sessionId);
+    const previousTenantSessionKey = this.phoneIndex.get(phoneKey);
+
+    if (previousTenantSessionKey && previousTenantSessionKey !== tenantSessionKey) {
+      this.deleteByTenantSessionKey(previousTenantSessionKey);
+    }
+
+    this.sessionsByTenantSessionKey.set(tenantSessionKey, session);
+    this.phoneIndex.set(phoneKey, tenantSessionKey);
+    this.reversePhoneIndex.set(tenantSessionKey, phoneKey);
   }
 
-  delete(phoneNumber: string): void {
-    this.store.delete(phoneNumber);
+  delete(tenantId: string, phoneNumber: string): void {
+    const phoneKey = this.getTenantPhoneKey(tenantId, phoneNumber);
+    const tenantSessionKey = this.phoneIndex.get(phoneKey);
+    if (!tenantSessionKey) return;
+
+    this.deleteByTenantSessionKey(tenantSessionKey);
   }
 
   cleanup(): void {
     const now = Date.now();
-    for (const [phoneNumber, session] of this.store.entries()) {
+    for (const [tenantSessionKey, session] of this.sessionsByTenantSessionKey.entries()) {
       if (now > session.expiresAt) {
-        this.store.delete(phoneNumber);
+        this.deleteByTenantSessionKey(tenantSessionKey);
       }
     }
+  }
+
+  /**
+   * Primary in-memory session key (tenant-isolated): `${tenantId}:${sessionId}`
+   */
+  private getTenantSessionKey(tenantId: string, sessionId: string): string {
+    return `${tenantId}:${sessionId}`;
+  }
+
+  private getTenantPhoneKey(tenantId: string, phoneNumber: string): string {
+    return `${tenantId}:${phoneNumber}`;
+  }
+
+  private deleteByTenantSessionKey(tenantSessionKey: string): void {
+    const phoneKey = this.reversePhoneIndex.get(tenantSessionKey);
+    if (phoneKey) {
+      this.phoneIndex.delete(phoneKey);
+      this.reversePhoneIndex.delete(tenantSessionKey);
+    }
+    this.sessionsByTenantSessionKey.delete(tenantSessionKey);
   }
 }
 
@@ -125,7 +168,7 @@ class SessionManager {
       }
 
       // Fallback to memory (development/test only)
-      const session = this.memoryStore.get(phoneNumber);
+      const session = this.memoryStore.get(tenantId, phoneNumber);
 
       if (session) {
         logger.debug('Session retrieved from memory (dev fallback)', { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
@@ -227,7 +270,7 @@ class SessionManager {
 
     // Save to memory only in development/test
     if (appConfig.env !== 'production') {
-      this.memoryStore.set(phoneNumber, session);
+      this.memoryStore.set(tenantId, phoneNumber, session);
     }
   }
 
@@ -249,7 +292,7 @@ class SessionManager {
     }
 
     // Delete from memory
-    this.memoryStore.delete(phoneNumber);
+    this.memoryStore.delete(tenantId, phoneNumber);
 
     logger.info('Session deleted', { phoneNumber: logger.maskPhone(phoneNumber), tenantId });
   }
@@ -270,7 +313,7 @@ class SessionManager {
       return await redisClient.ttl(this.getKey(tenantId, phoneNumber));
     }
 
-    const session = this.memoryStore.get(phoneNumber);
+    const session = this.memoryStore.get(tenantId, phoneNumber);
     if (!session) return null;
 
     const ttlMs = session.expiresAt - Date.now();

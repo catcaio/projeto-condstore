@@ -99,6 +99,13 @@
       "when": 1771900120323,
       "tag": "0013_parallel_arclight",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1772006400000,
+      "tag": "0014_public_events_tenant_isolation",
+      "breakpoints": true
     }
   ]
 }
