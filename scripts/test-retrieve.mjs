@@ -5,6 +5,13 @@ function truncate(text, maxLen = 160) {
   return `${clean.slice(0, maxLen)}...`;
 }
 
+function truncateChunkText(text, maxLen = 500) {
+  if (typeof text !== 'string') return '';
+  const clean = text.trim();
+  if (clean.length <= maxLen) return clean;
+  return `${clean.slice(0, maxLen)}...[truncated]`;
+}
+
 function formatDateShort(iso) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso ?? '');
@@ -83,18 +90,30 @@ async function main() {
     console.log(`    ${truncate(chunk.text, 160)}`);
   });
 
-  const lines = ['### Contexto recuperado'];
-  chunks.forEach((chunk, idx) => {
-    const score = Number.isFinite(chunk.score) ? chunk.score.toFixed(2) : '0.00';
-    const datePart = chunk.meta.created_at ? formatDateShort(chunk.meta.created_at) : 'n/a';
-    const routePart = chunk.meta.route ?? 'n/a';
-    const sourcePart = chunk.meta.source ?? 'frank_event';
-    const pathPart = chunk.meta.path ?? 'n/a';
-    lines.push(`[${idx + 1}] (score=${score}, ${datePart}, source=${sourcePart}, path=${pathPart}, route=${routePart})`);
-    lines.push(chunk.text || '[sem texto]');
-    lines.push('');
-  });
+  const docsOut = chunks.filter((c) => c.meta.source === 'repo');
+  const chatOut = chunks.filter((c) => c.meta.source !== 'repo');
+  const lines = [];
+  if (docsOut.length > 0) {
+    lines.push('### Contexto (Docs)');
+    docsOut.forEach((chunk, idx) => {
+      const score = Number.isFinite(chunk.score) ? chunk.score.toFixed(2) : '0.00';
+      lines.push(`[D${idx + 1}] (score=${score}, path=${chunk.meta.path ?? 'n/a'})`);
+      lines.push(truncateChunkText(chunk.text, 500) || '[sem texto]');
+      lines.push('');
+    });
+  }
+  if (chatOut.length > 0) {
+    lines.push('### Contexto (Memória)');
+    chatOut.forEach((chunk, idx) => {
+      const score = Number.isFinite(chunk.score) ? chunk.score.toFixed(2) : '0.00';
+      const datePart = chunk.meta.created_at ? formatDateShort(chunk.meta.created_at) : 'n/a';
+      lines.push(`[M${idx + 1}] (score=${score}, date=${datePart})`);
+      lines.push(truncateChunkText(chunk.text, 500) || '[sem texto]');
+      lines.push('');
+    });
+  }
   if (chunks.length === 0) {
+    lines.push('### Contexto (Docs)');
     lines.push('[sem chunks acima do threshold]');
   }
 
