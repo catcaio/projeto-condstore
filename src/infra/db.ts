@@ -33,20 +33,19 @@ function validateAndLogDbUrl(): string {
     return dbUrl;
 }
 
-// Singleton initialization
-if (!globalForDb.conn) {
-    const dbUrl = validateAndLogDbUrl();
-    globalForDb.conn = mysql.createPool({
-        uri: dbUrl,
-        connectionLimit: 10,
-        multipleStatements: false,
-        timezone: 'Z',
-        ssl: { rejectUnauthorized: true },
-    });
-}
-
 export async function getDb() {
+    // Lazy initialization: only create pool when getDb() is first called
+    if (!globalForDb.conn) {
+        const dbUrl = validateAndLogDbUrl();
+        globalForDb.conn = mysql.createPool({
+            uri: dbUrl,
+            connectionLimit: 10,
+            multipleStatements: false,
+            timezone: 'Z',
+            ssl: { rejectUnauthorized: true },
+        });
+    }
     // Return drizzle instance using the singleton pool
-    return drizzle(globalForDb.conn!, { mode: 'default' });
+    return drizzle(globalForDb.conn, { mode: 'default' });
 }
 
