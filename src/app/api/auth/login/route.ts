@@ -1,5 +1,6 @@
 export const runtime = "nodejs";
 
+import crypto from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { userRepository } from '@/infra/repositories/user.repository';
@@ -8,6 +9,7 @@ import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
 import { checkRateLimit } from '@/infra/rate-limiter';
 import { auditService } from '@/modules/audit/audit.service';
+import { InfrastructureError, getUserMessage } from '@/infra/errors';
 
 const loginSchema = z.object({
     email: z.string().email('Email inválido'),
@@ -15,6 +17,7 @@ const loginSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+    const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID?.() ?? `${Date.now()}`;
     // 5) Validação de Variáveis de Ambiente e Fallback
     const dbUrl = process.env.DATABASE_URL;
     const authSecret = process.env.AUTH_SECRET || process.env.JWT_SECRET;
@@ -111,19 +114,30 @@ export async function POST(request: NextRequest) {
         return response;
     } catch (error) {
         // Envolver login em try/catch adequado, apenas erro de infra retorna 500
-        if (error instanceof Error && error.name === 'InfrastructureError') {
-            logger.error('Infrastructure failure during login', error);
+        if (error instanceof InfrastructureError) {
+            logger.error('Infrastructure failure during login', error, {
+                requestId,
+                code: error.code,
+                retryable: error.isRetryable,
+                context: error.context,
+            });
             return NextResponse.json(
-                { success: false, error: 'Erro interno' },
-                { status: 500 }
+                {
+                    success: false,
+                    error: getUserMessage(error),
+                    code: error.code,
+                    retryable: error.isRetryable,
+                    requestId,
+                },
+                { status: 503 }
             );
         }
 
         // Log everything else, generic 500 since we don't know what broke, wait, requirements say only 500 for infra
         // I'll log securely
-        logger.error('Unexpected error during login', error as Error);
+        logger.error('Unexpected error during login', error as Error, { requestId });
         return NextResponse.json(
-            { success: false, error: 'Erro interno de servidor' },
+            { success: false, error: 'Erro interno de servidor', requestId },
             { status: 500 }
         );
     }
