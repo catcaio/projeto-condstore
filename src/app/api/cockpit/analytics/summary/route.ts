@@ -60,6 +60,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (entitlement.errorResponse) {
     return entitlement.errorResponse;
   }
+  const tenantId = entitlement.tenantId!;
 
   try {
     const db = await getDb();
@@ -70,14 +71,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           COUNT(*) AS totalEvents,
           COUNT(DISTINCT anon_id) AS uniqueAnon
         FROM public_events
-        WHERE created_at >= NOW() - INTERVAL 7 DAY
+        WHERE tenant_id = ${tenantId}
+          AND created_at >= NOW() - INTERVAL 7 DAY
       `),
       db.execute(sql`
         SELECT
           event,
           COUNT(*) AS count
         FROM public_events
-        WHERE created_at >= NOW() - INTERVAL 7 DAY
+        WHERE tenant_id = ${tenantId}
+          AND created_at >= NOW() - INTERVAL 7 DAY
         GROUP BY event
         ORDER BY count DESC, event ASC
       `),
@@ -86,7 +89,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           event,
           COUNT(*) AS count
         FROM public_events
-        WHERE created_at >= NOW() - INTERVAL 7 DAY
+        WHERE tenant_id = ${tenantId}
+          AND created_at >= NOW() - INTERVAL 7 DAY
           AND event IN ('landing_view', 'pricing_view', 'pricing_click_checkout')
         GROUP BY event
       `),
@@ -127,7 +131,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
     });
   } catch (error) {
-    logger.error('cockpit/analytics/summary: failed to load summary', error as Error);
+    logger.error('cockpit/analytics/summary: failed to load summary', error as Error, { tenantId });
 
     if (isAnalyticsTableMissing(error)) {
       return NextResponse.json({ error: 'Analytics table not migrated' }, { status: 503 });

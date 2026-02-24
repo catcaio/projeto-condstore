@@ -17,6 +17,7 @@ describe('analyticsService.logEvent', () => {
     const { analyticsService } = await import('../analytics.service');
 
     await analyticsService.logEvent({
+      tenantId: 'tenant-1',
       anonId: 'anon-1',
       event: 'landing_view',
       path: '/',
@@ -30,6 +31,7 @@ describe('analyticsService.logEvent', () => {
     const { analyticsService } = await import('../analytics.service');
 
     await analyticsService.logEvent({
+      tenantId: 'tenant-1',
       anonId: 'anon-1',
       event: 'landing_view',
       path: '/',
@@ -44,6 +46,7 @@ describe('analyticsService.logEvent', () => {
     const { analyticsService } = await import('../analytics.service');
 
     await analyticsService.logEvent({
+      tenantId: 'tenant-1',
       anonId: 'anon-1',
       event: 'landing_view',
       path: '/',
@@ -51,6 +54,7 @@ describe('analyticsService.logEvent', () => {
     });
 
     expect(valuesMock).toHaveBeenCalledTimes(1);
+    expect(valuesMock.mock.calls[0][0].tenantId).toBe('tenant-1');
     expect(valuesMock.mock.calls[0][0].props).toBe(JSON.stringify({ source: 'hero_cta' }));
   });
 });

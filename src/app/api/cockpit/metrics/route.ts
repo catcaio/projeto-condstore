@@ -2,7 +2,7 @@
  * GET /api/cockpit/metrics
  *
  * Returns today's operational metrics for the authenticated tenant.
- * Requires `x-tenant-id` header (injected server-side by the global JWT middleware).
+ * Requires authenticated session; tenantId is derived from the verified session cookie.
  *
  * Response shape (all fields always present, always integers):
  *   { mensagensHoje: number, cotacoesHoje: number, pedidosHoje: number, erros24h: number }

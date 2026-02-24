@@ -3,6 +3,7 @@ import { publicEvents } from '../../drizzle/schema';
 import crypto from 'crypto';
 
 interface LogPublicEventParams {
+    tenantId: string;
     anonId: string;
     event: string;
     path: string;
@@ -19,6 +20,11 @@ export const analyticsService = {
      */
     async logEvent(params: LogPublicEventParams): Promise<void> {
         try {
+            const tenantId = params.tenantId?.trim();
+            if (!tenantId) {
+                throw new Error('tenant_id is required to log public event');
+            }
+
             const db = await getDb();
             const eventId = crypto.randomUUID();
 
@@ -29,6 +35,7 @@ export const analyticsService = {
 
             await db.insert(publicEvents).values({
                 id: eventId,
+                tenantId,
                 anonId: params.anonId,
                 event: params.event,
                 path: params.path,
