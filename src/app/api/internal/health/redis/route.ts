@@ -14,10 +14,11 @@
  */
 export const runtime = "nodejs";
 
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { redisClient } from "@/infra/redis.client";
+import { withRequestTrace } from "@/infra/http/request-trace";
 
-export async function GET() {
+async function handler(request: NextRequest): Promise<NextResponse> {
   const timestamp = new Date().toISOString();
 
   // Redis não configurado — fallback em memória, comportamento esperado em dev
@@ -59,3 +60,5 @@ export async function GET() {
     );
   }
 }
+
+export const GET = withRequestTrace(handler);
