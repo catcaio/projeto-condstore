@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { runQdrantReindex } from '@/infra/vector/qdrant-reindex';
+import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
 
 interface ReindexBody {
   tenantId?: string;
@@ -13,9 +14,11 @@ interface ReindexBody {
 }
 
 function isAuthorized(request: NextRequest): boolean {
-  const expected = process.env.INTERNAL_EXPORT_TOKEN;
+  if (process.env.NODE_ENV !== 'production') {
+    return true;
+  }
   const token = request.headers.get('x-internal-token');
-  return Boolean(expected && token && token === expected);
+  return isInternalTokenAuthorized(token);
 }
 
 function parseBody(body: ReindexBody) {
@@ -40,8 +43,14 @@ function parseBody(body: ReindexBody) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!process.env.INTERNAL_EXPORT_TOKEN) {
-    return NextResponse.json({ error: 'INTERNAL_EXPORT_TOKEN not configured' }, { status: 500 });
+  try {
+    // In dev this generates an ephemeral token (logged once); in prod it throws if missing.
+    getInternalExportTokenOrThrow();
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'INTERNAL_EXPORT_TOKEN not configured' },
+      { status: 500 },
+    );
   }
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
