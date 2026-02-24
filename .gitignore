@@ -127,6 +127,7 @@ screenshots/
 # System Dumps and Exports
 *.dump
 *.sql
+!drizzle/**/*.sql
 exports/
 !src/app/api/internal/exports/
 !src/app/api/internal/exports/frank-events/

@@ -61,8 +61,15 @@ class RedisService {
         return [];
       }
     }
-    // Memory fallback doesn't actively support pattern matching properly in this simple implementation
-    return [];
+    // Memory fallback: simple glob matching for '*' patterns.
+    const keys = Array.from(this.inMemoryCache.keys());
+    if (!pattern.includes('*')) {
+      return keys.includes(pattern) ? [pattern] : [];
+    }
+
+    const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+    const re = new RegExp(`^${escaped}$`);
+    return keys.filter((k) => re.test(k));
   }
 
   async get<T>(key: string): Promise<T | null> {

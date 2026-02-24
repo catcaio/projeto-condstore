@@ -12,6 +12,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import { logger } from '../logger';
 import { getSessionUser } from '../auth/session';
 
+const TRACE_REQUEST_ID = Symbol.for('condstore.requestId');
+
 /**
  * Generate a unique request ID from header or create new UUID.
  */
@@ -22,6 +24,17 @@ export function makeRequestId(request?: NextRequest): string {
     if (fromHeader) return fromHeader;
   }
   return crypto.randomUUID();
+}
+
+export function getTracedRequestId(request: NextRequest): string | undefined {
+  const anyReq = request as unknown as Record<string | symbol, unknown>;
+  const fromSymbol = anyReq[TRACE_REQUEST_ID];
+  if (typeof fromSymbol === 'string' && fromSymbol.trim()) return fromSymbol.trim();
+  const fromProp = anyReq.__requestId;
+  if (typeof fromProp === 'string' && fromProp.trim()) return fromProp.trim();
+  const fromHeader = request.headers.get('x-request-id')?.trim() ||
+                     request.headers.get('x-vercel-id')?.trim();
+  return fromHeader || undefined;
 }
 
 /**
@@ -75,6 +88,10 @@ export function withRequestTrace(
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
     const requestId = makeRequestId(request);
+    // Expose requestId to handlers that need to persist/return it.
+    // This is safe: NextRequest is an object and we only attach non-PII metadata.
+    (request as unknown as Record<string | symbol, unknown>)[TRACE_REQUEST_ID] = requestId;
+    (request as unknown as Record<string, unknown>).__requestId = requestId;
     const startTime = Date.now();
 
     try {

@@ -24,6 +24,12 @@ function getOverrideKey(tenantId: string): string {
   return `${OVERRIDE_KEY_PREFIX}${tenantId}`;
 }
 
+export interface OverrideListRecord {
+  tenantId: string;
+  candidateVersionId: string;
+  baselineVersionId?: string;
+}
+
 /**
  * Get the override for a specific tenant from Redis.
  * Returns null if not found or if Redis is unavailable.
@@ -90,4 +96,28 @@ export async function setTenantOverride(
  */
 export async function clearTenantOverride(tenantId: string, reason?: string): Promise<boolean> {
   return setTenantOverride(tenantId, null, reason);
+}
+
+/**
+ * List all tenant overrides from Redis.
+ * Returns empty array if Redis is unavailable or listing fails.
+ */
+export async function listOverrides(): Promise<OverrideListRecord[]> {
+  try {
+    const keys = await redisClient.keys(`${OVERRIDE_KEY_PREFIX}*`);
+    if (!keys || keys.length === 0) return [];
+
+    const records = await Promise.all(keys.map(async (key) => {
+      const tenantId = key.startsWith(OVERRIDE_KEY_PREFIX) ? key.slice(OVERRIDE_KEY_PREFIX.length) : '';
+      if (!tenantId) return null;
+      const candidateVersionId = await getTenantOverride(tenantId);
+      if (!candidateVersionId) return null;
+      return { tenantId, candidateVersionId } satisfies OverrideListRecord;
+    }));
+
+    return records.filter(Boolean) as OverrideListRecord[];
+  } catch (error) {
+    logger.warn('frank_override_store_list_failed', { error: String(error) });
+    return [];
+  }
 }
