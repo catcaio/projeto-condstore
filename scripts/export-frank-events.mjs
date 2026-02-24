@@ -20,11 +20,7 @@ if (!tenantId || !outFileArg) {
   process.exit(1);
 }
 
-const internalToken = process.env.INTERNAL_EXPORT_TOKEN;
-if (!internalToken) {
-  console.error('INTERNAL_EXPORT_TOKEN não definida.');
-  process.exit(1);
-}
+const internalToken = String(process.env.INTERNAL_EXPORT_TOKEN ?? '').trim();
 
 const baseUrl = process.env.INTERNAL_EXPORT_BASE_URL ?? 'http://127.0.0.1:3000';
 const from = fromArg && fromArg !== '-' ? fromArg : undefined;
@@ -77,12 +73,19 @@ if (embedModelId) url.searchParams.set('embedModelId', embedModelId);
 
 const startedAt = Date.now();
 console.log('EXPORT_START', JSON.stringify({ url: url.toString(), outFile }, null, 2));
+if (!internalToken) {
+  console.log('EXPORT_INFO', JSON.stringify({
+    warning: 'INTERNAL_EXPORT_TOKEN vazia; tentando sem x-internal-token (bypass local/dev).',
+  }, null, 2));
+}
 
+const headers = {};
+if (internalToken) {
+  headers['x-internal-token'] = internalToken;
+}
 const response = await fetch(url, {
   method: 'GET',
-  headers: {
-    'x-internal-token': internalToken,
-  },
+  headers,
 });
 
 if (!response.ok || !response.body) {
@@ -91,6 +94,9 @@ if (!response.ok || !response.body) {
     status: response.status,
     statusText: response.statusText,
     body: errorBody.slice(0, 1000),
+    hint: response.status === 401 && !internalToken
+      ? '401 sem token. Defina READY_INTERNAL_TOKEN ou INTERNAL_EXPORT_TOKEN.'
+      : undefined,
   }, null, 2));
   process.exit(1);
 }
