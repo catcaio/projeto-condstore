@@ -28,6 +28,16 @@ function nowStamp() {
   return new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function randomSuffix(length = 6) {
+  return Math.random().toString(36).slice(2, 2 + length);
+}
+
 function getGitShortHash() {
   try {
     const headPath = path.resolve('.git', 'HEAD');
@@ -85,33 +95,287 @@ function runCommand(stepName, command, args, options = {}) {
   return { durationMs };
 }
 
-function runBuildStep(npmCmd, { distDirBase = '.next-ready' } = {}) {
+function runCommandCaptured(stepName, command, args, options = {}) {
+  const startedAt = Date.now();
+  const result = spawnSync(command, args, {
+    stdio: ['inherit', 'pipe', 'pipe'],
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+    ...options,
+  });
+  const durationMs = Date.now() - startedAt;
+
+  if (typeof result.stdout === 'string' && result.stdout.length > 0) {
+    process.stdout.write(result.stdout);
+  }
+  if (typeof result.stderr === 'string' && result.stderr.length > 0) {
+    process.stderr.write(result.stderr);
+  }
+
+  if (result.error) {
+    const err = new Error(`${stepName} spawn failed: ${result.error.message}`);
+    err.stepName = stepName;
+    err.exitCode = null;
+    err.durationMs = durationMs;
+    err.code = result.error.code ?? null;
+    err.stdout = result.stdout ?? '';
+    err.stderr = result.stderr ?? '';
+    throw err;
+  }
+
+  if (result.status !== 0) {
+    const err = new Error(`${stepName} failed (${command} ${args.join(' ')})`);
+    err.stepName = stepName;
+    err.exitCode = result.status ?? null;
+    err.durationMs = durationMs;
+    err.stdout = result.stdout ?? '';
+    err.stderr = result.stderr ?? '';
+    throw err;
+  }
+
+  return { durationMs, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
+}
+
+function isEpermError(error) {
+  const code = String(error?.code ?? '').toUpperCase();
+  if (code === 'EPERM') return true;
+  const text = [error?.message, error?.stdout, error?.stderr].filter(Boolean).join('\n');
+  return /\bEPERM\b/i.test(text);
+}
+
+function getEpermReason(error) {
+  const text = [error?.stderr, error?.stdout, error?.message].filter(Boolean).join('\n');
+  const line = text
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .find((item) => /\bEPERM\b/i.test(item));
+  return line || (error instanceof Error ? error.message : String(error));
+}
+
+async function removeDirWithRetry(targetDir, { attempts = 3, baseDelayMs = 250 } = {}) {
+  if (!fs.existsSync(targetDir)) return { removed: false, attempts: 0 };
+
+  let lastError = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await fs.promises.rm(targetDir, { recursive: true, force: true });
+      console.log(`[ready-to-train] cleaned dist dir: ${targetDir} (attempt ${attempt}/${attempts})`);
+      return { removed: true, attempts: attempt };
+    } catch (error) {
+      lastError = error;
+      const reason = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `[ready-to-train] failed to remove dist dir ${targetDir} (attempt ${attempt}/${attempts}): ${reason}`,
+      );
+      if (attempt < attempts) {
+        await sleep(baseDelayMs * attempt);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+async function restoreFileSnapshot(filePath, snapshot) {
+  const existsNow = fs.existsSync(filePath);
+  if (snapshot.exists) {
+    const current = existsNow ? await fs.promises.readFile(filePath, 'utf8') : null;
+    if (current !== snapshot.content) {
+      await fs.promises.writeFile(filePath, snapshot.content, 'utf8');
+      console.log(`[ready-to-train] restored ${filePath} after build`);
+    }
+    return;
+  }
+
+  if (existsNow) {
+    await fs.promises.rm(filePath, { force: true });
+    console.log(`[ready-to-train] removed generated ${filePath} after build`);
+  }
+}
+
+async function withBuildFileProtection(fn) {
+  const protectedFiles = ['tsconfig.json', 'next-env.d.ts'];
+  const snapshots = await Promise.all(
+    protectedFiles.map(async (filePath) => {
+      const exists = fs.existsSync(filePath);
+      return {
+        filePath,
+        exists,
+        content: exists ? await fs.promises.readFile(filePath, 'utf8') : null,
+      };
+    }),
+  );
+
+  try {
+    return await fn();
+  } finally {
+    for (const snapshot of snapshots) {
+      try {
+        await restoreFileSnapshot(snapshot.filePath, snapshot);
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        console.warn(`[ready-to-train] warning: failed to restore ${snapshot.filePath}: ${reason}`);
+      }
+    }
+  }
+}
+
+async function bestEffortWindowsBuildUnlock() {
+  if (process.platform !== 'win32') return;
+
+  const cwdPs = process.cwd().replace(/'/g, "''");
+  const psScript = [
+    `$repo='${cwdPs}'`,
+    `$selfPid=${process.pid}`,
+    `$names=@('node.exe','next.exe','esbuild.exe')`,
+    `$targets=@(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {`,
+    `  $names -contains $_.Name -and $_.ProcessId -ne $selfPid -and $_.CommandLine -and ($_.CommandLine -like ('*' + $repo + '*'))`,
+    `})`,
+    `if ($targets.Count -eq 0) { Write-Output 'no matching build lock processes found' }`,
+    `foreach ($p in $targets) {`,
+    `  try {`,
+    `    Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop`,
+    `    Write-Output ('killed ' + $p.Name + ' #' + $p.ProcessId)`,
+    `  } catch {`,
+    `    Write-Output ('skip ' + $p.Name + ' #' + $p.ProcessId + ' - ' + $_.Exception.Message)`,
+    `  }`,
+    `}`,
+  ].join('; ');
+
+  console.log('[ready-to-train] Windows build prep: attempting to stop node.exe / next.exe / esbuild.exe (repo-scoped)');
+  const res = spawnSync('powershell.exe', ['-NoProfile', '-Command', psScript], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  });
+
+  if (typeof res.stdout === 'string' && res.stdout.length > 0) process.stdout.write(res.stdout);
+  if (typeof res.stderr === 'string' && res.stderr.length > 0) process.stderr.write(res.stderr);
+  if (res.error) {
+    console.warn(`[ready-to-train] Windows build prep warning: ${res.error.message}`);
+  }
+
+  await sleep(1500);
+}
+
+async function runBuildStep(npmCmd, { distDirBase = '.next-ready' } = {}) {
   const baseEnv = {
     ...process.env,
     NODE_ENV: 'production',
   };
 
-  try {
-    const first = runCommand('build', npmCmd, ['run', 'build'], {
-      env: {
-        ...baseEnv,
-        NEXT_DIST_DIR: `${distDirBase}-tb`,
-      },
-    });
-    return { ...first, strategy: 'turbopack' };
-  } catch (firstError) {
-    const retry = runCommand('build', npmCmd, ['run', 'build', '--', '--webpack'], {
-      env: {
-        ...baseEnv,
-        NEXT_DIST_DIR: `${distDirBase}-wp`,
-      },
-    });
-    return {
-      ...retry,
-      strategy: 'webpack_retry',
-      retriedAfter: firstError instanceof Error ? firstError.message : String(firstError),
+  return withBuildFileProtection(async () => {
+    await bestEffortWindowsBuildUnlock();
+
+    const makeDistDir = () => `${distDirBase}-${randomSuffix(6)}`;
+    let currentDistDir = makeDistDir();
+    console.log(`[ready-to-train] build NEXT_DIST_DIR=${currentDistDir}`);
+    await removeDirWithRetry(currentDistDir);
+
+    const buildStartedAt = Date.now();
+    const attempts = [];
+
+    const tryBuild = async ({ attemptNo, strategy, args, distDir, extraEnv = {} }) => {
+      console.log(
+        `[ready-to-train] build attempt ${attemptNo}: strategy=${strategy} NEXT_DIST_DIR=${distDir}`,
+      );
+      await removeDirWithRetry(distDir);
+      const result = runCommandCaptured('build', npmCmd, args, {
+        env: {
+          ...baseEnv,
+          ...extraEnv,
+          NEXT_DIST_DIR: distDir,
+        },
+      });
+      attempts.push({
+        attempt: attemptNo,
+        strategy,
+        distDir,
+        status: 'ok',
+        durationMs: result.durationMs,
+      });
+      return result;
     };
-  }
+
+    const onAttemptError = (attemptNo, strategy, distDir, error) => {
+      const epremDetected = isEpermError(error);
+      const reason = epremDetected ? getEpermReason(error) : (error instanceof Error ? error.message : String(error));
+      attempts.push({
+        attempt: attemptNo,
+        strategy,
+        distDir,
+        status: 'failed',
+        eperm: epremDetected,
+        durationMs: error?.durationMs ?? null,
+        reason,
+      });
+      if (epremDetected) {
+        console.warn(`[ready-to-train] EPERM detected on build attempt ${attemptNo}: ${reason}`);
+      }
+      return epremDetected;
+    };
+
+    const sequence = [
+      { attemptNo: 1, strategy: 'turbopack', args: ['run', 'build'], useNewDistDir: false },
+      { attemptNo: 2, strategy: 'turbopack_retry_same_dist', args: ['run', 'build'], useNewDistDir: false },
+      { attemptNo: 3, strategy: 'turbopack_retry_new_dist', args: ['run', 'build'], useNewDistDir: true },
+      {
+        attemptNo: 4,
+        strategy: 'webpack_retry_turbopack0',
+        args: ['run', 'build', '--', '--webpack'],
+        useNewDistDir: true,
+        extraEnv: { TURBOPACK: '0' },
+      },
+    ];
+
+    let lastError = null;
+    let finalStrategy = null;
+    let finalDistDir = currentDistDir;
+
+    for (const step of sequence) {
+      if (step.useNewDistDir) {
+        currentDistDir = makeDistDir();
+        console.log(`[ready-to-train] switching NEXT_DIST_DIR=${currentDistDir}`);
+      }
+      finalDistDir = currentDistDir;
+
+      try {
+        const result = await tryBuild({
+          attemptNo: step.attemptNo,
+          strategy: step.strategy,
+          args: step.args,
+          distDir: currentDistDir,
+          extraEnv: step.extraEnv,
+        });
+        finalStrategy = step.strategy;
+        return {
+          durationMs: Date.now() - buildStartedAt,
+          strategy: finalStrategy,
+          nextDistDir: finalDistDir,
+          attempts,
+          lastAttemptDurationMs: result.durationMs,
+        };
+      } catch (error) {
+        lastError = error;
+        const epremDetected = onAttemptError(step.attemptNo, step.strategy, currentDistDir, error);
+        if (!epremDetected) {
+          error.attempts = attempts;
+          throw error;
+        }
+        if (step.attemptNo === sequence.length) {
+          break;
+        }
+      }
+    }
+
+    if (lastError) {
+      lastError.attempts = attempts;
+      lastError.hint = 'Feche npm run dev / VSCode / antivírus/OneDrive e tente novamente';
+      console.error(lastError.hint);
+      throw lastError;
+    }
+
+    throw new Error('build failed without error details');
+  });
 }
 
 async function httpJsonCheck(stepName, url, { headers } = {}) {
@@ -326,7 +590,7 @@ async function main() {
 
   try {
     report.steps.push({ step: 'typecheck', ...(runCommand('typecheck', npmCmd, ['run', 'typecheck'])) });
-    report.steps.push({ step: 'build', ...runBuildStep(npmCmd, { distDirBase: `.next-ready-${timestamp}` }) });
+    report.steps.push({ step: 'build', ...(await runBuildStep(npmCmd, { distDirBase: `.next-ready-${timestamp}` })) });
 
     report.steps.push({
       step: 'health_db',
@@ -453,6 +717,7 @@ async function main() {
       exitCode: error?.exitCode ?? null,
       status: error?.status ?? null,
       body: error?.body ?? null,
+      hint: error?.hint ?? null,
     };
     console.error('READY_TO_TRAIN_FAIL', JSON.stringify(report, null, 2));
     process.exit(1);
