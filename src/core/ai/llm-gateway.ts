@@ -108,17 +108,43 @@ function getRagChatMinScore(): number {
   return Math.max(0, Math.min(value, 1));
 }
 
-function buildContextText(chunks: Array<{ score: number; text: string; meta: { created_at: string } }>): string {
-  return chunks
-    .map((chunk, index) => {
+function truncateRagChunkText(text: string, maxLen = 500): string {
+  const clean = String(text || '').trim();
+  if (clean.length <= maxLen) return clean;
+  return `${clean.slice(0, maxLen)}...[truncated]`;
+}
+
+function buildContextTextV2(
+  docsChunks: Array<{ score: number; text: string; meta: { path?: string } }>,
+  chatChunks: Array<{ score: number; text: string; meta: { created_at: string } }>,
+): string {
+  const parts: string[] = [];
+
+  if (docsChunks.length > 0) {
+    parts.push('### Contexto (Docs)');
+    docsChunks.forEach((chunk, index) => {
+      const score = Number.isFinite(chunk.score) ? chunk.score.toFixed(2) : '0.00';
+      const path = typeof chunk.meta?.path === 'string' ? chunk.meta.path : 'n/a';
+      parts.push(`[D${index + 1}] (score=${score}, path=${path})`);
+      parts.push(truncateRagChunkText(chunk.text, 500));
+      parts.push('');
+    });
+  }
+
+  if (chatChunks.length > 0) {
+    parts.push('### Contexto (Memória)');
+    chatChunks.forEach((chunk, index) => {
+      const score = Number.isFinite(chunk.score) ? chunk.score.toFixed(2) : '0.00';
       const datePart = typeof chunk.meta?.created_at === 'string'
         ? chunk.meta.created_at.slice(0, 10)
         : 'n/a';
-      const score = Number.isFinite(chunk.score) ? chunk.score.toFixed(2) : '0.00';
-      return `[${index + 1}] (score=${score}, ${datePart})\n${chunk.text}`;
-    })
-    .join('\n\n')
-    .trim();
+      parts.push(`[M${index + 1}] (score=${score}, date=${datePart})`);
+      parts.push(truncateRagChunkText(chunk.text, 500));
+      parts.push('');
+    });
+  }
+
+  return parts.join('\n').trim();
 }
 
 function mergeSystemPromptWithRag(baseSystem: string | undefined, ragText: string): string {
@@ -200,7 +226,7 @@ class ObservedProvider implements AIProvider {
           const chatChunks = ragResult.chat.filter((chunk) => chunk.score >= chatMinScore);
           const scoredChunks = [...docsChunks, ...chatChunks];
           const filteredOut = ragResult.chunks.length > 0 && scoredChunks.length === 0;
-          const ragText = buildContextText(scoredChunks);
+          const ragText = buildContextTextV2(docsChunks, chatChunks);
           const trimmed = ragText.slice(0, getRagMaxContextChars());
           const ragLatencyMs = Date.now() - ragStartedAt;
           const shouldInject = Boolean(trimmed);
