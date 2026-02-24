@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from 'next/server';
 import { metricsRepository } from '../../../../../modules/metrics/metrics.repository';
-import { logger } from '../../../../../infra/logger';
+import { logger } from '@/infra/logger';
 import { requireActivePlan } from '../../../../../modules/billing/requireActivePlan';
 
 export async function GET(request: NextRequest) {

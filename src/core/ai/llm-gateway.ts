@@ -179,7 +179,8 @@ export async function getAIProviderWithMeta(tenantId: string): Promise<{ provide
   const model = tenantConfig?.model || defaults!.model;
   const embedModel = tenantConfig?.embedModel || defaults!.embedModel;
   const timeoutMs = tenantConfig?.timeoutMs || defaults!.timeoutMs;
-  const apiKey = tenantConfig?.apiKeyEncrypted || tenantConfig?.apiKey || undefined;
+  // resolvedApiKey já é decriptada em memória pelo repositório (nunca ciphertext aqui)
+  const apiKey = tenantConfig?.resolvedApiKey || undefined;
   const providerType = tenantConfig?.providerType || 'shared';
   const chatProvider = new OpenAICompatibleProvider({
     baseUrl,

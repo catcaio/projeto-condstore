@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyStripeSignature, StripeEvent } from '../../../../lib/billing/signature';
 import { planData } from '../../../../../components/pricing/planData';
 import { SubscriptionStatus } from '../../../../lib/billing/types';
-import { getDb } from '../../../../infra/db';
+import { getDb } from '@/infra/db';
 import { tenants } from '../../../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { auditService } from '../../../../modules/audit/audit.service';

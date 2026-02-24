@@ -8,9 +8,11 @@ if (!connectionString) {
 }
 
 const caPath = path.resolve("./certs/ca.pem");
+// Se ca.pem não existir, não sobrescreve SSL — a URL já carrega os params SSL (?ssl=...).
+// Passar ssl:true em conflito com o param da URL causava ETIMEDOUT no TiDB Cloud.
 const sslConfig = fs.existsSync(caPath)
   ? { ssl: { ca: fs.readFileSync(caPath, "utf-8") } }
-  : { ssl: true };
+  : {};
 
 export default defineConfig({
   schema: "./src/drizzle/schema.ts",

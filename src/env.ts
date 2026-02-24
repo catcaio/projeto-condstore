@@ -8,6 +8,8 @@ const EnvSchema = z.object({
   ADMIN_SEED_PASSWORD: z.string().min(8).optional(),
   REDIS_URL: z.string().min(10).optional(),
   GITHUB_TOKEN: z.string().min(10).optional(),
+  // 64 chars hex = 32 bytes para AES-256-GCM. Obrigatório em prod via boot-check.
+  PROVIDER_SECRETS_KEY: z.string().length(64).optional(),
 });
 
 export const env = (() => {
