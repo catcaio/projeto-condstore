@@ -22,30 +22,11 @@ const CACHE_TTL_SECONDS = 60;
 
 export async function GET(request: NextRequest) {
     try {
-        let tenantId: string;
-
-        // DEV bypass: allow testing metrics endpoints without session
-        if (
-            process.env.NODE_ENV === 'development' &&
-            process.env.COCKPIT_METRICS_DEV_BYPASS === '1'
-        ) {
-            // Get the first available tenant for DEV bypass testing
-            const db = await getDb();
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const { tenants } = require('@/drizzle/schema');
-            const firstTenant = await db.select().from(tenants).limit(1);
-            if (!firstTenant || firstTenant.length === 0) {
-                return NextResponse.json({ error: 'No tenants found for dev bypass' }, { status: 400 });
-            }
-            tenantId = firstTenant[0].id;
-        } else {
-            // Production: authenticate via JWT cookie — no x-tenant-id header
-            const user = await getSessionUser(request);
-            if (!user?.tenantId) {
-                return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-            }
-            tenantId = user.tenantId;
+        const user = await getSessionUser(request);
+        if (!user?.tenantId) {
+            return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
         }
+        const tenantId = user.tenantId;
 
         // 2. Try Redis Cache (with availability guard)
         const cacheKey = `cockpit:metrics:funnel:${tenantId}`;
