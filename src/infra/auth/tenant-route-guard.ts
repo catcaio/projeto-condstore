@@ -44,5 +44,5 @@ export async function requireSessionTenantMatch(
     };
   }
 
-  return { ok: true, tenantId: normalizedTenantId, sessionUser };
+  return { ok: true, tenantId: sessionUser.tenantId, sessionUser };
 }

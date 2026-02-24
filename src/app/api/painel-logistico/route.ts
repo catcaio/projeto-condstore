@@ -1,6 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { isInternalTokenAuthorized } from '@/infra/config/internal-token';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+    const token = request.headers.get('x-internal-token');
+    if (!isInternalTokenAuthorized(token)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     try {
         const body = await request.json();
         return NextResponse.json({
@@ -9,7 +14,7 @@ export async function POST(request: Request) {
             message: 'Logistics Panel API is online',
             timestamp: new Date().toISOString(),
         });
-    } catch (error) {
+    } catch {
         return NextResponse.json({
             ok: false,
             error: 'Invalid JSON body',
@@ -18,10 +23,14 @@ export async function POST(request: Request) {
     }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const token = request.headers.get('x-internal-token');
+    if (!isInternalTokenAuthorized(token)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json({
         ok: true,
         message: 'Logistics Panel API (GET)',
         timestamp: new Date().toISOString()
-    })
+    });
 }
