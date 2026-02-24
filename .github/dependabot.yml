@@ -1,0 +1,33 @@
+version: 2
+updates:
+  # npm dependencies (production + dev)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "catcaio"
+    labels:
+      - "dependencies"
+      - "automations"
+    ignore:
+      # Ignore major version updates to reduce noise
+      # - dependency-name: "*"
+      #   update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:30"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "catcaio"
+    labels:
+      - "ci"
+      - "automations"
