@@ -10,6 +10,13 @@ class RedisService {
   private inMemoryCache = new Map<string, CacheEntry<any>>();
   private redisInstance: Redis | null = null;
   private isConnecting: boolean = false;
+  /**
+   * Tracks whether the Redis connection is actually established and ready.
+   * Only set to true on the 'ready' event; reset to false on 'close'/'end'.
+   * Kept separate from `redisInstance` because an ioredis object can exist
+   * while the underlying TCP connection is not yet up (lazyConnect: true).
+   */
+  private _ready: boolean = false;
 
   constructor() {
     this.initRedis();
@@ -24,8 +31,18 @@ class RedisService {
           connectTimeout: 5000,
           maxRetriesPerRequest: 1
         });
+        this.redisInstance.on('ready', () => { this._ready = true; });
+        this.redisInstance.on('close', () => { this._ready = false; });
+        this.redisInstance.on('end',   () => { this._ready = false; });
         this.redisInstance.on('error', (err: Error) => {
           logger.error('Redis connection error', err);
+        });
+        // Trigger connection eagerly so _ready becomes true as soon as Redis is
+        // reachable, instead of waiting for the first command to kick off the
+        // lazy-connect handshake (which would block callers for connectTimeout
+        // milliseconds when Redis is temporarily unavailable).
+        void this.redisInstance.connect().catch((err: Error) => {
+          logger.error('Redis initial connect failed', err);
         });
       } catch (err) {
         logger.error('Failed to initialize Redis', err as Error);
@@ -36,8 +53,15 @@ class RedisService {
     }
   }
 
+  /**
+   * Returns true only when a live Redis connection is established and ready.
+   * Returns false (triggering in-memory fallback) when:
+   *   - REDIS_URL is not set
+   *   - the connection hasn't been established yet (startup or reconnect)
+   *   - the connection was lost
+   */
   isAvailable(): boolean {
-    return !!this.redisInstance;
+    return this._ready;
   }
 
   async ping(): Promise<boolean> {
