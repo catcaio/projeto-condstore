@@ -17,8 +17,11 @@ export interface InsertFrankEventInput {
   provider: string;
   model: string;
   latencyMs: number;
-  tokensPrompt?: number;
-  tokensCompletion?: number;
+  tokensPrompt: number;
+  tokensCompletion: number;
+  ragUsed: boolean;
+  ragChunks: number;
+  ragLatencyMs: number;
 }
 
 const DEDUP_WINDOW_MS = 5 * 60 * 1000;
@@ -76,6 +79,12 @@ export class FrankEventsRepository {
         }
       }
 
+      const latencyMs = Number.isFinite(input.latencyMs) ? Math.max(0, Math.trunc(input.latencyMs)) : 0;
+      const tokensPrompt = Number.isFinite(input.tokensPrompt) ? Math.max(0, Math.trunc(input.tokensPrompt)) : 0;
+      const tokensCompletion = Number.isFinite(input.tokensCompletion) ? Math.max(0, Math.trunc(input.tokensCompletion)) : 0;
+      const ragChunks = Number.isFinite(input.ragChunks) ? Math.max(0, Math.trunc(input.ragChunks)) : 0;
+      const ragLatencyMs = Number.isFinite(input.ragLatencyMs) ? Math.max(0, Math.trunc(input.ragLatencyMs)) : 0;
+
       await db.insert(frankEvents).values({
         id: randomUUID(),
         tenantId: input.tenantId,
@@ -85,9 +94,12 @@ export class FrankEventsRepository {
         payloadJson: pruneUndefined(input.payloadJson) as unknown as Record<string, unknown>,
         provider: input.provider,
         model: input.model,
-        latencyMs: Math.max(0, Math.trunc(input.latencyMs)),
-        tokensPrompt: typeof input.tokensPrompt === 'number' ? Math.trunc(input.tokensPrompt) : null,
-        tokensCompletion: typeof input.tokensCompletion === 'number' ? Math.trunc(input.tokensCompletion) : null,
+        latencyMs,
+        tokensPrompt,
+        tokensCompletion,
+        ragUsed: input.ragUsed ? 1 : 0,
+        ragChunks,
+        ragLatencyMs,
       });
     } catch (error) {
       logger.warn('Failed to persist frank event', {

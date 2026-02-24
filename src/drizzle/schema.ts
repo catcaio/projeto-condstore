@@ -142,8 +142,11 @@ export const frankEvents = mysqlTable('frank_events', {
     provider: varchar('provider', { length: 50 }).notNull(),
     model: varchar('model', { length: 100 }).notNull(),
     latencyMs: int('latency_ms').notNull(),
-    tokensPrompt: int('tokens_prompt'),
-    tokensCompletion: int('tokens_completion'),
+    tokensPrompt: int('tokens_prompt').notNull().default(0),
+    tokensCompletion: int('tokens_completion').notNull().default(0),
+    ragUsed: int('rag_used').notNull().default(0),
+    ragChunks: int('rag_chunks').notNull().default(0),
+    ragLatencyMs: int('rag_latency_ms').notNull().default(0),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => {
     return {

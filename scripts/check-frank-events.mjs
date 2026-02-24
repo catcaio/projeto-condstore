@@ -32,6 +32,9 @@ try {
         latency_ms,
         tokens_prompt,
         tokens_completion,
+        rag_used,
+        rag_chunks,
+        rag_latency_ms,
         created_at,
         payload_json
       FROM \`frank_events\`
