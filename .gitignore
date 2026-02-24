@@ -138,6 +138,13 @@ umps/
 *.db
 qdrant_data/
 
+# Generated ready-to-train datasets/baselines
+/datasets/train/*.ndjson
+/datasets/eval/*.ndjson
+/datasets/replay/*.ndjson
+/datasets/replay/baselines/*.json
+!/datasets/**/.gitkeep
+
 # Ngrok
 ngrok.exe
 ngrok.yml
