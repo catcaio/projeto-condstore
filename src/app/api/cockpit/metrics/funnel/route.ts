@@ -6,6 +6,7 @@ import { freightFunnelEvents } from '@/drizzle/schema';
 import { sql, and, gte, eq } from 'drizzle-orm';
 import { redisClient } from "@/infra/redis.client";
 import { logger } from '@/infra/logger';
+import { makeRequestId, respondInfraError } from '@/infra/http/infra-error';
 
 export enum FunnelStage {
     FLOW_STARTED = 'FLOW_STARTED',
@@ -21,10 +22,11 @@ export enum FunnelStage {
 const CACHE_TTL_SECONDS = 60;
 
 export async function GET(request: NextRequest) {
+    const requestId = makeRequestId();
     try {
         const user = await getSessionUser(request);
         if (!user?.tenantId) {
-            return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+            return NextResponse.json({ error: 'UNAUTHORIZED', requestId }, { status: 401, headers: { 'X-Request-Id': requestId } });
         }
         const tenantId = user.tenantId;
 
@@ -38,6 +40,7 @@ export async function GET(request: NextRequest) {
                         headers: {
                             'Cache-Control': `private, max-age=${CACHE_TTL_SECONDS}`,
                             'X-Cache': 'HIT',
+                            'X-Request-Id': requestId,
                         },
                     });
                 }
@@ -139,11 +142,11 @@ export async function GET(request: NextRequest) {
             headers: {
                 'Cache-Control': `private, max-age=${CACHE_TTL_SECONDS}`,
                 'X-Cache': 'MISS',
+                'X-Request-Id': requestId,
             },
         });
 
     } catch (error) {
-        logger.error('Failed to fetch funnel metrics', error as Error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return respondInfraError(error, requestId);
     }
 }
