@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Truck, AlertCircle } from 'lucide-react';
+import { AlertCircle, LockKeyhole, Mail, ShieldCheck, Truck } from 'lucide-react';
+import { Badge, Button, Card, CardContent, CardHeader, ListGroup, ListItem, Separator, TextField } from '@/ui/components';
+import { ThemeToggle } from '@/ui/theme';
 
 interface LoginFormProps {
     buildLabel: string;
@@ -41,67 +43,112 @@ export function LoginForm({ buildLabel }: LoginFormProps) {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-            <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center gap-3 mb-2">
-                        <Truck className="h-8 w-8 text-blue-600" />
-                        <h1 className="text-2xl font-bold text-slate-900">CondStore</h1>
-                    </div>
-                    <p className="text-slate-500 text-sm">Painel Logístico</p>
-                    <p className="text-slate-400 text-xs mt-1" data-testid="login-build-label">
-                        {buildLabel}
-                    </p>
+        <div className="min-h-screen px-4 py-8 sm:px-6">
+            <div className="mx-auto flex w-full max-w-md flex-col gap-4 pt-6 sm:pt-12">
+                <div className="flex justify-end">
+                    <ThemeToggle />
                 </div>
 
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
-                            Email
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            autoComplete="email"
-                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="seu@email.com"
-                        />
-                    </div>
-
-                    <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">
-                            Senha
-                        </label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            autoComplete="current-password"
-                            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="••••••••"
-                        />
-                    </div>
-
-                    {error && (
-                        <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm">
-                            <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                            <span>{error}</span>
+                <Card variant="elevated" className="overflow-hidden">
+                    <CardHeader
+                        className="pb-2"
+                        heading={
+                            <div className="flex items-center gap-3">
+                                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[hsl(var(--ui-accent-blue)/0.12)] text-[hsl(var(--ui-accent-blue))]">
+                                    <Truck className="h-5 w-5" />
+                                </span>
+                                <div>
+                                    <h1 className="text-xl font-semibold tracking-tight text-[hsl(var(--ui-text))]">
+                                        CondStore OS
+                                    </h1>
+                                    <p className="text-xs font-normal text-[hsl(var(--ui-text-muted))]">
+                                        Painel logístico
+                                    </p>
+                                </div>
+                            </div>
+                        }
+                        actions={<Badge variant="outline">FRONT-01</Badge>}
+                    />
+                    <CardContent className="space-y-4">
+                        <div className="rounded-xl bg-[hsl(var(--ui-muted))] px-3 py-2">
+                            <p className="text-[11px] font-medium uppercase tracking-wide text-[hsl(var(--ui-text-muted))]">
+                                Build
+                            </p>
+                            <p className="mt-0.5 text-xs text-[hsl(var(--ui-text))]" data-testid="login-build-label">
+                                {buildLabel}
+                            </p>
                         </div>
-                    )}
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? 'Entrando...' : 'Entrar'}
-                    </button>
-                </form>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <TextField
+                                id="email"
+                                label="Email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                autoComplete="email"
+                                placeholder="admin@condstore.local"
+                            />
+
+                            <TextField
+                                id="password"
+                                label="Senha"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                autoComplete="current-password"
+                                placeholder="••••••••"
+                            />
+
+                            {error ? (
+                                <div className="flex items-start gap-2 rounded-xl border border-[hsl(var(--ui-danger)/0.2)] bg-[hsl(var(--ui-danger)/0.08)] px-3 py-2.5 text-sm text-[hsl(var(--ui-danger-ink))]">
+                                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                                    <span>{error}</span>
+                                </div>
+                            ) : null}
+
+                            <Button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full"
+                                size="lg"
+                            >
+                                {loading ? 'Entrando...' : 'Entrar'}
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+
+                <ListGroup>
+                    <ListItem leading={<ShieldCheck className="h-4 w-4" />}>
+                        <div className="min-w-0">
+                            <p className="font-medium">Ambiente protegido</p>
+                            <p className="text-xs text-[hsl(var(--ui-text-muted))]">
+                                Sessão HTTP-only + invalidação server-side no logout
+                            </p>
+                        </div>
+                    </ListItem>
+                    <Separator />
+                    <ListItem leading={<Mail className="h-4 w-4" />}>
+                        <div className="min-w-0">
+                            <p className="font-medium">Acesso de staging</p>
+                            <p className="text-xs text-[hsl(var(--ui-text-muted))]">
+                                Admin pode ser resetado via rota interna protegida
+                            </p>
+                        </div>
+                    </ListItem>
+                    <Separator />
+                    <ListItem leading={<LockKeyhole className="h-4 w-4" />}>
+                        <div className="min-w-0">
+                            <p className="font-medium">Rate limit & observabilidade</p>
+                            <p className="text-xs text-[hsl(var(--ui-text-muted))]">
+                                Login falha com mensagens genéricas e logs sem PII
+                            </p>
+                        </div>
+                    </ListItem>
+                </ListGroup>
             </div>
         </div>
     );
