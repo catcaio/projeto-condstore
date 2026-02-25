@@ -2,7 +2,7 @@
 -- Created: 2026-02-15
 -- Description: Creates default tenant for existing Lojacond installation
 
-INSERT INTO `tenants` (`id`, `name`, `twilio_number`, `created_at`)
+INSERT INTO `tenants` (`id`, `name`, `twilio_number`, `timezone`, `created_at`)
 VALUES (
     'lojacond-default',
     'Lojacond',
@@ -10,6 +10,7 @@ VALUES (
         (SELECT value FROM (SELECT @twilio_number AS value) AS temp WHERE @twilio_number IS NOT NULL),
         '+14155238886'  -- Fallback if env var not set
     ),
+    'America/Sao_Paulo',
     CURRENT_TIMESTAMP
 )
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);

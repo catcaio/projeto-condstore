@@ -3,6 +3,7 @@ import { eq, desc, and, sql } from 'drizzle-orm';
 import { messages, type NewMessageRecord } from '../../drizzle/schema';
 import { logger } from '../logger';
 import { ErrorCode, InfrastructureError } from '../errors';
+import { redisClient } from '../redis.client';
 
 /**
  * Compact message snapshot used by the context cache and Frank orchestrator.
@@ -38,6 +39,10 @@ export class MessageRepository {
 
             // Idempotency via unique constraint (messageSid is PK)
             await db.insert(messages).values(record);
+
+            if (redisClient.isAvailable()) {
+                await redisClient.del(`cockpit:metrics:${record.tenantId}`);
+            }
 
             logger.info('Inbound message persisted', {
                 messageSid: record.messageSid,

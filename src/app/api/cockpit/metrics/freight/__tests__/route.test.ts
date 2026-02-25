@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from '../route';
-import { getDb } from '@/infra/db';
-import { getSessionUser } from '@/infra/auth/session';
+import { getDb } from '../../../../../../infra/db';
+import { getSessionUser } from '../../../../../../infra/auth/session';
 
 const mockExecute = vi.fn();
 
@@ -82,7 +82,8 @@ describe('GET /api/cockpit/metrics/freight', () => {
     });
     expect(mockExecute).toHaveBeenCalledTimes(6);
 
-    expect(headerGet).not.toHaveBeenCalled();
+    expect(headerGet).toHaveBeenCalledWith('x-request-id');
+    expect(headerGet).not.toHaveBeenCalledWith('x-tenant-id');
   });
 
   it('returns 401 when auth context has no tenantId', async () => {
@@ -96,7 +97,39 @@ describe('GET /api/cockpit/metrics/freight', () => {
     const data = await response.json();
 
     expect(response.status).toBe(401);
-    expect(data).toEqual({ error: 'Unauthorized' });
+    expect(data).toMatchObject({
+      ok: false,
+      error: { code: 'AUTH_REQUIRED' },
+    });
     expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it('returns attribution breakdown when groupBy=utm_source', async () => {
+    mockExecute
+      .mockResolvedValueOnce([[{ total: '2' }], []])
+      .mockResolvedValueOnce([[{ uf: 'SP', count: '2' }], []])
+      .mockResolvedValueOnce([[{ uf: 'SP', avg_valor: '25.00' }], []])
+      .mockResolvedValueOnce([[{ avg_peso: '2.15' }], []])
+      .mockResolvedValueOnce([[{ uf: 'SP', avg_prazo: '2.00' }], []])
+      .mockResolvedValueOnce([[{ date: '2026-02-01', count: '2' }], []])
+      .mockResolvedValueOnce([[{ bucket: 'google', count: '5' }, { bucket: '(none)', count: '2' }], []]);
+
+    const request = {
+      nextUrl: new URL('http://localhost/api/cockpit/metrics/freight?groupBy=utm_source'),
+      headers: { get: vi.fn() },
+      cookies: { get: vi.fn() },
+    } as never;
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.attribution_breakdown_7d).toEqual({
+      groupBy: 'utm_source',
+      buckets: [
+        { key: 'google', count: 5 },
+        { key: '(none)', count: 2 },
+      ],
+    });
   });
 });

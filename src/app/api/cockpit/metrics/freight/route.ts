@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
-import { getDb } from '@/infra/db';
-import { getSessionUser } from '@/infra/auth/session';
-import { logger } from '@/infra/logger';
-import { redisClient } from '@/infra/redis.client';
+import { getDb } from '../../../../../infra/db';
+import { getSessionUser } from '../../../../../infra/auth/session';
+import { logger } from '../../../../../infra/logger';
+import { redisClient } from '../../../../../infra/redis.client';
+import { buildAttributionBreakdown, isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '../../../../../modules/metrics/attribution-breakdown';
+import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/request-trace';
+import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '../../../../../infra/http/error-response';
+import { structuredLogger } from '../../../../../infra/log/logger';
 
 interface FreightMetricsResponse {
   total_simulations_7d: number;
@@ -12,6 +16,10 @@ interface FreightMetricsResponse {
   avg_peso_7d: number;
   avg_prazo_by_uf_7d: Array<{ uf: string; avg_prazo: number }>;
   daily_14d: Array<{ date: string; count: number }>;
+  attribution_breakdown_7d?: {
+    groupBy: 'utm_source' | 'utm_campaign';
+    buckets: Array<{ key: string; count: number }>;
+  };
 }
 
 interface FreightCacheEntry {
@@ -29,16 +37,6 @@ const globalForFreightMetricsCache = globalThis as typeof globalThis & {
 const inMemoryCache =
   globalForFreightMetricsCache.cockpitFreightMetricsCache ??
   (globalForFreightMetricsCache.cockpitFreightMetricsCache = new Map<string, FreightCacheEntry>());
-
-function unwrapRows<T>(result: unknown): T[] {
-  if (Array.isArray(result) && Array.isArray(result[0])) {
-    return result[0] as T[];
-  }
-  if (Array.isArray(result)) {
-    return result as T[];
-  }
-  return [];
-}
 
 async function readFromCache(cacheKey: string, tenantId: string): Promise<FreightMetricsResponse | null> {
   try {
@@ -95,40 +93,76 @@ function writeToCache(cacheKey: string, tenantId: string, payload: FreightMetric
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const startedAt = Date.now();
+  const requestId = makeRequestId(request);
+  const route = '/api/cockpit/metrics/freight';
   let tenantId = 'unknown';
 
+  structuredLogger.info('cockpit_metrics_freight_start', {
+    requestId,
+    route,
+    eventType: 'route_start',
+  });
+
+  const finalize = (response: NextResponse, code?: ErrorCode) => {
+    attachRequestIdHeader(response, requestId);
+    structuredLogger.info('cockpit_metrics_freight_end', {
+      requestId,
+      tenantId: tenantId !== 'unknown' ? tenantId : undefined,
+      route,
+      eventType: 'route_end',
+      durationMs: Date.now() - startedAt,
+      status: response.status,
+      outcome: response.status >= 400 ? 'error' : 'ok',
+      errorCode: code ?? (response.status >= 400 ? inferErrorCodeFromStatus(response.status) : undefined),
+    });
+    return response;
+  };
+
   try {
+    const requestedGroupBy = request.nextUrl?.searchParams.get('groupBy');
+    const parsedGroupBy = parseAttributionGroupBy(requestedGroupBy);
+    if (requestedGroupBy && !isAttributionGroupBy(parsedGroupBy) && requestedGroupBy !== 'none') {
+      return finalize(
+        errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid groupBy. Use utm_source, utm_campaign or none.'),
+        ErrorCode.VALIDATION_ERROR,
+      );
+    }
+    const groupBy = isAttributionGroupBy(parsedGroupBy) ? parsedGroupBy : null;
+
     const sessionUser = await getSessionUser(request);
 
     if (!sessionUser?.tenantId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return finalize(errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'Unauthorized'), ErrorCode.AUTH_REQUIRED);
     }
 
-    tenantId = sessionUser.tenantId;
-    const cacheKey = `cockpit:metrics:freight:${tenantId}`;
+    const resolvedTenantId = sessionUser.tenantId;
+    tenantId = resolvedTenantId;
+    const cacheKey = `cockpit:metrics:freight:${resolvedTenantId}`;
 
-    const cachedPayload = await readFromCache(cacheKey, tenantId);
-    if (cachedPayload) {
-      return NextResponse.json(cachedPayload, {
-        status: 200,
-        headers: { 'Cache-Control': 'private, max-age=60' },
-      });
+    if (!groupBy) {
+      const cachedPayload = await readFromCache(cacheKey, resolvedTenantId);
+      if (cachedPayload) {
+        return finalize(NextResponse.json(cachedPayload, {
+          status: 200,
+          headers: { 'Cache-Control': 'private, max-age=60' },
+        }));
+      }
     }
 
     const db = await getDb();
 
-    const [totalResult, topUfsResult, avgValorByUfResult, avgPesoResult, avgPrazoByUfResult, dailyResult] =
+    const [totalResult, topUfsResult, avgValorByUfResult, avgPesoResult, avgPrazoByUfResult, dailyResult, attributionBreakdownResult] =
       await Promise.all([
         db.execute(sql`
           SELECT COUNT(*) AS total
           FROM freight_simulation_logs
-          WHERE tenant_id = ${tenantId}
+          WHERE tenant_id = ${resolvedTenantId}
             AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
         `),
         db.execute(sql`
           SELECT uf, COUNT(*) AS count
           FROM freight_simulation_logs
-          WHERE tenant_id = ${tenantId}
+          WHERE tenant_id = ${resolvedTenantId}
             AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
           GROUP BY uf
           ORDER BY count DESC, uf ASC
@@ -136,7 +170,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         db.execute(sql`
           SELECT uf, AVG(valor) AS avg_valor
           FROM freight_simulation_logs
-          WHERE tenant_id = ${tenantId}
+          WHERE tenant_id = ${resolvedTenantId}
             AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
           GROUP BY uf
           ORDER BY uf ASC
@@ -144,13 +178,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         db.execute(sql`
           SELECT AVG(peso) AS avg_peso
           FROM freight_simulation_logs
-          WHERE tenant_id = ${tenantId}
+          WHERE tenant_id = ${resolvedTenantId}
             AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
         `),
         db.execute(sql`
           SELECT uf, AVG(prazo) AS avg_prazo
           FROM freight_simulation_logs
-          WHERE tenant_id = ${tenantId}
+          WHERE tenant_id = ${resolvedTenantId}
             AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
           GROUP BY uf
           ORDER BY uf ASC
@@ -158,11 +192,32 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         db.execute(sql`
           SELECT DATE(created_at) AS date, COUNT(*) AS count
           FROM freight_simulation_logs
-          WHERE tenant_id = ${tenantId}
+          WHERE tenant_id = ${resolvedTenantId}
             AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 14 DAY)
           GROUP BY DATE(created_at)
           ORDER BY date ASC
         `),
+        groupBy
+          ? db.execute(
+              groupBy === 'utm_campaign'
+                ? sql`
+                    SELECT COALESCE(NULLIF(utm_campaign, ''), '(none)') AS bucket, COUNT(*) AS count
+                    FROM freight_simulation_logs
+                    WHERE tenant_id = ${resolvedTenantId}
+                      AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+                    GROUP BY COALESCE(NULLIF(utm_campaign, ''), '(none)')
+                    ORDER BY count DESC, bucket ASC
+                  `
+                : sql`
+                    SELECT COALESCE(NULLIF(utm_source, ''), '(none)') AS bucket, COUNT(*) AS count
+                    FROM freight_simulation_logs
+                    WHERE tenant_id = ${resolvedTenantId}
+                      AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+                    GROUP BY COALESCE(NULLIF(utm_source, ''), '(none)')
+                    ORDER BY count DESC, bucket ASC
+                  `,
+            )
+          : Promise.resolve(null),
       ]);
 
     const totalRows = unwrapRows<{ total: number | string }>(totalResult);
@@ -184,24 +239,33 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       })),
     };
 
-    writeToCache(cacheKey, tenantId, payload);
+    if (groupBy && attributionBreakdownResult) {
+      payload.attribution_breakdown_7d = buildAttributionBreakdown(
+        groupBy,
+        unwrapRows<{ bucket: string | null; count: number | string | null }>(attributionBreakdownResult),
+      );
+    }
 
-    return NextResponse.json(payload, {
+    if (!groupBy) {
+      writeToCache(cacheKey, resolvedTenantId, payload);
+    }
+
+    return finalize(NextResponse.json(payload, {
       status: 200,
       headers: { 'Cache-Control': 'private, max-age=60' },
-    });
+    }));
   } catch (error) {
     logger.error('cockpit/metrics/freight: unexpected error', error as Error, { tenantId });
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
-    const durationMs = Date.now() - startedAt;
-    const logContext = { tenantId, duration_ms: durationMs };
-
-    if (durationMs > 500) {
-      logger.warn('cockpit/metrics/freight: slow request', logContext);
-    } else {
-      logger.info('cockpit/metrics/freight: request completed', logContext);
-    }
+    structuredLogger.error('cockpit_metrics_freight_failed', {
+      requestId,
+      tenantId: tenantId !== 'unknown' ? tenantId : undefined,
+      route,
+      eventType: 'route_error',
+      durationMs: Date.now() - startedAt,
+      errorCode: ErrorCode.DB_ERROR,
+      error,
+    });
+    return finalize(errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Internal server error'), ErrorCode.DB_ERROR);
   }
 }
 

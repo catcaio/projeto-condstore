@@ -120,6 +120,55 @@
       "when": 1771973316106,
       "tag": "0016_even_george_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1772060400000,
+      "tag": "0017_drop_tenant_ai_providers_plaintext_api_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1772064000000,
+      "tag": "0018_attribution_tracking",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1772067600000,
+      "tag": "0019_inbound_message_dedup_and_abuse_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1772071200000,
+      "tag": "0020_metrics_rollups",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1772082000000,
+      "tag": "0021_tenant_timezone",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1772085600000,
+      "tag": "0022_metrics_rollup_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1772089200000,
+      "tag": "0023_admin_audit_log",
+      "breakpoints": true
     }
   ]
 }

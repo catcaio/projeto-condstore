@@ -7,6 +7,10 @@ export const config = {
   matcher: [
     '/cockpit/:path*',
     '/api/cockpit/:path*',
+    '/api/webhook',
+    '/api/events',
+    '/api/tenants/:tenantId/ai-provider/:path*',
+    '/api/tenants/:tenantId/settings/:path*',
   ],
 };
 
@@ -55,9 +59,28 @@ function isCockpitApi(pathname: string): boolean {
   return pathname === '/api/cockpit' || pathname.startsWith('/api/cockpit/');
 }
 
-function unauthorizedResponse(req: NextRequest): NextResponse {
+function isCockpitUi(pathname: string): boolean {
+  return pathname === '/cockpit' || pathname.startsWith('/cockpit/');
+}
+
+function isCockpitProtectedPath(pathname: string): boolean {
+  return isCockpitApi(pathname) || isCockpitUi(pathname);
+}
+
+function getOrCreateRequestId(req: NextRequest): string {
+  const fromHeader = req.headers.get('x-request-id')?.trim();
+  if (fromHeader) return fromHeader;
+  return crypto.randomUUID();
+}
+
+function setRequestIdHeader(response: NextResponse, requestId: string): NextResponse {
+  response.headers.set('x-request-id', requestId);
+  return response;
+}
+
+function unauthorizedResponse(req: NextRequest, requestId: string): NextResponse {
   if (isCockpitApi(req.nextUrl.pathname)) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+    return setRequestIdHeader(NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 }), requestId);
   }
 
   const loginUrl = new URL('/login', req.url);
@@ -66,21 +89,35 @@ function unauthorizedResponse(req: NextRequest): NextResponse {
     loginUrl.searchParams.set('next', nextPath);
   }
 
-  return NextResponse.redirect(loginUrl);
+  return setRequestIdHeader(NextResponse.redirect(loginUrl), requestId);
 }
 
 export async function middleware(req: NextRequest) {
+  const requestId = getOrCreateRequestId(req);
+  const headers = new Headers(req.headers);
+  headers.set('x-request-id', requestId);
+
+  if (!isCockpitProtectedPath(req.nextUrl.pathname)) {
+    return setRequestIdHeader(
+      NextResponse.next({
+        request: {
+          headers,
+        },
+      }),
+      requestId,
+    );
+  }
+
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (!token) {
-    return unauthorizedResponse(req);
+    return unauthorizedResponse(req, requestId);
   }
 
   const session = await verifyMiddlewareSessionToken(token);
   if (!session) {
-    return unauthorizedResponse(req);
+    return unauthorizedResponse(req, requestId);
   }
 
-  const headers = new Headers(req.headers);
   headers.delete('x-tenant-id');
   headers.delete('x-user-id');
   headers.delete('x-role');
@@ -88,9 +125,12 @@ export async function middleware(req: NextRequest) {
   headers.set('x-auth-tenant-id', session.tenantId);
   headers.set('x-auth-role', session.role);
 
-  return NextResponse.next({
-    request: {
-      headers,
-    },
-  });
+  return setRequestIdHeader(
+    NextResponse.next({
+      request: {
+        headers,
+      },
+    }),
+    requestId,
+  );
 }

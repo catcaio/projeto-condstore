@@ -3,6 +3,8 @@
  * Defines all types used in the freight calculation module.
  */
 
+import type { AttributionSnapshot } from '../../infra/attribution/attribution.types';
+
 /**
  * Freight calculation request.
  */
@@ -10,6 +12,8 @@ export interface FreightRequest {
   destinationCep: string;
   quantity: number;
   tenantId?: string;
+  attribution?: AttributionSnapshot | null;
+  requestId?: string;
   unitWeight?: number; // kg (optional, uses default if not provided)
   dimensions?: {
     width: number; // cm

@@ -185,6 +185,19 @@ class RedisService {
     }
   }
 
+  async eval(script: string, numberOfKeys: number, ...args: Array<string | number>): Promise<unknown> {
+    if (this.isAvailable()) {
+      try {
+        return await (this.redisInstance as any).eval(script, numberOfKeys, ...args);
+      } catch (e) {
+        logger.error('Redis EVAL error', e as Error, { numberOfKeys });
+        throw e;
+      }
+    }
+
+    throw new Error('Redis EVAL unavailable in memory mode');
+  }
+
   async ttl(key: string): Promise<number> {
     if (this.isAvailable()) {
       try {
