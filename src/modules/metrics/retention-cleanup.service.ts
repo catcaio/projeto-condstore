@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { getDataRetentionPolicy } from '../../infra/config/data-retention';
+import { getDataRetentionPolicy, type DataRetentionPolicy } from '../../infra/config/data-retention';
 import { getDb } from '../../infra/db';
 import { structuredLogger } from '../../infra/log/logger';
 
@@ -95,10 +95,11 @@ async function cleanupTable(table: string, retentionDays: number, requestId?: st
 export async function runRetentionCleanup(input?: {
   requestId?: string;
   now?: Date;
+  policy?: DataRetentionPolicy;
 }): Promise<CleanupRetentionResult> {
   const startedAt = Date.now();
   const now = input?.now ?? new Date();
-  const policy = getDataRetentionPolicy();
+  const policy = input?.policy ?? getDataRetentionPolicy();
 
   const tables: CleanupTableResult[] = [];
   tables.push(await cleanupTable('public_events', policy.publicEventsDays, input?.requestId, now));
