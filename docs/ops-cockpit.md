@@ -33,6 +33,10 @@ Body opcional:
 - Se `day` não for enviado, usa a regra padrão do serviço (`defaultRollupDay`).
 - A execução é limitada ao tenant da sessão admin.
 - A rota grava audit log (`ops.run_rollup`) e invalida o cache curto de status.
+- O `result` pode incluir:
+  - `failedTenants`: quantidade de tenants com erro no processamento (sempre `0` na rota manual, exceto falha retornada pelo serviço antes da resposta).
+  - `errors`: lista resumida (`tenantId`, `day`, `code`, `message`) usada em execuções multi-tenant (jobs internos).
+- O processamento multi-tenant usa paralelismo controlado por `METRICS_ROLLUP_CONCURRENCY` (default `4`) e mantém lock distribuído por `tenant + day`.
 
 ### Resposta `409 LOCK_BUSY`
 
