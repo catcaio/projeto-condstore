@@ -135,6 +135,60 @@ TWILIO_SIGNATURE_VALIDATION_ENABLED=false
 | POST | `/api/painel-logistico` | API do painel de cotação. |
 | GET | `/api/debug/tenants` | Lista tenants (apenas DEV). |
 
+## Operação / Cockpit Ops
+
+Endpoints operacionais (admin) para acompanhar e acionar jobs de métricas:
+
+- `GET /api/cockpit/ops/status`: retorna `timezone`, `db_ok`, `redis_ok` e `rollup_status` por tenant.
+- `POST /api/cockpit/ops/run-rollup`: dispara rollup manual para o tenant da sessão.
+  - Retorna `409 LOCK_BUSY` quando já existe execução para o mesmo `tenant + day`.
+
+Configuração útil:
+
+- `METRICS_ROLLUP_CONCURRENCY`: limita o paralelismo do rollup multi-tenant (default atual `4`).
+
+Mais detalhes: [`docs/ops-cockpit.md`](docs/ops-cockpit.md)
+
+## Métricas / Rollups
+
+- Rollup diário em `metrics_daily` para reduzir custo de leitura nas rotas do cockpit.
+- Timezone por tenant (IANA) influencia:
+  - definição de “dia” local
+  - janelas de métricas
+  - processamento de rollup/backfill
+- Jobs internos relacionados:
+  - `POST /api/internal/jobs/rollup-daily`
+  - `POST /api/internal/jobs/rollup-backfill`
+  - `POST /api/internal/jobs/cleanup-retention`
+
+Documentação:
+
+- [`docs/metrics-timezones.md`](docs/metrics-timezones.md)
+- [`docs/ops-cockpit.md`](docs/ops-cockpit.md)
+- [`docs/data-retention.md`](docs/data-retention.md)
+
+## Smoke Test HTTP (sem Twilio)
+
+Smoke test HTTP para validar pipeline público + cockpit sem depender de Twilio:
+
+- Script: [`scripts/smoke/smoke.mjs`](scripts/smoke/smoke.mjs)
+- Wrapper PowerShell: [`scripts/smoke/smoke.ps1`](scripts/smoke/smoke.ps1)
+- Guia: [`docs/smoke-tests.md`](docs/smoke-tests.md)
+- Workflow manual (GitHub Actions): [`.github/workflows/smoke.yml`](.github/workflows/smoke.yml) (`workflow_dispatch`)
+
+Secrets necessários para o workflow de smoke:
+
+- `BASE_URL`
+- `INTERNAL_TOKEN`
+- `COCKPIT_COOKIE`
+- `TENANT_ID`
+
+Execução via Actions:
+
+1. Configure os secrets no repositório/ambiente de staging.
+2. Abra **Actions** → **Smoke HTTP**.
+3. Execute manualmente (`workflow_dispatch`).
+
 ##  Testes
 
 ### Verificação de Webhook
