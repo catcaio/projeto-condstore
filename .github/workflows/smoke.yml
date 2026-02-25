@@ -1,0 +1,53 @@
+name: Smoke HTTP
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-http:
+    name: Run HTTP Smoke Test (no Twilio)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN }}
+      COCKPIT_COOKIE: ${{ secrets.COCKPIT_COOKIE }}
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in BASE_URL INTERNAL_TOKEN COCKPIT_COOKIE TENANT_ID; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required repository secret: ${name}"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Mask runtime values
+        shell: bash
+        run: |
+          echo "::add-mask::${BASE_URL}"
+          echo "::add-mask::${INTERNAL_TOKEN}"
+          echo "::add-mask::${COCKPIT_COOKIE}"
+          echo "::add-mask::${TENANT_ID}"
+
+      - name: Run smoke script
+        run: node scripts/smoke/smoke.mjs
