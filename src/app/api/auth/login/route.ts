@@ -7,7 +7,7 @@ import { userRepository } from '@/infra/repositories/user.repository';
 import { verifyPassword } from '@/infra/auth/password';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
-import { checkRateLimit } from '@/infra/rate-limiter';
+import { hashRateLimitKeyForLog, rateLimiter } from '@/infra/security/rate-limiter';
 import { auditService } from '@/modules/audit/audit.service';
 import { InfrastructureError, getUserMessage } from '@/infra/errors';
 
@@ -15,6 +15,17 @@ const loginSchema = z.object({
     email: z.string().email('Email inválido'),
     password: z.string().min(1, 'Senha obrigatória'),
 });
+
+function getClientIp(request: NextRequest): string {
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    if (forwardedFor) {
+        const firstIp = forwardedFor.split(',')[0]?.trim();
+        if (firstIp) return firstIp;
+    }
+
+    const realIp = request.headers.get('x-real-ip')?.trim();
+    return realIp || 'unknown';
+}
 
 export async function POST(request: NextRequest) {
     const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID?.() ?? `${Date.now()}`;
@@ -49,15 +60,22 @@ export async function POST(request: NextRequest) {
         }
 
         const { email, password } = validation.data;
+        const normalizedEmail = email.trim().toLowerCase();
 
         // Rate Limit: 5 attempts per minute per IP+Email
-        const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-        const rateLimitKey = `login:${ip}:${email}`;
-
-        const rateLimit = await checkRateLimit(rateLimitKey, 5, 60);
+        const ip = getClientIp(request);
+        const rateLimitKey = `${ip}:${normalizedEmail}`;
+        const rateLimitKeyHash = hashRateLimitKeyForLog(rateLimitKey);
+        const rateLimit = await rateLimiter.limit('auth.login', rateLimitKey, {
+            max: 5,
+            windowSec: 60,
+        });
 
         if (!rateLimit.allowed) {
-            logger.warn('Login rate limit exceeded', { email, ip });
+            logger.warn('Login rate limit exceeded', {
+                scope: 'auth.login',
+                rateLimitKeyHash,
+            });
             return NextResponse.json(
                 { success: false, error: 'Muitas tentativas. Tente novamente em alguns minutos.' },
                 { status: 429 }
