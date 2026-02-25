@@ -37,7 +37,7 @@ describe('GET /api/cockpit/metrics/freight', () => {
       sub: 'user-1',
       email: 'user@example.com',
       tenantId: 'tenant-from-session',
-      role: 'manager',
+      role: 'admin',
     });
   });
 
@@ -100,6 +100,30 @@ describe('GET /api/cockpit/metrics/freight', () => {
     expect(data).toMatchObject({
       ok: false,
       error: { code: 'AUTH_REQUIRED' },
+    });
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 for operator session', async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({
+      sub: 'user-2',
+      email: 'operator@example.com',
+      tenantId: 'tenant-from-session',
+      role: 'operator',
+    });
+
+    const request = {
+      headers: new Headers(),
+    } as never;
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get('x-request-id')).toBeTruthy();
+    expect(data).toMatchObject({
+      ok: false,
+      error: { code: 'FORBIDDEN' },
     });
     expect(mockExecute).not.toHaveBeenCalled();
   });

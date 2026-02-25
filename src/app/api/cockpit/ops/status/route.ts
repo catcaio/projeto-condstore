@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
-import { getSessionUser } from '../../../../../infra/auth/session';
+import { requireAdmin } from '../../../../../infra/auth/guards';
 import { getDb } from '../../../../../infra/db';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '../../../../../infra/http/error-response';
 import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/request-trace';
@@ -86,15 +86,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   };
 
   try {
-    const session = await getSessionUser(request);
-    if (!session?.tenantId) {
-      return finalize(errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'Unauthorized'), ErrorCode.AUTH_REQUIRED);
-    }
-    if (session.role !== 'admin') {
-      return finalize(errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Forbidden'), ErrorCode.FORBIDDEN);
-    }
+    const auth = await requireAdmin(request, { requestId });
+    if (!auth.ok) return finalize(auth.response, auth.code);
 
-    tenantId = session.tenantId;
+    tenantId = auth.session.tenantId;
     const key = cacheKey(tenantId);
 
     if (redisClient.isAvailable()) {

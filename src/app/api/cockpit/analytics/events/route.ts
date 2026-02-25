@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
+import { requireAdmin } from '@/infra/auth/guards';
 import { publicEvents } from '../../../../../drizzle/schema';
 import { requireActivePlan } from '../../../../../modules/billing/requireActivePlan';
 import { logger } from '@/infra/logger';
@@ -38,6 +39,11 @@ function safeParseProps(raw: string | null): EventProps | { _parseError: true; r
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const auth = await requireAdmin(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const entitlement = await requireActivePlan(request);
   if (entitlement.errorResponse) {
     return entitlement.errorResponse;

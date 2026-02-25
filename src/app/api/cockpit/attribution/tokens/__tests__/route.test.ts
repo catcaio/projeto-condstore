@@ -43,9 +43,11 @@ describe('/api/cockpit/attribution/tokens', () => {
     const res = await POST({
       json: vi.fn().mockResolvedValue({ count: 1, tenantId: 'tenant-1' }),
     } as never);
+    const body = await res.json();
 
     expect(res.status).toBe(401);
-    expect(await res.json()).toEqual({ error: 'UNAUTHORIZED' });
+    expect(res.headers.get('x-request-id')).toBeTruthy();
+    expect(body).toMatchObject({ ok: false, error: { code: 'AUTH_REQUIRED' } });
   });
 
   it('POST returns 403 for non-admin', async () => {
@@ -57,9 +59,11 @@ describe('/api/cockpit/attribution/tokens', () => {
     const res = await POST({
       json: vi.fn().mockResolvedValue({ count: 1, tenantId: 'tenant-1' }),
     } as never);
+    const body = await res.json();
 
     expect(res.status).toBe(403);
-    expect(await res.json()).toEqual({ error: 'FORBIDDEN' });
+    expect(res.headers.get('x-request-id')).toBeTruthy();
+    expect(body).toMatchObject({ ok: false, error: { code: 'FORBIDDEN' } });
   });
 
   it('POST returns 200, creates requested count and tokens are unique', async () => {
