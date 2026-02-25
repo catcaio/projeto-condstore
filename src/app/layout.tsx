@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { SentryClientBootstrap } from './_sentry-client-bootstrap';
 
 export const metadata: Metadata = {
     title: 'Painel Logístico - LojaCond',
@@ -14,6 +15,7 @@ export default function RootLayout({
     return (
         <html lang="pt-BR">
             <body style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                <SentryClientBootstrap />
                 <div className="min-h-screen bg-background">
                     {children}
                 </div>
