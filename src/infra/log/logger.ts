@@ -1,3 +1,5 @@
+import { captureExceptionWithSentryNonBlocking } from '../observability/sentry';
+
 export type StructuredLogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface StructuredLogContext {
@@ -107,6 +109,29 @@ export const structuredLogger = {
     log('warn', message, context);
   },
   error(message: string, context?: StructuredLogContext) {
+    const rawError = context?.error;
+    const error =
+      rawError instanceof Error
+        ? rawError
+        : rawError
+          ? new Error(typeof rawError === 'string' ? rawError : message)
+          : null;
+
+    if (error) {
+      captureExceptionWithSentryNonBlocking(error, {
+        requestId: typeof context?.requestId === 'string' ? context.requestId : undefined,
+        tenantId: typeof context?.tenantId === 'string' ? context.tenantId : undefined,
+        extras: {
+          logger: 'structured',
+          logMessage: message,
+          context,
+        },
+        tags: {
+          logger: 'structured',
+        },
+      });
+    }
+
     log('error', message, context);
   },
 };

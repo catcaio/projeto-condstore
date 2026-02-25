@@ -5,6 +5,7 @@
 
 import { appConfig } from '../config/app.config';
 import type { BaseError } from './errors';
+import { captureExceptionWithSentryNonBlocking } from './observability/sentry';
 
 export enum LogLevel {
   DEBUG = 0,
@@ -112,6 +113,22 @@ class Logger {
   }
 
   error(message: string, error?: Error | BaseError, context?: LogContext): void {
+    if (error) {
+      const requestId = typeof context?.requestId === 'string' ? context.requestId : undefined;
+      const tenantId = typeof context?.tenantId === 'string' ? context.tenantId : undefined;
+      captureExceptionWithSentryNonBlocking(error, {
+        requestId,
+        tenantId,
+        extras: {
+          logger: 'app',
+          logMessage: message,
+          context,
+        },
+        tags: {
+          logger: 'app',
+        },
+      });
+    }
     this.log(LogLevel.ERROR, 'ERROR', message, context, error);
   }
 

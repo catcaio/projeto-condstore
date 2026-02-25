@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { captureExceptionWithSentryNonBlocking } from '@/infra/observability/sentry';
 
 export default function Error({
     error,
@@ -11,6 +12,15 @@ export default function Error({
     reset: () => void;
 }) {
     useEffect(() => {
+        captureExceptionWithSentryNonBlocking(error, {
+            extras: {
+                digest: error.digest,
+                surface: 'painel-logistico.error',
+            },
+            tags: {
+                surface: 'painel-logistico.error',
+            },
+        });
         console.error(error);
     }, [error]);
 
