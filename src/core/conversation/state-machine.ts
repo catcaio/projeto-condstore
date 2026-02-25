@@ -6,6 +6,7 @@
 
 import { BusinessError, ErrorCode } from '../../infra/errors';
 import { logger } from '../../infra/logger';
+import type { AttributionSnapshot } from '../../infra/attribution/attribution.types';
 
 /**
  * All possible conversation states.
@@ -55,6 +56,7 @@ export interface ConversationContext {
   lastMessage?: string;
   errorCount?: number;
   metadata?: Record<string, unknown>;
+  attribution?: AttributionSnapshot | null;
 }
 
 /**

@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { logger } from '@/infra/logger';
+import { logger } from '../logger';
 
 let generatedDevToken: string | null = null;
 let warned = false;
