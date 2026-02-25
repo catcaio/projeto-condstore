@@ -1,10 +1,9 @@
 /**
- * Redis-backed rate limiter.
- * Tracks request counts per identifier (phone number or IP) using Redis INCR + EXPIRE.
- * Serverless-compatible — uses Upstash REST API.
+ * @deprecated Prefer `rateLimiter.limit()` from `src/infra/security/rate-limiter`.
+ * Legacy wrapper kept for compatibility while callers migrate.
  */
 
-import { redisClient } from './redis.client';
+import { hashRateLimitKeyForLog, rateLimiter } from './security/rate-limiter';
 import { logger } from './logger';
 
 interface RateLimitResult {
@@ -19,72 +18,51 @@ const WINDOW_SECONDS = 60;
 
 /**
  * Check rate limit for a given identifier.
- * Uses Redis INCR with TTL to track request counts.
- * If Redis is unavailable, allows the request (graceful degradation — don't block users).
- */
-/**
- * Check rate limit for a given identifier.
- * Uses atomic Redis INCR + EXPIRE.
- * 
+ *
  * @param identifier Unique key (e.g. "webhook:tenant:phone" or "login:ip:email")
  * @param limit Max requests per window (default 10)
  * @param windowSeconds Window duration in seconds (default 60)
  */
-export async function checkRateLimit(identifier: string, limit: number = MAX_REQUESTS_PER_MINUTE, windowSeconds: number = WINDOW_SECONDS): Promise<RateLimitResult> {
-    const key = `ratelimit:${identifier}`;
+export async function checkRateLimit(
+  identifier: string,
+  limit: number = MAX_REQUESTS_PER_MINUTE,
+  windowSeconds: number = WINDOW_SECONDS,
+): Promise<RateLimitResult> {
+  const normalizedIdentifier = identifier.trim();
+  const now = Date.now();
 
-    try {
-        if (!redisClient.isAvailable()) {
-            logger.warn('Rate limiter: Redis unavailable, allowing request', { identifier });
-            return { allowed: true, remaining: limit, limit };
-        }
+  const decision = await rateLimiter.limit('legacy', normalizedIdentifier, {
+    max: limit,
+    windowSec: windowSeconds,
+  });
 
-        // Atomic increment
-        const current = await redisClient.incr(key);
+  if (!decision.allowed) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((decision.resetAt - now) / 1000));
+    logger.warn('Rate limit exceeded', {
+      event: 'RATE_LIMIT_EXCEEDED',
+      identifierHash: hashRateLimitKeyForLog(normalizedIdentifier),
+      limit,
+      retryAfterSeconds,
+    });
+    return {
+      allowed: false,
+      remaining: 0,
+      limit,
+      retryAfterSeconds,
+    };
+  }
 
-        if (current === null) {
-            // Fallback if INCR fails
-            return { allowed: true, remaining: limit, limit };
-        }
-
-        // If this is the first request, set expiration
-        if (current === 1) {
-            await redisClient.expire(key, windowSeconds);
-        }
-
-        if (current > limit) {
-            const ttl = await redisClient.ttl(key);
-            logger.warn('Rate limit exceeded', {
-                event: 'RATE_LIMIT_EXCEEDED',
-                identifier,
-                current,
-                limit,
-                ttlSeconds: ttl,
-            });
-            return {
-                allowed: false,
-                remaining: 0,
-                limit,
-                retryAfterSeconds: ttl ?? windowSeconds,
-            };
-        }
-
-        return {
-            allowed: true,
-            remaining: Math.max(0, limit - current),
-            limit,
-        };
-    } catch (error) {
-        // On error, allow the request (don't block users due to rate limiter failures)
-        logger.error('Rate limiter error, allowing request', error as Error, { identifier });
-        return { allowed: true, remaining: limit, limit };
-    }
+  return {
+    allowed: true,
+    remaining: decision.remaining,
+    limit,
+  };
 }
 
 /**
  * Generate a friendly throttling message for WhatsApp users.
  */
 export function getThrottleMessage(): string {
-    return 'Você está enviando muitas mensagens. Por favor, aguarde um momento antes de tentar novamente.';
+  return 'Você está enviando muitas mensagens. Por favor, aguarde um momento antes de tentar novamente.';
 }
 
