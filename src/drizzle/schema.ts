@@ -87,8 +87,11 @@ export const messages = mysqlTable('messages', {
     messageSid: varchar('message_sid', { length: 64 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
     fromPhone: varchar('from_phone', { length: 30 }).notNull(),
+    phoneHash: varchar('phone_hash', { length: 64 }),
+    phoneEncrypted: text('phone_encrypted'),
     toPhone: varchar('to_phone', { length: 30 }),
     body: text('body').notNull(),
+    bodyEncrypted: text('body_encrypted'),
     direction: varchar('direction', { length: 10 }).notNull().default('inbound'),
     intent: varchar('intent', { length: 50 }).notNull().default('unknown'),
     intentConfidence: decimal('intent_confidence', { precision: 5, scale: 4 }),
@@ -97,6 +100,7 @@ export const messages = mysqlTable('messages', {
 }, (table) => {
     return {
         tenantIdCreatedAtIndex: index('idx_messages_tenant_created_at').on(table.tenantId, table.createdAt),
+        tenantPhoneHashCreatedAtIndex: index('idx_messages_tenant_phone_hash_created_at').on(table.tenantId, table.phoneHash, table.createdAt),
     };
 });
 
@@ -219,6 +223,8 @@ export const freightFunnelEvents = mysqlTable('freight_funnel_events', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
     phoneNumber: varchar('phone_number', { length: 30 }).notNull(),
+    phoneHash: varchar('phone_hash', { length: 64 }),
+    phoneEncrypted: text('phone_encrypted'),
     sessionId: varchar('session_id', { length: 36 }).notNull(),
     stage: varchar('stage', { length: 50 }).notNull(), // INTENT_DETECTED, ASKED_CEP, CEP_RECEIVED, QUOTE_SENT, ABANDONED
     utmSource: varchar('utm_source', { length: 255 }),
@@ -234,6 +240,7 @@ export const freightFunnelEvents = mysqlTable('freight_funnel_events', {
         // Unique Constraint: One event per stage per session
         uniqueStage: uniqueIndex('idx_funnel_unique_stage').on(table.sessionId, table.stage),
         idxTenantTime: index('idx_funnel_tenant_time').on(table.tenantId, table.createdAt),
+        idxTenantPhoneHashTime: index('idx_funnel_tenant_phone_hash_time').on(table.tenantId, table.phoneHash, table.createdAt),
     };
 });
 

@@ -72,7 +72,7 @@ function buildRedirectUrl(token: string): URL {
 
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ token: string }> | { token: string } },
+  context: { params: Promise<{ token: string }> },
 ): Promise<NextResponse> {
   const requestId = makeRequestId(request);
   const route = '/t/[token]';
@@ -103,7 +103,7 @@ export async function GET(
       );
     }
 
-    const params = await Promise.resolve(context.params);
+    const params = await context.params;
     const token = parseToken(params?.token);
 
     if (!token) {

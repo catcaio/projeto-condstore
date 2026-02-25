@@ -41,6 +41,7 @@ const REDACT_KEY_PATTERNS = [
   /phone/i,
   /message/i,
   /body/i,
+  /payload/i,
 ];
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
