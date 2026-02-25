@@ -7,19 +7,10 @@ import { sql, and, gte, eq } from 'drizzle-orm';
 import { redisClient } from "@/infra/redis.client";
 import { logger } from '@/infra/logger';
 import { buildAttributionBreakdown, isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '@/modules/metrics/attribution-breakdown';
+import { FunnelStage } from '@/modules/funnel/funnel-stage';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '@/infra/http/error-response';
 import { structuredLogger } from '@/infra/log/logger';
-
-export enum FunnelStage {
-    FLOW_STARTED = 'FLOW_STARTED',
-    INTENT_DETECTED = 'INTENT_DETECTED',
-    ASKED_CEP = 'ASKED_CEP',
-    CEP_PROVIDED = 'CEP_PROVIDED',
-    QUANTITY_PROVIDED = 'QUANTITY_PROVIDED',
-    FREIGHT_QUOTED = 'FREIGHT_QUOTED',
-    FLOW_ABORTED = 'FLOW_ABORTED'
-}
 
 // Cache TTL: 60 seconds
 const CACHE_TTL_SECONDS = 60;
