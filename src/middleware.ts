@@ -2,6 +2,10 @@ import { jwtVerify, type JWTPayload } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
 
 const SESSION_COOKIE_NAME = 'condstore_session';
+const ALLOWED_ROLES = ['admin', 'operator'] as const;
+const ALLOWED_ROLES_SET = new Set<MiddlewareRole>(ALLOWED_ROLES);
+
+type MiddlewareRole = (typeof ALLOWED_ROLES)[number];
 
 export const config = {
   matcher: [
@@ -14,9 +18,17 @@ export const config = {
   ],
 };
 
+function hasAuthSecretConfigured(): boolean {
+  return Boolean(process.env.AUTH_SECRET?.trim());
+}
+
 function getAuthSecret(): Uint8Array {
-  const secret = process.env.AUTH_SECRET;
+  const secret = process.env.AUTH_SECRET?.trim();
   if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('MISCONFIG_AUTH_SECRET');
+    }
+
     return new TextEncoder().encode('dev-only-fallback-secret-do-not-use-in-prod');
   }
 
@@ -26,7 +38,11 @@ function getAuthSecret(): Uint8Array {
 interface MiddlewareSessionClaims {
   sub: string;
   tenantId: string;
-  role: string;
+  role: MiddlewareRole;
+}
+
+function isMiddlewareRole(value: unknown): value is MiddlewareRole {
+  return typeof value === 'string' && ALLOWED_ROLES_SET.has(value as MiddlewareRole);
 }
 
 async function verifyMiddlewareSessionToken(token: string): Promise<MiddlewareSessionClaims | null> {
@@ -37,11 +53,7 @@ async function verifyMiddlewareSessionToken(token: string): Promise<MiddlewareSe
       role?: unknown;
     };
 
-    if (
-      typeof claims.sub !== 'string' ||
-      typeof claims.tenantId !== 'string' ||
-      typeof claims.role !== 'string'
-    ) {
+    if (typeof claims.sub !== 'string' || typeof claims.tenantId !== 'string' || !isMiddlewareRole(claims.role)) {
       return null;
     }
 
@@ -92,6 +104,24 @@ function unauthorizedResponse(req: NextRequest, requestId: string): NextResponse
   return setRequestIdHeader(NextResponse.redirect(loginUrl), requestId);
 }
 
+function authSecretMisconfiguredResponse(req: NextRequest, requestId: string): NextResponse {
+  if (isCockpitApi(req.nextUrl.pathname)) {
+    return setRequestIdHeader(NextResponse.json({ error: 'MISCONFIG_AUTH_SECRET' }, { status: 500 }), requestId);
+  }
+
+  if (isCockpitUi(req.nextUrl.pathname)) {
+    return setRequestIdHeader(
+      new NextResponse('MISCONFIG_AUTH_SECRET', {
+        status: 500,
+        headers: { 'content-type': 'text/plain; charset=utf-8' },
+      }),
+      requestId,
+    );
+  }
+
+  return setRequestIdHeader(NextResponse.json({ error: 'MISCONFIG_AUTH_SECRET' }, { status: 500 }), requestId);
+}
+
 export async function middleware(req: NextRequest) {
   const requestId = getOrCreateRequestId(req);
   const headers = new Headers(req.headers);
@@ -106,6 +136,10 @@ export async function middleware(req: NextRequest) {
       }),
       requestId,
     );
+  }
+
+  if (process.env.NODE_ENV === 'production' && !hasAuthSecretConfigured()) {
+    return authSecretMisconfiguredResponse(req, requestId);
   }
 
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
