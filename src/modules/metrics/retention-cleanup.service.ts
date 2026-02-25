@@ -16,9 +16,17 @@ export interface CleanupRetentionResult {
 }
 
 const BATCH_SIZE = 5000;
+const BATCH_DELAY_MS = parseInt(process.env.RETENTION_CLEANUP_BATCH_DELAY_MS ?? '100', 10);
 
 function cutoffDate(days: number, now: Date): Date {
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+}
+
+function sleepBetweenBatches(deleted: number): Promise<void> {
+  if (deleted > 0 && BATCH_DELAY_MS > 0) {
+    return new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+  }
+  return Promise.resolve();
 }
 
 function extractAffectedRows(result: unknown): number {
@@ -73,6 +81,8 @@ async function cleanupTable(table: string, retentionDays: number, requestId?: st
     if (deleted < BATCH_SIZE) {
       break;
     }
+    // Add configurable delay between batches to reduce database load
+    await sleepBetweenBatches(deleted);
   }
 
   const result = {
@@ -87,6 +97,7 @@ async function cleanupTable(table: string, retentionDays: number, requestId?: st
     table,
     deletedCount,
     durationMs: result.durationMs,
+    batchDelayMs: BATCH_DELAY_MS,
   });
 
   return result;
