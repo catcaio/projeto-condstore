@@ -50,6 +50,7 @@ vi.mock('../../../infra/log/logger', () => ({
 describe('rollup-daily.service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.METRICS_ROLLUP_CONCURRENCY;
     mockExecute.mockReset();
     vi.mocked(getDb).mockResolvedValue({ execute: mockExecute } as never);
     const tenant = {
@@ -98,6 +99,8 @@ describe('rollup-daily.service', () => {
     expect(result.day).toBe('2026-02-20');
     expect(result.rowsWritten).toBe(2);
     expect(result.skippedTenants).toBe(0);
+    expect(result.failedTenants).toBe(0);
+    expect(result.errors).toEqual([]);
     expect(result.lockBusy).toBe(false);
     expect(metricsDailyRepository.upsertDailyRows).toHaveBeenCalledWith(
       expect.arrayContaining([
@@ -153,18 +156,174 @@ describe('rollup-daily.service', () => {
     })).rejects.toThrow('range_too_large');
   });
 
-  it('writes error status when a tenant rollup query fails', async () => {
+  it('throws for single-tenant rollup when tenant processing fails', async () => {
     mockExecute.mockRejectedValueOnce(Object.assign(new Error('boom'), { code: 'ER_TEST_FAIL' }));
 
     await expect(runDailyMetricsRollup({
       day: '2026-02-20',
       requestId: 'req-rollup-error',
+      tenantId: 'tenant-1',
     })).rejects.toThrow('boom');
 
     expect(metricsRollupStatusRepository.upsertError).toHaveBeenCalledWith(expect.objectContaining({
       tenantId: 'tenant-1',
       errorCode: 'ER_TEST_FAIL',
     }));
+  });
+
+  it('continues processing tenant C when tenant B fails and reports tenant error summary', async () => {
+    process.env.METRICS_ROLLUP_CONCURRENCY = '1';
+    vi.mocked(tenantRepository.getAllTenants).mockResolvedValue([
+      {
+        id: 'tenant-a',
+        name: 'Tenant A',
+        twilioNumber: 'whatsapp:+5511000000001',
+        timezone: 'America/Sao_Paulo',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        plan: null,
+        planStatus: null,
+        planCurrentPeriodEnd: null,
+        createdAt: new Date('2026-02-01T00:00:00Z'),
+      },
+      {
+        id: 'tenant-b',
+        name: 'Tenant B',
+        twilioNumber: 'whatsapp:+5511000000002',
+        timezone: 'America/Sao_Paulo',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        plan: null,
+        planStatus: null,
+        planCurrentPeriodEnd: null,
+        createdAt: new Date('2026-02-01T00:00:00Z'),
+      },
+      {
+        id: 'tenant-c',
+        name: 'Tenant C',
+        twilioNumber: 'whatsapp:+5511000000003',
+        timezone: 'America/Sao_Paulo',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        plan: null,
+        planStatus: null,
+        planCurrentPeriodEnd: null,
+        createdAt: new Date('2026-02-01T00:00:00Z'),
+      },
+    ] as never);
+    mockExecute.mockResolvedValue([[], []]);
+
+    let upsertCallCount = 0;
+    vi.mocked(metricsDailyRepository.upsertDailyRows).mockImplementation(async () => {
+      upsertCallCount += 1;
+      if (upsertCallCount === 2) {
+        throw Object.assign(new Error('tenant-b failed'), { code: 'ER_TENANT_B' });
+      }
+    });
+
+    const result = await runDailyMetricsRollup({
+      day: '2026-02-20',
+      requestId: 'req-rollup-continue-on-error',
+    });
+
+    expect(result.rowsWritten).toBe(0);
+    expect(result.skippedTenants).toBe(0);
+    expect(result.failedTenants).toBe(1);
+    expect(result.errors).toEqual([
+      expect.objectContaining({
+        tenantId: 'tenant-b',
+        day: '2026-02-20',
+        code: 'ER_TENANT_B',
+        message: 'tenant-b failed',
+      }),
+    ]);
+    expect(vi.mocked(metricsDailyRepository.upsertDailyRows)).toHaveBeenCalledTimes(3);
+    expect(vi.mocked(metricsRollupStatusRepository.upsertError)).toHaveBeenCalledWith(expect.objectContaining({
+      tenantId: 'tenant-b',
+      errorCode: 'ER_TENANT_B',
+    }));
+    expect(vi.mocked(metricsRollupStatusRepository.upsertSuccess)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(metricsRollupStatusRepository.upsertSuccess)).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      tenantId: 'tenant-a',
+    }));
+    expect(vi.mocked(metricsRollupStatusRepository.upsertSuccess)).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      tenantId: 'tenant-c',
+    }));
+  });
+
+  it('respects METRICS_ROLLUP_CONCURRENCY limit when processing tenants', async () => {
+    process.env.METRICS_ROLLUP_CONCURRENCY = '2';
+    vi.mocked(tenantRepository.getAllTenants).mockResolvedValue([
+      {
+        id: 'tenant-1',
+        name: 'Tenant 1',
+        twilioNumber: 'whatsapp:+5511000000001',
+        timezone: 'America/Sao_Paulo',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        plan: null,
+        planStatus: null,
+        planCurrentPeriodEnd: null,
+        createdAt: new Date('2026-02-01T00:00:00Z'),
+      },
+      {
+        id: 'tenant-2',
+        name: 'Tenant 2',
+        twilioNumber: 'whatsapp:+5511000000002',
+        timezone: 'America/Sao_Paulo',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        plan: null,
+        planStatus: null,
+        planCurrentPeriodEnd: null,
+        createdAt: new Date('2026-02-01T00:00:00Z'),
+      },
+      {
+        id: 'tenant-3',
+        name: 'Tenant 3',
+        twilioNumber: 'whatsapp:+5511000000003',
+        timezone: 'America/Sao_Paulo',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        plan: null,
+        planStatus: null,
+        planCurrentPeriodEnd: null,
+        createdAt: new Date('2026-02-01T00:00:00Z'),
+      },
+      {
+        id: 'tenant-4',
+        name: 'Tenant 4',
+        twilioNumber: 'whatsapp:+5511000000004',
+        timezone: 'America/Sao_Paulo',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        plan: null,
+        planStatus: null,
+        planCurrentPeriodEnd: null,
+        createdAt: new Date('2026-02-01T00:00:00Z'),
+      },
+    ] as never);
+    mockExecute.mockResolvedValue([[], []]);
+
+    let active = 0;
+    let maxActive = 0;
+    vi.mocked(metricsDailyRepository.upsertDailyRows).mockImplementation(async () => {
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      active -= 1;
+    });
+
+    const result = await runDailyMetricsRollup({
+      day: '2026-02-20',
+      requestId: 'req-rollup-concurrency',
+    });
+
+    expect(result.failedTenants).toBe(0);
+    expect(result.errors).toEqual([]);
+    expect(vi.mocked(metricsDailyRepository.upsertDailyRows)).toHaveBeenCalledTimes(4);
+    expect(maxActive).toBeLessThanOrEqual(2);
+    expect(maxActive).toBe(2);
   });
 
   it('skips tenant when lock is busy and marks lock-busy status', async () => {
@@ -178,6 +337,8 @@ describe('rollup-daily.service', () => {
 
     expect(result.rowsWritten).toBe(0);
     expect(result.skippedTenants).toBe(1);
+    expect(result.failedTenants).toBe(0);
+    expect(result.errors).toEqual([]);
     expect(result.lockBusy).toBe(true);
     expect(metricsDailyRepository.upsertDailyRows).not.toHaveBeenCalled();
     expect(metricsRollupStatusRepository.markLockBusy).toHaveBeenCalledWith(expect.objectContaining({

@@ -69,6 +69,8 @@ describe('POST /api/cockpit/ops/run-rollup', () => {
       day: '2026-02-24',
       rowsWritten: 7,
       skippedTenants: 0,
+      failedTenants: 0,
+      errors: [],
       lockBusy: false,
       durationMs: 55,
     });
@@ -158,6 +160,8 @@ describe('POST /api/cockpit/ops/run-rollup', () => {
       day: '2026-02-24',
       rowsWritten: 0,
       skippedTenants: 1,
+      failedTenants: 0,
+      errors: [],
       lockBusy: true,
       durationMs: 5,
     });
