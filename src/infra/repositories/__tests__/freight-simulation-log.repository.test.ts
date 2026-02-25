@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FreightSimulationLogRepository } from '../freight-simulation-log.repository';
+import { redisClient } from '../../redis.client';
 
 const mockDb = vi.hoisted(() => ({
   insert: vi.fn().mockReturnThis(),
@@ -16,12 +17,20 @@ vi.mock('../../logger', () => ({
   },
 }));
 
+vi.mock('../../redis.client', () => ({
+  redisClient: {
+    isAvailable: vi.fn().mockReturnValue(false),
+    del: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 describe('FreightSimulationLogRepository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('persists hashed CEP and normalized values', async () => {
+    vi.mocked(redisClient.isAvailable).mockReturnValue(true);
     const repository = new FreightSimulationLogRepository();
 
     await repository.saveMetric({
@@ -42,5 +51,6 @@ describe('FreightSimulationLogRepository', () => {
       prazo: 4,
       cepHash: expect.stringMatching(/^[a-f0-9]{64}$/),
     }));
+    expect(redisClient.del).toHaveBeenCalledWith('cockpit:metrics:freight:tenant-1');
   });
 });

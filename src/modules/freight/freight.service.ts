@@ -73,6 +73,8 @@ class FreightService {
           totalWeight,
           bestPrice: bestOption.price,
           bestDeliveryTime: bestOption.deliveryTime,
+          attribution: request.attribution ?? null,
+          requestId: request.requestId,
         });
       }
 
@@ -289,11 +291,16 @@ class FreightService {
   ): Promise<void> {
     const tenantKey = request.tenantId || 'global';
     const key = `v1:freight:${tenantKey}:${request.destinationCep.replace(/\D/g, '')}:${totalWeight}:${request.quantity}`;
+    const cacheSafeRequest: FreightRequest = {
+      ...request,
+      attribution: null,
+      requestId: undefined,
+    };
     const result: FreightResult = {
       success: true,
       options: this.sortAndLimitOptions(options),
       totalWeight,
-      request,
+      request: cacheSafeRequest,
       calculatedAt: new Date(),
     };
 

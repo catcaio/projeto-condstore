@@ -57,4 +57,31 @@ describe('analyticsService.logEvent', () => {
     expect(valuesMock.mock.calls[0][0].tenantId).toBe('tenant-1');
     expect(valuesMock.mock.calls[0][0].props).toBe(JSON.stringify({ source: 'hero_cta' }));
   });
+
+  it('persists attribution fields when provided', async () => {
+    const { analyticsService } = await import('../analytics.service');
+
+    await analyticsService.logEvent({
+      tenantId: 'tenant-1',
+      anonId: 'anon-1',
+      event: 'landing_view',
+      path: '/',
+      attribution: {
+        utmSource: 'google',
+        utmMedium: 'cpc',
+        utmCampaign: 'summer',
+        refToken: 'ref-123',
+        clickId: 'gclid-1',
+      },
+    });
+
+    expect(valuesMock).toHaveBeenCalledTimes(1);
+    expect(valuesMock.mock.calls[0][0]).toMatchObject({
+      utmSource: 'google',
+      utmMedium: 'cpc',
+      utmCampaign: 'summer',
+      refToken: 'ref-123',
+      clickId: 'gclid-1',
+    });
+  });
 });

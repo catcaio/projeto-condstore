@@ -27,6 +27,7 @@ async function seed() {
             id: 'tenant-twilio-sandbox',
             name: 'Twilio Sandbox',
             twilioNumber: 'whatsapp:+14155238886',
+            timezone: 'America/Sao_Paulo',
         });
 
         console.log('✅ Twilio Sandbox tenant created successfully');

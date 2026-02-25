@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MessageRepository } from '../message.repository';
+import { redisClient } from '../../redis.client';
 
 // ── DB mock (Drizzle chained query) ───────────────────────────────────────────
 const mockDb = vi.hoisted(() => ({
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockResolvedValue(undefined),
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
@@ -19,6 +22,13 @@ vi.mock('../../logger', () => ({
         error: vi.fn(),
         info: vi.fn(),
         debug: vi.fn(),
+    },
+}));
+
+vi.mock('../../redis.client', () => ({
+    redisClient: {
+        isAvailable: vi.fn().mockReturnValue(false),
+        del: vi.fn().mockResolvedValue(undefined),
     },
 }));
 
@@ -42,6 +52,7 @@ describe('MessageRepository.getLastMessages', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         repo = new MessageRepository();
+        mockDb.values.mockResolvedValue(undefined);
         mockDb.limit.mockResolvedValue([]);
     });
 
@@ -140,5 +151,22 @@ describe('MessageRepository.getLastMessages', () => {
         const result = await repo.getLastMessages('tenant-1', '+5511999', 5);
 
         expect(result).toEqual([]);
+    });
+
+    it('invalidates cockpit metrics cache after successful inbound insert', async () => {
+        vi.mocked(redisClient.isAvailable).mockReturnValue(true);
+
+        await repo.saveInboundMessage({
+            messageSid: 'SM123',
+            tenantId: 'tenant-1',
+            fromPhone: '+5511999999999',
+            toPhone: '+5511000000000',
+            body: 'oi',
+            rawPayload: '{}',
+            direction: 'inbound',
+            intent: 'unknown',
+        });
+
+        expect(redisClient.del).toHaveBeenCalledWith('cockpit:metrics:tenant-1');
     });
 });
