@@ -26,10 +26,29 @@ vi.mock('../../../infra/repositories/tenant-ai-provider.repository', () => ({
   },
 }));
 
+vi.mock('../../../infra/repositories/frank-events.repository', () => ({
+  frankEventsRepository: {
+    insertEvent: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 vi.mock('../../../infra/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
 
 vi.mock('../../../infra/rate-limit/redis-rate-limiter', () => ({
   checkRedisRateLimit: (...args: any[]) => mockCheckRateLimit(...args),
+}));
+
+vi.mock('../retrieval/retrieve-context', () => ({
+  retrieveContextMulti: vi.fn().mockResolvedValue({
+    docs: [],
+    chat: [],
+    chunks: [],
+    cacheHit: false,
+  }),
+}));
+
+vi.mock('../model-registry', () => ({
+  resolveFrankModelVersion: vi.fn().mockReturnValue([{ id: 'test-model-version' }, 'default']),
 }));
 
 describe('llm-gateway', () => {
@@ -63,8 +82,9 @@ describe('llm-gateway', () => {
       baseUrl: 'http://tenant-ai:9999',
       model: 'tenant-model',
       embedModel: 'tenant-embed',
-      apiKeyEncrypted: 'secret',
+      resolvedApiKey: 'secret',
       timeoutMs: 25000,
+      isEnabled: 1,
     });
 
     const { getAIProvider } = await import('../llm-gateway');
