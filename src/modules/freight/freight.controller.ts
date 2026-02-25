@@ -5,26 +5,38 @@ import { sessionManager } from '../../core/conversation/session-manager';
 import { freightService } from './freight.service';
 import { funnelRepository, FunnelStage } from '../funnel/funnel.repository';
 import { appConfig } from '../../config/app.config';
+import type { AttributionSnapshot } from '../../infra/attribution/attribution.types';
 
 export class FreightController {
-    async handleIncoming(tenantId: string, phoneNumber: string, message: string, messageSid?: string): Promise<string> {
+    async handleIncoming(
+        tenantId: string,
+        phoneNumber: string,
+        message: string,
+        messageSid?: string,
+        attribution?: AttributionSnapshot | null,
+        requestId?: string,
+    ): Promise<string> {
         try {
             let session = await sessionManager.getSession(tenantId, phoneNumber);
 
             if (!session) {
-                return await this.startFreightQuery(tenantId, phoneNumber, messageSid);
+                return await this.startFreightQuery(tenantId, phoneNumber, messageSid, attribution ?? null, requestId);
+            }
+
+            if (attribution) {
+                await sessionManager.updateSession(tenantId, phoneNumber, { attribution });
             }
 
             switch (session.currentState) {
                 case ConversationState.AWAITING_CEP:
-                    return await this.handleCEP(tenantId, phoneNumber, message, messageSid);
+                    return await this.handleCEP(tenantId, phoneNumber, message, messageSid, requestId);
 
                 case ConversationState.AWAITING_QUANTITY:
-                    return await this.handleQuantity(tenantId, phoneNumber, message, messageSid);
+                    return await this.handleQuantity(tenantId, phoneNumber, message, messageSid, requestId);
 
                 default:
                     await sessionManager.deleteSession(tenantId, phoneNumber);
-                    return await this.startFreightQuery(tenantId, phoneNumber, messageSid);
+                    return await this.startFreightQuery(tenantId, phoneNumber, messageSid, attribution ?? null, requestId);
             }
         } catch (error) {
             logger.error('Error handling freight incoming message', error as Error, { tenantId, phoneNumber });
@@ -32,9 +44,18 @@ export class FreightController {
         }
     }
 
-    private async startFreightQuery(tenantId: string, phoneNumber: string, messageSid?: string): Promise<string> {
+    private async startFreightQuery(
+        tenantId: string,
+        phoneNumber: string,
+        messageSid?: string,
+        attribution?: AttributionSnapshot | null,
+        requestId?: string,
+    ): Promise<string> {
         // Generate new session (initially IDLE, then transition to AWAITING_CEP)
         let session = await sessionManager.createSession(tenantId, phoneNumber);
+        if (attribution) {
+            session.attribution = attribution;
+        }
 
         session = Object.assign(session, await stateMachine.transition(session, ConversationEvent.START_FREIGHT_QUERY));
         await sessionManager.updateSession(tenantId, phoneNumber, session as any);
@@ -44,6 +65,7 @@ export class FreightController {
             phoneNumber,
             sessionId: session.sessionId,
             stage: FunnelStage.FLOW_STARTED,
+            attribution: session.attribution ?? null,
         });
 
         void funnelRepository.saveEvent({
@@ -51,6 +73,7 @@ export class FreightController {
             phoneNumber,
             sessionId: session.sessionId,
             stage: FunnelStage.INTENT_DETECTED,
+            attribution: session.attribution ?? null,
         });
 
         void funnelRepository.saveEvent({
@@ -58,12 +81,13 @@ export class FreightController {
             phoneNumber,
             sessionId: session.sessionId,
             stage: FunnelStage.ASKED_CEP,
+            attribution: session.attribution ?? null,
         });
 
         return 'Olá! Vou ajudar você a calcular o frete. Qual é o CEP de destino? (Apenas números)';
     }
 
-    private async handleCEP(tenantId: string, phoneNumber: string, message: string, messageSid?: string): Promise<string> {
+    private async handleCEP(tenantId: string, phoneNumber: string, message: string, messageSid?: string, requestId?: string): Promise<string> {
         const session = await sessionManager.getSession(tenantId, phoneNumber);
         if (!session) throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session not found');
 
@@ -83,12 +107,13 @@ export class FreightController {
             phoneNumber,
             sessionId: session.sessionId,
             stage: FunnelStage.CEP_PROVIDED,
+            attribution: session.attribution ?? null,
         });
 
         return 'Perfeito! E qual quantidade de produtos você deseja cotar? (apenas números, exemplo: "1" ou "5")';
     }
 
-    private async handleQuantity(tenantId: string, phoneNumber: string, message: string, messageSid?: string): Promise<string> {
+    private async handleQuantity(tenantId: string, phoneNumber: string, message: string, messageSid?: string, requestId?: string): Promise<string> {
         const session = await sessionManager.getSession(tenantId, phoneNumber);
         if (!session || !session.cep) throw new BusinessError(ErrorCode.SESSION_NOT_FOUND, 'Session/CEP not found');
 
@@ -107,6 +132,7 @@ export class FreightController {
             phoneNumber,
             sessionId: session.sessionId,
             stage: FunnelStage.QUANTITY_PROVIDED,
+            attribution: session.attribution ?? null,
         });
 
         // Move to CALCULATING
@@ -121,7 +147,9 @@ export class FreightController {
             const result = await freightService.calculateFreight({
                 destinationCep: session.cep,
                 quantity,
-                tenantId // Ensure simulation logging happens
+                tenantId, // Ensure simulation logging happens
+                attribution: session.attribution ?? null,
+                requestId,
             });
 
             // Format result message
@@ -143,6 +171,7 @@ export class FreightController {
                 phoneNumber,
                 sessionId: session.sessionId,
                 stage: FunnelStage.FREIGHT_QUOTED,
+                attribution: session.attribution ?? null,
             });
 
             return reply;
@@ -158,6 +187,7 @@ export class FreightController {
                 phoneNumber,
                 sessionId: session.sessionId,
                 stage: FunnelStage.FLOW_ABORTED,
+                attribution: session.attribution ?? null,
             });
 
             return 'Houve um problema ao calcular o frete para este CEP e quantidade. Por favor, verifique os dados e tente novamente mais tarde.';

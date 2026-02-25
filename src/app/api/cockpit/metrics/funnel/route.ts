@@ -6,7 +6,10 @@ import { freightFunnelEvents } from '@/drizzle/schema';
 import { sql, and, gte, eq } from 'drizzle-orm';
 import { redisClient } from "@/infra/redis.client";
 import { logger } from '@/infra/logger';
-import { makeRequestId, respondInfraError } from '@/infra/http/infra-error';
+import { buildAttributionBreakdown, isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '@/modules/metrics/attribution-breakdown';
+import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
+import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '@/infra/http/error-response';
+import { structuredLogger } from '@/infra/log/logger';
 
 export enum FunnelStage {
     FLOW_STARTED = 'FLOW_STARTED',
@@ -21,28 +24,94 @@ export enum FunnelStage {
 // Cache TTL: 60 seconds
 const CACHE_TTL_SECONDS = 60;
 
+interface FunnelStageCountRow {
+    stage: string | null;
+    count: number | string | null;
+}
+
+interface FunnelMetricsResponse {
+    window_7d: {
+        counts: {
+            flow_started: number;
+            intent_detected: number;
+            asked_cep: number;
+            cep_provided: number;
+            quantity_provided: number;
+            freight_quoted: number;
+            flow_aborted: number;
+        };
+        rates: {
+            intent_per_flow: number;
+            cep_per_asked: number;
+            cep_provide_per_ask: number;
+            qty_per_cep: number;
+            quoted_per_qty: number;
+        };
+    };
+    timeseries_14d: Array<unknown>;
+    attribution_breakdown_7d?: {
+        groupBy: 'utm_source' | 'utm_campaign';
+        buckets: Array<{ key: string; count: number }>;
+    };
+}
+
 export async function GET(request: NextRequest) {
-    const requestId = makeRequestId();
+    const startedAt = Date.now();
+    const requestId = makeRequestId(request);
+    const route = '/api/cockpit/metrics/funnel';
+    let tenantId: string | undefined;
+
+    structuredLogger.info('cockpit_metrics_funnel_start', {
+        requestId,
+        route,
+        eventType: 'route_start',
+    });
+
+    const finalize = (response: NextResponse, code?: ErrorCode) => {
+        attachRequestIdHeader(response, requestId);
+        structuredLogger.info('cockpit_metrics_funnel_end', {
+            requestId,
+            tenantId,
+            route,
+            eventType: 'route_end',
+            durationMs: Date.now() - startedAt,
+            status: response.status,
+            outcome: response.status >= 400 ? 'error' : 'ok',
+            errorCode: code ?? (response.status >= 400 ? inferErrorCodeFromStatus(response.status) : undefined),
+        });
+        return response;
+    };
+
     try {
+        const requestedGroupBy = request.nextUrl?.searchParams.get('groupBy');
+        const parsedGroupBy = parseAttributionGroupBy(requestedGroupBy);
+        if (requestedGroupBy && !isAttributionGroupBy(parsedGroupBy) && requestedGroupBy !== 'none') {
+            return finalize(
+                errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid groupBy. Use utm_source, utm_campaign or none.'),
+                ErrorCode.VALIDATION_ERROR,
+            );
+        }
+        const groupBy = isAttributionGroupBy(parsedGroupBy) ? parsedGroupBy : null;
+
         const user = await getSessionUser(request);
         if (!user?.tenantId) {
-            return NextResponse.json({ error: 'UNAUTHORIZED', requestId }, { status: 401, headers: { 'X-Request-Id': requestId } });
+            return finalize(errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'UNAUTHORIZED'), ErrorCode.AUTH_REQUIRED);
         }
-        const tenantId = user.tenantId;
+        tenantId = user.tenantId;
 
         // 2. Try Redis Cache (with availability guard)
         const cacheKey = `cockpit:metrics:funnel:${tenantId}`;
         try {
-            if (redisClient.isAvailable()) {
-                const cachedData = await redisClient.get<any>(cacheKey);
+            if (!groupBy && redisClient.isAvailable()) {
+                const cachedData = await redisClient.get<FunnelMetricsResponse>(cacheKey);
                 if (cachedData) {
-                    return NextResponse.json(cachedData, {
+                    return finalize(NextResponse.json(cachedData, {
                         headers: {
                             'Cache-Control': `private, max-age=${CACHE_TTL_SECONDS}`,
                             'X-Cache': 'HIT',
                             'X-Request-Id': requestId,
                         },
-                    });
+                    }));
                 }
             }
         } catch (cacheErr) {
@@ -55,7 +124,7 @@ export async function GET(request: NextRequest) {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
         // Aggregate counts by stage for the last 7 days
-        const result = await db
+        const result: FunnelStageCountRow[] = await db
             .select({
                 stage: freightFunnelEvents.stage,
                 count: sql<number>`count(*)`,
@@ -70,7 +139,7 @@ export async function GET(request: NextRequest) {
             .groupBy(freightFunnelEvents.stage);
 
         // Map results to counts object
-        const counts = {
+        const counts: Record<FunnelStage, number> = {
             [FunnelStage.FLOW_STARTED]: 0,
             [FunnelStage.INTENT_DETECTED]: 0,
             [FunnelStage.ASKED_CEP]: 0,
@@ -80,11 +149,12 @@ export async function GET(request: NextRequest) {
             [FunnelStage.FLOW_ABORTED]: 0,
         };
 
-        result.forEach((row: any) => {
-            const stage = row.stage as FunnelStage;
-            if (stage in counts) {
-                counts[stage as keyof typeof counts] = Number(row.count);
+        result.forEach((row) => {
+            if (!row.stage || !(row.stage in counts)) {
+                return;
             }
+
+            counts[row.stage as FunnelStage] = Number(row.count ?? 0);
         });
 
         // 4. Calculate Rates (full granular pipeline)
@@ -108,8 +178,38 @@ export async function GET(request: NextRequest) {
             ? counts[FunnelStage.FREIGHT_QUOTED] / counts[FunnelStage.QUANTITY_PROVIDED]
             : 0;
 
+        let attributionBreakdown: FunnelMetricsResponse['attribution_breakdown_7d'] | undefined;
+        if (groupBy) {
+            const attributionResult = await db.execute(
+                groupBy === 'utm_campaign'
+                    ? sql`
+                        SELECT COALESCE(NULLIF(utm_campaign, ''), '(none)') AS bucket, COUNT(*) AS count
+                        FROM freight_funnel_events
+                        WHERE tenant_id = ${tenantId}
+                          AND created_at >= ${sevenDaysAgo}
+                          AND stage = ${FunnelStage.FLOW_STARTED}
+                        GROUP BY COALESCE(NULLIF(utm_campaign, ''), '(none)')
+                        ORDER BY count DESC, bucket ASC
+                    `
+                    : sql`
+                        SELECT COALESCE(NULLIF(utm_source, ''), '(none)') AS bucket, COUNT(*) AS count
+                        FROM freight_funnel_events
+                        WHERE tenant_id = ${tenantId}
+                          AND created_at >= ${sevenDaysAgo}
+                          AND stage = ${FunnelStage.FLOW_STARTED}
+                        GROUP BY COALESCE(NULLIF(utm_source, ''), '(none)')
+                        ORDER BY count DESC, bucket ASC
+                    `,
+            );
+
+            attributionBreakdown = buildAttributionBreakdown(
+                groupBy,
+                unwrapRows<{ bucket: string | null; count: number | string | null }>(attributionResult),
+            );
+        }
+
         // 5. Build Response Payload
-        const responseData = {
+        const responseData: FunnelMetricsResponse = {
             window_7d: {
                 counts: {
                     flow_started: counts[FunnelStage.FLOW_STARTED],
@@ -130,23 +230,35 @@ export async function GET(request: NextRequest) {
             },
             timeseries_14d: [],
         };
+        if (attributionBreakdown) {
+            responseData.attribution_breakdown_7d = attributionBreakdown;
+        }
 
         // 6. Cache Result (fire-and-forget with availability guard)
         try {
-            if (redisClient.isAvailable()) {
+            if (!groupBy && redisClient.isAvailable()) {
                 redisClient.set(cacheKey, responseData, CACHE_TTL_SECONDS).catch(() => { });
             }
         } catch (_) { }
 
-        return NextResponse.json(responseData, {
+        return finalize(NextResponse.json(responseData, {
             headers: {
                 'Cache-Control': `private, max-age=${CACHE_TTL_SECONDS}`,
                 'X-Cache': 'MISS',
                 'X-Request-Id': requestId,
             },
-        });
+        }));
 
     } catch (error) {
-        return respondInfraError(error, requestId);
+        structuredLogger.error('cockpit_metrics_funnel_failed', {
+            requestId,
+            tenantId,
+            route,
+            eventType: 'route_error',
+            durationMs: Date.now() - startedAt,
+            errorCode: ErrorCode.DB_ERROR,
+            error,
+        });
+        return finalize(errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Failed to load funnel metrics'), ErrorCode.DB_ERROR);
     }
 }

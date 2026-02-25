@@ -1,28 +1,118 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyticsService } from '../../../modules/analytics/analytics.service';
 import { z } from 'zod';
-import { getSessionUser } from '@/infra/auth/session';
-import { withRequestTrace } from '@/infra/http/request-trace';
+import { getSessionUser } from '../../../infra/auth/session';
+import { getTracedRequestId, makeRequestId, withRequestTrace } from '../../../infra/http/request-trace';
+import { attributionClickRepository } from '../../../infra/repositories/attribution-click.repository';
+import { normalizeAttributionSnapshot } from '../../../infra/attribution/attribution.types';
+import type { AttributionSnapshot } from '../../../infra/attribution/attribution.types';
+import { sha256Hex } from '../../../infra/attribution/hash';
+import { ErrorCode, errorResponse } from '../../../infra/http/error-response';
+import { structuredLogger } from '../../../infra/log/logger';
+import { applyRateLimitHeaders, hashRateLimitKeyForLog, rateLimiter } from '../../../infra/security/rate-limiter';
+
+const BODY_MAX_BYTES = 8 * 1024;
+const PROPS_MAX_CHARS = 4096;
+const UTM_MAX_LENGTH = 128;
+
+function isAllowedEventType(value: string): boolean {
+    const normalized = value.trim();
+    if (!normalized) return false;
+
+    return (
+        normalized === 'RATE_LIMITED' ||
+        /^(landing|pricing|checkout|cta|whatsapp|quote|funnel)_[a-z0-9_]+$/i.test(normalized)
+    );
+}
 
 const eventSchema = z.object({
-    event: z.string().min(1).max(64),
+    event: z.string().min(1).max(64).refine(isAllowedEventType, 'Unsupported event type'),
     path: z.string().min(1).max(200),
     props: z.record(z.string(), z.any()).optional(),
-});
+}).strict();
+
+function getClientIp(request: NextRequest): string | null {
+    const forwarded = request.headers.get('x-forwarded-for');
+    if (forwarded) {
+        return forwarded.split(',')[0]?.trim() || null;
+    }
+    return request.headers.get('x-real-ip');
+}
+
+function capNullable(value: string | null | undefined, maxLength: number): string | null {
+    if (!value) return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    return trimmed.slice(0, maxLength);
+}
+
+function sanitizeAttributionUtmFields(attribution: AttributionSnapshot | null): AttributionSnapshot | null {
+    if (!attribution) return null;
+    return {
+        ...attribution,
+        utmSource: capNullable(attribution.utmSource ?? null, UTM_MAX_LENGTH),
+        utmMedium: capNullable(attribution.utmMedium ?? null, UTM_MAX_LENGTH),
+        utmCampaign: capNullable(attribution.utmCampaign ?? null, UTM_MAX_LENGTH),
+        utmTerm: capNullable(attribution.utmTerm ?? null, UTM_MAX_LENGTH),
+        utmContent: capNullable(attribution.utmContent ?? null, UTM_MAX_LENGTH),
+    };
+}
 
 async function handler(request: NextRequest): Promise<NextResponse> {
+    const requestId = getTracedRequestId(request) ?? makeRequestId(request);
+    const route = '/api/events';
+    const startedAt = Date.now();
+    let tenantId: string | undefined;
+
     try {
-        const session = await getSessionUser(request);
-        const tenantId = session?.tenantId?.trim();
-        if (!tenantId) {
-            return NextResponse.json({ ok: false, error: 'UNAUTHORIZED' }, { status: 401 });
+        const attrCookie = request.cookies.get('condstore_attr')?.value?.trim() || null;
+        const ipHash = sha256Hex(getClientIp(request)) ?? 'ip_unknown';
+        const rateLimitKey = attrCookie
+            ? `attr:${sha256Hex(attrCookie) ?? 'attr_unknown'}`
+            : `ip:${ipHash}`;
+        const rateDecision = await rateLimiter.limit('events', rateLimitKey, {
+            windowSec: 60,
+            max: 60,
+        });
+
+        if (!rateDecision.allowed) {
+            structuredLogger.warn('rate_limited', {
+                requestId,
+                route,
+                tenantId,
+                eventType: 'RATE_LIMITED',
+                scope: 'events',
+                keyHash: hashRateLimitKeyForLog(rateLimitKey),
+                remaining: rateDecision.remaining,
+            });
+            return applyRateLimitHeaders(
+                errorResponse(ErrorCode.RATE_LIMITED, 429, requestId, 'Rate limit exceeded'),
+                rateDecision,
+            );
         }
 
-        const bodyObj = await request.json();
+        const rawBody = await request.text();
+        if (new TextEncoder().encode(rawBody).length > BODY_MAX_BYTES) {
+            return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Payload too large');
+        }
+
+        let bodyObj: unknown;
+        try {
+            bodyObj = JSON.parse(rawBody);
+        } catch {
+            return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid JSON payload');
+        }
+
+        const session = await getSessionUser(request);
+        tenantId = session?.tenantId?.trim();
+        if (!tenantId) {
+            return errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'UNAUTHORIZED');
+        }
+
         const parseResult = eventSchema.safeParse(bodyObj);
 
         if (!parseResult.success) {
-            return NextResponse.json({ ok: false, error: 'Invalid payload schema' }, { status: 400 });
+            return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid payload schema');
         }
 
         const { event, path, props } = parseResult.data;
@@ -33,8 +123,9 @@ async function handler(request: NextRequest): Promise<NextResponse> {
                 ? JSON.stringify(props)
                 : null;
 
-        if (safeProps && safeProps.length > 4096) {
-            return NextResponse.json({ ok: false, error: 'Payload limits exceeded (Max 4096 chars)' }, { status: 400 });
+        if (safeProps && safeProps.length > PROPS_MAX_CHARS) {
+            // Keep props limit stricter than body limit to cap DB payload size.
+            return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, `Payload limits exceeded (Max ${PROPS_MAX_CHARS} chars)`);
         }
 
         // 🔒 Anonymous Identity Management (Strict crypto.randomUUID implementation constraint)
@@ -47,6 +138,24 @@ async function handler(request: NextRequest): Promise<NextResponse> {
         }
 
         const userAgent = request.headers.get('user-agent') || undefined;
+        const attrToken = attrCookie;
+        let attribution: AttributionSnapshot | null = null;
+
+        if (attrToken) {
+            const click = await attributionClickRepository.getByToken(attrToken);
+            if (click && (!click.tenantId || click.tenantId === tenantId)) {
+                attribution = normalizeAttributionSnapshot({
+                    utmSource: click.utmSource,
+                    utmMedium: click.utmMedium,
+                    utmCampaign: click.utmCampaign,
+                    utmTerm: click.utmTerm,
+                    utmContent: click.utmContent,
+                    refToken: click.token,
+                    clickId: click.clickId,
+                });
+                attribution = sanitizeAttributionUtmFields(attribution);
+            }
+        }
 
         // Async fire-and-forget logic (Resilient - won't throw out to surface)
         await analyticsService.logEvent({
@@ -55,7 +164,8 @@ async function handler(request: NextRequest): Promise<NextResponse> {
             event,
             path,
             props: props ?? null,
-            userAgent
+            userAgent,
+            attribution,
         });
 
         const response = NextResponse.json({ ok: true });
@@ -73,9 +183,16 @@ async function handler(request: NextRequest): Promise<NextResponse> {
         return response;
 
     } catch (err) {
-        // Prevent generic breaking. Endpoints receiving payloads blindly might be hit heavily.
-        console.error('[Events API] Unhandled ingest error:', err);
-        return NextResponse.json({ ok: false, error: 'Internal Ingest Error' }, { status: 500 });
+        structuredLogger.error('events_api_unhandled', {
+            requestId,
+            tenantId,
+            route,
+            eventType: 'route_error',
+            durationMs: Date.now() - startedAt,
+            errorCode: ErrorCode.UNKNOWN,
+            error: err,
+        });
+        return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Internal Ingest Error');
     }
 }
 

@@ -4,6 +4,7 @@ import { simulations, type NewSimulationRecord, type SimulationRecord } from '..
 import { logger } from '../logger';
 import { appConfig } from '../../config/app.config';
 import { ErrorCode, InfrastructureError } from '../errors';
+import { redisClient } from '../redis.client';
 
 export class SimulationRepository {
     /**
@@ -22,6 +23,11 @@ export class SimulationRepository {
 
         const db = await getDb();
         await db.insert(simulations).values(record);
+
+        if (redisClient.isAvailable()) {
+            await redisClient.del(`cockpit:metrics:${record.tenantId}`);
+        }
+
         logger.info('Simulation saved', { id: record.id, tenantId: record.tenantId });
     }
 
