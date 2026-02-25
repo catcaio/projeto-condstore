@@ -9,8 +9,9 @@
  */
 
 import { NextResponse, NextRequest } from 'next/server';
-import { logger } from '../logger';
+import { structuredLogger } from '../log/logger';
 import { getSessionUser } from '../auth/session';
+import { ErrorCode, errorResponse } from './error-response';
 
 const TRACE_REQUEST_ID = Symbol.for('condstore.requestId');
 
@@ -35,6 +36,11 @@ export function getTracedRequestId(request: NextRequest): string | undefined {
   const fromHeader = request.headers.get('x-request-id')?.trim() ||
                      request.headers.get('x-vercel-id')?.trim();
   return fromHeader || undefined;
+}
+
+export function attachRequestIdHeader(response: NextResponse, requestId: string): NextResponse {
+  response.headers.set('x-request-id', requestId);
+  return response;
 }
 
 /**
@@ -97,11 +103,12 @@ export function withRequestTrace(
     try {
       // Log start
       const context = await buildRequestContext(request, requestId);
-      logger.info('api_request_start', {
+      structuredLogger.info('api_request_start', {
         requestId: context.requestId,
+        route: context.path,
+        tenantId: context.tenantId,
         method: context.method,
-        path: context.path,
-        ...(context.tenantId && { tenantId: context.tenantId }),
+        eventType: 'api_request_start',
       });
 
       // Execute handler
@@ -109,43 +116,35 @@ export function withRequestTrace(
 
       // Add X-Request-Id header to response
       const latencyMs = Date.now() - startTime;
-      const newHeaders = new Headers(response.headers);
-      newHeaders.set('X-Request-Id', requestId);
+      attachRequestIdHeader(response, requestId);
 
       // Log end
-      logger.info('api_request_end', {
+      structuredLogger.info('api_request_end', {
         requestId,
+        route: context.path,
+        tenantId: context.tenantId,
+        durationMs: latencyMs,
         status: response.status,
-        latencyMs,
-        ...(context.tenantId && { tenantId: context.tenantId }),
+        outcome: response.status >= 400 ? 'error' : 'ok',
+        errorCode: response.status >= 400 ? `${response.status}` : undefined,
+        eventType: 'api_request_end',
       });
 
-      return new NextResponse(response.body, {
-        status: response.status,
-        headers: newHeaders,
-      });
+      return response;
     } catch (error) {
       const latencyMs = Date.now() - startTime;
 
       // Log error
-      logger.error('api_request_error', error instanceof Error ? error : new Error(String(error)), {
+      structuredLogger.error('api_request_error', {
         requestId,
-        latencyMs,
+        durationMs: latencyMs,
+        eventType: 'api_request_error',
+        errorCode: ErrorCode.UNKNOWN,
+        error,
       });
 
       // Return 500 with request ID
-      return NextResponse.json(
-        {
-          error: 'INTERNAL_SERVER_ERROR',
-          requestId,
-        },
-        {
-          status: 500,
-          headers: {
-            'X-Request-Id': requestId,
-          },
-        },
-      );
+      return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Internal server error');
     }
   };
 }
@@ -172,10 +171,11 @@ export function withWebhookTrace(
 
     try {
       // Log start
-      logger.info('webhook_request_start', {
+      structuredLogger.info('webhook_request_start', {
         requestId,
+        route: new URL(request.url).pathname,
         method: request.method,
-        path: new URL(request.url).pathname,
+        eventType: 'webhook_request_start',
       });
 
       // Execute handler
@@ -183,42 +183,34 @@ export function withWebhookTrace(
 
       // Add X-Request-Id header to response
       const latencyMs = Date.now() - startTime;
-      const newHeaders = new Headers(response.headers);
-      newHeaders.set('X-Request-Id', requestId);
+      attachRequestIdHeader(response, requestId);
 
       // Log end
-      logger.info('webhook_request_end', {
+      structuredLogger.info('webhook_request_end', {
         requestId,
+        route: new URL(request.url).pathname,
+        durationMs: latencyMs,
         status: response.status,
-        latencyMs,
+        outcome: response.status >= 400 ? 'error' : 'ok',
+        errorCode: response.status >= 400 ? `${response.status}` : undefined,
+        eventType: 'webhook_request_end',
       });
 
-      return new NextResponse(response.body, {
-        status: response.status,
-        headers: newHeaders,
-      });
+      return response;
     } catch (error) {
       const latencyMs = Date.now() - startTime;
 
       // Log error
-      logger.error('webhook_request_error', error instanceof Error ? error : new Error(String(error)), {
+      structuredLogger.error('webhook_request_error', {
         requestId,
-        latencyMs,
+        durationMs: latencyMs,
+        eventType: 'webhook_request_error',
+        errorCode: ErrorCode.UNKNOWN,
+        error,
       });
 
       // Return 500 with request ID
-      return NextResponse.json(
-        {
-          error: 'INTERNAL_SERVER_ERROR',
-          requestId,
-        },
-        {
-          status: 500,
-          headers: {
-            'X-Request-Id': requestId,
-          },
-        },
-      );
+      return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Internal server error');
     }
   };
 }

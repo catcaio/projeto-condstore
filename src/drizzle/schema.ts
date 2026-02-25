@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, decimal, int, timestamp, text, index, uniqueIndex, json } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, decimal, int, timestamp, text, index, uniqueIndex, json, date, primaryKey, datetime, mysqlEnum } from 'drizzle-orm/mysql-core';
 import { sql } from 'drizzle-orm';
 
 // --- Tenants (Multi-Tenant Support) ---
@@ -7,6 +7,7 @@ export const tenants = mysqlTable('tenants', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     name: varchar('name', { length: 255 }).notNull(),
     twilioNumber: varchar('twilio_number', { length: 30 }).notNull().unique(),
+    timezone: varchar('timezone', { length: 64 }).notNull().default('America/Sao_Paulo'),
     stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
     stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
     plan: varchar('plan', { length: 50 }),
@@ -25,7 +26,6 @@ export const tenantAiProviders = mysqlTable('tenant_ai_providers', {
     baseUrl: varchar('base_url', { length: 255 }).notNull(),
     model: varchar('model', { length: 255 }).notNull(),
     embedModel: varchar('embed_model', { length: 255 }).notNull(),
-    apiKey: varchar('api_key', { length: 512 }),
     apiKeyEncrypted: varchar('api_key_encrypted', { length: 512 }),
     isEnabled: int('is_enabled').notNull().default(1),
     timeoutMs: int('timeout_ms').notNull().default(20000),
@@ -102,6 +102,20 @@ export const messages = mysqlTable('messages', {
 
 export type MessageRecord = typeof messages.$inferSelect;
 export type NewMessageRecord = typeof messages.$inferInsert;
+
+export const inboundMessageDedup = mysqlTable('inbound_message_dedup', {
+    messageSid: varchar('message_sid', { length: 64 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        tenantCreatedAtIndex: index('idx_inbound_message_dedup_tenant_created_at').on(table.tenantId, table.createdAt),
+        createdAtIndex: index('idx_inbound_message_dedup_created_at').on(table.createdAt),
+    };
+});
+
+export type InboundMessageDedupRecord = typeof inboundMessageDedup.$inferSelect;
+export type NewInboundMessageDedupRecord = typeof inboundMessageDedup.$inferInsert;
 
 // --- AI Decision Logs (Frank audit trail) ---
 
@@ -207,6 +221,13 @@ export const freightFunnelEvents = mysqlTable('freight_funnel_events', {
     phoneNumber: varchar('phone_number', { length: 30 }).notNull(),
     sessionId: varchar('session_id', { length: 36 }).notNull(),
     stage: varchar('stage', { length: 50 }).notNull(), // INTENT_DETECTED, ASKED_CEP, CEP_RECEIVED, QUOTE_SENT, ABANDONED
+    utmSource: varchar('utm_source', { length: 255 }),
+    utmMedium: varchar('utm_medium', { length: 255 }),
+    utmCampaign: varchar('utm_campaign', { length: 255 }),
+    utmTerm: varchar('utm_term', { length: 255 }),
+    utmContent: varchar('utm_content', { length: 255 }),
+    refToken: varchar('ref_token', { length: 128 }),
+    clickId: varchar('click_id', { length: 255 }),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => {
     return {
@@ -228,6 +249,13 @@ export const freightSimulationLogs = mysqlTable('freight_simulation_logs', {
     valor: decimal('valor', { precision: 10, scale: 2 }).notNull(),
     prazo: int('prazo').notNull(),
     cepHash: varchar('cep_hash', { length: 64 }).notNull(),
+    utmSource: varchar('utm_source', { length: 255 }),
+    utmMedium: varchar('utm_medium', { length: 255 }),
+    utmCampaign: varchar('utm_campaign', { length: 255 }),
+    utmTerm: varchar('utm_term', { length: 255 }),
+    utmContent: varchar('utm_content', { length: 255 }),
+    refToken: varchar('ref_token', { length: 128 }),
+    clickId: varchar('click_id', { length: 255 }),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => {
     return {
@@ -274,14 +302,102 @@ export const publicEvents = mysqlTable('public_events', {
     path: varchar('path', { length: 200 }).notNull(),
     props: text('props'), // JSON stringified up to 4096 chars evaluated at runtime
     userAgent: text('user_agent'),
+    utmSource: varchar('utm_source', { length: 255 }),
+    utmMedium: varchar('utm_medium', { length: 255 }),
+    utmCampaign: varchar('utm_campaign', { length: 255 }),
+    utmTerm: varchar('utm_term', { length: 255 }),
+    utmContent: varchar('utm_content', { length: 255 }),
+    refToken: varchar('ref_token', { length: 128 }),
+    clickId: varchar('click_id', { length: 255 }),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => {
     return {
         tenantTimeIdx: index('idx_public_events_tenant_created_at').on(table.tenantId, table.createdAt),
         eventTimeIdx: index('idx_public_events_event_time').on(table.event, table.createdAt),
         anonIdTimeIdx: index('idx_public_events_anon_time').on(table.anonId, table.createdAt),
+        utmSourceTimeIdx: index('idx_public_events_utm_source_time').on(table.tenantId, table.utmSource, table.createdAt),
+        utmCampaignTimeIdx: index('idx_public_events_utm_campaign_time').on(table.tenantId, table.utmCampaign, table.createdAt),
     };
 });
 
 export type PublicEventRecord = typeof publicEvents.$inferSelect;
 export type NewPublicEventRecord = typeof publicEvents.$inferInsert;
+
+export const attributionClicks = mysqlTable('attribution_clicks', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    token: varchar('token', { length: 128 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }),
+    utmSource: varchar('utm_source', { length: 255 }),
+    utmMedium: varchar('utm_medium', { length: 255 }),
+    utmCampaign: varchar('utm_campaign', { length: 255 }),
+    utmTerm: varchar('utm_term', { length: 255 }),
+    utmContent: varchar('utm_content', { length: 255 }),
+    clickId: varchar('click_id', { length: 255 }),
+    landingUrl: varchar('landing_url', { length: 2048 }),
+    userAgentHash: varchar('user_agent_hash', { length: 64 }),
+    ipHash: varchar('ip_hash', { length: 64 }),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    consumedAt: timestamp('consumed_at'),
+}, (table) => {
+    return {
+        tokenUnique: uniqueIndex('idx_attribution_clicks_token').on(table.token),
+        tenantCreatedAtIdx: index('idx_attribution_clicks_tenant_created_at').on(table.tenantId, table.createdAt),
+        consumedAtIdx: index('idx_attribution_clicks_consumed_at').on(table.consumedAt),
+    };
+});
+
+export type AttributionClickRecord = typeof attributionClicks.$inferSelect;
+export type NewAttributionClickRecord = typeof attributionClicks.$inferInsert;
+
+export const metricsDaily = mysqlTable('metrics_daily', {
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    dayDate: date('day_date', { mode: 'string' }).notNull(),
+    utmSource: varchar('utm_source', { length: 255 }).notNull().default('(none)'),
+    utmCampaign: varchar('utm_campaign', { length: 255 }).notNull().default('(none)'),
+    totalEvents: int('total_events').notNull().default(0),
+    funnelStarted: int('funnel_started').notNull().default(0),
+    freightSimulations: int('freight_simulations').notNull().default(0),
+    consumedTokens: int('consumed_tokens').notNull().default(0),
+    clickTokens: int('click_tokens').notNull().default(0),
+}, (table) => {
+    return {
+        pk: primaryKey({ columns: [table.tenantId, table.dayDate, table.utmSource, table.utmCampaign], name: 'pk_metrics_daily' }),
+        tenantDayIdx: index('idx_metrics_daily_tenant_day').on(table.tenantId, table.dayDate),
+        tenantSourceDayIdx: index('idx_metrics_daily_tenant_source_day').on(table.tenantId, table.utmSource, table.dayDate),
+        tenantCampaignDayIdx: index('idx_metrics_daily_tenant_campaign_day').on(table.tenantId, table.utmCampaign, table.dayDate),
+    };
+});
+
+export type MetricsDailyRecord = typeof metricsDaily.$inferSelect;
+export type NewMetricsDailyRecord = typeof metricsDaily.$inferInsert;
+
+export const metricsRollupStatus = mysqlTable('metrics_rollup_status', {
+    tenantId: varchar('tenant_id', { length: 36 }).primaryKey().notNull(),
+    lastDayProcessed: date('last_day_processed', { mode: 'string' }),
+    lastRunAt: datetime('last_run_at', { mode: 'date' }),
+    lastDurationMs: int('last_duration_ms'),
+    lastRowsWritten: int('last_rows_written'),
+    status: mysqlEnum('status', ['ok', 'error']).notNull().default('ok'),
+    lastErrorCode: varchar('last_error_code', { length: 64 }),
+});
+
+export type MetricsRollupStatusRecord = typeof metricsRollupStatus.$inferSelect;
+export type NewMetricsRollupStatusRecord = typeof metricsRollupStatus.$inferInsert;
+
+export const adminAuditLog = mysqlTable('admin_audit_log', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    userId: varchar('user_id', { length: 36 }).notNull(),
+    action: varchar('action', { length: 64 }).notNull(),
+    metadata: json('metadata'),
+    createdAt: datetime('created_at', { mode: 'date' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => {
+    return {
+        tenantCreatedAtIdx: index('idx_admin_audit_log_tenant_created_at').on(table.tenantId, table.createdAt),
+        userCreatedAtIdx: index('idx_admin_audit_log_user_created_at').on(table.userId, table.createdAt),
+        actionCreatedAtIdx: index('idx_admin_audit_log_action_created_at').on(table.action, table.createdAt),
+    };
+});
+
+export type AdminAuditLogRecord = typeof adminAuditLog.$inferSelect;
+export type NewAdminAuditLogRecord = typeof adminAuditLog.$inferInsert;
