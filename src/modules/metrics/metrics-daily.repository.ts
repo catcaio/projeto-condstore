@@ -25,6 +25,8 @@ export interface MetricsDailyUpsertRow {
   clickTokens: number;
 }
 
+export const METRICS_DAILY_UPSERT_CHUNK_SIZE = 250;
+
 function normalizeBucketValue(value: string | null | undefined): string {
   const trimmed = value?.trim() ?? '';
   return trimmed || '(none)';
@@ -38,6 +40,16 @@ function toInt(value: unknown): number {
 function isTableMissingMetricsDaily(error: unknown): boolean {
   const e = error as { code?: string; message?: string };
   return e?.code === 'ER_NO_SUCH_TABLE' || Boolean(e?.message?.toLowerCase().includes('metrics_daily'));
+}
+
+function chunkRows<T>(rows: T[], chunkSize: number): T[][] {
+  if (rows.length === 0) return [];
+  const size = Math.max(1, Math.trunc(chunkSize));
+  const chunks: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) {
+    chunks.push(rows.slice(i, i + size));
+  }
+  return chunks;
 }
 
 export class MetricsDailyRepository {
@@ -88,8 +100,34 @@ export class MetricsDailyRepository {
   async upsertDailyRows(rows: MetricsDailyUpsertRow[]): Promise<void> {
     if (rows.length === 0) return;
     const db = await getDb();
+    const normalized = rows.map((row) => ({
+      tenantId: row.tenantId,
+      dayDate: row.dayDate,
+      utmSource: normalizeBucketValue(row.utmSource),
+      utmCampaign: normalizeBucketValue(row.utmCampaign),
+      totalEvents: toInt(row.totalEvents),
+      funnelStarted: toInt(row.funnelStarted),
+      freightSimulations: toInt(row.freightSimulations),
+      consumedTokens: toInt(row.consumedTokens),
+      clickTokens: toInt(row.clickTokens),
+    }));
 
-    for (const row of rows) {
+    for (const chunk of chunkRows(normalized, METRICS_DAILY_UPSERT_CHUNK_SIZE)) {
+      const valuesSql = sql.join(
+        chunk.map((row) => sql`(
+          ${row.tenantId},
+          ${row.dayDate},
+          ${row.utmSource},
+          ${row.utmCampaign},
+          ${row.totalEvents},
+          ${row.funnelStarted},
+          ${row.freightSimulations},
+          ${row.consumedTokens},
+          ${row.clickTokens}
+        )`),
+        sql`, `,
+      );
+
       await db.execute(sql`
         INSERT INTO metrics_daily (
           tenant_id,
@@ -101,17 +139,7 @@ export class MetricsDailyRepository {
           freight_simulations,
           consumed_tokens,
           click_tokens
-        ) VALUES (
-          ${row.tenantId},
-          ${row.dayDate},
-          ${normalizeBucketValue(row.utmSource)},
-          ${normalizeBucketValue(row.utmCampaign)},
-          ${toInt(row.totalEvents)},
-          ${toInt(row.funnelStarted)},
-          ${toInt(row.freightSimulations)},
-          ${toInt(row.consumedTokens)},
-          ${toInt(row.clickTokens)}
-        )
+        ) VALUES ${valuesSql}
         ON DUPLICATE KEY UPDATE
           total_events = VALUES(total_events),
           funnel_started = VALUES(funnel_started),
