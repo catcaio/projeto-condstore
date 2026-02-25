@@ -61,4 +61,5 @@ jobs:
         run: npm run lint
 
       - name: Release Check
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npm run release:check
