@@ -93,12 +93,129 @@
 }
 
 @layer base {
+  :root,
+  html[data-theme='light'] {
+    color-scheme: light;
+
+    --ui-page: 220 18% 96%;
+    --ui-surface: 0 0% 100%;
+    --ui-surface-elevated: 210 18% 98%;
+    --ui-muted: 220 20% 94%;
+    --ui-border: 220 16% 86%;
+    --ui-border-strong: 220 14% 78%;
+    --ui-text: 222 20% 12%;
+    --ui-text-muted: 220 12% 38%;
+    --ui-text-subtle: 220 10% 52%;
+    --ui-shadow: 222 28% 18%;
+
+    --ui-accent-blue: 211 100% 50%;
+    --ui-accent-blue-strong: 211 100% 43%;
+    --ui-accent-blue-ink: 211 100% 37%;
+
+    --ui-danger: 4 90% 58%;
+    --ui-danger-strong: 4 84% 52%;
+    --ui-danger-ink: 4 72% 43%;
+
+    --ui-success: 145 66% 42%;
+    --ui-success-ink: 145 72% 28%;
+
+    --background: var(--ui-page);
+    --foreground: var(--ui-text);
+    --card: var(--ui-surface);
+    --card-foreground: var(--ui-text);
+    --popover: var(--ui-surface);
+    --popover-foreground: var(--ui-text);
+    --primary: var(--ui-accent-blue);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--ui-muted);
+    --secondary-foreground: var(--ui-text);
+    --muted: var(--ui-muted);
+    --muted-foreground: var(--ui-text-muted);
+    --accent: var(--ui-muted);
+    --accent-foreground: var(--ui-text);
+    --destructive: var(--ui-danger);
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--ui-border);
+    --input: var(--ui-border);
+    --ring: var(--ui-accent-blue);
+
+    --cockpit-bg: var(--ui-page);
+    --cockpit-surface: 0 0% 100%;
+    --cockpit-border: var(--ui-border);
+    --cockpit-text: var(--ui-text);
+    --cockpit-text-muted: var(--ui-text-muted);
+    --cockpit-accent: var(--ui-accent-blue);
+    --cockpit-accent-fg: 0 0% 100%;
+    --cockpit-danger: var(--ui-danger);
+  }
+
+  html.dark,
+  html[data-theme='dark'] {
+    color-scheme: dark;
+
+    --ui-page: 224 20% 8%;
+    --ui-surface: 224 17% 11%;
+    --ui-surface-elevated: 224 15% 14%;
+    --ui-muted: 224 14% 17%;
+    --ui-border: 223 12% 23%;
+    --ui-border-strong: 223 10% 31%;
+    --ui-text: 210 18% 96%;
+    --ui-text-muted: 220 10% 68%;
+    --ui-text-subtle: 220 8% 56%;
+    --ui-shadow: 220 45% 3%;
+
+    --ui-accent-blue: 211 100% 60%;
+    --ui-accent-blue-strong: 211 100% 64%;
+    --ui-accent-blue-ink: 211 100% 82%;
+
+    --ui-danger: 4 82% 60%;
+    --ui-danger-strong: 4 84% 65%;
+    --ui-danger-ink: 4 100% 82%;
+
+    --ui-success: 145 60% 45%;
+    --ui-success-ink: 145 82% 80%;
+
+    --background: var(--ui-page);
+    --foreground: var(--ui-text);
+    --card: var(--ui-surface);
+    --card-foreground: var(--ui-text);
+    --popover: var(--ui-surface);
+    --popover-foreground: var(--ui-text);
+    --primary: var(--ui-accent-blue);
+    --primary-foreground: 224 20% 8%;
+    --secondary: var(--ui-muted);
+    --secondary-foreground: var(--ui-text);
+    --muted: var(--ui-muted);
+    --muted-foreground: var(--ui-text-muted);
+    --accent: var(--ui-muted);
+    --accent-foreground: var(--ui-text);
+    --destructive: var(--ui-danger);
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--ui-border);
+    --input: var(--ui-border);
+    --ring: var(--ui-accent-blue);
+
+    --cockpit-bg: var(--ui-page);
+    --cockpit-surface: var(--ui-surface);
+    --cockpit-border: var(--ui-border);
+    --cockpit-text: var(--ui-text);
+    --cockpit-text-muted: var(--ui-text-muted);
+    --cockpit-accent: var(--ui-accent-blue);
+    --cockpit-accent-fg: 224 20% 8%;
+    --cockpit-danger: var(--ui-danger);
+  }
+}
+
+@layer base {
   * {
     @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at 15% 0%, hsl(var(--ui-accent-blue) / 0.08), transparent 36%),
+      radial-gradient(circle at 85% 0%, hsl(var(--ui-border-strong) / 0.18), transparent 32%);
   }
 }
 
