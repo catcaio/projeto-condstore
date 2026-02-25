@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '@/infra/auth/session';
+import { requireAdmin } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
 import { freightFunnelEvents } from '@/drizzle/schema';
 import { sql, and, gte, eq } from 'drizzle-orm';
@@ -93,11 +93,9 @@ export async function GET(request: NextRequest) {
         }
         const groupBy = isAttributionGroupBy(parsedGroupBy) ? parsedGroupBy : null;
 
-        const user = await getSessionUser(request);
-        if (!user?.tenantId) {
-            return finalize(errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'UNAUTHORIZED'), ErrorCode.AUTH_REQUIRED);
-        }
-        tenantId = user.tenantId;
+        const auth = await requireAdmin(request, { requestId });
+        if (!auth.ok) return finalize(auth.response, auth.code);
+        tenantId = auth.session.tenantId;
 
         // 2. Try Redis Cache (with availability guard)
         const cacheKey = `cockpit:metrics:funnel:${tenantId}`;

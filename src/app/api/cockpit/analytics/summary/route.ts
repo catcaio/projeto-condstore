@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
+import { requireAdmin } from '@/infra/auth/guards';
 import { requireActivePlan } from '../../../../../modules/billing/requireActivePlan';
 import { logger } from '@/infra/logger';
 
@@ -56,6 +57,11 @@ function toRate(numerator: number, denominator: number): number {
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const auth = await requireAdmin(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const entitlement = await requireActivePlan(request);
   if (entitlement.errorResponse) {
     return entitlement.errorResponse;

@@ -15,7 +15,7 @@ import { messageRepository } from '@/infra/repositories/message.repository';
 import { simulationRepository } from '@/infra/repositories/simulation.repository';
 import { redisClient } from "@/infra/redis.client";
 import { logger } from '@/infra/logger';
-import { getSessionUser } from '@/infra/auth/session';
+import { requireAdmin } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
 import { sql } from 'drizzle-orm';
 import { buildAttributionBreakdown, isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '@/modules/metrics/attribution-breakdown';
@@ -73,12 +73,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
   const groupBy = isAttributionGroupBy(parsedGroupBy) ? parsedGroupBy : null;
 
-  const user = await getSessionUser(request);
-  tenantId = user?.tenantId;
-
-  if (!tenantId) {
-    return finalize(errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'UNAUTHORIZED'), ErrorCode.AUTH_REQUIRED);
-  }
+  const auth = await requireAdmin(request, { requestId });
+  if (!auth.ok) return finalize(auth.response, auth.code);
+  tenantId = auth.session.tenantId;
 
   const cacheKey = `cockpit:metrics:${tenantId}`;
 

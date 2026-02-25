@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { getDb } from '../../../../../infra/db';
 import { logger } from '../../../../../infra/logger';
 import { redisClient } from '../../../../../infra/redis.client';
+import { requireAdmin } from '../../../../../infra/auth/guards';
 import { requireActivePlan } from '../../../../../modules/billing/requireActivePlan';
 import { isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '../../../../../modules/metrics/attribution-breakdown';
 import { metricsDailyRepository } from '../../../../../modules/metrics/metrics-daily.repository';
@@ -396,11 +397,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return response;
   };
 
+  const auth = await requireAdmin(request, { requestId });
+  if (!auth.ok) return finalize(auth.response, auth.code);
+
   const entitlement = await requireActivePlan(request);
   if (entitlement.errorResponse) {
     return finalize(entitlement.errorResponse);
   }
-  tenantId = entitlement.tenantId!;
+  tenantId = auth.session.tenantId;
 
   const parsedWindow = parseWindow(request.nextUrl.searchParams.get('window'));
   if (parsedWindow === 'invalid') {

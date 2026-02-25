@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET } from '../route';
+import { getSessionUser } from '../../../../../../infra/auth/session';
 import { requireActivePlan } from '../../../../../../modules/billing/requireActivePlan';
 import { getDb } from '../../../../../../infra/db';
 import { metricsDailyRepository } from '../../../../../../modules/metrics/metrics-daily.repository';
@@ -10,6 +11,10 @@ const mockExecute = vi.fn();
 
 vi.mock('../../../../../../modules/billing/requireActivePlan', () => ({
   requireActivePlan: vi.fn(),
+}));
+
+vi.mock('../../../../../../infra/auth/session', () => ({
+  getSessionUser: vi.fn(),
 }));
 
 vi.mock('../../../../../../infra/db', () => ({
@@ -47,6 +52,13 @@ describe('GET /api/cockpit/metrics/acquisition', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockExecute.mockReset();
+    vi.mocked(getSessionUser).mockResolvedValue({
+      sub: 'user-1',
+      email: 'admin@example.com',
+      tenantId: 'tenant-1',
+      role: 'admin',
+      sv: 1,
+    });
     vi.mocked(requireActivePlan).mockResolvedValue({ tenantId: 'tenant-1' });
     vi.mocked(getDb).mockResolvedValue({ execute: mockExecute } as never);
     vi.mocked(metricsDailyRepository.queryAcquisitionBuckets).mockResolvedValue([]);
