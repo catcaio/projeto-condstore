@@ -6,8 +6,8 @@
  * TTL        : CONTEXT_TTL_SECONDS (6 h by default)
  *
  * Why phoneHash in the key?  We never store raw phone numbers in Redis keys
- * to stay PII-safe.  The DB fallback path receives the normalised phone number
- * (fromPhone) so it can issue a real WHERE clause.
+ * to stay PII-safe.  The DB fallback path now prefers `messages.phone_hash`
+ * (with a temporary legacy fallback to plaintext `from_phone` during migration).
  *
  * Failure contract:
  *   - Redis failures are logged and swallowed; DB fallback is used.
@@ -57,8 +57,9 @@ function safeTrack(track: () => void): void {
  *
  * @param tenantId    Tenant identifier — enforces cross-tenant isolation.
  * @param phoneHash   SHA-256 of the normalised phone number (for the Redis key).
- * @param phoneNumber Normalised phone number stored in `messages.from_phone`
- *                    (used only on cache miss for the DB fallback query).
+ * @param phoneNumber Normalised phone number used to derive tenant-scoped
+ *                    `phone_hash` for DB fallback (legacy plaintext fallback
+ *                    remains temporarily for backfilled-incomplete rows).
  * @param limit       Number of messages to return (default: MAX_CONTEXT_MESSAGES).
  */
 export async function getContext(

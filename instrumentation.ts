@@ -7,31 +7,44 @@
  * Docs: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
 
+import { captureNextRequestErrorWithSentry } from './src/infra/observability/sentry';
+
 export async function register() {
-  // Roda apenas no runtime Node.js (não no Edge runtime)
-  if (process.env.NEXT_RUNTIME !== 'nodejs') return;
-
   const isProd = process.env.NODE_ENV === 'production';
-  const missing: string[] = [];
+  const runtime = process.env.NEXT_RUNTIME;
 
-  if (!process.env.DATABASE_URL)  missing.push('DATABASE_URL');
-  if (!process.env.AUTH_SECRET)   missing.push('AUTH_SECRET');
+  if (runtime === 'nodejs') {
+    const missing: string[] = [];
 
-  // Em produção: PROVIDER_SECRETS_KEY obrigatória para proteger apiKeys de providers
-  if (isProd && !process.env.PROVIDER_SECRETS_KEY) {
-    missing.push('PROVIDER_SECRETS_KEY');
-  }
+    if (!process.env.DATABASE_URL)  missing.push('DATABASE_URL');
+    if (!process.env.AUTH_SECRET)   missing.push('AUTH_SECRET');
 
-  if (missing.length > 0) {
-    const msg = `[boot-check] Env vars críticas ausentes: ${missing.join(', ')}`;
-    if (isProd) {
-      // Hard-fail: processo não deve continuar sem configuração mínima
-      throw new Error(msg);
+    // Em produção: PROVIDER_SECRETS_KEY obrigatória para proteger apiKeys de providers
+    if (isProd && !process.env.PROVIDER_SECRETS_KEY) {
+      missing.push('PROVIDER_SECRETS_KEY');
     }
-    // Dev: warn visível mas não bloqueia
-    console.warn(msg);
-  } else {
-    const mode = isProd ? 'production' : 'development';
-    console.log(`[boot-check] ✅ Todas as env vars críticas presentes (${mode})`);
+
+    if (missing.length > 0) {
+      const msg = `[boot-check] Env vars críticas ausentes: ${missing.join(', ')}`;
+      if (isProd) {
+        // Hard-fail: processo não deve continuar sem configuração mínima
+        throw new Error(msg);
+      }
+      // Dev: warn visível mas não bloqueia
+      console.warn(msg);
+    } else {
+      const mode = isProd ? 'production' : 'development';
+      console.log(`[boot-check] ✅ Todas as env vars críticas presentes (${mode})`);
+    }
   }
+
+  if (runtime === 'nodejs') {
+    await import('./sentry.server.config');
+  } else if (runtime === 'edge') {
+    await import('./sentry.edge.config');
+  }
+}
+
+export async function onRequestError(...args: unknown[]): Promise<void> {
+  await captureNextRequestErrorWithSentry(...args);
 }

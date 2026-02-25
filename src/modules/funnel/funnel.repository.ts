@@ -5,6 +5,8 @@ import { logger } from '../../infra/logger';
 import { sql } from 'drizzle-orm';
 import { redisClient } from '../../infra/redis.client';
 import type { AttributionSnapshot } from '../../infra/attribution/attribution.types';
+import { encryptString } from '../../infra/pii/crypto';
+import { hashPhoneForTenant } from '../../infra/pii/phone';
 
 export enum FunnelStage {
     FLOW_STARTED = 'FLOW_STARTED',
@@ -42,13 +44,17 @@ export class FunnelRepository {
     async saveEvent(input: SaveFunnelEventInput): Promise<void> {
         try {
             const db = await getDb();
+            const { e164, hash } = hashPhoneForTenant(input.phoneNumber, input.tenantId);
+            const phoneEncrypted = encryptString(e164);
 
             await db
                 .insert(freightFunnelEvents)
                 .values({
                     id: randomUUID(),
                     tenantId: input.tenantId,
-                    phoneNumber: input.phoneNumber,
+                    phoneNumber: '[redacted]',
+                    phoneHash: hash,
+                    phoneEncrypted,
                     sessionId: input.sessionId,   // Must be explicit — no fallback
                     stage: input.stage,
                     utmSource: input.attribution?.utmSource ?? null,

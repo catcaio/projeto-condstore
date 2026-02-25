@@ -1,522 +1,509 @@
-# Arquitetura do Sistema - Lojacond Frete Automação
+# Arquitetura do Sistema - Condstore OS (Estado Real)
 
-**Autor:** Manus AI  
-**Data:** 12 de Fevereiro de 2026  
-**Versão:** 2.0 (Arquitetura Profissional)
+**Last updated:** 2026-02-25  
+**Baseline SHA (antes deste PR FRONT-01/docs):** `a5e210a`  
+**Status:** pós-P0 (hardening, RBAC, cron, Sentry, PII) + smoke de staging
 
 ---
 
 ## Visão Geral
 
-O **Lojacond Frete Automação** é um framework conversacional profissional, modular e escalável, projetado para automatizar cotações de frete via WhatsApp (Twilio). A arquitetura foi desenvolvida com foco em **separação de responsabilidades**, **extensibilidade** e **produção-ready**.
-
-Este sistema não é apenas uma automação de frete — é uma **base reutilizável** para qualquer fluxo conversacional futuro, incluindo rastreamento de pedidos, status de pagamento, segunda via de boleto e atendimento humano.
-
----
-
-## Princípios Arquiteturais
-
-A arquitetura segue os seguintes princípios fundamentais:
-
-1. **Separação de Responsabilidades**: Cada camada tem uma responsabilidade clara e bem definida.
-2. **Desacoplamento**: Providers, serviços e controladores são independentes e podem ser substituídos sem impacto no restante do sistema.
-3. **Extensibilidade**: Novos módulos, intents e providers podem ser adicionados sem refatoração massiva.
-4. **Observabilidade**: Logging estruturado e rastreamento de estado em todos os pontos críticos.
-5. **Resiliência**: Retry automático, fallbacks e tratamento de erros em todas as camadas.
-6. **Type Safety**: Tipagem forte em TypeScript para prevenir erros em tempo de compilação.
+Aplicação Next.js (App Router) multi-tenant para operações de frete/analytics e automação via WhatsApp/Twilio, com:
+- UI web (`/login`, `/cockpit`, telas operacionais)
+- APIs de produto e cockpit (`/api/*`, `/api/cockpit/*`)
+- Webhooks (Twilio / eventos)
+- Jobs internos e cron (retenção/cleanup, backfills)
+- Observabilidade com `requestId`, logs estruturados e Sentry (opcional)
+- Hardening de auth/rate limit/PII para ambiente de produção
 
 ---
 
-## Estrutura de Diretórios
+## Diagrama (texto)
 
-```
-src/
-├── app/
-│   └── api/
-│       └── webhook/
-│           └── route.ts                # Webhook Twilio (entry point)
-├── core/
-│   └── conversation/
-│       ├── state-machine.ts            # Máquina de estados formal
-│       ├── session-manager.ts          # Gerenciamento de sessão (Redis + fallback)
-│       ├── intent-classifier.ts        # Classificador de intenções
-│       └── __tests__/                  # Testes unitários
-├── modules/
-│   └── freight/
-│       ├── freight.types.ts            # Tipos do módulo de frete
-│       ├── freight.service.ts          # Lógica de negócio de frete
-│       └── freight.controller.ts       # Controlador de frete (orquestração)
-├── providers/
-│   ├── twilio.provider.ts              # Provider Twilio (desacoplado)
-│   └── melhorenvio.provider.ts         # Provider Melhor Envio (desacoplado)
-├── infra/
-│   ├── redis.client.ts                 # Cliente Redis tipado
-│   ├── logger.ts                       # Sistema de logging estruturado
-│   └── errors.ts                       # Sistema de erros estruturado
-└── config/
-    ├── app.config.ts                   # Configuração central da aplicação
-    ├── twilio.config.ts                # Configuração do Twilio
-    └── melhorenvio.config.ts           # Configuração do Melhor Envio
+```text
+Browser/UI (/login, /cockpit)
+  -> Next App Router pages/layouts (React Server + Client Components)
+  -> /api/auth/* (login, me, logout)
+  -> /api/cockpit/* (RBAC admin via guards)
+
+Twilio / clientes externos
+  -> /api/webhook, /api/events
+  -> modules/* (freight, analytics, attribution, audit)
+  -> infra/repositories/* -> Drizzle -> TiDB/MySQL
+  -> Redis (cache, rate limit, session-like support where applicable)
+
+Vercel Cron / internal ops
+  -> /api/cron/cleanup (x-vercel-cron=1 ou token)
+  -> modules/jobs/cleanupRetention -> retention-cleanup.service
+  -> deletes/anonymization idempotentes por tabela
+
+Observabilidade
+  -> request-trace (x-request-id)
+  -> structuredLogger / logger (redaction)
+  -> Sentry (server/client/edge, opcional via DSN)
 ```
 
 ---
 
-## Camadas da Arquitetura
+## Stack e Organização
 
-### 1. **Camada de Entrada (Entry Point)**
+### Stack principal
+- `Next.js` App Router (`src/app`)
+- `TypeScript`
+- `Drizzle ORM` (`src/drizzle/schema.ts`)
+- `TiDB/MySQL` via `DATABASE_URL`
+- `Redis` (cache/rate limit)
+- `Vitest` para testes
+- `Vercel` (preview/prod + cron)
 
-**Arquivo:** `src/app/api/webhook/route.ts`
-
-Responsabilidade: Receber requisições HTTP do Twilio e delegar o processamento para o controlador.
-
-**Características:**
-- Thin layer: não contém lógica de negócio.
-- Parse de payload do Twilio.
-- Geração de resposta TwiML.
-- Tratamento de erros global.
-
-**Fluxo:**
-```
-Twilio → POST /api/webhook → Parse payload → freightController.processMessage() → TwiML response
-```
-
----
-
-### 2. **Camada de Controle (Controller)**
-
-**Arquivo:** `src/modules/freight/freight.controller.ts`
-
-Responsabilidade: Orquestrar o fluxo conversacional, coordenando State Machine, Session Manager e Freight Service.
-
-**Características:**
-- Recebe mensagem do usuário.
-- Classifica intenção via Intent Classifier.
-- Gerencia transições de estado via State Machine.
-- Persiste sessão via Session Manager.
-- Delega cálculo de frete para Freight Service.
-- Retorna resposta formatada para o usuário.
-
-**Decisão Técnica:** O controlador **não** contém lógica de negócio. Ele apenas orquestra.
+### Estrutura (alto nível)
+- `src/app/*`: páginas, layouts e route handlers (API)
+- `src/modules/*`: regras de negócio (frete, métricas, jobs, audit, etc.)
+- `src/infra/*`: auth, logging, request tracing, repos, redis, config, observabilidade
+- `src/ui/*`: tokens, tema e componentes UI reutilizáveis (FRONT-01)
+- `scripts/*`: utilitários e smoke tests (`scripts/smoke/staging-smoke.ts`)
+- `drizzle/*`: migrations SQL + metadata
 
 ---
 
-### 3. **Camada de Negócio (Service)**
+## Multi-Tenant + RBAC (centralizado)
 
-**Arquivo:** `src/modules/freight/freight.service.ts`
+### Modelo
+- Sessão carrega `tenantId` e `role`
+- Roles suportadas: `admin | operator`
+- Tipos/validação centralizados em `src/infra/auth/roles.ts`
+- Guards centralizados em `src/infra/auth/guards.ts`:
+  - `requireSession(req)` -> retorna sessão validada ou `401` padronizado
+  - `requireAdmin(req)` -> exige sessão + role `admin` ou retorna `403` padronizado
 
-Responsabilidade: Implementar a lógica de negócio de cálculo de frete.
+### Rotas cockpit admin-only (atual)
+As rotas abaixo usam `requireAdmin(...)` e não fazem checks ad-hoc de role espalhados:
+- `/api/cockpit/analytics/events`
+- `/api/cockpit/analytics/summary`
+- `/api/cockpit/attribution/tokens` (`GET`/`POST`)
+- `/api/cockpit/audit`
+- `/api/cockpit/metrics`
+- `/api/cockpit/metrics/acquisition`
+- `/api/cockpit/metrics/freight`
+- `/api/cockpit/metrics/funnel`
+- `/api/cockpit/ops/status`
+- `/api/cockpit/ops/run-rollup`
 
-**Características:**
-- Validação de CEP e quantidade.
-- Decisão de estratégia baseada em peso (≤10kg, 10-15kg, >15kg).
-- Orquestração de providers (Melhor Envio e Tabela).
-- Ordenação e limitação de opções de frete.
-- Formatação de resposta para o usuário.
-
-**Decisão Técnica:** A lógica de decisão por peso está encapsulada no serviço, facilitando mudanças futuras nas regras de negócio.
-
----
-
-### 4. **Camada de Conversação (Conversation Core)**
-
-**Arquivos:**
-- `src/core/conversation/state-machine.ts`
-- `src/core/conversation/session-manager.ts`
-- `src/core/conversation/intent-classifier.ts`
-
-#### 4.1. **State Machine**
-
-Responsabilidade: Gerenciar o fluxo conversacional com uma máquina de estados formal.
-
-**Estados:**
-- `IDLE`: Sem conversa ativa.
-- `AWAITING_CEP`: Aguardando CEP do usuário.
-- `AWAITING_QUANTITY`: Aguardando quantidade.
-- `CALCULATING`: Processando cálculo de frete.
-- `COMPLETED`: Conversa concluída.
-- `ERROR`: Estado de erro.
-
-**Eventos:**
-- `START_FREIGHT_QUERY`: Iniciar cotação.
-- `CEP_PROVIDED`: CEP fornecido.
-- `QUANTITY_PROVIDED`: Quantidade fornecida.
-- `CALCULATION_SUCCESS`: Cálculo bem-sucedido.
-- `CALCULATION_ERROR`: Erro no cálculo.
-- `RESET`: Reiniciar conversa.
-- `ERROR`: Erro genérico.
-
-**Transições:**
-```
-IDLE → START_FREIGHT_QUERY → AWAITING_CEP
-AWAITING_CEP → CEP_PROVIDED → AWAITING_QUANTITY
-AWAITING_QUANTITY → QUANTITY_PROVIDED → CALCULATING
-CALCULATING → CALCULATION_SUCCESS → COMPLETED
-CALCULATING → CALCULATION_ERROR → ERROR
-* → RESET → IDLE
-```
-
-**Decisão Técnica:** A State Machine é **extensível**. Novos estados e eventos podem ser adicionados sem impactar os existentes.
-
-#### 4.2. **Session Manager**
-
-Responsabilidade: Gerenciar sessões de usuários com persistência Redis e fallback em memória.
-
-**Características:**
-- Persistência primária: Upstash Redis (REST API).
-- Fallback: In-memory store.
-- TTL configurável (padrão: 30 minutos).
-- Operações tipadas: `getSession`, `createSession`, `updateSession`, `deleteSession`.
-- Cleanup automático de sessões expiradas.
-
-**Decisão Técnica:** O fallback em memória garante que o sistema continue funcionando mesmo se o Redis estiver indisponível.
-
-#### 4.3. **Intent Classifier**
-
-Responsabilidade: Classificar mensagens do usuário em intenções (intents).
-
-**Intenções Suportadas:**
-- `FREIGHT_QUERY`: Cotação de frete.
-- `PROVIDE_CEP`: Fornecimento de CEP.
-- `PROVIDE_QUANTITY`: Fornecimento de quantidade.
-- `RESET`: Reiniciar conversa.
-- `HELP`: Ajuda.
-- `CANCEL`: Cancelar.
-- `TRACK_ORDER`: Rastreamento (futuro).
-- `PAYMENT_STATUS`: Status de pagamento (futuro).
-- `HUMAN_SUPPORT`: Atendimento humano (futuro).
-- `UNKNOWN`: Intenção desconhecida.
-
-**Extração de Dados:**
-- CEP: Regex para formatos `01001-000` ou `01001000`.
-- Quantidade: Regex para números de 1 a 9999.
-
-**Decisão Técnica:** O classificador é baseado em regras (rule-based), mas pode ser substituído por um modelo de ML no futuro sem impactar o restante do sistema.
+### Middleware (borda de proteção)
+Arquivo: `src/middleware.ts`
+- Protege `/cockpit/*` e `/api/cockpit/*` (além de outros paths sensíveis no matcher)
+- Injeta/propaga `x-request-id`
+- Valida token JWT e exige claims mínimos:
+  - `sub` (string)
+  - `tenantId` (string)
+  - `role` estritamente `admin | operator`
+- Falha com `401` (API) ou redirect para `/login` (UI) quando sem sessão/inválido
 
 ---
 
-### 5. **Camada de Providers**
+## Auth e Sessão
 
-**Arquivos:**
-- `src/providers/twilio.provider.ts`
-- `src/providers/melhorenvio.provider.ts`
+### Endpoints principais
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
 
-Responsabilidade: Encapsular toda a comunicação com APIs externas.
+### JWT + session version
+Arquivo: `src/infra/auth/session.ts`
+- Cookie: `condstore_session`
+- Token JWT inclui:
+  - `sub` (user id)
+  - `email`
+  - `tenantId`
+  - `role`
+  - `sv` (`sessionVersion`)
+- `getSessionUser(req)` valida:
+  1. assinatura JWT (`AUTH_SECRET`)
+  2. busca usuário no DB
+  3. compara `user.sessionVersion === payload.sv`
+- Resultado: tokens antigos são rejeitados imediatamente após invalidação
 
-**Características:**
-- Desacoplamento total: nenhuma chamada HTTP direta no código de negócio.
-- Retry automático com exponential backoff.
-- Timeout configurável.
-- Tratamento de erros tipado.
-- Health checks.
+### Logout com invalidação server-side
+Arquivo: `src/app/api/auth/logout/route.ts`
+- Não é só limpar cookie
+- Se houver sessão válida, chama `invalidateSessions(userId)`
+- `invalidateSessions` incrementa `users.session_version`
+- Sempre limpa cookie e retorna `200 { success: true }`
+- Tokens antigos passam a falhar em `/api/auth/me` e rotas autenticadas
 
-**Decisão Técnica:** Providers são **singleton instances**, garantindo que configurações sejam carregadas uma única vez.
-
----
-
-### 6. **Camada de Infraestrutura**
-
-**Arquivos:**
-- `src/infra/redis.client.ts`
-- `src/infra/logger.ts`
-- `src/infra/errors.ts`
-
-#### 6.1. **Redis Client**
-
-Responsabilidade: Cliente Redis tipado e seguro.
-
-**Características:**
-- Operações tipadas: `get<T>`, `set<T>`, `delete`, `exists`, `ttl`.
-- Retry automático (até 2 tentativas).
-- Timeout de 5 segundos.
-- Fallback gracioso quando Redis está indisponível.
-
-#### 6.2. **Logger**
-
-Responsabilidade: Logging estruturado em JSON.
-
-**Níveis de Log:**
-- `DEBUG`: Informações de depuração.
-- `INFO`: Informações gerais.
-- `WARN`: Avisos.
-- `ERROR`: Erros.
-
-**Características:**
-- Output em JSON estruturado.
-- Mascaramento de dados sensíveis (telefone).
-- Métodos especializados: `http()`, `stateTransition()`.
-
-#### 6.3. **Errors**
-
-Responsabilidade: Sistema de erros estruturado.
-
-**Tipos de Erros:**
-- `BaseError`: Classe base para todos os erros.
-- `InfrastructureError`: Erros de infraestrutura (Redis, etc.).
-- `ProviderError`: Erros de providers (Twilio, Melhor Envio).
-- `BusinessError`: Erros de lógica de negócio.
-
-**Características:**
-- Códigos de erro tipados (`ErrorCode` enum).
-- Mensagens amigáveis para o usuário (`userFacingMessages`).
-- Flag `isRetryable` para indicar se o erro pode ser retentado.
-- Contexto adicional para debugging.
+### Reset interno de admin (staging/dev only)
+Arquivo: `src/app/api/internal/auth/reset-admin/route.ts`
+- `POST /api/internal/auth/reset-admin`
+- Protegido por `x-internal-token` (mesmo token interno usado pelo diag)
+- Bloqueado em `VERCEL_ENV=production`
+- Faz hash da nova senha com o util de auth e incrementa `session_version`
+- Uso principal: recuperar login de preview/staging de forma confiável
 
 ---
 
-### 7. **Camada de Configuração**
+## Segurança e Hardening (P0)
 
-**Arquivos:**
-- `src/config/app.config.ts`
-- `src/config/twilio.config.ts`
-- `src/config/melhorenvio.config.ts`
+### Rate limit (novo limiter, fail-closed)
+Arquivo: `src/infra/security/rate-limiter.ts`
+- Implementa rate limit com Redis + fallback em memória somente fora de produção
+- Em produção, se Redis indisponível/erro:
+  - **fail-closed** (`allowed=false`)
+- Override explícito (opt-in):
+  - `RATE_LIMIT_FAIL_OPEN=true` -> permite fail-open mesmo em produção
+- Logs usam hash da chave (`hashRateLimitKeyForLog`) e não expõem PII
 
-Responsabilidade: Centralizar toda a configuração da aplicação.
+### Login usando limiter novo
+Arquivo: `src/app/api/auth/login/route.ts`
+- Login usa `rateLimiter.limit('auth.login', key, { max: 5, windowSec: 60 })`
+- Chave = `ip + email normalizado`
+- Logging de diagnóstico sem PII:
+  - `reason = user_not_found | password_mismatch | schema_error | rate_limited`
+  - `requestId`
+  - `emailHash` / `rateLimitKeyHash`
+- Resposta ao cliente continua genérica em falhas de credencial (`401`)
 
-**Características:**
-- Tipagem forte: todas as configurações são tipadas.
-- Validação em tempo de inicialização.
-- Nenhum `process.env` espalhado pelo código.
-- Valores padrão para desenvolvimento.
+### Middleware fail-hard sem `AUTH_SECRET` em produção
+Arquivo: `src/middleware.ts`
+- Se `NODE_ENV=production` e `AUTH_SECRET` ausente:
+  - `/api/cockpit/*` -> `500 { error: "MISCONFIG_AUTH_SECRET" }`
+  - `/cockpit/*` -> `500` texto simples (sem redirect)
+- Em dev/test pode usar fallback apenas local
 
-**Decisão Técnica:** A configuração é carregada uma única vez no início da aplicação, evitando leituras repetidas de variáveis de ambiente.
-
----
-
-## Fluxo de Dados
-
-### Fluxo Completo de Cotação de Frete
-
-```
-1. Twilio envia POST /api/webhook
-   ↓
-2. Webhook parse payload e extrai mensagem
-   ↓
-3. freightController.processMessage()
-   ↓
-4. sessionManager.getSession() ou createSession()
-   ↓
-5. intentClassifier.classify(message)
-   ↓
-6. stateMachine.transition(context, event)
-   ↓
-7. sessionManager.updateSession()
-   ↓
-8. [Se estado = CALCULATING] freightService.calculateFreight()
-   ↓
-9. [Decisão de estratégia por peso]
-   ↓
-10. [Fetch quotes de providers]
-    ├─ melhorEnvioProvider.calculateShipping()
-    └─ tabelaProvider.calculateShipping()
-   ↓
-11. [Ordenar e limitar opções]
-   ↓
-12. freightService.formatOptionsForUser()
-   ↓
-13. twilioProvider.generateTwiMLResponse()
-   ↓
-14. Retornar TwiML para Twilio
-```
+### Segredos internos (diag/jobs)
+Arquivo: `src/infra/config/internal-token.ts`
+- Aceita `INTERNAL_DIAG_TOKEN` ou `INTERNAL_EXPORT_TOKEN`
+- Em produção, ausência do token é erro
+- Em dev/test, fallback efêmero é permitido (com warning)
 
 ---
 
-## Decisões Técnicas Importantes
+## Observabilidade (requestId + logs + diag + Sentry)
 
-### 1. **Por que State Machine?**
+### Request tracing
+Arquivo: `src/infra/http/request-trace.ts`
+- `makeRequestId()` usa `x-request-id`/`x-vercel-id` se houver, senão UUID
+- `attachRequestIdHeader()` padroniza header nas respostas
+- Wrappers:
+  - `withRequestTrace(...)`
+  - `withWebhookTrace(...)`
+- Logs estruturados de início/fim/erro com `requestId`, `route`, `tenantId` (quando disponível)
 
-Uma máquina de estados formal garante que:
-- Todas as transições são explícitas e validadas.
-- Não há estados "órfãos" ou transições inválidas.
-- O fluxo conversacional é previsível e testável.
-- Novos estados podem ser adicionados sem quebrar os existentes.
+### Loggers (redaction)
+Arquivos:
+- `src/infra/log/logger.ts` (`structuredLogger`)
+- `src/infra/logger.ts` (`logger`)
 
-### 2. **Por que Session Manager com Redis + Fallback?**
+Redaction cobre chaves sensíveis, incluindo:
+- `authorization`, `cookie`, `secret`, `password`, `token`
+- `phone`, `message`, `body`, `payload`
 
-- **Redis (Upstash)**: Persistência distribuída, essencial para ambientes serverless (Vercel).
-- **Fallback em memória**: Garante que o sistema continue funcionando mesmo se o Redis estiver indisponível.
-- **TTL automático**: Sessões expiram automaticamente, evitando acúmulo de dados.
+Os loggers também integram com Sentry em erros (sem enviar PII por padrão).
 
-### 3. **Por que Providers Desacoplados?**
+### Diagnóstico interno
+Arquivo: `src/app/api/internal/diag/route.ts`
+- `GET /api/internal/diag`
+- Protegido por `x-internal-token`
+- Retorna status de `db`, `redis`, `env`, `git_sha`, `uptime`, `version`
+- Inclui `x-request-id`
 
-- **Testabilidade**: Providers podem ser mockados facilmente em testes.
-- **Substituibilidade**: Um provider pode ser substituído sem impactar o restante do sistema.
-- **Retry e Timeout**: Lógica de retry e timeout está encapsulada no provider, não espalhada pelo código.
+### Sentry (opcional, desabilitado por padrão)
+Arquivos:
+- `instrumentation.ts`
+- `sentry.client.config.ts`
+- `sentry.server.config.ts`
+- `sentry.edge.config.ts`
+- `src/infra/observability/sentry.ts`
 
-### 4. **Por que Logging Estruturado?**
-
-- **Observabilidade**: Logs em JSON podem ser facilmente ingeridos por ferramentas de monitoramento (Datadog, Sentry, etc.).
-- **Rastreamento**: Cada log contém contexto (phoneNumber, estado, etc.), facilitando debugging.
-
-### 5. **Por que Erros Estruturados?**
-
-- **Mensagens Amigáveis**: Erros técnicos são traduzidos para mensagens amigáveis ao usuário.
-- **Retry Inteligente**: A flag `isRetryable` permite que o sistema decida automaticamente se deve retentar.
-- **Debugging**: Contexto adicional facilita a identificação da causa raiz.
-
----
-
-## Extensibilidade
-
-### Como Adicionar um Novo Intent (ex: Rastreamento de Pedidos)
-
-1. **Adicionar novo enum em `intent-classifier.ts`:**
-   ```typescript
-   export enum UserIntent {
-     // ...
-     TRACK_ORDER = 'TRACK_ORDER',
-   }
-   ```
-
-2. **Implementar lógica de classificação:**
-   ```typescript
-   private isTrackingQuery(message: string): boolean {
-     const keywords = ['rastrear', 'rastreio', 'onde está'];
-     return keywords.some((kw) => message.includes(kw));
-   }
-   ```
-
-3. **Adicionar handler no `freight.controller.ts`:**
-   ```typescript
-   if (intent === UserIntent.TRACK_ORDER) {
-     return await this.handleTracking(phoneNumber, extractedData);
-   }
-   ```
-
-4. **Criar novo módulo `src/modules/tracking/`:**
-   - `tracking.types.ts`
-   - `tracking.service.ts`
-   - `tracking.controller.ts`
-
-5. **Adicionar novos estados na State Machine (se necessário):**
-   ```typescript
-   export enum ConversationState {
-     // ...
-     AWAITING_ORDER_ID = 'AWAITING_ORDER_ID',
-     FETCHING_TRACKING = 'FETCHING_TRACKING',
-   }
-   ```
-
-### Como Adicionar um Novo Provider (ex: Correios)
-
-1. **Criar `src/providers/correios.provider.ts`:**
-   ```typescript
-   class CorreiosProvider {
-     async calculateShipping(request: ShippingQuoteRequest): Promise<ShippingQuote[]> {
-       // Implementação
-     }
-   }
-   export const correiosProvider = new CorreiosProvider();
-   ```
-
-2. **Adicionar configuração em `src/config/correios.config.ts`.**
-
-3. **Integrar no `freight.service.ts`:**
-   ```typescript
-   if (strategy === 'CORREIOS_ONLY') {
-     const correiosQuotes = await correiosProvider.calculateShipping(request);
-     options.push(...correiosQuotes);
-   }
-   ```
+Comportamento:
+- Inicializa apenas se `SENTRY_DSN` ou `NEXT_PUBLIC_SENTRY_DSN` existir
+- `release` = `GIT_SHA` -> `VERCEL_GIT_COMMIT_SHA` -> `COMMIT_SHA` -> `dev`
+- `tracesSampleRate` por `SENTRY_TRACES_SAMPLE_RATE` (default `0.05`)
+- `sendDefaultPii=false`
+- `beforeSend`/`beforeBreadcrumb` fazem redaction de headers, payloads e campos sensíveis (`phone`, `message`, `body`, etc.)
+- `requestId` e `tenantId` são enviados como tags/extras quando disponíveis
 
 ---
 
-## Testes
+## Cron e Retenção (cleanup)
 
-### Estratégia de Testes
+### Rota de cron
+Arquivo: `src/app/api/cron/cleanup/route.ts`
+- `GET` e `POST` suportados
+- Autenticação:
+  - header `x-vercel-cron: 1`
+  - ou query `?token=<CRON_TOKEN>`
+- Sem auth -> `401 { error: "UNAUTHORIZED_CRON" }`
+- Observabilidade:
+  - `x-request-id`
+  - logs `cron_cleanup_start` / `cron_cleanup_end`
+- Resposta de sucesso:
+  - `200 { ok: true, deleted: {...}, retentionDays }`
 
-- **Unit Tests**: Testam componentes isolados (State Machine, Intent Classifier, Providers).
-- **Integration Tests**: Testam a integração entre camadas (Controller + Service + Providers).
-- **E2E Tests**: Testam o fluxo completo (Webhook → Resposta).
+### Serviço/job de cleanup
+Arquivos:
+- `src/modules/jobs/cleanupRetention.ts`
+- `src/modules/metrics/retention-cleanup.service.ts`
+- `src/infra/config/data-retention.ts`
 
-### Testes Implementados
+Comportamento:
+- `cleanupRetention()` monta policy a partir de envs (default base `RETENTION_DAYS=90` no job cron)
+- `runRetentionCleanup()` executa por tabela em batches (`LIMIT`), de forma idempotente
+- Operações atuais:
+  - `DELETE` em tabelas de eventos/logs antigos
+  - `ANONYMIZE` em PII de `messages` e `freight_funnel_events`
+- Retorna contagem por tabela + total
 
-- `src/core/conversation/__tests__/state-machine.test.ts`: Testes da State Machine.
-- `src/core/conversation/__tests__/intent-classifier.test.ts`: Testes do Intent Classifier.
-
-### Como Executar Testes
-
-```bash
-pnpm test
-```
-
----
-
-## Deploy
-
-### Variáveis de Ambiente Necessárias
-
-```env
-# Twilio
-TWILIO_ACCOUNT_SID=your_account_sid
-TWILIO_AUTH_TOKEN=your_auth_token
-TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
-
-# Melhor Envio
-MELHORENVIO_TOKEN=your_token
-MELHORENVIO_API_URL=https://sandbox.melhorenvio.com.br/api/v2
-
-# Redis (Upstash)
-UPSTASH_REDIS_REST_URL=your_redis_url
-UPSTASH_REDIS_REST_TOKEN=your_redis_token
-
-# Configuração
-ORIGIN_CEP=01001000
-DEFAULT_UNIT_WEIGHT=0.3
-MAX_FREIGHT_OPTIONS=3
-SESSION_TTL_MS=1800000
-LOG_LEVEL=info
-NODE_ENV=production
-```
-
-### Deploy na Vercel
-
-1. Conectar repositório GitHub à Vercel.
-2. Configurar variáveis de ambiente no painel da Vercel.
-3. Deploy automático a cada push na branch `main`.
-
-### Webhook URL
-
-Após o deploy, configurar a URL do webhook no Twilio:
-```
-https://your-app.vercel.app/api/webhook
-```
+Observação operacional:
+- Se houver drift de schema no staging, a recomendação é reconciliar migrations. O cleanup foi desenhado para ser repetível e seguro com `0` registros afetados.
 
 ---
 
-## Monitoramento e Observabilidade
+## PII Hardening (telefone + conteúdo)
 
-### Logs
+### Objetivo
+Remover dependência de telefone em claro para lookup/dedup e reduzir persistência de conteúdo sensível.
 
-Todos os logs são estruturados em JSON e podem ser enviados para ferramentas de monitoramento:
-- **Datadog**: Integração via Vercel.
-- **Sentry**: Captura de erros em tempo real.
-- **Logtail**: Agregação de logs.
+### Estratégia atual (dual-write + backfill)
 
-### Métricas Recomendadas
+#### Telefone
+Arquivos:
+- `src/infra/pii/phone.ts`
+- `src/infra/pii/crypto.ts`
 
-- **Latência do Webhook**: Tempo de resposta do webhook.
-- **Taxa de Erro**: Porcentagem de requisições que falharam.
-- **Taxa de Conversão**: Porcentagem de usuários que completaram a cotação.
-- **Uso de Redis**: Hit rate do cache.
+Implementado:
+- `normalizeE164(input)` (normalização e validação básica)
+- `deriveTenantPhoneSalt(tenantId)` usando HMAC-SHA256 com `AUTH_SECRET`
+- `phoneHash(e164, tenantSalt)` / `hashPhoneForTenant(...)`
+- `encryptString()` / `decryptString()` com AES-256-GCM
+- `PII_ENCRYPTION_KEY` obrigatório em produção (fail-hard)
+
+Persistência (schema Drizzle)
+- `messages`
+  - `phone_hash`
+  - `phone_encrypted`
+  - `body_encrypted`
+  - legado `from_phone`/`body` mantido temporariamente (com placeholders/redaction)
+- `freight_funnel_events`
+  - `phone_hash`
+  - `phone_encrypted`
+  - legado `phone_number` mantido temporariamente (com placeholder)
+
+Lookup/dedup:
+- Preferência por `phone_hash` (ex.: índices por `tenant_id + phone_hash + created_at`)
+
+Exibição/contato:
+- Usar `phone_encrypted` (decrypt somente quando necessário)
+
+#### Backfill de PII
+Arquivos:
+- `src/modules/jobs/backfillPhonePii.ts`
+- `src/app/api/internal/jobs/backfill-phone/route.ts`
+
+Comportamento:
+- Varre batches de registros legados em `messages` e `freight_funnel_events`
+- Preenche `phone_hash` + `phone_encrypted`
+- Move `body` para `body_encrypted` e substitui texto em claro por placeholder (`[encrypted:n]` / `[redacted]`)
+- Rota interna protegida por `x-internal-token`
+
+#### Retenção de PII / conteúdo
+Arquivo: `src/modules/metrics/retention-cleanup.service.ts`
+- `messages`: anonimiza `from_phone`, limpa `phone_encrypted`, substitui `body`, limpa `body_encrypted`
+- `freight_funnel_events`: anonimiza `phone_number`, limpa `phone_encrypted`
+- Prazos controlados por envs (`RETENTION_MESSAGE_PII_DAYS`, `RETENTION_FUNNEL_PII_DAYS`, etc.)
+
+### Garantias anti-vazamento
+- Logs e Sentry redigem `phone`, `message`, `body`, `payload`, `token`, `cookie`, etc.
+- `errorResponse` usado nas rotas críticas evita ecoar payload sensível
+- Diagnósticos de login usam hashes (`emailHash`, `rateLimitKeyHash`)
 
 ---
 
-## Conclusão
+## APIs Internas / Jobs Operacionais
 
-A arquitetura do **Lojacond Frete Automação** foi projetada para ser **profissional, modular e escalável**. Ela não é apenas uma solução para cotações de frete, mas uma **base reutilizável** para qualquer fluxo conversacional futuro.
+### `/api/internal/diag`
+- Diagnóstico básico de runtime/DB/Redis
+- Protegido por `x-internal-token`
 
-Principais conquistas:
-- ✅ Separação clara de responsabilidades.
-- ✅ Desacoplamento total entre camadas.
-- ✅ Extensibilidade para novos módulos e intents.
-- ✅ Resiliência com retry, fallback e tratamento de erros.
-- ✅ Observabilidade com logging estruturado.
-- ✅ Tipagem forte para prevenir erros.
+### `/api/internal/jobs/backfill-phone`
+- Backfill de `phone_hash` / `phone_encrypted` / `body_encrypted`
+- Protegido por `x-internal-token`
+- Audit log interno (`ops.backfill_phone_pii`)
 
-**Este sistema está pronto para produção e para expansão futura.**
+### `/api/internal/auth/reset-admin` (staging/dev only)
+- Reset de senha do admin local (`admin@condstore.local` ou outro email fornecido)
+- Protegido por `x-internal-token`
+- Bloqueado em produção (`VERCEL_ENV=production`)
 
 ---
 
-**Autor:** Manus AI  
-**Contato:** https://manus.im  
-**Licença:** MIT
+## Frontend Foundation (FRONT-01)
+
+### Objetivo
+Base visual consistente no estilo "grouped settings" (iOS Settings-inspired), sem adicionar design system pesado.
+
+### Entregas desta etapa
+- Tokens em `src/ui/tokens/*`
+  - `colors`, `spacing`, `radius`, `typography`, `shadows`, `zIndex`
+- Componentes base em `src/ui/components/*`
+  - `Card`, `ListGroup`, `ListItem`, `Separator`, `Badge`, `Button`, `TextField`, `NavItem`
+- Tema em `src/ui/theme/*`
+  - `ThemeProvider`
+  - `ThemeScript` (bootstrap anti-flicker)
+  - `ThemeToggle`
+- Aplicação inicial em:
+  - `/login`
+  - shell/layout base de `/cockpit`
+
+### Tema (light/dark/system)
+- Preferência persistida em `localStorage` (`condstore.theme`)
+- `ThemeScript` aplica `data-theme` antes da hidratação para reduzir flicker
+- `ThemeProvider` sincroniza com `prefers-color-scheme` quando modo `system`
+- Variáveis CSS semânticas definidas em `src/app/globals.css`
+
+---
+
+## Smoke Test de Staging
+
+Arquivo/script:
+- `scripts/smoke/staging-smoke.ts`
+- `npm run staging:smoke -- <preview-url>`
+
+Checks principais:
+- `GET /api/internal/diag` com `x-internal-token` -> `200` (`db=ok`, `redis=ok`)
+- Cockpit sem auth -> `401`
+- RBAC cockpit (`operator=403`, `admin=200`) quando tokens/creds disponíveis
+- `POST /api/auth/logout` + `GET /api/auth/me` com token antigo -> invalidação efetiva (`401`)
+- Cron cleanup sem auth -> `401`
+- Cron cleanup com `CRON_TOKEN` -> `200`
+- Validação de `x-request-id` nas rotas críticas
+
+Entrada por env (sem valores):
+- `INTERNAL_DIAG_TOKEN`
+- `CRON_TOKEN`
+- `TOKEN_ADMIN` / `TOKEN_OPERATOR` (opcional)
+- ou `LOGIN_ADMIN_EMAIL` + `LOGIN_ADMIN_PASSWORD`
+- ou `LOGIN_OPERATOR_EMAIL` + `LOGIN_OPERATOR_PASSWORD`
+
+---
+
+## Variáveis de Ambiente (principais) e propósito
+
+### Runtime / Build / Identidade
+- `NODE_ENV`: modo (`development`/`production`/`test`)
+- `VERCEL_ENV`: ambiente Vercel (`preview`/`production`/...)
+- `GIT_SHA`, `VERCEL_GIT_COMMIT_SHA`, `COMMIT_SHA`: release/versionamento (diag + Sentry)
+- `APP_URL`: URL base pública (quando aplicável)
+- `LOG_LEVEL`: nível de log da aplicação
+
+### Banco / Cache
+- `DATABASE_URL`: conexão TiDB/MySQL (obrigatória)
+- `REDIS_URL`: conexão Redis (cache/rate limit)
+
+### Auth / Sessão / Segurança
+- `AUTH_SECRET`: assinatura de sessão JWT (obrigatória em produção)
+- `JWT_SECRET`: compat legado em alguns fluxos (login fallback de env)
+- `RATE_LIMIT_FAIL_OPEN`: override explícito para fail-open do limiter em produção (default `false`)
+- `RATE_LIMIT_DEFAULT_MAX`, `RATE_LIMIT_DEFAULT_WINDOW_SECONDS`: política default de rate limit (quando usada)
+
+### Internos / Operação
+- `INTERNAL_DIAG_TOKEN`: token para `/api/internal/diag` e rotas internas protegidas
+- `INTERNAL_EXPORT_TOKEN`: alias/compat para token interno
+- `SEED_TOKEN`: proteção de endpoints de seed (ex.: admin seed)
+- `ADMIN_SEED_PASSWORD`: senha do seed admin (quando seed cria usuário)
+- `CRON_TOKEN`: auth por query no `/api/cron/cleanup`
+
+### PII / Criptografia
+- `PII_ENCRYPTION_KEY`: chave AES-256-GCM para `phone_encrypted`/`body_encrypted` (obrigatória em produção)
+- `PROVIDER_SECRETS_KEY`: proteção de segredos de providers (hard check em produção no boot)
+
+### Observabilidade / Sentry (opcional)
+- `SENTRY_DSN`: DSN Sentry server/edge
+- `NEXT_PUBLIC_SENTRY_DSN`: DSN Sentry client
+- `SENTRY_TRACES_SAMPLE_RATE`: sampling de tracing (default `0.05`)
+
+### Retenção / Cleanup
+- `RETENTION_DAYS`: base default do job de cron cleanup (fallback `90`)
+- `RETENTION_PUBLIC_EVENTS_DAYS`
+- `RETENTION_FUNNEL_DAYS`
+- `RETENTION_FREIGHT_LOGS_DAYS`
+- `RETENTION_ATTR_CLICKS_DAYS`
+- `RETENTION_DEDUP_DAYS`
+- `RETENTION_MESSAGE_PII_DAYS`
+- `RETENTION_FUNNEL_PII_DAYS`
+
+### Twilio / Webhooks / Tracking (principais integrações)
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_WHATSAPP_NUMBER`
+- `TWILIO_WEBHOOK_BASE_URL`
+- `TWILIO_SIGNATURE_VALIDATION_ENABLED`
+- `TRACKING_REDIRECT_MODE`
+- `TRACKING_REDIRECT_URL`
+
+### Pagamentos / terceiros (quando habilitado)
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `MELHORENVIO_TOKEN`
+- `MELHORENVIO_API_URL`
+
+> Nota: existem outras envs de módulos específicos (AI/RAG/Frank/metrics) no código. A lista acima cobre as variáveis centrais de segurança, auth, observabilidade, cron, PII e operação usadas no estado atual pós-P0.
+
+---
+
+## Fluxos-chave (resumo)
+
+### Login -> sessão -> cockpit
+1. `POST /api/auth/login` valida payload
+2. Rate limit `auth.login` (IP + email normalizado)
+3. Busca usuário + verifica senha
+4. Emite JWT com `sv=sessionVersion`
+5. UI acessa `/cockpit/*`
+6. Middleware valida JWT + role e injeta headers auth internos
+7. Route handlers do cockpit aplicam `requireAdmin()` (RBAC central)
+
+### Logout -> invalidação imediata
+1. `POST /api/auth/logout`
+2. `getSessionUser()` resolve usuário atual
+3. `invalidateSessions(userId)` incrementa `session_version`
+4. Cookie é limpo
+5. Token antigo falha em `getSessionUser()` por mismatch de `sv`
+
+### Cron cleanup
+1. Vercel chama `/api/cron/cleanup`
+2. Auth por `x-vercel-cron=1` ou `?token=CRON_TOKEN`
+3. `cleanupRetention()` resolve policy de retenção
+4. `runRetentionCleanup()` executa deletes/anonymize por tabela
+5. Retorna `200` com contagens e `x-request-id`
+
+---
+
+## Riscos Operacionais Conhecidos / Checklist de Deploy
+
+- **Schema drift em staging** quebra login/analytics/cleanup: manter migrations alinhadas ao `src/drizzle/schema.ts`
+- **`AUTH_SECRET` ausente em produção** bloqueia cockpit (comportamento intencional fail-hard)
+- **`PII_ENCRYPTION_KEY` ausente em produção** quebra criptografia PII (comportamento intencional fail-hard)
+- **Redis indisponível em produção** bloqueia rate limits (fail-closed), salvo override explícito `RATE_LIMIT_FAIL_OPEN=true`
+- **Sentry sem DSN** não quebra build/runtime (fica desabilitado)
+
+Checklist rápido de preview/staging:
+- `DATABASE_URL`, `AUTH_SECRET`, `PII_ENCRYPTION_KEY`, `CRON_TOKEN`, `INTERNAL_DIAG_TOKEN`
+- `REDIS_URL` (recomendado)
+- `SEED_TOKEN` / `ADMIN_SEED_PASSWORD` (se usar seed/reset de admin)
+- `npm run staging:smoke -- <preview-url>`
+
+---
+
+## Referências de Código (arquivos-chave)
+
+- Auth/sessão: `src/infra/auth/session.ts`
+- RBAC/guards: `src/infra/auth/roles.ts`, `src/infra/auth/guards.ts`
+- Middleware: `src/middleware.ts`
+- Login/logout/me: `src/app/api/auth/login/route.ts`, `src/app/api/auth/logout/route.ts`, `src/app/api/auth/me/route.ts`
+- Rate limiting: `src/infra/security/rate-limiter.ts`, `src/infra/rate-limiter.ts`
+- Request trace/logs: `src/infra/http/request-trace.ts`, `src/infra/log/logger.ts`, `src/infra/logger.ts`
+- Diag: `src/app/api/internal/diag/route.ts`
+- Sentry: `src/infra/observability/sentry.ts`, `instrumentation.ts`, `sentry.*.config.ts`
+- Cron cleanup: `src/app/api/cron/cleanup/route.ts`, `src/modules/jobs/cleanupRetention.ts`
+- Retenção/anonimização: `src/modules/metrics/retention-cleanup.service.ts`
+- PII (phone/body): `src/infra/pii/phone.ts`, `src/infra/pii/crypto.ts`, `src/modules/jobs/backfillPhonePii.ts`
+- UI foundation (FRONT-01): `src/ui/tokens/*`, `src/ui/components/*`, `src/ui/theme/*`
+- Smoke: `scripts/smoke/staging-smoke.ts`

@@ -8,8 +8,9 @@ import ReactMarkdown from 'react-markdown';
 
 export const dynamic = 'force-dynamic';
 
-export default async function EvolutionDetailPage({ params }: { params: { id: string } }) {
-    const report = await projectReportRepository.getReportById(params.id);
+export default async function EvolutionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const report = await projectReportRepository.getReportById(id);
 
     if (!report) {
         notFound();

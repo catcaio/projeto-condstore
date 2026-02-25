@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '../../../../../infra/auth/session';
+import { requireAdmin } from '../../../../../infra/auth/guards';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '../../../../../infra/http/error-response';
 import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/request-trace';
 import { structuredLogger } from '../../../../../infra/log/logger';
@@ -51,16 +51,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   };
 
   try {
-    const session = await getSessionUser(request);
-    if (!session?.tenantId) {
-      return finalize(errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'Unauthorized'), ErrorCode.AUTH_REQUIRED);
-    }
-    if (session.role !== 'admin') {
-      return finalize(errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Forbidden'), ErrorCode.FORBIDDEN);
-    }
+    const auth = await requireAdmin(request, { requestId });
+    if (!auth.ok) return finalize(auth.response, auth.code);
 
-    tenantId = session.tenantId;
-    userId = session.sub;
+    tenantId = auth.session.tenantId;
+    userId = auth.session.sub;
 
     let body: RunRollupBody = {};
     try {

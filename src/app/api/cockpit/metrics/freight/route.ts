@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { getDb } from '../../../../../infra/db';
-import { getSessionUser } from '../../../../../infra/auth/session';
+import { requireAdmin } from '../../../../../infra/auth/guards';
 import { logger } from '../../../../../infra/logger';
 import { redisClient } from '../../../../../infra/redis.client';
 import { buildAttributionBreakdown, isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '../../../../../modules/metrics/attribution-breakdown';
@@ -129,13 +129,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
     const groupBy = isAttributionGroupBy(parsedGroupBy) ? parsedGroupBy : null;
 
-    const sessionUser = await getSessionUser(request);
+    const auth = await requireAdmin(request, { requestId });
+    if (!auth.ok) return finalize(auth.response, auth.code);
 
-    if (!sessionUser?.tenantId) {
-      return finalize(errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'Unauthorized'), ErrorCode.AUTH_REQUIRED);
-    }
-
-    const resolvedTenantId = sessionUser.tenantId;
+    const resolvedTenantId = auth.session.tenantId;
     tenantId = resolvedTenantId;
     const cacheKey = `cockpit:metrics:freight:${resolvedTenantId}`;
 

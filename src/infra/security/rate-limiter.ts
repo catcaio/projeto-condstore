@@ -46,6 +46,10 @@ function isDevMemoryFallbackEnabled(): boolean {
   return process.env.NODE_ENV !== 'production';
 }
 
+function isRateLimitFailOpenOverrideEnabled(): boolean {
+  return process.env.RATE_LIMIT_FAIL_OPEN?.trim().toLowerCase() === 'true';
+}
+
 function bucketKey(scope: string, key: string, windowStartSec: number): string {
   return `rl:${scope}:${key}:${windowStartSec}`;
 }
@@ -91,6 +95,24 @@ function hashRateLimitKeyInternal(key: string): string {
   return sha256Hex(key)?.slice(0, 16) ?? 'unknown';
 }
 
+function failClosedDecision(now: number, options: LimitOptions): RateLimitDecision {
+  return {
+    allowed: false,
+    remaining: 0,
+    resetAt: now + options.windowSec * 1000,
+    limit: options.max,
+  };
+}
+
+function failOpenDecision(now: number, options: LimitOptions): RateLimitDecision {
+  return {
+    allowed: true,
+    remaining: options.max,
+    resetAt: now + options.windowSec * 1000,
+    limit: options.max,
+  };
+}
+
 async function getRedisNumber(key: string): Promise<number> {
   const value = await redisClient.get<number>(key);
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
@@ -109,24 +131,18 @@ export class RateLimiter {
     const now = nowMs();
 
     if (redisClient.isAvailable()) {
-      return this.limitWithRedis(normalizedScope, normalizedKey, options, now);
+      try {
+        return await this.limitWithRedis(normalizedScope, normalizedKey, options, now);
+      } catch (error) {
+        return await this.handleRedisFailure(normalizedScope, normalizedKey, options, now, 'redis_error', error);
+      }
     }
 
     if (isDevMemoryFallbackEnabled()) {
       return this.limitWithMemory(normalizedScope, normalizedKey, options, now);
     }
 
-    structuredLogger.warn('rate_limiter_redis_unavailable_prod_fail_open', {
-      eventType: 'rate_limiter',
-      scope: normalizedScope,
-      keyHash: hashRateLimitKeyInternal(normalizedKey),
-    });
-    return {
-      allowed: true,
-      remaining: options.max,
-      resetAt: computeWindow(now, options.windowSec).resetAt,
-      limit: options.max,
-    };
+    return await this.handleRedisFailure(normalizedScope, normalizedKey, options, now, 'redis_unavailable');
   }
 
   private async limitWithRedis(scope: string, key: string, options: LimitOptions, now: number): Promise<RateLimitDecision> {
@@ -155,6 +171,13 @@ export class RateLimiter {
       getRedisNumber(prevKey),
     ]);
 
+    if (!Number.isFinite(currentCount) || currentCount < 1) {
+      throw new Error('rate_limiter_redis_incr_failed');
+    }
+    if (!Number.isFinite(prevCount) || prevCount < 0) {
+      throw new Error('rate_limiter_redis_prev_count_failed');
+    }
+
     if (currentCount === 1) {
       // Keep one extra window so the previous bucket is still available for weighted reads.
       await redisClient.expire(currentKey, options.windowSec * 2);
@@ -180,6 +203,51 @@ export class RateLimiter {
       resetAt: window.resetAt,
       limit: options.max,
     };
+  }
+
+  private async handleRedisFailure(
+    scope: string,
+    key: string,
+    options: LimitOptions,
+    now: number,
+    reason: 'redis_unavailable' | 'redis_error',
+    error?: unknown,
+  ): Promise<RateLimitDecision> {
+    const keyHash = hashRateLimitKeyInternal(key);
+    const errorName = error instanceof Error ? error.name : undefined;
+
+    if (isDevMemoryFallbackEnabled()) {
+      structuredLogger.warn('rate_limiter_redis_failure_memory_fallback', {
+        eventType: 'rate_limiter',
+        scope,
+        keyHash,
+        reason,
+        ...(errorName ? { errorName } : {}),
+      });
+      return this.limitWithMemory(scope, key, options, now);
+    }
+
+    if (isRateLimitFailOpenOverrideEnabled()) {
+      structuredLogger.warn('rate_limiter_redis_failure_fail_open_override', {
+        eventType: 'rate_limiter',
+        scope,
+        keyHash,
+        reason,
+        failOpenOverride: true,
+        ...(errorName ? { errorName } : {}),
+      });
+      return failOpenDecision(now, options);
+    }
+
+    structuredLogger.error('rate_limiter_redis_failure_fail_closed', {
+      eventType: 'rate_limiter',
+      scope,
+      keyHash,
+      reason,
+      failOpenOverride: false,
+      ...(errorName ? { errorName } : {}),
+    });
+    return failClosedDecision(now, options);
   }
 
   private async limitWithMemory(scope: string, key: string, options: LimitOptions, now: number): Promise<RateLimitDecision> {
