@@ -3,6 +3,8 @@ import { getDb } from '../../infra/db';
 import { freightFunnelEvents } from '../../drizzle/schema';
 import { logger } from '../../infra/logger';
 import { sql } from 'drizzle-orm';
+import { redisClient } from '../../infra/redis.client';
+import type { AttributionSnapshot } from '../../infra/attribution/attribution.types';
 
 export enum FunnelStage {
     FLOW_STARTED = 'FLOW_STARTED',
@@ -28,6 +30,7 @@ export interface SaveFunnelEventInput {
     sessionId: string;      // Required: always pass session.sessionId explicitly
     stage: FunnelStage;
     messageSid?: string;    // Optional: Twilio MessageSid for tracing
+    attribution?: AttributionSnapshot | null;
 }
 
 export class FunnelRepository {
@@ -48,6 +51,13 @@ export class FunnelRepository {
                     phoneNumber: input.phoneNumber,
                     sessionId: input.sessionId,   // Must be explicit — no fallback
                     stage: input.stage,
+                    utmSource: input.attribution?.utmSource ?? null,
+                    utmMedium: input.attribution?.utmMedium ?? null,
+                    utmCampaign: input.attribution?.utmCampaign ?? null,
+                    utmTerm: input.attribution?.utmTerm ?? null,
+                    utmContent: input.attribution?.utmContent ?? null,
+                    refToken: input.attribution?.refToken ?? null,
+                    clickId: input.attribution?.clickId ?? null,
                 })
                 .onDuplicateKeyUpdate({
                     set: {
@@ -55,6 +65,10 @@ export class FunnelRepository {
                         id: sql`id`,
                     },
                 });
+
+            if (redisClient.isAvailable()) {
+                await redisClient.del(`cockpit:metrics:funnel:${input.tenantId}`);
+            }
 
         } catch (error) {
             // Log warning but do not throw to prevent blocking the user flow

@@ -22,12 +22,9 @@ export type TenantAIProviderWithKey = TenantAIProviderRecord & {
 
 const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.DEFAULT_AI_TIMEOUT_MS || '20000', 10);
 
-/**
- * Resolve a API key em memória: decripta v1:... ou usa plaintext legado.
- * Nunca loga o valor decriptado.
- */
+/** Resolve a API key em memória a partir do valor criptografado (v1:...). */
 function resolveApiKey(row: TenantAIProviderRecord): string | null {
-  const raw = row.apiKeyEncrypted ?? row.apiKey ?? null;
+  const raw = row.apiKeyEncrypted ?? null;
   if (!raw) return null;
   return decryptApiKey(raw);
 }
@@ -52,22 +49,11 @@ export class TenantAIProviderRepository {
       }
 
       const row = results[0];
-      if (row.apiKeyEncrypted && row.apiKey) {
-        // Hygiene: if encrypted key exists, immediately clear legacy plaintext.
-        await db
-          .update(tenantAiProviders)
-          .set({ apiKey: null })
-          .where(eq(tenantAiProviders.id, row.id));
-        row.apiKey = null;
-        logger.warn('Tenant AI provider plaintext api_key cleared because encrypted key exists', {
-          tenantId,
-        });
-      }
 
       logger.info('Tenant AI provider config retrieved', {
         tenantId,
         providerType: row.providerType,
-        hasKey: !!(row.apiKeyEncrypted || row.apiKey),
+        hasKey: !!row.apiKeyEncrypted,
       });
 
       return { ...row, resolvedApiKey: resolveApiKey(row) };
@@ -107,7 +93,6 @@ export class TenantAIProviderRepository {
           baseUrl: payload.baseUrl,
           model: payload.model,
           embedModel: payload.embedModel,
-          apiKey: null,             // apaga plaintext legado
           apiKeyEncrypted,
           isEnabled: isEnabled ? 1 : 0,
           timeoutMs,
@@ -129,7 +114,6 @@ export class TenantAIProviderRepository {
       baseUrl: payload.baseUrl,
       model: payload.model,
       embedModel: payload.embedModel,
-      apiKey: null,             // nunca persistir plaintext
       apiKeyEncrypted,
       isEnabled: isEnabled ? 1 : 0,
       timeoutMs,
@@ -159,7 +143,6 @@ export class TenantAIProviderRepository {
     await db
       .update(tenantAiProviders)
       .set({
-        apiKey: null,           // apaga plaintext
         apiKeyEncrypted,
         isEnabled: 1,
       })

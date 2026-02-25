@@ -6,9 +6,9 @@
  *   2. TWILIO_AUTH_TOKEN presence (500 if missing — no bypass ever)
  *   3. Signature verification (401 if invalid)
  *   4. Circuit breaker check (200 TwiML fallback if open)
- *   5. Dual rate limits: phone (10/60s) + tenant (200/3600s) → 200 TwiML if exceeded
+ *   5. Rate limit (tenant+From, 30/60s) → 429 JSON if exceeded
  *   6. Payload validation (MessageSid required)
- *   7. Idempotency: duplicate MessageSid → 200 TwiML, no reprocessing
+ *   7. Idempotency (DB dedup): duplicate MessageSid → 200 TwiML empty no-op
  *   8. Tenant resolution
  *   9. Business logic (freight controller)
  *  10. Structured audit log
@@ -17,25 +17,31 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { twilioProvider } from "../../../providers/twilio.provider";
-import { logger } from '@/infra/logger';
-import { makeRequestId } from "@/infra/http/request-trace";
+import { logger } from '../../../infra/logger';
+import { attachRequestIdHeader, makeRequestId } from "../../../infra/http/request-trace";
 import { sanitizeMessage, validateWebhookPayload } from "../../../lib/validation";
 import { messageRepository } from "../../../infra/repositories/message.repository";
 import { tenantRepository } from "../../../infra/repositories/tenant.repository";
 import { aiDecisionLogRepository } from "../../../infra/repositories/ai-decision-log.repository";
 import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
-import { checkRedisRateLimit } from "../../../infra/rate-limit/redis-rate-limiter";
-import { acquireIdempotency, markIdempotencyDone } from "../../../infra/idempotency/redis-idempotency";
 import { freightController } from "../../../modules/freight/freight.controller";
 import { normalizeAndHash, isValidPhone } from "../../../lib/phone";
 import { intentClassifier } from "../../../core/conversation/intent-classifier";
 import { appendMessage } from "../../../infra/context-cache";
+import { extractAttributionTokenFromText } from "../../../infra/attribution/token-parser";
+import { attributionClickRepository } from "../../../infra/repositories/attribution-click.repository";
+import { inboundMessageDedupRepository } from "../../../infra/repositories/inbound-message-dedup.repository";
+import { sessionManager } from "../../../core/conversation/session-manager";
+import type { AttributionSnapshot } from "../../../infra/attribution/attribution.types";
 import {
   isCircuitOpen,
   recordSuccess,
   recordFailure,
   CIRCUIT_FALLBACK_MESSAGE,
 } from "../../../infra/circuit-breaker";
+import { ErrorCode, errorResponse } from "../../../infra/http/error-response";
+import { structuredLogger } from "../../../infra/log/logger";
+import { applyRateLimitHeaders, hashRateLimitKeyForLog, rateLimiter } from "../../../infra/security/rate-limiter";
 
 // ─── TwiML helpers ────────────────────────────────────────────────────────────
 
@@ -66,6 +72,29 @@ function twimlEmpty(requestId?: string): NextResponse {
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   const requestId = makeRequestId(request);
+  const route = '/api/webhook';
+  let tenantIdForLog: string | undefined;
+
+  structuredLogger.info('webhook_route_start', {
+    requestId,
+    route,
+    eventType: 'route_start',
+  });
+
+  const finish = (response: NextResponse, code?: ErrorCode | string) => {
+    attachRequestIdHeader(response, requestId);
+    structuredLogger.info('webhook_route_end', {
+      requestId,
+      tenantId: tenantIdForLog,
+      route,
+      eventType: 'route_end',
+      durationMs: Date.now() - startTime,
+      status: response.status,
+      outcome: response.status >= 400 ? 'error' : 'ok',
+      errorCode: code,
+    });
+    return response;
+  };
 
   logger.info('webhook_request_start', {
     requestId,
@@ -82,9 +111,14 @@ export async function POST(request: NextRequest) {
       latencyMs,
       contentType,
     });
-    return NextResponse.json(
-      { error: "Unsupported Media Type. Use application/x-www-form-urlencoded." },
-      { status: 415, headers: { 'X-Request-Id': requestId } }
+    return finish(
+      errorResponse(
+        ErrorCode.VALIDATION_ERROR,
+        415,
+        requestId,
+        "Unsupported Media Type. Use application/x-www-form-urlencoded."
+      ),
+      ErrorCode.VALIDATION_ERROR,
     );
   }
 
@@ -96,9 +130,14 @@ export async function POST(request: NextRequest) {
       new Error("TWILIO_AUTH_TOKEN missing"),
       { event: "webhook_misconfigured", requestId, latencyMs }
     );
-    return NextResponse.json(
-      { error: "Webhook not properly configured." },
-      { status: 500, headers: { 'X-Request-Id': requestId } }
+    return finish(
+      errorResponse(
+        ErrorCode.UPSTREAM_TWILIO_ERROR,
+        500,
+        requestId,
+        "Webhook not properly configured."
+      ),
+      ErrorCode.UPSTREAM_TWILIO_ERROR,
     );
   }
 
@@ -129,7 +168,7 @@ export async function POST(request: NextRequest) {
       event: "webhook_invalid_signature",
       ...safeCtx,
     });
-    return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
+    return finish(errorResponse(ErrorCode.FORBIDDEN, 401, requestId, "Invalid signature."), ErrorCode.FORBIDDEN);
   }
 
   // ── 5. Circuit breaker ─────────────────────────────────────────────────────
@@ -138,7 +177,7 @@ export async function POST(request: NextRequest) {
       event: "webhook_circuit_open",
       ...safeCtx,
     });
-    return twimlOk(CIRCUIT_FALLBACK_MESSAGE, requestId);
+    return finish(twimlOk(CIRCUIT_FALLBACK_MESSAGE, requestId), 'CIRCUIT_OPEN');
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -152,9 +191,9 @@ export async function POST(request: NextRequest) {
         event: "webhook_missing_message_sid",
         ...safeCtx,
       });
-      return NextResponse.json(
-        { error: "Invalid payload: MessageSid is required." },
-        { status: 400 }
+      return finish(
+        errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, "Invalid payload: MessageSid is required."),
+        ErrorCode.VALIDATION_ERROR,
       );
     }
 
@@ -165,7 +204,7 @@ export async function POST(request: NextRequest) {
         event: "webhook_missing_to",
         ...safeCtx,
       });
-      return twimlOk("Erro interno: payload inválido.", requestId);
+      return finish(twimlOk("Erro interno: payload inválido.", requestId), ErrorCode.VALIDATION_ERROR);
     }
 
     let tenant: Awaited<ReturnType<typeof tenantRepository.resolveTenantByTwilioNumber>>;
@@ -177,95 +216,48 @@ export async function POST(request: NextRequest) {
           event: "webhook_tenant_not_found",
           ...safeCtx,
         });
-        return NextResponse.json({ error: "Tenant not found" }, { status: 403 });
+        return finish(errorResponse(ErrorCode.FORBIDDEN, 403, requestId, "Tenant not found"), ErrorCode.FORBIDDEN);
       }
       logger.error("Tenant resolution failed", err as Error, {
         event: "webhook_tenant_resolution_error",
         ...safeCtx,
       });
-      return twimlOk("Serviço indisponível temporariamente.");
+      return finish(twimlOk("Serviço indisponível temporariamente.", requestId), ErrorCode.DB_ERROR);
     }
 
     const tenantId = tenant.id.toString();
+    tenantIdForLog = tenantId;
     // Pre-compute hash from payload["From"] so rate-limit and idempotency logs
     // use a stable key before the full parse step.  The normalised form used for
     // DB storage is derived again from the parsed incomingMessage below.
     const phoneHash = normalizeAndHash(payload["From"] || "").hash;
 
-    // ── 8. Idempotency (Redis) ───────────────────────────────────────────────
-    const idemKey = `idem:${tenantId}:webhook.twilio:${messageSid}`;
-    const acquired = await acquireIdempotency(idemKey, undefined, requestId);
-    if (!acquired) {
-      logger.info("Webhook duplicate ignored (idempotency)", {
-        event: "webhook_idem_duplicate",
-        tenantId,
-        phoneHash,
-        providerEventId: messageSid,
-        ...safeCtx,
-      });
-      return twimlEmpty(requestId);
-    }
-
-    // ── 9. Dual rate limits ──────────────────────────────────────────────────
-
-    // 9a. Per-phone: 10 messages / 60s
-    const phoneLimit = await checkRedisRateLimit({
-      tenantId,
-      scope: `webhook.twilio.phone:${phoneHash}`,
-      limit: 10,
-      windowSeconds: 60,
-      requestId,
+    // ── 8. Rate limit (tenant + sender) ──────────────────────────────────────
+    const twilioRateKey = `${tenantId}:${(payload["From"] || "").trim().toLowerCase() || "unknown"}`;
+    const twilioRateDecision = await rateLimiter.limit('twilio', twilioRateKey, {
+      windowSec: 60,
+      max: 30,
     });
-    if (!phoneLimit.allowed) {
-      logger.warn("Webhook rate limited: phone threshold", {
-        event: "webhook_rate_limited",
-        limitType: "phone",
+    if (!twilioRateDecision.allowed) {
+      structuredLogger.warn('rate_limited', {
+        requestId,
+        route,
         tenantId,
-        phoneHash,
-        ...safeCtx,
+        eventType: 'RATE_LIMITED',
+        scope: 'twilio',
+        keyHash: hashRateLimitKeyForLog(twilioRateKey),
+        remaining: twilioRateDecision.remaining,
       });
-      return twimlOk(
-        "Muitas mensagens enviadas. Por favor, aguarde um momento antes de tentar novamente.",
-        requestId
+      return finish(
+        applyRateLimitHeaders(
+          errorResponse(ErrorCode.RATE_LIMITED, 429, requestId, 'Rate limit exceeded'),
+          twilioRateDecision,
+        ),
+        ErrorCode.RATE_LIMITED,
       );
     }
 
-    // 9b. Per-tenant: 200 messages / 3600s (1h)
-    const tenantLimit = await checkRedisRateLimit({
-      tenantId,
-      scope: "webhook.twilio.tenant",
-      limit: 200,
-      windowSeconds: 3600,
-      requestId,
-    });
-    if (!tenantLimit.allowed) {
-      logger.warn("Webhook rate limited: tenant threshold", {
-        event: "webhook_rate_limited",
-        limitType: "tenant",
-        tenantId,
-        phoneHash,
-        ...safeCtx,
-      });
-      return twimlOk(
-        "Muitas mensagens recebidas no momento. Tente novamente em breve.",
-        requestId
-      );
-    }
-
-    // ── 9. Idempotency: reject duplicates ────────────────────────────────────
-    const isDuplicate = await messageRepository.existsByMessageSid(messageSid);
-    if (isDuplicate) {
-      logger.info("Webhook duplicate ignored", {
-        event: "webhook_duplicate_ignored",
-        tenantId,
-        phoneHash,
-        providerEventId: messageSid,
-        ...safeCtx,
-      });
-      return twimlEmpty(requestId);
-    }
-
-    // ── 10. Validate and sanitize payload ────────────────────────────────────
+    // ── 9. Validate and sanitize payload ─────────────────────────────────────
     validateWebhookPayload(payload);
 
     const incomingMessage = twilioProvider.parseIncomingMessage(payload as any);
@@ -281,7 +273,20 @@ export async function POST(request: NextRequest) {
         tenantId,
         ...safeCtx,
       });
-      return twimlOk("Número inválido. Tente novamente.", requestId);
+      return finish(twimlOk("Número inválido. Tente novamente.", requestId), ErrorCode.VALIDATION_ERROR);
+    }
+
+    // ── 10. DB idempotency guard (authoritative replay protection) ───────────
+    const dedupAcquired = await inboundMessageDedupRepository.tryAcquire(messageSid, tenantId);
+    if (!dedupAcquired) {
+      structuredLogger.info('webhook_duplicate_db_dedup', {
+        requestId,
+        route,
+        tenantId,
+        eventType: 'webhook_duplicate',
+        durationMs: Date.now() - startTime,
+      });
+      return finish(twimlEmpty(requestId), 'DUPLICATE_DB_DEDUP');
     }
 
     // ── 11. Persist inbound message (sanitized, no PII in payload) ───────────
@@ -289,6 +294,25 @@ export async function POST(request: NextRequest) {
     const intentResult = intentClassifier.classify(messageText);
     const intent = intentResult.intent;
     const confidence = intentResult.confidence;
+    let inboundAttribution: AttributionSnapshot | null = null;
+
+    const attributionToken = extractAttributionTokenFromText(messageText);
+    if (attributionToken) {
+      const consumed = await attributionClickRepository.consumeByToken(attributionToken, {
+        requestId,
+        tenantId,
+      });
+      if (consumed?.attribution) {
+        inboundAttribution = consumed.attribution;
+
+        const existingSession = await sessionManager.getSession(tenantId, fromNormalized);
+        if (existingSession) {
+          await sessionManager.updateSession(tenantId, fromNormalized, {
+            attribution: consumed.attribution,
+          });
+        }
+      }
+    }
 
     const sanitizedPayload = {
       MessageSid: payload["MessageSid"],
@@ -331,7 +355,9 @@ export async function POST(request: NextRequest) {
       tenantId,
       fromNormalized,
       messageText,
-      messageSid
+      messageSid,
+      inboundAttribution,
+      requestId,
     );
 
     const latencyMs = Date.now() - startTime;
@@ -365,8 +391,6 @@ export async function POST(request: NextRequest) {
 
     // Circuit breaker: mark success
     recordSuccess();
-    await markIdempotencyDone(idemKey, { status: "ok" }, undefined, requestId);
-
     const successLatencyMs = Date.now() - startTime;
     logger.info('webhook_request_end', {
       requestId,
@@ -375,7 +399,7 @@ export async function POST(request: NextRequest) {
       tenantId,
     });
 
-    return twimlOk(replyMessage, requestId);
+    return finish(twimlOk(replyMessage, requestId));
   } catch (err) {
     const errorLatencyMs = Date.now() - startTime;
 
@@ -394,7 +418,17 @@ export async function POST(request: NextRequest) {
       latencyMs: errorLatencyMs,
     });
 
-    return twimlOk("Desculpe, ocorreu um erro. Tente novamente mais tarde.", requestId);
+    structuredLogger.error('webhook_route_error', {
+      requestId,
+      tenantId: tenantIdForLog,
+      route,
+      eventType: 'route_error',
+      durationMs: Date.now() - startTime,
+      errorCode: ErrorCode.UNKNOWN,
+      error: err,
+    });
+
+    return finish(twimlOk("Desculpe, ocorreu um erro. Tente novamente mais tarde.", requestId), ErrorCode.UNKNOWN);
   }
 }
 
@@ -405,16 +439,12 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   const requestId = makeRequestId(request);
-  return NextResponse.json(
+  const response = NextResponse.json(
     {
       status: "ok",
       service: "lojacond-frete-automacao",
       timestamp: new Date().toISOString(),
-    },
-    {
-      headers: {
-        'X-Request-Id': requestId,
-      },
     }
   );
+  return attachRequestIdHeader(response, requestId);
 }

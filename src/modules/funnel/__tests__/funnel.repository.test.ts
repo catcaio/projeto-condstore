@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { funnelRepository, FunnelStage } from '../funnel.repository';
 import { freightFunnelEvents } from '../../../drizzle/schema';
+import { redisClient } from '../../../infra/redis.client';
 
 // Mock dependencies
 const mockDb = {
@@ -25,12 +26,21 @@ vi.mock('../../../infra/logger', () => ({
     },
 }));
 
+vi.mock('../../../infra/redis.client', () => ({
+    redisClient: {
+        isAvailable: vi.fn().mockReturnValue(false),
+        del: vi.fn().mockResolvedValue(undefined),
+    },
+}));
+
 describe('FunnelRepository', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
     it('should save a funnel event with phone number and session', async () => {
+        vi.mocked(redisClient.isAvailable).mockReturnValue(true);
+
         const input = {
             tenantId: 'tenant-123',
             phoneNumber: '5511999999999',
@@ -48,6 +58,7 @@ describe('FunnelRepository', () => {
             sessionId: input.sessionId,
         }));
         expect(mockDb.onDuplicateKeyUpdate).toHaveBeenCalled();
+        expect(redisClient.del).toHaveBeenCalledWith('cockpit:metrics:funnel:tenant-123');
     });
 
     it('should not throw if database operation fails', async () => {

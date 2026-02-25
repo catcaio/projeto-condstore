@@ -1,6 +1,7 @@
 import { getDb } from '../../infra/db';
 import { publicEvents } from '../../drizzle/schema';
 import crypto from 'crypto';
+import type { AttributionSnapshot } from '../../infra/attribution/attribution.types';
 
 interface LogPublicEventParams {
     tenantId: string;
@@ -9,6 +10,7 @@ interface LogPublicEventParams {
     path: string;
     props?: Record<string, unknown> | null;
     userAgent?: string;
+    attribution?: AttributionSnapshot | null;
 }
 
 export const analyticsService = {
@@ -41,6 +43,13 @@ export const analyticsService = {
                 path: params.path,
                 props: safeProps,
                 userAgent: params.userAgent ?? null,
+                utmSource: params.attribution?.utmSource ?? null,
+                utmMedium: params.attribution?.utmMedium ?? null,
+                utmCampaign: params.attribution?.utmCampaign ?? null,
+                utmTerm: params.attribution?.utmTerm ?? null,
+                utmContent: params.attribution?.utmContent ?? null,
+                refToken: params.attribution?.refToken ?? null,
+                clickId: params.attribution?.clickId ?? null,
             });
 
         } catch (err) {
