@@ -211,6 +211,23 @@ export class TenantRepository {
         }
     }
 
+    async updateTenantTimezone(tenantId: string, timezone: string): Promise<void> {
+        try {
+            const db = await getDb();
+            await db
+                .update(tenants)
+                .set({ timezone })
+                .where(eq(tenants.id, tenantId));
+        } catch (error) {
+            logger.error('Failed to update tenant timezone', error as Error, { tenantId, timezone });
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'Failed to update tenant timezone',
+                { tenantId, timezone }
+            );
+        }
+    }
+
     /**
      * Invalidate cache for a specific Twilio number.
      */

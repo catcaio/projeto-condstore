@@ -16,45 +16,113 @@ import { simulationRepository } from '@/infra/repositories/simulation.repository
 import { redisClient } from "@/infra/redis.client";
 import { logger } from '@/infra/logger';
 import { getSessionUser } from '@/infra/auth/session';
-import { makeRequestId, respondInfraError } from '@/infra/http/infra-error';
+import { getDb } from '@/infra/db';
+import { sql } from 'drizzle-orm';
+import { buildAttributionBreakdown, isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '@/modules/metrics/attribution-breakdown';
+import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
+import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '@/infra/http/error-response';
+import { structuredLogger } from '@/infra/log/logger';
 
 interface CockpitMetrics {
   mensagensHoje: number;
   cotacoesHoje: number;
   pedidosHoje: number;
   erros24h: number;
+  attribution_breakdown_7d?: {
+    groupBy: 'utm_source' | 'utm_campaign';
+    buckets: Array<{ key: string; count: number }>;
+  };
 }
 
 const CACHE_TTL_SECONDS = 30;
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const requestId = makeRequestId();
+  const startedAt = Date.now();
+  const requestId = makeRequestId(request);
+  const route = '/api/cockpit/metrics';
+  let tenantId: string | undefined;
+
+  structuredLogger.info('cockpit_metrics_start', {
+    requestId,
+    route,
+    eventType: 'route_start',
+  });
+
+  const finalize = (response: NextResponse, code?: ErrorCode) => {
+    attachRequestIdHeader(response, requestId);
+    structuredLogger.info('cockpit_metrics_end', {
+      requestId,
+      tenantId,
+      route,
+      eventType: 'route_end',
+      durationMs: Date.now() - startedAt,
+      status: response.status,
+      outcome: response.status >= 400 ? 'error' : 'ok',
+      errorCode: code ?? (response.status >= 400 ? inferErrorCodeFromStatus(response.status) : undefined),
+    });
+    return response;
+  };
+
+  const requestedGroupBy = request.nextUrl?.searchParams.get('groupBy');
+  const parsedGroupBy = parseAttributionGroupBy(requestedGroupBy);
+  if (requestedGroupBy && !isAttributionGroupBy(parsedGroupBy) && requestedGroupBy !== 'none') {
+    return finalize(
+      errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid groupBy. Use utm_source, utm_campaign or none.'),
+      ErrorCode.VALIDATION_ERROR,
+    );
+  }
+  const groupBy = isAttributionGroupBy(parsedGroupBy) ? parsedGroupBy : null;
+
   const user = await getSessionUser(request);
-  const tenantId = user?.tenantId;
+  tenantId = user?.tenantId;
 
   if (!tenantId) {
-    return NextResponse.json({ error: 'UNAUTHORIZED', requestId }, { status: 401, headers: { 'X-Request-Id': requestId } });
+    return finalize(errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'UNAUTHORIZED'), ErrorCode.AUTH_REQUIRED);
   }
 
   const cacheKey = `cockpit:metrics:${tenantId}`;
 
   try {
     // Cache read (skip if Redis unavailable)
-    if (redisClient.isAvailable()) {
+    if (!groupBy && redisClient.isAvailable()) {
       const cached = await redisClient.get<CockpitMetrics>(cacheKey);
       if (cached) {
         logger.debug('cockpit/metrics: cache hit', { tenantId });
-        return NextResponse.json(cached, {
+        return finalize(NextResponse.json(cached, {
           status: 200,
           headers: { 'Cache-Control': 'private, max-age=30', 'X-Request-Id': requestId },
-        });
+        }));
       }
     }
 
     // Real DB queries in parallel (tenant-isolated)
-    const [msgMetrics, cotacoesHoje] = await Promise.all([
+    const [msgMetrics, cotacoesHoje, attributionBreakdownResult] = await Promise.all([
       messageRepository.getMetricsToday(tenantId),
       simulationRepository.countToday(tenantId),
+      groupBy
+        ? (async () => {
+            const db = await getDb();
+            return db.execute(
+              groupBy === 'utm_campaign'
+                ? sql`
+                    SELECT COALESCE(NULLIF(utm_campaign, ''), '(none)') AS bucket, COUNT(*) AS count
+                    FROM public_events
+                    WHERE tenant_id = ${tenantId}
+                      AND created_at >= NOW() - INTERVAL 7 DAY
+                    GROUP BY COALESCE(NULLIF(utm_campaign, ''), '(none)')
+                    ORDER BY count DESC, bucket ASC
+                  `
+                : sql`
+                    SELECT COALESCE(NULLIF(utm_source, ''), '(none)') AS bucket, COUNT(*) AS count
+                    FROM public_events
+                    WHERE tenant_id = ${tenantId}
+                      AND created_at >= NOW() - INTERVAL 7 DAY
+                    GROUP BY COALESCE(NULLIF(utm_source, ''), '(none)')
+                    ORDER BY count DESC, bucket ASC
+                  `,
+            );
+          })()
+        : Promise.resolve(null),
     ]);
 
     const payload: CockpitMetrics = {
@@ -64,8 +132,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       erros24h: 0,    // TODO: error_log table
     };
 
+    if (groupBy && attributionBreakdownResult) {
+      payload.attribution_breakdown_7d = buildAttributionBreakdown(
+        groupBy,
+        unwrapRows<{ bucket: string | null; count: number | string | null }>(attributionBreakdownResult),
+      );
+    }
+
     // Cache write (fire-and-forget)
-    if (redisClient.isAvailable()) {
+    if (!groupBy && redisClient.isAvailable()) {
       redisClient.set<CockpitMetrics>(cacheKey, payload, CACHE_TTL_SECONDS).catch((err: unknown) => {
         logger.warn('cockpit/metrics: cache write failed', { tenantId }, err as Error);
       });
@@ -77,11 +152,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       cotacoesHoje: payload.cotacoesHoje,
     });
 
-    return NextResponse.json(payload, {
+    return finalize(NextResponse.json(payload, {
       status: 200,
       headers: { 'Cache-Control': 'private, max-age=30', 'X-Request-Id': requestId },
-    });
+    }));
   } catch (error) {
-    return respondInfraError(error, requestId);
+    structuredLogger.error('cockpit_metrics_failed', {
+      requestId,
+      tenantId,
+      route,
+      eventType: 'route_error',
+      durationMs: Date.now() - startedAt,
+      errorCode: ErrorCode.DB_ERROR,
+      error,
+    });
+    return finalize(errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Failed to load metrics'), ErrorCode.DB_ERROR);
   }
 }
