@@ -7,6 +7,7 @@ import { userRepository } from '@/infra/repositories/user.repository';
 import { verifyPassword } from '@/infra/auth/password';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
+import { structuredLogger } from '@/infra/log/logger';
 import { hashRateLimitKeyForLog, rateLimiter } from '@/infra/security/rate-limiter';
 import { auditService } from '@/modules/audit/audit.service';
 import { InfrastructureError, getUserMessage } from '@/infra/errors';
@@ -15,6 +16,8 @@ const loginSchema = z.object({
     email: z.string().email('Email inválido'),
     password: z.string().min(1, 'Senha obrigatória'),
 });
+
+type LoginFailureReason = 'user_not_found' | 'password_mismatch' | 'schema_error' | 'rate_limited';
 
 function getClientIp(request: NextRequest): string {
     const forwardedFor = request.headers.get('x-forwarded-for');
@@ -25,6 +28,41 @@ function getClientIp(request: NextRequest): string {
 
     const realIp = request.headers.get('x-real-ip')?.trim();
     return realIp || 'unknown';
+}
+
+function hashLoginEmailForLog(email: string): string {
+    return hashRateLimitKeyForLog(email.trim().toLowerCase());
+}
+
+function logLoginDiagnostic(input: {
+    level: 'warn' | 'error';
+    reason: LoginFailureReason;
+    requestId: string;
+    emailHash?: string;
+    rateLimitKeyHash?: string;
+    tenantId?: string;
+    error?: unknown;
+    errorCode?: string;
+    retryable?: boolean;
+}) {
+    const context = {
+        eventType: 'auth_login',
+        reason: input.reason,
+        requestId: input.requestId,
+        ...(input.emailHash ? { emailHash: input.emailHash } : {}),
+        ...(input.rateLimitKeyHash ? { rateLimitKeyHash: input.rateLimitKeyHash } : {}),
+        ...(input.tenantId ? { tenantId: input.tenantId } : {}),
+        ...(input.errorCode ? { errorCode: input.errorCode } : {}),
+        ...(typeof input.retryable === 'boolean' ? { retryable: input.retryable } : {}),
+        ...(input.error ? { error: input.error } : {}),
+    };
+
+    if (input.level === 'error') {
+        structuredLogger.error('auth_login_failed', context);
+        return;
+    }
+
+    structuredLogger.warn('auth_login_rejected', context);
 }
 
 export async function POST(request: NextRequest) {
@@ -48,6 +86,8 @@ export async function POST(request: NextRequest) {
         }
         process.env.AUTH_SECRET = 'dev-only-fallback-secret-do-not-use-in-prod';
     }
+    let loginEmailHash: string | undefined;
+
     try {
         const body = await request.json();
         const validation = loginSchema.safeParse(body);
@@ -61,6 +101,7 @@ export async function POST(request: NextRequest) {
 
         const { email, password } = validation.data;
         const normalizedEmail = email.trim().toLowerCase();
+        loginEmailHash = hashLoginEmailForLog(normalizedEmail);
 
         // Rate Limit: 5 attempts per minute per IP+Email
         const ip = getClientIp(request);
@@ -72,8 +113,11 @@ export async function POST(request: NextRequest) {
         });
 
         if (!rateLimit.allowed) {
-            logger.warn('Login rate limit exceeded', {
-                scope: 'auth.login',
+            logLoginDiagnostic({
+                level: 'warn',
+                reason: 'rate_limited',
+                requestId,
+                emailHash: loginEmailHash,
                 rateLimitKeyHash,
             });
             return NextResponse.json(
@@ -84,7 +128,12 @@ export async function POST(request: NextRequest) {
 
         const user = await userRepository.getUserByEmail(email);
         if (!user) {
-            logger.warn('Login attempt for unknown email', { email });
+            logLoginDiagnostic({
+                level: 'warn',
+                reason: 'user_not_found',
+                requestId,
+                emailHash: loginEmailHash,
+            });
             return NextResponse.json(
                 { success: false, error: 'Email ou senha inválidos' },
                 { status: 401 }
@@ -93,7 +142,13 @@ export async function POST(request: NextRequest) {
 
         const valid = verifyPassword(password, user.passwordHash);
         if (!valid) {
-            logger.warn('Invalid password attempt', { email });
+            logLoginDiagnostic({
+                level: 'warn',
+                reason: 'password_mismatch',
+                requestId,
+                emailHash: loginEmailHash,
+                tenantId: user.tenantId,
+            });
             // Audit trailing requires a tenant, which we have from the user object
             await auditService.logEvent(user.tenantId, 'LOGIN_FAILED', { email });
             return NextResponse.json(
@@ -110,7 +165,7 @@ export async function POST(request: NextRequest) {
             sessionVersion: user.sessionVersion,
         });
 
-        logger.info('User logged in', { email: user.email, tenantId: user.tenantId });
+        logger.info('User logged in', { emailHash: loginEmailHash, tenantId: user.tenantId });
         await auditService.logEvent(user.tenantId, 'LOGIN_SUCCESS', {
             email: user.email,
             ip: request.headers.get("x-forwarded-for") ?? "unknown"
@@ -133,6 +188,15 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         // Envolver login em try/catch adequado, apenas erro de infra retorna 500
         if (error instanceof InfrastructureError) {
+            logLoginDiagnostic({
+                level: 'error',
+                reason: 'schema_error',
+                requestId,
+                emailHash: loginEmailHash,
+                errorCode: error.code,
+                retryable: error.isRetryable,
+                error,
+            });
             logger.error('Infrastructure failure during login', error, {
                 requestId,
                 code: error.code,
@@ -153,6 +217,13 @@ export async function POST(request: NextRequest) {
 
         // Log everything else, generic 500 since we don't know what broke, wait, requirements say only 500 for infra
         // I'll log securely
+        logLoginDiagnostic({
+            level: 'error',
+            reason: 'schema_error',
+            requestId,
+            emailHash: loginEmailHash,
+            error: error as Error,
+        });
         logger.error('Unexpected error during login', error as Error, { requestId });
         return NextResponse.json(
             { success: false, error: 'Erro interno de servidor', requestId },
