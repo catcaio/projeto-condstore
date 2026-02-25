@@ -64,6 +64,8 @@ describe('internal jobs RBAC', () => {
       day: '2026-02-24',
       rowsWritten: 3,
       skippedTenants: 0,
+      failedTenants: 0,
+      errors: [],
       lockBusy: false,
       durationMs: 10,
     });
