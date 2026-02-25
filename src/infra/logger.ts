@@ -5,6 +5,7 @@
 
 import { appConfig } from '../config/app.config';
 import type { BaseError } from './errors';
+import { captureExceptionWithSentryNonBlocking } from './observability/sentry';
 
 export enum LogLevel {
   DEBUG = 0,
@@ -37,6 +38,61 @@ interface LogEntry {
   };
 }
 
+const SAFE_LOG_KEY_ALLOWLIST = new Set([
+  'requestid',
+  'tenantid',
+  'userid',
+  'route',
+  'errorcode',
+  'durationms',
+]);
+
+const REDACT_LOG_KEY_PATTERNS = [
+  /api.?key/i,
+  /authorization/i,
+  /cookie/i,
+  /secret/i,
+  /password/i,
+  /token/i,
+  /phone/i,
+  /message/i,
+  /body/i,
+  /payload/i,
+];
+
+function shouldRedactLogKey(key: string): boolean {
+  const normalized = key.toLowerCase();
+  if (SAFE_LOG_KEY_ALLOWLIST.has(normalized)) return false;
+  return REDACT_LOG_KEY_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function sanitizeLogValue(value: unknown, key?: string, depth = 0): unknown {
+  if (key && shouldRedactLogKey(key)) {
+    return '[REDACTED]';
+  }
+
+  if (value instanceof Error) {
+    return { name: value.name, message: value.message };
+  }
+  if (value === null || value === undefined) return value;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+  if (depth >= 2) return '[TRUNCATED]';
+
+  if (Array.isArray(value)) {
+    return value.slice(0, 20).map((item) => sanitizeLogValue(item, undefined, depth + 1));
+  }
+
+  if (typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [childKey, childValue] of Object.entries(value as Record<string, unknown>)) {
+      out[childKey] = sanitizeLogValue(childValue, childKey, depth + 1);
+    }
+    return out;
+  }
+
+  return String(value);
+}
+
 class Logger {
   private minLevel: LogLevel;
 
@@ -56,7 +112,7 @@ class Logger {
     };
 
     if (context && Object.keys(context).length > 0) {
-      entry.context = context;
+      entry.context = sanitizeLogValue(context) as LogContext;
     }
 
     if (error) {
@@ -112,6 +168,22 @@ class Logger {
   }
 
   error(message: string, error?: Error | BaseError, context?: LogContext): void {
+    if (error) {
+      const requestId = typeof context?.requestId === 'string' ? context.requestId : undefined;
+      const tenantId = typeof context?.tenantId === 'string' ? context.tenantId : undefined;
+      captureExceptionWithSentryNonBlocking(error, {
+        requestId,
+        tenantId,
+        extras: {
+          logger: 'app',
+          logMessage: message,
+          context: sanitizeLogValue(context) as LogContext | undefined,
+        },
+        tags: {
+          logger: 'app',
+        },
+      });
+    }
     this.log(LogLevel.ERROR, 'ERROR', message, context, error);
   }
 

@@ -94,6 +94,7 @@ export function withRequestTrace(
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
     const requestId = makeRequestId(request);
+    let requestContext: RequestContext | undefined;
     // Expose requestId to handlers that need to persist/return it.
     // This is safe: NextRequest is an object and we only attach non-PII metadata.
     (request as unknown as Record<string | symbol, unknown>)[TRACE_REQUEST_ID] = requestId;
@@ -103,6 +104,7 @@ export function withRequestTrace(
     try {
       // Log start
       const context = await buildRequestContext(request, requestId);
+      requestContext = context;
       structuredLogger.info('api_request_start', {
         requestId: context.requestId,
         route: context.path,
@@ -137,6 +139,8 @@ export function withRequestTrace(
       // Log error
       structuredLogger.error('api_request_error', {
         requestId,
+        route: requestContext?.path ?? new URL(request.url).pathname,
+        tenantId: requestContext?.tenantId,
         durationMs: latencyMs,
         eventType: 'api_request_error',
         errorCode: ErrorCode.UNKNOWN,
@@ -168,12 +172,13 @@ export function withWebhookTrace(
   return async (request: NextRequest): Promise<NextResponse> => {
     const requestId = makeRequestId(request);
     const startTime = Date.now();
+    const route = new URL(request.url).pathname;
 
     try {
       // Log start
       structuredLogger.info('webhook_request_start', {
         requestId,
-        route: new URL(request.url).pathname,
+        route,
         method: request.method,
         eventType: 'webhook_request_start',
       });
@@ -188,7 +193,7 @@ export function withWebhookTrace(
       // Log end
       structuredLogger.info('webhook_request_end', {
         requestId,
-        route: new URL(request.url).pathname,
+        route,
         durationMs: latencyMs,
         status: response.status,
         outcome: response.status >= 400 ? 'error' : 'ok',
@@ -203,6 +208,7 @@ export function withWebhookTrace(
       // Log error
       structuredLogger.error('webhook_request_error', {
         requestId,
+        route,
         durationMs: latencyMs,
         eventType: 'webhook_request_error',
         errorCode: ErrorCode.UNKNOWN,

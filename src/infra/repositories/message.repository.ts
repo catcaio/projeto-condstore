@@ -4,6 +4,8 @@ import { messages, type NewMessageRecord } from '../../drizzle/schema';
 import { logger } from '../logger';
 import { ErrorCode, InfrastructureError } from '../errors';
 import { redisClient } from '../redis.client';
+import { encryptString, decryptString, isEncryptedString } from '../pii/crypto';
+import { hashPhoneForTenant } from '../pii/phone';
 
 /**
  * Compact message snapshot used by the context cache and Frank orchestrator.
@@ -16,6 +18,67 @@ export interface ContextMessage {
     /** Classifier confidence in [0, 1].  null when no classifier ran. */
     intentConfidence: number | null;
     createdAt: string; // ISO-8601 string (serialisation-safe)
+}
+
+const REDACTED_PHONE_PLACEHOLDER = '[redacted]';
+
+function makeEncryptedBodyPlaceholder(body: string): string {
+    return `[encrypted:${body.length}]`;
+}
+
+function resolveStoredBody(row: { body: string; bodyEncrypted?: string | null }, tenantId: string): string {
+    const encrypted = row.bodyEncrypted;
+    if (encrypted && isEncryptedString(encrypted)) {
+        try {
+            return decryptString(encrypted);
+        } catch (error) {
+            logger.warn('Failed to decrypt message body in getLastMessages', { tenantId, error: (error as Error).name });
+        }
+    }
+
+    return row.body;
+}
+
+async function queryLastMessagesByPhoneHash(
+    tenantId: string,
+    hashedPhone: string,
+    limit: number,
+) {
+    const db = await getDb();
+    return db
+        .select({
+            body: messages.body,
+            bodyEncrypted: messages.bodyEncrypted,
+            direction: messages.direction,
+            intent: messages.intent,
+            intentConfidence: messages.intentConfidence,
+            createdAt: messages.createdAt,
+        })
+        .from(messages)
+        .where(and(eq(messages.tenantId, tenantId), eq(messages.phoneHash, hashedPhone)))
+        .orderBy(desc(messages.createdAt))
+        .limit(limit);
+}
+
+async function queryLastMessagesLegacy(
+    tenantId: string,
+    phoneNumber: string,
+    limit: number,
+) {
+    const db = await getDb();
+    return db
+        .select({
+            body: messages.body,
+            bodyEncrypted: messages.bodyEncrypted,
+            direction: messages.direction,
+            intent: messages.intent,
+            intentConfidence: messages.intentConfidence,
+            createdAt: messages.createdAt,
+        })
+        .from(messages)
+        .where(and(eq(messages.tenantId, tenantId), eq(messages.fromPhone, phoneNumber)))
+        .orderBy(desc(messages.createdAt))
+        .limit(limit);
 }
 
 export class MessageRepository {
@@ -36,9 +99,21 @@ export class MessageRepository {
 
         try {
             const db = await getDb();
+            const { e164, hash } = hashPhoneForTenant(record.fromPhone, record.tenantId);
+            const phoneEncrypted = encryptString(e164);
+            const bodyEncrypted = encryptString(record.body);
+            const recordToPersist: NewMessageRecord = {
+                ...record,
+                fromPhone: REDACTED_PHONE_PLACEHOLDER,
+                phoneHash: hash,
+                phoneEncrypted,
+                toPhone: null,
+                body: makeEncryptedBodyPlaceholder(record.body),
+                bodyEncrypted,
+            };
 
             // Idempotency via unique constraint (messageSid is PK)
-            await db.insert(messages).values(record);
+            await db.insert(messages).values(recordToPersist);
 
             if (redisClient.isAvailable()) {
                 await redisClient.del(`cockpit:metrics:${record.tenantId}`);
@@ -130,8 +205,12 @@ export class MessageRepository {
      * Return the last `limit` messages sent by `phoneNumber` within `tenantId`,
      * in chronological order (oldest → newest).
      *
-     * Single query, filtered by (tenantId, fromPhone), ordered DESC then reversed
-     * so the caller always receives history in conversation order.
+     * Preferred query path filters by `(tenantId, phone_hash)` (tenant-scoped hash),
+     * with temporary fallback to legacy `(tenantId, fromPhone)` while old rows are
+     * still being backfilled.
+     *
+     * Message text is read from `body_encrypted` when available (cutover path),
+     * with fallback to legacy `body` for pre-backfill rows.
      *
      * Returns an empty array (never throws) so callers can safely ignore failures
      * in the hot path.
@@ -140,23 +219,31 @@ export class MessageRepository {
         if (!tenantId || !phoneNumber || limit <= 0) return [];
 
         try {
-            const db = await getDb();
-            const rows = await db
-                .select({
-                    body: messages.body,
-                    direction: messages.direction,
-                    intent: messages.intent,
-                    intentConfidence: messages.intentConfidence,
-                    createdAt: messages.createdAt,
-                })
-                .from(messages)
-                .where(and(eq(messages.tenantId, tenantId), eq(messages.fromPhone, phoneNumber)))
-                .orderBy(desc(messages.createdAt))
-                .limit(limit);
+            let rows: Array<{
+                body: string;
+                bodyEncrypted: string | null;
+                direction: string;
+                intent: string;
+                intentConfidence: unknown;
+                createdAt: unknown;
+            }> = [];
+            try {
+                const hashedPhone = hashPhoneForTenant(phoneNumber, tenantId).hash;
+                rows = await queryLastMessagesByPhoneHash(tenantId, hashedPhone, limit);
+            } catch (hashError) {
+                logger.warn('getLastMessages phone hash generation failed; using legacy fallback', {
+                    tenantId,
+                    error: (hashError as Error).name,
+                });
+            }
+
+            if (rows.length === 0) {
+                rows = await queryLastMessagesLegacy(tenantId, phoneNumber, limit);
+            }
 
             // Reverse so the result is oldest-first (natural conversation order)
             return rows.reverse().map(r => ({
-                body: r.body,
+                body: resolveStoredBody(r, tenantId),
                 direction: r.direction as 'inbound' | 'outbound',
                 intent: r.intent,
                 intentConfidence: r.intentConfidence !== null && r.intentConfidence !== undefined

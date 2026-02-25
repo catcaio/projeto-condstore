@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '../../../../../infra/auth/session';
+import { requireAdmin } from '../../../../../infra/auth/guards';
 import { adminAuditLogRepository } from '../../../../../infra/repositories/admin-audit-log.repository';
 import { attributionClickRepository } from '../../../../../infra/repositories/attribution-click.repository';
 import type { NewAttributionClickRecord } from '../../../../../drizzle/schema';
@@ -37,19 +37,8 @@ function generateToken(): string {
   return randomBytes(12).toString('base64url');
 }
 
-async function requireAdminSession(request: NextRequest) {
-  const session = await getSessionUser(request);
-  if (!session?.tenantId) {
-    return { ok: false as const, response: NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 }) };
-  }
-  if (session.role !== 'admin') {
-    return { ok: false as const, response: NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 }) };
-  }
-  return { ok: true as const, session };
-}
-
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireAdminSession(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   try {
@@ -62,17 +51,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
 
     const count = Number(body.count ?? 0);
-    const tenantId = body.tenantId?.trim();
+    const tenantId = auth.session.tenantId;
     const campaign = body.campaign?.trim() || null;
     const source = body.source?.trim() || DEFAULT_SOURCE;
     const medium = body.medium?.trim() || DEFAULT_MEDIUM;
 
-    if (!tenantId) {
-      return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });
-    }
-    if (tenantId !== auth.session.tenantId) {
-      return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
-    }
     if (!Number.isInteger(count) || count < 1 || count > MAX_POST_COUNT) {
       return NextResponse.json({ error: `count must be an integer between 1 and ${MAX_POST_COUNT}` }, { status: 400 });
     }
@@ -132,7 +115,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireAdminSession(request);
+  const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
   const campaign = request.nextUrl.searchParams.get('campaign');

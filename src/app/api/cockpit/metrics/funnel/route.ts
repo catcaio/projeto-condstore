@@ -1,25 +1,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '@/infra/auth/session';
+import { requireAdmin } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
 import { freightFunnelEvents } from '@/drizzle/schema';
 import { sql, and, gte, eq } from 'drizzle-orm';
 import { redisClient } from "@/infra/redis.client";
 import { logger } from '@/infra/logger';
 import { buildAttributionBreakdown, isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '@/modules/metrics/attribution-breakdown';
+import { FunnelStage } from '@/modules/funnel/funnel-stage';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '@/infra/http/error-response';
 import { structuredLogger } from '@/infra/log/logger';
-
-export enum FunnelStage {
-    FLOW_STARTED = 'FLOW_STARTED',
-    INTENT_DETECTED = 'INTENT_DETECTED',
-    ASKED_CEP = 'ASKED_CEP',
-    CEP_PROVIDED = 'CEP_PROVIDED',
-    QUANTITY_PROVIDED = 'QUANTITY_PROVIDED',
-    FREIGHT_QUOTED = 'FREIGHT_QUOTED',
-    FLOW_ABORTED = 'FLOW_ABORTED'
-}
 
 // Cache TTL: 60 seconds
 const CACHE_TTL_SECONDS = 60;
@@ -93,11 +84,9 @@ export async function GET(request: NextRequest) {
         }
         const groupBy = isAttributionGroupBy(parsedGroupBy) ? parsedGroupBy : null;
 
-        const user = await getSessionUser(request);
-        if (!user?.tenantId) {
-            return finalize(errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'UNAUTHORIZED'), ErrorCode.AUTH_REQUIRED);
-        }
-        tenantId = user.tenantId;
+        const auth = await requireAdmin(request, { requestId });
+        if (!auth.ok) return finalize(auth.response, auth.code);
+        tenantId = auth.session.tenantId;
 
         // 2. Try Redis Cache (with availability guard)
         const cacheKey = `cockpit:metrics:funnel:${tenantId}`;

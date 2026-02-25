@@ -4,6 +4,8 @@ export interface DataRetentionPolicy {
   freightLogsDays: number;
   attributionClicksDays: number;
   dedupDays: number;
+  messagePiiDays: number;
+  funnelPiiDays: number;
 }
 
 function parseRetentionDays(value: string | undefined, fallback: number): number {
@@ -21,5 +23,7 @@ export function getDataRetentionPolicy(): DataRetentionPolicy {
     freightLogsDays: parseRetentionDays(process.env.RETENTION_FREIGHT_LOGS_DAYS, 180),
     attributionClicksDays: parseRetentionDays(process.env.RETENTION_ATTR_CLICKS_DAYS, 365),
     dedupDays: parseRetentionDays(process.env.RETENTION_DEDUP_DAYS, 30),
+    messagePiiDays: parseRetentionDays(process.env.RETENTION_MESSAGE_PII_DAYS, 30),
+    funnelPiiDays: parseRetentionDays(process.env.RETENTION_FUNNEL_PII_DAYS, 90),
   };
 }

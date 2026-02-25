@@ -87,6 +87,11 @@ jspm_packages/
 
 # Next.js build output
 .next
+.next*
+.next-sentry-check*
+.next-sentry-check*/**
+.next-*-check*
+.next-*-check*/**
 .next-ready*
 
 # Nuxt.js build / generate output

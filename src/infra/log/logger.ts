@@ -1,3 +1,5 @@
+import { captureExceptionWithSentryNonBlocking } from '../observability/sentry';
+
 export type StructuredLogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface StructuredLogContext {
@@ -36,6 +38,10 @@ const REDACT_KEY_PATTERNS = [
   /secret/i,
   /password/i,
   /token/i,
+  /phone/i,
+  /message/i,
+  /body/i,
+  /payload/i,
 ];
 
 function shouldRedactKey(rawKey: string): boolean {
@@ -107,6 +113,29 @@ export const structuredLogger = {
     log('warn', message, context);
   },
   error(message: string, context?: StructuredLogContext) {
+    const rawError = context?.error;
+    const error =
+      rawError instanceof Error
+        ? rawError
+        : rawError
+          ? new Error(typeof rawError === 'string' ? rawError : message)
+          : null;
+
+    if (error) {
+      captureExceptionWithSentryNonBlocking(error, {
+        requestId: typeof context?.requestId === 'string' ? context.requestId : undefined,
+        tenantId: typeof context?.tenantId === 'string' ? context.tenantId : undefined,
+        extras: {
+          logger: 'structured',
+          logMessage: message,
+          context,
+        },
+        tags: {
+          logger: 'structured',
+        },
+      });
+    }
+
     log('error', message, context);
   },
 };

@@ -16,9 +16,11 @@
     "test:ci": "cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=threads vitest run --configLoader runner --config vitest.config.mjs",
     "test:win-stable": "cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=forks vitest run --configLoader runner --config vitest.config.mjs",
     "release:check": "node scripts/release-check.mjs",
+    "staging:smoke": "node --import tsx scripts/smoke/staging-smoke.ts",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.40.0",
     "axios": "1.13.5",
     "clsx": "2.1.1",
     "date-fns-tz": "3.2.0",
