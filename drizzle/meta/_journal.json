@@ -169,6 +169,13 @@
       "when": 1772089200000,
       "tag": "0023_admin_audit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1772112000000,
+      "tag": "0024_pii_phone_hash_encryption",
+      "breakpoints": true
     }
   ]
 }

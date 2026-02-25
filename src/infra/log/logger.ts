@@ -38,6 +38,10 @@ const REDACT_KEY_PATTERNS = [
   /secret/i,
   /password/i,
   /token/i,
+  /phone/i,
+  /message/i,
+  /body/i,
+  /payload/i,
 ];
 
 function shouldRedactKey(rawKey: string): boolean {

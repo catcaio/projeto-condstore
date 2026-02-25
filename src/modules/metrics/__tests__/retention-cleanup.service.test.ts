@@ -32,11 +32,15 @@ describe('retention-cleanup.service', () => {
       freightLogsDays: 180,
       attributionClicksDays: 365,
       dedupDays: 30,
+      messagePiiDays: 30,
+      funnelPiiDays: 90,
     });
   });
 
   it('deletes in batches and returns per-table totals', async () => {
     mockExecute
+      .mockResolvedValueOnce([{ affectedRows: 6 }]) // messages_pii anonymize
+      .mockResolvedValueOnce([{ affectedRows: 2 }]) // freight_funnel_events_pii anonymize (90-180d window)
       .mockResolvedValueOnce([{ affectedRows: 5000 }]) // public_events batch 1 (old)
       .mockResolvedValueOnce([{ affectedRows: 2 }]) // public_events batch 2 (remaining old, new stays)
       .mockResolvedValueOnce([{ affectedRows: 1 }]) // freight_funnel_events
@@ -49,14 +53,16 @@ describe('retention-cleanup.service', () => {
       now: new Date('2026-02-25T00:00:00.000Z'),
     });
 
-    expect(result.totalDeleted).toBe(5010);
+    expect(result.totalDeleted).toBe(5018);
     expect(result.tables).toEqual([
+      expect.objectContaining({ table: 'messages_pii', deletedCount: 6, operation: 'anonymize' }),
+      expect.objectContaining({ table: 'freight_funnel_events_pii', deletedCount: 2, operation: 'anonymize' }),
       expect.objectContaining({ table: 'public_events', deletedCount: 5002 }),
       expect.objectContaining({ table: 'freight_funnel_events', deletedCount: 1 }),
       expect.objectContaining({ table: 'freight_simulation_logs', deletedCount: 0 }),
       expect.objectContaining({ table: 'attribution_clicks', deletedCount: 4 }),
       expect.objectContaining({ table: 'inbound_message_dedup', deletedCount: 3 }),
     ]);
-    expect(mockExecute).toHaveBeenCalledTimes(6);
+    expect(mockExecute).toHaveBeenCalledTimes(8);
   });
 });

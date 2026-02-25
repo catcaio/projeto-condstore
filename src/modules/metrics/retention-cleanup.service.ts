@@ -7,6 +7,7 @@ export interface CleanupTableResult {
   table: string;
   deletedCount: number;
   durationMs: number;
+  operation?: 'delete' | 'anonymize';
 }
 
 export interface CleanupRetentionResult {
@@ -16,6 +17,8 @@ export interface CleanupRetentionResult {
 }
 
 const BATCH_SIZE = 5000;
+const REDACTED_PHONE_PLACEHOLDER = '[redacted]';
+const REDACTED_BODY_PLACEHOLDER = '[redacted]';
 
 function cutoffDate(days: number, now: Date): Date {
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
@@ -62,13 +65,105 @@ async function deleteBatch(table: string, cutoff: Date): Promise<number> {
   return extractAffectedRows(result);
 }
 
-async function cleanupTable(table: string, retentionDays: number, requestId?: string, now = new Date()): Promise<CleanupTableResult> {
+async function anonymizeBatch(table: 'messages_pii' | 'freight_funnel_events_pii', cutoff: Date, newerThanCutoff?: Date): Promise<number> {
+  const db = await getDb();
+
+  let result: unknown;
+  switch (table) {
+    case 'messages_pii': {
+      if (newerThanCutoff) {
+        result = await db.execute(sql`
+          UPDATE messages
+          SET
+            from_phone = ${REDACTED_PHONE_PLACEHOLDER},
+            phone_encrypted = NULL,
+            body = ${REDACTED_BODY_PLACEHOLDER},
+            body_encrypted = NULL
+          WHERE created_at < ${cutoff}
+            AND created_at >= ${newerThanCutoff}
+            AND (
+              from_phone <> ${REDACTED_PHONE_PLACEHOLDER}
+              OR phone_encrypted IS NOT NULL
+              OR body <> ${REDACTED_BODY_PLACEHOLDER}
+              OR body_encrypted IS NOT NULL
+            )
+          LIMIT ${BATCH_SIZE}
+        `);
+      } else {
+        result = await db.execute(sql`
+          UPDATE messages
+          SET
+            from_phone = ${REDACTED_PHONE_PLACEHOLDER},
+            phone_encrypted = NULL,
+            body = ${REDACTED_BODY_PLACEHOLDER},
+            body_encrypted = NULL
+          WHERE created_at < ${cutoff}
+            AND (
+              from_phone <> ${REDACTED_PHONE_PLACEHOLDER}
+              OR phone_encrypted IS NOT NULL
+              OR body <> ${REDACTED_BODY_PLACEHOLDER}
+              OR body_encrypted IS NOT NULL
+            )
+          LIMIT ${BATCH_SIZE}
+        `);
+      }
+      break;
+    }
+    case 'freight_funnel_events_pii': {
+      if (newerThanCutoff) {
+        result = await db.execute(sql`
+          UPDATE freight_funnel_events
+          SET
+            phone_number = ${REDACTED_PHONE_PLACEHOLDER},
+            phone_encrypted = NULL
+          WHERE created_at < ${cutoff}
+            AND created_at >= ${newerThanCutoff}
+            AND (
+              phone_number <> ${REDACTED_PHONE_PLACEHOLDER}
+              OR phone_encrypted IS NOT NULL
+            )
+          LIMIT ${BATCH_SIZE}
+        `);
+      } else {
+        result = await db.execute(sql`
+          UPDATE freight_funnel_events
+          SET
+            phone_number = ${REDACTED_PHONE_PLACEHOLDER},
+            phone_encrypted = NULL
+          WHERE created_at < ${cutoff}
+            AND (
+              phone_number <> ${REDACTED_PHONE_PLACEHOLDER}
+              OR phone_encrypted IS NOT NULL
+            )
+          LIMIT ${BATCH_SIZE}
+        `);
+      }
+      break;
+    }
+    default:
+      throw new Error(`Unsupported anonymize table: ${table}`);
+  }
+
+  return extractAffectedRows(result);
+}
+
+async function cleanupTable(
+  table: string,
+  retentionDays: number,
+  requestId?: string,
+  now = new Date(),
+  operation: 'delete' | 'anonymize' = 'delete',
+  newerThanRetentionDays?: number,
+): Promise<CleanupTableResult> {
   const startedAt = Date.now();
   const cutoff = cutoffDate(retentionDays, now);
+  const newerThanCutoff = typeof newerThanRetentionDays === 'number' ? cutoffDate(newerThanRetentionDays, now) : undefined;
   let deletedCount = 0;
 
   while (true) {
-    const deleted = await deleteBatch(table, cutoff);
+    const deleted = operation === 'delete'
+      ? await deleteBatch(table, cutoff)
+      : await anonymizeBatch(table as 'messages_pii' | 'freight_funnel_events_pii', cutoff, newerThanCutoff);
     deletedCount += deleted;
     if (deleted < BATCH_SIZE) {
       break;
@@ -79,6 +174,7 @@ async function cleanupTable(table: string, retentionDays: number, requestId?: st
     table,
     deletedCount,
     durationMs: Date.now() - startedAt,
+    operation,
   };
 
   structuredLogger.info('retention_cleanup_table', {
@@ -87,6 +183,7 @@ async function cleanupTable(table: string, retentionDays: number, requestId?: st
     table,
     deletedCount,
     durationMs: result.durationMs,
+    operation,
   });
 
   return result;
@@ -102,6 +199,19 @@ export async function runRetentionCleanup(input?: {
   const policy = input?.policy ?? getDataRetentionPolicy();
 
   const tables: CleanupTableResult[] = [];
+  tables.push(await cleanupTable('messages_pii', policy.messagePiiDays, input?.requestId, now, 'anonymize'));
+  if (policy.funnelPiiDays < policy.funnelDays) {
+    tables.push(
+      await cleanupTable(
+        'freight_funnel_events_pii',
+        policy.funnelPiiDays,
+        input?.requestId,
+        now,
+        'anonymize',
+        policy.funnelDays,
+      ),
+    );
+  }
   tables.push(await cleanupTable('public_events', policy.publicEventsDays, input?.requestId, now));
   tables.push(await cleanupTable('freight_funnel_events', policy.funnelDays, input?.requestId, now));
   tables.push(await cleanupTable('freight_simulation_logs', policy.freightLogsDays, input?.requestId, now));

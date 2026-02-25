@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST as postRollupDaily } from '../rollup-daily/route';
 import { POST as postRollupBackfill } from '../rollup-backfill/route';
 import { POST as postCleanupRetention } from '../cleanup-retention/route';
+import { POST as postBackfillPhone } from '../backfill-phone/route';
 import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '../../../../../infra/config/internal-token';
 import { adminAuditLogRepository } from '../../../../../infra/repositories/admin-audit-log.repository';
 import { runDailyMetricsRollup, runRollupBackfill } from '../../../../../modules/metrics/rollup-daily.service';
 import { runRetentionCleanup } from '../../../../../modules/metrics/retention-cleanup.service';
+import { backfillPhonePii } from '../../../../../modules/jobs/backfillPhonePii';
 
 vi.mock('../../../../../infra/config/internal-token', () => ({
   getInternalExportTokenOrThrow: vi.fn(),
@@ -27,6 +29,10 @@ vi.mock('../../../../../modules/metrics/rollup-daily.service', () => ({
 
 vi.mock('../../../../../modules/metrics/retention-cleanup.service', () => ({
   runRetentionCleanup: vi.fn(),
+}));
+
+vi.mock('../../../../../modules/jobs/backfillPhonePii', () => ({
+  backfillPhonePii: vi.fn(),
 }));
 
 vi.mock('../../../../../infra/repositories/admin-audit-log.repository', () => ({
@@ -83,18 +89,29 @@ describe('internal jobs RBAC', () => {
       totalDeleted: 12,
       durationMs: 40,
     });
+    vi.mocked(backfillPhonePii).mockResolvedValue({
+      batchSize: 100,
+      maxBatches: 5,
+      batchesRun: 1,
+      messagesUpdated: 2,
+      funnelEventsUpdated: 1,
+      skippedRows: 0,
+      hasMore: false,
+      durationMs: 15,
+    });
   });
 
   it('requires internal token on all job endpoints', async () => {
     vi.mocked(isInternalTokenAuthorized).mockReturnValue(false);
 
-    const [rollupRes, backfillRes, cleanupRes] = await Promise.all([
+    const [rollupRes, backfillRes, cleanupRes, piiBackfillRes] = await Promise.all([
       postRollupDaily(makeRequest('http://localhost/api/internal/jobs/rollup-daily') as never),
       postRollupBackfill(makeRequest('http://localhost/api/internal/jobs/rollup-backfill', undefined, { from: '2026-02-01', to: '2026-02-02' }) as never),
       postCleanupRetention(makeRequest('http://localhost/api/internal/jobs/cleanup-retention') as never),
+      postBackfillPhone(makeRequest('http://localhost/api/internal/jobs/backfill-phone') as never),
     ]);
 
-    for (const res of [rollupRes, backfillRes, cleanupRes]) {
+    for (const res of [rollupRes, backfillRes, cleanupRes, piiBackfillRes]) {
       const body = await res.json();
       expect(res.status).toBe(401);
       expect(res.headers.get('x-request-id')).toBeTruthy();
@@ -115,18 +132,28 @@ describe('internal jobs RBAC', () => {
     const cleanupRes = await postCleanupRetention(
       makeRequest('http://localhost/api/internal/jobs/cleanup-retention', 'internal-test-token') as never,
     );
+    const piiBackfillRes = await postBackfillPhone(
+      makeRequest('http://localhost/api/internal/jobs/backfill-phone', 'internal-test-token', { batchSize: 100 }) as never,
+    );
 
     expect(rollupRes.status).toBe(200);
     expect(backfillRes.status).toBe(200);
     expect(cleanupRes.status).toBe(200);
+    expect(piiBackfillRes.status).toBe(200);
     expect(vi.mocked(runDailyMetricsRollup)).toHaveBeenCalled();
     expect(vi.mocked(runRollupBackfill)).toHaveBeenCalled();
     expect(vi.mocked(runRetentionCleanup)).toHaveBeenCalled();
+    expect(vi.mocked(backfillPhonePii)).toHaveBeenCalledWith(expect.objectContaining({
+      batchSize: 100,
+    }));
     expect(vi.mocked(adminAuditLogRepository.log)).toHaveBeenCalledWith(expect.objectContaining({
       action: 'ops.rollup_backfill',
     }));
     expect(vi.mocked(adminAuditLogRepository.log)).toHaveBeenCalledWith(expect.objectContaining({
       action: 'ops.cleanup_retention',
+    }));
+    expect(vi.mocked(adminAuditLogRepository.log)).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'ops.backfill_phone_pii',
     }));
   });
 });

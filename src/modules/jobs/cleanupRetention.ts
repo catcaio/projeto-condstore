@@ -38,6 +38,8 @@ function buildCronRetentionPolicy(retentionDays: number): DataRetentionPolicy {
     freightLogsDays: parsePositiveInt(process.env.RETENTION_FREIGHT_LOGS_DAYS, retentionDays),
     attributionClicksDays: parsePositiveInt(process.env.RETENTION_ATTR_CLICKS_DAYS, retentionDays),
     dedupDays: parsePositiveInt(process.env.RETENTION_DEDUP_DAYS, retentionDays),
+    messagePiiDays: parsePositiveInt(process.env.RETENTION_MESSAGE_PII_DAYS, 30),
+    funnelPiiDays: parsePositiveInt(process.env.RETENTION_FUNNEL_PII_DAYS, Math.min(90, retentionDays)),
   };
 }
 

@@ -54,7 +54,9 @@ describe('FunnelRepository', () => {
         expect(mockDb.values).toHaveBeenCalledWith(expect.objectContaining({
             tenantId: input.tenantId,
             stage: input.stage,
-            phoneNumber: input.phoneNumber,
+            phoneNumber: '[redacted]',
+            phoneHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+            phoneEncrypted: expect.stringMatching(/^v1:/),
             sessionId: input.sessionId,
         }));
         expect(mockDb.onDuplicateKeyUpdate).toHaveBeenCalled();
