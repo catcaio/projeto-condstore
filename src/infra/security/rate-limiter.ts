@@ -2,12 +2,14 @@ import type { NextResponse } from 'next/server';
 import { redisClient } from '../redis.client';
 import { sha256Hex } from '../attribution/hash';
 import { structuredLogger } from '../log/logger';
+import { getRateLimitPolicy } from './rate-limit-policies';
 
 export interface RateLimitDecision {
   allowed: boolean;
   remaining: number;
   resetAt: number;
   limit: number;
+  degraded?: boolean;
 }
 
 interface LimitOptions {
@@ -116,16 +118,38 @@ export class RateLimiter {
       return this.limitWithMemory(normalizedScope, normalizedKey, options, now);
     }
 
-    structuredLogger.warn('rate_limiter_redis_unavailable_prod_fail_open', {
+    // Redis unavailable in production: apply fallback policy
+    const fallbackPolicy = getRateLimitPolicy(normalizedScope);
+    const window = computeWindow(now, options.windowSec);
+
+    if (fallbackPolicy === 'fail-open') {
+      // Explicitly allowed to fail open for this scope
+      structuredLogger.warn('rate_limiter_redis_unavailable_fail_open_policy', {
+        eventType: 'rate_limiter',
+        scope: normalizedScope,
+        keyHash: hashRateLimitKeyInternal(normalizedKey),
+      });
+      return {
+        allowed: true,
+        remaining: options.max,
+        resetAt: window.resetAt,
+        limit: options.max,
+        degraded: true,
+      };
+    }
+
+    // Default: fail-closed when Redis unavailable
+    structuredLogger.error('rate_limiter_redis_unavailable_fail_closed', {
       eventType: 'rate_limiter',
       scope: normalizedScope,
       keyHash: hashRateLimitKeyInternal(normalizedKey),
     });
     return {
-      allowed: true,
-      remaining: options.max,
-      resetAt: computeWindow(now, options.windowSec).resetAt,
+      allowed: false,
+      remaining: 0,
+      resetAt: window.resetAt,
       limit: options.max,
+      degraded: true,
     };
   }
 
@@ -240,6 +264,9 @@ export function applyRateLimitHeaders(response: NextResponse, decision: RateLimi
   response.headers.set('x-ratelimit-limit', String(decision.limit));
   response.headers.set('x-ratelimit-remaining', String(decision.remaining));
   response.headers.set('x-ratelimit-reset', String(decision.resetAt));
+  if (decision.degraded) {
+    response.headers.set('x-ratelimit-degraded', 'true');
+  }
   return response;
 }
 
