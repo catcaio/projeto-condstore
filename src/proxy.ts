@@ -2,7 +2,7 @@ import { jwtVerify, type JWTPayload } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
 
 const SESSION_COOKIE_NAME = 'condstore_session';
-const ALLOWED_ROLES = ['admin', 'operator'] as const;
+const ALLOWED_ROLES = ['admin', 'operator', 'manager', 'viewer'] as const;
 const ALLOWED_ROLES_SET = new Set<MiddlewareRole>(ALLOWED_ROLES);
 
 type MiddlewareRole = (typeof ALLOWED_ROLES)[number];

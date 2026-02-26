@@ -1,10 +1,11 @@
 import Sidebar from './_components/sidebar';
 import CommandBar from './_components/command-bar';
-import { getServerSessionUser } from '@/infra/auth/session';
+import { headers } from 'next/headers';
 import { getDb } from '@/infra/db';
 import { tenants } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { EntitlementProvider, Role } from '@/ui/auth/entitlements';
+import { EntitlementProvider } from '@/ui/auth/entitlements';
+import { type Role } from '@/ui/auth/entitlements-logic';
 import { redirect } from 'next/navigation';
 
 export default async function CockpitLayout({
@@ -12,31 +13,35 @@ export default async function CockpitLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const session = await getServerSessionUser();
+    // Read session from x-auth-* headers set by middleware (proxy.ts)
+    // Middleware already verified the JWT — these headers are trusted
+    const headersList = await headers();
+    const userId = headersList.get('x-auth-user-id');
+    const tenantId = headersList.get('x-auth-tenant-id');
+    const role = (headersList.get('x-auth-role') || 'viewer') as Role;
 
-    if (!session) {
+    if (!userId || !tenantId) {
         redirect('/login');
     }
 
     let hasActivePlan = false;
-    let role = session.role as Role;
 
-    if (session.tenantId) {
+    if (tenantId) {
         try {
             const db = await getDb();
             const results = await db.select({
-                planStatus: tenants.planStatus,
                 plan: tenants.plan
-            }).from(tenants).where(eq(tenants.id, session.tenantId)).limit(1);
+            }).from(tenants).where(eq(tenants.id, tenantId)).limit(1);
 
             if (results.length > 0) {
-                const { planStatus, plan } = results[0];
-                hasActivePlan = planStatus === 'active' || planStatus === 'trialing' || plan === 'ENTERPRISE';
+                const { plan } = results[0];
+                hasActivePlan = plan === 'ENTERPRISE' || plan === 'PRO' || plan === 'STARTER';
             }
-        } catch (error) {
-            console.error('Failed to get tenant plan status', error);
+        } catch {
+            // Fail-open: hasActivePlan stays false
         }
     }
+
     return (
         <EntitlementProvider value={{ role, hasActivePlan }}>
             <div className="cockpit-theme min-h-screen bg-[hsl(var(--cockpit-bg))] text-[hsl(var(--cockpit-text))]">

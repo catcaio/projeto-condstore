@@ -1,32 +1,9 @@
 'use client';
 
 import { createContext, useContext, ReactNode } from 'react';
-
-export type Role = 'admin' | 'manager' | 'viewer';
-export type Entitlement = 'plan:active' | 'rbac:admin_only' | 'rbac:viewer_or_higher';
-export type Module = 'cockpit' | 'acquisition' | 'audit' | 'frete' | 'settings';
-
-export interface UserContextData {
-    role: Role;
-    hasActivePlan: boolean;
-}
-
-export function canAccess(module: Module, ctx: UserContextData): boolean {
-    if (ctx.role === 'admin') return true;
-
-    switch (module) {
-        case 'cockpit':
-        case 'acquisition':
-        case 'frete':
-            return ctx.hasActivePlan;
-        case 'audit':
-            return ctx.role === 'manager'; // Only admin (handled above) or manager can access audit
-        case 'settings':
-            return false; // Only admin can access settings
-        default:
-            return false;
-    }
-}
+export type { Role, Entitlement, Module, UserContextData } from './entitlements-logic';
+export { canAccess } from './entitlements-logic';
+import type { UserContextData } from './entitlements-logic';
 
 export const EntitlementContext = createContext<UserContextData | null>(null);
 
