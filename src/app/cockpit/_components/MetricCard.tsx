@@ -24,22 +24,20 @@ export function MetricCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl border shadow-sm p-6 flex flex-col gap-1 ${
-        isError ? 'border-red-200' : 'border-slate-100'
-      }`}
+      className={`rounded-2xl border bg-[hsl(var(--ui-surface))] p-6 flex flex-col gap-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${isError ? 'border-red-500/30' : 'border-[hsl(var(--ui-border)/0.5)]'
+        }`}
     >
-      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <span className="text-xs font-semibold text-[hsl(var(--ui-text-muted))] uppercase tracking-wider">
         {title}
       </span>
       <span
-        className={`text-3xl font-bold ${
-          isError ? 'text-red-600' : 'text-slate-900'
-        }`}
+        className={`text-3xl font-bold tracking-tight ${isError ? 'text-red-500' : 'text-[hsl(var(--ui-text))]'
+          }`}
       >
         {value.toLocaleString('pt-BR')}
       </span>
       {subtitle && (
-        <span className="text-xs text-slate-500 mt-1">{subtitle}</span>
+        <span className="text-xs text-[hsl(var(--ui-text-muted))]/80 mt-1">{subtitle}</span>
       )}
     </div>
   );
