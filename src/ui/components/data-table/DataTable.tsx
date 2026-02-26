@@ -25,6 +25,13 @@ export interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     initialSorting?: SortingState;
+    sorting?: SortingState;
+    onSortingChange?: (sorting: SortingState) => void;
+    pagination?: { pageIndex: number; pageSize: number };
+    onPaginationChange?: (pagination: { pageIndex: number; pageSize: number }) => void;
+    pageCount?: number;
+    manualPagination?: boolean;
+    manualSorting?: boolean;
     rowActions?: React.ReactNode;
     onRowClick?: (row: TData) => void;
     isLoading?: boolean;
@@ -41,6 +48,13 @@ export function DataTable<TData, TValue>({
     columns,
     data,
     initialSorting = [],
+    sorting: controlledSorting,
+    onSortingChange: setControlledSorting,
+    pagination: controlledPagination,
+    onPaginationChange: setControlledPagination,
+    pageCount,
+    manualPagination = false,
+    manualSorting = false,
     onRowClick,
     isLoading,
     isError,
@@ -51,18 +65,41 @@ export function DataTable<TData, TValue>({
     className,
     virtualizeThreshold = 50,
 }: DataTableProps<TData, TValue>) {
-    const [sorting, setSorting] = useState<SortingState>(initialSorting);
+    const [internalSorting, setInternalSorting] = useState<SortingState>(initialSorting);
+    const [internalPagination, setInternalPagination] = useState({ pageIndex: 0, pageSize: 20 });
+
+    const sorting = controlledSorting !== undefined ? controlledSorting : internalSorting;
+    const pagination = controlledPagination !== undefined ? controlledPagination : internalPagination;
 
     const table = useReactTable({
         data,
         columns,
+        pageCount: manualPagination ? pageCount : undefined,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getSortedRowModel: getSortedRowModel(),
-        onSortingChange: setSorting,
+        manualPagination,
+        manualSorting,
+        onSortingChange: (updaterOrValue) => {
+            const newSorting = typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue;
+            if (setControlledSorting) {
+                setControlledSorting(newSorting);
+            } else {
+                setInternalSorting(newSorting);
+            }
+        },
+        onPaginationChange: (updaterOrValue) => {
+            const newPagination = typeof updaterOrValue === 'function' ? updaterOrValue(pagination) : updaterOrValue;
+            if (setControlledPagination) {
+                setControlledPagination(newPagination);
+            } else {
+                setInternalPagination(newPagination);
+            }
+        },
         state: {
             sorting,
+            pagination,
         },
     });
 
