@@ -42,8 +42,27 @@ async function runQa() {
     // Extract the raw cookie without Max-Age, etc. Just the key=value part
     const cookieString = setCookieHeader.split(';')[0];
     const headers = {
-        'Cookie': cookieString
+        'Cookie': cookieString,
+        'Content-Type': 'application/json'
     };
+
+    // 1.5 Create a Saved View via API (QA View)
+    console.log(`[QA] Creating Server Saved View...`);
+    const createViewRes = await fetch(`${BASE_URL}/api/cockpit/saved-views`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            module: 'audit',
+            name: 'QA View',
+            filters: { status: 'success' }
+        })
+    });
+
+    if (!createViewRes.ok) {
+        console.warn(`[QA] Failed to create saved view, moving on with fallback... HTTP ${createViewRes.status}`);
+    } else {
+        console.log(`[QA] Server Saved View created successfully`);
+    }
 
     let hasErrors = false;
 
@@ -55,6 +74,13 @@ async function runQa() {
             asserts: [
                 { string: 'transações', description: 'Table Summary text rendered' },
                 { string: 'Mostrando', description: 'Summary explicitly checks limits' }
+            ]
+        },
+        {
+            name: 'saved_views_api',
+            url: `${BASE_URL}/api/cockpit/saved-views?module=audit`,
+            asserts: [
+                { string: 'QA View', description: 'Server Saved View present in API response' }
             ]
         },
         {

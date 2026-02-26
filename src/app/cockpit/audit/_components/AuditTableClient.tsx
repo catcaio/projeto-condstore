@@ -145,6 +145,8 @@ export function AuditTableClient({ data, meta, initialError, requestId }: AuditT
             <FilterBar<AuditFilterSchema>
                 allowedKeys={AUDIT_FILTER_KEYS}
                 storageKey="condstore.savedViews.audit"
+                module="audit"
+                searchPlaceholder="Buscar eventos..."
                 drawerContent={(localFilters, setLocalFilters) => (
                     <>
                         <div className="space-y-2">

@@ -408,3 +408,22 @@ export const adminAuditLog = mysqlTable('admin_audit_log', {
 
 export type AdminAuditLogRecord = typeof adminAuditLog.$inferSelect;
 export type NewAdminAuditLogRecord = typeof adminAuditLog.$inferInsert;
+
+export const tenantSavedViews = mysqlTable('tenant_saved_views', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    module: varchar('module', { length: 50 }).notNull(),
+    name: varchar('name', { length: 100 }).notNull(),
+    filtersJson: text('filters_json').notNull(),
+    createdByUserId: varchar('created_by_user_id', { length: 36 }),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => {
+    return {
+        tenantModuleUpdatedAtIdx: index('idx_saved_views_tenant_module_updated_at').on(table.tenantId, table.module, table.updatedAt),
+        tenantModuleNameUnique: uniqueIndex('idx_saved_views_tenant_module_name').on(table.tenantId, table.module, table.name),
+    };
+});
+
+export type TenantSavedViewRecord = typeof tenantSavedViews.$inferSelect;
+export type NewTenantSavedViewRecord = typeof tenantSavedViews.$inferInsert;
