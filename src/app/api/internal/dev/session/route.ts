@@ -7,6 +7,7 @@ import { logger } from '@/infra/logger';
 import { assertDevOnly } from '@/infra/env/devOnly';
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
     const devGuard = assertDevOnly();
@@ -34,8 +35,17 @@ export async function GET(request: NextRequest) {
             logger.warn('Failed to query DB for dev session, using mock user', { error: String(dbError) });
         }
 
-        if (!user) {
-            user = { id: 'mock-admin', email: 'admin@condstore.com', tenantId: 'condstore', role: 'admin', sessionVersion: 1 };
+        const forceRole = request.nextUrl.searchParams.get('role');
+        const forceTenant = request.nextUrl.searchParams.get('tenantId');
+
+        if (!user || forceRole || forceTenant) {
+            user = {
+                id: 'mock-admin',
+                email: 'admin@condstore.com',
+                tenantId: forceTenant || 'condstore',
+                role: forceRole || 'admin',
+                sessionVersion: 1
+            };
         }
 
         const sessionToken = await createSessionToken({

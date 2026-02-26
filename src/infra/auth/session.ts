@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
 import { logger } from '../logger';
 import { userRepository } from '../repositories/user.repository';
 import { isDevRuntime } from '../env/devOnly';
@@ -75,6 +76,29 @@ export async function getSessionUser(request: NextRequest): Promise<SessionPaylo
         return payload;
     } catch (error) {
         logger.error('Failed to validate session user', error as Error, { userId: payload.sub });
+        return null;
+    }
+}
+
+export async function getServerSessionUser(): Promise<SessionPayload | null> {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(COOKIE_NAME)?.value;
+    if (!token) return null;
+
+    const payload = await verifySessionToken(token);
+    if (!payload) return null;
+
+    try {
+        if (payload.sub === 'mock-admin' && isDevRuntime()) {
+            return payload;
+        }
+        const user = await userRepository.getUserById(payload.sub);
+        if (!user || user.sessionVersion !== payload.sv) {
+            return null;
+        }
+        return payload;
+    } catch (error) {
+        logger.error('Failed to validate server session user', error as Error, { userId: payload.sub });
         return null;
     }
 }

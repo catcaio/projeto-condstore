@@ -184,7 +184,7 @@ export function DataTable<TData, TValue>({
                                     <tr
                                         key={row.id}
                                         className={cn(
-                                            'transition-colors hover:bg-black/5 dark:hover:bg-white/5',
+                                            'transition-colors hover:bg-[hsl(var(--ui-muted)/0.5)]',
                                             onRowClick ? 'cursor-pointer hover:bg-[hsl(var(--ui-muted))]' : ''
                                         )}
                                         onClick={() => onRowClick && onRowClick(row.original)}
