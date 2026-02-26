@@ -3,7 +3,7 @@ import { AuditTableClient } from './_components/AuditTableClient';
 import { Card, CardHeader, CardContent } from '@/ui/components/card';
 import { headers } from 'next/headers';
 import { canAccess, type Role } from '@/ui/auth/entitlements-logic';
-import { Lock } from 'lucide-react';
+import AccessDenied from '@/ui/components/AccessDenied';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,23 +16,18 @@ async function fetchAuditLogs(searchParams: Record<string, string | string[] | u
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(searchParams)) {
         if (typeof value === 'string') params.set(key, value);
-        else if (Array.isArray(value)) params.set(key, value[0]); // simplifying array params to string
+        else if (Array.isArray(value)) params.set(key, value[0]);
     }
 
     const url = `${protocol}://${host}/api/cockpit/audit?${params.toString()}`;
 
     try {
         const res = await fetch(url, {
-            headers: {
-                // Pass auth tokens if needed from headers
-                cookie: headersList.get('cookie') || '',
-            },
+            headers: { cookie: headersList.get('cookie') || '' },
             cache: 'no-store'
         });
 
-        if (!res.ok) {
-            throw new Error(`Failed to fetch audit logs: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Failed to fetch audit logs: ${res.status}`);
 
         const data = await res.json();
         return { data: data.events || [], meta: data.meta, error: false, requestId: res.headers.get('x-request-id') || 'unknown' };
@@ -46,33 +41,18 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
     const resolvedParams = await searchParams;
     const headersList = await headers();
     const role = (headersList.get('x-auth-role') || 'viewer') as Role;
-    const hasActivePlan = true; // audit module doesn't gate on plan
 
-    if (!canAccess('audit', { role, hasActivePlan })) {
+    if (!canAccess('audit', { role, hasActivePlan: true })) {
         return (
             <div className="space-y-5 p-6 min-h-screen os-root">
                 <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">Audit Logs</h1>
-                <div className="flex px-4 py-16 items-center justify-center min-h-[50vh]">
-                    <div className="w-full max-w-md text-center border border-dashed rounded-[1.2rem] border-[hsl(var(--ui-border)/0.9)] bg-[hsl(var(--ui-surface))] shadow-[0_16px_50px_-24px_hsl(var(--ui-shadow)/0.55)] p-10">
-                        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(var(--ui-muted))] text-[hsl(var(--ui-text-muted))]">
-                            <Lock className="h-6 w-6" />
-                        </div>
-                        <h2 className="mb-2 text-xl font-semibold tracking-tight text-[hsl(var(--ui-text))]">Sem permissão</h2>
-                        <p className="text-sm text-[hsl(var(--ui-text-muted))] px-4">
-                            Seu usuário atual não possui papel (role) elevado para visualizar este conteúdo.
-                        </p>
-                        <div className="mt-6 inline-block rounded-lg bg-[hsl(var(--ui-muted))] px-4 py-2 text-sm font-medium text-[hsl(var(--ui-text-muted))]">
-                            Fale com o administrador
-                        </div>
-                    </div>
-                </div>
+                <AccessDenied />
             </div>
         );
     }
 
     const { data: rawEvents, meta, error, requestId } = await fetchAuditLogs(resolvedParams);
 
-    // Transform logs to match the expected format in AuditTableClient
     const formattedData = rawEvents.map((event: any) => {
         let status: 'success' | 'failure' | 'pending' = 'success';
         if (event.payload?.status === 'failure' || event.payload?.error) status = 'failure';
