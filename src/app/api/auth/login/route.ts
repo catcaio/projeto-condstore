@@ -11,6 +11,7 @@ import { structuredLogger } from '@/infra/log/logger';
 import { hashRateLimitKeyForLog, rateLimiter } from '@/infra/security/rate-limiter';
 import { auditService } from '@/modules/audit/audit.service';
 import { InfrastructureError, getUserMessage } from '@/infra/errors';
+import { isDevRuntime } from '@/infra/env/devOnly';
 
 const loginSchema = z.object({
     email: z.string().email('Email inválido'),
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
 
         let shouldBypassRateLimit = false;
         if (
-            (process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development') &&
+            isDevRuntime() &&
             request.headers.get('x-internal-token') === process.env.INTERNAL_TOKEN &&
             process.env.INTERNAL_TOKEN
         ) {

@@ -12,9 +12,7 @@ import { ACQUISITION_FILTER_KEYS } from '../../../../ui/components/filters/schem
 
 export const runtime = 'nodejs';
 
-function isDev() {
-    return process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development';
-}
+import { isDevRuntime as isDev } from '../../../../infra/env/devOnly';
 
 const ALLOWED_BY_MODULE: Record<string, string[]> = {
     'audit': AUDIT_FILTER_KEYS,

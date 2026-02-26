@@ -4,13 +4,13 @@ import { users } from '@/drizzle/schema';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { eq } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
+import { assertDevOnly } from '@/infra/env/devOnly';
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-    if (process.env.NODE_ENV !== 'development' && process.env.VERCEL_ENV !== 'development') {
-        return NextResponse.json({ error: 'Fora do ambiente de desenvolvimento' }, { status: 403 });
-    }
+    const devGuard = assertDevOnly();
+    if (devGuard) return devGuard;
 
     const token = request.headers.get('x-internal-token') || request.nextUrl.searchParams.get('token');
     if (!token || token !== process.env.INTERNAL_TOKEN) {
@@ -21,18 +21,22 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const db = await getDb();
-        const results = await db
-            .select()
-            .from(users)
-            .where(eq(users.role, 'admin'))
-            .limit(1);
-
-        if (results.length === 0) {
-            return NextResponse.json({ error: 'Nenhum usuário admin encontrado para gerar sessão.' }, { status: 404 });
+        let user;
+        try {
+            const db = await getDb();
+            const results = await db
+                .select()
+                .from(users)
+                .where(eq(users.role, 'admin'))
+                .limit(1);
+            if (results.length > 0) user = results[0];
+        } catch (dbError) {
+            logger.warn('Failed to query DB for dev session, using mock user', { error: String(dbError) });
         }
 
-        const user = results[0];
+        if (!user) {
+            user = { id: 'mock-admin', email: 'admin@condstore.com', tenantId: 'condstore', role: 'admin', sessionVersion: 1 };
+        }
 
         const sessionToken = await createSessionToken({
             id: user.id,
