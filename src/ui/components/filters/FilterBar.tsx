@@ -13,6 +13,7 @@ interface FilterBarProps<T extends Record<string, any>> {
     allowedKeys: string[];
     defaults?: Partial<T>;
     storageKey?: string;
+    module?: 'audit' | 'acquisition' | 'acquisition_drilldown';
     searchPlaceholder?: string;
     // render function for drawer content
     drawerContent?: (localFilters: T, setLocalFilters: React.Dispatch<React.SetStateAction<T>>) => React.ReactNode;
@@ -24,6 +25,7 @@ export function FilterBar<T extends Record<string, any>>({
     allowedKeys,
     defaults,
     storageKey,
+    module,
     searchPlaceholder = "Buscar por termo (q)...",
     drawerContent,
     fastFilters
@@ -113,7 +115,7 @@ export function FilterBar<T extends Record<string, any>>({
                         </Button>
                     )}
 
-                    <SavedViews currentFilters={filters} storageKey={storageKey} onApplyView={(f) => {
+                    <SavedViews currentFilters={filters} storageKey={storageKey} module={module} onApplyView={(f) => {
                         handleApplyFilters(f);
                     }} />
 

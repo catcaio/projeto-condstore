@@ -183,6 +183,7 @@ export function AcquisitionClient({ data, meta, totals, initialError, requestId 
             <FilterBar<AcquisitionFilterSchema>
                 allowedKeys={ACQUISITION_FILTER_KEYS}
                 storageKey="condstore.savedViews.acquisition"
+                module="acquisition"
                 defaults={{ groupBy: 'utm_source' }}
                 searchPlaceholder="Buscar source ou campanha (q)..."
                 fastFilters={(filters, updateFilter) => (
