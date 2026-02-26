@@ -9,6 +9,7 @@ interface NavItemProps {
   icon?: React.ComponentType<{ className?: string }>;
   active?: boolean;
   muted?: boolean;
+  disabled?: boolean;
   trailing?: React.ReactNode;
   className?: string;
 }
@@ -19,6 +20,7 @@ export function NavItem({
   icon: Icon,
   active = false,
   muted = false,
+  disabled = false,
   trailing,
   className,
 }: NavItemProps) {
@@ -32,6 +34,7 @@ export function NavItem({
           ? 'bg-[hsl(var(--ui-accent-blue)/0.12)] text-[hsl(var(--ui-accent-blue-ink))]'
           : 'text-[hsl(var(--ui-text))] hover:bg-[hsl(var(--ui-muted))]',
         muted && !active && 'text-[hsl(var(--ui-text-muted))]',
+        disabled && 'opacity-60 pointer-events-none',
         className,
       )}
       aria-current={active ? 'page' : undefined}

@@ -1,0 +1,11 @@
+node_modules
+.next
+.npm-cache
+.npm-cache-2
+.qa
+.venv
+remote_control_bot.py
+start_bot.ps1
+.env
+.env.local
+.env.vercel
