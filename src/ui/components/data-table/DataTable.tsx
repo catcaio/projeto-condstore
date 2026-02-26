@@ -11,9 +11,11 @@ import {
     useReactTable,
     flexRender,
 } from '@tanstack/react-table';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
+
+const VirtualBody = dynamic(() => import('./DataTableVirtualBody'), { ssr: false }) as React.ComponentType<any>;
 
 import { DataTableToolbar } from './DataTableToolbar';
 import { DataTablePagination } from './DataTablePagination';
@@ -106,13 +108,6 @@ export function DataTable<TData, TValue>({
     const parentRef = React.useRef<HTMLDivElement>(null);
     const isVirtual = data.length > virtualizeThreshold;
 
-    const rowVirtualizer = useVirtualizer({
-        count: table.getRowModel().rows.length,
-        getScrollElement: () => parentRef.current,
-        estimateSize: () => 48,
-        overscan: 10,
-    });
-
     if (isLoading) {
         return <DataTableSkeleton columnCount={columns.length} />;
     }
@@ -181,44 +176,11 @@ export function DataTable<TData, TValue>({
                                 </tr>
                             ))}
                         </thead>
-                        <tbody
-                            className="divide-y divide-[hsl(var(--ui-border))]"
-                            style={{
-                                height: isVirtual ? `${rowVirtualizer.getTotalSize()}px` : 'auto',
-                                position: 'relative',
-                            }}
-                        >
-                            {isVirtual ? (
-                                rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                                    const row = rows[virtualRow.index];
-                                    return (
-                                        <tr
-                                            key={row.id}
-                                            className={cn(
-                                                'group transition-colors absolute w-full flex items-center',
-                                                onRowClick ? 'cursor-pointer hover:bg-[hsl(var(--ui-muted))]' : ''
-                                            )}
-                                            style={{
-                                                top: 0,
-                                                left: 0,
-                                                height: `${virtualRow.size}px`,
-                                                transform: `translateY(${virtualRow.start}px)`,
-                                            }}
-                                            onClick={() => onRowClick && onRowClick(row.original)}
-                                        >
-                                            {row.getVisibleCells().map((cell) => (
-                                                <td
-                                                    key={cell.id}
-                                                    className="px-4 py-3 align-middle text-[hsl(var(--ui-text))] truncate flex-1"
-                                                >
-                                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    );
-                                })
-                            ) : (
-                                rows.map((row) => (
+                        {isVirtual ? (
+                            <VirtualBody rows={rows} parentRef={parentRef} onRowClick={onRowClick} />
+                        ) : (
+                            <tbody className="divide-y divide-[hsl(var(--ui-border))]">
+                                {rows.map((row) => (
                                     <tr
                                         key={row.id}
                                         className={cn(
@@ -236,9 +198,9 @@ export function DataTable<TData, TValue>({
                                             </td>
                                         ))}
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
+                                ))}
+                            </tbody>
+                        )}
                     </table>
                 </div>
             </div>

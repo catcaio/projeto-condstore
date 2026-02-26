@@ -1,26 +1,49 @@
 import { ReadonlyURLSearchParams } from 'next/navigation';
-import { FilterSchema } from './filter-schema';
 
-export function parseFiltersFromSearchParams(searchParams: ReadonlyURLSearchParams | URLSearchParams): FilterSchema {
-    const filters: any = {};
+export function parseFiltersFromSearchParams<T extends Record<string, string>>(
+    searchParams: ReadonlyURLSearchParams | URLSearchParams,
+    allowedKeys: string[],
+    defaults?: Partial<T>
+): T {
+    const filters: any = { ...defaults };
     searchParams.forEach((value, key) => {
-        if (value.trim() !== '') {
+        if (allowedKeys.includes(key) && value.trim() !== '') {
             filters[key] = value;
         }
     });
-    return filters as FilterSchema;
+
+    // Remove defaults if they match exactly to keep URL clean, but wait, parse doesn't write.
+    // parse just returns the state.
+    // If the URL has a value, it overrides default.
+    return filters as T;
 }
 
-export function writeFiltersToUrl(router: any, pathname: string, filters: FilterSchema) {
+export function writeFiltersToUrl<T extends Record<string, any>>(
+    router: any,
+    pathname: string,
+    filters: T,
+    allowedKeys: string[],
+    defaults?: Partial<T>
+) {
     const params = new URLSearchParams();
 
     // Sort keys to maintain stable URL
     const sortedKeys = Object.keys(filters).sort();
 
     for (const key of sortedKeys) {
-        const value = (filters as any)[key];
-        if (value && typeof value === 'string' && value.trim() !== '') {
-            params.set(key, value);
+        if (allowedKeys.includes(key)) {
+            const value = filters[key];
+            const defaultValue = defaults ? defaults[key] : undefined;
+            // Only set if value exists and is not the default
+            // Wait, if it's default, should we remove it from URL? Yes, cleaner URL.
+            // But wait, if someone removes a default, it will fall back to default again.
+            // Let's just set it if it exists.
+            if (value && typeof value === 'string' && value.trim() !== '') {
+                // if it matches default, we can omit it if we want. Let's omit.
+                if (value !== defaultValue) {
+                    params.set(key, value);
+                }
+            }
         }
     }
 

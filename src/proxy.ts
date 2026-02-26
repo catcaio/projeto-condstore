@@ -122,7 +122,7 @@ function authSecretMisconfiguredResponse(req: NextRequest, requestId: string): N
   return setRequestIdHeader(NextResponse.json({ error: 'MISCONFIG_AUTH_SECRET' }, { status: 500 }), requestId);
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const requestId = getOrCreateRequestId(req);
   const headers = new Headers(req.headers);
   headers.set('x-request-id', requestId);

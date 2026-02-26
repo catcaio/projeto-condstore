@@ -1,30 +1,30 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FilterSchema } from './filter-schema';
 import { Bookmark, Trash } from 'lucide-react';
 
-interface SavedView {
+interface SavedView<T = Record<string, any>> {
     name: string;
-    filters: FilterSchema;
+    filters: T;
     updatedAt: string;
 }
 
-interface SavedViewsProps {
-    currentFilters: FilterSchema;
-    onApplyView: (filters: FilterSchema) => void;
+interface SavedViewsProps<T = Record<string, any>> {
+    currentFilters: T;
+    onApplyView: (filters: T) => void;
+    storageKey?: string;
 }
 
-const STORAGE_KEY = 'condstore.savedViews.audit';
+const DEFAULT_STORAGE_KEY = 'condstore.savedViews.audit';
 
-export function SavedViews({ currentFilters, onApplyView }: SavedViewsProps) {
-    const [views, setViews] = useState<SavedView[]>([]);
+export function SavedViews<T extends Record<string, any>>({ currentFilters, onApplyView, storageKey = DEFAULT_STORAGE_KEY }: SavedViewsProps<T>) {
+    const [views, setViews] = useState<SavedView<T>[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [saveName, setSaveName] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-        const stored = localStorage.getItem(STORAGE_KEY);
+        const stored = localStorage.getItem(storageKey);
         if (stored) {
             try {
                 setViews(JSON.parse(stored));
@@ -34,14 +34,14 @@ export function SavedViews({ currentFilters, onApplyView }: SavedViewsProps) {
         }
     }, []);
 
-    const saveViews = (newViews: SavedView[]) => {
+    const saveViews = (newViews: SavedView<T>[]) => {
         setViews(newViews);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newViews));
+        localStorage.setItem(storageKey, JSON.stringify(newViews));
     };
 
     const handleSaveView = () => {
         if (!saveName.trim()) return;
-        const newView: SavedView = {
+        const newView: SavedView<T> = {
             name: saveName.trim(),
             filters: currentFilters,
             updatedAt: new Date().toISOString()
