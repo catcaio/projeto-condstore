@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardHeader, CardContent } from '@/ui/components/card';
 import { headers } from 'next/headers';
 import { AcquisitionClient } from './_components/AcquisitionClient';
+import { ModuleGate } from '@/ui/auth/AccessGate';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,24 +55,26 @@ export default async function AcquisitionPage({ searchParams }: { searchParams: 
                 Análise de performance de tráfego, sessões e simulações agrupadas por UTMs.
             </p>
 
-            <Card variant="elevated">
-                <CardHeader heading="Atribuição de Performance" subheading="Filtros dinâmicos e exportação de dados" />
-                <CardContent className="pt-0 p-4 relative">
-                    <React.Suspense fallback={
-                        <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
-                            Carregando métricas de aquisição...
-                        </div>
-                    }>
-                        <AcquisitionClient
-                            data={rows}
-                            meta={meta}
-                            totals={totals}
-                            initialError={error}
-                            requestId={requestId}
-                        />
-                    </React.Suspense>
-                </CardContent>
-            </Card>
+            <ModuleGate moduleName="acquisition">
+                <Card variant="elevated">
+                    <CardHeader heading="Atribuição de Performance" subheading="Filtros dinâmicos e exportação de dados" />
+                    <CardContent className="pt-0 p-4 relative">
+                        <React.Suspense fallback={
+                            <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
+                                Carregando métricas de aquisição...
+                            </div>
+                        }>
+                            <AcquisitionClient
+                                data={rows}
+                                meta={meta}
+                                totals={totals}
+                                initialError={error}
+                                requestId={requestId}
+                            />
+                        </React.Suspense>
+                    </CardContent>
+                </Card>
+            </ModuleGate>
         </div>
     );
 }

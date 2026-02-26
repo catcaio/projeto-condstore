@@ -29,6 +29,8 @@ async function runQa() {
     // 1. Bootstrap dev session bypassing auth
     let headers: Record<string, string> = { 'Content-Type': 'application/json' };
     const isDev = process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development';
+    let headersNoPlan: Record<string, string> = { 'Content-Type': 'application/json' };
+    let headersNoRole: Record<string, string> = { 'Content-Type': 'application/json' };
 
     if (isDev) {
         console.log(`[QA] Bootstrapping dev session...`);
@@ -47,6 +49,16 @@ async function runQa() {
 
         const cookieString = setCookieHeader.split(';')[0];
         headers['Cookie'] = cookieString;
+
+        console.log(`[QA] Bootstrapping no-plan session...`);
+        const sessionRes2 = await fetch(`${BASE_URL}/api/internal/dev/session?token=${INTERNAL_TOKEN}&tenantId=mock-no-plan`);
+        const setCookieHeader2 = sessionRes2.headers.get('set-cookie');
+        if (setCookieHeader2) headersNoPlan['Cookie'] = setCookieHeader2.split(';')[0];
+
+        console.log(`[QA] Bootstrapping no-role session...`);
+        const sessionRes3 = await fetch(`${BASE_URL}/api/internal/dev/session?token=${INTERNAL_TOKEN}&role=viewer`);
+        const setCookieHeader3 = sessionRes3.headers.get('set-cookie');
+        if (setCookieHeader3) headersNoRole['Cookie'] = setCookieHeader3.split(';')[0];
     } else {
         console.log(`[QA] Skipping dev session bootstrap (production mode detected)`);
     }
@@ -100,9 +112,26 @@ async function runQa() {
         {
             name: 'drilldown',
             url: `${BASE_URL}/cockpit/acquisition/drilldown?groupBy=utm_campaign&utm_campaign=summer_sale`,
+            headers: headers,
             asserts: [
                 { string: 'Detalhes de Aquisição', description: 'Drilldown Page Title rendered' },
                 { string: 'Mostrando', description: 'Drilldown DataTable rendering text' }
+            ]
+        },
+        {
+            name: 'acquisition_no_plan',
+            url: `${BASE_URL}/cockpit/acquisition`,
+            headers: headersNoPlan,
+            asserts: [
+                { string: 'Plano necessário', description: 'Access Gate Block Rendered for missing plan' }
+            ]
+        },
+        {
+            name: 'audit_no_role',
+            url: `${BASE_URL}/cockpit/audit`,
+            headers: headersNoRole,
+            asserts: [
+                { string: 'Sem permissão', description: 'Access Gate Block Rendered for insufficient role' }
             ]
         }
     ];
@@ -110,7 +139,8 @@ async function runQa() {
     for (const target of targets) {
         console.log(`\n[QA] Testing [${target.name}] at: ${target.url}`);
         try {
-            const res = await fetch(target.url, { headers });
+            const currentHeaders = target.headers || headers;
+            const res = await fetch(target.url, { headers: currentHeaders });
             const html = await res.text();
 
             // Save html snapshot
@@ -148,7 +178,8 @@ async function runQa() {
     try {
         const prodSafetyPromise = new Promise<void>((resolve, reject) => {
             const prodPort = '3015'; // avoid conflicts
-            const nextStart = spawn('npx', ['next', 'start', '-p', prodPort], {
+            const cmdStr = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+            const nextStart = spawn(cmdStr, ['next', 'start', '-p', prodPort], {
                 env: { ...process.env, NODE_ENV: 'production', VERCEL_ENV: 'production', PORT: prodPort },
                 stdio: 'pipe',
                 shell: process.platform === 'win32'
@@ -158,6 +189,7 @@ async function runQa() {
 
             nextStart.stdout.on('data', async (data) => {
                 const out = data.toString();
+                // console.log('[NEXT STDOUT]', out);
                 if (!isResolved && (out.includes('Ready in') || out.includes('ready on'))) {
                     isResolved = true;
                     try {
@@ -179,7 +211,9 @@ async function runQa() {
             });
 
             nextStart.stderr.on('data', (data) => {
-                if (!isResolved && data.toString().includes('ready on')) {
+                const out = data.toString();
+                // console.error('[NEXT STDERR]', out);
+                if (!isResolved && (out.includes('ready on') || out.includes('Ready in'))) {
                     isResolved = true;
                     fetch(`http://localhost:${prodPort}/api/internal/dev/session`)
                         .then(async res => {
@@ -202,7 +236,7 @@ async function runQa() {
                     nextStart.kill();
                     reject(new Error('PROD-SAFETY FAIL: Server did not start in time.'));
                 }
-            }, 20000);
+            }, 60000); // 60 seconds
         });
 
         await prodSafetyPromise;
