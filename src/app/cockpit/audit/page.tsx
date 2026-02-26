@@ -94,11 +94,17 @@ export default async function AuditPage() {
             <Card variant="elevated">
                 <CardHeader heading="Eventos do Sistema" subheading="Auditoria de ações em tempo real" />
                 <CardContent className="pt-0 p-4">
-                    <AuditTableClient
-                        initialData={formattedData}
-                        initialError={error}
-                        requestId={requestId}
-                    />
+                    <React.Suspense fallback={
+                        <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
+                            Carregando filtros...
+                        </div>
+                    }>
+                        <AuditTableClient
+                            initialData={formattedData}
+                            initialError={error}
+                            requestId={requestId}
+                        />
+                    </React.Suspense>
                 </CardContent>
             </Card>
         </div>
