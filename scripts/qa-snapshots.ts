@@ -89,6 +89,7 @@ async function runQa() {
             name: 'audit',
             url: `${BASE_URL}/cockpit/audit?status=success&page=2`,
             asserts: [
+                { string: 'Audit Logs', description: 'PageHeader Title rendered' },
                 { string: 'transações', description: 'Table Summary text rendered' },
                 { string: 'Mostrando', description: 'Summary explicitly checks limits' }
             ]
@@ -104,6 +105,7 @@ async function runQa() {
             name: 'acquisition',
             url: `${BASE_URL}/cockpit/acquisition?groupBy=utm_campaign&q=summer&page=2`,
             asserts: [
+                { string: 'Acquisition (UTM)', description: 'PageHeader Title rendered' },
                 { string: 'summer', description: 'Query value reflected in HTML' },
                 { string: 'utm_campaign', description: 'Grouping reflected in HTML' },
                 { string: 'Mostrando', description: 'DataTable rendering text' }

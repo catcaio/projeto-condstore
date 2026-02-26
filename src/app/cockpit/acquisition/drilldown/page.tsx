@@ -10,6 +10,9 @@ import AccessDenied from '@/ui/components/AccessDenied';
 import PlanRequired from '@/ui/components/PlanRequired';
 import ServerErrorState from '@/ui/components/ServerErrorState';
 import { serverFetchJson } from '@/ui/http/server-fetch';
+import { PageContainer } from '@/ui/layout/PageContainer';
+import { PageHeader } from '@/ui/components/PageHeader';
+import { EmptyState } from '@/ui/components/EmptyState';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,10 +64,10 @@ export default async function AcquisitionDrilldownPage({ searchParams }: { searc
     if (!canAccess('acquisition', { role, hasActivePlan })) {
         const reason = !hasActivePlan ? 'plan' : 'rbac';
         return (
-            <div className="space-y-5 p-6 min-h-screen os-root">
-                <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">Detalhes de Aquisição</h1>
+            <PageContainer>
+                <PageHeader title="Detalhes de Aquisição" />
                 {reason === 'plan' ? <PlanRequired /> : <AccessDenied />}
-            </div>
+            </PageContainer>
         );
     }
 
@@ -72,16 +75,14 @@ export default async function AcquisitionDrilldownPage({ searchParams }: { searc
 
     if (!res.ok) {
         return (
-            <div className="space-y-5 p-6 min-h-screen os-root">
-                <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">
-                    Detalhes de Aquisição
-                </h1>
+            <PageContainer>
+                <PageHeader title="Detalhes de Aquisição" />
                 <ServerErrorState
                     message={res.error?.message}
                     requestId={res.requestId}
                     status={res.status}
                 />
-            </div>
+            </PageContainer>
         );
     }
 
@@ -95,32 +96,39 @@ export default async function AcquisitionDrilldownPage({ searchParams }: { searc
         action: event.action || 'N/A',
     }));
 
-    return (
-        <div className="space-y-5 p-6 min-h-screen os-root">
-            <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">
-                Detalhes de Aquisição
-            </h1>
-            <p className="text-[hsl(var(--ui-text-muted))] mb-4">
-                Visualização de eventos atrelados ao filtro {groupByText}: <span className="font-semibold text-[hsl(var(--ui-accent-blue))]">{groupValue}</span>
-            </p>
+    const isEmpty = formattedData.length === 0;
 
-            <Card variant="elevated">
-                <CardHeader heading="Eventos Relacionados" subheading="Eventos públicos, cliques de atribuição e simulações." />
-                <CardContent className="pt-0 p-4 relative">
-                    <React.Suspense fallback={
-                        <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
-                            Carregando eventos...
-                        </div>
-                    }>
-                        <AcquisitionDrilldownClient
-                            data={formattedData}
-                            meta={meta}
-                            initialError={false}
-                            requestId={res.requestId || 'unknown'}
-                        />
-                    </React.Suspense>
-                </CardContent>
-            </Card>
-        </div>
+    return (
+        <PageContainer>
+            <PageHeader
+                title="Detalhes de Aquisição"
+                subtitle={`Visualização de eventos atrelados ao filtro ${groupByText}: ${groupValue}`}
+            />
+
+            {isEmpty ? (
+                <EmptyState
+                    title="Nenhum evento registrado"
+                    description="Não identificamos eventos associados a essa campanha UTM."
+                />
+            ) : (
+                <Card variant="elevated">
+                    <CardHeader heading="Eventos Relacionados" subheading="Eventos públicos, cliques de atribuição e simulações." />
+                    <CardContent className="pt-0 p-4 relative">
+                        <React.Suspense fallback={
+                            <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
+                                Carregando eventos...
+                            </div>
+                        }>
+                            <AcquisitionDrilldownClient
+                                data={formattedData}
+                                meta={meta}
+                                initialError={false}
+                                requestId={res.requestId || 'unknown'}
+                            />
+                        </React.Suspense>
+                    </CardContent>
+                </Card>
+            )}
+        </PageContainer>
     );
 }

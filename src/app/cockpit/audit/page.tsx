@@ -6,6 +6,9 @@ import { canAccess, type Role } from '@/ui/auth/entitlements-logic';
 import AccessDenied from '@/ui/components/AccessDenied';
 import ServerErrorState from '@/ui/components/ServerErrorState';
 import { serverFetchJson } from '@/ui/http/server-fetch';
+import { PageContainer } from '@/ui/layout/PageContainer';
+import { PageHeader } from '@/ui/components/PageHeader';
+import { EmptyState } from '@/ui/components/EmptyState';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,10 +38,10 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
 
     if (!canAccess('audit', { role, hasActivePlan: true })) {
         return (
-            <div className="space-y-5 p-6 min-h-screen os-root">
-                <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">Audit Logs</h1>
+            <PageContainer>
+                <PageHeader title="Audit Logs" />
                 <AccessDenied />
-            </div>
+            </PageContainer>
         );
     }
 
@@ -46,14 +49,14 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
 
     if (!res.ok) {
         return (
-            <div className="space-y-5 p-6 min-h-screen os-root">
-                <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">Audit Logs</h1>
+            <PageContainer>
+                <PageHeader title="Audit Logs" />
                 <ServerErrorState
                     message={res.error?.message}
                     requestId={res.requestId}
                     status={res.status}
                 />
-            </div>
+            </PageContainer>
         );
     }
 
@@ -75,30 +78,40 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         };
     });
 
-    return (
-        <div className="space-y-5 p-6 min-h-screen os-root">
-            <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">Audit Logs</h1>
-            <p className="text-[hsl(var(--ui-text-muted))] mb-4">
-                Visualização de auditoria utilizando a nova DataTable enterprise.
-            </p>
+    const isFiltered = Object.keys(resolvedParams).some(k => k !== 'page' && k !== 'limit');
+    const isEmpty = meta.total === 0 && !isFiltered;
 
-            <Card variant="elevated">
-                <CardHeader heading="Eventos do Sistema" subheading="Auditoria de ações em tempo real" />
-                <CardContent className="pt-0 p-4 relative">
-                    <React.Suspense fallback={
-                        <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
-                            Carregando filtros...
-                        </div>
-                    }>
-                        <AuditTableClient
-                            data={formattedData}
-                            meta={meta}
-                            initialError={false}
-                            requestId={res.requestId || 'unknown'}
-                        />
-                    </React.Suspense>
-                </CardContent>
-            </Card>
-        </div>
+    return (
+        <PageContainer>
+            <PageHeader
+                title="Audit Logs"
+                subtitle="Visualização de auditoria utilizando a nova DataTable enterprise."
+            />
+
+            {isEmpty ? (
+                <EmptyState
+                    title="Sistema sem registros"
+                    description="O seu tenant não tem nenhum log de auditoria associado até o momento."
+                />
+            ) : (
+                <Card variant="elevated">
+                    <CardHeader heading="Eventos do Sistema" subheading="Auditoria de ações em tempo real" />
+                    <CardContent className="pt-0 p-4 relative">
+                        <React.Suspense fallback={
+                            <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
+                                Carregando filtros...
+                            </div>
+                        }>
+                            <AuditTableClient
+                                data={formattedData}
+                                meta={meta}
+                                initialError={false}
+                                requestId={res.requestId || 'unknown'}
+                            />
+                        </React.Suspense>
+                    </CardContent>
+                </Card>
+            )}
+        </PageContainer>
     );
 }

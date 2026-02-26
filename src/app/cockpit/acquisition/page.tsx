@@ -10,6 +10,9 @@ import AccessDenied from '@/ui/components/AccessDenied';
 import PlanRequired from '@/ui/components/PlanRequired';
 import ServerErrorState from '@/ui/components/ServerErrorState';
 import { serverFetchJson } from '@/ui/http/server-fetch';
+import { PageContainer } from '@/ui/layout/PageContainer';
+import { PageHeader } from '@/ui/components/PageHeader';
+import { EmptyState } from '@/ui/components/EmptyState';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,10 +64,10 @@ export default async function AcquisitionPage({ searchParams }: { searchParams: 
     if (!canAccess('acquisition', { role, hasActivePlan })) {
         const reason = !hasActivePlan ? 'plan' : 'rbac';
         return (
-            <div className="space-y-5 p-6 min-h-screen os-root">
-                <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">Acquisition (UTM)</h1>
+            <PageContainer>
+                <PageHeader title="Acquisition (UTM)" />
                 {reason === 'plan' ? <PlanRequired /> : <AccessDenied />}
-            </div>
+            </PageContainer>
         );
     }
 
@@ -72,14 +75,14 @@ export default async function AcquisitionPage({ searchParams }: { searchParams: 
 
     if (!res.ok) {
         return (
-            <div className="space-y-5 p-6 min-h-screen os-root">
-                <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">Acquisition (UTM)</h1>
+            <PageContainer>
+                <PageHeader title="Acquisition (UTM)" />
                 <ServerErrorState
                     message={res.error?.message}
                     requestId={res.requestId}
                     status={res.status}
                 />
-            </div>
+            </PageContainer>
         );
     }
 
@@ -87,31 +90,41 @@ export default async function AcquisitionPage({ searchParams }: { searchParams: 
     const totals = res.data?.totals || null;
     const meta = res.data?.meta || { page: 1, limit: 20, total: 0, totalPages: 0 };
 
-    return (
-        <div className="space-y-5 p-6 min-h-screen os-root">
-            <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">Acquisition (UTM)</h1>
-            <p className="text-[hsl(var(--ui-text-muted))] mb-4">
-                Análise de performance de tráfego, sessões e simulações agrupadas por UTMs.
-            </p>
+    const isFiltered = Object.keys(resolvedParams).some(k => k !== 'page' && k !== 'limit' && k !== 'window' && k !== 'groupBy');
+    const isEmpty = rows.length === 0 && !isFiltered;
 
-            <Card variant="elevated">
-                <CardHeader heading="Atribuição de Performance" subheading="Filtros dinâmicos e exportação de dados" />
-                <CardContent className="pt-0 p-4 relative">
-                    <React.Suspense fallback={
-                        <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
-                            Carregando métricas de aquisição...
-                        </div>
-                    }>
-                        <AcquisitionClient
-                            data={rows}
-                            meta={meta}
-                            totals={totals}
-                            initialError={false}
-                            requestId={res.requestId || 'unknown'}
-                        />
-                    </React.Suspense>
-                </CardContent>
-            </Card>
-        </div>
+    return (
+        <PageContainer>
+            <PageHeader
+                title="Acquisition (UTM)"
+                subtitle="Análise de performance de tráfego, sessões e simulações agrupadas por UTMs."
+            />
+
+            {isEmpty ? (
+                <EmptyState
+                    title="Sem dados de UTMs"
+                    description="Não identificamos tráfego qualificado com as tags UTM nos últimos 30 dias."
+                />
+            ) : (
+                <Card variant="elevated">
+                    <CardHeader heading="Atribuição de Performance" subheading="Filtros dinâmicos e exportação de dados" />
+                    <CardContent className="pt-0 p-4 relative">
+                        <React.Suspense fallback={
+                            <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
+                                Carregando métricas de aquisição...
+                            </div>
+                        }>
+                            <AcquisitionClient
+                                data={rows}
+                                meta={meta}
+                                totals={totals}
+                                initialError={false}
+                                requestId={res.requestId || 'unknown'}
+                            />
+                        </React.Suspense>
+                    </CardContent>
+                </Card>
+            )}
+        </PageContainer>
     );
 }
