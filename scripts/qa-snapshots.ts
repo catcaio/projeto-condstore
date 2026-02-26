@@ -51,7 +51,7 @@ async function runQa() {
         headers['Cookie'] = cookieString;
 
         console.log(`[QA] Bootstrapping no-plan session...`);
-        const sessionRes2 = await fetch(`${BASE_URL}/api/internal/dev/session?token=${INTERNAL_TOKEN}&tenantId=mock-no-plan`);
+        const sessionRes2 = await fetch(`${BASE_URL}/api/internal/dev/session?token=${INTERNAL_TOKEN}&tenantId=mock-no-plan&role=operator`);
         const setCookieHeader2 = sessionRes2.headers.get('set-cookie');
         if (setCookieHeader2) headersNoPlan['Cookie'] = setCookieHeader2.split(';')[0];
 
