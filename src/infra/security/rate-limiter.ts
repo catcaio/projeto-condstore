@@ -42,8 +42,8 @@ function nowMs(): number {
   return Date.now();
 }
 
-function isDevMemoryFallbackEnabled(): boolean {
-  return process.env.NODE_ENV !== 'production';
+function isMemoryFallbackEnabled(): boolean {
+  return true; // Use in-memory fallback even in production if Redis is missing/disconnected
 }
 
 function isRateLimitFailOpenOverrideEnabled(): boolean {
@@ -138,7 +138,7 @@ export class RateLimiter {
       }
     }
 
-    if (isDevMemoryFallbackEnabled()) {
+    if (isMemoryFallbackEnabled()) {
       return this.limitWithMemory(normalizedScope, normalizedKey, options, now);
     }
 
@@ -216,7 +216,7 @@ export class RateLimiter {
     const keyHash = hashRateLimitKeyInternal(key);
     const errorName = error instanceof Error ? error.name : undefined;
 
-    if (isDevMemoryFallbackEnabled()) {
+    if (isMemoryFallbackEnabled()) {
       structuredLogger.warn('rate_limiter_redis_failure_memory_fallback', {
         eventType: 'rate_limiter',
         scope,
