@@ -4,3 +4,4 @@ export * from './card';
 export * from './list-group';
 export * from './nav-item';
 export * from './text-field';
+export * from './data-table';

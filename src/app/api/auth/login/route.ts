@@ -107,8 +107,18 @@ export async function POST(request: NextRequest) {
         const ip = getClientIp(request);
         const rateLimitKey = `${ip}:${normalizedEmail}`;
         const rateLimitKeyHash = hashRateLimitKeyForLog(rateLimitKey);
+
+        let shouldBypassRateLimit = false;
+        if (
+            (process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development') &&
+            request.headers.get('x-internal-token') === process.env.INTERNAL_TOKEN &&
+            process.env.INTERNAL_TOKEN
+        ) {
+            shouldBypassRateLimit = true;
+        }
+
         const rateLimit = await rateLimiter.limit('auth.login', rateLimitKey, {
-            max: 5,
+            max: shouldBypassRateLimit ? 9999 : 5,
             windowSec: 60,
         });
 
