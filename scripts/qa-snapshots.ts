@@ -141,6 +141,33 @@ async function runQa() {
             asserts: [
                 { string: 'Erro ao carregar', description: 'Server Error State Rendered for failed fetch' }
             ]
+        },
+        {
+            name: 'home',
+            url: `${BASE_URL}/`,
+            headers: {},
+            asserts: [
+                { string: 'Automatize o frete da sua loja em', description: 'Public Hero Title rendered' },
+                { string: 'Começar agora', description: 'Public primary CTA rendered' }
+            ]
+        },
+        {
+            name: 'docs',
+            url: `${BASE_URL}/docs`,
+            headers: {},
+            asserts: [
+                { string: 'Documentação', description: 'Public Docs heading rendered' },
+                { string: 'Integração simplificada', description: 'Public Docs content rendered' }
+            ]
+        },
+        {
+            name: 'pricing',
+            url: `${BASE_URL}/pricing`,
+            headers: {},
+            asserts: [
+                { string: 'Planos simples e flexíveis', description: 'Pricing header rendered' },
+                { string: 'R$ 0', description: 'Pricing card rendered' }
+            ]
         }
     ];
 
