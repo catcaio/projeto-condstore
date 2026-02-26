@@ -6,6 +6,7 @@ import { DataTable } from '@/ui/components/data-table';
 import { Badge } from '@/ui/components/badge';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { FilterBar } from '@/ui/components/filters/FilterBar';
+import { AuditFilterSchema, AUDIT_FILTER_KEYS } from '@/ui/components/filters/schemas/audit';
 
 export type AuditLog = {
     id: string;
@@ -141,7 +142,82 @@ export function AuditTableClient({ data, meta, initialError, requestId }: AuditT
 
     return (
         <div className="flex flex-col gap-2 relative">
-            <FilterBar />
+            <FilterBar<AuditFilterSchema>
+                allowedKeys={AUDIT_FILTER_KEYS}
+                storageKey="condstore.savedViews.audit"
+                drawerContent={(localFilters, setLocalFilters) => (
+                    <>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-[hsl(var(--ui-text))]">Tipo de Evento</label>
+                            <select
+                                className="w-full h-10 px-3 rounded-md border border-[hsl(var(--ui-border))] bg-transparent text-sm text-[hsl(var(--ui-text))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ui-accent-blue))]"
+                                value={localFilters.type || ''}
+                                onChange={e => setLocalFilters({ ...localFilters, type: e.target.value })}
+                            >
+                                <option value="" className="bg-[hsl(var(--ui-surface))]">Todos</option>
+                                <option value="USER_LOGIN" className="bg-[hsl(var(--ui-surface))]">USER_LOGIN</option>
+                                <option value="ITEM_UPDATED" className="bg-[hsl(var(--ui-surface))]">ITEM_UPDATED</option>
+                                <option value="BILLING_FAILED" className="bg-[hsl(var(--ui-surface))]">BILLING_FAILED</option>
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-[hsl(var(--ui-text))]">Status</label>
+                            <select
+                                className="w-full h-10 px-3 rounded-md border border-[hsl(var(--ui-border))] bg-transparent text-sm text-[hsl(var(--ui-text))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ui-accent-blue))]"
+                                value={localFilters.status || ''}
+                                onChange={e => setLocalFilters({ ...localFilters, status: e.target.value })}
+                            >
+                                <option value="" className="bg-[hsl(var(--ui-surface))]">Todos</option>
+                                <option value="success" className="bg-[hsl(var(--ui-surface))]">Sucesso</option>
+                                <option value="failure" className="bg-[hsl(var(--ui-surface))]">Falha</option>
+                                <option value="pending" className="bg-[hsl(var(--ui-surface))]">Pendente</option>
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-[hsl(var(--ui-text))]">Ator / Tenant</label>
+                            <input
+                                className="w-full h-10 px-3 rounded-md border border-[hsl(var(--ui-border))] bg-transparent text-sm text-[hsl(var(--ui-text))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ui-accent-blue))]"
+                                placeholder="Buscar ator..."
+                                value={localFilters.actor || ''}
+                                onChange={e => setLocalFilters({ ...localFilters, actor: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-[hsl(var(--ui-text))]">Recurso</label>
+                            <input
+                                className="w-full h-10 px-3 rounded-md border border-[hsl(var(--ui-border))] bg-transparent text-sm text-[hsl(var(--ui-text))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ui-accent-blue))]"
+                                placeholder="Buscar recurso..."
+                                value={localFilters.resource || ''}
+                                onChange={e => setLocalFilters({ ...localFilters, resource: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[hsl(var(--ui-text))]">Data Início</label>
+                                <input
+                                    type="date"
+                                    className="w-full h-10 px-3 rounded-md border border-[hsl(var(--ui-border))] bg-transparent text-sm text-[hsl(var(--ui-text))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ui-accent-blue))]"
+                                    value={localFilters.dateStart || ''}
+                                    onChange={e => setLocalFilters({ ...localFilters, dateStart: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[hsl(var(--ui-text))]">Data Fim</label>
+                                <input
+                                    type="date"
+                                    className="w-full h-10 px-3 rounded-md border border-[hsl(var(--ui-border))] bg-transparent text-sm text-[hsl(var(--ui-text))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ui-accent-blue))]"
+                                    value={localFilters.dateEnd || ''}
+                                    onChange={e => setLocalFilters({ ...localFilters, dateEnd: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
+            />
 
             <div className="text-sm font-medium text-[hsl(var(--ui-text-muted))] mb-2 border-b border-[hsl(var(--ui-border))] pb-2 flex justify-between items-center">
                 <span>Mostrando {data.length} de {meta.total} transações</span>
