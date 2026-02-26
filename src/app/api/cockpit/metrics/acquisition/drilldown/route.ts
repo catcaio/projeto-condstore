@@ -3,8 +3,9 @@ import { sql } from 'drizzle-orm';
 import { getDb } from '../../../../../../infra/db';
 import { requireAdmin } from '../../../../../../infra/auth/guards';
 import { makeRequestId } from '../../../../../../infra/http/request-trace';
-
 export const runtime = 'nodejs';
+
+import { isDevRuntime } from '../../../../../../infra/env/devOnly';
 
 export async function GET(request: NextRequest) {
     const requestId = makeRequestId(request);
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
 
         // Handle mock if empty in DEV
         let mockEvents = [];
-        const isDev = process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development';
+        const isDev = isDevRuntime();
 
         const countRes = await db.execute(sql`
         SELECT COUNT(*) as count FROM (
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         console.error('Drilldown API Error:', error);
 
-        if (process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development') {
+        if (isDevRuntime()) {
             const total = 55;
             const rows = Array.from({ length: limit }).map((_, i) => ({
                 id: `mock-${i}-${page}`,

@@ -2,13 +2,14 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import 'dotenv/config';
+import { spawn } from 'child_process';
 
 // Fix for __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3002;
-const BASE_URL = `http://localhost:${PORT}`;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN || 'condstore_dev_bypass_local_991';
 
 async function ensureDir(dirPath: string) {
@@ -26,25 +27,29 @@ async function runQa() {
     await ensureDir(artifactsDir);
 
     // 1. Bootstrap dev session bypassing auth
-    console.log(`[QA] Bootstrapping dev session...`);
-    const sessionRes = await fetch(`${BASE_URL}/api/internal/dev/session?token=${INTERNAL_TOKEN}`);
-    if (!sessionRes.ok) {
-        console.error(`[QA] Failed to bootstrap session! HTTP ${sessionRes.status}`);
-        process.exit(1);
-    }
+    let headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const isDev = process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development';
 
-    const setCookieHeader = sessionRes.headers.get('set-cookie');
-    if (!setCookieHeader) {
-        console.error(`[QA] No Set-Cookie header found in session bootstrap!`);
-        process.exit(1);
-    }
+    if (isDev) {
+        console.log(`[QA] Bootstrapping dev session...`);
+        const sessionRes = await fetch(`${BASE_URL}/api/internal/dev/session?token=${INTERNAL_TOKEN}`);
+        if (!sessionRes.ok) {
+            console.error(`[QA] Failed to bootstrap session! HTTP ${sessionRes.status}`);
+            console.error(await sessionRes.text());
+            process.exit(1);
+        }
 
-    // Extract the raw cookie without Max-Age, etc. Just the key=value part
-    const cookieString = setCookieHeader.split(';')[0];
-    const headers = {
-        'Cookie': cookieString,
-        'Content-Type': 'application/json'
-    };
+        const setCookieHeader = sessionRes.headers.get('set-cookie');
+        if (!setCookieHeader) {
+            console.error(`[QA] No Set-Cookie header found in session bootstrap!`);
+            process.exit(1);
+        }
+
+        const cookieString = setCookieHeader.split(';')[0];
+        headers['Cookie'] = cookieString;
+    } else {
+        console.log(`[QA] Skipping dev session bootstrap (production mode detected)`);
+    }
 
     // 1.5 Create a Saved View via API (QA View)
     console.log(`[QA] Creating Server Saved View...`);
@@ -136,7 +141,78 @@ async function runQa() {
         }
     }
 
-    if (hasErrors) {
+    // 3. Prod-safety test (run Next.js in production mode and expect 403 on dev endpoint)
+    let prodSafetyOk = false;
+    console.log(`\n[QA] Running PROD-SAFETY test...`);
+
+    try {
+        const prodSafetyPromise = new Promise<void>((resolve, reject) => {
+            const prodPort = '3015'; // avoid conflicts
+            const nextStart = spawn('npx', ['next', 'start', '-p', prodPort], {
+                env: { ...process.env, NODE_ENV: 'production', VERCEL_ENV: 'production', PORT: prodPort },
+                stdio: 'pipe',
+                shell: process.platform === 'win32'
+            });
+
+            let isResolved = false;
+
+            nextStart.stdout.on('data', async (data) => {
+                const out = data.toString();
+                if (!isResolved && (out.includes('Ready in') || out.includes('ready on'))) {
+                    isResolved = true;
+                    try {
+                        const res = await fetch(`http://localhost:${prodPort}/api/internal/dev/session`);
+                        const html = await res.text();
+                        await fs.writeFile(path.join(artifactsDir, 'prod_safety.html'), html, 'utf-8');
+                        if (res.status === 403) {
+                            console.log(`[QA] PROD-SAFETY: OK. Dev session returned 403 in production.`);
+                            resolve();
+                        } else {
+                            reject(new Error(`PROD-SAFETY FAIL: Expected 403, got ${res.status}`));
+                        }
+                    } catch (err) {
+                        reject(err);
+                    } finally {
+                        nextStart.kill();
+                    }
+                }
+            });
+
+            nextStart.stderr.on('data', (data) => {
+                if (!isResolved && data.toString().includes('ready on')) {
+                    isResolved = true;
+                    fetch(`http://localhost:${prodPort}/api/internal/dev/session`)
+                        .then(async res => {
+                            const html = await res.text();
+                            await fs.writeFile(path.join(artifactsDir, 'prod_safety.html'), html, 'utf-8');
+                            if (res.status === 403) {
+                                console.log(`[QA] PROD-SAFETY: OK. Dev session returned 403 in production.`);
+                                resolve();
+                            } else {
+                                reject(new Error(`PROD-SAFETY FAIL: Expected 403, got ${res.status}`));
+                            }
+                        })
+                        .catch(reject)
+                        .finally(() => nextStart.kill());
+                }
+            });
+
+            setTimeout(() => {
+                if (!isResolved) {
+                    nextStart.kill();
+                    reject(new Error('PROD-SAFETY FAIL: Server did not start in time.'));
+                }
+            }, 20000);
+        });
+
+        await prodSafetyPromise;
+        prodSafetyOk = true;
+    } catch (e: any) {
+        console.error(`[QA] PROD-SAFETY test failed: ${e.message}`);
+        hasErrors = true;
+    }
+
+    if (hasErrors || !prodSafetyOk) {
         console.error(`\n[QA] 🛑 Visual Proof Validation FAILED!`);
         process.exit(1);
     } else {
