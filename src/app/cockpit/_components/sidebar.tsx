@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Badge, Card, CardContent, CardHeader, ListGroup, ListItem, NavItem, Separator } from '@/ui/components';
 import { Activity, BarChart3, Boxes, LayoutDashboard, Package, Settings2, FileText } from 'lucide-react';
-import { useEntitlements, canAccess, Module } from '@/ui/auth/entitlements';
+import { useSession } from '@/ui/context/SessionContext';
+import { canAccess, type Module } from '@/ui/auth/entitlements-logic';
 
 type NavItemDef = { label: string; href: string; icon: any; module: Module; isPlaceholder?: boolean };
 
@@ -20,7 +21,7 @@ const items: NavItemDef[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const auth = useEntitlements();
+  const auth = useSession();
 
   return (
     <aside className="lg:sticky lg:top-3 lg:h-[calc(100vh-1.5rem)]">
