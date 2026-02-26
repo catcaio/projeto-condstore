@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 1) Auth / tenant resolution + Plan Entitlement
-    const entitlement = await requireActivePlan(request);
+    const entitlement = (process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development') ? { errorResponse: null, tenantId: auth.session.tenantId } : await requireActivePlan(request);
     if (entitlement.errorResponse) {
         return entitlement.errorResponse;
     }
@@ -29,6 +29,36 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+        if (process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development') {
+            return NextResponse.json({
+                success: true,
+                events: [
+                    {
+                        id: 'evt_1',
+                        tenantId: tenantId,
+                        type: 'USER_LOGIN',
+                        payload: { status: 'success', resource: 'Autenticação' },
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: 'evt_2',
+                        tenantId: tenantId,
+                        type: 'ITEM_UPDATED',
+                        payload: { status: 'success', resource: 'Produto XPTO' },
+                        createdAt: new Date(Date.now() - 3600000).toISOString()
+                    },
+                    {
+                        id: 'evt_3',
+                        tenantId: tenantId,
+                        type: 'BILLING_FAILED',
+                        payload: { status: 'failure', resource: 'Fatura #111' },
+                        createdAt: new Date(Date.now() - 7200000).toISOString()
+                    }
+                ],
+                meta: { count: 3, limit }
+            });
+        }
+
         const db = await getDb();
         const events = await db
             .select()
@@ -37,7 +67,6 @@ export async function GET(request: NextRequest) {
             .orderBy(desc(tenantEvents.createdAt))
             .limit(limit);
 
-        // Parse JSON payload securely before returning
         const serializedEvents = events.map(event => ({
             id: event.id,
             tenantId: event.tenantId,
