@@ -2,6 +2,7 @@ import React from 'react';
 import { AuditTableClient } from './_components/AuditTableClient';
 import { Card, CardHeader, CardContent } from '@/ui/components/card';
 import { headers } from 'next/headers';
+import { ModuleGate } from '@/ui/auth/AccessGate';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,23 +68,25 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
                 Visualização de auditoria utilizando a nova DataTable enterprise.
             </p>
 
-            <Card variant="elevated">
-                <CardHeader heading="Eventos do Sistema" subheading="Auditoria de ações em tempo real" />
-                <CardContent className="pt-0 p-4 relative">
-                    <React.Suspense fallback={
-                        <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
-                            Carregando filtros...
-                        </div>
-                    }>
-                        <AuditTableClient
-                            data={formattedData}
-                            meta={meta}
-                            initialError={error}
-                            requestId={requestId}
-                        />
-                    </React.Suspense>
-                </CardContent>
-            </Card>
+            <ModuleGate moduleName="audit">
+                <Card variant="elevated">
+                    <CardHeader heading="Eventos do Sistema" subheading="Auditoria de ações em tempo real" />
+                    <CardContent className="pt-0 p-4 relative">
+                        <React.Suspense fallback={
+                            <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
+                                Carregando filtros...
+                            </div>
+                        }>
+                            <AuditTableClient
+                                data={formattedData}
+                                meta={meta}
+                                initialError={error}
+                                requestId={requestId}
+                            />
+                        </React.Suspense>
+                    </CardContent>
+                </Card>
+            </ModuleGate>
         </div>
     );
 }

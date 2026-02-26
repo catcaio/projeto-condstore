@@ -2,6 +2,7 @@ import React from 'react';
 import { AcquisitionDrilldownClient } from './_components/AcquisitionDrilldownClient';
 import { Card, CardHeader, CardContent } from '@/ui/components/card';
 import { headers } from 'next/headers';
+import { ModuleGate } from '@/ui/auth/AccessGate';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,23 +63,25 @@ export default async function AcquisitionDrilldownPage({ searchParams }: { searc
                 Visualização de eventos atrelados ao filtro {groupByText}: <span className="font-semibold text-[hsl(var(--ui-accent-blue))]">{groupValue}</span>
             </p>
 
-            <Card variant="elevated">
-                <CardHeader heading="Eventos Relacionados" subheading="Eventos públicos, cliques de atribuição e simulações." />
-                <CardContent className="pt-0 p-4 relative">
-                    <React.Suspense fallback={
-                        <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
-                            Carregando eventos...
-                        </div>
-                    }>
-                        <AcquisitionDrilldownClient
-                            data={formattedData}
-                            meta={meta}
-                            initialError={error}
-                            requestId={requestId}
-                        />
-                    </React.Suspense>
-                </CardContent>
-            </Card>
+            <ModuleGate moduleName="acquisition">
+                <Card variant="elevated">
+                    <CardHeader heading="Eventos Relacionados" subheading="Eventos públicos, cliques de atribuição e simulações." />
+                    <CardContent className="pt-0 p-4 relative">
+                        <React.Suspense fallback={
+                            <div className="h-40 flex items-center justify-center text-[hsl(var(--ui-text-muted))]">
+                                Carregando eventos...
+                            </div>
+                        }>
+                            <AcquisitionDrilldownClient
+                                data={formattedData}
+                                meta={meta}
+                                initialError={error}
+                                requestId={requestId}
+                            />
+                        </React.Suspense>
+                    </CardContent>
+                </Card>
+            </ModuleGate>
         </div>
     );
 }
