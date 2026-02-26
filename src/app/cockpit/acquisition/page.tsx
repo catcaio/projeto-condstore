@@ -8,14 +8,15 @@ import { tenants } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import AccessDenied from '@/ui/components/AccessDenied';
 import PlanRequired from '@/ui/components/PlanRequired';
+import ServerErrorState from '@/ui/components/ServerErrorState';
+import { serverFetchJson } from '@/ui/http/server-fetch';
 
 export const dynamic = 'force-dynamic';
 
 async function fetchAcquisitionData(searchParams: Record<string, string | string[] | undefined>) {
     const headersList = await headers();
     const host = headersList.get('host') || 'localhost:3000';
-    const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1');
-    const protocol = isLocalhost ? 'http' : (process.env.NODE_ENV === 'development' ? 'http' : 'https');
+    const protocol = (host.startsWith('localhost') || host.startsWith('127.0.0.1')) ? 'http' : (process.env.NODE_ENV === 'development' ? 'http' : 'https');
 
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(searchParams)) {
@@ -28,20 +29,10 @@ async function fetchAcquisitionData(searchParams: Record<string, string | string
 
     const url = `${protocol}://${host}/api/cockpit/metrics/acquisition?${params.toString()}`;
 
-    try {
-        const res = await fetch(url, {
-            headers: { cookie: headersList.get('cookie') || '' },
-            cache: 'no-store'
-        });
-
-        if (!res.ok) throw new Error(`Failed to fetch acquisition metrics: ${res.status}`);
-
-        const data = await res.json();
-        return { data: data.rows || [], totals: data.totals || null, meta: data.meta, error: false, requestId: res.headers.get('x-request-id') || 'unknown' };
-    } catch (error) {
-        console.error('Error fetching acquisition metrics:', error);
-        return { data: [], totals: null, meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, error: true, requestId: `local-${Date.now()}` };
-    }
+    return serverFetchJson<any>(url, {
+        headers: { cookie: headersList.get('cookie') || '' },
+        cache: 'no-store'
+    });
 }
 
 export default async function AcquisitionPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -77,7 +68,24 @@ export default async function AcquisitionPage({ searchParams }: { searchParams: 
         );
     }
 
-    const { data: rows, totals, meta, error, requestId } = await fetchAcquisitionData(resolvedParams);
+    const res = await fetchAcquisitionData(resolvedParams);
+
+    if (!res.ok) {
+        return (
+            <div className="space-y-5 p-6 min-h-screen os-root">
+                <h1 className="text-2xl font-bold text-[hsl(var(--ui-text))]">Acquisition (UTM)</h1>
+                <ServerErrorState
+                    message={res.error?.message}
+                    requestId={res.requestId}
+                    status={res.status}
+                />
+            </div>
+        );
+    }
+
+    const rows = res.data?.rows || [];
+    const totals = res.data?.totals || null;
+    const meta = res.data?.meta || { page: 1, limit: 20, total: 0, totalPages: 0 };
 
     return (
         <div className="space-y-5 p-6 min-h-screen os-root">
@@ -98,8 +106,8 @@ export default async function AcquisitionPage({ searchParams }: { searchParams: 
                             data={rows}
                             meta={meta}
                             totals={totals}
-                            initialError={error}
-                            requestId={requestId}
+                            initialError={false}
+                            requestId={res.requestId || 'unknown'}
                         />
                     </React.Suspense>
                 </CardContent>

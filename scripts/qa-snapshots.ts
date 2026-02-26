@@ -133,6 +133,14 @@ async function runQa() {
             asserts: [
                 { string: 'Sem permissão', description: 'Access Gate Block Rendered for insufficient role' }
             ]
+        },
+        {
+            name: 'acquisition_error',
+            url: `${BASE_URL}/cockpit/acquisition?groupBy=UNSUPPORTED_GROUPING`,
+            headers: headers,
+            asserts: [
+                { string: 'Erro ao carregar', description: 'Server Error State Rendered for failed fetch' }
+            ]
         }
     ];
 
