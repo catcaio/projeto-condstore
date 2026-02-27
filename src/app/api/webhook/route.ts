@@ -6,12 +6,15 @@
  *   2. TWILIO_AUTH_TOKEN presence (500 if missing — no bypass ever)
  *   3. Signature verification (401 if invalid)
  *   4. Circuit breaker check (200 TwiML fallback if open)
- *   5. Rate limit (tenant+From, 30/60s) → 429 JSON if exceeded
- *   6. Payload validation (MessageSid required)
- *   7. Idempotency (DB dedup): duplicate MessageSid → 200 TwiML empty no-op
- *   8. Tenant resolution
- *   9. Business logic (freight controller)
- *  10. Structured audit log
+ *   5. Replay protection (clock-drift check)
+ *   6. Rate limit (tenant+From, 30/60s) → 429 JSON if exceeded
+ *   7. Payload validation (MessageSid required)
+ *   8. Persistent webhook_events idempotency (provider + external_id)
+ *   9. Idempotency (DB dedup): duplicate MessageSid → 200 TwiML empty no-op
+ *  10. Tenant resolution
+ *  11. Business logic (freight controller)
+ *  12. Event Bus publish (events:webhook)
+ *  13. Structured audit log
  */
 export const runtime = "nodejs";
 
@@ -42,6 +45,17 @@ import {
 import { ErrorCode, errorResponse } from "../../../infra/http/error-response";
 import { structuredLogger } from "../../../infra/log/logger";
 import { applyRateLimitHeaders, hashRateLimitKeyForLog, rateLimiter } from "../../../infra/security/rate-limiter";
+import { webhookEventRepository, hashPayload } from "../../../infra/repositories/webhook-event.repository";
+import { publishEvent } from "../../../core/events/event-bus";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+/** Maximum clock drift (in ms) before logging a replay warning (5 minutes). */
+const REPLAY_DRIFT_WARN_MS = 5 * 60 * 1000;
+/** Maximum clock drift (in ms) before hard-rejecting (15 minutes). */
+const REPLAY_DRIFT_REJECT_MS = 15 * 60 * 1000;
+/** Redis Stream for webhook events. */
+const WEBHOOK_STREAM = 'events:webhook';
 
 // ─── TwiML helpers ────────────────────────────────────────────────────────────
 
@@ -171,6 +185,33 @@ export async function POST(request: NextRequest) {
     return finish(errorResponse(ErrorCode.FORBIDDEN, 401, requestId, "Invalid signature."), ErrorCode.FORBIDDEN);
   }
 
+  // ── 4b. Replay protection (clock drift check) ─────────────────────────────
+  const twilioTimestamp = request.headers.get('x-twilio-timestamp');
+  if (twilioTimestamp) {
+    const tMs = parseInt(twilioTimestamp, 10) * 1000;
+    const drift = Math.abs(Date.now() - tMs);
+    if (drift > REPLAY_DRIFT_REJECT_MS) {
+      structuredLogger.warn('webhook_replay_rejected', {
+        requestId,
+        route,
+        drift,
+        eventType: 'webhook_replay_rejected',
+      });
+      return finish(
+        errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Request timestamp too old — possible replay.'),
+        ErrorCode.FORBIDDEN,
+      );
+    }
+    if (drift > REPLAY_DRIFT_WARN_MS) {
+      structuredLogger.warn('webhook_replay_clock_drift', {
+        requestId,
+        route,
+        drift,
+        eventType: 'webhook_replay_clock_drift',
+      });
+    }
+  }
+
   // ── 5. Circuit breaker ─────────────────────────────────────────────────────
   if (isCircuitOpen()) {
     logger.warn("Webhook blocked: circuit breaker is OPEN", {
@@ -195,6 +236,25 @@ export async function POST(request: NextRequest) {
         errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, "Invalid payload: MessageSid is required."),
         ErrorCode.VALIDATION_ERROR,
       );
+    }
+
+    // ── 6b. Persistent webhook_events idempotency ─────────────────────────────
+    const pHash = hashPayload(rawBody);
+    const isNew = await webhookEventRepository.tryInsert({
+      provider: 'twilio',
+      externalId: messageSid,
+      payloadHash: pHash,
+    });
+    if (!isNew) {
+      structuredLogger.info('webhook_duplicate_persistent', {
+        requestId,
+        route,
+        eventType: 'webhook_duplicate_persistent',
+        provider: 'twilio',
+        externalId: messageSid,
+        durationMs: Date.now() - startTime,
+      });
+      return finish(twimlEmpty(requestId), 'DUPLICATE_WEBHOOK_EVENT');
     }
 
     // ── 7. Resolve tenant EARLY — needed for per-tenant rate limit ───────────
@@ -391,6 +451,35 @@ export async function POST(request: NextRequest) {
 
     // Circuit breaker: mark success
     recordSuccess();
+
+    // ── 12b. Publish to event bus (fire-and-forget, fallback below) ──────────
+    try {
+      await publishEvent({
+        stream: WEBHOOK_STREAM,
+        type: 'WEBHOOK_INBOUND',
+        tenantId,
+        data: {
+          messageSid,
+          phoneHash,
+          intent,
+          confidence,
+        },
+        requestId,
+      });
+    } catch (publishErr) {
+      // Event bus publish failed — this is non-blocking. The webhook
+      // already processed the message synchronously above.
+      structuredLogger.warn('webhook_event_bus_publish_failed', {
+        requestId,
+        route,
+        eventType: 'webhook_event_bus_publish_failed',
+        error: publishErr,
+      });
+    }
+
+    // ── 12c. Mark webhook event as processed ─────────────────────────────────
+    void webhookEventRepository.markProcessed('twilio', messageSid);
+
     const successLatencyMs = Date.now() - startTime;
     logger.info('webhook_request_end', {
       requestId,
@@ -411,6 +500,12 @@ export async function POST(request: NextRequest) {
 
     // Circuit breaker: mark failure
     recordFailure();
+
+    // Mark webhook event as failed (best-effort, non-blocking)
+    const failedSid = payload?.["MessageSid"];
+    if (failedSid) {
+      void webhookEventRepository.markFailed('twilio', failedSid);
+    }
 
     logger.info('webhook_request_end', {
       requestId,

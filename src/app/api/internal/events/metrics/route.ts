@@ -4,8 +4,8 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/internal/events/metrics
  * ─────────────────────────────────────────────────────────────────────────────
- * Expõe métricas de backlog e DLQ do Redis Stream do worker FinOps.
- *
+ * Expõe métricas de backlog e DLQ do Redis Stream do worker FinOps
+ * e do stream de Webhook.
  * Auth: x-internal-token (mesmo token de /api/internal/diag)
  *
  * Query params (opcionais):
@@ -25,9 +25,12 @@ import { isInternalTokenAuthorized, getInternalExportTokenOrThrow } from '../../
 import { makeRequestId, attachRequestIdHeader } from '../../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse } from '../../../../../infra/http/error-response';
 import { structuredLogger } from '../../../../../infra/log/logger';
+import { webhookEventRepository } from '../../../../../infra/repositories/webhook-event.repository';
 
 const DEFAULT_STREAM = 'events:finops';
 const DEFAULT_GROUP = 'finops-group';
+const WEBHOOK_STREAM = 'events:webhook';
+const WEBHOOK_GROUP = 'webhook-group';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();
@@ -53,10 +56,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const stream = searchParams.get('stream') || DEFAULT_STREAM;
     const group = searchParams.get('group') || DEFAULT_GROUP;
 
-    // ── Collect ───────────────────────────────────────────────────────────
+    // ── Collect finops ────────────────────────────────────────────────────
     const [lag, dlq] = await Promise.allSettled([
         getStreamLag(stream, group),
         getDLQCount(stream),
+    ]);
+
+    // ── Collect webhook ───────────────────────────────────────────────────
+    const [webhookLag, webhookDlq, webhookFailed] = await Promise.allSettled([
+        getStreamLag(WEBHOOK_STREAM, WEBHOOK_GROUP),
+        getDLQCount(WEBHOOK_STREAM),
+        webhookEventRepository.countFailed(),
     ]);
 
     const payload = {
@@ -64,6 +74,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         group,
         lag: lag.status === 'fulfilled' ? lag.value : { error: String((lag as PromiseRejectedResult).reason) },
         dlq: dlq.status === 'fulfilled' ? dlq.value : { error: String((dlq as PromiseRejectedResult).reason) },
+        webhook: {
+            lag: webhookLag.status === 'fulfilled' ? webhookLag.value : { error: String((webhookLag as PromiseRejectedResult).reason) },
+            dlq: webhookDlq.status === 'fulfilled' ? webhookDlq.value : { error: String((webhookDlq as PromiseRejectedResult).reason) },
+            failedCount: webhookFailed.status === 'fulfilled' ? webhookFailed.value : 0,
+        },
     };
 
     const response = NextResponse.json(payload, { status: 200 });

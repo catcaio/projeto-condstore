@@ -17,9 +17,14 @@ export type FinOpsEventType =
     | 'FINOPS_MONTHLY_RESET'
     | 'CACHE_INVALIDATE';
 
+export type WebhookEventType =
+    | 'WEBHOOK_INBOUND';
+
+export type StreamEventType = FinOpsEventType | WebhookEventType;
+
 interface PublishOptions {
     stream: string;
-    type: FinOpsEventType;
+    type: StreamEventType;
     tenantId: string;
     data: any;
     requestId?: string;

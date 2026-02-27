@@ -10,6 +10,9 @@
  *   - Rate limit: phone exceeded → 200 TwiML
  *   - Rate limit: tenant exceeded → 200 TwiML
  *   - Duplicate MessageSid → 200 empty TwiML (no reprocessing)
+ *   - Persistent webhook_events idempotency dedup
+ *   - Replay protection (clock-drift)
+ *   - Webhook event status tracking (processed/failed)
  *
  * Test file is at: src/app/api/webhook/__tests__/
  * Paths go UP 4 levels to reach src/
@@ -92,6 +95,20 @@ vi.mock("../../../../infra/context-cache", () => ({
     appendMessage: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("../../../../infra/repositories/webhook-event.repository", () => ({
+    webhookEventRepository: {
+        tryInsert: vi.fn(),
+        markProcessed: vi.fn(),
+        markFailed: vi.fn(),
+        countFailed: vi.fn(),
+    },
+    hashPayload: vi.fn(() => 'hash-mock-abc123'),
+}));
+
+vi.mock("../../../../core/events/event-bus", () => ({
+    publishEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("../../../../infra/circuit-breaker", () => ({
     isCircuitOpen: vi.fn(() => false),
     recordSuccess: vi.fn(),
@@ -126,6 +143,8 @@ import { twilioProvider } from "../../../../providers/twilio.provider";
 import { isCircuitOpen } from "../../../../infra/circuit-breaker";
 import { sessionManager } from "../../../../core/conversation/session-manager";
 import { rateLimiter } from "../../../../infra/security/rate-limiter";
+import { webhookEventRepository } from "../../../../infra/repositories/webhook-event.repository";
+import { publishEvent } from "../../../../core/events/event-bus";
 
 // ── Import route under test (after all mocks are hoisted) ────────────────────
 import { POST } from "../route";
@@ -195,6 +214,10 @@ describe("POST /api/webhook — security hardening", () => {
         });
         (sessionManager.getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
         (sessionManager.updateSession as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+        (webhookEventRepository.tryInsert as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+        (webhookEventRepository.markProcessed as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+        (webhookEventRepository.markFailed as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+        (publishEvent as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     });
 
     afterEach(() => {
