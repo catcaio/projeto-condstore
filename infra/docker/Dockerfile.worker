@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.worker — CONDSTORE FinOps Worker
+# Build context: repositório raiz
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Stage 1: deps ─────────────────────────────────────────────────────────
+FROM node:22-alpine AS deps
+WORKDIR /app
+
+# Apenas package files para cache de camada eficiente
+COPY package.json package-lock.json ./
+# instala sem scripts pós-instalação desnecessários em CI
+RUN npm ci --ignore-scripts
+
+# ── Stage 2: runner ───────────────────────────────────────────────────────
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+# Segurança: não rodar como root
+RUN addgroup -S condstore && adduser -S worker -G condstore
+USER worker
+
+# Copia dependências resolvidas
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copia o código-fonte necessário (sem .env, sem .git)
+COPY --chown=worker:condstore src ./src
+COPY --chown=worker:condstore package.json tsconfig.json tsconfig.build.json ./
+
+# ── Health probe simples (processo vivo = saudável) ────────────────────────
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD pgrep -f "finops-worker" > /dev/null || exit 1
+
+# ── Entrypoint ─────────────────────────────────────────────────────────────
+CMD ["npm", "run", "worker:finops"]

@@ -1,0 +1,56 @@
+[Unit]
+Description=CONDSTORE FinOps Worker — Redis Streams consumer
+Documentation=https://github.com/your-org/projeto-condstore/blob/main/docs/ops/worker-finops.md
+After=network-online.target redis.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+
+# ── Working directory ────────────────────────────────────────────────────
+WorkingDirectory=/var/www/condstore
+
+# ── Process ──────────────────────────────────────────────────────────────
+# tsx já instalado em node_modules como devDependency
+ExecStart=/usr/bin/node --import tsx src/workers/finops-worker.ts
+
+# Alternativa com npm script (preferencial após npm ci em prod):
+# ExecStart=/usr/bin/npm run worker:finops
+
+# ── Restart policy ────────────────────────────────────────────────────────
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# ── Shutdown ──────────────────────────────────────────────────────────────
+KillSignal=SIGTERM
+TimeoutStopSec=15
+# Permite que o worker drene até 8 s (+ 7s buffer antes do systemd SIGKILL)
+
+# ── Environment ───────────────────────────────────────────────────────────
+# Descomente e aponte para o seu arquivo .env se não usar variáveis de sistema:
+# EnvironmentFile=/var/www/condstore/.env
+
+# Variáveis mínimas necessárias (alternativa ao EnvironmentFile):
+# Environment=NODE_ENV=production
+# Environment=REDIS_URL=redis://127.0.0.1:6379
+# Environment=DATABASE_URL=mysql://user:pass@host:3306/db
+# Environment=AUTH_SECRET=...
+
+# ── Logging ───────────────────────────────────────────────────────────────
+# Logs vão para journald automaticamente — use:
+#   journalctl -u condstore-finops-worker -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=condstore-finops-worker
+
+# ── Resource limits ───────────────────────────────────────────────────────
+# Ajuste conforme capacidade do VPS
+LimitNOFILE=65536
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target
