@@ -174,6 +174,8 @@ export function FinOpsCard() {
     const [upgrading, setUpgrading] = useState(false);
     const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
+    const stripeEnabled = process.env.NEXT_PUBLIC_STRIPE_ENABLED === '1';
+
     const loadPlans = async () => {
         try {
             const res = await fetch('/api/cockpit/billing/upgrade');
@@ -196,17 +198,32 @@ export function FinOpsCard() {
         setUpgrading(true);
         setUpgradeError(null);
         try {
-            const res = await fetch('/api/cockpit/billing/upgrade', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ planId }),
-            });
-            if (!res.ok) {
-                const json = await res.json().catch(() => ({}));
-                throw new Error(json?.error?.message ?? 'Erro ao realizar upgrade.');
+            if (stripeEnabled) {
+                // Stripe checkout: get redirect URL
+                const res = await fetch('/api/cockpit/billing/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ planId }),
+                });
+                if (!res.ok) {
+                    const json = await res.json().catch(() => ({}));
+                    throw new Error(json?.message ?? json?.error ?? 'Erro ao iniciar checkout.');
+                }
+                const { url } = await res.json();
+                if (url) window.location.href = url;
+            } else {
+                // Manual upgrade flow (no Stripe)
+                const res = await fetch('/api/cockpit/billing/upgrade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ planId }),
+                });
+                if (!res.ok) {
+                    const json = await res.json().catch(() => ({}));
+                    throw new Error(json?.error?.message ?? 'Erro ao realizar upgrade.');
+                }
+                window.location.reload();
             }
-            // Otimista: reload
-            window.location.reload();
         } catch (err) {
             setUpgradeError((err as Error).message);
             setUpgrading(false);
