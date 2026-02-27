@@ -169,3 +169,11 @@ ngrok.yml
 .env*.local
 artifacts/
 ai-eval/
+
+# Security: never commit secrets
+.env.vercel
+.env
+*.env
+*.pem
+id_ed25519*
+id_rsa*
