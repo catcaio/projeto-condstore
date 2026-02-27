@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockRedis = vi.hoisted(() => ({
   isAvailable: vi.fn(),
@@ -36,15 +36,12 @@ vi.mock('../../attribution/hash', () => ({
 import { RateLimiter } from '../rate-limiter';
 
 describe('security rate-limiter redis failure hardening', () => {
-  const originalNodeEnv = process.env.NODE_ENV;
-  const originalFailOpen = process.env.RATE_LIMIT_FAIL_OPEN;
-
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-02-25T12:00:00.000Z'));
 
-    process.env.NODE_ENV = 'production';
+    vi.stubEnv('NODE_ENV', 'production');
     delete process.env.RATE_LIMIT_FAIL_OPEN;
 
     mockRedis.isAvailable.mockReturnValue(false);
@@ -57,18 +54,8 @@ describe('security rate-limiter redis failure hardening', () => {
 
   afterEach(() => {
     vi.useRealTimers();
-
-    if (originalNodeEnv === undefined) {
-      delete process.env.NODE_ENV;
-    } else {
-      process.env.NODE_ENV = originalNodeEnv;
-    }
-
-    if (originalFailOpen === undefined) {
-      delete process.env.RATE_LIMIT_FAIL_OPEN;
-    } else {
-      process.env.RATE_LIMIT_FAIL_OPEN = originalFailOpen;
-    }
+    vi.unstubAllEnvs();
+    delete process.env.RATE_LIMIT_FAIL_OPEN;
   });
 
   it('fails closed in production when redis is unavailable', async () => {

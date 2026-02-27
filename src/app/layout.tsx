@@ -1,5 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import '../styles/tokens.typography.css';
+import '../styles/tokens.light.css';
+import '../styles/tokens.dark.css';
+import '../styles/tokens.semantic.css';
 import { SentryClientBootstrap } from './_sentry-client-bootstrap';
 import { ThemeProvider, ThemeScript } from '@/ui/theme';
 
@@ -38,11 +42,11 @@ export default function RootLayout({
 }) {
     return (
         <html lang="pt-BR" suppressHydrationWarning data-theme="light">
-            <body className="min-h-screen bg-background text-foreground antialiased [font-family:-apple-system,BlinkMacSystemFont,'SF_Pro_Text','Segoe_UI',sans-serif]">
+            <body className="min-h-screen antialiased">
                 <ThemeScript />
                 <ThemeProvider>
                     <SentryClientBootstrap />
-                    <div className="min-h-screen bg-background">
+                    <div className="min-h-screen">
                         {children}
                     </div>
                 </ThemeProvider>

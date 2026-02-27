@@ -27,10 +27,10 @@ export function TimelineVirtual({ reports, onTagClick }: TimelineVirtualProps) {
     if (reports.length === 0) return null;
 
     return (
-        <div className="flex flex-col h-full bg-[#0e0e11] rounded border border-gray-800 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-[#111]">
-                <h3 className="text-[10px] uppercase text-gray-500 tracking-wider font-semibold">Event Log Stream</h3>
-                <span className="text-[10px] text-gray-400 font-mono tracking-tight bg-gray-900 px-2 py-0.5 rounded border border-gray-800">{reports.length} matching events</span>
+        <div className="flex flex-col h-full bg-[#0e0e11] rounded border border-[var(--border-default)] overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)] bg-[#111]">
+                <h3 className="text-[10px] uppercase text-[var(--text-secondary)] tracking-wider font-semibold">Event Log Stream</h3>
+                <span className="text-[10px] text-[var(--text-secondary)] font-mono tracking-tight bg-[var(--bg-panel)] px-2 py-0.5 rounded border border-[var(--border-default)]">{reports.length} matching events</span>
             </div>
             
             {/* Height constraint + scroll to enable progressive pseudo-virtualization */}
@@ -38,8 +38,8 @@ export function TimelineVirtual({ reports, onTagClick }: TimelineVirtualProps) {
                 {groups.map(([date, items]) => (
                     <div key={date}>
                         {/* Day Divider */}
-                        <div className="sticky top-0 z-10 bg-[#0c0c0e]/95 backdrop-blur border-y border-gray-800/80 px-4 py-1.5 flex items-center shadow-lg">
-                            <span className="text-[9px] font-bold text-gray-400 font-mono tracking-widest uppercase">{date}</span>
+                        <div className="sticky top-0 z-10 bg-[#0c0c0e]/95 backdrop-blur border-y border-[var(--border-default)] px-4 py-1.5 flex items-center shadow-lg">
+                            <span className="text-[9px] font-bold text-[var(--text-secondary)] font-mono tracking-widest uppercase">{date}</span>
                         </div>
                         
                         <div className="flex flex-col bg-[#0e0e11]">
@@ -51,10 +51,10 @@ export function TimelineVirtual({ reports, onTagClick }: TimelineVirtualProps) {
                 ))}
                 
                 {reports.length > limit && (
-                    <div className="p-4 flex justify-center border-t border-gray-800 bg-[#111]">
+                    <div className="p-4 flex justify-center border-t border-[var(--border-default)] bg-[#111]">
                         <button 
                             onClick={() => setLimit(prev => prev + 50)}
-                            className="bg-gray-900 border border-gray-700 hover:border-blue-500/50 hover:text-blue-400 hover:bg-gray-800 text-gray-300 text-[11px] px-6 py-2.5 rounded transition-all font-mono font-semibold tracking-wider uppercase shadow-sm"
+                            className="bg-[var(--bg-panel)] border border-[var(--border-default)] hover:border-blue-500/50 hover:text-blue-400 hover:bg-[var(--bg-panel)] text-[var(--text-secondary)] text-[11px] px-6 py-2.5 rounded transition-all font-mono font-semibold tracking-wider uppercase shadow-sm"
                         >
                             Load 50 Older Logs (of {reports.length - limit} remaining)
                         </button>

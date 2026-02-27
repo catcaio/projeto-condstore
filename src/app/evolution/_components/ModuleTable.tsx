@@ -83,11 +83,11 @@ export function ModuleTable({ reports, days, activeModulesFilter, onFilterModule
 
     return (
         <div className="flex flex-col h-full">
-            <h3 className="text-[10px] uppercase text-gray-500 tracking-wider font-semibold mb-3">Module Health</h3>
+            <h3 className="text-[10px] uppercase text-[var(--text-secondary)] tracking-wider font-semibold mb-3">Module Health</h3>
 
             <div className="flex-1 overflow-auto overflow-x-hidden min-h-[200px]">
                 <table className="w-full text-xs text-left">
-                    <thead className="text-[9px] uppercase text-gray-500 sticky top-0 bg-[#111] z-10">
+                    <thead className="text-[9px] uppercase text-[var(--text-secondary)] sticky top-0 bg-[#111] z-10">
                         <tr>
                             <Th col="module" label="Module" />
                             <Th col="progress" label="Prog" />
@@ -97,7 +97,7 @@ export function ModuleTable({ reports, days, activeModulesFilter, onFilterModule
                     </thead>
                     <tbody className="divide-y divide-gray-800/50">
                         {modules.length === 0 && (
-                            <tr><td colSpan={4} className="py-4 text-center text-gray-600">No active modules</td></tr>
+                            <tr><td colSpan={4} className="py-4 text-center text-[var(--text-secondary)]">No active modules</td></tr>
                         )}
                         {modules.map((m) => {
                             const isActive = activeModulesFilter.includes(m.key);
@@ -105,30 +105,30 @@ export function ModuleTable({ reports, days, activeModulesFilter, onFilterModule
                                 <tr
                                     key={m.key}
                                     onClick={() => onFilterModule(m.key)}
-                                    className={`cursor-pointer transition-colors group ${isActive ? 'bg-blue-900/10' : 'hover:bg-gray-800/30'}`}
+                                    className={`cursor-pointer transition-colors group ${isActive ? 'bg-blue-900/10' : 'hover:bg-[var(--bg-panel)]'}`}
                                 >
                                     <td className="py-2.5 flex items-center space-x-2">
                                         <div className={`w-1.5 h-1.5 rounded-full ${m.status === 'warn' ? 'bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)]' : 'bg-emerald-500'} ${isActive ? 'animate-pulse' : ''}`}></div>
-                                        <span className={`font-mono truncate max-w-[100px] ${isActive ? 'text-blue-400 font-bold' : 'text-gray-300 group-hover:text-blue-300'}`}>
+                                        <span className={`font-mono truncate max-w-[100px] ${isActive ? 'text-blue-400 font-bold' : 'text-[var(--text-secondary)] group-hover:text-blue-300'}`}>
                                             {m.key}
                                         </span>
                                     </td>
                                     <td className="py-2.5">
                                         <div className="flex items-center space-x-1 w-12">
-                                            <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                                            <div className="flex-1 h-1.5 bg-[var(--bg-panel)] rounded-full overflow-hidden">
                                                 <div className="h-full bg-blue-500" style={{ width: `${m.progress}%` }}></div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="py-2.5 text-gray-400 font-mono">{m.count}</td>
-                                    <td className="py-2.5 text-gray-500 font-mono">{formatTimeRelative(m.lastTime)}</td>
+                                    <td className="py-2.5 text-[var(--text-secondary)] font-mono">{m.count}</td>
+                                    <td className="py-2.5 text-[var(--text-secondary)] font-mono">{formatTimeRelative(m.lastTime)}</td>
                                 </tr>
                             );
                         })}
                     </tbody>
                 </table>
             </div>
-            <div className="mt-2 text-[9px] text-gray-600">
+            <div className="mt-2 text-[9px] text-[var(--text-secondary)]">
                 Tip: Click a module to drill-down.
             </div>
         </div>

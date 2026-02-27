@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from '../route';
 import { getDb } from '../../../../../../infra/db';
 import { getSessionUser } from '../../../../../../infra/auth/session';
@@ -38,6 +38,7 @@ describe('GET /api/cockpit/metrics/freight', () => {
       email: 'user@example.com',
       tenantId: 'tenant-from-session',
       role: 'admin',
+      sv: 1,
     });
   });
 
@@ -110,6 +111,7 @@ describe('GET /api/cockpit/metrics/freight', () => {
       email: 'operator@example.com',
       tenantId: 'tenant-from-session',
       role: 'operator',
+      sv: 1,
     });
 
     const request = {

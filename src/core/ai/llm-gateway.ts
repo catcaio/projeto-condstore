@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { tenantAiProviderRepository } from '../../infra/repositories/tenant-ai-provider.repository';
 import { frankEventsRepository } from '../../infra/repositories/frank-events.repository';
 import { logger } from '../../infra/logger';
@@ -7,6 +8,24 @@ import { checkRedisRateLimit } from '../../infra/rate-limit/redis-rate-limiter';
 import { sanitizeFrankPayload } from './frank-event-sanitize';
 import { retrieveContextMulti } from './retrieval/retrieve-context';
 import { resolveFrankModelVersion } from './model-registry';
+import { getTenantState } from './tenant-state-resolver';
+import { tokenUsageEventsRepository } from '../../infra/repositories/token-usage-events.repository';
+import { promptRegistry } from './prompt-registry';
+import { piiRedactor } from './pii-redactor';
+import { injectionGuard } from './injection-guard';
+/** Thrown when a tenant's monthly token budget is fully exhausted. */
+export class BudgetLockedError extends Error {
+  constructor(tenantId: string) {
+    super(`BUDGET_LOCKED: LLM calls blocked for tenant ${tenantId}`);
+    this.name = 'BudgetLockedError';
+  }
+}
+
+/** Model to use when tenant is in 'degraded' zone (80-100% budget). */
+function getDegradedModel(): string {
+  return process.env.DEGRADED_MODEL ?? 'gpt-4o-mini';
+}
+
 
 const DEFAULT_TIMEOUT_MS = Number.parseInt(process.env.DEFAULT_AI_TIMEOUT_MS || '20000', 10);
 
@@ -190,7 +209,7 @@ class DualModelProvider implements AIProvider {
   constructor(
     private readonly chatProvider: OpenAICompatibleProvider,
     private readonly embeddingsProvider: OpenAICompatibleProvider
-  ) {}
+  ) { }
 
   chat(input: ChatInput): Promise<ChatOutput> {
     return this.chatProvider.chat(input);
@@ -205,9 +224,63 @@ class ObservedProvider implements AIProvider {
   constructor(
     private readonly provider: AIProvider,
     private readonly meta: AIProviderMeta
-  ) {}
+  ) { }
 
   async chat(input: ChatInput): Promise<ChatOutput> {
+    // ── Governance Layer (PII, Injection, Registry) ─────────────────────────
+    let finalSystem = input.system;
+    let finalTemperature = input.temperature;
+    let finalMaxTokens = input.maxTokens;
+    let promptVersion = 'none';
+
+    // 1. Resolve Active Prompt if defined by route
+    const registryId = input.route ? `cockpit:${input.route}` : 'cockpit:default';
+    const activePrompt = await promptRegistry.getActivePrompt(registryId);
+
+    if (activePrompt) {
+      finalSystem = activePrompt.system;
+      finalTemperature = activePrompt.temperature;
+      finalMaxTokens = activePrompt.maxTokens;
+      promptVersion = activePrompt.version;
+    }
+
+    // 2. Detect prompt injection
+    const injectionDetected = injectionGuard.detectInjection(input.user || '');
+
+    // 3. PII Redaction
+    const sanitizedUser = piiRedactor.sanitizeInput(input.user || '');
+
+    // ── Budget / state gate (ADR 006 / 007) ─────────────────────────────────
+    const tenantState = await getTenantState(this.meta.tenantId);
+    const effectiveModel =
+      (tenantState.state === 'degraded' || tenantState.state === 'degraded_preemptive') ? getDegradedModel() : this.meta.model;
+
+    logger.info('ai_budget_state', {
+      tenantId: this.meta.tenantId,
+      budgetState: tenantState.state,
+      stateSource: tenantState.source,
+      stateRevision: tenantState.revision,
+      configuredModel: this.meta.model,
+      effectiveModel,
+      injectionDetected,
+      promptVersion
+    });
+
+    if (tenantState.state === 'locked') {
+      logger.warn('ai_budget_locked', {
+        tenantId: this.meta.tenantId,
+        stateSource: tenantState.source,
+        stateRevision: tenantState.revision,
+      });
+      // enforcement absoluto retorna format padronizado sem quebrar downstream
+      return {
+        error: 'BUDGET_LOCKED',
+        message: 'Orçamento mensal atingido.',
+        upgradeRequired: true
+      } as unknown as ChatOutput;
+    }
+
+    // ── Redis rate-limit (existing) ──────────────────────────────────────────
     const rate = await checkRedisRateLimit({
       tenantId: this.meta.tenantId,
       scope: 'ai.chat',
@@ -216,14 +289,20 @@ class ObservedProvider implements AIProvider {
       logger.warn('ai_rate_limit', {
         tenant_id: this.meta.tenantId,
         provider_type: this.meta.providerType,
-        model: this.meta.model,
+        model: effectiveModel,
         reset_at: rate.resetAt,
       });
       throw new Error('AI_RATE_LIMIT');
     }
 
     const totalStartedAt = Date.now();
-    let finalInput: ChatInput = input;
+    let finalInput: ChatInput = {
+      ...input,
+      system: finalSystem,
+      user: sanitizedUser,
+      temperature: finalTemperature,
+      maxTokens: finalMaxTokens
+    };
     let ragLog = {
       enabled: false,
       chunks: 0,
@@ -414,6 +493,17 @@ class ObservedProvider implements AIProvider {
         ragChunks: ragLog.chunks,
         ragLatencyMs: ragLog.latencyMs,
       });
+
+      // ── FinOps: enqueue raw usage event (fire-and-forget, never throws) ────────
+      void tokenUsageEventsRepository.insertUsageEvent({
+        traceId: finalInput.correlationId ?? randomUUID(),
+        tenantId: this.meta.tenantId,
+        model: effectiveModel,
+        inputTokens: typeof tokenCounts.prompt_tokens === 'number' ? tokenCounts.prompt_tokens : 0,
+        outputTokens: typeof tokenCounts.completion_tokens === 'number' ? tokenCounts.completion_tokens : 0,
+        type: 'usage',
+      });
+
       return result;
     } catch (error) {
       const latencyMs = providerStartedAt > 0 ? (Date.now() - providerStartedAt) : 0;

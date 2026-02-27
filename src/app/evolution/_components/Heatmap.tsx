@@ -63,7 +63,7 @@ export function Heatmap({ reports, days }: HeatmapProps) {
                         className={cn("w-3 h-3 rounded-[2px] transition-colors relative group", getColor(b.intensity))}
                     >
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 pointer-events-none">
-                            <div className="bg-black text-gray-200 text-[10px] py-1 px-2 rounded whitespace-nowrap border border-gray-700 shadow-xl font-mono">
+                            <div className="bg-[var(--bg-app)] text-[var(--text-secondary)] text-[10px] py-1 px-2 rounded whitespace-nowrap border border-[var(--border-default)] shadow-xl font-mono">
                                 <span className="text-white font-bold">{b.count}</span> events on {b.date}
                             </div>
                         </div>

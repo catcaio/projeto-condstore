@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { hashPassword } from '@/infra/auth/password';
 import { COOKIE_NAME } from '@/infra/auth/session';
 import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
@@ -108,37 +108,22 @@ function makeLoginRequest(body: unknown): Request {
 }
 
 describe('POST /api/internal/auth/reset-admin', () => {
-  const originalNodeEnv = process.env.NODE_ENV;
-  const originalVercelEnv = process.env.VERCEL_ENV;
-  const originalAuthSecret = process.env.AUTH_SECRET;
-  const originalDatabaseUrl = process.env.DATABASE_URL;
-
   beforeEach(() => {
     vi.clearAllMocks();
     authState.user.passwordHash = hashPassword('OldPassword!123');
     authState.user.sessionVersion = 1;
 
-    process.env.NODE_ENV = 'test';
-    process.env.VERCEL_ENV = 'preview';
-    process.env.AUTH_SECRET = 'test-auth-secret';
-    process.env.DATABASE_URL = 'mysql://test:test@localhost:3306/test';
+    vi.stubEnv('NODE_ENV', 'test');
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    vi.stubEnv('AUTH_SECRET', 'test-auth-secret');
+    vi.stubEnv('DATABASE_URL', 'mysql://test:test@localhost:3306/test');
 
     vi.mocked(getInternalExportTokenOrThrow).mockReturnValue('internal-test-token');
     vi.mocked(isInternalTokenAuthorized).mockReturnValue(true);
   });
 
   afterEach(() => {
-    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = originalNodeEnv;
-
-    if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
-    else process.env.VERCEL_ENV = originalVercelEnv;
-
-    if (originalAuthSecret === undefined) delete process.env.AUTH_SECRET;
-    else process.env.AUTH_SECRET = originalAuthSecret;
-
-    if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
-    else process.env.DATABASE_URL = originalDatabaseUrl;
+    vi.unstubAllEnvs();
   });
 
   it('returns 401 when internal token is missing/invalid', async () => {

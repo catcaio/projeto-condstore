@@ -27,9 +27,9 @@
   --os-row-height: 44px;
 
   /* Tipografia */
-  --os-font-body: 17px;
-  --os-font-footnote: 13px;
-  --os-font-caption: 11px;
+  --os-font-body: var(--font-size-md);
+  --os-font-footnote: var(--font-size-sm);
+  --os-font-caption: var(--font-size-xs);
 }
 
 /* ─── Dark Theme (override explícito) ──────────────────────── */
@@ -58,8 +58,7 @@
 
 /* ─── Utilitários de base para telas OS ────────────────────── */
 .os-root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, sans-serif;
+  font-family: var(--font-family-base);
   font-size: var(--os-font-body);
   background-color: var(--os-bg);
   color: var(--os-text);
@@ -93,11 +92,11 @@
   cursor: pointer;
 }
 
-.os-toggle input:checked + .os-toggle-track {
+.os-toggle input:checked+.os-toggle-track {
   background-color: var(--os-accent);
 }
 
-.os-toggle input:focus-visible + .os-toggle-track {
+.os-toggle input:focus-visible+.os-toggle-track {
   outline: 2px solid var(--os-accent);
   outline-offset: 2px;
 }
@@ -115,6 +114,6 @@
   pointer-events: none;
 }
 
-.os-toggle input:checked ~ .os-toggle-thumb {
+.os-toggle input:checked~.os-toggle-thumb {
   transform: translateX(20px);
 }

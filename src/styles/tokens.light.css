@@ -1,0 +1,23 @@
+:root,
+[data-theme="light"] {
+    --color-bg-base: #F0EEE9;
+    --color-bg-surface: #FFFFFF;
+    --color-bg-elevated: #FFFFFF;
+    --color-border: rgba(16, 24, 39, 0.08);
+    --color-text-primary: #101827;
+    --color-text-secondary: rgba(16, 24, 39, 0.62);
+    --color-shadow: rgba(0, 0, 0, 0.06);
+
+    /* Mapping for components */
+    --os-bg: var(--color-bg-base);
+    --os-surface: var(--color-bg-surface);
+    --os-text: var(--color-text-primary);
+    --os-text2: var(--color-text-secondary);
+    --os-line: var(--color-border);
+}
+
+html,
+body {
+    background-color: var(--color-bg-base);
+    color: var(--color-text-primary);
+}

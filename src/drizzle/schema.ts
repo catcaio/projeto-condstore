@@ -427,3 +427,154 @@ export const tenantSavedViews = mysqlTable('tenant_saved_views', {
 
 export type TenantSavedViewRecord = typeof tenantSavedViews.$inferSelect;
 export type NewTenantSavedViewRecord = typeof tenantSavedViews.$inferInsert;
+
+// --- Agent Mesh: Budget & Lock State ---
+
+export const tenantBudgets = mysqlTable('tenant_budgets', {
+    tenantId: varchar('tenant_id', { length: 36 }).primaryKey().notNull(),
+    monthlyTokenLimit: int('monthly_token_limit').notNull().default(1000000),
+    tokensConsumed: int('tokens_consumed').notNull().default(0),
+    // 'unlocked' | 'degraded' (>=softLimit%) | 'locked' (>=hardLimit%)
+    currentLockState: varchar('current_lock_state', { length: 20 }).notNull().default('unlocked'),
+    // Monotonically increasing. Redis only overwrites when its copy is stale.
+    stateRevision: int('state_revision').notNull().default(1),
+    // ── FinOps USD budget ────────────────────────────────────────────────────
+    // Monthly budget cap in USD (0 = token-only mode, no USD enforcement)
+    monthlyBudgetUsd: decimal('monthly_budget_usd', { precision: 12, scale: 6 }).notNull().default('0'),
+    // Percentage thresholds driven by USD spend
+    softLimitPercent: int('soft_limit_percent').notNull().default(80),
+    hardLimitPercent: int('hard_limit_percent').notNull().default(100),
+    // Incremental USD spend this calendar month (updated by insertUsageEvent)
+    currentMonthUsd: decimal('current_month_usd', { precision: 12, scale: 6 }).notNull().default('0'),
+    // Burn rate estimate: currentMonthUsd / days since lastBudgetResetAt
+    burnRatePerDay: decimal('burn_rate_per_day', { precision: 12, scale: 6 }),
+    // Date the monthly counter was last zeroed (first-of-month reset)
+    lastBudgetResetAt: timestamp('last_budget_reset_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+});
+
+export type TenantBudgetRecord = typeof tenantBudgets.$inferSelect;
+export type NewTenantBudgetRecord = typeof tenantBudgets.$inferInsert;
+
+export const finopsAlertEvents = mysqlTable('finops_alert_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    prevState: varchar('prev_state', { length: 50 }).notNull(),
+    nextState: varchar('next_state', { length: 50 }).notNull(),
+    reason: varchar('reason', { length: 100 }).notNull(),
+    projectedDaysToHardLimit: decimal('projected_days_to_hard_limit', { precision: 10, scale: 2 }),
+    currentMonthUsd: decimal('current_month_usd', { precision: 12, scale: 6 }).notNull().default('0'),
+    monthlyBudgetUsd: decimal('monthly_budget_usd', { precision: 12, scale: 6 }).notNull().default('0'),
+    burnRatePerDay: decimal('burn_rate_per_day', { precision: 12, scale: 6 }),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    tenantCreatedIdx: index('idx_finops_alert_events_tenant_created').on(table.tenantId, table.createdAt),
+    tenantStateIdx: index('idx_finops_alert_events_tenant_state').on(table.tenantId, table.nextState, table.createdAt),
+}));
+
+export const finopsLockEvents = mysqlTable('finops_lock_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    lockedAt: timestamp('locked_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    currentMonthUsd: decimal('current_month_usd', { precision: 12, scale: 6 }).notNull().default('0'),
+    monthlyBudgetUsd: decimal('monthly_budget_usd', { precision: 12, scale: 6 }).notNull().default('0'),
+    burnRatePerDay: decimal('burn_rate_per_day', { precision: 12, scale: 6 }),
+    resolvedAt: timestamp('resolved_at'),
+    resolutionType: varchar('resolution_type', { length: 50 }),
+}, (table) => ({
+    tenantActiveIdx: index('idx_finops_lock_events_tenant_active').on(table.tenantId, table.resolvedAt),
+}));
+
+export const finopsMonthlyResets = mysqlTable('finops_monthly_resets', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    resetMonth: varchar('reset_month', { length: 10 }).notNull(), // format YYYY-MM
+    prevCurrentMonthUsd: decimal('prev_current_month_usd', { precision: 12, scale: 6 }).notNull().default('0'),
+    prevBurnRatePerDay: decimal('prev_burn_rate_per_day', { precision: 12, scale: 6 }),
+    performedAt: timestamp('performed_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    tenantMonthUniqueIdx: uniqueIndex('idx_finops_monthly_resets_tenant_month').on(table.tenantId, table.resetMonth),
+}));
+
+
+// --- Agent Mesh: FinOps LLM Base ---
+
+export const tokenUsageEvents = mysqlTable('token_usage_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    // Idempotency key: one row per LLM call. Prevents double-spend on Worker retry.
+    traceId: varchar('trace_id', { length: 36 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // 'usage' | 'loop_guard_violation'
+    modelUsed: varchar('model_used', { length: 100 }).notNull().default('unknown'),
+    inputTokens: int('input_tokens').notNull().default(0),
+    outputTokens: int('output_tokens').notNull().default(0),
+    estimatedCostUsd: decimal('estimated_cost_usd', { precision: 10, scale: 6 }).notNull().default('0'),
+    // Nullable: set by Worker when consumed into tenant_usage_metrics
+    processedByWorker: timestamp('processed_by_worker'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    // Hard idempotency guard: one event per LLM trace
+    traceIdUnique: uniqueIndex('idx_token_usage_events_trace_id').on(table.traceId),
+    tenantCreatedAtIdx: index('idx_token_usage_events_tenant_created_at').on(table.tenantId, table.createdAt),
+}));
+
+export type TokenUsageEventRecord = typeof tokenUsageEvents.$inferSelect;
+export type NewTokenUsageEventRecord = typeof tokenUsageEvents.$inferInsert;
+
+// Aggregated daily snapshot per tenant — populated by the Control Plane Worker (future)
+export const tenantUsageMetrics = mysqlTable('tenant_usage_metrics', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    // Day-level granularity: all events for a calendar day are merged here
+    date: date('date', { mode: 'string' }).notNull(),
+    totalRequests: int('total_requests').notNull().default(0),
+    totalToolCalls: int('total_tool_calls').notNull().default(0),
+    totalTokensInput: int('total_tokens_input').notNull().default(0),
+    totalTokensOutput: int('total_tokens_output').notNull().default(0),
+    estimatedCostUsd: decimal('estimated_cost_usd', { precision: 12, scale: 6 }).notNull().default('0'),
+    // e.g. {"gpt-4o": 120, "gpt-4o-mini": 55}
+    modelDistributionJson: json('model_distribution_json').notNull().default({}),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    // One row per tenant per day — Worker uses ON CONFLICT DO UPDATE
+    unqTenantDate: uniqueIndex('idx_tenant_usage_metrics_tenant_date').on(table.tenantId, table.date),
+    tenantDateIdx: index('idx_tenant_usage_metrics_tenant_date_q').on(table.tenantId, table.date),
+}));
+
+export type TenantUsageMetricRecord = typeof tenantUsageMetrics.$inferSelect;
+export type NewTenantUsageMetricRecord = typeof tenantUsageMetrics.$inferInsert;
+
+// --- AI Prompts (Governance & Security) ---
+
+export const aiPrompts = mysqlTable('ai_prompts', {
+    id: varchar('id', { length: 128 }).notNull(), // e.g. "cockpit:support"
+    version: varchar('version', { length: 50 }).notNull(), // e.g. "v1.0.0"
+    system: text('system').notNull(),
+    temperature: decimal('temperature', { precision: 3, scale: 2 }).notNull().default('0.7'),
+    maxTokens: int('max_tokens').notNull().default(1000),
+    active: int('active').notNull().default(0), // 0 or 1
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    pk: primaryKey({ columns: [table.id, table.version], name: 'pk_ai_prompts_id_version' }),
+    activeIdx: index('idx_ai_prompts_active').on(table.active)
+}));
+
+export type AiPromptRecord = typeof aiPrompts.$inferSelect;
+export type NewAiPromptRecord = typeof aiPrompts.$inferInsert;
+
+export const aiEvalRuns = mysqlTable('ai_eval_runs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    promptId: varchar('prompt_id', { length: 128 }).notNull(),
+    promptVersion: varchar('prompt_version', { length: 50 }).notNull(),
+    model: varchar('model', { length: 100 }).notNull(),
+    score: int('score').notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    reportJson: json('report_json').notNull(),
+}, (table) => ({
+    promptIdIdx: index('idx_ai_eval_runs_prompt_id').on(table.promptId),
+    createdIdx: index('idx_ai_eval_runs_created_at').on(table.createdAt)
+}));
+
+export type AiEvalRunRecord = typeof aiEvalRuns.$inferSelect;
+export type NewAiEvalRunRecord = typeof aiEvalRuns.$inferInsert;

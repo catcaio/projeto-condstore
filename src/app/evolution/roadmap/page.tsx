@@ -19,7 +19,7 @@ export default async function RoadmapPage() {
     const moduleList = Object.entries(modules);
 
     return (
-        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100">
+        <div className="min-h-screen bg-[var(--bg-app)] text-slate-900 font-sans selection:bg-blue-100">
             <div className="max-w-3xl mx-auto px-6 py-16 md:py-24">
                 <header className="mb-16">
                     <Link href="/evolution" className="inline-flex items-center text-sm font-bold text-blue-600 mb-12 hover:gap-2 transition-all">
@@ -36,7 +36,7 @@ export default async function RoadmapPage() {
                         </div>
                     ) : (
                         moduleList.map(([key, data]) => (
-                            <div key={key} className="group bg-white p-8 rounded-3xl border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:shadow-blue-50/50 transition-all duration-300">
+                            <div key={key} className="group bg-[var(--bg-app)] p-8 rounded-3xl border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:shadow-blue-50/50 transition-all duration-300">
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="font-black text-xl tracking-tight text-slate-900">{key}</h3>
                                     <StatusBadge status={data.status} />

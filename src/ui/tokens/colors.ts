@@ -4,10 +4,10 @@ export const colors = {
     blueStrong: '#0066CC',
     red: '#FF3B30',
     black: '#111113',
-    white: '#FFFFFF',
+    white: 'var(--bg-app)FFF',
   },
   neutral: {
-    0: '#FFFFFF',
+    0: 'var(--bg-app)FFF',
     25: '#FAFAFC',
     50: '#F2F3F7',
     100: '#E7E9EE',

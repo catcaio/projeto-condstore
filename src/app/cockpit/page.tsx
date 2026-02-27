@@ -1,5 +1,6 @@
 import { CockpitMetrics } from './_components/cockpit-metrics';
 import { FreightMetricsDashboard } from './_components/freight-metrics-dashboard';
+import { FinOpsCard } from './_components/finops-card';
 import { Badge, Button, Card, CardContent, CardHeader, ListGroup, ListItem, Separator } from '@/ui/components';
 import { Activity, Database, Radio, Shield } from 'lucide-react';
 
@@ -36,6 +37,9 @@ export default function CockpitPage() {
 
             <FreightMetricsDashboard />
 
+            {/* FinOps Budget Card */}
+            <FinOpsCard />
+
             {/* Recent Activity Mock (To be refactored later) */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 <Card className="lg:col-span-2">
@@ -67,7 +71,7 @@ export default function CockpitPage() {
 
                 <Card>
                     <CardHeader heading="Status do sistema" subheading="Snapshot local do shell" />
-                <CardContent className="space-y-3">
+                    <CardContent className="space-y-3">
                         <ListGroup>
                             <ListItem leading={<Radio className="h-4 w-4" />} trailing={<Badge variant="success">Operacional</Badge>}>
                                 Twilio Webhook

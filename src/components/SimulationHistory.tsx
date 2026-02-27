@@ -34,7 +34,7 @@ export function SimulationHistory({ history, onSelect }: SimulationHistoryProps)
                     <button
                         key={sim.id}
                         onClick={() => onSelect(sim)}
-                        className="w-full text-left bg-white p-3 rounded-lg border border-slate-200 shadow-sm hover:border-blue-300 transition-all group"
+                        className="w-full text-left bg-[var(--bg-app)] p-3 rounded-lg border border-slate-200 shadow-sm hover:border-blue-300 transition-all group"
                     >
                         <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-2 text-slate-900 font-medium">

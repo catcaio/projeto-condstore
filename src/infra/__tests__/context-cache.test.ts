@@ -1,15 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ContextMessage } from '../context-cache';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
 const mockRedis = vi.hoisted(() => ({
-    get: vi.fn<[], Promise<ContextMessage[] | null>>().mockResolvedValue(null),
-    set: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
+    get: vi.fn().mockResolvedValue(null as ContextMessage[] | null),
+    set: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockMessageRepo = vi.hoisted(() => ({
-    getLastMessages: vi.fn<[], Promise<ContextMessage[]>>().mockResolvedValue([]),
+    getLastMessages: vi.fn().mockResolvedValue([] as ContextMessage[]),
 }));
 
 const mockLogger = vi.hoisted(() => ({

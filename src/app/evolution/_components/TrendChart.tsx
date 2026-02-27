@@ -53,8 +53,8 @@ export function TrendChart({ reports, days }: TrendChartProps) {
     return (
         <div className="w-full h-full relative group flex flex-col">
             <div className="flex justify-between items-center mb-2 px-2">
-                <h3 className="text-[10px] uppercase text-gray-500 tracking-wider font-semibold">Event Trend</h3>
-                <span className="text-[10px] text-gray-500 font-mono">Peak: {maxVal}/d</span>
+                <h3 className="text-[10px] uppercase text-[var(--text-secondary)] tracking-wider font-semibold">Event Trend</h3>
+                <span className="text-[10px] text-[var(--text-secondary)] font-mono">Peak: {maxVal}/d</span>
             </div>
 
             <div className="flex-1 relative">
@@ -82,7 +82,7 @@ export function TrendChart({ reports, days }: TrendChartProps) {
                 {/* Crosshair / Overlay conceptually (pure CSS on hover over specific divisions but keeping simple for now) */}
             </div>
 
-            <div className="flex justify-between px-2 text-[9px] text-gray-600 font-mono mt-1">
+            <div className="flex justify-between px-2 text-[9px] text-[var(--text-secondary)] font-mono mt-1">
                 <span>{points[0]?.date}</span>
                 <span>{points[Math.floor(points.length / 2)]?.date}</span>
                 <span>{points[points.length - 1]?.date}</span>

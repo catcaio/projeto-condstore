@@ -167,3 +167,5 @@ ngrok.yml
 .claude/worktrees/
 .vercel
 .env*.local
+artifacts/
+ai-eval/

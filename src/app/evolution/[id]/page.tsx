@@ -22,7 +22,7 @@ export default async function EvolutionDetailPage({ params }: { params: Promise<
     const nextActions = report.nextActions ? JSON.parse(report.nextActions) : [];
 
     return (
-        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100">
+        <div className="min-h-screen bg-[var(--bg-app)] text-slate-900 font-sans selection:bg-blue-100">
             <div className="max-w-3xl mx-auto px-6 py-16 md:py-24">
                 <header className="mb-16">
                     <Link href="/evolution" className="inline-flex items-center text-sm font-bold text-blue-600 mb-12 hover:gap-2 transition-all">

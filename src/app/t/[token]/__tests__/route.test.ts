@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET } from '../route';
 import { attributionClickRepository } from '../../../../infra/repositories/attribution-click.repository';
 import { rateLimiter } from '../../../../infra/security/rate-limiter';
@@ -130,7 +130,7 @@ describe('GET /t/[token]', () => {
   });
 
   it('sets secure cookie flag in production', async () => {
-    process.env.NODE_ENV = 'production';
+    vi.stubEnv('NODE_ENV', 'production');
 
     const request = {
       nextUrl: new URL('http://localhost/t/ref_123?utm_source=google'),

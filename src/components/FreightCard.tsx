@@ -17,8 +17,8 @@ export function FreightCard({ option, isBest, isCheapest, isFastest, savings }: 
         <div className={`
       relative rounded-xl p-4 transition-all border
       ${isBest
-                ? 'bg-white border-green-500 shadow-md ring-1 ring-green-500/20'
-                : 'bg-white border-slate-100 hover:border-blue-200'
+                ? 'bg-[var(--bg-app)] border-green-500 shadow-md ring-1 ring-green-500/20'
+                : 'bg-[var(--bg-app)] border-slate-100 hover:border-blue-200'
             }
     `}>
             {/* Badges */}

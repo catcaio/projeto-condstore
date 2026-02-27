@@ -17,8 +17,8 @@ export function Card({
   return (
     <div
       className={cn(
-        'rounded-[1.2rem] border border-[hsl(var(--ui-border)/0.9)] bg-[hsl(var(--ui-surface))] text-[hsl(var(--ui-text))]',
-        variant === 'elevated' && 'shadow-[0_16px_50px_-24px_hsl(var(--ui-shadow)/0.55)]',
+        'rounded-[1.2rem] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]',
+        variant === 'elevated' && 'shadow-[var(--color-shadow)]',
         variant === 'plain' && 'shadow-none',
         inset && 'p-1',
         className,
@@ -38,9 +38,9 @@ export function CardHeader({ className, heading, subheading, actions, children, 
   return (
     <div className={cn('flex items-start justify-between gap-3 px-4 py-3', className)} {...props}>
       <div className="min-w-0">
-        {heading ? <div className="text-sm font-semibold tracking-tight text-[hsl(var(--ui-text))]">{heading}</div> : null}
+        {heading ? <div className="text-sm font-semibold tracking-tight text-[var(--color-text-primary)]">{heading}</div> : null}
         {subheading ? (
-          <div className="mt-0.5 text-xs text-[hsl(var(--ui-text-muted))]">{subheading}</div>
+          <div className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{subheading}</div>
         ) : null}
         {children}
       </div>

@@ -11,7 +11,7 @@ export default async function EvolutionTimelinePage() {
     const reports = await projectReportRepository.getAllReports();
 
     return (
-        <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100">
+        <div className="min-h-screen bg-[var(--bg-app)] text-slate-900 font-sans selection:bg-blue-100">
             <div className="max-w-3xl mx-auto px-6 py-16 md:py-24">
                 <header className="mb-16 border-b border-slate-100 pb-12">
                     <div className="flex items-center gap-3 mb-6">
@@ -44,7 +44,7 @@ export default async function EvolutionTimelinePage() {
                                 </div>
 
                                 {/* Content Card */}
-                                <div className="w-[calc(100%-4rem)] md:w-[45%] bg-white p-6 rounded-2xl border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:shadow-blue-50/50 transition-all duration-300 ml-auto md:ml-0">
+                                <div className="w-[calc(100%-4rem)] md:w-[45%] bg-[var(--bg-app)] p-6 rounded-2xl border border-slate-100 hover:border-blue-100 hover:shadow-xl hover:shadow-blue-50/50 transition-all duration-300 ml-auto md:ml-0">
                                     <div className="flex justify-between items-center mb-4">
                                         <time className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                             {format(new Date(report.createdAt), "d MMM yyyy", { locale: ptBR })}

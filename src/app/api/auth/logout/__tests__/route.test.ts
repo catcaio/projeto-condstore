@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COOKIE_NAME } from '@/infra/auth/session';
 
 const sessionState = vi.hoisted(() => ({
@@ -107,27 +107,16 @@ function makeAuthedRequest(token?: string, requestId = 'req-auth-1') {
 }
 
 describe('auth session invalidation on logout', () => {
-  const originalNodeEnv = process.env.NODE_ENV;
-  const originalAuthSecret = process.env.AUTH_SECRET;
-  const originalDatabaseUrl = process.env.DATABASE_URL;
-
   beforeEach(() => {
     vi.clearAllMocks();
     sessionState.user.sessionVersion = 1;
-    process.env.NODE_ENV = 'test';
-    process.env.AUTH_SECRET = 'test-auth-secret';
-    process.env.DATABASE_URL = 'mysql://test:test@localhost:3306/test';
+    vi.stubEnv('NODE_ENV', 'test');
+    vi.stubEnv('AUTH_SECRET', 'test-auth-secret');
+    vi.stubEnv('DATABASE_URL', 'mysql://test:test@localhost:3306/test');
   });
 
   afterEach(() => {
-    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = originalNodeEnv;
-
-    if (originalAuthSecret === undefined) delete process.env.AUTH_SECRET;
-    else process.env.AUTH_SECRET = originalAuthSecret;
-
-    if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
-    else process.env.DATABASE_URL = originalDatabaseUrl;
+    vi.unstubAllEnvs();
   });
 
   it('logs in, invalidates sessions on logout, and rejects the old token afterwards', async () => {

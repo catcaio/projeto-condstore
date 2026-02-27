@@ -27,7 +27,7 @@ export default function GlobalError({
       <body style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
         <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24 }}>
           <div style={{ maxWidth: 520, textAlign: 'center' }}>
-            <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>Erro inesperado</h1>
+            <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 12 }}>Erro inesperado</h1>
             <p style={{ color: '#475569', marginBottom: 16 }}>
               Ocorreu um erro inesperado. Tente novamente.
             </p>

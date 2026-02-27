@@ -44,7 +44,7 @@ export function FilterDrawer<T extends Record<string, any>>({ isOpen, onClose, c
         <div className={cn("relative z-50", !isOpen && "pointer-events-none")}>
             <div
                 className={cn(
-                    "fixed inset-0 bg-black/60 transition-opacity",
+                    "fixed inset-0 bg-[var(--bg-app)]/60 transition-opacity",
                     isOpen ? "opacity-100" : "opacity-0"
                 )}
                 onClick={onClose}

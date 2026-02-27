@@ -1,0 +1,25 @@
+[data-theme="dark"],
+.dark {
+    --color-bg-base-dark: #0B0D12;
+    --color-bg-surface-dark: #11131A;
+    --color-text-primary-dark: #E6E8EC;
+    --color-text-secondary-dark: #9CA3AF;
+
+    --color-border-subtle-dark: rgba(255, 255, 255, 0.06);
+    --color-shadow-base-dark: rgba(0, 0, 0, 0.4);
+
+    --color-bg-base: var(--color-bg-base-dark);
+    --color-bg-surface: var(--color-bg-surface-dark);
+    --color-bg-elevated: var(--color-bg-surface-dark);
+    --color-border: var(--color-border-subtle-dark);
+    --color-text-primary: var(--color-text-primary-dark);
+    --color-text-secondary: var(--color-text-secondary-dark);
+    --color-shadow: var(--color-shadow-base-dark);
+
+    /* Mapping for backwards compatibility with OS tokens */
+    --os-bg: var(--color-bg-base-dark);
+    --os-surface: var(--color-bg-surface-dark);
+    --os-text: var(--color-text-primary-dark);
+    --os-text2: var(--color-text-secondary-dark);
+    --os-line: var(--color-border-subtle-dark);
+}

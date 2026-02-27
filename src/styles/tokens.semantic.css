@@ -1,0 +1,50 @@
+:root,
+[data-theme="light"] {
+    /* Híbrido / Glass */
+    --bg-glass: rgba(255, 255, 255, 0.6);
+    --bg-glass-dark: rgba(17, 19, 26, 0.6);
+
+    /* Tokens semânticos baseados na camada light */
+    --bg-app: var(--color-bg-base);
+    --bg-panel: var(--color-bg-surface);
+    --bg-card: var(--color-bg-elevated);
+    --bg-hover: rgba(16, 24, 39, 0.05);
+
+    --text-primary: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
+    --text-muted: var(--color-text-secondary);
+
+    --border-default: var(--color-border);
+    --border-strong: rgba(16, 24, 39, 0.15);
+
+    --shadow-soft: var(--color-shadow);
+
+    --bg-glass-semantic: var(--bg-glass);
+}
+
+[data-theme="dark"],
+.dark {
+    /* Tokens semânticos baseados na camada dark */
+    --bg-app: var(--color-bg-base);
+    --bg-panel: var(--color-bg-surface);
+    --bg-card: var(--color-bg-elevated);
+    --bg-hover: rgba(255, 255, 255, 0.05);
+
+    --text-primary: var(--color-text-primary);
+    --text-secondary: var(--color-text-secondary);
+    --text-muted: var(--color-text-secondary);
+
+    --border-default: var(--color-border);
+    --border-strong: rgba(255, 255, 255, 0.15);
+
+    --shadow-soft: var(--color-shadow);
+
+    --bg-glass-semantic: var(--bg-glass-dark);
+}
+
+/* Modo Híbrido de Surface */
+.glass-surface {
+    background-color: var(--bg-glass-semantic);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}

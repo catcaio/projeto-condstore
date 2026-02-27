@@ -133,7 +133,7 @@ export default function Dashboard() {
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-12">
             {/* Header */}
-            <header className="bg-white border-b border-slate-200">
+            <header className="bg-[var(--bg-app)] border-b border-slate-200">
                 <div className="max-w-6xl mx-auto px-6 py-6 flex items-center gap-3">
                     <div className="bg-blue-600 p-2.5 rounded-xl text-white shadow-blue-200 shadow-lg">
                         <Truck size={28} />
@@ -149,7 +149,7 @@ export default function Dashboard() {
 
                 {/* Left Column: Form & History */}
                 <div className="lg:col-span-4 space-y-6">
-                    <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <section className="bg-[var(--bg-app)] p-6 rounded-2xl shadow-sm border border-slate-100">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800">
                                 <Search size={20} className="text-blue-600" />
@@ -169,7 +169,7 @@ export default function Dashboard() {
                                     <input
                                         type="text"
                                         placeholder="00000-000"
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 focus:border-blue-500 focus:bg-[var(--bg-app)] focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
                                         value={formData.destinationCep}
                                         onChange={(e) => setFormData({ ...formData, destinationCep: e.target.value })}
                                         maxLength={9}
@@ -186,7 +186,7 @@ export default function Dashboard() {
                                         <input
                                             type="number"
                                             min="1"
-                                            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                                            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 focus:border-blue-500 focus:bg-[var(--bg-app)] focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
                                             value={formData.quantity}
                                             onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
                                             required
@@ -200,7 +200,7 @@ export default function Dashboard() {
                                         type="number"
                                         step="0.1"
                                         min="0.1"
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 focus:border-blue-500 focus:bg-[var(--bg-app)] focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
                                         value={formData.unitWeight}
                                         onChange={(e) => setFormData({ ...formData, unitWeight: parseFloat(e.target.value) || 0 })}
                                         required
@@ -241,7 +241,7 @@ export default function Dashboard() {
                 {/* Right Column: Results */}
                 <div className="lg:col-span-8">
                     {!ranking && !loading && !error && (
-                        <div className="h-full min-h-[400px] flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white/50 text-slate-400 p-8 text-center">
+                        <div className="h-full min-h-[400px] flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-[var(--bg-app)]/50 text-slate-400 p-8 text-center">
                             <div className="bg-slate-100 p-6 rounded-full mb-4">
                                 <Package size={48} className="text-slate-300" />
                             </div>
@@ -253,7 +253,7 @@ export default function Dashboard() {
                     {ranking && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             {/* Toolbar */}
-                            <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                            <div className="flex justify-between items-center bg-[var(--bg-app)] p-4 rounded-xl border border-slate-100 shadow-sm">
                                 <h3 className="font-bold text-slate-700">
                                     {ranking.options.length} opções encontradas
                                 </h3>

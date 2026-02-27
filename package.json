@@ -18,7 +18,10 @@
     "release:check": "node scripts/release-check.mjs",
     "staging:smoke": "node --import tsx scripts/smoke/staging-smoke.ts",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
-    "qa:snapshots": "node --import tsx scripts/qa-snapshots.ts"
+    "qa:snapshots": "node --import tsx scripts/qa-snapshots.ts",
+    "lint:design-system": "vitest run src/__tests__/design-system.test.ts",
+    "worker:finops": "node --import tsx src/workers/finops-worker.ts",
+    "ai:eval": "node --import tsx src/core/ai/evals/eval-runner.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.40.0",
@@ -44,6 +47,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.58.2",
     "@types/node": "25.2.3",
     "@types/node-fetch": "2.6.13",
     "@types/react": "19.2.14",

@@ -199,7 +199,7 @@ export function SavedViews<T extends Record<string, any>>({
                                         </div>
                                         <button
                                             onClick={(e) => handleDeleteView(v, e)}
-                                            className="absolute right-3 opacity-0 group-hover:opacity-100 text-[hsl(var(--ui-danger))] hover:text-red-600 focus:opacity-100 bg-[hsl(var(--ui-muted))] p-1 rounded-sm shadow-sm hover:bg-white transition-all transform scale-95 hover:scale-100"
+                                            className="absolute right-3 opacity-0 group-hover:opacity-100 text-[hsl(var(--ui-danger))] hover:text-red-600 focus:opacity-100 bg-[hsl(var(--ui-muted))] p-1 rounded-sm shadow-sm hover:bg-[var(--bg-app)] transition-all transform scale-95 hover:scale-100"
                                             aria-label="Deletar view"
                                         >
                                             <Trash className="w-3.5 h-3.5" />

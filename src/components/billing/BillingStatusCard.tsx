@@ -14,8 +14,8 @@ const statusMap: Record<string, { label: string, colorClass: string }> = {
     trialing: { label: 'Em período de teste', colorClass: 'bg-blue-100 text-blue-800 border-blue-200' },
     past_due: { label: 'Pagamento pendente', colorClass: 'bg-orange-100 text-orange-800 border-orange-200' },
     canceled: { label: 'Cancelado', colorClass: 'bg-red-100 text-red-800 border-red-200' },
-    incomplete: { label: 'Incompleto', colorClass: 'bg-gray-100 text-gray-800 border-gray-200' },
-    none: { label: 'Sem plano ativo', colorClass: 'bg-gray-100 text-gray-800 border-gray-200' }
+    incomplete: { label: 'Incompleto', colorClass: 'bg-[var(--bg-panel)] text-[var(--text-secondary)] border-[var(--border-default)]' },
+    none: { label: 'Sem plano ativo', colorClass: 'bg-[var(--bg-panel)] text-[var(--text-secondary)] border-[var(--border-default)]' }
 };
 
 export const BillingStatusCard = ({ subscription, isLoading }: BillingStatusCardProps) => {
@@ -24,9 +24,9 @@ export const BillingStatusCard = ({ subscription, isLoading }: BillingStatusCard
         return (
             <Card className="animate-pulse">
                 <Stack space={16}>
-                    <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    <div className="h-[56px] bg-gray-200 rounded w-full mt-4"></div>
+                    <div className="h-6 bg-[var(--bg-panel)] rounded w-1/3"></div>
+                    <div className="h-4 bg-[var(--bg-panel)] rounded w-1/2"></div>
+                    <div className="h-[56px] bg-[var(--bg-panel)] rounded w-full mt-4"></div>
                 </Stack>
             </Card>
         );

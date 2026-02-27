@@ -35,9 +35,12 @@ class RedisService {
       }
     }
   }
-
   isAvailable(): boolean {
     return !!this.redisInstance;
+  }
+
+  getRawClient(): Redis | null {
+    return this.redisInstance;
   }
 
   async ping(): Promise<boolean> {

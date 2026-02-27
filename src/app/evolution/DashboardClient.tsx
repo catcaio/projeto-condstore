@@ -41,7 +41,7 @@ function DashboardInner({ initialReports, commits, buildInfo, dbError }: Dashboa
     }, [state.autoRefresh, router]);
 
     return (
-        <div className="min-h-screen bg-[#09090b] text-gray-300 font-sans selection:bg-blue-500/30">
+        <div className="min-h-screen bg-[#09090b] text-[var(--text-secondary)] font-sans selection:bg-blue-500/30">
             <DbBanner error={dbError} />
             <TopBar state={state} updateState={updateState} buildInfo={buildInfo} dbError={dbError} />
 
@@ -56,10 +56,10 @@ function DashboardInner({ initialReports, commits, buildInfo, dbError }: Dashboa
 
                         {/* Visualizations Column (Heatmap + Trend) */}
                         <div className="xl:col-span-8 flex flex-col space-y-5">
-                            <div className="bg-[#111] border border-gray-800 rounded h-48 flex items-center justify-center p-3 shadow-md">
+                            <div className="bg-[#111] border border-[var(--border-default)] rounded h-48 flex items-center justify-center p-3 shadow-md">
                                 <TrendChart reports={filteredReports} days={days} />
                             </div>
-                            <div className="bg-[#111] border border-gray-800 rounded flex items-center justify-center p-3 shadow-md pb-0">
+                            <div className="bg-[#111] border border-[var(--border-default)] rounded flex items-center justify-center p-3 shadow-md pb-0">
                                 <Heatmap reports={filteredReports} days={days} />
                             </div>
                             <div className="min-h-96 flex flex-col pt-1">
@@ -69,7 +69,7 @@ function DashboardInner({ initialReports, commits, buildInfo, dbError }: Dashboa
 
                         {/* Side Panel (Modules Health + Commits) */}
                         <div className="xl:col-span-4 flex flex-col space-y-5">
-                            <div className="bg-[#111] border border-gray-800 rounded min-h-64 flex flex-col p-4 shadow-md max-h-[500px]">
+                            <div className="bg-[#111] border border-[var(--border-default)] rounded min-h-64 flex flex-col p-4 shadow-md max-h-[500px]">
                                 <ModuleTable
                                     reports={filteredReports}
                                     days={days}
@@ -77,7 +77,7 @@ function DashboardInner({ initialReports, commits, buildInfo, dbError }: Dashboa
                                     onFilterModule={(m) => toggleArrayItem('modules', m)}
                                 />
                             </div>
-                            <div className="bg-[#111] border border-gray-800 rounded min-h-64 flex flex-col p-4 shadow-md max-h-[700px]">
+                            <div className="bg-[#111] border border-[var(--border-default)] rounded min-h-64 flex flex-col p-4 shadow-md max-h-[700px]">
                                 <CommitsPanel commits={commits} />
                             </div>
                         </div>
@@ -87,7 +87,7 @@ function DashboardInner({ initialReports, commits, buildInfo, dbError }: Dashboa
             </main>
 
             {/* Background static grid for observability feel */}
-            <div className="fixed inset-0 pointer-events-none z-[-1] opacity-[0.03]" style={{ backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`, backgroundSize: '40px 40px' }}></div>
+            <div className="fixed inset-0 pointer-events-none z-[-1] opacity-[0.03]" style={{ backgroundImage: `linear-gradient(var(--bg-app) 1px, transparent 1px), linear-gradient(90deg, var(--bg-app) 1px, transparent 1px)`, backgroundSize: '40px 40px' }}></div>
         </div>
     );
 }
