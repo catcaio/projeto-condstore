@@ -1,4 +1,4 @@
-# Condstore OS - Automação Multi-Tenant & AI Platform
+# CONDSTORE OS - Automação Multi-Tenant & AI Platform
 
 Sistema logístico multi-tenant via WhatsApp, com camada nativa de Governance em IA, arquitetura orientada à processamentos baseados em eventos e controle orçamentário granular (FinOps).
 
