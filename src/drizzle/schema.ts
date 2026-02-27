@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, decimal, int, timestamp, text, index, uniqueIndex, json, date, primaryKey, datetime, mysqlEnum } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, decimal, int, timestamp, text, index, uniqueIndex, json, date, primaryKey, datetime, mysqlEnum, boolean } from 'drizzle-orm/mysql-core';
 import { sql } from 'drizzle-orm';
 
 // --- Tenants (Multi-Tenant Support) ---
@@ -620,6 +620,9 @@ export const tenantSubscriptions = mysqlTable('tenant_subscriptions', {
     endedAt: timestamp('ended_at'),
     stripeCustomerId: varchar('stripe_customer_id', { length: 128 }),
     stripeSubscriptionId: varchar('stripe_subscription_id', { length: 128 }),
+    lastPaymentFailedAt: timestamp('last_payment_failed_at'),
+    cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
+    currentPeriodEnd: timestamp('current_period_end'),
 }, (table) => ({
     tenantIdx: uniqueIndex('idx_tenant_subscriptions_tenant').on(table.tenantId),
 }));
