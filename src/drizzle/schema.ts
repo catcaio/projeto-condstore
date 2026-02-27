@@ -595,3 +595,47 @@ export const webhookEvents = mysqlTable('webhook_events', {
 
 export type WebhookEventRecord = typeof webhookEvents.$inferSelect;
 export type NewWebhookEventRecord = typeof webhookEvents.$inferInsert;
+
+// --- Billing Core ---
+
+export const plans = mysqlTable('plans', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    name: varchar('name', { length: 64 }).notNull(),
+    monthlyPriceUsd: decimal('monthly_price_usd', { precision: 12, scale: 6 }).notNull(),
+    monthlyBudgetUsd: decimal('monthly_budget_usd', { precision: 12, scale: 6 }).notNull(),
+    softLimitPercent: int('soft_limit_percent').notNull().default(80),
+    hardLimitPercent: int('hard_limit_percent').notNull().default(100),
+    active: int('active').notNull().default(1), // 1=true, 0=false (MySQL boolean)
+});
+
+export type PlanRecord = typeof plans.$inferSelect;
+export type NewPlanRecord = typeof plans.$inferInsert;
+
+export const tenantSubscriptions = mysqlTable('tenant_subscriptions', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    planId: varchar('plan_id', { length: 36 }).notNull(),
+    status: varchar('status', { length: 32 }).notNull(), // 'active' | 'canceled' | 'past_due'
+    startedAt: timestamp('started_at').notNull(),
+    endedAt: timestamp('ended_at'),
+}, (table) => ({
+    tenantIdx: uniqueIndex('idx_tenant_subscriptions_tenant').on(table.tenantId),
+}));
+
+export type TenantSubscriptionRecord = typeof tenantSubscriptions.$inferSelect;
+export type NewTenantSubscriptionRecord = typeof tenantSubscriptions.$inferInsert;
+
+export const billingLedger = mysqlTable('billing_ledger', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    type: varchar('type', { length: 32 }).notNull(), // 'upgrade' | 'downgrade' | 'manual_adjust'
+    amountUsd: decimal('amount_usd', { precision: 12, scale: 6 }),
+    metadata: json('metadata'),
+    createdAt: timestamp('created_at').notNull(),
+}, (table) => ({
+    tenantIdx: index('idx_billing_ledger_tenant').on(table.tenantId),
+    tenantCreatedIdx: index('idx_billing_ledger_tenant_created').on(table.tenantId, table.createdAt),
+}));
+
+export type BillingLedgerRecord = typeof billingLedger.$inferSelect;
+export type NewBillingLedgerRecord = typeof billingLedger.$inferInsert;
