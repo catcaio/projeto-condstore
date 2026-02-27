@@ -618,6 +618,8 @@ export const tenantSubscriptions = mysqlTable('tenant_subscriptions', {
     status: varchar('status', { length: 32 }).notNull(), // 'active' | 'canceled' | 'past_due'
     startedAt: timestamp('started_at').notNull(),
     endedAt: timestamp('ended_at'),
+    stripeCustomerId: varchar('stripe_customer_id', { length: 128 }),
+    stripeSubscriptionId: varchar('stripe_subscription_id', { length: 128 }),
 }, (table) => ({
     tenantIdx: uniqueIndex('idx_tenant_subscriptions_tenant').on(table.tenantId),
 }));
@@ -639,3 +641,14 @@ export const billingLedger = mysqlTable('billing_ledger', {
 
 export type BillingLedgerRecord = typeof billingLedger.$inferSelect;
 export type NewBillingLedgerRecord = typeof billingLedger.$inferInsert;
+
+// --- Stripe Events (idempotency) ---
+
+export const stripeEvents = mysqlTable('stripe_events', {
+    id: varchar('id', { length: 128 }).primaryKey().notNull(), // Stripe event ID
+    receivedAt: timestamp('received_at').notNull(),
+    type: varchar('type', { length: 128 }).notNull(),
+});
+
+export type StripeEventRecord = typeof stripeEvents.$inferSelect;
+export type NewStripeEventRecord = typeof stripeEvents.$inferInsert;
