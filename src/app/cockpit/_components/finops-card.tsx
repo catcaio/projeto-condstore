@@ -151,6 +151,15 @@ function DaysAlert({ days, state }: { days: number | null, state: FinOpsData['st
     );
 }
 
+// ─── Plan types ───────────────────────────────────────────────────────────────
+
+interface AvailablePlan {
+    id: string;
+    name: string;
+    monthlyPriceUsd: number;
+    monthlyBudgetUsd: number;
+}
+
 // ─── Main card ─────────────────────────────────────────────────────────────────
 
 export function FinOpsCard() {
@@ -159,25 +168,48 @@ export function FinOpsCard() {
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    const handleUpgrade = async () => {
-        if (!data) return;
-        const suggested = data.monthlyBudgetUsd > 0 ? data.monthlyBudgetUsd * 1.5 : 50;
-        const newBudget = window.prompt('Digite o novo valor do orçamento mensal em USD:', String(suggested.toFixed(2)));
-        if (!newBudget || isNaN(Number(newBudget))) return;
+    // Upgrade state
+    const [showUpgrade, setShowUpgrade] = useState(false);
+    const [plans, setPlans] = useState<AvailablePlan[]>([]);
+    const [upgrading, setUpgrading] = useState(false);
+    const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
+    const loadPlans = async () => {
         try {
-            setLoading(true);
-            const res = await fetch('/api/cockpit/finops/unlock', {
+            const res = await fetch('/api/cockpit/billing/upgrade');
+            if (res.ok) {
+                const json = await res.json();
+                setPlans(json.plans ?? []);
+            }
+        } catch {
+            // silently fail — user can retry
+        }
+    };
+
+    const handleUpgradeClick = () => {
+        setShowUpgrade(true);
+        setUpgradeError(null);
+        void loadPlans();
+    };
+
+    const handleSelectPlan = async (planId: string) => {
+        setUpgrading(true);
+        setUpgradeError(null);
+        try {
+            const res = await fetch('/api/cockpit/billing/upgrade', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ newBudgetUsd: Number(newBudget) })
+                body: JSON.stringify({ planId }),
             });
-
-            if (!res.ok) throw new Error('Falha ao aumentar o orçamento.');
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json?.error?.message ?? 'Erro ao realizar upgrade.');
+            }
+            // Otimista: reload
             window.location.reload();
         } catch (err) {
-            window.alert('Erro ao tentar aumentar o orçamento.');
-            setLoading(false);
+            setUpgradeError((err as Error).message);
+            setUpgrading(false);
         }
     };
 
@@ -339,15 +371,75 @@ export function FinOpsCard() {
 
                         {data.state === 'locked' && (
                             <div style={{ marginTop: 12 }}>
-                                <button
-                                    onClick={handleUpgrade}
-                                    style={{
-                                        width: '100%', padding: '10px 16px', background: '#ef4444', color: 'var(--bg-app)',
-                                        border: 'none', borderRadius: 8, fontSize: 'var(--font-size-sm)', fontWeight: 600, cursor: 'pointer',
-                                    }}
-                                >
-                                    Aumentar orçamento
-                                </button>
+                                {!showUpgrade ? (
+                                    <button
+                                        id="btn-upgrade-plan"
+                                        onClick={handleUpgradeClick}
+                                        style={{
+                                            width: '100%', padding: '10px 16px',
+                                            background: 'linear-gradient(135deg, #dc2626, #991b1b)',
+                                            color: '#fff', border: 'none', borderRadius: 8,
+                                            fontSize: 'var(--font-size-sm)', fontWeight: 700,
+                                            cursor: 'pointer', letterSpacing: '0.02em',
+                                        }}
+                                    >
+                                        ⚡ Upgrade Plan
+                                    </button>
+                                ) : (
+                                    <div style={{
+                                        background: 'rgba(239,68,68,0.08)',
+                                        border: '1px solid rgba(239,68,68,0.3)',
+                                        borderRadius: 10, padding: '14px 16px',
+                                    }}>
+                                        <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 700, color: '#ef4444', marginBottom: 10 }}>
+                                            Escolha um plano
+                                        </div>
+                                        {plans.length === 0 ? (
+                                            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--finops-muted)' }}>Carregando planos…</div>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                {plans.map((plan) => (
+                                                    <button
+                                                        key={plan.id}
+                                                        id={`btn-plan-${plan.id}`}
+                                                        disabled={upgrading}
+                                                        onClick={() => void handleSelectPlan(plan.id)}
+                                                        style={{
+                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                            width: '100%', padding: '9px 12px',
+                                                            background: 'rgba(255,255,255,0.05)',
+                                                            border: '1px solid rgba(255,255,255,0.12)',
+                                                            borderRadius: 8, cursor: upgrading ? 'not-allowed' : 'pointer',
+                                                            color: 'var(--finops-text)', fontSize: 'var(--font-size-xs)',
+                                                            transition: 'background 0.15s',
+                                                            opacity: upgrading ? 0.6 : 1,
+                                                        }}
+                                                    >
+                                                        <span style={{ fontWeight: 700 }}>{plan.name}</span>
+                                                        <span style={{ color: 'var(--finops-muted)' }}>
+                                                            {plan.monthlyPriceUsd === 0 ? 'Grátis' : `$${plan.monthlyPriceUsd}/mês`}
+                                                            {' · '}
+                                                            <span style={{ color: '#22c55e', fontWeight: 600 }}>
+                                                                ${plan.monthlyBudgetUsd} budget
+                                                            </span>
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {upgradeError && (
+                                            <div style={{ fontSize: 'var(--font-size-xs)', color: '#ef4444', marginTop: 8 }}>
+                                                {upgradeError}
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => setShowUpgrade(false)}
+                                            style={{ marginTop: 8, fontSize: 'var(--font-size-xs)', background: 'none', border: 'none', color: 'var(--finops-muted)', cursor: 'pointer' }}
+                                        >
+                                            ← Cancelar
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
