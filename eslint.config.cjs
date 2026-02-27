@@ -2,10 +2,13 @@ const tsParser = require('@typescript-eslint/parser');
 
 const noopRule = { create: () => ({}) };
 const reactPlugin = { rules: { 'no-danger': noopRule } };
+const a11yPlugin = { rules: { 'no-autofocus': noopRule } };
+const reactHooksPlugin = { rules: { 'exhaustive-deps': noopRule, 'rules-of-hooks': noopRule } };
 const tsPlugin = {
   rules: {
     'no-var-requires': noopRule,
     'no-explicit-any': noopRule,
+    'no-useless-constructor': noopRule,
   },
 };
 
@@ -43,6 +46,8 @@ module.exports = [
     plugins: {
       '@typescript-eslint': tsPlugin,
       react: reactPlugin,
+      'jsx-a11y': a11yPlugin,
+      'react-hooks': reactHooksPlugin,
     },
     settings: {
       react: { version: 'detect' },
