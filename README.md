@@ -65,4 +65,4 @@ npm run db:push
 
 ***
 
-_Condstore AI Platform Development - 2026_
+_Condstore OS AI Platform Development - 2026_
