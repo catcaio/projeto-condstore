@@ -16,11 +16,13 @@ export async function register() {
   if (runtime === 'nodejs') {
     const missing: string[] = [];
 
-    if (!process.env.DATABASE_URL)  missing.push('DATABASE_URL');
-    if (!process.env.AUTH_SECRET)   missing.push('AUTH_SECRET');
+    if (!process.env.DATABASE_URL) missing.push('DATABASE_URL');
+    if (!process.env.AUTH_SECRET) missing.push('AUTH_SECRET');
 
     // Em produção: PROVIDER_SECRETS_KEY obrigatória para proteger apiKeys de providers
-    if (isProd && !process.env.PROVIDER_SECRETS_KEY) {
+    // Exception: CI runners não precisam dessa key pois não acessam dados criptografados reais
+    const isCI = process.env.CI === 'true';
+    if (isProd && !isCI && !process.env.PROVIDER_SECRETS_KEY) {
       missing.push('PROVIDER_SECRETS_KEY');
     }
 
