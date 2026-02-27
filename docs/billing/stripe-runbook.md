@@ -156,3 +156,59 @@ WHERE tenant_id = 'sua-tenant-id'
 ```
 
 Para upgrades isolados falhados, use o endpoint de _fallback_: `POST /api/cockpit/billing/upgrade`.
+
+---
+
+## 🚀 GO-LIVE CHECKLIST
+
+Antes de ligar o billing Stripe em produção, percorra esta lista na ordem:
+
+### 1. Environment Variables
+
+- [ ] `NEXT_PUBLIC_STRIPE_ENABLED=1`
+- [ ] `STRIPE_SECRET_KEY=sk_live_...`
+- [ ] `STRIPE_WEBHOOK_SECRET=whsec_...`
+- [ ] `STRIPE_PRICE_PRO=price_...`
+- [ ] `STRIPE_PRICE_GROWTH=price_...` (se aplicável)
+- [ ] `STRIPE_PRICE_SCALE=price_...` (se aplicável)
+- [ ] `INTERNAL_TOKEN` configurado (para reconciliação break-glass)
+
+### 2. Stripe Dashboard
+
+- [ ] Webhook endpoint criado: `https://<domínio>/api/webhook/stripe`
+- [ ] Eventos habilitados:
+  - `checkout.session.completed`
+  - `invoice.paid`
+  - `invoice.payment_failed`
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
+- [ ] API version compatível com SDK instalado (`2026-02-25.clover`)
+
+### 3. Database
+
+- [ ] Migration 0010 (billing_core) aplicada
+- [ ] Migration 0011 (billing_stripe) aplicada
+- [ ] Migration 0012 (stripe_events_unique) aplicada
+- [ ] Migration 0013 (stripe_subscription_lifecycle) aplicada
+- [ ] Planos seed inseridos na tabela `plans` (plan_pro, plan_growth, plan_scale)
+
+### 4. Validação Pré-Live
+
+- [ ] Rodar reconcile-stripe em dry run: `curl -X POST .../api/internal/billing/reconcile-stripe -H "x-internal-token: $TOKEN" -d '{"dryRun":true,"limit":10}'`
+- [ ] Confirmar `updatedCount=0` (ou investigar drifts)
+- [ ] Testar fluxo completo em **Test Mode** do Stripe (checkout → invoice → cancel)
+- [ ] Verificar logs: `stripe_checkout_completed_processed`, `stripe_invoice_paid_processed`
+
+### 5. Ativação
+
+- [ ] Mudar `NEXT_PUBLIC_STRIPE_ENABLED` para `1` e fazer deploy
+- [ ] Monitorar primeiros 10 minutos: logs de webhook, `stripe_event_duplicate_skipped` (normal em retry), erros 500
+
+### 6. Plano de Rollback
+
+Se algo crítico falhar após go-live:
+
+1. Setar `NEXT_PUBLIC_STRIPE_ENABLED=0` (desliga checkout no frontend — webhooks continuam processando)
+2. Se necessário parar webhooks: remover endpoint no Stripe Dashboard
+3. Subscriptions existentes continuam funcionando via billing manual (`POST /api/cockpit/billing/upgrade`)
+4. Investigar logs, rodar reconcile-stripe para corrigir drift, e reativar
