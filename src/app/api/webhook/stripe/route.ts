@@ -23,6 +23,17 @@ export const runtime = 'nodejs';
  *     • se sub ID não bate com factura                    → ignored
  *     • só then: status=active (idempotente)
  *
+ *   invoice.payment_failed:
+ *     • encontra subscription pelo stripe_subscription_id → gate
+ *     • se já canceled ou endedAt!=null → ignored
+ *     • status=past_due + salva lastPaymentFailedAt=now()
+ *
+ *   customer.subscription.updated:
+ *     • encontra subscription → gate
+ *     • se já canceled ou endedAt!=null → nunca reativa
+ *     • converte stripeStatus para active/past_due de forma branda
+ *     • se cancel_at_period_end=true, apenas salva o boolean+data e se mantém active
+ *
  *   customer.subscription.deleted:
  *     • encontra subscription pelo stripe_subscription_id → gate
  *     • se já canceled: no-op
@@ -35,7 +46,7 @@ import type Stripe from 'stripe';
 import { getStripe, getPlanIdFromPriceId, getPriceWhitelist } from '../../../../core/stripe/stripe-client';
 import { getDb } from '../../../../infra/db';
 import { stripeEvents, tenantSubscriptions } from '../../../../drizzle/schema';
-import { eq, and, isNull, isNotNull } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { upgradeTenantPlan, BillingServiceError } from '../../../../modules/billing/billing.service';
 import { structuredLogger } from '../../../../infra/log/logger';
 
@@ -336,6 +347,115 @@ async function handleSubscriptionDeleted(
     return PROCESSED();
 }
 
+// ── D. invoice.payment_failed ─────────────────────────────────────────────────
+
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<HandlerResult> {
+    // Usamos same logic de extract sub id
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const inv = invoice as any;
+    const invoiceSubId: string | null =
+        (typeof inv.subscription === 'string' ? inv.subscription : null) ??
+        (typeof inv.subscription?.id === 'string' ? inv.subscription.id : null) ??
+        (typeof inv.parent?.subscription_details?.subscription === 'string'
+            ? inv.parent.subscription_details.subscription
+            : null);
+
+    if (!invoiceSubId) {
+        return IGNORED('no_subscription_id');
+    }
+
+    const db = await getDb();
+    const rows = await db
+        .select()
+        .from(tenantSubscriptions)
+        .where(eq(tenantSubscriptions.stripeSubscriptionId, invoiceSubId))
+        .limit(1);
+
+    const sub = rows[0] ?? null;
+
+    if (!sub) {
+        return IGNORED('no_matching_subscription');
+    }
+
+    if (sub.status === 'canceled' || sub.endedAt !== null) {
+        return IGNORED('already_canceled');
+    }
+
+    await db
+        .update(tenantSubscriptions)
+        .set({ status: 'past_due', lastPaymentFailedAt: new Date() })
+        .where(eq(tenantSubscriptions.stripeSubscriptionId, invoiceSubId));
+
+    structuredLogger.info('stripe_invoice_payment_failed_processed', {
+        tenantId: sub.tenantId,
+        stripeSubscriptionId: invoiceSubId,
+        eventType: 'stripe_webhook',
+    });
+
+    return PROCESSED();
+}
+
+// ── E. customer.subscription.updated ──────────────────────────────────────────
+
+async function handleSubscriptionUpdated(
+    subscription: Stripe.Subscription,
+): Promise<HandlerResult> {
+    const db = await getDb();
+
+    const rows = await db
+        .select()
+        .from(tenantSubscriptions)
+        .where(eq(tenantSubscriptions.stripeSubscriptionId, subscription.id))
+        .limit(1);
+
+    const sub = rows[0] ?? null;
+
+    if (!sub) {
+        return IGNORED('no_matching_subscription');
+    }
+
+    if (sub.status === 'canceled' || sub.endedAt !== null) {
+        return IGNORED('already_canceled');
+    }
+
+    const stripeStatus = subscription.status;
+    let newStatus = sub.status;
+
+    // Regras mansas sem cortar cancel_at_period_end
+    if (['past_due', 'unpaid', 'incomplete'].includes(stripeStatus)) {
+        newStatus = 'past_due';
+    } else if (['active', 'trialing'].includes(stripeStatus)) {
+        newStatus = 'active';
+    }
+
+    // Persiste campos adicionais pro dashboard
+    const cancelAtPeriodEnd = subscription.cancel_at_period_end ?? false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const subAny = subscription as any;
+    const currentPeriodEnd = subAny.current_period_end
+        ? new Date(subAny.current_period_end * 1000)
+        : null;
+
+    await db
+        .update(tenantSubscriptions)
+        .set({
+            status: newStatus,
+            cancelAtPeriodEnd,
+            ...(currentPeriodEnd ? { currentPeriodEnd } : {})
+        })
+        .where(eq(tenantSubscriptions.stripeSubscriptionId, subscription.id));
+
+    structuredLogger.info('stripe_subscription_updated_processed', {
+        tenantId: sub.tenantId,
+        stripeSubscriptionId: subscription.id,
+        newStatus,
+        cancelAtPeriodEnd,
+        eventType: 'stripe_webhook',
+    });
+
+    return PROCESSED();
+}
+
 // ── Main handler ────────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -416,6 +536,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
             case 'invoice.paid':
                 handlerResult = await handleInvoicePaid(event.data.object as Stripe.Invoice);
+                break;
+
+            case 'invoice.payment_failed':
+                handlerResult = await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+                break;
+
+            case 'customer.subscription.updated':
+                handlerResult = await handleSubscriptionUpdated(
+                    event.data.object as Stripe.Subscription,
+                );
                 break;
 
             case 'customer.subscription.deleted':

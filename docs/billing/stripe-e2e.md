@@ -94,7 +94,20 @@ stripe trigger invoice.paid \
 - [ ] **Log (Server):** `stripe_invoice_paid_processed` documentando o status resgatado ou `stripe_invoice_paid_skipped_canceled` se a assinatura testada já estava desativada/cancelada permanentemente localmente (`endedAt != null`).
 - [ ] **DB `tenant_subscriptions`:** Campo `status` deve ser igual a `active`. Campo `endedAt` devia igual a `NULL`.
 
-### 3. Subscription Deleted (Cancelamento Fixo)
+### 3. Invoice Payment Failed (Atraso/Bloqueio Prévio)
+
+```bash
+# Necessário adicionar a subscription ID mockada
+stripe trigger invoice.payment_failed \
+  --override invoice:subscription=sub_id_do_banco \
+  --override invoice:parent:subscription_details:subscription=sub_id_do_banco
+```
+**Verificações no webhook / banco:**
+- [ ] **HTTP Response:** `200` ({ received: true }).
+- [ ] **Log (Server):** `stripe_invoice_payment_failed_processed`.
+- [ ] **DB `tenant_subscriptions`:** Campo `status` deve mudar para `past_due`. Campo `lastPaymentFailedAt` deve assumir o timestamp atual. 
+
+### 4. Subscription Deleted (Cancelamento Fixo)
 
 ```bash
 npm run stripe:trigger:cancel
