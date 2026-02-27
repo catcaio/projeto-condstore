@@ -65,20 +65,94 @@ As rejeições ou exceções sempre devolvem um _HTTP 200_ ao Stripe para **evit
 
 ---
 
-## 🚑 Reconciliação Pós-Ausência Manual
+## 🚑 Reconciliação Manual (Break Glass)
 
-Caso um checkout seja efetuado com os painéis ou webhook offline, **aplique estes SQLs manuais (safety on)**:
+Em caso de webhook offline, key rotation, ou suspeita de drift entre DB local e Stripe, use o endpoint interno de reconciliação.
+
+### Quando usar
+
+- **Webhook outage**: eventos perdidos durante downtime.
+- **Suspeita de drift**: status local difere do Stripe (ex: tenant ativo localmente mas cancelado no Stripe).
+- **Pós-rotation**: após rotacionar chaves, garantir que nenhum evento foi perdido.
+
+### Endpoint
+
+```
+POST /api/internal/billing/reconcile-stripe
+Header: x-internal-token: <INTERNAL_TOKEN>
+```
+
+### Exemplos curl
+
+```bash
+# 1. Dry run — ver o que SERIA atualizado (sem alterar DB)
+curl -X POST https://<dominio>/api/internal/billing/reconcile-stripe \
+  -H "Content-Type: application/json" \
+  -H "x-internal-token: $INTERNAL_TOKEN" \
+  -d '{"dryRun": true, "limit": 50}'
+
+# 2. Reconciliar um tenant específico
+curl -X POST https://<dominio>/api/internal/billing/reconcile-stripe \
+  -H "Content-Type: application/json" \
+  -H "x-internal-token: $INTERNAL_TOKEN" \
+  -d '{"tenantId": "tenant-xyz"}'
+
+# 3. Reconciliar todos (até 200 subscriptions)
+curl -X POST https://<dominio>/api/internal/billing/reconcile-stripe \
+  -H "Content-Type: application/json" \
+  -H "x-internal-token: $INTERNAL_TOKEN" \
+  -d '{}'
+```
+
+### Interpretando resultados
+
+```json
+{
+  "processedCount": 42,
+  "updatedCount": 3,
+  "driftCount": 1,
+  "dryRun": false,
+  "items": [
+    {
+      "tenantId": "tenant-1",
+      "subscriptionId": "sub_xxx",
+      "before": "active",
+      "after": "past_due",
+      "action": "sync:status"
+    }
+  ]
+}
+```
+
+| Campo | Significado |
+|-------|------------|
+| `processedCount` | Total de subscriptions verificadas contra o Stripe |
+| `updatedCount` | Quantas foram efetivamente atualizadas no DB |
+| `driftCount` | Quantas têm divergência irreconciliável (ex: endedAt local com Stripe ativo) |
+| `action: drift_*` | Drift detectado — requer análise manual |
+| `action: sync:*` | Campos sincronizados (ex: `sync:status,cancelAtPeriodEnd`) |
+| `action: no_change` | Já sincronizado, nenhuma ação necessária |
+
+### ⚠️ Regra de segurança
+
+O endpoint **NUNCA reativa** uma subscription com `endedAt != null`. Se houver drift (Stripe diz active mas DB diz canceled), o endpoint reporta `driftCount` sem alterar. Investigue manualmente.
+
+---
+
+## 🔧 Reconciliação SQL Manual (último recurso)
+
+Caso o endpoint acima não seja suficiente, aplique SQLs manuais:
 
 ```sql
--- 1. Inserir manualmente no banco IDs perante o Stripe locatário orfão:
+-- Inserir manualmente IDs do Stripe em tenant órfão:
 UPDATE tenant_subscriptions
 SET
   stripe_customer_id = 'cus_PAGORFAO',
   stripe_subscription_id = 'sub_NOVAASSINATURA',
   status = 'active',
   ended_at = NULL
-WHERE tenant_id = 'sua-tenant-id-orf\~a' 
+WHERE tenant_id = 'sua-tenant-id'
   AND status != 'canceled'; -- NUNCA altere sem validar.
 ```
 
-Para upgrades isolados falhados, pode chamar no painel administrativo Cockpit o endpoint já criado de _fallback_: `POST /api/cockpit/billing/upgrade`.
+Para upgrades isolados falhados, use o endpoint de _fallback_: `POST /api/cockpit/billing/upgrade`.
