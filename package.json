@@ -22,7 +22,11 @@
     "qa:snapshots": "node --import tsx scripts/qa-snapshots.ts",
     "lint:design-system": "vitest run src/__tests__/design-system.test.ts",
     "worker:finops": "node --import tsx src/workers/finops-worker.ts",
-    "ai:eval": "node --import tsx src/core/ai/evals/eval-runner.ts"
+    "ai:eval": "node --import tsx src/core/ai/evals/eval-runner.ts",
+    "stripe:listen": "stripe listen --forward-to localhost:3015/api/webhook/stripe",
+    "stripe:trigger:checkout": "stripe trigger checkout.session.completed",
+    "stripe:trigger:invoice": "stripe trigger invoice.paid",
+    "stripe:trigger:cancel": "stripe trigger customer.subscription.deleted"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.40.0",
@@ -41,6 +45,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
+    "stripe": "^20.4.0",
     "tailwind-merge": "3.4.1",
     "tailwindcss-animate": "1.0.7",
     "twilio": "5.12.1",
