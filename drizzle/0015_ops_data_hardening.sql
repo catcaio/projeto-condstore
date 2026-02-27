@@ -1,8 +1,4 @@
-UPDATE `tenant_ai_providers`
-SET `api_key` = NULL
-WHERE `api_key_encrypted` IS NOT NULL
-  AND `api_key_encrypted` <> ''
-  AND `api_key` IS NOT NULL;--> statement-breakpoint
+-- NOTE: legacy api_key column removed later; skip legacy cleanup here (no-op)--> statement-breakpoint
 
 ALTER TABLE `frank_events`
 ADD COLUMN IF NOT EXISTS `rag_used` int NOT NULL DEFAULT 0;--> statement-breakpoint

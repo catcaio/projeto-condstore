@@ -71,7 +71,7 @@ CREATE TABLE `tenant_usage_metrics` (
 	`total_tokens_input` int NOT NULL DEFAULT 0,
 	`total_tokens_output` int NOT NULL DEFAULT 0,
 	`estimated_cost_usd` decimal(12,6) NOT NULL DEFAULT '0',
-	`model_distribution_json` json NOT NULL DEFAULT ('{}'),
+	`model_distribution_json` json NOT NULL,
 	`created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `tenant_usage_metrics_id` PRIMARY KEY(`id`),
