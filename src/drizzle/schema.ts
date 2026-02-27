@@ -578,3 +578,20 @@ export const aiEvalRuns = mysqlTable('ai_eval_runs', {
 
 export type AiEvalRunRecord = typeof aiEvalRuns.$inferSelect;
 export type NewAiEvalRunRecord = typeof aiEvalRuns.$inferInsert;
+
+// --- Webhook Hardening ---
+
+export const webhookEvents = mysqlTable('webhook_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    provider: varchar('provider', { length: 32 }).notNull(), // e.g. "twilio"
+    externalId: varchar('external_id', { length: 128 }).notNull(), // messageSid/eventId
+    receivedAt: timestamp('received_at').notNull(),
+    payloadHash: varchar('payload_hash', { length: 128 }).notNull(),
+    processedAt: timestamp('processed_at'),
+    status: varchar('status', { length: 32 }).notNull(), // 'received' | 'processed' | 'failed'
+}, (table) => ({
+    providerExternalIdx: uniqueIndex('idx_webhook_events_provider_external').on(table.provider, table.externalId),
+}));
+
+export type WebhookEventRecord = typeof webhookEvents.$inferSelect;
+export type NewWebhookEventRecord = typeof webhookEvents.$inferInsert;
