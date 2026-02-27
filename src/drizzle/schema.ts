@@ -643,12 +643,21 @@ export type BillingLedgerRecord = typeof billingLedger.$inferSelect;
 export type NewBillingLedgerRecord = typeof billingLedger.$inferInsert;
 
 // --- Stripe Events (idempotency) ---
+// id            = Stripe event ID (PK, backward compat)
+// stripeEventId = explicit alias with UNIQUE constraint (belt + suspenders)
+// stripeCreatedAt = timestamp from Stripe event object for audit ordering
+// payloadHash   = SHA256(rawBody) to detect payload tampering on replay
 
 export const stripeEvents = mysqlTable('stripe_events', {
-    id: varchar('id', { length: 128 }).primaryKey().notNull(), // Stripe event ID
+    id: varchar('id', { length: 128 }).primaryKey().notNull(),           // Stripe event ID
+    stripeEventId: varchar('stripe_event_id', { length: 128 }).notNull(), // UNIQUE alias
     receivedAt: timestamp('received_at').notNull(),
     type: varchar('type', { length: 128 }).notNull(),
-});
+    stripeCreatedAt: timestamp('stripe_created_at'),
+    payloadHash: varchar('payload_hash', { length: 64 }),
+}, (table) => ({
+    stripeEventIdIdx: uniqueIndex('uq_stripe_events_event_id').on(table.stripeEventId),
+}));
 
 export type StripeEventRecord = typeof stripeEvents.$inferSelect;
 export type NewStripeEventRecord = typeof stripeEvents.$inferInsert;

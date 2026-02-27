@@ -3,15 +3,26 @@ export const runtime = 'nodejs';
 /**
  * POST /api/webhook/stripe
  * ─────────────────────────────────────────────────────────────────────────────
- * Stripe Webhook handler com:
- *   1. Verificação de assinatura (STRIPE_WEBHOOK_SECRET)
- *   2. Idempotência via stripe_events (insert + UNIQUE → 200 early if duplicate)
- *   3. Eventos tratados:
+ * Stripe Webhook handler — hardened idempotency:
+ *
+ *   1. Verificação de assinatura HMAC (STRIPE_WEBHOOK_SECRET)
+ *   2. Idempotency gate via DB-level UNIQUE insert atômico:
+ *      - INSERT stripe_events (id PK + stripe_event_id UNIQUE)
+ *      - Se ER_DUP_ENTRY → retornar 200 { received:true, duplicate:true }
+ *      - Se inserted=true → prosseguir para dispatch
+ *   3. upgradeTenantPlan() SÓ roda quando inserted=true
+ *   4. Eventos tratados:
  *      - checkout.session.completed → upgradeTenantPlan + salva stripe IDs
  *      - invoice.paid               → garante status=active na subscription
  *      - customer.subscription.deleted → cancela subscription
+ *
+ * Comprovação de idempotência:
+ *   - O campo `id` na tabela stripe_events é PK (UNIQUE).
+ *   - O campo `stripe_event_id` tem UNIQUE constraint explícito (migration 0012).
+ *   - O INSERT é atômico: sem race condition em múltiplos workers/replicas.
  */
 
+import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { getStripe } from '../../../../core/stripe/stripe-client';
@@ -21,27 +32,63 @@ import { eq, and } from 'drizzle-orm';
 import { upgradeTenantPlan, BillingServiceError } from '../../../../modules/billing/billing.service';
 import { structuredLogger } from '../../../../infra/log/logger';
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+interface InsertResult {
+    inserted: boolean;   // true = nova entrada; false = duplicado
+    errorKind?: 'duplicate' | 'db_error';
+    error?: unknown;
+}
+
+// ── Idempotency guard ──────────────────────────────────────────────────────────
 
 function isDuplicateEntry(err: unknown): boolean {
     const e = err as { code?: string; message?: string };
     return e?.code === 'ER_DUP_ENTRY' || Boolean(e?.message?.includes('Duplicate entry'));
 }
 
-async function saveStripeEvent(eventId: string, type: string): Promise<boolean> {
+/**
+ * insertStripeEventOnce — DB-level atomic idempotency gate.
+ *
+ * Tenta inserir um registro em stripe_events usando o stripe_event_id como
+ * identificador único. O banco garante unicidade via:
+ *   - PRIMARY KEY (id)            ← mesmo valor que stripe_event_id (backward compat)
+ *   - UNIQUE (stripe_event_id)    ← constraint explícita (migration 0012)
+ *
+ * Retorna:
+ *   { inserted: true }   → evento é novo, pode processar
+ *   { inserted: false, errorKind: 'duplicate' } → já processado, responder 200
+ *   { inserted: false, errorKind: 'db_error', error } → falha real de DB
+ */
+async function insertStripeEventOnce(
+    stripeEventId: string,
+    type: string,
+    rawBody: string,
+    stripeCreatedAt?: Date,
+): Promise<InsertResult> {
     try {
         const db = await getDb();
+        const payloadHash = createHash('sha256').update(rawBody).digest('hex').slice(0, 64);
+
         await db.insert(stripeEvents).values({
-            id: eventId,
+            id: stripeEventId,             // PK (backward compat)
+            stripeEventId,                 // UNIQUE alias  (migration 0012)
             receivedAt: new Date(),
             type,
+            stripeCreatedAt: stripeCreatedAt ?? null,
+            payloadHash,
         });
-        return true; // inserted = first time
+
+        return { inserted: true };
     } catch (err) {
-        if (isDuplicateEntry(err)) return false; // already processed
-        throw err;
+        if (isDuplicateEntry(err)) {
+            return { inserted: false, errorKind: 'duplicate' };
+        }
+        return { inserted: false, errorKind: 'db_error', error: err };
     }
 }
+
+// ── Event handlers ─────────────────────────────────────────────────────────────
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
     const tenantId = session.metadata?.tenantId;
@@ -55,17 +102,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
         return;
     }
 
-    // Upgrade via billing service (creates ledger, updates budget, resolves lock)
+    // Core upgrade flow via billing service
     await upgradeTenantPlan(tenantId, planId, `stripe:${session.id}`);
 
-    // Save Stripe IDs into tenant_subscriptions
+    // Persist Stripe IDs for subscription management
     const stripeCustomerId = typeof session.customer === 'string'
         ? session.customer
-        : session.customer?.id ?? null;
+        : (session.customer as Stripe.Customer | null)?.id ?? null;
 
     const stripeSubId = typeof session.subscription === 'string'
         ? session.subscription
-        : session.subscription?.id ?? null;
+        : (session.subscription as Stripe.Subscription | null)?.id ?? null;
 
     if (stripeCustomerId || stripeSubId) {
         const db = await getDb();
@@ -92,8 +139,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
-    // Stripe SDK >=14 moved subscription to invoice.parent.subscription_details
-    // For compatibility we access via any cast and check both paths.
+    // Stripe SDK >=14 moved subscription into invoice.parent.subscription_details
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const inv = invoice as any;
     const stripeSubId: string | null =
@@ -130,12 +176,13 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
     });
 }
 
-// ── Handler ────────────────────────────────────────────────────────────────
+// ── Main handler ────────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
     const sig = request.headers.get('stripe-signature');
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+    // ── Config check ────────────────────────────────────────────────────────────
     if (!webhookSecret) {
         structuredLogger.error('stripe_webhook_secret_missing', {
             eventType: 'stripe_webhook',
@@ -148,10 +195,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: 'Missing Stripe-Signature header.' }, { status: 400 });
     }
 
-    // ── Read raw body ─────────────────────────────────────────────────────────
+    // ── Read raw body (must be text for signature verification) ─────────────────
     const rawBody = await request.text();
 
-    // ── Verify signature ──────────────────────────────────────────────────────
+    // ── Verify Stripe signature ──────────────────────────────────────────────────
     let event: Stripe.Event;
     try {
         const stripe = getStripe();
@@ -170,22 +217,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         eventType: 'stripe_webhook',
     });
 
-    // ── Idempotency guard ─────────────────────────────────────────────────────
-    let savedNew: boolean;
-    try {
-        savedNew = await saveStripeEvent(event.id, event.type);
-    } catch (err) {
+    // ── Idempotency gate (atomic DB insert) ─────────────────────────────────────
+    // This is the ONLY place that decides whether to process the event.
+    // upgradeTenantPlan() and all side-effectful code runs ONLY if inserted=true.
+    const stripeCreatedAt = event.created ? new Date(event.created * 1000) : undefined;
+    const idempotencyResult = await insertStripeEventOnce(
+        event.id,
+        event.type,
+        rawBody,
+        stripeCreatedAt,
+    );
+
+    if (idempotencyResult.errorKind === 'db_error') {
         structuredLogger.error('stripe_event_save_failed', {
             eventId: event.id,
             type: event.type,
-            error: err,
+            error: idempotencyResult.error,
             eventType: 'stripe_webhook',
         });
         return NextResponse.json({ error: 'Failed to record event.' }, { status: 500 });
     }
 
-    if (!savedNew) {
-        // Already processed — acknowledge without reprocessing
+    if (!idempotencyResult.inserted) {
+        // Duplicate event — acknowledge to Stripe without reprocessing
         structuredLogger.info('stripe_event_duplicate_skipped', {
             eventId: event.id,
             type: event.type,
@@ -194,7 +248,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
     }
 
-    // ── Dispatch ───────────────────────────────────────────────────────────────
+    // ── Dispatch (only reached when inserted=true) ───────────────────────────────
     try {
         switch (event.type) {
             case 'checkout.session.completed':
@@ -210,7 +264,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 break;
 
             default:
-                // Acknowledged but not processed
                 structuredLogger.info('stripe_event_unhandled', {
                     eventId: event.id,
                     type: event.type,
@@ -218,9 +271,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 });
         }
     } catch (err) {
-        // Processing failed AFTER we already saved stripe_events.
-        // We log and return 200 to prevent Stripe retrying infinitely.
-        // The event is marked as received but unprocessed — ops can replay manually.
+        // Business logic failed AFTER we committed the idempotency record.
+        // Return 200 to prevent Stripe retrying — event is marked for manual replay.
         structuredLogger.error('stripe_event_processing_failed', {
             eventId: event.id,
             type: event.type,
@@ -229,7 +281,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             eventType: 'stripe_webhook',
         });
         return NextResponse.json(
-            { received: true, error: 'Processing failed, event recorded for manual replay.' },
+            { received: true, error: 'Processing failed — event recorded for manual replay.' },
             { status: 200 },
         );
     }
