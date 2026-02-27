@@ -47,7 +47,9 @@ const mockUpgrade = vi.fn().mockResolvedValue({ status: 'upgraded', plan: 'Pro',
 vi.mock('../../../../../core/stripe/stripe-client', () => ({
     getStripe: vi.fn(() => ({ webhooks: { constructEvent: mockConstructEvent } })),
     isStripeEnabled: vi.fn(() => true),
-    getPriceIdForPlan: vi.fn(() => 'price_pro'),
+    getPriceIdForPlan: vi.fn((id: string) => id === 'plan_pro' ? 'price_pro_test' : null),
+    getPriceWhitelist: vi.fn(() => new Set(['price_pro_test'])),
+    getPlanIdFromPriceId: vi.fn((pid: string) => pid === 'price_pro_test' ? 'plan_pro' : null),
 }));
 
 vi.mock('../../../../../modules/billing/billing.service', () => ({
@@ -75,12 +77,16 @@ function makeReq(body: unknown, sig: string | null = 'valid'): NextRequest {
 const CHECKOUT_EVENT = {
     id: 'evt_001',
     type: 'checkout.session.completed',
+    created: Math.floor(Date.now() / 1000),
     data: {
         object: {
             id: 'cs_001',
+            mode: 'subscription',
+            payment_status: 'paid',
             customer: 'cus_abc',
             subscription: 'sub_xyz',
-            metadata: { tenantId: 'tenant-1', planId: 'plan_pro' },
+            client_reference_id: null,
+            metadata: { tenantId: 'tenant-1', planId: 'plan_pro', priceId: 'price_pro_test' },
         },
     },
 };

@@ -46,3 +46,33 @@ export function getPriceIdForPlan(planId: string): string | null {
     };
     return map[planId] ?? null;
 }
+
+/**
+ * Returns the set of all configured Stripe Price IDs (whitelist).
+ * Only prices present here are accepted by the webhook handler.
+ */
+export function getPriceWhitelist(): Set<string> {
+    const whitelist = new Set<string>();
+    const envVars = [
+        process.env.STRIPE_PRICE_GROWTH,
+        process.env.STRIPE_PRICE_PRO,
+        process.env.STRIPE_PRICE_SCALE,
+    ];
+    for (const v of envVars) {
+        if (v) whitelist.add(v);
+    }
+    return whitelist;
+}
+
+/**
+ * Inverse of getPriceIdForPlan — resolves a Stripe Price ID to an internal plan ID.
+ * Returns null if the priceId is not in the whitelist.
+ */
+export function getPlanIdFromPriceId(priceId: string): string | null {
+    const map: Record<string, string | undefined> = {
+        [process.env.STRIPE_PRICE_GROWTH ?? '']: 'plan_growth',
+        [process.env.STRIPE_PRICE_PRO ?? '']: 'plan_pro',
+        [process.env.STRIPE_PRICE_SCALE ?? '']: 'plan_scale',
+    };
+    return map[priceId] ?? null;
+}
