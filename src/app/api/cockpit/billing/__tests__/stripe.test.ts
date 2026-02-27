@@ -28,9 +28,15 @@ function makeMockDb() {
                 _insertCapture.push({ ...vals });
                 if (_shouldDuplicate) {
                     const err: any = new Error('Duplicate entry'); err.code = 'ER_DUP_ENTRY';
-                    return { execute: () => Promise.reject(err) };
+                    return {
+                        then: (_r: any, rej: any) => Promise.reject(err).then(_r, rej),
+                        execute: () => Promise.reject(err),
+                    };
                 }
-                return { execute: () => Promise.resolve() };
+                return {
+                    then: (res: any) => Promise.resolve().then(res),
+                    execute: () => Promise.resolve(),
+                };
             },
         }),
         select: () => ({
@@ -47,7 +53,10 @@ function makeMockDb() {
             set: (vals: any) => ({
                 where: () => {
                     _updateCapture.push({ ...vals });
-                    return { execute: () => Promise.resolve() };
+                    return {
+                        then: (res: any) => Promise.resolve().then(res),
+                        execute: () => Promise.resolve(),
+                    };
                 },
             }),
         }),
@@ -94,6 +103,13 @@ vi.mock('../../../../../core/stripe/stripe-client', () => ({
         webhooks: { constructEvent: mockConstructEvent },
     })),
     getPriceIdForPlan: vi.fn((planId: string) => _priceIdMap[planId] ?? null),
+    getPriceWhitelist: vi.fn(() => new Set(Object.values(_priceIdMap))),
+    getPlanIdFromPriceId: vi.fn((priceId: string) => {
+        for (const [planId, pid] of Object.entries(_priceIdMap)) {
+            if (pid === priceId) return planId;
+        }
+        return null;
+    }),
 }));
 
 // Billing service mock
@@ -138,12 +154,16 @@ function makeWebhookReq(body: unknown, sig: string | null = 'valid-sig'): NextRe
 const CHECKOUT_EVENT = {
     id: 'evt_001',
     type: 'checkout.session.completed',
+    created: Math.floor(Date.now() / 1000),
     data: {
         object: {
             id: 'cs_001',
+            mode: 'subscription',
+            payment_status: 'paid',
             customer: 'cus_abc',
             subscription: 'sub_xyz',
-            metadata: { tenantId: 'tenant-1', planId: 'plan_pro' },
+            client_reference_id: null,
+            metadata: { tenantId: 'tenant-1', planId: 'plan_pro', priceId: 'price_pro_123' },
         },
     },
 };
