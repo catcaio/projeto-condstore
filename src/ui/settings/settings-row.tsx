@@ -8,7 +8,7 @@ export interface SettingsRowProps extends React.HTMLAttributes<HTMLDivElement> {
     description?: React.ReactNode;
     value?: React.ReactNode;
     icon?: React.ReactNode;
-    href?: string;
+    href?: string | any;
     external?: boolean;
     onClick?: () => void;
     showChevron?: boolean;

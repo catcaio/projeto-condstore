@@ -318,7 +318,7 @@ export default async function SupremePage() {
                                             </td>
                                             <td style={{ padding: '0.75rem 1.5rem', fontFamily: 'monospace', fontSize: '0.8125rem' }}>
                                                 <Link
-                                                    href={`/cockpit?tenantId=${item.tenantId}`}
+                                                    href={{ pathname: '/cockpit', query: { tenantId: item.tenantId } }}
                                                     style={{ color: '#3b82f6', textDecoration: 'none' }}
                                                 >
                                                     {item.tenantId}

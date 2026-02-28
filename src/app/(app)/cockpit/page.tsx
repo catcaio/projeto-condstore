@@ -14,9 +14,9 @@ import { ptBR } from 'date-fns/locale';
 
 import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
 
-export default async function CockpitPage(props: { searchParams?: Promise<{ tenantId?: string }> }) {
-    const searchParams = props.searchParams ? await props.searchParams : {};
-    const inspectTenantId = searchParams.tenantId;
+export default async function CockpitPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+    const searchParams = await props.searchParams;
+    const inspectTenantId = typeof searchParams.tenantId === 'string' ? searchParams.tenantId : undefined;
 
     const headersList = await headers();
     const sessionTenantId = headersList.get('x-auth-tenant-id');

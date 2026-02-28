@@ -1,30 +1,39 @@
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { AppShell } from "@/ui/shell/app-shell";
 import "../../styles/tokens.css";
 
 export const metadata = {
-  title: "Configurações — Condstore OS",
+  title: "CONDSTORE OS",
 };
 
 /**
- * Layout do Condstore OS (grupo de rotas).
+ * Layout do Condstore OS Logado (grupo de rotas app).
  *
  * Responsabilidades:
- * - Importar os tokens CSS do OS (--os-*)
- * - Injetar ThemeScript inline (evita flash de tema incorreto)
- * - Envolver o conteúdo no .os-root para tipografia e background
- *
- * O ThemeScript lê localStorage('condstore:theme') de forma síncrona
- * e aplica data-theme no <html> antes do primeiro paint.
+ * - Proteger rotas filhas garantindo tenantId (redireciona p/ login).
+ * - Envolver conteúdo no novo AppShell.
+ * - Injetar CSS tokens base.
  */
-export default function CockpitOSLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  const headersList = await headers();
+  const tenantId = headersList.get("x-auth-tenant-id");
+  const role = headersList.get("x-auth-role") || "viewer";
+
+  // Guard: if not authenticated, redirect to login
+  if (!tenantId) {
+    redirect("/login");
+  }
+
   const themeScript = `(function(){try{var t=localStorage.getItem('condstore:theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`;
 
   return (
     <>
-      {/* ThemeScript: síncrono, sem defer, sem async — aplicado antes do paint */}
-      {/* eslint-disable-next-line react/no-danger */}
       <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      <div className="os-root">{children}</div>
+      <AppShell role={role} tenantId={tenantId}>
+        {children}
+      </AppShell>
     </>
   );
 }
