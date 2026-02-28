@@ -34,7 +34,7 @@ export function LoginForm({ buildLabel }: LoginFormProps) {
                 return;
             }
 
-            window.location.href = '/cockpit';
+            window.location.href = '/home';
         } catch {
             setError('Erro de conexão. Tente novamente.');
         } finally {

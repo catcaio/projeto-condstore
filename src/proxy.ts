@@ -10,6 +10,10 @@ type MiddlewareRole = (typeof ALLOWED_ROLES)[number];
 export const config = {
   matcher: [
     '/cockpit/:path*',
+    '/home/:path*',
+    '/inbox/:path*',
+    '/attribution/:path*',
+    '/settings/:path*',
     '/api/cockpit/:path*',
     '/api/webhook',
     '/api/events',
@@ -71,12 +75,18 @@ function isCockpitApi(pathname: string): boolean {
   return pathname === '/api/cockpit' || pathname.startsWith('/api/cockpit/');
 }
 
-function isCockpitUi(pathname: string): boolean {
-  return pathname === '/cockpit' || pathname.startsWith('/cockpit/');
+function isProtectedUi(pathname: string): boolean {
+  return (
+    pathname === '/cockpit' || pathname.startsWith('/cockpit/') ||
+    pathname === '/home' || pathname.startsWith('/home/') ||
+    pathname === '/inbox' || pathname.startsWith('/inbox/') ||
+    pathname === '/attribution' || pathname.startsWith('/attribution/') ||
+    pathname === '/settings' || pathname.startsWith('/settings/')
+  );
 }
 
 function isCockpitProtectedPath(pathname: string): boolean {
-  return isCockpitApi(pathname) || isCockpitUi(pathname);
+  return isCockpitApi(pathname) || isProtectedUi(pathname);
 }
 
 function getOrCreateRequestId(req: NextRequest): string {
@@ -97,7 +107,7 @@ function unauthorizedResponse(req: NextRequest, requestId: string): NextResponse
 
   const loginUrl = new URL('/login', req.url);
   const nextPath = `${req.nextUrl.pathname}${req.nextUrl.search}`;
-  if (nextPath && nextPath !== '/cockpit') {
+  if (nextPath && !['/cockpit', '/home'].includes(nextPath)) {
     loginUrl.searchParams.set('next', nextPath);
   }
 
@@ -109,7 +119,7 @@ function authSecretMisconfiguredResponse(req: NextRequest, requestId: string): N
     return setRequestIdHeader(NextResponse.json({ error: 'MISCONFIG_AUTH_SECRET' }, { status: 500 }), requestId);
   }
 
-  if (isCockpitUi(req.nextUrl.pathname)) {
+  if (isProtectedUi(req.nextUrl.pathname)) {
     return setRequestIdHeader(
       new NextResponse('MISCONFIG_AUTH_SECRET', {
         status: 500,
