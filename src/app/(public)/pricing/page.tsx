@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { Button } from '@/ui/components/button';
+import { RoiCalculator } from '@/ui/components/roi-calculator';
 
 export const metadata = {
     title: 'Preços',
@@ -10,6 +11,8 @@ export const metadata = {
 export default function PricingPage() {
     return (
         <div className="mx-auto max-w-7xl px-6 lg:px-8 py-20 lg:py-32 flex flex-col items-center">
+
+            <RoiCalculator />
 
             <div className="text-center mb-16">
                 <h1 className="text-[var(--text-hero)] font-bold text-[hsl(var(--ui-text))] leading-tight tracking-tight mb-4">
