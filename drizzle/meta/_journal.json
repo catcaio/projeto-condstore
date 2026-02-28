@@ -162,6 +162,13 @@
       "when": 1772314522801,
       "tag": "0034_supreme_arclight",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "5",
+      "when": 1772315137355,
+      "tag": "0035_loud_baron_zemo",
+      "breakpoints": true
     }
   ]
 }

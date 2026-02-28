@@ -13,6 +13,9 @@ import { tokenUsageEventsRepository } from '../../infra/repositories/token-usage
 import { promptRegistry } from './prompt-registry';
 import { piiRedactor } from './pii-redactor';
 import { injectionGuard } from './injection-guard';
+import { circuitBreaker } from '../../infra/security/circuit-breaker';
+import { structuredLogger } from '../../infra/log/logger';
+
 /** Thrown when a tenant's monthly token budget is fully exhausted. */
 export class BudgetLockedError extends Error {
   constructor(tenantId: string) {
@@ -280,6 +283,18 @@ class ObservedProvider implements AIProvider {
       } as unknown as ChatOutput;
     }
 
+    if (circuitBreaker.isOpen(this.meta.tenantId, 'ai')) {
+      structuredLogger.warn('ai_circuit_open', {
+        tenantId: this.meta.tenantId,
+        eventType: 'ai_circuit_open'
+      });
+      return {
+        error: 'CIRCUIT_OPEN',
+        message: 'Estamos passando por instabilidade, retornaremos em instantes.',
+        text: 'Estamos passando por instabilidade, retornaremos em instantes.'
+      } as unknown as ChatOutput;
+    }
+
     // ── Redis rate-limit (existing) ──────────────────────────────────────────
     const rate = await checkRedisRateLimit({
       tenantId: this.meta.tenantId,
@@ -415,6 +430,9 @@ class ObservedProvider implements AIProvider {
       const modelLatencyMs = Date.now() - providerStartedAt;
       const totalLatencyMs = Date.now() - totalStartedAt;
       const tokenCounts = extractTokenCounts(result.raw);
+
+      circuitBreaker.recordSuccess(this.meta.tenantId, 'ai');
+
       logger.info('ai_chat', {
         tenant_id: this.meta.tenantId,
         provider_type: this.meta.providerType,
@@ -506,6 +524,8 @@ class ObservedProvider implements AIProvider {
 
       return result;
     } catch (error) {
+      await circuitBreaker.recordFailure(this.meta.tenantId, 'ai');
+
       const latencyMs = providerStartedAt > 0 ? (Date.now() - providerStartedAt) : 0;
       logger.error('ai_chat_failed', error as Error, {
         tenant_id: this.meta.tenantId,
