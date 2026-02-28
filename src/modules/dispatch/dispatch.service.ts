@@ -4,7 +4,8 @@ import {
     dispatchDeliveryOrders,
     dispatchDeliveryRoutes,
     dispatchDeliveryRouteStops,
-    dispatchDeliveryEvents
+    dispatchDeliveryEvents,
+    freightSimulationLogs
 } from '../../drizzle/schema';
 import { eq, and, sql, desc, inArray } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -13,13 +14,12 @@ import { logger } from '../../infra/logger';
 export class DispatchService {
 
     /**
-     * Stub for importing orders from a local source.
-     * In MVP, it just creates mock orders if none exist for today to simulate the process.
+     * Import local orders from existing ERP/freight data.
      */
     async importOrders(tenantId: string): Promise<number> {
         const db = await getDb();
 
-        // MVP: Check if any pending orders exist today
+        // 1. Dedup: Check if any pending orders exist today
         const existing = await db.select({ id: dispatchDeliveryOrders.id })
             .from(dispatchDeliveryOrders)
             .where(
@@ -30,76 +30,105 @@ export class DispatchService {
             )
             .limit(1);
 
-        if (existing.length > 0) return 0; // Already have pending orders
+        if (existing.length > 0) return 0; // Already have pending orders to process
 
-        // Create 3 mock orders
-        const mocks = [
-            { customerName: 'João Silva', addressLine: 'Rua das Flores, 123', city: 'São Paulo', zipCode: '01000-000' },
-            { customerName: 'Maria Cunha', addressLine: 'Av Paulista, 1000', city: 'São Paulo', zipCode: '01310-100' },
-            { customerName: 'Carlos Beta', addressLine: 'Rua Augusta, 400', city: 'São Paulo', zipCode: '01305-000' }
-        ];
+        let ordersToCreate: any[] = [];
+
+        // 2. Real Integration path > get recent local simulated freights acting as sales
+        const recentRealLocalTasks = await db.select({
+            id: freightSimulationLogs.id,
+            uf: freightSimulationLogs.uf,
+            cep: freightSimulationLogs.cepHash, // hashed cep, we just use it as ref for local logic
+            createdAt: freightSimulationLogs.createdAt
+        })
+            .from(freightSimulationLogs)
+            .where(
+                and(
+                    eq(freightSimulationLogs.tenantId, tenantId),
+                    sql`${freightSimulationLogs.prazo} <= 2` // Assuming fast transit times means local local scope
+                )
+            )
+            .orderBy(desc(freightSimulationLogs.createdAt))
+            .limit(10);
+
+        if (recentRealLocalTasks.length > 0) {
+            ordersToCreate = recentRealLocalTasks.map(task => ({
+                customerName: `Cliente Log ${task.id.slice(0, 5)}`,
+                addressLine: `Endereço Referência CEPHash: ${task.cep}`,
+                city: 'Capital/Região',
+                state: task.uf,
+                zipCode: '00000-000'
+            }));
+        } else if (process.env.DISPATCH_ALLOW_MOCK_IMPORT === 'true') {
+            // 3. Fallback to mock ONLY if explicit feature flag allowed
+            ordersToCreate = [
+                { customerName: 'João Silva', addressLine: 'Rua das Flores, 123', city: 'São Paulo', state: 'SP', zipCode: '01000-000' },
+                { customerName: 'Maria Cunha', addressLine: 'Av Paulista, 1000', city: 'São Paulo', state: 'SP', zipCode: '01310-100' },
+                { customerName: 'Carlos Beta', addressLine: 'Rua Augusta, 400', city: 'São Paulo', state: 'SP', zipCode: '01305-000' }
+            ];
+        } else {
+            logger.info('No recent local tasks found to import and mock is disabled.', { tenantId });
+            return 0;
+        }
 
         let count = 0;
-        for (const m of mocks) {
+        for (const m of ordersToCreate) {
             const orderId = crypto.randomUUID();
+            const tokenPlain = crypto.randomBytes(32).toString('hex');
+            const tokenHash = crypto.createHash('sha256').update(tokenPlain).digest('hex');
+            const expiry = new Date();
+            expiry.setDate(expiry.getDate() + 7); // Token valid for 7 days
+
             await db.insert(dispatchDeliveryOrders).values({
                 id: orderId,
                 tenantId,
-                orderRef: `MOCK-${Date.now()}-${count}`,
+                orderRef: `REF-${Date.now()}-${count}`,
                 customerName: m.customerName,
                 addressLine: m.addressLine,
                 city: m.city,
-                trackingToken: crypto.randomBytes(16).toString('hex'),
+                state: m.state,
+                zipCode: m.zipCode,
+                trackingTokenHash: tokenHash,
+                trackingTokenExpiresAt: expiry,
                 status: 'pending'
             });
             count++;
 
-            // Log creation event
             await db.insert(dispatchDeliveryEvents).values({
                 id: crypto.randomUUID(),
                 tenantId,
                 orderId,
                 status: 'created',
-                description: 'Imported local mock order'
+                description: 'Imported local delivery request'
             });
         }
         return count;
     }
 
     /**
-     * Generate routes (MVP: Group by city/neighborhood generic, assign all pending to one active tech)
+     * Generate routes (Aggregates available tasks for technicians)
      */
     async generateRoutes(tenantId: string, targetDate: string): Promise<string[]> {
         const db = await getDb();
 
-        // Get active technicians
+        // MVP: Only route if technicians exist. We DO NOT auto-create anymore explicitly per user rule 6.
         const techs = await db.select()
             .from(dispatchTechnicians)
             .where(and(eq(dispatchTechnicians.tenantId, tenantId), eq(dispatchTechnicians.status, 'active')));
 
         if (techs.length === 0) {
-            // MVP: auto create a technician if none exist
-            const newTechId = crypto.randomUUID();
-            await db.insert(dispatchTechnicians).values({
-                id: newTechId,
-                tenantId,
-                name: 'Técnico Parceiro Padrão',
-                phone: '11999999999'
-            });
-            techs.push({
-                id: newTechId, tenantId, name: 'Técnico Parceiro Padrão', phone: '11999999999', status: 'active', createdAt: new Date(), updatedAt: new Date()
-            });
+            logger.warn('No active technicians found for tenant. Cannot generate routes.', { tenantId });
+            return [];
         }
 
-        // Get pending orders
         const pending = await db.select()
             .from(dispatchDeliveryOrders)
             .where(and(eq(dispatchDeliveryOrders.tenantId, tenantId), eq(dispatchDeliveryOrders.status, 'pending')));
 
-        if (pending.length === 0) return []; // Nothing to route
+        if (pending.length === 0) return [];
 
         const generatedRouteIds: string[] = [];
-        const techId = techs[0].id; // MVP: Assign all to first tech
+        const techId = techs[0].id;
 
         // Create Route
         const routeId = crypto.randomUUID();
@@ -107,14 +136,13 @@ export class DispatchService {
             id: routeId,
             tenantId,
             technicianId: techId,
-            date: new Date(targetDate), // Requires YYYY-MM-DD
+            date: new Date(targetDate), // Requires YYYY-MM-DD format
             status: 'pending'
         });
 
-        // Add Stops
+        // Loop stops
         let seq = 1;
         for (const order of pending) {
-            // stop
             await db.insert(dispatchDeliveryRouteStops).values({
                 id: crypto.randomUUID(),
                 tenantId,
@@ -123,12 +151,10 @@ export class DispatchService {
                 sequenceIndex: seq++
             });
 
-            // update order
             await db.update(dispatchDeliveryOrders)
                 .set({ status: 'routed' })
                 .where(eq(dispatchDeliveryOrders.id, order.id));
 
-            // event log
             await db.insert(dispatchDeliveryEvents).values({
                 id: crypto.randomUUID(),
                 tenantId,
@@ -159,7 +185,7 @@ export class DispatchService {
 
         await db.update(dispatchDeliveryOrders)
             .set({ status: newOrderStatus })
-            .where(eq(dispatchDeliveryOrders.id, orderId));
+            .where(and(eq(dispatchDeliveryOrders.tenantId, tenantId), eq(dispatchDeliveryOrders.id, orderId)));
 
         await db.insert(dispatchDeliveryEvents).values({
             id: crypto.randomUUID(),
@@ -169,7 +195,6 @@ export class DispatchService {
             description: description || `Status updated to ${newOrderStatus} by technician`
         });
 
-        // Check if route is fully completed
         const remaining = await db.select({ id: dispatchDeliveryRouteStops.id })
             .from(dispatchDeliveryRouteStops)
             .where(and(eq(dispatchDeliveryRouteStops.routeId, routeId), eq(dispatchDeliveryRouteStops.status, 'pending')));
@@ -177,12 +202,13 @@ export class DispatchService {
         if (remaining.length === 0) {
             await db.update(dispatchDeliveryRoutes)
                 .set({ status: 'completed' })
-                .where(eq(dispatchDeliveryRoutes.id, routeId));
+                .where(and(eq(dispatchDeliveryRoutes.tenantId, tenantId), eq(dispatchDeliveryRoutes.id, routeId)));
         } else {
-            // If it's the first step being marked, mark route as in_progress
+            // First step updates to in_progress
             await db.update(dispatchDeliveryRoutes)
                 .set({ status: 'in_progress' })
                 .where(and(
+                    eq(dispatchDeliveryRoutes.tenantId, tenantId),
                     eq(dispatchDeliveryRoutes.id, routeId),
                     eq(dispatchDeliveryRoutes.status, 'pending')
                 ));

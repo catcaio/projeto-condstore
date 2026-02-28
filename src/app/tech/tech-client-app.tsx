@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Map, MapPin, Check, X, Navigation } from 'lucide-react';
+import { Map, MapPin, Check, X } from 'lucide-react';
 
 interface StopItem {
     stopId: string;
@@ -23,9 +23,6 @@ export default function TechClientApp({ routeId, tenantId, stops: initialStops }
     const handleUpdate = async (stopId: string, orderId: string, status: 'completed' | 'failed') => {
         setLoadingMap(prev => ({ ...prev, [stopId]: true }));
         try {
-            // Need to pass simulated auth headers if we strictly relied on MVP, but Next.js fetches from client might pass cookies implicitly. 
-            // In a PWA, we usually attach a Bearer Token. MVP: Send via body if needed, but our route expects headers. 
-            // We'll append tenant header just for MVP
             const headers: any = {
                 'Content-Type': 'application/json',
                 'x-auth-tenant-id': tenantId,
@@ -51,13 +48,37 @@ export default function TechClientApp({ routeId, tenantId, stops: initialStops }
         }
     };
 
-    const openMaps = (address: string, city: string | null) => {
+    const openMapsDirect = (address: string, city: string | null) => {
         const query = encodeURIComponent(`${address}, ${city || ''}`);
         window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
     };
 
+    const openRouteMaps = () => {
+        const pendingStops = stops.filter(s => s.status === 'pending').sort((a, b) => a.sequence - b.sequence);
+        if (pendingStops.length === 0) return;
+
+        // Build directions URL
+        const origin = encodeURIComponent(process.env.NEXT_PUBLIC_DISPATCH_ORIGIN || 'Centro de Distribuição');
+        const destination = encodeURIComponent(`${pendingStops[pendingStops.length - 1].address}, ${pendingStops[pendingStops.length - 1].city || ''}`);
+
+        let waypoints = '';
+        if (pendingStops.length > 1) {
+            const wps = pendingStops.slice(0, -1).map(s => encodeURIComponent(`${s.address}, ${s.city || ''}`)).join('|');
+            waypoints = `&waypoints=${wps}`;
+        }
+
+        window.open(`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints}`, '_blank');
+    };
+
     return (
         <div className="space-y-4 pb-20">
+            <button
+                onClick={openRouteMaps}
+                className="w-full flex items-center justify-center gap-2 bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg sticky top-0 z-30"
+            >
+                <Map className="w-5 h-5" /> Navegar Rota Completa (Maps)
+            </button>
+
             {stops.map(s => {
                 const isCompleted = s.status === 'completed';
                 const isFailed = s.status === 'failed';
@@ -84,10 +105,10 @@ export default function TechClientApp({ routeId, tenantId, stops: initialStops }
                         {isPending ? (
                             <div className="flex flex-col gap-2 relative z-20">
                                 <button
-                                    onClick={() => openMaps(s.address, s.city)}
-                                    className="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-700 py-3 rounded-lg font-semibold hover:bg-blue-100 transition-colors"
+                                    onClick={() => openMapsDirect(s.address, s.city)}
+                                    className="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-700 py-3 rounded-lg font-semibold border border-blue-200 hover:bg-blue-100 transition-colors"
                                 >
-                                    <Map className="w-5 h-5" /> Navegar Maps
+                                    <MapPin className="w-5 h-5" /> Destino Simples (Maps)
                                 </button>
 
                                 <div className="grid grid-cols-2 gap-2 mt-2">

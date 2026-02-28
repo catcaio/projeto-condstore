@@ -1,28 +1,61 @@
 import { notFound } from 'next/navigation';
 import { getDb } from '../../../../infra/db';
 import { dispatchDeliveryOrders, dispatchDeliveryEvents } from '../../../../drizzle/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { MapPin, Package, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/ui/components';
+import crypto from 'crypto';
 
 export default async function TrackingPage(props: { params: Promise<{ token: string }> }) {
     const params = await props.params;
     const db = await getDb();
 
-    // Find Order by token
-    const [order] = await db.select()
+    // 1. Hash the public token to find the record securely
+    const tokenHash = crypto.createHash('sha256').update(params.token).digest('hex');
+
+    // 2. Find Order by Hash safely. (Explicitly select ONLY what is needed)
+    const [order] = await db.select({
+        id: dispatchDeliveryOrders.id,
+        tenantId: dispatchDeliveryOrders.tenantId, // needed for fetching events safely
+        customerName: dispatchDeliveryOrders.customerName,
+        city: dispatchDeliveryOrders.city,
+        state: dispatchDeliveryOrders.state,
+        status: dispatchDeliveryOrders.status,
+        expiresAt: dispatchDeliveryOrders.trackingTokenExpiresAt
+    })
         .from(dispatchDeliveryOrders)
-        .where(eq(dispatchDeliveryOrders.trackingToken, params.token))
+        .where(eq(dispatchDeliveryOrders.trackingTokenHash, tokenHash))
         .limit(1);
 
     if (!order) {
         notFound();
     }
 
-    // Find Events
-    const events = await db.select()
+    // 3. Expiry check
+    if (new Date() > new Date(order.expiresAt)) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+                <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
+                <h1 className="text-xl font-bold text-gray-900 mb-2">Link Expirado</h1>
+                <p className="text-gray-500">Este link de rastreamento perdeu a validade.</p>
+            </div>
+        );
+    }
+
+    // 4. Find Events securely binding tenant
+    const events = await db.select({
+        id: dispatchDeliveryEvents.id,
+        status: dispatchDeliveryEvents.status,
+        description: dispatchDeliveryEvents.description,
+        createdAt: dispatchDeliveryEvents.createdAt
+    })
         .from(dispatchDeliveryEvents)
-        .where(eq(dispatchDeliveryEvents.orderId, order.id))
+        .where(
+            and(
+                eq(dispatchDeliveryEvents.orderId, order.id),
+                eq(dispatchDeliveryEvents.tenantId, order.tenantId) // Tenant boundary defense
+            )
+        )
         .orderBy(desc(dispatchDeliveryEvents.createdAt));
 
     const getStatusIcon = (status: string) => {
@@ -60,13 +93,17 @@ export default async function TrackingPage(props: { params: Promise<{ token: str
         'failed': 'Falhou / Retornado'
     };
 
+    // Note: NEVER render raw `order.id` globally.
+    // Ensure display name is masked partially or at least not showing PII
+    const safeName = order.customerName.split(' ')[0] + ' ' + (order.customerName.split(' ')[1] ? order.customerName.split(' ')[1][0] + '.' : '');
+
     return (
         <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center font-sans antialiased">
             <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
                 <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Rastreio de Pedido</h1>
-                    <p className="text-gray-500 text-sm">Destinatário: {order.customerName}</p>
-                    <p className="text-gray-500 text-sm">Ref: {order.orderRef}</p>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Rastreio Local</h1>
+                    <p className="text-gray-500 text-sm">Destinatário: {safeName}</p>
+                    <p className="text-gray-500 text-sm">Região: {order.city} - {order.state}</p>
                     <div className="mt-4">
                         <Badge variant={getBadgeVariant(order.status) as any}>{StatusNameMap[order.status] || order.status}</Badge>
                     </div>

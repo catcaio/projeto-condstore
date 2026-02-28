@@ -9,15 +9,15 @@ import { eq } from 'drizzle-orm';
 
 /**
  * Endpoint para ser chamado por um Scheduler/Cron externo às 08:00
- * Passa o Authorization: Bearer <ADMIN_SECRET>
+ * Passa o Header: x-internal-token: <INTERNAL_TOKEN>
  */
 export async function POST(request: NextRequest) {
     const requestId = makeRequestId(request);
 
-    // Internal API Auth Check (simulated for MVP)
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.ADMIN_SECRET || 'dev-secret-123'}`) {
-        return errorResponse("UNAUTHORIZED" as any, 401, requestId, 'Invalid secret');
+    // Internal API Auth Check
+    const token = request.headers.get('x-internal-token');
+    if (!token || token !== process.env.INTERNAL_TOKEN) {
+        return errorResponse("UNAUTHORIZED" as any, 401, requestId, 'Invalid internal token');
     }
 
     const url = new URL(request.url);

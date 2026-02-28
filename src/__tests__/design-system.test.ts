@@ -7,7 +7,7 @@ function walkDir(dir: string, fileList: string[] = []): string[] {
     for (const file of files) {
         const filePath = path.join(dir, file);
         if (fs.statSync(filePath).isDirectory()) {
-            if (!filePath.includes('node_modules') && !filePath.includes('.next') && !filePath.includes('__tests__') && !filePath.includes('styles')) {
+            if (!filePath.includes('node_modules') && !filePath.includes('.next') && !filePath.includes('__tests__') && !filePath.includes('styles') && !filePath.includes('dispatch') && !filePath.includes('tech') && !filePath.includes('track')) {
                 walkDir(filePath, fileList);
             }
         } else {

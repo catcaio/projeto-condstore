@@ -37,7 +37,6 @@ export default async function DispatchPage() {
         status: dispatchDeliveryOrders.status,
         name: dispatchDeliveryOrders.customerName,
         city: dispatchDeliveryOrders.city,
-        token: dispatchDeliveryOrders.trackingToken
     })
         .from(dispatchDeliveryOrders)
         .where(eq(dispatchDeliveryOrders.tenantId, tenantId));
@@ -51,7 +50,6 @@ export default async function DispatchPage() {
         failed: orders.filter(o => o.status === 'failed')
     };
 
-    // 3. Fetch Active routes
     const routes = await db.select({
         id: dispatchDeliveryRoutes.id,
         status: dispatchDeliveryRoutes.status,
@@ -59,6 +57,26 @@ export default async function DispatchPage() {
     })
         .from(dispatchDeliveryRoutes)
         .where(eq(dispatchDeliveryRoutes.tenantId, tenantId));
+
+    // 4. Check for setup
+    const techs = await db.select({ id: dispatchTechnicians.id })
+        .from(dispatchTechnicians)
+        .where(eq(dispatchTechnicians.tenantId, tenantId))
+        .limit(1);
+
+    if (techs.length === 0) {
+        return (
+            <SettingsPage title="DISPATCH" description="Motor visual de roteirização e entregas logísticas.">
+                <div className="flex flex-col items-center justify-center py-20 bg-[hsl(var(--ui-surface))] rounded-xl border border-[hsl(var(--ui-border))]">
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-500 bg-clip-text text-transparent mb-2">SETUP INCOMPLETO</h2>
+                    <p className="text-sm text-[hsl(var(--ui-text-muted))] max-w-sm text-center mb-6">Você precisa ter ao menos um Técnico Parceiro cadastrado para poder gerar rotas locais e despachar os pedidos.</p>
+                    <a href="/cockpit/dispatch/technicians" className="bg-[hsl(var(--ui-primary))] text-[hsl(var(--ui-primary-foreground))] font-semibold rounded-lg px-6 py-3 shadow hover:opacity-90 transition-opacity">
+                        CADASTRAR TÉCNICOS
+                    </a>
+                </div>
+            </SettingsPage>
+        );
+    }
 
     return (
         <SettingsPage

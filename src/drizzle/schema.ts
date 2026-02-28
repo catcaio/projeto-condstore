@@ -787,7 +787,9 @@ export const dispatchTechnicians = mysqlTable('dispatch_technicians', {
     status: mysqlEnum('status', ['active', 'inactive']).notNull().default('active'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
-});
+}, (table) => ({
+    tenantIdStatusIdx: index('idx_dispatch_techs_tenant_status').on(table.tenantId, table.status),
+}));
 
 export const dispatchDeliveryOrders = mysqlTable('dispatch_delivery_orders', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
@@ -800,12 +802,14 @@ export const dispatchDeliveryOrders = mysqlTable('dispatch_delivery_orders', {
     city: varchar('city', { length: 255 }),
     state: varchar('state', { length: 2 }),
     status: mysqlEnum('status', ['pending', 'routed', 'in_transit', 'delivered', 'failed']).notNull().default('pending'),
-    trackingToken: varchar('tracking_token', { length: 64 }).notNull(),
+    trackingTokenHash: varchar('tracking_token_hash', { length: 64 }).notNull(),
+    trackingTokenExpiresAt: timestamp('tracking_token_expires_at').notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 }, (table) => ({
     tenantIdStatusIdx: index('idx_dispatch_orders_tenant_status').on(table.tenantId, table.status),
-    trackingTokenIdx: index('idx_dispatch_orders_tracking_token').on(table.trackingToken),
+    tenantIdCreatedIdx: index('idx_dispatch_orders_tenant_created').on(table.tenantId, table.createdAt),
+    trackingTokenIdx: index('idx_dispatch_orders_tracking_token').on(table.trackingTokenHash),
 }));
 
 export const dispatchDeliveryRoutes = mysqlTable('dispatch_delivery_routes', {
@@ -816,7 +820,9 @@ export const dispatchDeliveryRoutes = mysqlTable('dispatch_delivery_routes', {
     status: mysqlEnum('status', ['draft', 'pending', 'in_progress', 'completed']).notNull().default('draft'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
-});
+}, (table) => ({
+    tenantIdDateIdx: index('idx_dispatch_routes_tenant_date').on(table.tenantId, table.date, table.status),
+}));
 
 export const dispatchDeliveryRouteStops = mysqlTable('dispatch_delivery_route_stops', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
@@ -827,7 +833,9 @@ export const dispatchDeliveryRouteStops = mysqlTable('dispatch_delivery_route_st
     status: mysqlEnum('status', ['pending', 'completed', 'failed']).notNull().default('pending'),
     completedAt: timestamp('completed_at'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
-});
+}, (table) => ({
+    tenantIdRouteIdx: index('idx_dispatch_stops_tenant_route').on(table.tenantId, table.routeId),
+}));
 
 export const dispatchDeliveryEvents = mysqlTable('dispatch_delivery_events', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
@@ -837,6 +845,6 @@ export const dispatchDeliveryEvents = mysqlTable('dispatch_delivery_events', {
     description: varchar('description', { length: 255 }),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
-    orderIdIdx: index('idx_dispatch_events_order_id').on(table.orderId),
+    tenantIdOrderIdIdx: index('idx_dispatch_events_tenant_order').on(table.tenantId, table.orderId, table.createdAt),
 }));
 

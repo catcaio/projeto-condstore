@@ -4,17 +4,18 @@ import { errorResponse } from '../../../../infra/http/error-response';
 import { makeRequestId } from '../../../../infra/http/request-trace';
 import { logger } from '../../../../infra/logger';
 
+import { requireSessionTenantMatch } from '../../../../infra/auth/tenant-route-guard';
+
 export async function POST(request: NextRequest) {
     const requestId = makeRequestId(request);
 
-    // In MVP, PWA will send authorization tokens which our middleware converts 
-    // to x-auth headers or we validate JWT manually. Assuming middleware works:
-    const tenantId = request.headers.get('x-auth-tenant-id');
-    const role = request.headers.get('x-auth-role');
+    const headerTenant = request.headers.get('x-auth-tenant-id');
+    if (!headerTenant) return errorResponse("UNAUTHORIZED" as any, 401, requestId, 'Missing tenant header');
 
-    if (!tenantId || !role) {
-        return errorResponse("UNAUTHORIZED" as any, 401, requestId, 'Missing context');
-    }
+    const guard = await requireSessionTenantMatch(request, headerTenant);
+    if (!guard.ok) return guard.response;
+
+    const tenantId = guard.tenantId;
 
     try {
         const body = await request.json();

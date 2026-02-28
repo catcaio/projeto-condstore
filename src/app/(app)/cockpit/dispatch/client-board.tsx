@@ -10,7 +10,6 @@ interface OrderItem {
     status: string;
     name: string;
     city: string | null;
-    token: string;
 }
 
 interface dispatchColumns {
@@ -59,10 +58,10 @@ export default function DispatchBoardClient({ initialData, routes }: { initialDa
         }
     };
 
-    const copyTracking = (token: string) => {
-        const link = `${window.location.origin}/t/track/${token}`;
+    const copyRouteLink = () => {
+        const link = `${window.location.origin}/tech`;
         navigator.clipboard.writeText(link);
-        alert('Link copiado. URL do Motorista: /tech');
+        alert('Link enviado ao clipboard. O técnico deve acessar com o device.');
     };
 
     const renderColumn = (title: string, items: OrderItem[], color: string) => (
@@ -76,9 +75,6 @@ export default function DispatchBoardClient({ initialData, routes }: { initialDa
                     <div key={o.id} className="p-3 bg-white rounded shadow-sm border border-gray-100 flex flex-col gap-2 hover:border-gray-300 transition-colors">
                         <div className="flex justify-between items-center">
                             <span className="font-semibold text-xs py-1 px-2 bg-gray-100 rounded text-gray-700">{o.ref}</span>
-                            <button onClick={() => copyTracking(o.token)} className="text-gray-400 hover:text-blue-500" title="Link Cliente / Motorista">
-                                <Copy className="w-3 h-3" />
-                            </button>
                         </div>
                         <p className="text-sm font-medium text-gray-900 line-clamp-1">{o.name}</p>
                         <p className="text-xs text-gray-500 flex items-center gap-1"><Route className="w-3 h-3" /> {o.city}</p>
@@ -106,6 +102,13 @@ export default function DispatchBoardClient({ initialData, routes }: { initialDa
                         className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--ui-primary))] text-white rounded shadow-sm hover:opacity-90 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Route className="w-4 h-4" />} Reterizar Dia (Auto)
+                    </button>
+
+                    <button
+                        onClick={copyRouteLink}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded shadow-sm hover:bg-blue-100 transition-colors text-sm font-medium"
+                    >
+                        <Copy className="w-4 h-4" /> Copiar Link Motorista (/tech)
                     </button>
                 </div>
 
