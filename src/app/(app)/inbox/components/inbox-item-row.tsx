@@ -3,6 +3,7 @@ import { Badge } from '@/ui/components';
 import { MessageSquare, Webhook, Zap, Activity } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import Link from 'next/link';
 import { type InboxItem } from '../queries';
 
 function getIconForKind(kind: string) {
@@ -44,7 +45,16 @@ export function InboxItemRow({ item }: { item: InboxItem }) {
                     {item.rawRef && <span className="font-mono text-[10px] text-[hsl(var(--ui-text-subtle))]">{item.rawRef}</span>}
                 </div>
             }
-            value={<span className="text-xs text-[hsl(var(--ui-text-muted))] whitespace-nowrap">{timeAgo}</span>}
+            value={
+                <div className="flex flex-col items-end gap-1">
+                    <span className="text-xs text-[hsl(var(--ui-text-muted))] whitespace-nowrap">{timeAgo}</span>
+                    <Link href={`/inbox/conversations/${item.rawRef || item.id}`}>
+                        <span className="text-xs font-semibold text-[hsl(var(--ui-accent-blue))] hover:underline cursor-pointer">
+                            Ver Thread
+                        </span>
+                    </Link>
+                </div>
+            }
         />
     );
 }
