@@ -6,3 +6,5 @@ export * from './nav-item';
 export * from './text-field';
 export * from './data-table';
 export * from './filters';
+export * from './icon';
+export * from './progress';

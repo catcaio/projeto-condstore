@@ -52,12 +52,12 @@ export default function CockpitPage() {
                         <ListGroup>
                             {[1, 2, 3, 4, 5].map((i) => (
                                 <div key={i}>
-                                    <ListItem leading={<span className="h-2 w-2 rounded-full bg-[hsl(var(--cockpit-accent))]" />} trailing={<span className="text-xs">{i * 5} min</span>}>
+                                    <ListItem leading={<span className="h-2 w-2 rounded-full bg-[hsl(var(--ui-accent-blue))]" />} trailing={<span className="text-xs">{i * 5} min</span>}>
                                         <div className="min-w-0">
-                                            <p className="truncate text-sm font-medium text-[hsl(var(--cockpit-text))]">
+                                            <p className="truncate text-sm font-medium text-[hsl(var(--ui-text))]">
                                                 Novo pedido via WhatsApp
                                             </p>
-                                            <p className="truncate text-xs text-[hsl(var(--cockpit-text-muted))]">
+                                            <p className="truncate text-xs text-[hsl(var(--ui-text-muted))]">
                                                 Tenant: Lojacond • Ref: #ORD-{1000 + i}
                                             </p>
                                         </div>
