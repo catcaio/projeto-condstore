@@ -1,6 +1,6 @@
 import { SettingsSection, SettingsRow } from '@/ui/settings';
 import { Badge } from '@/ui/components';
-import { Home, Settings, ShieldAlert, Inbox, Target, Activity } from 'lucide-react';
+import { Home, Settings, ShieldAlert, Inbox, Target, Activity, Package } from 'lucide-react';
 import { type Role, isSuperAdmin } from '@/ui/auth/entitlements-logic';
 
 interface AppNavProps {
@@ -38,6 +38,11 @@ export function AppNav({ role, tenantId }: AppNavProps) {
                     icon={<Target className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
                     label="Origem & Conversão"
                     href={attrHref}
+                />
+                <SettingsRow
+                    icon={<Package className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Fretes"
+                    href={isSuper && tenantId ? { pathname: '/freight/simulations', query: { tenantId } } : "/freight/simulations"}
                 />
                 <SettingsRow
                     icon={<Settings className="h-5 w-5" />}
