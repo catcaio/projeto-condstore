@@ -7,9 +7,15 @@ import { logger } from '../../infra/logger';
 
 export interface RetrievedChunk {
     id: string;
+    docId: string;
+    versionId: string;
     content: string;
     documentTitle: string;
     pageNumber: number | null;
+    orderIndex: number;
+    charStart: number;
+    charEnd: number;
+    isSensitive: boolean;
     score: number;
 }
 
@@ -43,12 +49,14 @@ export class RetrievalService {
         tenantId,
         query,
         topK = 5,
-        threshold = 0.78
+        threshold = 0.78,
+        includeSensitive = false,
     }: {
         tenantId: string;
         query: string;
         topK?: number;
         threshold?: number;
+        includeSensitive?: boolean;
     }): Promise<RetrievalResult> {
         if (!query.trim()) return { chunks: [], confidence: 0 };
 
@@ -62,22 +70,32 @@ export class RetrievalService {
             const db = await getDb();
 
             // 2. Fetch all valid chunks from this tenant (MVP manual retrieval)
+            let queryFilter = and(
+                eq(tenantDocumentChunks.tenantId, tenantId),
+                eq(tenantDocumentVersions.status, 'ready_indexed')
+            );
+
+            if (!includeSensitive) {
+                queryFilter = and(queryFilter, eq(tenantDocuments.isSensitive, false));
+            }
+
             const allChunks = await db.select({
                 id: tenantDocumentChunks.id,
+                docId: tenantDocuments.id,
+                versionId: tenantDocumentVersions.id,
                 content: tenantDocumentChunks.content,
                 embedding: tenantDocumentChunks.embedding,
                 documentTitle: tenantDocuments.title,
                 pageNumber: tenantDocumentChunks.pageNumber,
+                orderIndex: tenantDocumentChunks.orderIndex,
+                charStart: tenantDocumentChunks.charStart,
+                charEnd: tenantDocumentChunks.charEnd,
+                isSensitive: tenantDocuments.isSensitive,
             })
                 .from(tenantDocumentChunks)
                 .innerJoin(tenantDocumentVersions, eq(tenantDocumentVersions.id, tenantDocumentChunks.versionId))
                 .innerJoin(tenantDocuments, eq(tenantDocuments.id, tenantDocumentVersions.documentId))
-                .where(
-                    and(
-                        eq(tenantDocumentChunks.tenantId, tenantId),
-                        eq(tenantDocumentVersions.status, 'ready_indexed')
-                    )
-                );
+                .where(queryFilter);
 
             // 3. Compute scores and filter
             const scoredChunks: RetrievedChunk[] = allChunks
@@ -89,9 +107,15 @@ export class RetrievalService {
                     }
                     return {
                         id: chunk.id,
+                        docId: chunk.docId,
+                        versionId: chunk.versionId,
                         content: chunk.content,
                         documentTitle: chunk.documentTitle,
                         pageNumber: chunk.pageNumber,
+                        orderIndex: chunk.orderIndex,
+                        charStart: chunk.charStart,
+                        charEnd: chunk.charEnd,
+                        isSensitive: chunk.isSensitive,
                         score,
                     };
                 })

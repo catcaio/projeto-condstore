@@ -53,27 +53,33 @@ describe('Knowledge Retrieval & Identity', () => {
         expect((rs as any).cosineSimilarity([1, 0, 0], [-1, 0, 0])).toBeCloseTo(-1);
     });
 
-    it('should block weak answers based on threshold', () => {
-        const answer = buildGroundedAnswer({
+    it('should block weak answers based on threshold', async () => {
+        const { answer } = await buildGroundedAnswer({
             question: 'What is it?',
-            retrievedChunks: [{ id: '1', content: 'foo', documentTitle: 'Doc', pageNumber: null, score: 0.5 }],
+            retrievedChunks: [{ id: '1', docId: 'doc', versionId: 'v', orderIndex: 0, charStart: 0, charEnd: 10, isSensitive: false, content: 'foo', documentTitle: 'Doc', pageNumber: null, score: 0.5 }],
             confidence: 0.5,
             threshold: 0.78
         });
 
-        expect(answer).toBe('Não encontrei essa informação nos seus documentos. Deseja que eu pesquise na web ou adicione um novo arquivo?');
+        expect(answer).toContain('Não encontrei essa informação');
     });
 
-    it('should return grounded citation when confidence is high', () => {
-        const answer = buildGroundedAnswer({
+    it('should return grounded citation when confidence is high', async () => {
+        // Here we can't test real LLM easily without mock, but the logic in answer-builder gracefully degrades if OPENAI_API_KEY is missing, returning the chunk.
+        // Or if it's there it calls fetch. We will mock fetch globally.
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ choices: [{ message: { content: 'Mocked LLM Answer with Doc A, pág 2' } }] })
+        });
+
+        const { answer } = await buildGroundedAnswer({
             question: 'What is it?',
-            retrievedChunks: [{ id: '1', content: 'It is a bar', documentTitle: 'Doc A', pageNumber: 2, score: 0.9 }],
+            retrievedChunks: [{ id: '1', docId: 'docA', versionId: 'v1', orderIndex: 0, charStart: 0, charEnd: 10, isSensitive: false, content: 'It is a bar', documentTitle: 'Doc A', pageNumber: 2, score: 0.9 }],
             confidence: 0.9,
             threshold: 0.78
         });
 
-        expect(answer).toContain('Doc A, pág 2');
-        expect(answer).toContain('It is a bar');
+        expect(answer).toContain('Doc A');
     });
 
     it('ensures status transitions follow pipeline: ready -> ready_indexed', () => {

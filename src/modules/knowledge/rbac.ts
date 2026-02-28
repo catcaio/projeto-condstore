@@ -10,7 +10,8 @@ export type KnowledgePermission =
     | 'knowledge:reprocess'
     | 'knowledge:delete'
     | 'knowledge:mark_sensitive'
-    | 'knowledge:audit_read';
+    | 'knowledge:audit_read'
+    | 'knowledge:ask';
 
 // Map roles to permissions
 const rolePermissions: Record<Role, KnowledgePermission[]> = {
@@ -22,19 +23,23 @@ const rolePermissions: Record<Role, KnowledgePermission[]> = {
         'knowledge:delete',
         'knowledge:mark_sensitive',
         'knowledge:audit_read',
+        'knowledge:ask',
     ],
     manager: [
         'knowledge:read',
         'knowledge:upload',
         'knowledge:manage',
         'knowledge:reprocess',
+        'knowledge:ask',
     ], // no delete, maybe no mark_sensitive
     operator: [
         'knowledge:read',
         'knowledge:upload',
+        'knowledge:ask',
     ], // equivalent to requested 'agent' role
     viewer: [
         'knowledge:read',
+        'knowledge:ask',
     ],
 };
 

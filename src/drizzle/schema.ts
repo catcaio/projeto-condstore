@@ -742,6 +742,8 @@ export const tenantDocumentChunks = mysqlTable('tenant_document_chunks', {
     pageNumber: int('page_number'),
     piiRiskScore: decimal('pii_risk_score', { precision: 5, scale: 2 }).default('0').notNull(),
     orderIndex: int('order_index').notNull(),
+    charStart: int('char_start').notNull().default(0),
+    charEnd: int('char_end').notNull().default(0),
     embedding: json('embedding'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
@@ -749,3 +751,19 @@ export const tenantDocumentChunks = mysqlTable('tenant_document_chunks', {
 }));
 export type TenantDocumentChunkRecord = typeof tenantDocumentChunks.$inferSelect;
 export type NewTenantDocumentChunkRecord = typeof tenantDocumentChunks.$inferInsert;
+
+export const tenantKnowledgeQueries = mysqlTable('tenant_knowledge_queries', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    userId: varchar('user_id', { length: 36 }).notNull(),
+    questionHash: varchar('question_hash', { length: 64 }).notNull(),
+    questionPreview: varchar('question_preview', { length: 200 }).notNull(),
+    confidence: decimal('confidence', { precision: 5, scale: 4 }).notNull(),
+    citationsJson: json('citations_json'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    requestId: varchar('request_id', { length: 128 }),
+}, (table) => ({
+    tenantIdCreatedAtIdx: index('idx_tenant_knowledge_queries_tenant_created').on(table.tenantId, table.createdAt),
+}));
+export type TenantKnowledgeQueryRecord = typeof tenantKnowledgeQueries.$inferSelect;
+export type NewTenantKnowledgeQueryRecord = typeof tenantKnowledgeQueries.$inferInsert;

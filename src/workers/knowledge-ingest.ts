@@ -106,6 +106,8 @@ async function processMessage(messageId: string, fields: string[]) {
                     versionId,
                     content: c.content,
                     orderIndex: c.orderIndex,
+                    charStart: c.charStart || 0,
+                    charEnd: c.charEnd || 0,
                     pageNumber: null, // unsupported natively without PDF.js
                 }))
             );
