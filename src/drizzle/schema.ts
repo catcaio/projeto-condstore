@@ -664,3 +664,73 @@ export const stripeEvents = mysqlTable('stripe_events', {
 
 export type StripeEventRecord = typeof stripeEvents.$inferSelect;
 export type NewStripeEventRecord = typeof stripeEvents.$inferInsert;
+
+// --- Frank Knowledge Inbox MVP ---
+
+export const tenantCollections = mysqlTable('tenant_collections', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+export type TenantCollectionRecord = typeof tenantCollections.$inferSelect;
+export type NewTenantCollectionRecord = typeof tenantCollections.$inferInsert;
+
+export const tenantDocuments = mysqlTable('tenant_documents', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    createdBy: varchar('created_by', { length: 36 }).notNull(), // user ID sub
+    collectionId: varchar('collection_id', { length: 36 }),
+    isSensitive: boolean('is_sensitive').default(false).notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    tenantIdCreatedIdx: index('idx_tenant_documents_tenant_created').on(table.tenantId, table.createdAt),
+}));
+export type TenantDocumentRecord = typeof tenantDocuments.$inferSelect;
+export type NewTenantDocumentRecord = typeof tenantDocuments.$inferInsert;
+
+export const tenantDocumentVersions = mysqlTable('tenant_document_versions', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    documentId: varchar('document_id', { length: 36 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    objectKey: varchar('object_key', { length: 512 }).notNull(),
+    mimeType: varchar('mime_type', { length: 128 }).notNull(),
+    sizeBytes: int('size_bytes').notNull(),
+    sha256: varchar('sha256', { length: 64 }).notNull(),
+    status: mysqlEnum('status', ['uploaded', 'queued', 'processing', 'ready', 'failed']).notNull().default('uploaded'),
+    extractedTextPreview: text('extracted_text_preview'),
+    extractedMetaJson: json('extracted_meta_json'),
+    errorCode: varchar('error_code', { length: 128 }),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    tenantIdSha256Idx: uniqueIndex('uq_tenant_docs_tenant_sha256').on(table.tenantId, table.sha256),
+    tenantIdStatusIdx: index('idx_tenant_docs_tenant_status').on(table.tenantId, table.status),
+}));
+export type TenantDocumentVersionRecord = typeof tenantDocumentVersions.$inferSelect;
+export type NewTenantDocumentVersionRecord = typeof tenantDocumentVersions.$inferInsert;
+
+export const tenantDocumentTags = mysqlTable('tenant_document_tags', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    documentId: varchar('document_id', { length: 36 }).notNull(),
+    tag: varchar('tag', { length: 128 }).notNull(),
+}, (table) => ({
+    tenantDocumentTagIdx: index('idx_tenant_docs_tags_doc').on(table.tenantId, table.documentId),
+}));
+export type TenantDocumentTagRecord = typeof tenantDocumentTags.$inferSelect;
+export type NewTenantDocumentTagRecord = typeof tenantDocumentTags.$inferInsert;
+
+export const tenantIngestionJobs = mysqlTable('tenant_ingestion_jobs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    versionId: varchar('version_id', { length: 36 }).notNull(),
+    status: mysqlEnum('status', ['queued', 'processing', 'completed', 'failed']).notNull().default('queued'),
+    attempts: int('attempts').notNull().default(0),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+});
+export type TenantIngestionJobRecord = typeof tenantIngestionJobs.$inferSelect;
+export type NewTenantIngestionJobRecord = typeof tenantIngestionJobs.$inferInsert;
+
