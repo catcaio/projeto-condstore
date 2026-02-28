@@ -6,10 +6,12 @@ import { sql } from 'drizzle-orm';
 import packageJson from '../../../../../package.json';
 import { getDb } from '../../../../infra/db';
 import { redisClient } from '../../../../infra/redis.client';
+import { getRateLimiterFallbackMetrics } from '../../../../infra/security/rate-limiter';
 import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '../../../../infra/config/internal-token';
 import { makeRequestId, attachRequestIdHeader } from '../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse } from '../../../../infra/http/error-response';
 import { structuredLogger } from '../../../../infra/log/logger';
+import { circuitBreaker } from '../../../../infra/security/circuit-breaker';
 
 interface DiagStatus {
   env: string;
@@ -18,6 +20,8 @@ interface DiagStatus {
   redis: 'ok' | 'fail';
   uptimeSeconds: number;
   version: string;
+  rateLimiterFallbackActive: { count: number; lastSeenAt: number | null };
+  circuitBreakers: any[];
 }
 
 function detectGitSha(): string | null {
@@ -100,6 +104,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       redis: redisStatus,
       uptimeSeconds: Math.floor(process.uptime()),
       version: packageJson.version,
+      rateLimiterFallbackActive: getRateLimiterFallbackMetrics(),
+      circuitBreakers: circuitBreaker.getStatus(),
     };
 
     const response = NextResponse.json(payload, { status: 200 });

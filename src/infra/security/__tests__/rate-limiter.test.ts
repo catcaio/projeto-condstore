@@ -42,7 +42,7 @@ describe('security rate-limiter redis failure hardening', () => {
     vi.setSystemTime(new Date('2026-02-25T12:00:00.000Z'));
 
     vi.stubEnv('NODE_ENV', 'production');
-    delete process.env.RATE_LIMIT_FAIL_OPEN;
+    delete process.env.RATE_LIMIT_FAIL_CLOSED;
 
     mockRedis.isAvailable.mockReturnValue(false);
     mockRedis.get.mockResolvedValue(null);
@@ -55,42 +55,10 @@ describe('security rate-limiter redis failure hardening', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllEnvs();
-    delete process.env.RATE_LIMIT_FAIL_OPEN;
+    delete process.env.RATE_LIMIT_FAIL_CLOSED;
   });
 
-  it('fails closed in production when redis is unavailable', async () => {
-    const limiter = new RateLimiter();
-    const now = Date.now();
-
-    const result = await limiter.limit('auth.login', '1.2.3.4:user@example.com', {
-      max: 5,
-      windowSec: 60,
-    });
-
-    expect(result).toEqual({
-      allowed: false,
-      remaining: 0,
-      resetAt: now + 60_000,
-      limit: 5,
-    });
-    expect(mockStructuredLogger.error).toHaveBeenCalledWith(
-      'rate_limiter_redis_failure_fail_closed',
-      expect.objectContaining({
-        eventType: 'rate_limiter',
-        scope: 'auth.login',
-        keyHash: '0123456789abcdef',
-        reason: 'redis_unavailable',
-        failOpenOverride: false,
-      }),
-    );
-
-    const logContext = mockStructuredLogger.error.mock.calls[0]?.[1];
-    expect(logContext).not.toHaveProperty('key');
-    expect(JSON.stringify(logContext)).not.toContain('user@example.com');
-  });
-
-  it('allows only when RATE_LIMIT_FAIL_OPEN=true is explicitly set', async () => {
-    process.env.RATE_LIMIT_FAIL_OPEN = 'true';
+  it('fails open in production when redis is unavailable', async () => {
     const limiter = new RateLimiter();
     const now = Date.now();
 
@@ -106,18 +74,51 @@ describe('security rate-limiter redis failure hardening', () => {
       limit: 5,
     });
     expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
-      'rate_limiter_redis_failure_fail_open_override',
+      'rate_limiter_fallback_active',
+      expect.objectContaining({
+        eventType: 'rate_limiter_fallback_active',
+        strategy: 'fail_open',
+        scope: 'auth.login',
+        keyHash: '0123456789abcdef',
+        reason: 'redis_unavailable',
+        failClosedOverride: false,
+      }),
+    );
+
+    const logContext = mockStructuredLogger.warn.mock.calls[0]?.[1];
+    expect(logContext).not.toHaveProperty('key');
+    expect(JSON.stringify(logContext)).not.toContain('user@example.com');
+  });
+
+  it('fails closed only when RATE_LIMIT_FAIL_CLOSED=true is explicitly set', async () => {
+    process.env.RATE_LIMIT_FAIL_CLOSED = 'true';
+    const limiter = new RateLimiter();
+    const now = Date.now();
+
+    const result = await limiter.limit('auth.login', '1.2.3.4:user@example.com', {
+      max: 5,
+      windowSec: 60,
+    });
+
+    expect(result).toEqual({
+      allowed: false,
+      remaining: 0,
+      resetAt: now + 60_000,
+      limit: 5,
+    });
+    expect(mockStructuredLogger.error).toHaveBeenCalledWith(
+      'rate_limiter_redis_failure_fail_closed_override',
       expect.objectContaining({
         eventType: 'rate_limiter',
         scope: 'auth.login',
         keyHash: '0123456789abcdef',
         reason: 'redis_unavailable',
-        failOpenOverride: true,
+        failClosedOverride: true,
       }),
     );
   });
 
-  it('fails closed in production when redis operation fails while available', async () => {
+  it('fails open in production when redis operation fails while available', async () => {
     mockRedis.isAvailable.mockReturnValue(true);
     mockRedis.incr.mockResolvedValue(0);
     mockRedis.get.mockResolvedValue(0);
@@ -128,15 +129,17 @@ describe('security rate-limiter redis failure hardening', () => {
       windowSec: 60,
     });
 
-    expect(result.allowed).toBe(false);
-    expect(result.remaining).toBe(0);
-    expect(mockStructuredLogger.error).toHaveBeenCalledWith(
-      'rate_limiter_redis_failure_fail_closed',
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBe(5);
+    expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
+      'rate_limiter_fallback_active',
       expect.objectContaining({
+        eventType: 'rate_limiter_fallback_active',
+        strategy: 'fail_open',
         scope: 'auth.login',
         keyHash: '0123456789abcdef',
         reason: 'redis_error',
-        failOpenOverride: false,
+        failClosedOverride: false,
         errorName: 'Error',
       }),
     );

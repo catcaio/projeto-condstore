@@ -10,10 +10,15 @@ import { adminAuditLogRepository } from '../../../../../infra/repositories/admin
 import { tenantRepository } from '../../../../../infra/repositories/tenant.repository';
 import { canonicalizeIanaTimeZone } from '../../../../../infra/time/window';
 
+import { tenantIncidentsRepository } from '../../../../../infra/repositories/tenant-incidents.repository';
+import { rateLimiter, applyRateLimitHeaders } from '../../../../../infra/security/rate-limiter';
+
 export const runtime = 'nodejs';
 
 interface TenantSettingsPayload {
-  timezone?: unknown;
+  timezone?: string;
+  outboundEnabled?: boolean;
+  incidentMode?: boolean;
 }
 
 export async function PUT(request: NextRequest): Promise<NextResponse> {
@@ -59,44 +64,107 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       return finalize(NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 }), ErrorCode.FORBIDDEN);
     }
 
+    const limitDecision = await rateLimiter.limit('tenant_settings_put', guard.tenantId, {
+      windowSec: 60,
+      max: 20,
+    });
+    if (!limitDecision.allowed) {
+      return applyRateLimitHeaders(
+        errorResponse(ErrorCode.RATE_LIMITED, 429, requestId, 'Rate limit exceeded'),
+        limitDecision
+      );
+    }
+
     const payload = (await request.json()) as TenantSettingsPayload;
-    if (typeof payload.timezone !== 'string') {
-      return finalize(
-        errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'timezone is required'),
-        ErrorCode.VALIDATION_ERROR,
-      );
-    }
-
-    const timezone = canonicalizeIanaTimeZone(payload.timezone);
-    if (!timezone) {
-      return finalize(
-        errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid timezone. Use a valid IANA timezone.'),
-        ErrorCode.VALIDATION_ERROR,
-      );
-    }
-
-    timezoneForLog = timezone;
 
     const existingTenant = await tenantRepository.getTenantById(guard.tenantId);
     if (!existingTenant) {
       return finalize(NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 }), ErrorCode.VALIDATION_ERROR);
     }
 
-    await tenantRepository.updateTenantTimezone(guard.tenantId, timezone);
-    await adminAuditLogRepository.log({
-      tenantId: guard.tenantId,
-      userId: guard.sessionUser.sub,
-      action: 'tenant.set_timezone',
-      metadata: {
-        timezone,
-        requestId,
-      },
-    });
+    let hasUpdates = false;
+    let incidentUpdated = false;
+    let tzUpdated = false;
+    let outboundUpdated = false;
+
+    if (payload.timezone !== undefined) {
+      if (typeof payload.timezone !== 'string') {
+        return finalize(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'timezone is required to be string'), ErrorCode.VALIDATION_ERROR);
+      }
+      const timezone = canonicalizeIanaTimeZone(payload.timezone);
+      if (!timezone) {
+        return finalize(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid timezone.'), ErrorCode.VALIDATION_ERROR);
+      }
+      timezoneForLog = timezone;
+      await tenantRepository.updateTenantTimezone(guard.tenantId, timezone);
+      hasUpdates = true;
+      tzUpdated = true;
+    }
+
+    if (payload.outboundEnabled !== undefined) {
+      if (typeof payload.outboundEnabled !== 'boolean') {
+        return finalize(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'outboundEnabled must be boolean'), ErrorCode.VALIDATION_ERROR);
+      }
+      await tenantRepository.updateOutboundEnabled(guard.tenantId, payload.outboundEnabled);
+      hasUpdates = true;
+      outboundUpdated = true;
+
+      // Log incident if kill switch is turned on (meaning outboundEnabled goes true -> false)
+      if (existingTenant.outboundEnabled && !payload.outboundEnabled) {
+        await tenantIncidentsRepository.logIncident({
+          tenantId: guard.tenantId,
+          type: 'kill_switch',
+          startedAt: new Date(),
+          triggeredBy: guard.sessionUser.sub,
+          metadata: { outboundEnabled: false }
+        });
+      }
+    }
+
+    if (payload.incidentMode !== undefined) {
+      if (typeof payload.incidentMode !== 'boolean') {
+        return finalize(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'incidentMode must be boolean'), ErrorCode.VALIDATION_ERROR);
+      }
+      await tenantRepository.updateIncidentMode(guard.tenantId, payload.incidentMode);
+      hasUpdates = true;
+      incidentUpdated = true;
+
+      // Log incident if turning on
+      if (!existingTenant.incidentMode && payload.incidentMode) {
+        await tenantIncidentsRepository.logIncident({
+          tenantId: guard.tenantId,
+          type: 'incident_mode',
+          startedAt: new Date(),
+          triggeredBy: guard.sessionUser.sub,
+          metadata: { action: 'user_activated' }
+        });
+      } else if (existingTenant.incidentMode && !payload.incidentMode) {
+        // If deactivated, we could close it, but for now just logging closure is fine or standard audit handles it
+      }
+    }
+
+    if (hasUpdates) {
+      await adminAuditLogRepository.log({
+        tenantId: guard.tenantId,
+        userId: guard.sessionUser.sub,
+        action: 'tenant.update_settings',
+        metadata: {
+          requestId,
+          changes: {
+            timezone: tzUpdated ? timezoneForLog : undefined,
+            outboundEnabled: outboundUpdated ? payload.outboundEnabled : undefined,
+            incidentMode: incidentUpdated ? payload.incidentMode : undefined
+          }
+        },
+      });
+    }
 
     return finalize(NextResponse.json({
       tenantId: guard.tenantId,
-      timezone,
-      updated: true,
+      timezone: tzUpdated ? timezoneForLog : existingTenant.timezone,
+      outboundEnabled: outboundUpdated ? payload.outboundEnabled : existingTenant.outboundEnabled,
+      incidentMode: incidentUpdated ? payload.incidentMode : existingTenant.incidentMode,
+      updated: hasUpdates,
     }));
   } catch (error) {
     structuredLogger.error('tenant_settings_put_failed', {
@@ -115,5 +183,27 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, (error as Error).message),
       ErrorCode.VALIDATION_ERROR,
     );
+  }
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  try {
+    const tenantId = extractTenantIdFromTenantRoute(request);
+    const guard = await requireSessionTenantMatch(request, tenantId);
+    if (!guard.ok) return guard.response;
+
+    const existingTenant = await tenantRepository.getTenantById(guard.tenantId);
+    if (!existingTenant) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      tenantId: existingTenant.id,
+      timezone: existingTenant.timezone,
+      outboundEnabled: existingTenant.outboundEnabled,
+      incidentMode: existingTenant.incidentMode,
+    });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to GET tenant settings' }, { status: 500 });
   }
 }

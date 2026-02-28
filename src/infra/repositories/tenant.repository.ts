@@ -228,6 +228,40 @@ export class TenantRepository {
         }
     }
 
+    async updateOutboundEnabled(tenantId: string, outboundEnabled: boolean): Promise<void> {
+        try {
+            const db = await getDb();
+            await db
+                .update(tenants)
+                .set({ outboundEnabled })
+                .where(eq(tenants.id, tenantId));
+        } catch (error) {
+            logger.error('Failed to update tenant outbound status', error as Error, { tenantId, outboundEnabled });
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'Failed to update tenant outbound status',
+                { tenantId, outboundEnabled }
+            );
+        }
+    }
+
+    async updateIncidentMode(tenantId: string, incidentMode: boolean): Promise<void> {
+        try {
+            const db = await getDb();
+            await db
+                .update(tenants)
+                .set({ incidentMode })
+                .where(eq(tenants.id, tenantId));
+        } catch (error) {
+            logger.error('Failed to update tenant incident mode', error as Error, { tenantId, incidentMode });
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'Failed to update tenant incident mode',
+                { tenantId, incidentMode }
+            );
+        }
+    }
+
     /**
      * Invalidate cache for a specific Twilio number.
      */

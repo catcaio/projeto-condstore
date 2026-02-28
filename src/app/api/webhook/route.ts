@@ -285,6 +285,15 @@ export async function POST(request: NextRequest) {
       return finish(twimlOk("Serviço indisponível temporariamente.", requestId), ErrorCode.DB_ERROR);
     }
 
+    if (tenant.incidentMode) {
+      logger.warn("Webhook bypass: tenant is in incident mode", {
+        event: "webhook_tenant_incident_mode",
+        tenantId: tenant.id,
+        ...safeCtx,
+      });
+      return finish(twimlOk("Estamos passando por instabilidade, retornaremos em instantes.", requestId), 'INCIDENT_MODE_ACTIVE');
+    }
+
     const tenantId = tenant.id.toString();
     tenantIdForLog = tenantId;
     // Pre-compute hash from payload["From"] so rate-limit and idempotency logs

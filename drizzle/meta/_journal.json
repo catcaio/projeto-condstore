@@ -134,6 +134,41 @@
       "when": 1772294010269,
       "tag": "0030_fearless_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "5",
+      "when": 1772311955449,
+      "tag": "0031_strange_randall_flagg",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1772313542678,
+      "tag": "0032_sleepy_sir_ram",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1772314302142,
+      "tag": "0033_loving_madrox",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1772314522801,
+      "tag": "0034_supreme_arclight",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "5",
+      "when": 1772315137355,
+      "tag": "0035_loud_baron_zemo",
+      "breakpoints": true
     }
   ]
 }

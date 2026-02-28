@@ -7,8 +7,11 @@ import { appConfig } from '../config/app.config';
 import { melhorEnvioConfig, melhorEnvioEndpoints } from '../config/melhorenvio.config';
 import { ErrorCode, ProviderError } from '../infra/errors';
 import { logger } from '../infra/logger';
+import { circuitBreaker } from '../infra/security/circuit-breaker';
+import { structuredLogger } from '../infra/log/logger';
 
 export interface ShippingQuoteRequest {
+  tenantId: string;
   destinationCep: string;
   totalWeight: number; // kg
   quantity: number;
@@ -44,8 +47,17 @@ class MelhorEnvioProvider {
   async calculateShipping(request: ShippingQuoteRequest): Promise<ShippingQuote[]> {
     const payload = this.buildPayload(request);
 
+    if (circuitBreaker.isOpen(request.tenantId, 'frete')) {
+      structuredLogger.warn('melhorenvio_circuit_open', {
+        tenantId: request.tenantId,
+        eventType: 'freight_circuit_open'
+      });
+      return []; // fallback: return no quotes
+    }
+
     try {
       const response = await this.makeRequest<MelhorEnvioAPIResponse[]>(
+        request.tenantId,
         melhorEnvioEndpoints.calculateShipping,
         'POST',
         payload
@@ -121,6 +133,7 @@ class MelhorEnvioProvider {
    * Make HTTP request to Melhor Envio API with retry logic.
    */
   private async makeRequest<T>(
+    tenantId: string,
     endpoint: string,
     method: 'GET' | 'POST' = 'GET',
     body?: object,
@@ -158,9 +171,12 @@ class MelhorEnvioProvider {
         }
 
         const data = await response.json();
+        circuitBreaker.recordSuccess(tenantId, 'frete');
         return data as T;
       } catch (error) {
         lastError = error as Error;
+
+        await circuitBreaker.recordFailure(tenantId, 'frete');
 
         // Handle timeout
         if (error instanceof Error && error.name === 'TimeoutError') {
@@ -192,7 +208,7 @@ class MelhorEnvioProvider {
    */
   async healthCheck(): Promise<boolean> {
     try {
-      await this.makeRequest('/me', 'GET', undefined, 0); // No retries for health check
+      await this.makeRequest('system', '/me', 'GET', undefined, 0); // No retries for health check
       return true;
     } catch (error) {
       logger.warn('Melhor Envio health check failed', {}, error as Error);

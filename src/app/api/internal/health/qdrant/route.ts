@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextResponse, NextRequest } from "next/server";
-import { ensureCollection, getQdrantConfig, qdrantHealth } from "@/infra/vector/qdrant.client";
+import { getQdrantConfig, qdrantHealth } from "@/infra/vector/qdrant.client";
 import { withRequestTrace } from "@/infra/http/request-trace";
 
 async function handler(request: NextRequest): Promise<NextResponse> {
@@ -24,13 +24,10 @@ async function handler(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const ensuredResult = await ensureCollection();
-
     return NextResponse.json({
       ok: true,
       url: cfg.url,
       collection: cfg.collection,
-      ensured: ensuredResult.ensured,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {

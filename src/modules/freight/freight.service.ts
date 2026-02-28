@@ -171,6 +171,7 @@ class FreightService {
       // Fetch from Melhor Envio
       if (strategy === 'MELHORENVIO_ONLY' || strategy === 'BOTH') {
         const meQuotes = await melhorEnvioProvider.calculateShipping({
+          tenantId: request.tenantId || 'system',
           destinationCep: request.destinationCep,
           totalWeight,
           quantity: request.quantity,
