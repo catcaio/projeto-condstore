@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { planData } from '../../../../components/pricing/planData';
+const planData = [
+    { id: 'starter', stripePriceId: 'price_starter_placeholder' },
+    { id: 'essencial', stripePriceId: 'price_essencial_placeholder' },
+    { id: 'growth', stripePriceId: 'price_growth_placeholder' },
+];
 import { getSessionUser } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
 import { createStripeCheckoutSession } from '../../../lib/billing/stripe';

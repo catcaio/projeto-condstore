@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { verifyStripeSignature, StripeEvent } from '../../../../lib/billing/signature';
-import { planData } from '../../../../../components/pricing/planData';
+const planData = [
+    { id: 'starter', stripePriceId: 'price_starter_placeholder' },
+    { id: 'essencial', stripePriceId: 'price_essencial_placeholder' },
+    { id: 'growth', stripePriceId: 'price_growth_placeholder' },
+];
 import { SubscriptionStatus } from '../../../../lib/billing/types';
 import { getDb } from '@/infra/db';
 import { tenants } from '../../../../drizzle/schema';
