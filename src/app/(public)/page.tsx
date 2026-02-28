@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Truck, BarChart3, Bot, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/ui/components/button';
 
 export default function PublicHomePage() {
     const isDev = process.env.NODE_ENV === 'development';
@@ -8,26 +9,24 @@ export default function PublicHomePage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8 py-20 lg:py-32 flex flex-col items-center text-center gap-16">
 
             <div className="max-w-3xl space-y-6">
-                <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold tracking-tight text-[hsl(var(--ui-text))]">
+                <h1 className="text-[var(--text-hero)] font-bold text-[hsl(var(--ui-text))] leading-tight tracking-tight mb-4">
                     Automatize o frete da sua loja em <span className="text-[hsl(var(--ui-accent-blue))]">minutos.</span>
                 </h1>
-                <p className="text-lg md:text-xl text-[hsl(var(--ui-text-muted))] max-w-2xl mx-auto leading-relaxed">
+                <p className="text-lg md:text-xl text-[hsl(var(--ui-text-muted))] max-w-[280px] md:max-w-2xl mx-auto leading-relaxed">
                     Cotações inteligentes, múltiplas transportadoras e automação via WhatsApp.
                     Escalonamento sem aumentar sua folha de pagamentos.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-                    <Link
-                        href="/pricing"
-                        className="w-full sm:w-auto inline-flex h-12 items-center justify-center rounded-full bg-[hsl(var(--ui-text))] px-8 text-base font-medium text-[hsl(var(--ui-bg))] hover:opacity-90 shadow-lg tracking-wide transition-all"
-                    >
-                        Começar agora
+                    <Link href="/pricing" passHref>
+                        <Button variant="primary" size="lg" className="w-full sm:w-auto">
+                            Começar agora
+                        </Button>
                     </Link>
-                    <Link
-                        href={isDev ? '/cockpit/audit?status=success' : '/docs'}
-                        className="w-full sm:w-auto inline-flex h-12 items-center justify-center rounded-full bg-[hsl(var(--ui-muted))] px-8 text-base font-medium text-[hsl(var(--ui-text))] hover:bg-[hsl(var(--ui-border)/0.5)] transition-all"
-                    >
-                        Ver demo
+                    <Link href={isDev ? '/cockpit/audit?status=success' : '/docs'} passHref>
+                        <Button variant="secondary" size="lg" className="w-full sm:w-auto">
+                            Ver demo
+                        </Button>
                     </Link>
                 </div>
             </div>
@@ -77,9 +76,9 @@ export default function PublicHomePage() {
                 </div>
             </div>
 
-            <div className="rounded-3xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] p-8 max-w-4xl w-full flex flex-col md:flex-row items-center justify-between shadow-[0_16px_40px_-16px_hsl(var(--ui-shadow)/0.05)]">
+            <div className="rounded-[var(--radius-card)] bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] p-8 max-w-4xl w-full flex flex-col md:flex-row items-center justify-between shadow-[var(--shadow-soft)]">
                 <div className="flex items-center gap-4 mb-4 md:mb-0">
-                    <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
+                    <div className="h-12 w-12 rounded-full bg-[hsl(var(--ui-success)/0.1)] flex items-center justify-center text-[hsl(var(--ui-success))]">
                         <CheckCircle2 className="h-6 w-6" />
                     </div>
                     <div className="text-left">
@@ -87,11 +86,8 @@ export default function PublicHomePage() {
                         <p className="text-[hsl(var(--ui-text-muted))] text-sm">Escalável com 99.9% de uptime real</p>
                     </div>
                 </div>
-                <Link
-                    href="/pricing"
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-text))] px-6 text-sm font-medium text-[hsl(var(--ui-bg))] transition-colors hover:opacity-90"
-                >
-                    Criar conta
+                <Link href="/pricing" passHref>
+                    <Button variant="primary">Criar conta</Button>
                 </Link>
             </div>
 

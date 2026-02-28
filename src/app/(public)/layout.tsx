@@ -20,8 +20,8 @@ export default function PublicLayout({
                 </div>
             )}
 
-            <header className="sticky top-0 z-50 w-full border-b border-[hsl(var(--ui-border)/0.5)] bg-[hsl(var(--ui-bg)/0.8)] backdrop-blur-sm">
-                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
+            <header className="sticky top-0 z-50 w-full border-b border-[hsl(var(--ui-border)/0.5)] bg-[hsl(var(--ui-surface)/0.8)] backdrop-blur-sm">
+                <div className="mx-auto flex h-16 max-w-[var(--container-max-width)] items-center justify-between px-6 lg:px-8">
                     <div className="flex items-center gap-10">
                         <Link href="/" className="font-bold text-xl tracking-tighter">
                             LojaCond
@@ -41,7 +41,7 @@ export default function PublicLayout({
                         </Link>
                         <Link
                             href={isDev ? '/cockpit/audit?status=success' : '/pricing'}
-                            className="inline-flex h-9 items-center justify-center rounded-full bg-[hsl(var(--ui-text))] px-4 text-sm font-medium text-[hsl(var(--ui-bg))] transition-colors hover:opacity-90 shadow-sm"
+                            className="inline-flex h-9 items-center justify-center rounded-[var(--radius-button)] bg-[hsl(var(--ui-accent-blue))] px-4 text-sm font-medium text-white transition-colors hover:bg-[hsl(var(--ui-accent-blue-strong))] shadow-[var(--shadow-soft)]"
                         >
                             Começar grátis
                         </Link>
@@ -54,7 +54,7 @@ export default function PublicLayout({
             </main>
 
             <footer className="border-t border-[hsl(var(--ui-border)/0.5)] bg-[hsl(var(--ui-surface))] py-12">
-                <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="mx-auto max-w-[var(--container-max-width)] px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="text-sm text-[hsl(var(--ui-text-muted))]">
                         &copy; {new Date().getFullYear()} LojaCond. Todos os direitos reservados.
                     </div>

@@ -108,6 +108,13 @@
     --ui-text-subtle: 220 10% 52%;
     --ui-shadow: 222 28% 18%;
 
+    --radius-card: 1.5rem;
+    --radius-button: 9999px;
+    --container-max-width: 80rem;
+    --section-spacing: 5rem;
+    --shadow-soft: 0 16px 40px -16px hsl(var(--ui-shadow) / 0.05);
+    --ui-bg: var(--ui-page);
+
     --ui-accent-blue: 211 100% 50%;
     --ui-accent-blue-strong: 211 100% 43%;
     --ui-accent-blue-ink: 211 100% 37%;
@@ -164,6 +171,13 @@
     --ui-text-subtle: 220 8% 56%;
     --ui-shadow: 220 45% 3%;
 
+    --radius-card: 1.5rem;
+    --radius-button: 9999px;
+    --container-max-width: 80rem;
+    --section-spacing: 5rem;
+    --shadow-soft: 0 16px 40px -16px hsl(var(--ui-shadow) / 0.05);
+    --ui-bg: var(--ui-page);
+
     --ui-accent-blue: 211 100% 60%;
     --ui-accent-blue-strong: 211 100% 64%;
     --ui-accent-blue-ink: 211 100% 82%;
@@ -213,9 +227,6 @@
 
   body {
     @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(circle at 15% 0%, hsl(var(--ui-accent-blue) / 0.08), transparent 36%),
-      radial-gradient(circle at 85% 0%, hsl(var(--ui-border-strong) / 0.18), transparent 32%);
   }
 }
 

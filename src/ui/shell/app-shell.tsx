@@ -48,7 +48,7 @@ export function AppShell({
                 <div className="flex-1 overflow-y-auto w-full">
                     {tenantId && <FinOpsStatusBar tenantId={tenantId} />}
                     <div className="px-4 py-6 md:px-8 md:py-8">
-                        <div className="mx-auto max-w-6xl w-full">
+                        <div className="mx-auto max-w-[var(--container-max-width)] w-full">
                             {children}
                         </div>
                     </div>
