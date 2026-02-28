@@ -774,3 +774,69 @@ export const tenantKnowledgeQueries = mysqlTable('tenant_knowledge_queries', {
 }));
 export type TenantKnowledgeQueryRecord = typeof tenantKnowledgeQueries.$inferSelect;
 export type NewTenantKnowledgeQueryRecord = typeof tenantKnowledgeQueries.$inferInsert;
+
+// ==========================================
+// DISPATCH MVP (Last-mile routing)
+// ==========================================
+
+export const dispatchTechnicians = mysqlTable('dispatch_technicians', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    phone: varchar('phone', { length: 30 }).notNull(),
+    status: mysqlEnum('status', ['active', 'inactive']).notNull().default('active'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+});
+
+export const dispatchDeliveryOrders = mysqlTable('dispatch_delivery_orders', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    orderRef: varchar('order_ref', { length: 128 }).notNull(), // External or internal order reference
+    customerName: varchar('customer_name', { length: 255 }).notNull(),
+    customerPhone: varchar('customer_phone', { length: 30 }),
+    zipCode: varchar('zip_code', { length: 20 }),
+    addressLine: varchar('address_line', { length: 500 }).notNull(),
+    city: varchar('city', { length: 255 }),
+    state: varchar('state', { length: 2 }),
+    status: mysqlEnum('status', ['pending', 'routed', 'in_transit', 'delivered', 'failed']).notNull().default('pending'),
+    trackingToken: varchar('tracking_token', { length: 64 }).notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    tenantIdStatusIdx: index('idx_dispatch_orders_tenant_status').on(table.tenantId, table.status),
+    trackingTokenIdx: index('idx_dispatch_orders_tracking_token').on(table.trackingToken),
+}));
+
+export const dispatchDeliveryRoutes = mysqlTable('dispatch_delivery_routes', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    technicianId: varchar('technician_id', { length: 36 }),
+    date: date('date').notNull(),
+    status: mysqlEnum('status', ['draft', 'pending', 'in_progress', 'completed']).notNull().default('draft'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+});
+
+export const dispatchDeliveryRouteStops = mysqlTable('dispatch_delivery_route_stops', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    routeId: varchar('route_id', { length: 36 }).notNull(),
+    orderId: varchar('order_id', { length: 36 }).notNull(), // refs dispatchDeliveryOrders
+    sequenceIndex: int('sequence_index').notNull(),
+    status: mysqlEnum('status', ['pending', 'completed', 'failed']).notNull().default('pending'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const dispatchDeliveryEvents = mysqlTable('dispatch_delivery_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    orderId: varchar('order_id', { length: 36 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull(), // 'created', 'routed', 'out_for_delivery', 'delivered', 'attempt_failed'
+    description: varchar('description', { length: 255 }),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    orderIdIdx: index('idx_dispatch_events_order_id').on(table.orderId),
+}));
+
