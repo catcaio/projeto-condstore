@@ -36,9 +36,13 @@ export default defineConfig({
     watch: false,
     include: [
       "src/**/*.test.ts",
+      "src/**/*.test.tsx",
       "src/**/*.spec.ts",
+      "src/**/*.spec.tsx",
       "server/**/*.test.ts",
+      "server/**/*.test.tsx",
       "server/**/*.spec.ts",
+      "server/**/*.spec.tsx",
     ],
   },
 });

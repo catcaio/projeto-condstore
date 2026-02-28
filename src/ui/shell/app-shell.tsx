@@ -3,6 +3,7 @@ import { AppNav } from './app-nav';
 import { type Role } from '@/ui/auth/entitlements-logic';
 import { ThemeToggle } from '@/ui/theme';
 import { InspectBadge } from './inspect-badge';
+import { FinOpsStatusBar } from './finops-status-bar';
 import { Box } from 'lucide-react';
 
 export function AppShell({
@@ -44,9 +45,12 @@ export function AppShell({
                     </div>
                     <ThemeToggle />
                 </header>
-                <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
-                    <div className="mx-auto max-w-6xl w-full">
-                        {children}
+                <div className="flex-1 overflow-y-auto w-full">
+                    {tenantId && <FinOpsStatusBar tenantId={tenantId} />}
+                    <div className="px-4 py-6 md:px-8 md:py-8">
+                        <div className="mx-auto max-w-6xl w-full">
+                            {children}
+                        </div>
                     </div>
                 </div>
             </main>
