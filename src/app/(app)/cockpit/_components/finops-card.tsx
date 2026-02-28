@@ -397,7 +397,7 @@ export function FinOpsCard() {
                                         style={{
                                             width: '100%', padding: '10px 16px',
                                             background: 'linear-gradient(135deg, #dc2626, #991b1b)',
-                                            color: '#fff', border: 'none', borderRadius: 8,
+                                            color: 'var(--text-primary)', border: 'none', borderRadius: 8,
                                             fontSize: 'var(--font-size-sm)', fontWeight: 700,
                                             cursor: 'pointer', letterSpacing: '0.02em',
                                         }}
@@ -426,8 +426,8 @@ export function FinOpsCard() {
                                                         style={{
                                                             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                                                             width: '100%', padding: '9px 12px',
-                                                            background: 'rgba(255,255,255,0.05)',
-                                                            border: '1px solid rgba(255,255,255,0.12)',
+                                                            background: 'var(--finops-surface)',
+                                                            border: '1px solid var(--finops-border)',
                                                             borderRadius: 8, cursor: upgrading ? 'not-allowed' : 'pointer',
                                                             color: 'var(--finops-text)', fontSize: 'var(--font-size-xs)',
                                                             transition: 'background 0.15s',

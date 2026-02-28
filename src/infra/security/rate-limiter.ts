@@ -43,7 +43,7 @@ function nowMs(): number {
 }
 
 function isMemoryFallbackEnabled(): boolean {
-  return true; // Use in-memory fallback even in production if Redis is missing/disconnected
+  return process.env.NODE_ENV !== 'production';
 }
 
 function isRateLimitFailOpenOverrideEnabled(): boolean {

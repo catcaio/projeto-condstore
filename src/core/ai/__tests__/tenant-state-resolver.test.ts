@@ -336,8 +336,10 @@ describe('getTenantState — integration with Redis + DB', () => {
     });
 
     it('finops_alerts — does not create duplicate if rate limited by redis', async () => {
-        mockRedisGet.mockResolvedValueOnce(null); // cache miss
-        mockRedisGet.mockResolvedValueOnce('1');  // redis rate limited hit
+        mockRedisGet.mockImplementation((key: unknown) => {
+            if (key === 'finops:alerted:tenant-alerts2:degraded_preemptive') return Promise.resolve('1');
+            return Promise.resolve(null);
+        });
 
         makeDbChain([budgetRow({
             currentLockState: 'unlocked',

@@ -107,7 +107,7 @@ describe('GET /api/cockpit/metrics/acquisition', () => {
       },
     });
 
-    expect(data.buckets).toEqual([
+    expect(data.rows).toEqual([
       {
         key: 'camp_a',
         total_click_tokens: 10,
