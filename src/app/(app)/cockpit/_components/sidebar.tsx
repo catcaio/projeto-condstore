@@ -8,6 +8,7 @@ import { useSession } from '@/ui/context/SessionContext';
 import { canAccess, type Module } from '@/ui/auth/entitlements-logic';
 
 import { MODULES } from '@/config/modules';
+import { isModuleAuthorized } from '@/ui/components/route-guard';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -42,8 +43,9 @@ export default function Sidebar() {
                   }, {} as Record<string, typeof MODULES>)
                 ).map(([groupName, groupModules], groupIdx) => {
                   const visibleModules = groupModules.filter(item => {
-                    const isSettingsOrAdmin = item.authModule === 'settings' || item.authModule === 'admin';
-                    if (isSettingsOrAdmin && auth.role !== 'admin') return false;
+                    if (!item.navVisible) return false;
+                    const { authorized, reason } = isModuleAuthorized(item, auth.role, auth.hasActivePlan);
+                    if (!authorized && reason === 'role') return false; // Hide if not matching role. Show if just plan (for upgrade badge)
                     return true;
                   });
 
@@ -56,18 +58,17 @@ export default function Sidebar() {
                       </h4>
                       <ListGroup>
                         {visibleModules.map((item, index) => {
-                          const hasAccess = canAccess(item.authModule, auth);
+                          const { authorized, reason } = isModuleAuthorized(item, auth.role, auth.hasActivePlan);
+                          const hasAccess = authorized;
                           const isActive = !item.isPlaceholder && (pathname === item.route || (item.route !== '/cockpit' && pathname.startsWith(`${item.route}/`)));
                           const isPlaceholder = item.isPlaceholder;
 
                           let trailingContent = isActive ? <Badge variant="default">Ativo</Badge> : undefined;
 
                           if (!hasAccess) {
-                            trailingContent = (
-                              <Badge variant="outline" className="border-red-500 text-red-500 whitespace-nowrap">
-                                {auth.role === 'admin' ? 'Sem permissão' : (item.authModule === 'audit' ? 'Sem permissão' : 'Plano')}
-                              </Badge>
-                            );
+                            trailingContent = reason === 'plan'
+                              ? <Badge variant="outline" className="border-[hsl(var(--ui-accent-blue))] text-[hsl(var(--ui-accent-blue))] whitespace-nowrap">Upgrade</Badge>
+                              : <Badge variant="outline" className="border-red-500 text-red-500 whitespace-nowrap">Bloqueado</Badge>;
                           } else if (isPlaceholder) {
                             trailingContent = <Badge variant="outline">Soon</Badge>;
                           }
