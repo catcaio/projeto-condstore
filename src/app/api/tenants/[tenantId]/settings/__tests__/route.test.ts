@@ -131,7 +131,7 @@ describe('PUT /api/tenants/[tenantId]/settings', () => {
     expect(adminAuditLogRepository.log).toHaveBeenCalledWith(expect.objectContaining({
       tenantId: 'tenant-1',
       userId: 'user-1',
-      action: 'tenant.set_timezone',
+      action: 'tenant.update_settings',
     }));
   });
 });

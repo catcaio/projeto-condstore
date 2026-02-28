@@ -8,7 +8,13 @@ vi.mock('next/navigation', () => ({
     usePathname: vi.fn()
 }));
 
-vi.mock('lucide-react', () => ({ shieldAlert: () => null }));
+vi.mock('lucide-react', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('lucide-react')>();
+    return {
+        ...actual,
+        shieldAlert: () => null
+    };
+});
 vi.mock('../card', () => ({ Card: () => null, CardHeader: () => null, CardContent: () => null }));
 
 import { isModuleAuthorized, findModuleForPath } from '../route-guard';

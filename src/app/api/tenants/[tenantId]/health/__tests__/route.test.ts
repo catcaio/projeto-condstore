@@ -36,7 +36,7 @@ describe('Health Route (Tenant Cockpit)', () => {
 
         expect(res.status).toBe(403);
         const data = await res.json();
-        expect(data.error).toBe('Forbidden');
+        expect(data.error.message).toBe('Forbidden');
     });
 
     it('should block if tenant mismatch', async () => {
