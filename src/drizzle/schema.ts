@@ -825,3 +825,49 @@ export const tenantIncidents = mysqlTable('tenant_incidents', {
 
 export type TenantIncidentRecord = typeof tenantIncidents.$inferSelect;
 export type NewTenantIncidentRecord = typeof tenantIncidents.$inferInsert;
+
+export const domineEvents = mysqlTable('domine_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    source: varchar('source', { length: 50 }).notNull(),
+    type: varchar('type', { length: 128 }).notNull(),
+    idempotencyKey: varchar('idempotency_key', { length: 255 }).notNull(),
+    payloadJson: json('payload_json'),
+    processedAt: timestamp('processed_at'),
+    status: varchar('status', { length: 30 }).notNull().default('queued'),
+    errorCode: varchar('error_code', { length: 100 }),
+    errorMessage: text('error_message'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantIdempotencyIdx: uniqueIndex('uq_domine_events_tenant_idempotency').on(table.tenantId, table.idempotencyKey),
+    tenantStatusIdx: index('idx_domine_events_tenant_status').on(table.tenantId, table.status),
+}));
+
+export const domineOrders = mysqlTable('domine_orders', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    orderId: varchar('order_id', { length: 100 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull(),
+    totals: json('totals'),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    tenantOrderIdx: uniqueIndex('uq_domine_orders_tenant_order').on(table.tenantId, table.orderId),
+}));
+
+export const domineFreightQuotes = mysqlTable('domine_freight_quotes', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    quoteId: varchar('quote_id', { length: 100 }).notNull(),
+    orderId: varchar('order_id', { length: 100 }),
+    summary: json('summary'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantQuoteIdx: uniqueIndex('uq_domine_freight_quotes_tenant_quote').on(table.tenantId, table.quoteId),
+}));
+
+export type DomineEventRecord = typeof domineEvents.$inferSelect;
+export type NewDomineEventRecord = typeof domineEvents.$inferInsert;
+export type DomineOrderRecord = typeof domineOrders.$inferSelect;
+export type NewDomineOrderRecord = typeof domineOrders.$inferInsert;
+export type DomineFreightQuoteRecord = typeof domineFreightQuotes.$inferSelect;
+export type NewDomineFreightQuoteRecord = typeof domineFreightQuotes.$inferInsert;

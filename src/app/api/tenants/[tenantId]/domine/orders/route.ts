@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { domineReadRepository } from '@/infra/repositories/domine-read.repository';
+import { makeRequestId } from '@/infra/http/request-trace';
+import { ErrorCode, errorResponse } from '@/infra/http/error-response';
+import { getInternalExportTokenOrThrow } from '@/infra/config/internal-token';
+
+export async function GET(req: NextRequest, { params }: { params: { tenantId: string } }) {
+    const requestId = makeRequestId(req);
+    const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
+
+    const authHeaders = req.headers.get('authorization');
+    let isAuthorized = false;
+
+    // Check internal token (Frank usually uses this)
+    try {
+        const token = getInternalExportTokenOrThrow();
+        if (authHeaders === `Bearer ${token}`) {
+            isAuthorized = true;
+        }
+    } catch { }
+
+    // Fallback to Admin session
+    if (!isAuthorized) {
+        const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+        if (guard.ok && guard.sessionUser.role === 'admin') {
+            isAuthorized = true;
+        }
+    }
+
+    if (!isAuthorized) {
+        return errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Forbidden');
+    }
+
+    try {
+        const orders = await domineReadRepository.listOrders(params.tenantId, 50);
+        return NextResponse.json({ data: orders });
+    } catch (e: any) {
+        return errorResponse(ErrorCode.UNKNOWN, 500, requestId, e.message);
+    }
+}
