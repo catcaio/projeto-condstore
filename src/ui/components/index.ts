@@ -8,3 +8,5 @@ export * from './data-table';
 export * from './filters';
 export * from './icon';
 export * from './progress';
+export * from './module-breadcrumb';
+export * from './route-guard';

@@ -7,17 +7,8 @@ import { Activity, BarChart3, Boxes, LayoutDashboard, Package, Settings2, FileTe
 import { useSession } from '@/ui/context/SessionContext';
 import { canAccess, type Module } from '@/ui/auth/entitlements-logic';
 
-type NavItemDef = { label: string; href: string; icon: any; module: Module; isPlaceholder?: boolean };
-
-const items: NavItemDef[] = [
-  { label: 'Dashboard', href: '/cockpit', icon: LayoutDashboard, module: 'cockpit' },
-  { label: 'Analytics', href: '/cockpit/analytics', icon: BarChart3, module: 'cockpit' },
-  { label: 'Audit Logs', href: '/cockpit/audit', icon: FileText, module: 'audit' },
-  { label: 'Rate Limit', href: '/cockpit/rate-limit', icon: Activity, module: 'settings' },
-  { label: 'Cotações', href: '#', icon: Package, module: 'frete', isPlaceholder: true },
-  { label: 'Pedidos', href: '#', icon: Boxes, module: 'frete', isPlaceholder: true },
-  { label: 'Tenants', href: '#', icon: Settings2, module: 'settings', isPlaceholder: true },
-];
+import { MODULES } from '@/config/modules';
+import { isModuleAuthorized } from '@/ui/components/route-guard';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -43,60 +34,80 @@ export default function Sidebar() {
           />
           <CardContent className="pt-0">
             <nav aria-label="Navegacao do cockpit" className="space-y-3">
-              <ListGroup>
-                {items.map((item, index) => {
-                  const isSettings = item.module === 'settings';
-                  if (isSettings && auth.role !== 'admin') {
-                    return null; // hide settings for non-admins completely
-                  }
+              <div className="space-y-6">
+                {Object.entries(
+                  MODULES.reduce((acc, current) => {
+                    if (!acc[current.group]) acc[current.group] = [];
+                    acc[current.group].push(current);
+                    return acc;
+                  }, {} as Record<string, typeof MODULES>)
+                ).map(([groupName, groupModules], groupIdx) => {
+                  const visibleModules = groupModules.filter(item => {
+                    if (!item.navVisible) return false;
+                    const { authorized, reason } = isModuleAuthorized(item, auth.role, auth.hasActivePlan);
+                    if (!authorized && reason === 'role') return false; // Hide if not matching role. Show if just plan (for upgrade badge)
+                    return true;
+                  });
 
-                  const hasAccess = canAccess(item.module, auth);
-                  const isActive = !item.isPlaceholder && (pathname === item.href || (item.href !== '/cockpit' && pathname.startsWith(`${item.href}/`)));
-                  const isPlaceholder = item.isPlaceholder;
-
-                  let trailingContent = isActive ? <Badge variant="default">Ativo</Badge> : undefined;
-
-                  if (!hasAccess) {
-                    trailingContent = (
-                      <Badge variant="outline" className="border-red-500 text-red-500 whitespace-nowrap">
-                        {auth.role === 'admin' ? 'Sem permissão' : (item.module === 'audit' ? 'Sem permissão' : 'Plano')}
-                      </Badge>
-                    );
-                  } else if (isPlaceholder) {
-                    trailingContent = <Badge variant="outline">Soon</Badge>;
-                  }
+                  if (visibleModules.length === 0) return null;
 
                   return (
-                    <div key={item.label}>
-                      {isPlaceholder && !hasAccess ? (
-                        <ListItem
-                          leading={item.icon ? <item.icon className="h-4 w-4 opacity-50" /> : undefined}
-                          trailing={trailingContent}
-                        >
-                          <span className="text-[hsl(var(--cockpit-text-muted))] opacity-50">{item.label}</span>
-                        </ListItem>
-                      ) : isPlaceholder && hasAccess ? (
-                        <ListItem
-                          leading={item.icon ? <item.icon className="h-4 w-4" /> : undefined}
-                          trailing={trailingContent}
-                        >
-                          <span className="text-[hsl(var(--cockpit-text-muted))]">{item.label}</span>
-                        </ListItem>
-                      ) : (
-                        <NavItem
-                          href={item.href}
-                          label={item.label}
-                          icon={item.icon}
-                          active={isActive}
-                          disabled={!hasAccess}
-                          trailing={trailingContent}
-                        />
-                      )}
-                      {index < items.length - 1 ? <Separator /> : null}
+                    <div key={groupName}>
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-[hsl(var(--cockpit-text-muted))] mb-2 px-3 opacity-80">
+                        {groupName}
+                      </h4>
+                      <ListGroup>
+                        {visibleModules.map((item, index) => {
+                          const { authorized, reason } = isModuleAuthorized(item, auth.role, auth.hasActivePlan);
+                          const hasAccess = authorized;
+                          const isActive = !item.isPlaceholder && (pathname === item.route || (item.route !== '/cockpit' && pathname.startsWith(`${item.route}/`)));
+                          const isPlaceholder = item.isPlaceholder;
+
+                          let trailingContent = isActive ? <Badge variant="default">Ativo</Badge> : undefined;
+
+                          if (!hasAccess) {
+                            trailingContent = reason === 'plan'
+                              ? <Badge variant="outline" className="border-[hsl(var(--ui-accent-blue))] text-[hsl(var(--ui-accent-blue))] whitespace-nowrap">Upgrade</Badge>
+                              : <Badge variant="outline" className="border-red-500 text-red-500 whitespace-nowrap">Bloqueado</Badge>;
+                          } else if (isPlaceholder) {
+                            trailingContent = <Badge variant="outline">Soon</Badge>;
+                          }
+
+                          return (
+                            <div key={item.id}>
+                              {isPlaceholder && !hasAccess ? (
+                                <ListItem
+                                  leading={item.icon ? <item.icon className="h-4 w-4 opacity-50" /> : undefined}
+                                  trailing={trailingContent}
+                                >
+                                  <span className="text-[hsl(var(--cockpit-text-muted))] opacity-50">{item.label}</span>
+                                </ListItem>
+                              ) : isPlaceholder && hasAccess ? (
+                                <ListItem
+                                  leading={item.icon ? <item.icon className="h-4 w-4" /> : undefined}
+                                  trailing={trailingContent}
+                                >
+                                  <span className="text-[hsl(var(--cockpit-text-muted))]">{item.label}</span>
+                                </ListItem>
+                              ) : (
+                                <NavItem
+                                  href={item.route}
+                                  label={item.label}
+                                  icon={item.icon}
+                                  active={isActive}
+                                  disabled={!hasAccess}
+                                  trailing={trailingContent}
+                                />
+                              )}
+                              {index < visibleModules.length - 1 ? <Separator /> : null}
+                            </div>
+                          );
+                        })}
+                      </ListGroup>
                     </div>
                   );
                 })}
-              </ListGroup>
+              </div>
 
               <ListGroup>
                 <ListItem as="div" leading={<Activity className="h-4 w-4" />}>

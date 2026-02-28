@@ -4,7 +4,7 @@
 
 export type Role = 'admin' | 'operator' | 'manager' | 'viewer';
 export type Entitlement = 'plan:active' | 'rbac:admin_only' | 'rbac:viewer_or_higher';
-export type Module = 'cockpit' | 'acquisition' | 'audit' | 'frete' | 'settings';
+export type Module = 'cockpit' | 'acquisition' | 'audit' | 'frete' | 'settings' | 'dispatch' | 'admin' | 'operation';
 
 export interface UserContextData {
     role: Role | string;
@@ -22,12 +22,15 @@ export function canAccess(module: Module, ctx: UserContextData): boolean {
         case 'cockpit':
         case 'acquisition':
         case 'frete':
+        case 'dispatch':
+        case 'operation':
             return ctx.hasActivePlan;
         case 'audit':
             // admin (above), manager, or operator can access audit
             return ctx.role === 'manager' || ctx.role === 'operator';
         case 'settings':
-            return false; // Only admin can access settings
+        case 'admin':
+            return false; // Only admin can access admin/settings
         default:
             return false;
     }

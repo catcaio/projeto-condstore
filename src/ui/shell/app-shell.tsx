@@ -5,6 +5,7 @@ import { ThemeToggle } from '@/ui/theme';
 import { InspectBadge } from './inspect-badge';
 import { FinOpsStatusBar } from './finops-status-bar';
 import { Box } from 'lucide-react';
+import { ModuleBreadcrumb } from '@/ui/components';
 
 export function AppShell({
     children,
@@ -40,7 +41,7 @@ export function AppShell({
             <main className="flex-1 flex flex-col min-h-0 bg-[hsl(var(--ui-bg))]">
                 <header className="h-14 border-b border-[hsl(var(--ui-border))] px-4 flex items-center justify-between bg-[hsl(var(--ui-surface))] shrink-0 sticky top-0 z-10 w-full">
                     <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-[hsl(var(--ui-text-muted))] tracking-wide uppercase">Workspace</span>
+                        <ModuleBreadcrumb />
                         <InspectBadge role={role} />
                     </div>
                     <ThemeToggle />
