@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 import { requireActivePlan } from '../../../modules/billing/requireActivePlan';
 import { auditService } from '../../../modules/audit/audit.service';
 import { checkRateLimit } from '../../../infra/rate-limiter';
+import { planEnforcementService } from '../../../modules/finops/plan-enforcement.service';
 
 export const runtime = 'nodejs';
 
@@ -42,6 +43,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Muitas consultas. Tente novamente em alguns minutos.' },
         { status: 429 }
+      );
+    }
+
+    // 1.6) Plan Limit Enforcement
+    const enforcement = await planEnforcementService.enforcePlanLimit(tenantId, 'freight_simulation');
+    if (!enforcement.allowed) {
+      logger.warn('Plan limit exceeded for freight_simulation', { tenantId });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Limite do plano excedido',
+          code: 'PAYMENT_REQUIRED',
+          details: { state: enforcement.state, percentUsed: enforcement.percentUsed }
+        },
+        { status: 402, headers: enforcement.headers }
       );
     }
 
@@ -101,6 +117,8 @@ export async function POST(request: NextRequest) {
           weight: result.totalWeight,
           bestPrice: bestOption.price
         });
+
+        await planEnforcementService.invalidateCache(tenantId);
 
       } catch (err) {
         logger.error('Failed to persist portal simulation', err as Error, { tenantId });

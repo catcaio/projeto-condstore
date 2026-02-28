@@ -6,6 +6,7 @@ import { ErrorCode, InfrastructureError } from '../errors';
 import { redisClient } from '../redis.client';
 import { encryptString, decryptString, isEncryptedString } from '../pii/crypto';
 import { hashPhoneForTenant } from '../pii/phone';
+import { planEnforcementService } from '../../modules/finops/plan-enforcement.service';
 
 /**
  * Compact message snapshot used by the context cache and Frank orchestrator.
@@ -118,6 +119,9 @@ export class MessageRepository {
             if (redisClient.isAvailable()) {
                 await redisClient.del(`cockpit:metrics:${record.tenantId}`);
             }
+
+            // Invalidate FinOps plan enforcement cache
+            await planEnforcementService.invalidateCache(record.tenantId);
 
             logger.info('Inbound message persisted', {
                 messageSid: record.messageSid,

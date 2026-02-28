@@ -3,6 +3,7 @@ import { logger } from '../../infra/logger';
 import { ConversationEvent, ConversationState, stateMachine } from '../../core/conversation/state-machine';
 import { sessionManager } from '../../core/conversation/session-manager';
 import { freightService } from './freight.service';
+import { planEnforcementService } from '../finops/plan-enforcement.service';
 import { funnelRepository, FunnelStage } from '../funnel/funnel.repository';
 import { appConfig } from '../../config/app.config';
 import type { AttributionSnapshot } from '../../infra/attribution/attribution.types';
@@ -15,8 +16,16 @@ export class FreightController {
         messageSid?: string,
         attribution?: AttributionSnapshot | null,
         requestId?: string,
-    ): Promise<string> {
+    ): Promise<string | null> {
         try {
+            // Plan Enforcement for whatsapp_outbound
+            const enforcement = await planEnforcementService.enforcePlanLimit(tenantId, 'whatsapp_outbound');
+            if (!enforcement.allowed) {
+                logger.warn('Plan limit exceeded for whatsapp_outbound', { tenantId, phoneNumber });
+                // Return null to drop the message silently and save costs
+                return null;
+            }
+
             let session = await sessionManager.getSession(tenantId, phoneNumber);
 
             if (!session) {

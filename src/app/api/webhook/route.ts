@@ -488,6 +488,10 @@ export async function POST(request: NextRequest) {
       tenantId,
     });
 
+    if (!replyMessage) {
+      return finish(twimlEmpty(requestId));
+    }
+
     return finish(twimlOk(replyMessage, requestId));
   } catch (err) {
     const errorLatencyMs = Date.now() - startTime;
