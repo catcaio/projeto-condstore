@@ -7,8 +7,12 @@ export type Entitlement = 'plan:active' | 'rbac:admin_only' | 'rbac:viewer_or_hi
 export type Module = 'cockpit' | 'acquisition' | 'audit' | 'frete' | 'settings';
 
 export interface UserContextData {
-    role: Role;
+    role: Role | string;
     hasActivePlan: boolean;
+}
+
+export function isSuperAdmin(role?: string | null): boolean {
+    return role === 'super_admin';
 }
 
 export function canAccess(module: Module, ctx: UserContextData): boolean {

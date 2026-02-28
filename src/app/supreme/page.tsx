@@ -8,6 +8,7 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -315,8 +316,13 @@ export default async function SupremePage() {
                                             <td style={{ padding: '0.75rem 1.5rem', textAlign: 'center', color: muted, fontVariantNumeric: 'tabular-nums' }}>
                                                 {idx + 1}
                                             </td>
-                                            <td style={{ padding: '0.75rem 1.5rem', fontFamily: 'monospace', fontSize: '0.8125rem', color: text }}>
-                                                {item.tenantId}
+                                            <td style={{ padding: '0.75rem 1.5rem', fontFamily: 'monospace', fontSize: '0.8125rem' }}>
+                                                <Link
+                                                    href={`/cockpit?tenantId=${item.tenantId}`}
+                                                    style={{ color: '#3b82f6', textDecoration: 'none' }}
+                                                >
+                                                    {item.tenantId}
+                                                </Link>
                                             </td>
                                             <td style={{ padding: '0.75rem 1.5rem', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: item.burnRatePerDay > 1 ? orange : text }}>
                                                 ${item.burnRatePerDay.toFixed(4)}

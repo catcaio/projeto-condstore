@@ -12,9 +12,19 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-export default async function CockpitPage() {
+import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
+
+export default async function CockpitPage(props: { searchParams?: Promise<{ tenantId?: string }> }) {
+    const searchParams = props.searchParams ? await props.searchParams : {};
+    const inspectTenantId = searchParams.tenantId;
+
     const headersList = await headers();
-    const tenantId = headersList.get('x-auth-tenant-id');
+    const sessionTenantId = headersList.get('x-auth-tenant-id');
+    const role = headersList.get('x-auth-role');
+
+    // guard
+    const actAsSuperAdmin = isSuperAdmin(role) && inspectTenantId;
+    const tenantId = actAsSuperAdmin ? inspectTenantId : sessionTenantId;
 
     if (!tenantId) {
         return <div>Tenant ID não encontrado.</div>;
