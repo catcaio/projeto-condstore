@@ -19,17 +19,17 @@ export function SettingsSection({
     return (
         <section className={cn('scroll-m-20', className)} {...props}>
             <header className="mb-3 px-1">
-                <h2 className="text-lg font-semibold tracking-tight text-[hsl(var(--ui-text))]">
+                <h2 className="text-lg font-semibold tracking-tight text-[var(--fg)]">
                     {title}
                 </h2>
                 {description && (
-                    <p className="text-sm text-[hsl(var(--ui-text-subtle))]">
+                    <p className="text-sm text-[var(--fg)]/70">
                         {description}
                     </p>
                 )}
             </header>
             <Card variant="grouped" className={cn('overflow-hidden rounded-xl', cardClassName)}>
-                <div className="divide-y divide-[hsl(var(--ui-border))]">
+                <div className="divide-y divide-[var(--border)]">
                     {children}
                 </div>
             </Card>

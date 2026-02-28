@@ -16,13 +16,13 @@ export function AppShell({
     tenantId: string | null
 }) {
     return (
-        <div className="os-root min-h-screen bg-[hsl(var(--ui-bg))] text-[hsl(var(--ui-text))] flex flex-col md:flex-row">
+        <div className="os-root min-h-screen bg-[var(--bg)] text-[var(--fg)] flex flex-col md:flex-row">
             {/* Sidebar / Topbar */}
-            <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] flex flex-col">
+            <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-[hsl(var(--ui-border))] bg-[var(--surface)] flex flex-col">
                 <div className="p-4 border-b border-[hsl(var(--ui-border))] flex items-center gap-2 shrink-0">
                     <Box className="h-5 w-5 text-[hsl(var(--ui-accent-blue))]" />
                     <div className="flex flex-col">
-                        <span className="font-semibold text-[hsl(var(--ui-text))] tracking-tight">CONDSTORE OS</span>
+                        <span className="font-semibold text-[var(--fg)] tracking-tight">CONDSTORE OS</span>
                         {tenantId && (
                             <span className="text-[11px] text-[hsl(var(--ui-text-muted))] truncate max-w-[180px] leading-tight">
                                 {tenantId}
@@ -37,8 +37,8 @@ export function AppShell({
             </aside>
 
             {/* Main view */}
-            <main className="flex-1 flex flex-col min-h-0 bg-[hsl(var(--ui-bg))]">
-                <header className="h-14 border-b border-[hsl(var(--ui-border))] px-4 flex items-center justify-between bg-[hsl(var(--ui-surface))] shrink-0 sticky top-0 z-10 w-full">
+            <main className="flex-1 flex flex-col min-h-0 bg-[var(--bg)]">
+                <header className="h-14 border-b border-[hsl(var(--ui-border))] px-4 flex items-center justify-between bg-[var(--surface)] shrink-0 sticky top-0 z-10 w-full">
                     <div className="flex items-center gap-3">
                         <span className="text-sm font-medium text-[hsl(var(--ui-text-muted))] tracking-wide uppercase">Workspace</span>
                         <InspectBadge role={role} />

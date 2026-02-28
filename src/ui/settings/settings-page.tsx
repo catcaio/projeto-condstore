@@ -18,13 +18,13 @@ export function SettingsPage({
 }: SettingsPageProps) {
     return (
         <div className={cn('mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10', className)} {...props}>
-            <header className="mb-8 flex items-end justify-between gap-4 border-b border-[hsl(var(--ui-border))] pb-4">
+            <header className="mb-8 flex items-end justify-between gap-4 border-b border-[var(--border)] pb-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--ui-text))]">
+                    <h1 className="text-2xl font-bold tracking-tight text-[var(--fg)]">
                         {title}
                     </h1>
                     {description && (
-                        <p className="mt-1 text-sm text-[hsl(var(--ui-text-muted))]">
+                        <p className="mt-1 text-sm text-[var(--fg)]/70">
                             {description}
                         </p>
                     )}

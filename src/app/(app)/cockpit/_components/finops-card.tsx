@@ -270,7 +270,7 @@ export function FinOpsCard() {
       `}</style>
 
             <div style={{
-                background: 'linear-gradient(135deg, rgba(24,24,40,0.95) 0%, rgba(18,18,32,0.98) 100%)',
+                background: 'var(--surface)',
                 border: '1px solid var(--finops-border)',
                 borderRadius: 16,
                 padding: '20px 22px',

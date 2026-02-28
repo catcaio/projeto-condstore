@@ -179,9 +179,9 @@ export default function CockpitAnalyticsPage() {
   if (planInactive) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--cockpit-text))]">Analytics</h1>
-        <div className="rounded-lg border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] p-4">
-          <p className="text-sm text-[hsl(var(--cockpit-text))]">Plano inativo.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--fg)]">Analytics</h1>
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
+          <p className="text-sm text-[var(--fg)]">Plano inativo.</p>
           <a href="/billing/manage" className="mt-2 inline-block text-sm text-[hsl(var(--cockpit-accent))] hover:underline">
             Ir para gestão de cobrança
           </a>
@@ -192,10 +192,10 @@ export default function CockpitAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--cockpit-text))]">Analytics</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-[var(--fg)]">Analytics</h1>
 
       {(errorSummary || errorEvents) && (
-        <div className="rounded-lg border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] p-4 text-sm text-red-300">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-red-300">
           {errorSummary ?? errorEvents}
         </div>
       )}
@@ -207,32 +207,32 @@ export default function CockpitAnalyticsPage() {
           { label: 'Checkout clicks', value: summary?.funnel.pricing_click_checkout ?? 0 },
           { label: 'Unique anon', value: summary?.uniqueAnon ?? 0 },
         ].map((card) => (
-          <div key={card.label} className="rounded-xl border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] p-4">
-            <p className="text-xs text-[hsl(var(--cockpit-text-muted))]">{card.label} (7d)</p>
+          <div key={card.label} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+            <p className="text-xs text-[var(--fg)]/70">{card.label} (7d)</p>
             <p className="mt-2 text-2xl font-semibold">{loadingSummary ? '...' : card.value}</p>
           </div>
         ))}
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="rounded-xl border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))]">
-          <div className="border-b border-[hsl(var(--cockpit-border))] px-4 py-3">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+          <div className="border-b border-[var(--border)] px-4 py-3">
             <h2 className="font-medium">Top events</h2>
           </div>
           <ul className="divide-y divide-[hsl(var(--cockpit-border))]">
             {topEvents.map((item) => (
               <li key={item.event} className="flex items-center justify-between px-4 py-3 text-sm">
                 <span>{item.event}</span>
-                <span className="text-[hsl(var(--cockpit-text-muted))]">{item.count}</span>
+                <span className="text-[var(--fg)]/70">{item.count}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="rounded-xl border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))]">
-          <div className="border-b border-[hsl(var(--cockpit-border))] px-4 py-3">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+          <div className="border-b border-[var(--border)] px-4 py-3">
             <h2 className="font-medium">Funnel (MVP)</h2>
-            <p className="text-xs text-[hsl(var(--cockpit-text-muted))]">Contagem por etapa no período de 7 dias (sem sequência inferida).</p>
+            <p className="text-xs text-[var(--fg)]/70">Contagem por etapa no período de 7 dias (sem sequência inferida).</p>
           </div>
           <div className="space-y-4 px-4 py-4">
             {[
@@ -245,7 +245,7 @@ export default function CockpitAnalyticsPage() {
                   <span>{row.label}</span>
                   <span>{row.value}</span>
                 </div>
-                <div className="h-2 rounded bg-[hsl(var(--cockpit-bg))]">
+                <div className="h-2 rounded bg-[var(--bg)]">
                   <div
                     className="h-2 rounded bg-[hsl(var(--cockpit-accent))]"
                     style={{ width: `${Math.max((row.value / funnelMax) * 100, 2)}%` }}
@@ -253,7 +253,7 @@ export default function CockpitAnalyticsPage() {
                 </div>
               </div>
             ))}
-            <div className="pt-2 text-xs text-[hsl(var(--cockpit-text-muted))]">
+            <div className="pt-2 text-xs text-[var(--fg)]/70">
               <div>pricing_view / landing_view: {summary?.funnel.rates.pricing_view_over_landing_view ?? 0}%</div>
               <div>click_checkout / pricing_view: {summary?.funnel.rates.click_checkout_over_pricing_view ?? 0}%</div>
             </div>
@@ -261,16 +261,16 @@ export default function CockpitAnalyticsPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))]">
-        <div className="border-b border-[hsl(var(--cockpit-border))] px-4 py-3">
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+        <div className="border-b border-[var(--border)] px-4 py-3">
           <h2 className="font-medium">Event Stream</h2>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 border-b border-[hsl(var(--cockpit-border))] px-4 py-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 border-b border-[var(--border)] px-4 py-3 md:grid-cols-3">
           <select
             value={eventFilter}
             onChange={(event) => setEventFilter(event.target.value)}
-            className="rounded-md border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-bg))] px-3 py-2 text-sm"
+            className="rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
           >
             <option value="">Todos os eventos</option>
             {topEvents.map((item) => (
@@ -284,13 +284,13 @@ export default function CockpitAnalyticsPage() {
             value={anonIdFilter}
             onChange={(event) => setAnonIdFilter(event.target.value)}
             placeholder="Filtrar por anonId"
-            className="rounded-md border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-bg))] px-3 py-2 text-sm"
+            className="rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
           />
 
           <select
             value={limit}
             onChange={(event) => setLimit(Number(event.target.value) as (typeof STREAM_LIMITS)[number])}
-            className="rounded-md border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-bg))] px-3 py-2 text-sm"
+            className="rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
           >
             {STREAM_LIMITS.map((value) => (
               <option key={value} value={value}>

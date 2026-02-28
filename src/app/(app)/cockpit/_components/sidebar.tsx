@@ -35,7 +35,7 @@ export default function Sidebar() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold">Condstore OS</p>
-                  <p className="text-xs font-normal text-[hsl(var(--cockpit-text-muted))]">Cockpit</p>
+                  <p className="text-xs font-normal text-[var(--fg)]">Cockpit</p>
                 </div>
               </div>
             }
@@ -73,14 +73,14 @@ export default function Sidebar() {
                           leading={item.icon ? <item.icon className="h-4 w-4 opacity-50" /> : undefined}
                           trailing={trailingContent}
                         >
-                          <span className="text-[hsl(var(--cockpit-text-muted))] opacity-50">{item.label}</span>
+                          <span className="text-[var(--fg)] opacity-50">{item.label}</span>
                         </ListItem>
                       ) : isPlaceholder && hasAccess ? (
                         <ListItem
                           leading={item.icon ? <item.icon className="h-4 w-4" /> : undefined}
                           trailing={trailingContent}
                         >
-                          <span className="text-[hsl(var(--cockpit-text-muted))]">{item.label}</span>
+                          <span className="text-[var(--fg)]">{item.label}</span>
                         </ListItem>
                       ) : (
                         <NavItem
@@ -101,8 +101,8 @@ export default function Sidebar() {
               <ListGroup>
                 <ListItem as="div" leading={<Activity className="h-4 w-4" />}>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-[hsl(var(--cockpit-text))]">Status do painel</p>
-                    <p className="text-xs text-[hsl(var(--cockpit-text-muted))]">Shell UI FRONT-01 ativo</p>
+                    <p className="text-xs font-medium text-[var(--fg)]">Status do painel</p>
+                    <p className="text-xs text-[var(--fg)]">Shell UI FRONT-01 ativo</p>
                   </div>
                 </ListItem>
               </ListGroup>
@@ -117,8 +117,8 @@ export default function Sidebar() {
                 {auth.role[0]}
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[hsl(var(--cockpit-text))] capitalize">{auth.role}</p>
-                <p className="truncate text-xs text-[hsl(var(--cockpit-text-muted))]">
+                <p className="truncate text-sm font-semibold text-[var(--fg)] capitalize">{auth.role}</p>
+                <p className="truncate text-xs text-[var(--fg)]">
                   {auth.hasActivePlan ? 'Plano Ativo' : 'Sem Plano'}
                 </p>
               </div>

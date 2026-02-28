@@ -8,6 +8,14 @@
   }
 
   :root {
+    --bg: #ffffff;
+    --bg-subtle: #f6f7f9;
+    --surface: #ffffff;
+    --surface-2: #f2f4f7;
+    --border: rgba(0, 0, 0, 0.08);
+    --shadow: rgba(0, 0, 0, 0.08);
+    --fg: #111827;
+
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -30,7 +38,16 @@
     --radius: 0.5rem;
   }
 
-  .dark {
+  .dark,
+  [data-theme="dark"] {
+    --bg: #1c1c1e;
+    --bg-subtle: #000000;
+    --surface: #2c2c2e;
+    --surface-2: #1c1c1e;
+    --border: rgba(255, 255, 255, 0.08);
+    --shadow: rgba(0, 0, 0, 0.5);
+    --fg: #f9fafb;
+
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -231,7 +248,9 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--bg);
+    color: var(--fg);
+    @apply antialiased;
   }
 }
 

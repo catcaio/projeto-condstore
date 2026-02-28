@@ -40,14 +40,14 @@ export function SettingsRow({
             {...props}
         >
             {icon && (
-                <div className="flex shrink-0 items-center justify-center text-[hsl(var(--ui-text-muted))] group-hover:text-[hsl(var(--ui-text))]">
+                <div className="flex shrink-0 items-center justify-center text-[var(--fg)]/60 group-hover:text-[var(--fg)]">
                     {icon}
                 </div>
             )}
             <div className="flex flex-1 flex-col py-1">
-                <div className="text-[15px] font-medium text-[hsl(var(--ui-text))]">{label}</div>
+                <div className="text-[15px] font-medium text-[var(--fg)]">{label}</div>
                 {description && (
-                    <div className="mt-0.5 text-[13px] text-[hsl(var(--ui-text-muted))]">
+                    <div className="mt-0.5 text-[13px] text-[var(--fg)]/70">
                         {description}
                     </div>
                 )}
@@ -55,13 +55,13 @@ export function SettingsRow({
             {(value || children || isClickable || showChevron) && (
                 <div className="flex shrink-0 items-center gap-3">
                     {value && (
-                        <div className="text-sm font-medium text-[hsl(var(--ui-text-subtle))]">
+                        <div className="text-sm font-medium text-[var(--fg)]/60">
                             {value}
                         </div>
                     )}
                     {children}
                     {(showChevron || isClickable) && (
-                        <ChevronRight className="h-5 w-5 text-[hsl(var(--ui-border-strong))] group-hover:text-[hsl(var(--ui-text-muted))]" />
+                        <ChevronRight className="h-5 w-5 text-[var(--border)] group-hover:text-[var(--fg)]/70" />
                     )}
                 </div>
             )}

@@ -37,7 +37,7 @@ export default async function CockpitPage(props: { searchParams: Promise<{ [key:
         <SettingsPage
             title="Cockpit Operacional"
             description="Visão em tempo real das operações e saúde do sistema"
-            headerAction={<Link href="/cockpit/system-status" className="text-xs text-[hsl(var(--ui-accent-blue))] font-medium hover:underline flex items-center gap-1">Ver Centro de Comando &rarr;</Link>}
+            headerAction={<Link href="/cockpit/system-status" className="text-xs text-[var(--fg)] font-medium hover:underline flex items-center gap-1">Ver Centro de Comando &rarr;</Link>}
         >
             {/* MINI STATUS BAR */}
             <div className="flex gap-2 mb-6 w-full overflow-x-auto pb-2 scrollbar-hide shrink-0">
@@ -81,17 +81,17 @@ async function SystemHealthSection({ tenantId }: { tenantId: string }) {
     return (
         <SettingsSection title="Saúde do Sistema">
             <SettingsRow
-                icon={<Database className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                icon={<Database className="h-5 w-5 text-[var(--fg)]/70" />}
                 label="Banco de Dados Principal"
                 value={<Badge variant={health.dbOk ? "success" : "danger"}>{health.dbOk ? "Conectado" : "Falha"}</Badge>}
             />
             <SettingsRow
-                icon={<Activity className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                icon={<Activity className="h-5 w-5 text-[var(--fg)]/70" />}
                 label="Cache Redis"
                 value={<Badge variant={health.redisOk ? "success" : "danger"}>{health.redisOk ? "ONLINE" : "OFFLINE"}</Badge>}
             />
             <SettingsRow
-                icon={<ShieldCheck className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                icon={<ShieldCheck className="h-5 w-5 text-[var(--fg)]/70" />}
                 label="Rollups em Segundo Plano"
                 value={<Badge variant={health.rollupOk ? "success" : "danger"}>{health.rollupOk ? "Ativo" : "Pausado"}</Badge>}
             />
