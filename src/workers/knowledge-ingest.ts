@@ -1,9 +1,11 @@
 import 'dotenv/config';
 import { getDb } from '../infra/db';
-import { tenantDocumentVersions, tenantIngestionJobs } from '../drizzle/schema';
+import { tenantDocumentVersions, tenantIngestionJobs, tenantDocumentChunks } from '../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { redisClient } from '../infra/redis.client';
 import { knowledgeStorage } from '../modules/knowledge/storage';
+import { chunkDocument } from '../modules/knowledge/chunker';
+import { embeddingsService } from '../modules/knowledge/embeddings.service';
 import { logger } from '../infra/logger';
 
 const STREAM_NAME = 'knowledge_ingest';
@@ -31,20 +33,19 @@ async function extractTextFromFileBuffer(buffer: Buffer, mimeType: string): Prom
 
     if (mimeType === 'text/plain' || mimeType === 'text/markdown') {
         const text = buffer.toString('utf-8');
-        return { text: text.substring(0, PREVIEW_LIMIT), meta: { size: buffer.length } };
+        return { text, meta: { size: buffer.length } };
     }
 
     if (mimeType === 'text/csv') {
         const text = buffer.toString('utf-8');
         const lines = text.split('\n');
-        const previewLines = lines.slice(0, 10).join('\n');
-        return { text: previewLines.substring(0, PREVIEW_LIMIT), meta: { totalLines: lines.length } };
+        return { text, meta: { totalLines: lines.length } };
     }
 
     if (mimeType === 'application/pdf') {
         // Without an OCR/PDF lib, just extract ASCII text block
         const text = buffer.toString('utf-8').replace(/[^\x20-\x7E\n]/g, '');
-        return { text: text.substring(0, PREVIEW_LIMIT), meta: { maybePdf: true } };
+        return { text, meta: { maybePdf: true } };
     }
 
     return { text: '', meta: { unsupported: true, originalMime: mimeType } };
@@ -91,12 +92,33 @@ async function processMessage(messageId: string, fields: string[]) {
 
         // 3. Extract text preview
         const { text, meta } = await extractTextFromFileBuffer(buffer, mimeType);
+        const previewText = text.substring(0, 5000); // 5k limit just for preview
 
-        // 4. Update status to ready
+        // 4. Chunk Document
+        const chunks = chunkDocument({ text, mimeType });
+
+        // 5. Save Chunks
+        if (chunks.length > 0) {
+            await db.insert(tenantDocumentChunks).values(
+                chunks.map(c => ({
+                    id: crypto.randomUUID(),
+                    tenantId,
+                    versionId,
+                    content: c.content,
+                    orderIndex: c.orderIndex,
+                    pageNumber: null, // unsupported natively without PDF.js
+                }))
+            );
+
+            // 6. Generate Embeddings using service
+            await embeddingsService.generateAndStoreEmbeddings(versionId, tenantId);
+        }
+
+        // 7. Update status to ready_indexed
         await db.update(tenantDocumentVersions)
             .set({
-                status: 'ready',
-                extractedTextPreview: text,
+                status: 'ready_indexed',
+                extractedTextPreview: previewText,
                 extractedMetaJson: meta
             })
             .where(eq(tenantDocumentVersions.id, versionId));

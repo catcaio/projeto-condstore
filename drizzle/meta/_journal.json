@@ -113,6 +113,13 @@
       "when": 1772288405613,
       "tag": "0027_mature_mister_fear",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1772290163230,
+      "tag": "0028_worried_lady_mastermind",
+      "breakpoints": true
     }
   ]
 }

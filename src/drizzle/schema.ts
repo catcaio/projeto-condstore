@@ -699,7 +699,7 @@ export const tenantDocumentVersions = mysqlTable('tenant_document_versions', {
     mimeType: varchar('mime_type', { length: 128 }).notNull(),
     sizeBytes: int('size_bytes').notNull(),
     sha256: varchar('sha256', { length: 64 }).notNull(),
-    status: mysqlEnum('status', ['uploaded', 'queued', 'processing', 'ready', 'failed']).notNull().default('uploaded'),
+    status: mysqlEnum('status', ['uploaded', 'queued', 'processing', 'ready', 'ready_indexed', 'failed']).notNull().default('uploaded'),
     extractedTextPreview: text('extracted_text_preview'),
     extractedMetaJson: json('extracted_meta_json'),
     errorCode: varchar('error_code', { length: 128 }),
@@ -734,3 +734,18 @@ export const tenantIngestionJobs = mysqlTable('tenant_ingestion_jobs', {
 export type TenantIngestionJobRecord = typeof tenantIngestionJobs.$inferSelect;
 export type NewTenantIngestionJobRecord = typeof tenantIngestionJobs.$inferInsert;
 
+export const tenantDocumentChunks = mysqlTable('tenant_document_chunks', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    versionId: varchar('version_id', { length: 36 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    content: text('content').notNull(),
+    pageNumber: int('page_number'),
+    piiRiskScore: decimal('pii_risk_score', { precision: 5, scale: 2 }).default('0').notNull(),
+    orderIndex: int('order_index').notNull(),
+    embedding: json('embedding'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    tenantIdVersionIdx: index('idx_tenant_chunks_tenant_version').on(table.tenantId, table.versionId),
+}));
+export type TenantDocumentChunkRecord = typeof tenantDocumentChunks.$inferSelect;
+export type NewTenantDocumentChunkRecord = typeof tenantDocumentChunks.$inferInsert;
