@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Truck, BarChart3, Bot, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/ui/components/button';
 import { CaseProofSection } from '@/ui/components/case-proof-section';
+import { HowItWorksSection } from '@/ui/components/how-it-works-section';
 
 export default function PublicHomePage() {
     const isDev = process.env.NODE_ENV === 'development';
@@ -24,7 +25,7 @@ export default function PublicHomePage() {
                             Começar agora
                         </Button>
                     </Link>
-                    <Link href={isDev ? '/cockpit/audit?status=success' : '/docs'} passHref>
+                    <Link href="#como-funciona" passHref>
                         <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                             Ver demo
                         </Button>
@@ -33,6 +34,8 @@ export default function PublicHomePage() {
             </div>
 
             <CaseProofSection />
+
+            <HowItWorksSection />
 
             <div className="py-12 border-y border-[hsl(var(--ui-border)/0.5)] w-full grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="flex flex-col items-center text-center gap-4">

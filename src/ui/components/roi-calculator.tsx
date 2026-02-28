@@ -23,7 +23,7 @@ export function RoiCalculator() {
     const { economiaOperacional, aumentoConversao, totalRecuperado } = calculateRoi(volume, ticket, whatsappCv, custoFrete);
 
     return (
-        <div className="w-full max-w-4xl mx-auto mb-20 bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)]">
+        <div id="simular-roi" className="w-full max-w-4xl mx-auto mb-20 bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)]">
             <div className="text-center mb-10">
                 <h2 className="text-2xl md:text-3xl font-bold text-[hsl(var(--ui-text))] mb-2">Descubra quanto você pode recuperar com automação</h2>
                 <p className="text-[hsl(var(--ui-text-muted))]">Simule em 15 segundos</p>

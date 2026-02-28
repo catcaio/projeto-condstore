@@ -16,7 +16,7 @@ export default function PricingPage() {
             <CaseProofSection />
             <RoiCalculator />
 
-            <div className="text-center mb-16">
+            <div id="planos" className="text-center mb-16 pt-8">
                 <h1 className="text-[var(--text-hero)] font-bold text-[hsl(var(--ui-text))] leading-tight tracking-tight mb-4">
                     Planos simples e flexíveis
                 </h1>

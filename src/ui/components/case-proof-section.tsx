@@ -34,7 +34,7 @@ export function CaseProofSection() {
                 </div>
 
                 <div className="mt-4 flex justify-end w-full">
-                    <Link href="/pricing" passHref>
+                    <Link href="#como-funciona" passHref>
                         <Button variant="ghost" className="font-semibold text-[hsl(var(--ui-accent-blue))] hover:text-[hsl(var(--ui-accent-blue-strong))] hover:bg-[hsl(var(--ui-accent-blue)/0.1)]">
                             Ver como funciona &rarr;
                         </Button>

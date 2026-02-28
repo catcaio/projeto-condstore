@@ -1,0 +1,117 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`HowItWorksSection > snapshot da estrutura 1`] = `
+<section
+  className="w-full max-w-[var(--container-max-width)] mx-auto px-6 lg:px-8 py-20"
+  id="como-funciona"
+>
+  <div
+    className="text-center mb-16"
+  >
+    <h2
+      className="text-3xl font-bold text-[hsl(var(--ui-text))] mb-4 tracking-tight"
+    >
+      Como funciona
+    </h2>
+    <p
+      className="text-lg text-[hsl(var(--ui-text-muted))] max-w-2xl mx-auto"
+    >
+      Implantação indolor desenhada para velocidade, dispensando a complexidade de meses de projeto.
+    </p>
+  </div>
+  <div
+    className="flex flex-col md:flex-row items-stretch justify-center gap-6 xl:gap-12 relative z-10"
+  >
+    <div
+      className="flex-1 flex flex-col bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)] hover:shadow-lg transition-all text-left relative overflow-hidden group"
+    >
+      <div
+        className="absolute -top-4 -right-4 text-9xl font-black text-[hsl(var(--ui-accent-blue)/0.03)] select-none pointer-events-none group-hover:text-[hsl(var(--ui-accent-blue)/0.05)] transition-colors"
+      >
+        1
+      </div>
+      <div
+        className="h-14 w-14 rounded-full bg-[hsl(var(--ui-accent-blue)/0.1)] flex items-center justify-center text-[hsl(var(--ui-accent-blue))] mb-8 shrink-0 relative z-10"
+      >
+        <Plug
+          className="h-6 w-6"
+        />
+      </div>
+      <div
+        className="relative z-10 flex-1"
+      >
+        <h3
+          className="text-xl font-bold text-[hsl(var(--ui-text))] mb-3"
+        >
+          Conecte sua loja
+        </h3>
+        <p
+          className="text-[hsl(var(--ui-text-muted))] text-sm leading-relaxed"
+        >
+          Inteface plug-and-play com ERPs e carrinhos (WooCommerce, Bling, Shopify, Tiny) ou operação 100% manual.
+        </p>
+      </div>
+    </div>
+    <div
+      className="flex-1 flex flex-col bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)] hover:shadow-lg transition-all text-left relative overflow-hidden group"
+    >
+      <div
+        className="absolute -top-4 -right-4 text-9xl font-black text-[hsl(var(--ui-accent-blue)/0.03)] select-none pointer-events-none group-hover:text-[hsl(var(--ui-accent-blue)/0.05)] transition-colors"
+      >
+        2
+      </div>
+      <div
+        className="h-14 w-14 rounded-full bg-[hsl(var(--ui-accent-blue)/0.1)] flex items-center justify-center text-[hsl(var(--ui-accent-blue))] mb-8 shrink-0 relative z-10"
+      >
+        <MessageCircle
+          className="h-6 w-6"
+        />
+      </div>
+      <div
+        className="relative z-10 flex-1"
+      >
+        <h3
+          className="text-xl font-bold text-[hsl(var(--ui-text))] mb-3"
+        >
+          Ative o WhatsApp + Frete
+        </h3>
+        <p
+          className="text-[hsl(var(--ui-text-muted))] text-sm leading-relaxed"
+        >
+          Determine suas próprias margens, rotas preferidas para operadoras, e crie a régua de rastreamento automática.
+        </p>
+      </div>
+    </div>
+    <div
+      className="flex-1 flex flex-col bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)] hover:shadow-lg transition-all text-left relative overflow-hidden group"
+    >
+      <div
+        className="absolute -top-4 -right-4 text-9xl font-black text-[hsl(var(--ui-accent-blue)/0.03)] select-none pointer-events-none group-hover:text-[hsl(var(--ui-accent-blue)/0.05)] transition-colors"
+      >
+        3
+      </div>
+      <div
+        className="h-14 w-14 rounded-full bg-[hsl(var(--ui-accent-blue)/0.1)] flex items-center justify-center text-[hsl(var(--ui-accent-blue))] mb-8 shrink-0 relative z-10"
+      >
+        <LayoutDashboard
+          className="h-6 w-6"
+        />
+      </div>
+      <div
+        className="relative z-10 flex-1"
+      >
+        <h3
+          className="text-xl font-bold text-[hsl(var(--ui-text))] mb-3"
+        >
+          Acompanhe no Cockpit
+        </h3>
+        <p
+          className="text-[hsl(var(--ui-text-muted))] text-sm leading-relaxed"
+        >
+          Controle em tempo real de filas operacionais, funil de cotações geradas, UTMs e ROI com dados unificados.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+`;

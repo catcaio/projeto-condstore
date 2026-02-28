@@ -40,7 +40,7 @@ export default function PublicLayout({
                             Entrar
                         </Link>
                         <Link
-                            href={isDev ? '/cockpit/audit?status=success' : '/pricing'}
+                            href={isDev ? '/cockpit/audit?status=success' : '/login'}
                             className="inline-flex h-9 items-center justify-center rounded-[var(--radius-button)] bg-[hsl(var(--ui-accent-blue))] px-4 text-sm font-medium text-white transition-colors hover:bg-[hsl(var(--ui-accent-blue-strong))] shadow-[var(--shadow-soft)]"
                         >
                             Começar grátis
