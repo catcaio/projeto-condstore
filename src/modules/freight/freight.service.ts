@@ -18,6 +18,7 @@ import type {
 import { redisClient } from '../../infra/redis.client';
 import { freightTableProvider } from '../../infra/freight-table';
 import { freightSimulationLogRepository } from '../../infra/repositories/freight-simulation-log.repository';
+import { domineEventBus } from '../domine/event-bus.service';
 
 
 
@@ -76,6 +77,22 @@ class FreightService {
           attribution: request.attribution ?? null,
           requestId: request.requestId,
         });
+
+        // Publish to Domine (fire and forget)
+        const quoteId = `quote_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        void domineEventBus.publish(
+          request.tenantId,
+          'connector',
+          'freight_quoted',
+          {
+            quoteId,
+            destinationCep: request.destinationCep,
+            totalWeight,
+            bestPrice: bestOption.price,
+            optionsCount: sortedOptions.length
+          },
+          { idempotencyKey: quoteId }
+        ).catch(e => logger.error('domine_publish_fail', e));
       }
 
       // Cache the result

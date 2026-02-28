@@ -43,6 +43,9 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
     const [goNoGoLoading, setGoNoGoLoading] = useState(false);
     const [goNoGoResult, setGoNoGoResult] = useState<GoNoGoResults | null>(null);
 
+    const [domineEvents, setDomineEvents] = useState<any[]>([]);
+    const [dlqCount, setDlqCount] = useState(0);
+
     const fetchStatus = useCallback(async () => {
         setLoading(true);
         try {
@@ -51,6 +54,14 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
                 const data = await res.json();
                 setStats(data);
                 setLastUpdated(new Date());
+            }
+
+            const eventsRes = await fetch(`/api/tenants/${tenantId}/domine/events?limit=20`);
+            if (eventsRes.ok) {
+                const data = await eventsRes.json();
+                setDomineEvents(data.data || []);
+                const failures = (data.data || []).filter((e: any) => e.status === 'failed');
+                setDlqCount(failures.length); // just an approximation for UI given the endpoint
             }
         } catch (e) {
             console.error('Failed to load status');
@@ -189,6 +200,48 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* Domine Events (Spine Pilot) */}
+                <div className="p-5 rounded-2xl border bg-zinc-900 border-zinc-800 md:col-span-2 lg:col-span-3">
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-sm text-zinc-400 font-medium">Domine Event Spine (Latest 20)</h3>
+                        {dlqCount > 0 && (
+                            <span className="px-2 py-0.5 rounded text-xs bg-red-950/40 text-red-500 border border-red-900/50">
+                                {dlqCount} events in DLQ (from latest)
+                            </span>
+                        )}
+                    </div>
+                    {domineEvents.length === 0 ? (
+                        <div className="text-sm text-zinc-500 mt-2">Nenhum evento registrado ainda.</div>
+                    ) : (
+                        <div className="mt-2 text-sm text-zinc-300 max-h-48 overflow-y-auto">
+                            <table className="w-full text-left font-mono text-xs">
+                                <thead>
+                                    <tr className="text-zinc-500">
+                                        <th className="pb-2 font-medium">Time (UTC)</th>
+                                        <th className="pb-2 font-medium">Type</th>
+                                        <th className="pb-2 font-medium">Source</th>
+                                        <th className="pb-2 font-medium text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {domineEvents.map(e => (
+                                        <tr key={e.id} className="border-t border-zinc-800/50">
+                                            <td className="py-2 text-zinc-400">{new Date(e.createdAt).toLocaleString()}</td>
+                                            <td className="py-2 break-all">{e.type}</td>
+                                            <td className="py-2 text-zinc-500">{e.source}</td>
+                                            <td className="py-2 text-right">
+                                                <span className={`px-2 py-0.5 rounded ${e.status === 'processed' ? 'text-emerald-400' : e.status === 'failed' ? 'bg-red-950/50 text-red-500 border border-red-900/50' : 'text-amber-500'}`}>
+                                                    {e.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             </div>
 
