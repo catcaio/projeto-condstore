@@ -1,97 +1,123 @@
-import { CockpitMetrics } from './_components/cockpit-metrics';
-import { FreightMetricsDashboard } from './_components/freight-metrics-dashboard';
-import { FinOpsCard } from './_components/finops-card';
-import { Badge, Button, Card, CardContent, CardHeader, ListGroup, ListItem, Separator } from '@/ui/components';
-import { Activity, Database, Radio, Shield } from 'lucide-react';
+import { headers } from 'next/headers';
+import { SettingsPage, SettingsSection, SettingsRow } from '@/ui/settings';
+import { Badge, Progress } from '@/ui/components';
+import { ShieldCheck, Activity, Database, Zap, Truck, DollarSign, Package, AlertCircle } from 'lucide-react';
+import {
+    getBillingSummary,
+    getUsageSummary,
+    getFunnelSummary,
+    getSystemHealth,
+    getRecentActivity
+} from './queries';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-export default function CockpitPage() {
+export default async function CockpitPage() {
+    const headersList = await headers();
+    const tenantId = headersList.get('x-auth-tenant-id');
+
+    if (!tenantId) {
+        return <div>Tenant ID não encontrado.</div>;
+    }
+
+    const [billing, usage, funnel, health, activity] = await Promise.all([
+        getBillingSummary(tenantId),
+        getUsageSummary(tenantId),
+        getFunnelSummary(tenantId),
+        getSystemHealth(tenantId),
+        getRecentActivity(tenantId),
+    ]);
+
+    const percentUsed = billing.monthlyBudgetUsd > 0
+        ? (billing.currentMonthUsd / billing.monthlyBudgetUsd) * 100
+        : 0;
+
     return (
-        <div className="space-y-5">
-            {/* Header */}
-            <Card variant="elevated">
-                <CardHeader
-                    heading="Cockpit"
-                    subheading="Visão operacional do tenant com métricas e status do sistema"
-                    actions={
-                        <div className="flex items-center gap-2">
-                            <Badge variant="muted">Atualizado agora</Badge>
-                            <Button variant="secondary" size="sm">Atualizar</Button>
-                        </div>
-                    }
+        <SettingsPage
+            title="Cockpit Operacional"
+            description="Visão em tempo real das operações e saúde do sistema"
+            headerAction={<Badge variant="success">Operacional</Badge>}
+        >
+            <SettingsSection title="Métricas de Funil (7 dias)">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-[hsl(var(--ui-border))]">
+                    <div className="flex flex-col gap-1 p-4">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--ui-text-muted))]">Simulações Iniciadas</span>
+                        <span className="text-2xl font-bold text-[hsl(var(--ui-text))]">{funnel.flow_started ?? 0}</span>
+                    </div>
+                    <div className="flex flex-col gap-1 p-4">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--ui-text-muted))]">CEP Informado</span>
+                        <span className="text-2xl font-bold text-[hsl(var(--ui-text))]">{funnel.cep_provided ?? 0}</span>
+                    </div>
+                    <div className="flex flex-col gap-1 p-4">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--ui-text-muted))]">Frete Cotado</span>
+                        <span className="text-2xl font-bold text-[hsl(var(--ui-accent-blue))]">{funnel.freight_quoted ?? 0}</span>
+                    </div>
+                </div>
+            </SettingsSection>
+
+            <SettingsSection title="Uso & Frete">
+                <SettingsRow
+                    icon={<Truck className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Volume Simulado (7 dias)"
+                    description="Total de pacotes e peso médio na base"
+                    value={`${usage.total_simulations ?? 0} envios`}
                 />
-                <CardContent className="pt-0">
-                    <ListGroup>
-                        <ListItem leading={<Shield className="h-4 w-4" />} trailing={<Badge variant="success">Admin-only</Badge>}>
-                            APIs protegidas por `requireAdmin` + middleware com role estrita
-                        </ListItem>
-                        <Separator />
-                        <ListItem leading={<Activity className="h-4 w-4" />} trailing={<Badge variant="muted">requestId</Badge>}>
-                            Logs estruturados, rate limit hardening e Sentry com redaction
-                        </ListItem>
-                    </ListGroup>
-                </CardContent>
-            </Card>
+                <SettingsRow
+                    icon={<Package className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Peso Médio dos Pedidos"
+                    value={`${Number(usage.avg_peso ?? 0).toFixed(2)} kg`}
+                />
+            </SettingsSection>
 
-            {/* Metrics Grid */}
-            <CockpitMetrics />
+            <SettingsSection title="FinOps Budget">
+                <SettingsRow
+                    icon={<DollarSign className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Gasto Acumulado Mensal"
+                    description={`Status: ${billing.state === 'unlocked' ? 'Liberado' : 'Limitado'}`}
+                    value={`$${Number(billing.currentMonthUsd).toFixed(2)} / $${billing.monthlyBudgetUsd > 0 ? Number(billing.monthlyBudgetUsd).toFixed(2) : '∞'}`}
+                />
+                <div className="px-4 pb-4 pt-2">
+                    <Progress value={percentUsed} max={100} indicatorClassName={percentUsed > 80 ? 'bg-[hsl(var(--ui-danger))]' : undefined} />
+                    <div className="flex justify-between mt-2 text-xs text-[hsl(var(--ui-text-muted))]">
+                        <span>Burn Rate: ${Number(billing.burnRatePerDay ?? 0).toFixed(4)}/dia</span>
+                        <span>{percentUsed.toFixed(1)}% utilizado</span>
+                    </div>
+                </div>
+            </SettingsSection>
 
-            <FreightMetricsDashboard />
+            <SettingsSection title="Atividade Recente">
+                {activity.length === 0 ? (
+                    <div className="p-4 text-sm text-[hsl(var(--ui-text-muted))]">Sem eventos registrados recentemente.</div>
+                ) : (
+                    activity.map((ev, i) => (
+                        <SettingsRow
+                            key={i}
+                            icon={<Zap className="h-5 w-5 text-[hsl(var(--ui-accent-blue))]" />}
+                            label={`Funil: ${ev.stage}`}
+                            description={ev.phoneNumber ? `Origem: ${ev.phoneNumber}` : `Ref: ${ev.sessionId}`}
+                            value={formatDistanceToNow(new Date(ev.createdAt), { addSuffix: true, locale: ptBR })}
+                        />
+                    ))
+                )}
+            </SettingsSection>
 
-            {/* FinOps Budget Card */}
-            <FinOpsCard />
-
-            {/* Recent Activity Mock (To be refactored later) */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <Card className="lg:col-span-2">
-                    <CardHeader
-                        heading="Atividade recente"
-                        subheading="Eventos operacionais resumidos"
-                        actions={<Button variant="ghost" size="sm">Ver tudo</Button>}
-                    />
-                    <CardContent className="pt-0">
-                        <ListGroup>
-                            {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i}>
-                                    <ListItem leading={<span className="h-2 w-2 rounded-full bg-[hsl(var(--ui-accent-blue))]" />} trailing={<span className="text-xs">{i * 5} min</span>}>
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm font-medium text-[hsl(var(--ui-text))]">
-                                                Novo pedido via WhatsApp
-                                            </p>
-                                            <p className="truncate text-xs text-[hsl(var(--ui-text-muted))]">
-                                                Tenant: Lojacond • Ref: #ORD-{1000 + i}
-                                            </p>
-                                        </div>
-                                    </ListItem>
-                                    {i < 5 ? <Separator /> : null}
-                                </div>
-                            ))}
-                        </ListGroup>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader heading="Status do sistema" subheading="Snapshot local do shell" />
-                    <CardContent className="space-y-3">
-                        <ListGroup>
-                            <ListItem leading={<Radio className="h-4 w-4" />} trailing={<Badge variant="success">Operacional</Badge>}>
-                                Twilio Webhook
-                            </ListItem>
-                            <Separator />
-                            <ListItem leading={<Database className="h-4 w-4" />} trailing={<Badge variant="success">Operacional</Badge>}>
-                                Banco de dados
-                            </ListItem>
-                            <Separator />
-                            <ListItem leading={<Activity className="h-4 w-4" />} trailing={<Badge variant="muted">Monitorado</Badge>}>
-                                Redis / rate limit
-                            </ListItem>
-                        </ListGroup>
-
-                        <Button variant="secondary" className="w-full">
-                            Ver logs do sistema
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
+            <SettingsSection title="Saúde do Sistema">
+                <SettingsRow
+                    icon={<Database className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Banco de Dados Principal"
+                    value={<Badge variant={health.dbOk ? "success" : "danger"}>{health.dbOk ? "Conectado" : "Falha"}</Badge>}
+                />
+                <SettingsRow
+                    icon={<Activity className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Cache Redis"
+                    value={<Badge variant={health.redisOk ? "success" : "danger"}>{health.redisOk ? "ONLINE" : "OFFLINE"}</Badge>}
+                />
+                <SettingsRow
+                    icon={<ShieldCheck className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Rollups em Segundo Plano"
+                    value={<Badge variant={health.rollupOk ? "success" : "danger"}>{health.rollupOk ? "Ativo" : "Pausado"}</Badge>}
+                />
+            </SettingsSection>
+        </SettingsPage>
     );
 }
