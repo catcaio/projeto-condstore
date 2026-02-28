@@ -1,0 +1,1 @@
+ALTER TABLE `tenants` ADD `outbound_enabled` boolean DEFAULT true NOT NULL;

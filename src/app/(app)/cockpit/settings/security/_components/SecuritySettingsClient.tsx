@@ -19,6 +19,8 @@ interface SecretMetadata {
 export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
     const [secrets, setSecrets] = useState<SecretMetadata[]>([]);
     const [loading, setLoading] = useState(false);
+    const [outboundEnabled, setOutboundEnabled] = useState<boolean | null>(null);
+    const [isUpdatingOutbound, setIsUpdatingOutbound] = useState(false);
 
     // Rotate Modal State
     const [isRotateModalOpen, setIsRotateModalOpen] = useState(false);
@@ -33,7 +35,20 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
 
     useEffect(() => {
         fetchSecrets();
+        fetchSettings();
     }, [tenantId]);
+
+    async function fetchSettings() {
+        try {
+            const res = await fetch(`/api/tenants/${tenantId}/settings`);
+            if (res.ok) {
+                const data = await res.json();
+                setOutboundEnabled(data.outboundEnabled !== false); // default true
+            }
+        } catch (error) {
+            console.error('Failed to fetch settings');
+        }
+    }
 
     async function fetchSecrets() {
         setLoading(true);
@@ -113,6 +128,27 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
         }
     };
 
+    const handleToggleOutbound = async () => {
+        setIsUpdatingOutbound(true);
+        const newValue = !outboundEnabled;
+        try {
+            const res = await fetch(`/api/tenants/${tenantId}/settings`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ outboundEnabled: newValue })
+            });
+            if (res.ok) {
+                setOutboundEnabled(newValue);
+            } else {
+                alert('Erro ao atualizar configurações.');
+            }
+        } catch (error) {
+            alert('Falha na requisição.');
+        } finally {
+            setIsUpdatingOutbound(false);
+        }
+    };
+
     const renderSecretItem = (
         scope: string,
         keyName: string,
@@ -157,6 +193,27 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
 
     return (
         <div className="space-y-6">
+            <SettingsSection
+                title="Operational Controls (Kill Switch)"
+                description="Controle de emergência para bloquear o tráfego de saída mantendo o recebimento de mensagens."
+            >
+                <div className="bg-[hsl(var(--ui-surface))] rounded-lg border border-[hsl(var(--ui-border))] px-4 py-4 flex items-center justify-between">
+                    <div>
+                        <span className="text-sm font-semibold text-[hsl(var(--ui-text))]">Permitir Envio de Mensagens</span>
+                        <p className="text-xs text-[hsl(var(--ui-text-muted))] mt-1">Se desativado, o sistema parará de enviar qualquer mensagem para este tenant, logando tentativas como bloqueadas.</p>
+                    </div>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleToggleOutbound}
+                        disabled={isUpdatingOutbound || outboundEnabled === null}
+                        className={!outboundEnabled ? "bg-[hsl(var(--ui-danger))] text-white border-transparent" : ""}
+                    >
+                        {isUpdatingOutbound ? 'Salvando...' : (outboundEnabled ? 'Ativado' : 'DESATIVADO')}
+                    </Button>
+                </div>
+            </SettingsSection>
+
             <SettingsSection
                 title="Mensageria (Twilio)"
                 description="Credenciais e tokens para comunicação via WhatsApp."

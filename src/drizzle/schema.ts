@@ -13,6 +13,7 @@ export const tenants = mysqlTable('tenants', {
     plan: varchar('plan', { length: 50 }),
     planStatus: varchar('plan_status', { length: 50 }),
     planCurrentPeriodEnd: timestamp('plan_current_period_end'),
+    outboundEnabled: boolean('outbound_enabled').default(true).notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
