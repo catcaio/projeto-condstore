@@ -1,46 +1,95 @@
 import { getDb } from '@/infra/db';
 import { sql, and, gte, eq, desc } from 'drizzle-orm';
-import { freightFunnelEvents, tenantBudgets, tenants } from '@/drizzle/schema';
+import { freightFunnelEvents, tenantBudgets, tenants, tenantSubscriptions } from '@/drizzle/schema';
 import { redisClient } from '@/infra/redis.client';
 import { metricsRollupStatusRepository } from '@/modules/metrics/metrics-rollup-status.repository';
 
 export async function getBillingSummary(tenantId: string) {
     const db = await getDb();
-    const result = await db.execute(sql`
-        SELECT
-            current_lock_state as state,
-            monthly_budget_usd as monthlyBudgetUsd,
-            current_month_usd as currentMonthUsd,
-            burn_rate_per_day as burnRatePerDay
-        FROM tenant_budgets
-        WHERE tenant_id = ${tenantId}
-        LIMIT 1
-    `);
-    const rows = (Array.isArray(result) ? result[0] : result) as unknown as any[];
-    return rows[0] ?? {
-        state: 'unlocked',
-        monthlyBudgetUsd: 0,
-        currentMonthUsd: 0,
-        burnRatePerDay: 0,
+
+    // Attempt to get active subscription first
+    const subResult = await db.select()
+        .from(tenantSubscriptions)
+        .where(and(eq(tenantSubscriptions.tenantId, tenantId), eq(tenantSubscriptions.status, 'active')))
+        .limit(1);
+
+    const sub = subResult[0];
+
+    const budgetResult = await db.select({
+        monthlyBudgetUsd: tenantBudgets.monthlyBudgetUsd,
+        currentMonthUsd: tenantBudgets.currentMonthUsd,
+        currentLockState: tenantBudgets.currentLockState,
+        burnRatePerDay: tenantBudgets.burnRatePerDay,
+    })
+        .from(tenantBudgets)
+        .where(eq(tenantBudgets.tenantId, tenantId))
+        .limit(1);
+
+    const budget = budgetResult[0] ?? {
+        monthlyBudgetUsd: '0',
+        currentMonthUsd: '0',
+        currentLockState: 'unlocked',
+        burnRatePerDay: '0',
+    };
+
+    // Fallback to tenants table if no subscription is present
+    const tResult = await db.select({
+        plan: tenants.plan,
+        planStatus: tenants.planStatus,
+    }).from(tenants).where(eq(tenants.id, tenantId)).limit(1);
+
+    const tenant = tResult[0];
+
+    return {
+        planId: sub?.planId ?? tenant?.plan ?? 'FREE',
+        status: sub?.status ?? tenant?.planStatus ?? 'active',
+        currentPeriodEnd: sub?.currentPeriodEnd ?? null,
+        cancelAtPeriodEnd: sub?.cancelAtPeriodEnd ?? false,
+        budget: {
+            monthlyUsd: Number(budget.monthlyBudgetUsd),
+            currentUsd: Number(budget.currentMonthUsd),
+            state: budget.currentLockState,
+            burnRate: Number(budget.burnRatePerDay),
+        }
     };
 }
 
 export async function getUsageSummary(tenantId: string) {
     const db = await getDb();
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const result = await db.execute(sql`
-        SELECT 
-            COUNT(*) as total_simulations,
-            AVG(peso_total) as avg_peso
-        FROM freight_funnel_events
-        WHERE tenant_id = ${tenantId} AND created_at >= ${sevenDaysAgo} AND stage = 'flow_started'
-    `);
-    const rows = (Array.isArray(result) ? result[0] : result) as unknown as any[];
-    return rows[0] ?? {
-        total_simulations: 0,
-        avg_peso: 0,
+    // Summing tokens from tenant_budgets or tenant_usage_metrics
+    const tokensResult = await db.select({
+        tokensConsumed: tenantBudgets.tokensConsumed,
+        monthlyTokenLimit: tenantBudgets.monthlyTokenLimit,
+        currentMonthUsd: tenantBudgets.currentMonthUsd,
+        monthlyBudgetUsd: tenantBudgets.monthlyBudgetUsd,
+    })
+        .from(tenantBudgets)
+        .where(eq(tenantBudgets.tenantId, tenantId))
+        .limit(1);
+
+    const tokens = tokensResult[0] ?? {
+        tokensConsumed: 0,
+        monthlyTokenLimit: 1000000,
+        currentMonthUsd: '0',
+        monthlyBudgetUsd: '0',
+    };
+
+    const percentUsedUsd = Number(tokens.monthlyBudgetUsd) > 0
+        ? (Number(tokens.currentMonthUsd) / Number(tokens.monthlyBudgetUsd)) * 100
+        : 0;
+
+    const percentUsedTokens = tokens.monthlyTokenLimit > 0
+        ? (tokens.tokensConsumed / tokens.monthlyTokenLimit) * 100
+        : 0;
+
+    return {
+        tokensConsumed: tokens.tokensConsumed,
+        monthlyTokenLimit: tokens.monthlyTokenLimit,
+        percentUsedTokens,
+        currentMonthUsd: Number(tokens.currentMonthUsd),
+        monthlyBudgetUsd: Number(tokens.monthlyBudgetUsd),
+        percentUsedUsd,
     };
 }
 
@@ -64,17 +113,25 @@ export async function getFunnelSummary(tenantId: string) {
         .groupBy(freightFunnelEvents.stage);
 
     const counts: Record<string, number> = {
-        flow_started: 0,
-        cep_provided: 0,
-        freight_quoted: 0,
+        'INTENT_DETECTED': 0,
+        'ASKED_CEP': 0,
+        'CEP_RECEIVED': 0,
+        'QUOTE_SENT': 0,
+        'ABANDONED': 0,
+        'flow_started': 0,
+        'cep_provided': 0,
+        'freight_quoted': 0,
     };
 
+    let total = 0;
     result.forEach((row) => {
-        if (row.stage && (row.stage in counts)) {
+        if (row.stage) {
             counts[row.stage] = Number(row.count ?? 0);
+            total += Number(row.count ?? 0);
         }
     });
 
+    counts['total'] = total;
     return counts;
 }
 
@@ -102,5 +159,5 @@ export async function getRecentActivity(tenantId: string) {
         .from(freightFunnelEvents)
         .where(eq(freightFunnelEvents.tenantId, tenantId))
         .orderBy(desc(freightFunnelEvents.createdAt))
-        .limit(5);
+        .limit(10);
 }
