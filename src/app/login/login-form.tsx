@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AlertCircle, LockKeyhole, Mail, ShieldCheck, Truck } from 'lucide-react';
 import { trackEvent } from '@/ui/lib/track-client';
+import { safeFetch } from '@/ui/lib/safe-fetch';
 import { Badge, Button, Card, CardContent, CardHeader, ListGroup, ListItem, Separator, TextField } from '@/ui/components';
 import { ThemeToggle } from '@/ui/theme';
 
@@ -37,7 +38,7 @@ export function LoginForm({ buildLabel }: LoginFormProps) {
         setLoading(true);
 
         try {
-            const res = await fetch('/api/auth/login', {
+            const res = await safeFetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),

@@ -1,3 +1,5 @@
+import { safeFetch } from './safe-fetch';
+
 export interface TrackingEvent {
     type: 'view_section' | 'click_cta' | 'roi_change' | 'entry_start' | 'entry_success';
     page: string;
@@ -69,15 +71,17 @@ async function flushEvents() {
                     const blob = new Blob([jsonStr], { type: 'application/json' });
                     navigator.sendBeacon(url, blob);
                 } else {
-                    const res = await fetch(url, {
+                    const res = await safeFetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: jsonStr,
                         keepalive: true,
+                        maxRetries: 2, // Reduce retries for analytics
+                        baseBackoffMs: 500
                     });
                     if (res.status === 429) {
                         consecutive429Count++;
-                        // backoff expo com jitter max 1 min
+                        // backoff expo com jitter max 1 min global buffer
                         const delay = Math.min(1000 * Math.pow(2, consecutive429Count), 60000) + Math.random() * 500;
                         backoffUntil = Date.now() + delay;
                         break; // Stop sending the rest for now

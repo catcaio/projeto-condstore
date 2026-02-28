@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { UploadCloud, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils'; // Optional if present, otherwise I will use template string
+import { safeFetch } from '@/ui/lib/safe-fetch';
 
 export function UploadCard({ tenantId, maxSizeBytes }: { tenantId: string; maxSizeBytes: number }) {
     const [file, setFile] = useState<File | null>(null);
@@ -29,7 +30,7 @@ export function UploadCard({ tenantId, maxSizeBytes }: { tenantId: string; maxSi
         setStatus('uploading');
         try {
             // 1. Init
-            const initRes = await fetch('/api/knowledge/upload/init', {
+            const initRes = await safeFetch('/api/knowledge/upload/init', {
                 method: 'POST',
                 body: JSON.stringify({
                     filename: file.name,
@@ -46,12 +47,13 @@ export function UploadCard({ tenantId, maxSizeBytes }: { tenantId: string; maxSi
             const { uploadUrl, documentId, versionId } = await initRes.json();
 
             // 2. Upload to S3/R2 directly
-            const uploadRes = await fetch(uploadUrl, {
+            const uploadRes = await safeFetch(uploadUrl, {
                 method: 'PUT',
                 body: file,
                 headers: {
                     'Content-Type': file.type || 'application/octet-stream',
-                }
+                },
+                maxRetries: 1 // Don't retry large file uploads aggressively
             });
 
             if (!uploadRes.ok) {
@@ -67,7 +69,7 @@ export function UploadCard({ tenantId, maxSizeBytes }: { tenantId: string; maxSi
             setStatus('processing');
 
             // 3. Complete
-            const compRes = await fetch('/api/knowledge/upload/complete', {
+            const compRes = await safeFetch('/api/knowledge/upload/complete', {
                 method: 'POST',
                 body: JSON.stringify({
                     documentId,
@@ -115,8 +117,8 @@ export function UploadCard({ tenantId, maxSizeBytes }: { tenantId: string; maxSi
 
             {status !== 'idle' && (
                 <div className={`mt-4 p-3 rounded-md text-sm flex gap-2 items-center ${status === 'error' ? 'bg-[hsl(var(--ui-danger)/0.1)] text-[hsl(var(--ui-danger-ink))]' :
-                        status === 'success' ? 'bg-[hsl(var(--ui-success)/0.1)] text-[hsl(var(--ui-success-ink))]' :
-                            'bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue-ink))]'
+                    status === 'success' ? 'bg-[hsl(var(--ui-success)/0.1)] text-[hsl(var(--ui-success-ink))]' :
+                        'bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue-ink))]'
                     }`}>
                     {status === 'error' && <AlertCircle className="w-4 h-4" />}
                     {status === 'success' && <CheckCircle2 className="w-4 h-4" />}

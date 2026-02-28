@@ -9,6 +9,7 @@ import { trackAppEvent } from '@/ui/lib/track-app';
 import { LocalStorageAdapter } from '@/lib/storage/LocalStorageAdapter';
 import { FreightCard } from '@/components/FreightCard';
 import { SimulationHistory } from '@/components/SimulationHistory';
+import { safeFetch } from '@/ui/lib/safe-fetch';
 
 export default function Dashboard() {
     // Form State
@@ -31,7 +32,7 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const response = await fetch('/api/history');
+                const response = await safeFetch('/api/history');
                 const data = await response.json();
                 if (data.success) {
                     setHistory(data.history);
@@ -50,7 +51,7 @@ export default function Dashboard() {
         setRanking(null);
 
         try {
-            const response = await fetch('/api/simulate', {
+            const response = await safeFetch('/api/simulate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
@@ -96,7 +97,7 @@ export default function Dashboard() {
             storage.saveSimulation(simulation);
 
             // Refresh History from API (Real Database)
-            const historyResponse = await fetch('/api/history');
+            const historyResponse = await safeFetch('/api/history');
             const historyData = await historyResponse.json();
             if (historyData.success) {
                 setHistory(historyData.history);

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Bookmark, Trash, Cloud, HardDrive } from 'lucide-react';
+import { safeFetch } from '@/ui/lib/safe-fetch';
 
 interface SavedView<T = Record<string, any>> {
     id?: string;
@@ -52,7 +53,7 @@ export function SavedViews<T extends Record<string, any>>({
 
         const fetchServer = async () => {
             try {
-                const res = await fetch(`/api/cockpit/saved-views?module=${module}`);
+                const res = await safeFetch(`/api/cockpit/saved-views?module=${module}`);
                 const data = await res.json();
                 if (data.success) {
                     setIsServerMode(true);
@@ -87,7 +88,7 @@ export function SavedViews<T extends Record<string, any>>({
 
         if (module && isServerMode) {
             try {
-                const res = await fetch('/api/cockpit/saved-views', {
+                const res = await safeFetch('/api/cockpit/saved-views', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ module, name: saveName.trim(), filters: currentFilters })
@@ -117,7 +118,7 @@ export function SavedViews<T extends Record<string, any>>({
 
         if (view.source === 'server' && view.id) {
             try {
-                const res = await fetch(`/api/cockpit/saved-views?id=${view.id}`, {
+                const res = await safeFetch(`/api/cockpit/saved-views?id=${view.id}`, {
                     method: 'DELETE'
                 });
                 const data = await res.json();

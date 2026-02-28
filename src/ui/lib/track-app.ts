@@ -1,3 +1,5 @@
+import { safeFetch } from './safe-fetch';
+
 export interface AppTrackingEvent {
     type: 'signup_created' | 'store_connected' | 'first_freight_simulation' | 'first_whatsapp_message' | 'cockpit_viewed';
     metadata?: Record<string, any>;
@@ -22,11 +24,13 @@ export function trackAppEvent({ type, metadata }: AppTrackingEvent) {
             if (queued) return;
         }
 
-        fetch(url, {
+        safeFetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: jsonStr,
             keepalive: true,
+            maxRetries: 2,
+            baseBackoffMs: 500
         }).catch(() => { });
     } catch (err) { }
 }

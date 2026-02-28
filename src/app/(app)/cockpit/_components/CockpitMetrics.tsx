@@ -19,6 +19,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MetricCard, type MetricCardVariant } from './MetricCard';
 import { MetricCardSkeleton } from './MetricCardSkeleton';
+import { safeFetch } from '@/ui/lib/safe-fetch';
 
 interface CockpitMetricsData {
   mensagensHoje: number;
@@ -33,11 +34,11 @@ const CARDS: Array<{
   title: string;
   colorVariant?: MetricCardVariant;
 }> = [
-  { key: 'mensagensHoje', title: 'Mensagens Hoje' },
-  { key: 'cotacoesHoje', title: 'Cotações Hoje' },
-  { key: 'pedidosHoje', title: 'Pedidos Hoje' },
-  { key: 'erros24h', title: 'Erros 24h', colorVariant: 'error' },
-];
+    { key: 'mensagensHoje', title: 'Mensagens Hoje' },
+    { key: 'cotacoesHoje', title: 'Cotações Hoje' },
+    { key: 'pedidosHoje', title: 'Pedidos Hoje' },
+    { key: 'erros24h', title: 'Erros 24h', colorVariant: 'error' },
+  ];
 
 export function CockpitMetrics() {
   const [data, setData] = useState<CockpitMetricsData | null>(null);
@@ -51,7 +52,7 @@ export function CockpitMetrics() {
   const fetchMetrics = useCallback(async (showSkeletons = false) => {
     if (showSkeletons) setLoading(true);
     try {
-      const res = await fetch('/api/cockpit/metrics');
+      const res = await safeFetch('/api/cockpit/metrics');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setData((await res.json()) as CockpitMetricsData);
       setError('');
@@ -98,16 +99,16 @@ export function CockpitMetrics() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {loading
           ? Array.from({ length: 4 }).map((_, i) => (
-              <MetricCardSkeleton key={i} />
-            ))
+            <MetricCardSkeleton key={i} />
+          ))
           : CARDS.map((card) => (
-              <MetricCard
-                key={card.key}
-                title={card.title}
-                value={data ? data[card.key] : 0}
-                colorVariant={card.colorVariant}
-              />
-            ))}
+            <MetricCard
+              key={card.key}
+              title={card.title}
+              value={data ? data[card.key] : 0}
+              colorVariant={card.colorVariant}
+            />
+          ))}
       </div>
     </section>
   );
