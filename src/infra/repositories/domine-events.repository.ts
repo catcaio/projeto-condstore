@@ -1,6 +1,6 @@
 import { getDb } from '../db';
 import { domineEvents, domineOrders, domineFreightQuotes } from '../../drizzle/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray, or, lte, isNull, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 
 export class DomineEventsRepository {
@@ -51,10 +51,56 @@ export class DomineEventsRepository {
             .where(eq(domineEvents.id, id));
     }
 
-    async sendToDLQ(id: string, errorCode: string, errorMessage?: string) {
+    async lockEvent(id: string): Promise<boolean> {
         const db = await getDb();
+        const [result] = await db.execute(sql`
+            UPDATE domine_events 
+            SET status = 'processing' 
+            WHERE id = ${id} AND status IN ('queued', 'failed')
+        `);
+        return (result as any).affectedRows > 0;
+    }
+
+    async fetchProcessableEvents(limit: number = 50, tenantId?: string) {
+        const db = await getDb();
+        const now = new Date();
+        const conditions = [
+            inArray(domineEvents.status, ['queued', 'failed']),
+            or(
+                isNull(domineEvents.nextRetryAt),
+                lte(domineEvents.nextRetryAt, now)
+            )
+        ];
+        if (tenantId) {
+            conditions.push(eq(domineEvents.tenantId, tenantId));
+        }
+
+        return db.select()
+            .from(domineEvents)
+            .where(and(...conditions))
+            .orderBy(domineEvents.createdAt)
+            .limit(limit);
+    }
+
+    async sendToDLQ(id: string, errorCode: string, errorMessage?: string, nextRetryAt?: Date, attempts?: number) {
+        const db = await getDb();
+
+        const setValues: any = {
+            status: 'failed',
+            errorCode,
+            errorMessage: errorMessage ?? null,
+            processedAt: new Date()
+        };
+
+        if (nextRetryAt !== undefined) {
+            setValues.nextRetryAt = nextRetryAt;
+        }
+        if (attempts !== undefined) {
+            setValues.attempts = attempts;
+        }
+
         await db.update(domineEvents)
-            .set({ status: 'failed', errorCode, errorMessage: errorMessage ?? null, processedAt: new Date() })
+            .set(setValues)
             .where(eq(domineEvents.id, id));
     }
 
@@ -72,10 +118,61 @@ export class DomineEventsRepository {
             .offset(filters.offset || 0);
     }
 
+    async listDLQEvents(tenantId: string, limit: number = 20, offset: number = 0) {
+        const db = await getDb();
+        return db.select()
+            .from(domineEvents)
+            .where(
+                and(
+                    eq(domineEvents.tenantId, tenantId),
+                    eq(domineEvents.status, 'failed'),
+                    isNull(domineEvents.nextRetryAt) // strictly DLQ (max retries reached or hard fail)
+                )
+            )
+            .orderBy(desc(domineEvents.createdAt))
+            .limit(limit)
+            .offset(offset);
+    }
+
+    async resetDLQEvent(eventId: string, tenantId: string): Promise<boolean> {
+        const db = await getDb();
+        const [result] = await db.execute(sql`
+            UPDATE domine_events 
+            SET status = 'queued', attempts = 0, next_retry_at = NULL 
+            WHERE id = ${eventId} AND tenant_id = ${tenantId} AND status = 'failed'
+        `);
+        return (result as any).affectedRows > 0;
+    }
+
     async getDLQCount(tenantId: string): Promise<number> {
         const db = await getDb();
         const rows = await db.select({ count: domineEvents.id }).from(domineEvents)
-            .where(and(eq(domineEvents.tenantId, tenantId), eq(domineEvents.status, 'failed')));
+            .where(
+                and(
+                    eq(domineEvents.tenantId, tenantId),
+                    eq(domineEvents.status, 'failed'),
+                    isNull(domineEvents.nextRetryAt)
+                )
+            );
+        return rows.length;
+    }
+
+    async countBacklogQueued(tenantId: string): Promise<number> {
+        const db = await getDb();
+        const rows = await db.select({ count: domineEvents.id }).from(domineEvents)
+            .where(and(eq(domineEvents.tenantId, tenantId), eq(domineEvents.status, 'queued')));
+        return rows.length;
+    }
+
+    async countProcessedLastWindow(tenantId: string, hours: number = 24): Promise<number> {
+        const db = await getDb();
+        const windowStart = new Date(Date.now() - hours * 60 * 60 * 1000);
+        const rows = await db.select({ count: domineEvents.id }).from(domineEvents)
+            .where(and(
+                eq(domineEvents.tenantId, tenantId),
+                eq(domineEvents.status, 'processed'),
+                sql`${domineEvents.processedAt} >= ${windowStart}`
+            ));
         return rows.length;
     }
 }

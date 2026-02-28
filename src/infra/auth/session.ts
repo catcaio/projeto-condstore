@@ -58,8 +58,14 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
     }
 }
 
-export async function getSessionUser(request: NextRequest): Promise<SessionPayload | null> {
-    const token = request.cookies.get(COOKIE_NAME)?.value;
+export async function getSessionUser(request?: NextRequest): Promise<SessionPayload | null> {
+    let token: string | undefined;
+    if (request) {
+        token = request.cookies.get(COOKIE_NAME)?.value;
+    } else {
+        const cookieStore = await cookies();
+        token = cookieStore.get(COOKIE_NAME)?.value;
+    }
     if (!token) return null;
 
     const payload = await verifySessionToken(token);

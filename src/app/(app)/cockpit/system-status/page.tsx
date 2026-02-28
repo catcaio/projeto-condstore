@@ -4,6 +4,7 @@ import { Badge } from '@/ui/components';
 import { getSystemStatus, SystemStatusPayload } from './queries';
 import { Database, ShieldAlert, Cpu, MessageCircle, Cloud, Activity, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { DomineProcessorCard } from './DomineProcessorCard';
 
 export const revalidate = 60; // SSR cache
 
@@ -111,6 +112,12 @@ export default async function SystemStatusPage() {
                     </div>
                 </div>
             </SettingsSection>
+
+            {data.domineProcessor && (
+                <SettingsSection title="Processamento de Eventos (Espinha Dorsal)" description="Status do loop idempotente de processamento">
+                    <DomineProcessorCard {...data.domineProcessor} />
+                </SettingsSection>
+            )}
         </SettingsPage>
     );
 }

@@ -45,7 +45,7 @@ describe('System Status & Health Checks', () => {
         expect(payload.whatsapp).toBeDefined();
 
         // Assert RBAC leak prevention assumption
-        expect(payload.storageReason).toBeDefined();
+        expect(payload.infra.storageReason).toBeDefined();
     });
 
     it('hides sensitive infra reasons from viewer role', async () => {

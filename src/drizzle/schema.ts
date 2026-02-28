@@ -837,10 +837,13 @@ export const domineEvents = mysqlTable('domine_events', {
     status: varchar('status', { length: 30 }).notNull().default('queued'),
     errorCode: varchar('error_code', { length: 100 }),
     errorMessage: text('error_message'),
+    attempts: int('attempts').default(0).notNull(),
+    nextRetryAt: timestamp('next_retry_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
     tenantIdempotencyIdx: uniqueIndex('uq_domine_events_tenant_idempotency').on(table.tenantId, table.idempotencyKey),
     tenantStatusIdx: index('idx_domine_events_tenant_status').on(table.tenantId, table.status),
+    nextRetryIdx: index('idx_domine_events_next_retry').on(table.nextRetryAt),
 }));
 
 export const domineOrders = mysqlTable('domine_orders', {
