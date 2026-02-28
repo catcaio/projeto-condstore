@@ -5,7 +5,7 @@ import { SettingsPage, SettingsSection, SettingsRow } from '@/ui/settings';
 import { Badge, Progress, Button } from '@/ui/components';
 import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
 import { getHomeFinancialSnapshot, getHomeAttributionSnapshot, getHomeInboxSnapshot } from './queries';
-import { InboxItemRow } from '../inbox/components/inbox-item-row';
+import { ConversationRow } from '../inbox/components/conversation-row';
 import { AttributionRow } from '../attribution/components/attribution-row';
 import { CreditCard, DollarSign } from 'lucide-react';
 
@@ -127,12 +127,12 @@ async function ActivitySection({ tenantId, inspectTenantId }: { tenantId: string
     const items = await getHomeInboxSnapshot(tenantId);
 
     return (
-        <SettingsSection title="Recent Activity">
-            {items.length > 0 ? (
-                items.map(item => <InboxItemRow key={item.id} item={item} />)
+        <SettingsSection title={`Fila Operacional: ${items.openCount} Open, ${items.pendingCount} Pending`}>
+            {items.recentActivity.length > 0 ? (
+                items.recentActivity.map(item => <ConversationRow key={item.convoId} item={item} />)
             ) : (
                 <div className="px-4 py-8 text-center text-sm text-[hsl(var(--ui-text-muted))]">
-                    Sem atividades recentes.
+                    Fila vazia.
                 </div>
             )}
 

@@ -4,7 +4,7 @@ import { MessageSquare, Webhook, Zap, Activity } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Link from 'next/link';
-import { type InboxItem } from '../queries';
+import { type InboxConversation } from '../queries';
 
 function getIconForKind(kind: string) {
     switch (kind) {
@@ -16,39 +16,37 @@ function getIconForKind(kind: string) {
     }
 }
 
-function getBadgeVariant(status?: string) {
-    if (!status) return 'muted';
-    const s = status.toLowerCase();
-    if (s === 'inbound' || s.includes('received') || s === 'success') return 'success';
-    if (s === 'outbound' || s.includes('sent') || s === 'quote_sent') return 'default'; // blue
-    if (s === 'abandoned' || s === 'failed' || s === 'error') return 'danger';
-    return 'muted';
+function getStatusBadge(status: string) {
+    if (status === 'open') return <Badge variant="success">OPEN</Badge>;
+    if (status === 'pending') return <Badge variant="outline">PENDING</Badge>;
+    return <Badge variant="muted">CLOSED</Badge>;
 }
 
-export function InboxItemRow({ item }: { item: InboxItem }) {
-    const timeAgo = formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: ptBR });
+export function ConversationRow({ item, searchParamsStr }: { item: InboxConversation, searchParamsStr?: string }) {
+    const timeAgo = formatDistanceToNow(new Date(item.lastActivityAt), { addSuffix: true, locale: ptBR });
+
+    // SLA only if open and slaMinutes is defined
+    const hasSLA = item.status === 'open' && item.slaMinutes !== undefined;
 
     return (
         <SettingsRow
-            icon={getIconForKind(item.kind)}
+            icon={getIconForKind(item.lastKind)}
             label={
                 <span className="flex items-center gap-2">
                     <span className="font-semibold text-[14px]">{item.title}</span>
-                    {item.status && (
-                        <Badge variant={getBadgeVariant(item.status)}>{item.status.toUpperCase()}</Badge>
-                    )}
+                    {getStatusBadge(item.status)}
                 </span>
             }
             description={
-                <div className="flex flex-col gap-0.5 text-xs">
-                    {item.subtitle && <span>{item.subtitle}</span>}
-                    {item.rawRef && <span className="font-mono text-[10px] text-[hsl(var(--ui-text-subtle))]">{item.rawRef}</span>}
+                <div className="flex flex-col gap-0.5 mt-1 text-xs text-[hsl(var(--ui-text-muted))]">
+                    <span>{hasSLA ? `Aguardando há ${item.slaMinutes} min` : 'Sem pendências'}</span>
+                    {item.utmSource && <span>utm_source: {item.utmSource}</span>}
                 </div>
             }
             value={
                 <div className="flex flex-col items-end gap-1">
                     <span className="text-xs text-[hsl(var(--ui-text-muted))] whitespace-nowrap">{timeAgo}</span>
-                    <Link href={`/inbox/conversations/${item.rawRef || item.id}`}>
+                    <Link href={`/inbox/conversations/${encodeURIComponent(item.convoId)}${searchParamsStr ? `?${searchParamsStr}` : ''}`}>
                         <span className="text-xs font-semibold text-[hsl(var(--ui-accent-blue))] hover:underline cursor-pointer">
                             Ver Thread
                         </span>

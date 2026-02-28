@@ -1,23 +1,23 @@
 import { Suspense } from 'react';
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import { SettingsPage } from '@/ui/settings';
+import { SettingsPage, SettingsSection } from '@/ui/settings';
+import { Button } from '@/ui/components';
 import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
-import { getInboxItems } from './queries';
-import { InboxList } from './components/inbox-list';
+import { getInboxConversations } from './queries';
 import { InboxListSkeleton } from './components/skeletons';
 import { InboxEmptyState } from './components/empty-state';
-import { Button } from '@/ui/components/button';
+import { ConversationRow } from './components/conversation-row';
 
 export const metadata = {
-    title: 'Inbox — Condstore OS',
+    title: 'Inbox / Fila Operacional — Condstore OS',
 };
 
 export default async function InboxPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
     const inspectTenantId = typeof searchParams.tenantId === 'string' ? searchParams.tenantId : undefined;
-    const filterKind = typeof searchParams.kind === 'string' ? searchParams.kind : undefined;
-    const searchQuery = typeof searchParams.q === 'string' ? searchParams.q : undefined;
+    const status = typeof searchParams.status === 'string' ? searchParams.status : 'all';
+    const range = searchParams.range === '30d' ? 30 : 7;
     const cursor = typeof searchParams.cursor === 'string' ? searchParams.cursor : undefined;
 
     const headersList = await headers();
@@ -31,59 +31,74 @@ export default async function InboxPage(props: { searchParams: Promise<{ [key: s
         return <div>Tenant ID não encontrado.</div>;
     }
 
+    // Builder string
+    const paramsQuery = new URLSearchParams();
+    if (inspectTenantId) paramsQuery.set('tenantId', inspectTenantId);
+    if (status !== 'all') paramsQuery.set('status', status);
+    if (range === 30) paramsQuery.set('range', '30d');
+    const searchParamsStr = paramsQuery.toString();
+
+    // Stats fetching
+    const allConvos = await getInboxConversations(tenantId, 999, undefined, { rangeDays: range });
+    const counts = {
+        open: allConvos.filter(c => c.status === 'open').length,
+        pending: allConvos.filter(c => c.status === 'pending').length,
+        closed: allConvos.filter(c => c.status === 'closed').length
+    };
+
     return (
         <SettingsPage
             title="Inbox"
-            description="Timeline operacional unificada do tenant"
+            description="Visão da fila operacional consolidada do tenant"
         >
-            {/* Filtros simples (server-side nav) */}
-            <div className="flex flex-wrap items-center gap-2 mb-6 px-4">
-                <Link href={{ pathname: '/inbox', query: { tenantId: inspectTenantId, q: searchQuery } }}>
-                    <span className={`text-xs px-3 py-1 rounded-full border ${!filterKind ? 'bg-[hsl(var(--ui-accent-blue))] text-[hsl(var(--ui-accent-blue-ink))] border-transparent' : 'bg-transparent text-[hsl(var(--ui-text))] border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-muted))]'}`}>
-                        Tudo
-                    </span>
-                </Link>
-                <Link href={{ pathname: '/inbox', query: { tenantId: inspectTenantId, kind: 'message', q: searchQuery } }}>
-                    <span className={`text-xs px-3 py-1 rounded-full border ${filterKind === 'message' ? 'bg-[hsl(var(--ui-accent-blue))] text-[hsl(var(--ui-accent-blue-ink))] border-transparent' : 'bg-transparent text-[hsl(var(--ui-text))] border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-muted))]'}`}>
-                        WhatsApp
-                    </span>
-                </Link>
-                <Link href={{ pathname: '/inbox', query: { tenantId: inspectTenantId, kind: 'freight', q: searchQuery } }}>
-                    <span className={`text-xs px-3 py-1 rounded-full border ${filterKind === 'freight' ? 'bg-[hsl(var(--ui-accent-blue))] text-[hsl(var(--ui-accent-blue-ink))] border-transparent' : 'bg-transparent text-[hsl(var(--ui-text))] border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-muted))]'}`}>
-                        Frete & Funil
-                    </span>
-                </Link>
-                <Link href={{ pathname: '/inbox', query: { tenantId: inspectTenantId, kind: 'event', q: searchQuery } }}>
-                    <span className={`text-xs px-3 py-1 rounded-full border ${filterKind === 'event' ? 'bg-[hsl(var(--ui-accent-blue))] text-[hsl(var(--ui-accent-blue-ink))] border-transparent' : 'bg-transparent text-[hsl(var(--ui-text))] border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-muted))]'}`}>
-                        Public Events
-                    </span>
-                </Link>
-                <Link href={{ pathname: '/inbox', query: { tenantId: inspectTenantId, kind: 'webhook', q: searchQuery } }}>
-                    <span className={`text-xs px-3 py-1 rounded-full border ${filterKind === 'webhook' ? 'bg-[hsl(var(--ui-accent-blue))] text-[hsl(var(--ui-accent-blue-ink))] border-transparent' : 'bg-transparent text-[hsl(var(--ui-text))] border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-muted))]'}`}>
-                        Webhooks/System
-                    </span>
-                </Link>
+            <div className="flex flex-col gap-4 mb-6 px-4">
+                <div className="flex items-center gap-4 text-xs">
+                    <div className="flex bg-[hsl(var(--ui-muted))] rounded-lg p-3 w-1/3 flex-col gap-1 items-center">
+                        <span className="text-[hsl(var(--ui-text-muted))] uppercase font-semibold">Open</span>
+                        <span className="text-xl font-bold text-[hsl(var(--ui-success))]">{counts.open}</span>
+                    </div>
+                    <div className="flex bg-[hsl(var(--ui-muted))] rounded-lg p-3 w-1/3 flex-col gap-1 items-center">
+                        <span className="text-[hsl(var(--ui-text-muted))] uppercase font-semibold">Pending</span>
+                        <span className="text-xl font-bold text-[hsl(var(--ui-warning))]">{counts.pending}</span>
+                    </div>
+                    <div className="flex bg-[hsl(var(--ui-muted))] rounded-lg p-3 w-1/3 flex-col gap-1 items-center">
+                        <span className="text-[hsl(var(--ui-text-muted))] uppercase font-semibold">Closed</span>
+                        <span className="text-xl font-bold text-[hsl(var(--ui-text))]">{counts.closed}</span>
+                    </div>
+                </div>
 
-                <form className="ml-auto flex items-center gap-2" action="/inbox" method="GET">
-                    {inspectTenantId && <input type="hidden" name="tenantId" value={inspectTenantId} />}
-                    {filterKind && <input type="hidden" name="kind" value={filterKind} />}
-                    <input
-                        type="text"
-                        name="q"
-                        defaultValue={searchQuery}
-                        placeholder="Buscar..."
-                        className="text-xs px-3 py-1 rounded border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] w-48 placeholder:text-[hsl(var(--ui-text-subtle))] focus:outline-none focus:border-[hsl(var(--ui-accent-blue))]"
-                    />
-                </form>
+                <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                    <span className="text-xs font-semibold text-[hsl(var(--ui-text-muted))] uppercase tracking-wider mr-2 shrink-0">Status:</span>
+                    {['all', 'open', 'pending', 'closed'].map(s => (
+                        <Link key={s} href={{ pathname: '/inbox', query: { tenantId: inspectTenantId, status: s, range: range === 30 ? '30d' : '7d' } }}>
+                            <span className={`text-xs px-3 py-1.5 rounded-full border cursor-pointer capitalize whitespace-nowrap ${status === s ? 'bg-[hsl(var(--ui-text))] text-[hsl(var(--ui-surface))] border-transparent font-medium' : 'bg-transparent text-[hsl(var(--ui-text))] border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-muted))]'}`}>
+                                {s}
+                            </span>
+                        </Link>
+                    ))}
+
+                    <span className="text-xs font-semibold text-[hsl(var(--ui-text-muted))] uppercase tracking-wider ml-4 mr-2 shrink-0">Range:</span>
+                    <Link href={{ pathname: '/inbox', query: { tenantId: inspectTenantId, status, range: '7d' } }}>
+                        <span className={`text-xs px-3 py-1.5 rounded-full border cursor-pointer whitespace-nowrap ${range === 7 ? 'bg-[hsl(var(--ui-accent-blue))] text-[hsl(var(--ui-accent-blue-ink))] border-transparent font-medium' : 'bg-transparent text-[hsl(var(--ui-text))] border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-muted))]'}`}>
+                            7 dias
+                        </span>
+                    </Link>
+                    <Link href={{ pathname: '/inbox', query: { tenantId: inspectTenantId, status, range: '30d' } }}>
+                        <span className={`text-xs px-3 py-1.5 rounded-full border cursor-pointer whitespace-nowrap ${range === 30 ? 'bg-[hsl(var(--ui-accent-blue))] text-[hsl(var(--ui-accent-blue-ink))] border-transparent font-medium' : 'bg-transparent text-[hsl(var(--ui-text))] border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-muted))]'}`}>
+                            30 dias
+                        </span>
+                    </Link>
+                </div>
             </div>
 
-            <Suspense fallback={<InboxListSkeleton />} key={filterKind + (searchQuery || '') + (cursor || '')}>
+            <Suspense fallback={<InboxListSkeleton />} key={status + range + (cursor || '')}>
                 <InboxContent
                     tenantId={tenantId}
                     inspectTenantId={inspectTenantId}
-                    filterKind={filterKind}
-                    searchQuery={searchQuery}
+                    status={status}
+                    range={range}
                     cursor={cursor}
+                    searchParamsStr={searchParamsStr}
                 />
             </Suspense>
         </SettingsPage>
@@ -93,33 +108,39 @@ export default async function InboxPage(props: { searchParams: Promise<{ [key: s
 async function InboxContent({
     tenantId,
     inspectTenantId,
-    filterKind,
-    searchQuery,
-    cursor
+    status,
+    range,
+    cursor,
+    searchParamsStr
 }: {
     tenantId: string,
     inspectTenantId?: string,
-    filterKind?: string,
-    searchQuery?: string,
-    cursor?: string
+    status: string,
+    range: number,
+    cursor?: string,
+    searchParamsStr?: string
 }) {
-    const items = await getInboxItems(tenantId, 50, cursor, filterKind, searchQuery);
+    const items = await getInboxConversations(tenantId, 50, cursor, { status: status !== 'all' ? status : undefined, rangeDays: range });
 
     if (items.length === 0 && !cursor) {
         return <InboxEmptyState />;
     }
 
-    const nextCursor = items.length === 50 ? items[49].createdAt.toISOString() : undefined;
+    const nextCursor = items.length === 50 ? items[49].convoId : undefined;
 
     return (
         <div className="flex flex-col gap-6">
-            <InboxList items={items} />
+            <SettingsSection title="Fila de Conversas">
+                {items.map((item) => (
+                    <ConversationRow key={item.convoId} item={item} searchParamsStr={searchParamsStr} />
+                ))}
+            </SettingsSection>
 
             {nextCursor && (
                 <div className="flex justify-center px-4 mb-8">
-                    <Link href={{ pathname: '/inbox', query: { tenantId: inspectTenantId, kind: filterKind, q: searchQuery, cursor: nextCursor } }}>
+                    <Link href={{ pathname: '/inbox', query: { tenantId: inspectTenantId, status, range: range === 30 ? '30d' : '7d', cursor: nextCursor } }}>
                         <Button variant="secondary" className="w-full max-w-sm rounded-full text-xs font-semibold hover:bg-[hsl(var(--ui-muted))] bg-transparent h-9 border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))]">
-                            Load more events
+                            Avançar
                         </Button>
                     </Link>
                 </div>

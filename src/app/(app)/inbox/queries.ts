@@ -1,150 +1,183 @@
 import { getDb } from '@/infra/db';
-import { sql, eq, and, desc, lte } from 'drizzle-orm';
+import { sql, eq, and, desc, gte } from 'drizzle-orm';
 import {
     messages,
     publicEvents,
     freightFunnelEvents,
-    tenantEvents
 } from '@/drizzle/schema';
 
-export type InboxItemKind = 'message' | 'webhook' | 'event' | 'freight';
+export type ConversationStatus = 'open' | 'pending' | 'closed';
 
-export type InboxItem = {
-    id: string;
-    kind: InboxItemKind;
+export type InboxConversation = {
+    convoId: string;
+    contactKey?: string;
+    refToken?: string;
     title: string;
-    subtitle?: string;
-    status?: string;
-    createdAt: Date;
-    rawRef?: string;
+    lastActivityAt: Date;
+    lastInboundAt?: Date;
+    lastOutboundAt?: Date;
+    lastKind: string;
+    utmSource?: string;
+    utmCampaign?: string;
+    status: ConversationStatus;
+    slaMinutes?: number;
 };
 
-export async function getInboxItems(
+export async function getInboxConversations(
     tenantId: string,
     limit: number = 50,
-    cursor?: string,
-    filterKind?: string,
-    searchQuery?: string
-): Promise<InboxItem[]> {
+    cursor?: string, // fallback to date pagination if needed, or index
+    filters?: { status?: string, rangeDays?: number }
+): Promise<InboxConversation[]> {
     const db = await getDb();
+    const rangeDays = filters?.rangeDays || 7;
 
-    // Preparar queries independentes
-    const items: InboxItem[] = [];
-    const maxDate = cursor ? new Date(cursor) : new Date();
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() - rangeDays);
 
-    const fetchMessages = async () => {
-        if (filterKind && filterKind !== 'message') return;
-        try {
-            const conditions = [eq(messages.tenantId, tenantId), lte(messages.createdAt, maxDate)];
-            if (searchQuery) conditions.push(sql`LOWER(${messages.body}) LIKE LOWER(${'%' + searchQuery + '%'})`);
+    const map = new Map<string, InboxConversation>();
 
-            const res = await db.select()
-                .from(messages)
-                .where(and(...conditions))
-                .orderBy(desc(messages.createdAt))
-                .limit(limit);
-
-            res.forEach(m => {
-                items.push({
-                    id: m.messageSid,
-                    kind: 'message',
-                    title: m.direction === 'inbound' ? 'Mensagem Recebida' : 'Mensagem Enviada',
-                    subtitle: String(m.intent) || 'unknown',
-                    status: m.direction,
-                    createdAt: m.createdAt,
-                    rawRef: m.fromPhone
-                });
+    const getOrInit = (key: string, defaultTitle: string) => {
+        if (!map.has(key)) {
+            map.set(key, {
+                convoId: key,
+                title: defaultTitle,
+                lastActivityAt: new Date(0),
+                lastKind: 'unknown',
+                status: 'closed'
             });
-        } catch { }
+        }
+        return map.get(key)!;
     };
 
-    const fetchPublicEvents = async () => {
-        if (filterKind && filterKind !== 'event') return;
-        try {
-            const conditions = [eq(publicEvents.tenantId, tenantId), lte(publicEvents.createdAt, maxDate)];
-            if (searchQuery) conditions.push(sql`LOWER(${publicEvents.event}) LIKE LOWER(${'%' + searchQuery + '%'})`);
+    // 1. Messages
+    try {
+        const msgs = await db.select()
+            .from(messages)
+            .where(and(eq(messages.tenantId, tenantId), gte(messages.createdAt, minDate)))
+            .orderBy(desc(messages.createdAt));
 
-            const res = await db.select()
-                .from(publicEvents)
-                .where(and(...conditions))
-                .orderBy(desc(publicEvents.createdAt))
-                .limit(limit);
+        for (const m of msgs) {
+            // Find key: opposite of our tenant system? Assuming fromPhone/toPhone
+            // If strictly inbound, contactKey is fromPhone. If outbound, toPhone.
+            const contactKey = m.direction === 'inbound' ? m.fromPhone : m.toPhone;
+            if (!contactKey) continue;
 
-            res.forEach(p => {
-                items.push({
-                    id: p.id,
-                    kind: 'event',
-                    title: p.event,
-                    subtitle: p.path,
-                    status: 'public',
-                    createdAt: p.createdAt,
-                    rawRef: p.anonId
-                });
-            });
-        } catch { }
-    };
+            const convo = getOrInit(contactKey, contactKey);
+            convo.contactKey = contactKey;
+            convo.lastKind = 'message';
 
-    const fetchFreightFunnel = async () => {
-        if (filterKind && filterKind !== 'freight') return;
-        try {
-            const conditions = [eq(freightFunnelEvents.tenantId, tenantId), lte(freightFunnelEvents.createdAt, maxDate)];
-            if (searchQuery) conditions.push(sql`LOWER(${freightFunnelEvents.stage}) LIKE LOWER(${'%' + searchQuery + '%'})`);
+            if (m.createdAt > convo.lastActivityAt) {
+                convo.lastActivityAt = m.createdAt;
+            }
 
-            const res = await db.select()
-                .from(freightFunnelEvents)
-                .where(and(...conditions))
-                .orderBy(desc(freightFunnelEvents.createdAt))
-                .limit(limit);
+            if (m.direction === 'inbound') {
+                if (!convo.lastInboundAt || m.createdAt > convo.lastInboundAt) {
+                    convo.lastInboundAt = m.createdAt;
+                }
+            } else {
+                if (!convo.lastOutboundAt || m.createdAt > convo.lastOutboundAt) {
+                    convo.lastOutboundAt = m.createdAt;
+                }
+            }
+        }
+    } catch { }
 
-            res.forEach(f => {
-                items.push({
-                    id: f.id,
-                    kind: 'freight',
-                    title: 'Funil: ' + f.stage,
-                    subtitle: f.utmSource ? 'Source: ' + f.utmSource : undefined,
-                    status: f.stage,
-                    createdAt: f.createdAt,
-                    rawRef: f.phoneNumber || f.sessionId
-                });
-            });
-        } catch { }
-    };
+    // 2. Freight Funnel
+    try {
+        const funnels = await db.select()
+            .from(freightFunnelEvents)
+            .where(and(eq(freightFunnelEvents.tenantId, tenantId), gte(freightFunnelEvents.createdAt, minDate)))
+            .orderBy(desc(freightFunnelEvents.createdAt));
 
-    const fetchTenantEvents = async () => {
-        if (filterKind && filterKind !== 'webhook') return; // map tenant events to 'webhook' kind for UI
-        try {
-            const conditions = [eq(tenantEvents.tenantId, tenantId), lte(tenantEvents.createdAt, maxDate)];
-            if (searchQuery) conditions.push(sql`LOWER(${tenantEvents.type}) LIKE LOWER(${'%' + searchQuery + '%'})`);
+        for (const f of funnels) {
+            const key = f.phoneNumber || f.refToken || f.sessionId;
+            if (!key) continue;
 
-            const res = await db.select()
-                .from(tenantEvents)
-                .where(and(...conditions))
-                .orderBy(desc(tenantEvents.createdAt))
-                .limit(limit);
+            const convo = getOrInit(key, f.phoneNumber ? f.phoneNumber : `Token: ${key.slice(0, 8)}`);
+            if (f.phoneNumber) convo.contactKey = f.phoneNumber;
+            if (f.refToken) convo.refToken = f.refToken;
+            if (!convo.utmSource && f.utmSource) convo.utmSource = f.utmSource;
+            if (!convo.utmCampaign && f.utmCampaign) convo.utmCampaign = f.utmCampaign;
 
-            res.forEach(t => {
-                items.push({
-                    id: t.id,
-                    kind: 'webhook',
-                    title: t.type,
-                    status: 'system',
-                    createdAt: t.createdAt,
-                });
-            });
-        } catch { }
-    };
+            if (f.createdAt > convo.lastActivityAt) {
+                convo.lastActivityAt = f.createdAt;
+                if (convo.lastKind === 'unknown') convo.lastKind = 'freight';
+            }
 
-    // Parallel fetch
-    await Promise.all([
-        fetchMessages(),
-        fetchPublicEvents(),
-        fetchFreightFunnel(),
-        fetchTenantEvents()
-    ]);
+            // Treat funnel progression as inbound activity from user
+            if (!convo.lastInboundAt || f.createdAt > convo.lastInboundAt) {
+                convo.lastInboundAt = f.createdAt;
+            }
+        }
+    } catch { }
 
-    // Merge Sort
-    items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    // 3. Public Events (Optional context)
+    try {
+        const events = await db.select()
+            .from(publicEvents)
+            .where(and(eq(publicEvents.tenantId, tenantId), gte(publicEvents.createdAt, minDate)))
+            .orderBy(desc(publicEvents.createdAt));
 
-    // Cut to limit
-    return items.slice(0, limit);
+        for (const e of events) {
+            const key = e.refToken || e.anonId;
+            if (!key) continue;
+
+            const convo = getOrInit(key, `Sessão: ${key.slice(0, 8)}`);
+            if (e.refToken) convo.refToken = e.refToken;
+
+            if (e.createdAt > convo.lastActivityAt) {
+                convo.lastActivityAt = e.createdAt;
+                if (convo.lastKind === 'unknown') convo.lastKind = 'event';
+            }
+
+            if (!convo.lastInboundAt || e.createdAt > convo.lastInboundAt) {
+                convo.lastInboundAt = e.createdAt;
+            }
+        }
+    } catch { }
+
+    // Process Status and SLA
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const results = Array.from(map.values()).map(convo => {
+        const lastIn = convo.lastInboundAt;
+        const lastOut = convo.lastOutboundAt;
+        const lastAct = convo.lastActivityAt;
+
+        let status: ConversationStatus = 'closed';
+
+        if (lastAct >= sevenDaysAgo) {
+            if (lastIn && (!lastOut || lastIn > lastOut)) {
+                status = 'open';
+                convo.slaMinutes = Math.floor((now.getTime() - lastIn.getTime()) / 60000);
+            } else if (lastOut && (!lastIn || lastOut > lastIn)) {
+                status = 'pending';
+            } else {
+                status = 'open'; // default active
+            }
+        }
+
+        convo.status = status;
+        return convo;
+    });
+
+    // Filter by status if requested
+    let filtered = results;
+    if (filters?.status && filters.status !== 'all') {
+        filtered = results.filter(c => c.status === filters.status);
+    }
+
+    // Sort by lastActivity DESC
+    filtered.sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
+
+    // Basic string cursor pagination (simplistic slice)
+    let startIndex = 0;
+    if (cursor) {
+        const idx = filtered.findIndex(c => c.convoId === cursor);
+        if (idx !== -1) startIndex = idx + 1;
+    }
+
+    return filtered.slice(startIndex, startIndex + limit);
 }

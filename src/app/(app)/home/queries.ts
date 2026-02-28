@@ -1,6 +1,6 @@
 import { getBillingSummary } from '../cockpit/queries';
 import { getAttributionSummary } from '../attribution/queries';
-import { getInboxItems } from '../inbox/queries';
+import { getInboxConversations } from '../inbox/queries';
 
 export async function getHomeFinancialSnapshot(tenantId: string) {
     const billing = await getBillingSummary(tenantId);
@@ -23,5 +23,16 @@ export async function getHomeAttributionSnapshot(tenantId: string) {
 }
 
 export async function getHomeInboxSnapshot(tenantId: string) {
-    return getInboxItems(tenantId, 10);
+    const ev = await getInboxConversations(tenantId, 5, undefined, { rangeDays: 7 });
+
+    // Naive fetch for counts, can be optimized later
+    const all = await getInboxConversations(tenantId, 100, undefined, { rangeDays: 7 });
+    const openCount = all.filter(c => c.status === 'open').length;
+    const pendingCount = all.filter(c => c.status === 'pending').length;
+
+    return {
+        openCount,
+        pendingCount,
+        recentActivity: ev
+    };
 }
