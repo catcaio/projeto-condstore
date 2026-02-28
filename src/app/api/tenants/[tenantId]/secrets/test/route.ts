@@ -8,6 +8,8 @@ import { getDb } from '@/infra/db';
 import { redisClient } from '@/infra/redis.client';
 import { sql } from 'drizzle-orm';
 import { secretResolver } from '@/infra/security/secret-resolver';
+import { tenantSecretsRepository } from '@/infra/repositories/tenant-secrets.repository';
+import { adminAuditLogRepository } from '@/infra/repositories/admin-audit-log.repository';
 
 export async function POST(req: NextRequest, { params }: { params: { tenantId: string } }) {
     const requestId = makeRequestId(req);
@@ -83,6 +85,16 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
         } else {
             testResult = true;
             message = 'Default OK';
+        }
+
+        if (testResult) {
+            await tenantSecretsRepository.markScopeAsVerified(auth.session.tenantId, scope);
+            await adminAuditLogRepository.log({
+                tenantId: auth.session.tenantId,
+                userId: auth.session.sub,
+                action: 'SECRET_VERIFIED',
+                metadata: { scope, requestId }
+            });
         }
 
         // Log the test action (audit)

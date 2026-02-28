@@ -11,6 +11,7 @@ interface SecretMetadata {
     scope: string;
     keyName: string;
     lastRotatedAt: string;
+    lastVerifiedAt: string | null;
     rotatedByUserId: string;
     createdAt: string;
     updatedAt: string;
@@ -118,6 +119,7 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
             const data = await res.json();
             if (data.ok) {
                 alert(`Conexão OK!\n\n${data.message}`);
+                fetchSecrets(); // Refresh to get the updated lastVerifiedAt
             } else {
                 alert(`Falha na conexão!\n\n${data.message || data.error}`);
             }
@@ -157,16 +159,32 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
     ) => {
         const meta = getSecretMeta(scope, keyName);
         const sourceLabel = meta ? 'DB (encrypted)' : 'ENV (fallback)';
-        const dateLabel = meta?.lastRotatedAt
+        const rotatedLabel = meta?.lastRotatedAt
             ? new Date(meta.lastRotatedAt).toLocaleString('pt-BR')
             : 'Padrão do sistema';
+
+        const isVerified = Boolean(meta?.lastVerifiedAt);
+        const verifiedLabel = isVerified ? new Date(meta!.lastVerifiedAt!).toLocaleString('pt-BR') : 'Pendente de teste';
+
+        let statusTag = null;
+        if (meta) {
+            if (isVerified) {
+                statusTag = <span className="text-xs px-2 py-0.5 bg-[hsl(var(--ui-success)/0.1)] text-[hsl(var(--ui-success))] font-bold rounded">Ativo</span>;
+            } else {
+                statusTag = <span className="text-xs px-2 py-0.5 bg-[hsl(var(--ui-warning)/0.1)] text-[hsl(var(--ui-warning))] font-bold rounded">Pending (Não testado)</span>;
+            }
+        }
 
         return (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-4 border-b border-[hsl(var(--ui-border)/0.5)] last:border-0 gap-4">
                 <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-[hsl(var(--ui-text))]">{displayName}</span>
-                    <span className="text-xs text-[hsl(var(--ui-text-muted))]">
-                        Source: <span className={meta ? 'text-[hsl(var(--ui-success))] font-medium' : 'font-mono'}>{sourceLabel}</span> • Atualizado: {dateLabel}
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-[hsl(var(--ui-text))]">{displayName}</span>
+                        {statusTag}
+                    </div>
+                    <span className="text-xs text-[hsl(var(--ui-text-muted))] mt-1">
+                        Source: <span className={meta ? 'text-[hsl(var(--ui-success))] font-medium' : 'font-mono'}>{sourceLabel}</span> • Atualizado: {rotatedLabel}
+                        {meta && ` • Verificado: ${verifiedLabel}`}
                     </span>
                     {options.description && (
                         <p className="text-xs text-[hsl(var(--ui-danger))] mt-1">{options.description}</p>

@@ -28,6 +28,7 @@ interface MemoryBlock {
 const globalForRateLimiter = globalThis as typeof globalThis & {
   __condstoreRateLimiterBuckets?: Map<string, MemoryBucket>;
   __condstoreRateLimiterBlocks?: Map<string, MemoryBlock>;
+  __condstoreRateLimiterFallbackMetrics?: { count: number; lastSeenAt: number | null };
 };
 
 const memoryBuckets =
@@ -37,6 +38,14 @@ const memoryBuckets =
 const memoryBlocks =
   globalForRateLimiter.__condstoreRateLimiterBlocks ??
   (globalForRateLimiter.__condstoreRateLimiterBlocks = new Map<string, MemoryBlock>());
+
+const fallbackMetrics =
+  globalForRateLimiter.__condstoreRateLimiterFallbackMetrics ??
+  (globalForRateLimiter.__condstoreRateLimiterFallbackMetrics = { count: 0, lastSeenAt: null });
+
+export function getRateLimiterFallbackMetrics() {
+  return { ...fallbackMetrics };
+}
 
 function nowMs(): number {
   return Date.now();
@@ -239,8 +248,13 @@ export class RateLimiter {
       return failClosedDecision(now, options);
     }
 
-    structuredLogger.warn('rate_limiter_redis_failure_fail_open', {
-      eventType: 'rate_limiter',
+    fallbackMetrics.count += 1;
+    fallbackMetrics.lastSeenAt = now;
+
+    structuredLogger.warn('rate_limiter_fallback_active', {
+      eventType: 'rate_limiter_fallback_active',
+      strategy: 'fail_open',
+      env: process.env.NODE_ENV ?? 'development',
       scope,
       keyHash,
       reason,
