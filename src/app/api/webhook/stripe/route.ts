@@ -181,6 +181,7 @@ async function handleCheckoutCompleted(
         structuredLogger.warn('stripe_checkout_missing_tenant', {
             sessionId: session.id,
             eventType: 'stripe_webhook',
+            binding_status: 'unbound',
         });
         return IGNORED('missing_tenant_binding');
     }
