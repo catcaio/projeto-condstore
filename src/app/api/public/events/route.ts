@@ -9,7 +9,7 @@ import { sha256Hex } from '../../../../infra/attribution/hash';
 import { ErrorCode, errorResponse } from '../../../../infra/http/error-response';
 import { structuredLogger } from '../../../../infra/log/logger';
 import { applyRateLimitHeaders, hashRateLimitKeyForLog, rateLimiter } from '../../../../infra/security/rate-limiter';
-import { redisClient } from '../../../../infra/redis.client';
+import { redisClient } from '@/infra/redis.client';
 
 const BODY_MAX_BYTES = 16 * 1024; // 16KB max
 const PROPS_MAX_CHARS = 2000;
@@ -76,7 +76,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
         // Rate Limit per IP
         const rateDecision = await rateLimiter.limit('public_events', rateLimitKey, {
             windowSec: 60,
-            max: 120, // 2 per sec
+            max: 300, // 5 per sec
         });
 
         if (!rateDecision.allowed) {
@@ -85,6 +85,22 @@ async function handler(request: NextRequest): Promise<NextResponse> {
                 keyHash: hashRateLimitKeyForLog(rateLimitKey),
                 remaining: rateDecision.remaining,
             });
+
+            // If it hits back-to-back repeatedly (e.g. rateDecision.retryAfter > 60 maybe, or tracking count in cache)
+            // Just basic record incident if it's aggressive
+            const abuseKey = `abuse:pubev:${ipHash}`;
+            const abuseHits = await redisClient.incr(abuseKey);
+            if (abuseHits === 1) await redisClient.expire(abuseKey, 300); // 5 min window
+
+            if (abuseHits === 10) { // 10 blocked attempts in 5 min
+                structuredLogger.error('public_events_rate_limit_spike', {
+                    tenantId,
+                    ipHash,
+                    route,
+                    message: `Rate limit heavily exceeded for public events.`
+                });
+            }
+
             return applyRateLimitHeaders(
                 errorResponse(ErrorCode.RATE_LIMITED, 429, requestId, 'Rate limit exceeded'),
                 rateDecision,
