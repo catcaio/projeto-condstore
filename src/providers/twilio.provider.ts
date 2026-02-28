@@ -1,9 +1,4 @@
-/**
- * Twilio WhatsApp provider.
- * Handles all Twilio API interactions with retry logic and error handling.
- */
-
-import { twilioConfig, extractPhoneNumber as extractPhone } from '../config/twilio.config';
+import { resolveTwilioConfig, extractPhoneNumber as extractPhone } from '../config/twilio.config';
 import { ErrorCode, ProviderError } from '../infra/errors';
 import { logger } from '../infra/logger';
 
@@ -50,7 +45,6 @@ class TwilioProvider {
 
   /**
    * Generate TwiML response for webhook.
-   * This is what Twilio expects as a response to send messages back.
    */
   generateTwiMLResponse(message: string): string {
     const escaped = this.escapeXml(message);
@@ -73,10 +67,12 @@ class TwilioProvider {
   }
 
   /**
-   * Send message via Twilio API (for proactive messaging, not webhook responses).
-   * This is useful for sending messages outside of the webhook flow.
+   * Send message via Twilio API.
+   * Modificado para receber tenantId e resolver config dinamicamente.
    */
-  async sendMessage(message: OutgoingMessage, maxRetries: number = twilioConfig.maxRetries): Promise<boolean> {
+  async sendMessage(tenantId: string, message: OutgoingMessage, maxRetriesParam?: number): Promise<boolean> {
+    const config = await resolveTwilioConfig(tenantId);
+    const maxRetries = maxRetriesParam ?? config.maxRetries;
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -84,21 +80,21 @@ class TwilioProvider {
         const startTime = Date.now();
 
         const response = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${twilioConfig.accountSid}/Messages.json`,
+          `https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
               Authorization: `Basic ${Buffer.from(
-                `${twilioConfig.accountSid}:${twilioConfig.authToken}`
+                `${config.accountSid}:${config.authToken}`
               ).toString('base64')}`,
             },
             body: new URLSearchParams({
-              From: twilioConfig.phoneNumber,
+              From: config.phoneNumber,
               To: `whatsapp:+${message.to}`,
               Body: message.body,
             }),
-            signal: AbortSignal.timeout(twilioConfig.webhookTimeout),
+            signal: AbortSignal.timeout(config.webhookTimeout),
           }
         );
 
