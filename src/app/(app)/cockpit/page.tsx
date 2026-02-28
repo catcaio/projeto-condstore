@@ -5,6 +5,8 @@ import { Badge } from '@/ui/components';
 import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
 import { ShieldCheck, Database, Activity } from 'lucide-react';
 import { getSystemHealth } from './queries';
+import { getSystemStatus } from './system-status/queries';
+import Link from 'next/link';
 
 import { BillingSection } from './components/billing-section';
 import { UsageSection } from './components/usage-section';
@@ -29,12 +31,26 @@ export default async function CockpitPage(props: { searchParams: Promise<{ [key:
         return <div>Tenant ID não encontrado.</div>;
     }
 
+    const status = await getSystemStatus(tenantId, role || 'viewer');
+
     return (
         <SettingsPage
             title="Cockpit Operacional"
             description="Visão em tempo real das operações e saúde do sistema"
-            headerAction={<span className="text-xs text-[hsl(var(--ui-text-muted))]">Atualizado agora</span>}
+            headerAction={<Link href="/cockpit/system-status" className="text-xs text-[hsl(var(--ui-accent-blue))] font-medium hover:underline flex items-center gap-1">Ver Centro de Comando &rarr;</Link>}
         >
+            {/* MINI STATUS BAR */}
+            <div className="flex gap-2 mb-6 w-full overflow-x-auto pb-2 scrollbar-hide shrink-0">
+                <Badge variant={status.finops.state === 'ok' || status.finops.state === 'unlocked' ? 'success' : 'muted'} className="shrink-0 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> FinOps: {status.finops.state}
+                </Badge>
+                <Badge variant={status.knowledge.failedTotal > 0 ? 'danger' : 'success'} className="shrink-0 flex items-center gap-1">
+                    <Database className="w-3 h-3" /> {status.knowledge.readyIndexedTotal} Docs Prontos
+                </Badge>
+                <Badge variant={status.infra.db === 'ok' && status.infra.redis === 'ok' ? 'success' : 'danger'} className="shrink-0 flex items-center gap-1">
+                    <Activity className="w-3 h-3" /> Infra: {status.infra.db === 'ok' ? 'OK' : 'Falha'}
+                </Badge>
+            </div>
             <Suspense fallback={<BillingSkeleton />}>
                 <BillingSection tenantId={tenantId} />
             </Suspense>
