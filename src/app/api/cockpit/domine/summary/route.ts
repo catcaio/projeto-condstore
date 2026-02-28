@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { DomineSummary } from "../../../../../domine/contracts/domineSummary";
 import { isDomineEnabled } from "../../../../../domine/tenant";
+import { getSessionUser } from "../../../../../infra/auth/session";
 
-export async function GET(request: Request) {
-    // Mocking tenantId extracted from request, assume headers or auth provides this
-    const tenantId = request.headers.get("x-tenant-id") || "LOJACOND";
+export async function GET(request: NextRequest) {
+    const session = await getSessionUser(request);
+    const tenantId = session?.tenantId || "LOJACOND";
 
     if (!isDomineEnabled(tenantId)) {
         return NextResponse.json({ error: "Domine not enabled for this tenant" }, { status: 404 });

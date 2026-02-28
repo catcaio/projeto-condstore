@@ -3,19 +3,19 @@ import { errorResponse, ErrorCode } from '../../../../infra/http/error-response'
 import { makeRequestId } from '../../../../infra/http/request-trace';
 import { getSystemStatus } from '../../../../app/(app)/cockpit/system-status/queries';
 import { logger } from '../../../../infra/logger';
+import { getSessionUser } from '../../../../infra/auth/session';
 
 export const revalidate = 60; // Route Segment config: cache for 60s
 
 export async function GET(request: NextRequest) {
     const requestId = makeRequestId(request);
 
-    // Simplest RBAC based on existing headers from middleware
-    const tenantId = request.headers.get('x-auth-tenant-id');
-    const role = request.headers.get('x-auth-role');
-
-    if (!tenantId || !role) {
+    const session = await getSessionUser(request);
+    if (!session) {
         return errorResponse("UNAUTHORIZED" as any, 401, requestId, 'Missing context');
     }
+    const tenantId = session.tenantId;
+    const role = session.role;
 
     try {
         const payload = await getSystemStatus(tenantId, role);
