@@ -33,6 +33,17 @@ export function KnowledgeSourcesClient({ tenantId }: { tenantId: string }) {
 
     async function handleCreate() {
         if (!newName.trim()) return;
+
+        // Custom validation for website
+        if (newType === 'website') {
+            try {
+                new URL(newName.trim());
+            } catch (_) {
+                alert('A URL fornecida é inválida.');
+                return;
+            }
+        }
+
         setIsCreating(true);
         try {
             const res = await fetch(`/api/tenants/${tenantId}/knowledge/sources`, {
@@ -50,6 +61,23 @@ export function KnowledgeSourcesClient({ tenantId }: { tenantId: string }) {
             alert('Falha interna');
         } finally {
             setIsCreating(false);
+        }
+    }
+
+    async function handleMarkReady(id: string) {
+        if (!confirm('Deseja marcar essa fonte como pronta para sync futuro?')) return;
+
+        try {
+            const res = await fetch(`/api/tenants/${tenantId}/knowledge/sources/${id}/ready`, {
+                method: 'POST',
+            });
+            if (res.ok) {
+                fetchSources();
+            } else {
+                alert('Erro ao marcar como ready');
+            }
+        } catch (e) {
+            alert('Falha');
         }
     }
 
@@ -104,10 +132,15 @@ export function KnowledgeSourcesClient({ tenantId }: { tenantId: string }) {
                                             <span className="text-sm font-semibold">{s.name}</span>
                                             <span className="text-xs text-[hsl(var(--ui-text-muted))] uppercase tracking-wider">{s.type}</span>
                                         </div>
-                                        <div>
-                                            <span className="text-xs font-mono px-2 py-1 bg-[hsl(var(--ui-surface-hover))] rounded border border-[hsl(var(--ui-border))]">
-                                                {s.status}
-                                            </span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span className={`text-xs font-mono px-2 py-1 rounded border ${s.status === 'ready' ? 'bg-emerald-950/30 text-emerald-400 border-emerald-900/50' : 'bg-amber-950/30 text-amber-500 border-amber-900/50'}`}>
+                                                    {s.status === 'ready' ? 'READY' : 'DRAFT'}
+                                                </span>
+                                            </div>
+                                            {s.status === 'draft' && (
+                                                <Button size="sm" variant="secondary" onClick={() => handleMarkReady(s.id)}>Mark Ready</Button>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

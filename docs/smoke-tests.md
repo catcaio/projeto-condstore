@@ -68,6 +68,8 @@ Workflow de CI: `.github/workflows/ci.yml`
 
 Smoke rápido focado em hardening: proteção de `/api/internal/*`, seeds bloqueados fora de dev, webhook Twilio sem vazamento, fallback de rate limiter e health básico.
 
+Runbook operacional de rotação: `docs/runbooks/keys-rotation.md`.
+
 ### Como rodar (PowerShell)
 
 ```powershell
@@ -97,6 +99,18 @@ export INTERNAL_TOKEN="..."
 7. `/api/health` retorna `200` e não expõe segredos.
 8. Webhook Twilio (se configurado) retorna status não-5xx e não expõe segredos.
 9. Se houver detecção de fallback de rate limiter, validar logs/alertas e decidir go/no-go.
+
+### Key Rotation Validation Loop
+
+Use este loop sempre que houver rotação de segredos (Twilio, Stripe, tokens internos ou AI keys):
+
+1. Rodar baseline: `./tools/smoke/smoke.ps1`.
+2. Rotacionar segredo no provedor e atualizar no cockpit Security & Keys (ou Vercel env).
+3. Executar `test connection` e validação funcional objetiva do fluxo afetado.
+4. Rodar novamente: `./tools/smoke/smoke.ps1`.
+5. Confirmar `/api/health` e healths internos (`db/redis/qdrant`).
+6. Confirmar que DLQ não cresceu e que não houve abertura indevida de circuit breaker.
+7. Registrar evidências no ticket e no audit trail operacional.
 
 ## Notas
 

@@ -4,18 +4,25 @@ import { tenantSecretsRepository } from '@/infra/repositories/tenant-secrets.rep
 import { rateLimiter, applyRateLimitHeaders } from '@/infra/security/rate-limiter';
 import { makeRequestId } from '@/infra/http/request-trace';
 
+import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { ErrorCode, errorResponse } from '@/infra/http/error-response';
+import { structuredLogger } from '@/infra/log/logger';
+
 export async function GET(req: NextRequest, { params }: { params: { tenantId: string } }) {
     const requestId = makeRequestId(req);
-    const auth = await requireAdmin(req, { requestId });
-    if (!auth.ok) return auth.response;
+    const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
-    // Enforce tenant isolation
-    if (auth.session.tenantId !== params.tenantId) {
-        return NextResponse.json({ error: 'Tenant mismatch' }, { status: 403 });
+    // 1. Session and Tenant Match
+    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+    if (!guard.ok) return guard.response;
+
+    // 2. Admin verification
+    if (guard.sessionUser.role !== 'admin') {
+        return errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Forbidden');
     }
 
     // Rate Limiter
-    const rlDecision = await rateLimiter.limit('secrets.get', auth.session.tenantId, {
+    const rlDecision = await rateLimiter.limit('secrets.get', guard.tenantId, {
         max: 100,
         windowSec: 60,
     });
@@ -26,12 +33,12 @@ export async function GET(req: NextRequest, { params }: { params: { tenantId: st
     }
 
     try {
-        const metadataList = await tenantSecretsRepository.getMetadataByTenant(params.tenantId);
+        const metadataList = await tenantSecretsRepository.getMetadataByTenant(guard.tenantId);
 
         const res = NextResponse.json({ secrets: metadataList });
         return applyRateLimitHeaders(res, rlDecision);
     } catch (error: any) {
-        console.error('Failed to get secrets metadata:', error);
+        structuredLogger.error('Failed to get secrets metadata', { err: error.message, tenantId: guard.tenantId ?? params.tenantId, requestId });
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

@@ -8,18 +8,24 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { structuredLogger } from '@/infra/log/logger';
 import crypto from 'crypto';
 
+import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { ErrorCode, errorResponse } from '@/infra/http/error-response';
+
 export async function POST(req: NextRequest, { params }: { params: { tenantId: string } }) {
     const requestId = makeRequestId(req);
-    const auth = await requireAdmin(req, { requestId });
-    if (!auth.ok) return auth.response;
+    const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
-    // Enforce tenant isolation
-    if (auth.session.tenantId !== params.tenantId) {
-        return NextResponse.json({ error: 'Tenant mismatch' }, { status: 403 });
+    // 1. Session and Tenant Match
+    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+    if (!guard.ok) return guard.response;
+
+    // 2. Admin verification
+    if (guard.sessionUser.role !== 'admin') {
+        return errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Forbidden');
     }
 
     // Rate Limiter
-    const rlDecision = await rateLimiter.limit('secrets.rotate', auth.session.tenantId, {
+    const rlDecision = await rateLimiter.limit('secrets.rotate', guard.tenantId, {
         max: 10,
         windowSec: 60,
     });
@@ -48,35 +54,35 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
         // Upsert
         await tenantSecretsRepository.upsertSecret({
             id: crypto.randomUUID(),
-            tenantId: auth.session.tenantId,
+            tenantId: guard.tenantId,
             scope,
             keyName,
             valueEncrypted: encrypted,
             valueHash: hash,
             lastRotatedAt: new Date(),
-            rotatedByUserId: auth.session.sub, // The user ID that triggered the rotation
+            rotatedByUserId: guard.sessionUser.sub, // The user ID that triggered the rotation
         });
 
         // Audit Log
         await adminAuditLogRepository.log({
-            tenantId: auth.session.tenantId,
-            userId: auth.session.sub,
+            tenantId: guard.tenantId,
+            userId: guard.sessionUser.sub,
             action: 'SECRET_ROTATED',
             metadata: { scope, keyName, requestId }
         });
 
         structuredLogger.info('Secret rotated successfully', {
-            tenantId: auth.session.tenantId,
+            tenantId: guard.tenantId,
             scope,
             keyName,
-            userId: auth.session.sub,
+            userId: guard.sessionUser.sub,
             requestId,
         });
 
         const res = NextResponse.json({ ok: true, message: 'Secret rotated' });
         return applyRateLimitHeaders(res, rlDecision);
     } catch (error: any) {
-        structuredLogger.error('Failed to rotate secret', { err: error, tenantId: auth.session.tenantId, requestId });
+        structuredLogger.error('Failed to rotate secret', { err: error.message, tenantId: guard.tenantId, requestId });
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

@@ -11,6 +11,7 @@ import { tenantRepository } from '../../../../../infra/repositories/tenant.repos
 import { canonicalizeIanaTimeZone } from '../../../../../infra/time/window';
 
 import { tenantIncidentsRepository } from '../../../../../infra/repositories/tenant-incidents.repository';
+import { rateLimiter, applyRateLimitHeaders } from '../../../../../infra/security/rate-limiter';
 
 export const runtime = 'nodejs';
 
@@ -61,6 +62,17 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     userIdForLog = guard.sessionUser.sub;
     if (guard.sessionUser.role !== 'admin') {
       return finalize(NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 }), ErrorCode.FORBIDDEN);
+    }
+
+    const limitDecision = await rateLimiter.limit('tenant_settings_put', guard.tenantId, {
+      windowSec: 60,
+      max: 20,
+    });
+    if (!limitDecision.allowed) {
+      return applyRateLimitHeaders(
+        errorResponse(ErrorCode.RATE_LIMITED, 429, requestId, 'Rate limit exceeded'),
+        limitDecision
+      );
     }
 
     const payload = (await request.json()) as TenantSettingsPayload;

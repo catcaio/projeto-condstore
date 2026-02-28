@@ -11,18 +11,24 @@ import { secretResolver } from '@/infra/security/secret-resolver';
 import { tenantSecretsRepository } from '@/infra/repositories/tenant-secrets.repository';
 import { adminAuditLogRepository } from '@/infra/repositories/admin-audit-log.repository';
 
+import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { ErrorCode, errorResponse } from '@/infra/http/error-response';
+
 export async function POST(req: NextRequest, { params }: { params: { tenantId: string } }) {
     const requestId = makeRequestId(req);
-    const auth = await requireAdmin(req, { requestId });
-    if (!auth.ok) return auth.response;
+    const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
-    // Enforce tenant isolation
-    if (auth.session.tenantId !== params.tenantId) {
-        return NextResponse.json({ error: 'Tenant mismatch' }, { status: 403 });
+    // 1. Session and Tenant Match
+    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+    if (!guard.ok) return guard.response;
+
+    // 2. Admin verification
+    if (guard.sessionUser.role !== 'admin') {
+        return errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Forbidden');
     }
 
     // Rate Limiter
-    const rlDecision = await rateLimiter.limit('secrets.test', auth.session.tenantId, {
+    const rlDecision = await rateLimiter.limit('secrets.test', guard.tenantId, {
         max: 10,
         windowSec: 60,
     });
@@ -40,7 +46,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
         let message = '';
 
         if (scope === 'twilio') {
-            const config = await resolveTwilioConfig(auth.session.tenantId);
+            const config = await resolveTwilioConfig(guard.tenantId);
             // Let's do a simple GET to Twilio's Account object
             const twilioRes = await fetch(
                 `https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}.json`,
@@ -54,7 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
             message = twilioRes.ok ? 'Twilio credentials verified' : 'Invalid Twilio credentials';
         } else if (scope === 'stripe') {
             // For Stripe, we just verify the webhook secret format
-            const whsec = await secretResolver.getValue(auth.session.tenantId, 'stripe', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_WEBHOOK_SECRET');
+            const whsec = await secretResolver.getValue(guard.tenantId, 'stripe', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_WEBHOOK_SECRET');
             if (whsec && whsec.startsWith('whsec_')) {
                 testResult = true;
                 message = 'Stripe webhook secret format looks valid';
@@ -88,10 +94,10 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
         }
 
         if (testResult) {
-            await tenantSecretsRepository.markScopeAsVerified(auth.session.tenantId, scope);
+            await tenantSecretsRepository.markScopeAsVerified(guard.tenantId, scope);
             await adminAuditLogRepository.log({
-                tenantId: auth.session.tenantId,
-                userId: auth.session.sub,
+                tenantId: guard.tenantId,
+                userId: guard.sessionUser.sub,
                 action: 'SECRET_VERIFIED',
                 metadata: { scope, requestId }
             });
@@ -100,16 +106,16 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
         // Log the test action (audit)
         // We only log if it's admin doing a test on a critical integration
         structuredLogger.info('Secret test executed', {
-            tenantId: auth.session.tenantId,
+            tenantId: guard.tenantId,
             scope,
-            userId: auth.session.sub,
+            userId: guard.sessionUser.sub,
             testResult,
         });
 
         const res = NextResponse.json({ ok: testResult, message });
         return applyRateLimitHeaders(res, rlDecision);
     } catch (error: any) {
-        structuredLogger.error('Failed to test secret', { err: error, tenantId: auth.session.tenantId, requestId });
+        structuredLogger.error('Failed to test secret', { err: error.message, tenantId: guard.tenantId ?? params.tenantId, requestId });
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
