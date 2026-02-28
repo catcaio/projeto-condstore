@@ -750,7 +750,8 @@ export const tenantDocumentChunks = mysqlTable('tenant_document_chunks', {
     orderIndex: int('order_index').notNull(),
     charStart: int('char_start').notNull().default(0),
     charEnd: int('char_end').notNull().default(0),
-    embedding: json('embedding'),
+    embedding: json('embedding'), // Legacy JSON standard
+    vectorEmbedding: json('vector_embedding'), // TiDB Vector / PGVector target format
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
     tenantIdVersionIdx: index('idx_tenant_chunks_tenant_version').on(table.tenantId, table.versionId),

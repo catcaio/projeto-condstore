@@ -1,0 +1,1 @@
+ALTER TABLE `tenant_document_chunks` ADD `vector_embedding` json;

@@ -127,6 +127,13 @@
       "when": 1772292221791,
       "tag": "0029_common_salo",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "5",
+      "when": 1772294010269,
+      "tag": "0030_fearless_franklin_storm",
+      "breakpoints": true
     }
   ]
 }
