@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/ui/shell/app-shell";
+import { ApplicationTracker } from "@/ui/lib/app-tracker-client";
 import "../../styles/tokens.css";
 
 export const metadata = {
@@ -32,6 +33,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     <>
       <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       <AppShell role={role} tenantId={tenantId}>
+        <ApplicationTracker />
         {children}
       </AppShell>
     </>

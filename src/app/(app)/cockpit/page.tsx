@@ -11,6 +11,7 @@ import { UsageSection } from './components/usage-section';
 import { FunnelSection } from './components/funnel-section';
 import { ActivitySection } from './components/activity-section';
 import { BillingSkeleton, UsageSkeleton, FunnelSkeleton, ActivitySkeleton } from './components/skeletons';
+import { ActivationSection } from './components/activation-section';
 
 export default async function CockpitPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -43,6 +44,7 @@ export default async function CockpitPage(props: { searchParams: Promise<{ [key:
             </Suspense>
 
             <Suspense fallback={<FunnelSkeleton />}>
+                <ActivationSection tenantId={tenantId} />
                 <FunnelSection tenantId={tenantId} />
             </Suspense>
 

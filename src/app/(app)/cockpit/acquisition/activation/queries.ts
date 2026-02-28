@@ -1,5 +1,5 @@
 import { getDb } from '@/infra/db';
-import { publicEvents } from '@/drizzle/schema';
+import { publicEvents, tenantEvents } from '@/drizzle/schema';
 import { eq, and, gte, desc, sql } from 'drizzle-orm';
 
 export interface ActivationStats {
@@ -99,5 +99,49 @@ export async function getActivationStats(days: number = 30): Promise<ActivationS
         ctaClicks: ctaRes.map((x: any) => ({ element: x.element || 'unknown', count: x.count })),
         mostViewedSections: sectionRes.map((x: any) => ({ section: x.section || 'unknown', count: x.count })),
         sourceBreakdown: sourceRes.map((x: any) => ({ source: x.source, campaign: x.campaign, count: x.count })),
+    };
+}
+
+export async function getTtvMetrics(days: number = 30) {
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() - days);
+
+    const db = await getDb();
+
+    // MySQL query for TTV: difference in seconds between 'entry_success' (or fallback to 'signup_created') 
+    // and 'first_freight_simulation' for the same tenant.
+    // The prompt requested min(ts(first_freight_simulation)) - min(ts(entry_success)).
+    // entry_success is logged inside public_events but without proper tenant linkage (only ref_token / anonId).
+    // Thus, we use 'signup_created' which safely mirrors tenant creation in tenant_events.
+
+    const query = sql`
+        SELECT 
+            sim.tenant_id,
+            TIMESTAMPDIFF(SECOND, MIN(signup.created_at), MIN(sim.created_at)) as diff_sec
+        FROM tenant_events sim
+        JOIN tenant_events signup ON sim.tenant_id = signup.tenant_id
+        WHERE sim.type = 'first_freight_simulation' 
+          AND signup.type = 'signup_created'
+          AND sim.created_at >= ${minDate}
+        GROUP BY sim.tenant_id
+        HAVING diff_sec >= 0
+    `;
+
+    const data = await db.execute(query);
+    const rows = (data as any)[0] || [];
+
+    const diffs = rows.map((r: any) => Number(r.diff_sec)).sort((a: number, b: number) => a - b);
+
+    let p50 = 0;
+    let p90 = 0;
+    if (diffs.length > 0) {
+        p50 = diffs[Math.floor(diffs.length * 0.5)];
+        p90 = diffs[Math.floor(diffs.length * 0.9)];
+    }
+
+    return {
+        p50Seconds: p50,
+        p90Seconds: p90,
+        sampleSize: diffs.length
     };
 }

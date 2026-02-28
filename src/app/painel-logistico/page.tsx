@@ -5,6 +5,7 @@ import { Truck, Package, MapPin, Search, AlertCircle, Share2, RefreshCw } from '
 import { FreightOption, FreightRanking, Simulation } from '@/types/freight';
 import { calculateRanking, DEFAULT_STRATEGY } from '@/lib/engine/ranking';
 import { generateQuoteMessage } from '@/lib/engine/messages';
+import { trackAppEvent } from '@/ui/lib/track-app';
 import { LocalStorageAdapter } from '@/lib/storage/LocalStorageAdapter';
 import { FreightCard } from '@/components/FreightCard';
 import { SimulationHistory } from '@/components/SimulationHistory';
@@ -99,6 +100,12 @@ export default function Dashboard() {
             const historyData = await historyResponse.json();
             if (historyData.success) {
                 setHistory(historyData.history);
+                if (historyData.history.length === 1) {
+                    trackAppEvent({ type: 'first_freight_simulation' });
+                } else {
+                    // Fallback to track anyway, dedup will handle it on server
+                    trackAppEvent({ type: 'first_freight_simulation' });
+                }
             }
 
         } catch (err) {

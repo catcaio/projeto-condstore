@@ -1,6 +1,6 @@
 import { getDb } from '@/infra/db';
 import { sql, and, gte, eq, desc } from 'drizzle-orm';
-import { freightFunnelEvents, tenantBudgets, tenants, tenantSubscriptions } from '@/drizzle/schema';
+import { freightFunnelEvents, tenantBudgets, tenants, tenantSubscriptions, tenantEvents } from '@/drizzle/schema';
 import { redisClient } from '@/infra/redis.client';
 import { metricsRollupStatusRepository } from '@/modules/metrics/metrics-rollup-status.repository';
 
@@ -160,4 +160,20 @@ export async function getRecentActivity(tenantId: string) {
         .where(eq(freightFunnelEvents.tenantId, tenantId))
         .orderBy(desc(freightFunnelEvents.createdAt))
         .limit(10);
+}
+
+export async function getActivationMilestones(tenantId: string) {
+    const db = await getDb();
+    const events = await db.select({ type: tenantEvents.type })
+        .from(tenantEvents)
+        .where(eq(tenantEvents.tenantId, tenantId));
+
+    const set = new Set(events.map(e => e.type));
+    return {
+        signup_created: set.has('signup_created'),
+        store_connected: set.has('store_connected'),
+        first_freight_simulation: set.has('first_freight_simulation'),
+        first_whatsapp_message: set.has('first_whatsapp_message'),
+        cockpit_viewed: set.has('cockpit_viewed'),
+    };
 }
