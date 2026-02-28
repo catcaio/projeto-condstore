@@ -14,6 +14,7 @@ export const tenants = mysqlTable('tenants', {
     planStatus: varchar('plan_status', { length: 50 }),
     planCurrentPeriodEnd: timestamp('plan_current_period_end'),
     outboundEnabled: boolean('outbound_enabled').default(true).notNull(),
+    incidentMode: boolean('incident_mode').default(false).notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
@@ -811,3 +812,16 @@ export const tenantKnowledgeSources = mysqlTable('tenant_knowledge_sources', {
     status: varchar('status', { length: 50 }).notNull().default('draft'), // 'draft', 'syncing', 'active', 'error'
     createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+export const tenantIncidents = mysqlTable('tenant_incidents', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(), // uuid
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // 'kill_switch', 'incident_mode', 'circuit_breaker'
+    startedAt: timestamp('started_at').notNull(),
+    endedAt: timestamp('ended_at'),
+    triggeredBy: varchar('triggered_by', { length: 255 }).notNull(), // userId or system/circuit-breaker
+    metadata: json('metadata'),
+});
+
+export type TenantIncidentRecord = typeof tenantIncidents.$inferSelect;
+export type NewTenantIncidentRecord = typeof tenantIncidents.$inferInsert;

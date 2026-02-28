@@ -10,11 +10,14 @@ import { adminAuditLogRepository } from '../../../../../infra/repositories/admin
 import { tenantRepository } from '../../../../../infra/repositories/tenant.repository';
 import { canonicalizeIanaTimeZone } from '../../../../../infra/time/window';
 
+import { tenantIncidentsRepository } from '../../../../../infra/repositories/tenant-incidents.repository';
+
 export const runtime = 'nodejs';
 
 interface TenantSettingsPayload {
   timezone?: string;
   outboundEnabled?: boolean;
+  incidentMode?: boolean;
 }
 
 export async function PUT(request: NextRequest): Promise<NextResponse> {
@@ -68,6 +71,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     }
 
     let hasUpdates = false;
+    let incidentUpdated = false;
     let tzUpdated = false;
     let outboundUpdated = false;
 
@@ -92,6 +96,39 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       await tenantRepository.updateOutboundEnabled(guard.tenantId, payload.outboundEnabled);
       hasUpdates = true;
       outboundUpdated = true;
+
+      // Log incident if kill switch is turned on (meaning outboundEnabled goes true -> false)
+      if (existingTenant.outboundEnabled && !payload.outboundEnabled) {
+        await tenantIncidentsRepository.logIncident({
+          tenantId: guard.tenantId,
+          type: 'kill_switch',
+          startedAt: new Date(),
+          triggeredBy: guard.sessionUser.sub,
+          metadata: { outboundEnabled: false }
+        });
+      }
+    }
+
+    if (payload.incidentMode !== undefined) {
+      if (typeof payload.incidentMode !== 'boolean') {
+        return finalize(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'incidentMode must be boolean'), ErrorCode.VALIDATION_ERROR);
+      }
+      await tenantRepository.updateIncidentMode(guard.tenantId, payload.incidentMode);
+      hasUpdates = true;
+      incidentUpdated = true;
+
+      // Log incident if turning on
+      if (!existingTenant.incidentMode && payload.incidentMode) {
+        await tenantIncidentsRepository.logIncident({
+          tenantId: guard.tenantId,
+          type: 'incident_mode',
+          startedAt: new Date(),
+          triggeredBy: guard.sessionUser.sub,
+          metadata: { action: 'user_activated' }
+        });
+      } else if (existingTenant.incidentMode && !payload.incidentMode) {
+        // If deactivated, we could close it, but for now just logging closure is fine or standard audit handles it
+      }
     }
 
     if (hasUpdates) {
@@ -103,7 +140,8 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
           requestId,
           changes: {
             timezone: tzUpdated ? timezoneForLog : undefined,
-            outboundEnabled: outboundUpdated ? payload.outboundEnabled : undefined
+            outboundEnabled: outboundUpdated ? payload.outboundEnabled : undefined,
+            incidentMode: incidentUpdated ? payload.incidentMode : undefined
           }
         },
       });
@@ -113,6 +151,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       tenantId: guard.tenantId,
       timezone: tzUpdated ? timezoneForLog : existingTenant.timezone,
       outboundEnabled: outboundUpdated ? payload.outboundEnabled : existingTenant.outboundEnabled,
+      incidentMode: incidentUpdated ? payload.incidentMode : existingTenant.incidentMode,
       updated: hasUpdates,
     }));
   } catch (error) {
@@ -150,6 +189,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       tenantId: existingTenant.id,
       timezone: existingTenant.timezone,
       outboundEnabled: existingTenant.outboundEnabled,
+      incidentMode: existingTenant.incidentMode,
     });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to GET tenant settings' }, { status: 500 });

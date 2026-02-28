@@ -22,6 +22,9 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
     const [loading, setLoading] = useState(false);
     const [outboundEnabled, setOutboundEnabled] = useState<boolean | null>(null);
     const [isUpdatingOutbound, setIsUpdatingOutbound] = useState(false);
+    const [incidentMode, setIncidentMode] = useState<boolean | null>(null);
+    const [isUpdatingIncidentMode, setIsUpdatingIncidentMode] = useState(false);
+    const [healthSummary, setHealthSummary] = useState<any>(null);
 
     // Rotate Modal State
     const [isRotateModalOpen, setIsRotateModalOpen] = useState(false);
@@ -37,7 +40,20 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
     useEffect(() => {
         fetchSecrets();
         fetchSettings();
+        fetchHealthSummary();
     }, [tenantId]);
+
+    async function fetchHealthSummary() {
+        try {
+            const res = await fetch(`/api/tenants/${tenantId}/health`);
+            if (res.ok) {
+                const data = await res.json();
+                setHealthSummary(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch health summary');
+        }
+    }
 
     async function fetchSettings() {
         try {
@@ -45,6 +61,7 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
             if (res.ok) {
                 const data = await res.json();
                 setOutboundEnabled(data.outboundEnabled !== false); // default true
+                setIncidentMode(data.incidentMode === true); // default false
             }
         } catch (error) {
             console.error('Failed to fetch settings');
@@ -151,6 +168,27 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
         }
     };
 
+    const handleToggleIncidentMode = async () => {
+        setIsUpdatingIncidentMode(true);
+        const newValue = !incidentMode;
+        try {
+            const res = await fetch(`/api/tenants/${tenantId}/settings`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ incidentMode: newValue })
+            });
+            if (res.ok) {
+                setIncidentMode(newValue);
+            } else {
+                alert('Erro ao atualizar configurações de incidente.');
+            }
+        } catch (error) {
+            alert('Falha na requisição.');
+        } finally {
+            setIsUpdatingIncidentMode(false);
+        }
+    };
+
     const renderSecretItem = (
         scope: string,
         keyName: string,
@@ -211,6 +249,43 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
 
     return (
         <div className="space-y-6">
+            {healthSummary && (
+                <SettingsSection
+                    title="Health Summary"
+                    description="Painel de diagnósticos rápidos dos serviços vitais."
+                >
+                    <div className="bg-[hsl(var(--ui-surface))] rounded-lg border border-[hsl(var(--ui-border))] p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex flex-col">
+                            <span className="text-xs text-[hsl(var(--ui-text-muted))] uppercase tracking-wider font-semibold">Redis</span>
+                            <span className={`text-sm font-bold ${healthSummary.redis === 'ok' ? 'text-[hsl(var(--ui-success))]' : 'text-[hsl(var(--ui-danger))]'}`}>
+                                {healthSummary.redis === 'ok' ? 'Online' : 'Offline'}
+                            </span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-xs text-[hsl(var(--ui-text-muted))] uppercase tracking-wider font-semibold">Limite Taxa</span>
+                            <span className={`text-sm font-bold ${healthSummary.rateLimiterFallback?.count > 0 ? 'text-[hsl(var(--ui-warning))]' : 'text-[hsl(var(--ui-success))]'}`}>
+                                {healthSummary.rateLimiterFallback?.count > 0 ? `Ativo (${healthSummary.rateLimiterFallback.count})` : 'Normal'}
+                            </span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-xs text-[hsl(var(--ui-text-muted))] uppercase tracking-wider font-semibold">Circuitos Abertos</span>
+                            <span className={`text-sm font-bold ${healthSummary.circuitBreakers?.length > 0 ? 'text-[hsl(var(--ui-danger))]' : 'text-[hsl(var(--ui-success))]'}`}>
+                                {healthSummary.circuitBreakers?.length > 0 ? healthSummary.circuitBreakers.map((cb: any) => cb.provider).join(', ') : 'Nenhum'}
+                            </span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-xs text-[hsl(var(--ui-text-muted))] uppercase tracking-wider font-semibold">Integridade</span>
+                            <span className={`text-sm font-bold ${healthSummary.incidentMode ? 'text-[hsl(var(--ui-danger))]' : (healthSummary.outboundEnabled ? 'text-[hsl(var(--ui-success))]' : 'text-[hsl(var(--ui-warning))]')}`}>
+                                {healthSummary.incidentMode ? 'Incidente (Lockdown)' : (healthSummary.outboundEnabled ? 'Operacional' : 'Envio Pausado')}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                        <Button variant="ghost" size="sm" onClick={fetchHealthSummary}>Refresh Health</Button>
+                    </div>
+                </SettingsSection>
+            )}
+
             <SettingsSection
                 title="Operational Controls (Kill Switch)"
                 description="Controle de emergência para bloquear o tráfego de saída mantendo o recebimento de mensagens."
@@ -228,6 +303,22 @@ export function SecuritySettingsClient({ tenantId }: { tenantId: string }) {
                         className={!outboundEnabled ? "bg-[hsl(var(--ui-danger))] text-white border-transparent" : ""}
                     >
                         {isUpdatingOutbound ? 'Salvando...' : (outboundEnabled ? 'Ativado' : 'DESATIVADO')}
+                    </Button>
+                </div>
+
+                <div className="bg-[hsl(var(--ui-surface))] rounded-lg border border-[hsl(var(--ui-border))] px-4 py-4 flex items-center justify-between mt-4">
+                    <div>
+                        <span className="text-sm font-semibold text-[hsl(var(--ui-text))]">Incident Mode (Lockdown)</span>
+                        <p className="text-xs text-[hsl(var(--ui-text-muted))] mt-1">Se ativado, bloqueia chamadas externas e ativa a mensagem padrão indicando instabilidade (Fail-Safe).</p>
+                    </div>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleToggleIncidentMode}
+                        disabled={isUpdatingIncidentMode || incidentMode === null}
+                        className={incidentMode ? "bg-[hsl(var(--ui-danger))] text-white border-transparent" : ""}
+                    >
+                        {isUpdatingIncidentMode ? 'Salvando...' : (incidentMode ? 'EM INCIDENTE' : 'Desativado')}
                     </Button>
                 </div>
             </SettingsSection>
