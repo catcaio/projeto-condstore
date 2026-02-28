@@ -1,16 +1,16 @@
 ﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET } from '../route';
-import { attributionClickRepository } from '../../../../infra/repositories/attribution-click.repository';
-import { rateLimiter } from '../../../../infra/security/rate-limiter';
+import { attributionClickRepository } from '../../../../../infra/repositories/attribution-click.repository';
+import { rateLimiter } from '../../../../../infra/security/rate-limiter';
 
-vi.mock('../../../../infra/repositories/attribution-click.repository', () => ({
+vi.mock('../../../../../infra/repositories/attribution-click.repository', () => ({
   attributionClickRepository: {
     getByToken: vi.fn(),
     upsertByToken: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
-vi.mock('../../../../infra/security/rate-limiter', () => ({
+vi.mock('../../../../../infra/security/rate-limiter', () => ({
   rateLimiter: {
     limit: vi.fn(),
   },

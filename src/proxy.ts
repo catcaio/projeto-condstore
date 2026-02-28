@@ -15,6 +15,7 @@ export const config = {
     '/freight/simulations/:path*',
     '/attribution/:path*',
     '/settings/:path*',
+    '/tech/:path*',
     '/api/cockpit/:path*',
     '/api/webhook',
     '/api/events',
@@ -83,7 +84,8 @@ function isProtectedUi(pathname: string): boolean {
     pathname === '/inbox' || pathname.startsWith('/inbox/') ||
     pathname === '/freight/simulations' || pathname.startsWith('/freight/simulations/') ||
     pathname === '/attribution' || pathname.startsWith('/attribution/') ||
-    pathname === '/settings' || pathname.startsWith('/settings/')
+    pathname === '/settings' || pathname.startsWith('/settings/') ||
+    pathname === '/tech' || pathname.startsWith('/tech/')
   );
 }
 

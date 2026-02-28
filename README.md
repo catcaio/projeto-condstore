@@ -51,7 +51,13 @@ npm run db:push
 
 ## Estrutura de Pastas Fundamental
 
-* **`/src/app/`**: Rotas públicas do App Router, Side-bars Web do Cockpit (Protected pages) e Endpoints de API internas `/api/internal/...` com gatekeepers via Token.
+**Mapa Visual de Navegação (Next.js App Router):**
+- **Público**: `(public)` -> Site institucional e documentações (`/`, `/docs`)
+- **Cockpit**: `(app)/cockpit` -> Dashboard settings e operações do tenant
+- **Operacional**: `(app)/modules` -> Fluxos de logística e gestão diária internamente (`/modules/...`)
+- **Campo**: `(field)/tech` -> Aplicativo PWA dos técnicos nas rotas (`/tech/...`)
+- **Externo**: `(external)/t` -> Rastreamento público para clientes finais sem sessão (`/t/track/...`)
+
 * **`/src/core/`**: O domínio vital.
   * `/ai/` → O Proxy LLM, `prompt-registry` versão base de banco, `pii-redactor`, `eval-runner`.
   * `/events/` → Toda infraestrutura custom baseada em ioredis streams (`publish`, `consume`, `DLQ`).
