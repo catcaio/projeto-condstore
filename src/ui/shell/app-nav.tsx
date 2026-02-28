@@ -1,6 +1,6 @@
 import { SettingsSection, SettingsRow } from '@/ui/settings';
 import { Badge } from '@/ui/components';
-import { Home, Settings, ShieldAlert, Inbox } from 'lucide-react';
+import { Home, Settings, ShieldAlert, Inbox, Target } from 'lucide-react';
 import { type Role, isSuperAdmin } from '@/ui/auth/entitlements-logic';
 
 interface AppNavProps {
@@ -12,6 +12,7 @@ export function AppNav({ role, tenantId }: AppNavProps) {
     const isSuper = isSuperAdmin(role);
     const cockpitHref = isSuper && tenantId ? { pathname: '/cockpit', query: { tenantId } } : "/cockpit";
     const inboxHref = isSuper && tenantId ? { pathname: '/inbox', query: { tenantId } } : "/inbox";
+    const attrHref = isSuper && tenantId ? { pathname: '/attribution', query: { tenantId } } : "/attribution";
 
     return (
         <div className="space-y-6">
@@ -25,6 +26,11 @@ export function AppNav({ role, tenantId }: AppNavProps) {
                     icon={<Inbox className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
                     label="Inbox"
                     href={inboxHref}
+                />
+                <SettingsRow
+                    icon={<Target className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Origem & Conversão"
+                    href={attrHref}
                 />
                 <SettingsRow
                     icon={<Settings className="h-5 w-5" />}
