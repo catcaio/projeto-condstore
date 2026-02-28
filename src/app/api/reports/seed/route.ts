@@ -7,6 +7,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  if (process.env.IS_DEV !== 'true') {
+    return NextResponse.json({ success: false, error: 'Forbidden in production' }, { status: 403 });
+  }
+
   try {
     const token = request.headers.get('x-seed-token');
 

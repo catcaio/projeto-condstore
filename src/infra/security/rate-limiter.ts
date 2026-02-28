@@ -46,8 +46,8 @@ function isMemoryFallbackEnabled(): boolean {
   return process.env.NODE_ENV !== 'production';
 }
 
-function isRateLimitFailOpenOverrideEnabled(): boolean {
-  return process.env.RATE_LIMIT_FAIL_OPEN?.trim().toLowerCase() === 'true';
+function isRateLimitFailClosedOverrideEnabled(): boolean {
+  return process.env.RATE_LIMIT_FAIL_CLOSED?.trim().toLowerCase() === 'true';
 }
 
 function bucketKey(scope: string, key: string, windowStartSec: number): string {
@@ -227,27 +227,27 @@ export class RateLimiter {
       return this.limitWithMemory(scope, key, options, now);
     }
 
-    if (isRateLimitFailOpenOverrideEnabled()) {
-      structuredLogger.warn('rate_limiter_redis_failure_fail_open_override', {
+    if (isRateLimitFailClosedOverrideEnabled()) {
+      structuredLogger.error('rate_limiter_redis_failure_fail_closed_override', {
         eventType: 'rate_limiter',
         scope,
         keyHash,
         reason,
-        failOpenOverride: true,
+        failClosedOverride: true,
         ...(errorName ? { errorName } : {}),
       });
-      return failOpenDecision(now, options);
+      return failClosedDecision(now, options);
     }
 
-    structuredLogger.error('rate_limiter_redis_failure_fail_closed', {
+    structuredLogger.warn('rate_limiter_redis_failure_fail_open', {
       eventType: 'rate_limiter',
       scope,
       keyHash,
       reason,
-      failOpenOverride: false,
+      failClosedOverride: false,
       ...(errorName ? { errorName } : {}),
     });
-    return failClosedDecision(now, options);
+    return failOpenDecision(now, options);
   }
 
   private async limitWithMemory(scope: string, key: string, options: LimitOptions, now: number): Promise<RateLimitDecision> {

@@ -13,6 +13,7 @@ export const tenants = mysqlTable('tenants', {
     plan: varchar('plan', { length: 50 }),
     planStatus: varchar('plan_status', { length: 50 }),
     planCurrentPeriodEnd: timestamp('plan_current_period_end'),
+    outboundEnabled: boolean('outbound_enabled').default(true).notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
@@ -774,3 +775,26 @@ export const tenantKnowledgeQueries = mysqlTable('tenant_knowledge_queries', {
 }));
 export type TenantKnowledgeQueryRecord = typeof tenantKnowledgeQueries.$inferSelect;
 export type NewTenantKnowledgeQueryRecord = typeof tenantKnowledgeQueries.$inferInsert;
+
+// --- Security & Keys (Stored Secrets) ---
+
+export const tenantSecrets = mysqlTable('tenant_secrets', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    scope: varchar('scope', { length: 50 }).notNull(), // 'twilio' | 'stripe' | 'internal' | 'ai_provider' | 'other'
+    keyName: varchar('key_name', { length: 255 }).notNull(),
+    valueEncrypted: text('value_encrypted').notNull(),
+    valueHash: varchar('value_hash', { length: 64 }).notNull(), // sha256 to detect changes
+    lastRotatedAt: timestamp('last_rotated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    rotatedByUserId: varchar('rotated_by_user_id', { length: 36 }),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => {
+    return {
+        tenantScopeKeyIdx: uniqueIndex('uq_tenant_secrets_scope_key').on(table.tenantId, table.scope, table.keyName),
+        tenantScopeIdx: index('idx_tenant_secrets_scope').on(table.tenantId, table.scope),
+    };
+});
+
+export type TenantSecretRecord = typeof tenantSecrets.$inferSelect;
+export type NewTenantSecretRecord = typeof tenantSecrets.$inferInsert;

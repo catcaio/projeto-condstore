@@ -1,11 +1,8 @@
-/**
- * Twilio WhatsApp provider.
- * Handles all Twilio API interactions with retry logic and error handling.
- */
-
-import { twilioConfig, extractPhoneNumber as extractPhone } from '../config/twilio.config';
+import { resolveTwilioConfig, extractPhoneNumber as extractPhone } from '../config/twilio.config';
 import { ErrorCode, ProviderError } from '../infra/errors';
 import { logger } from '../infra/logger';
+import { tenantRepository } from '../infra/repositories/tenant.repository';
+import { structuredLogger } from '../infra/log/logger';
 
 export interface IncomingMessage {
   from: string;
@@ -50,7 +47,6 @@ class TwilioProvider {
 
   /**
    * Generate TwiML response for webhook.
-   * This is what Twilio expects as a response to send messages back.
    */
   generateTwiMLResponse(message: string): string {
     const escaped = this.escapeXml(message);
@@ -73,32 +69,49 @@ class TwilioProvider {
   }
 
   /**
-   * Send message via Twilio API (for proactive messaging, not webhook responses).
-   * This is useful for sending messages outside of the webhook flow.
+   * Send message via Twilio API.
+   * Modificado para receber tenantId e resolver config dinamicamente.
    */
-  async sendMessage(message: OutgoingMessage, maxRetries: number = twilioConfig.maxRetries): Promise<boolean> {
+  async sendMessage(tenantId: string, message: OutgoingMessage, maxRetriesParam?: number): Promise<boolean> {
+    const config = await resolveTwilioConfig(tenantId);
+    const maxRetries = maxRetriesParam ?? config.maxRetries;
     let lastError: Error | null = null;
+
+    const tenant = await tenantRepository.getTenantById(tenantId);
+    if (!tenant) {
+      logger.error('Failed to send message via Twilio: Tenant not found', new Error('Tenant not found'), { tenantId });
+      return false;
+    }
+
+    if (!tenant.outboundEnabled) {
+      structuredLogger.warn('twilio_outbound_blocked_by_kill_switch', {
+        tenantId,
+        to: message.to,
+        eventType: 'twilio_outbound_blocked',
+      });
+      return false;
+    }
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const startTime = Date.now();
 
         const response = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${twilioConfig.accountSid}/Messages.json`,
+          `https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',
               Authorization: `Basic ${Buffer.from(
-                `${twilioConfig.accountSid}:${twilioConfig.authToken}`
+                `${config.accountSid}:${config.authToken}`
               ).toString('base64')}`,
             },
             body: new URLSearchParams({
-              From: twilioConfig.phoneNumber,
+              From: config.phoneNumber,
               To: `whatsapp:+${message.to}`,
               Body: message.body,
             }),
-            signal: AbortSignal.timeout(twilioConfig.webhookTimeout),
+            signal: AbortSignal.timeout(config.webhookTimeout),
           }
         );
 

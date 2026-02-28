@@ -13,7 +13,8 @@ import { canonicalizeIanaTimeZone } from '../../../../../infra/time/window';
 export const runtime = 'nodejs';
 
 interface TenantSettingsPayload {
-  timezone?: unknown;
+  timezone?: string;
+  outboundEnabled?: boolean;
 }
 
 export async function PUT(request: NextRequest): Promise<NextResponse> {
@@ -60,43 +61,59 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     }
 
     const payload = (await request.json()) as TenantSettingsPayload;
-    if (typeof payload.timezone !== 'string') {
-      return finalize(
-        errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'timezone is required'),
-        ErrorCode.VALIDATION_ERROR,
-      );
-    }
-
-    const timezone = canonicalizeIanaTimeZone(payload.timezone);
-    if (!timezone) {
-      return finalize(
-        errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid timezone. Use a valid IANA timezone.'),
-        ErrorCode.VALIDATION_ERROR,
-      );
-    }
-
-    timezoneForLog = timezone;
 
     const existingTenant = await tenantRepository.getTenantById(guard.tenantId);
     if (!existingTenant) {
       return finalize(NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 }), ErrorCode.VALIDATION_ERROR);
     }
 
-    await tenantRepository.updateTenantTimezone(guard.tenantId, timezone);
-    await adminAuditLogRepository.log({
-      tenantId: guard.tenantId,
-      userId: guard.sessionUser.sub,
-      action: 'tenant.set_timezone',
-      metadata: {
-        timezone,
-        requestId,
-      },
-    });
+    let hasUpdates = false;
+    let tzUpdated = false;
+    let outboundUpdated = false;
+
+    if (payload.timezone !== undefined) {
+      if (typeof payload.timezone !== 'string') {
+        return finalize(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'timezone is required to be string'), ErrorCode.VALIDATION_ERROR);
+      }
+      const timezone = canonicalizeIanaTimeZone(payload.timezone);
+      if (!timezone) {
+        return finalize(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid timezone.'), ErrorCode.VALIDATION_ERROR);
+      }
+      timezoneForLog = timezone;
+      await tenantRepository.updateTenantTimezone(guard.tenantId, timezone);
+      hasUpdates = true;
+      tzUpdated = true;
+    }
+
+    if (payload.outboundEnabled !== undefined) {
+      if (typeof payload.outboundEnabled !== 'boolean') {
+        return finalize(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'outboundEnabled must be boolean'), ErrorCode.VALIDATION_ERROR);
+      }
+      await tenantRepository.updateOutboundEnabled(guard.tenantId, payload.outboundEnabled);
+      hasUpdates = true;
+      outboundUpdated = true;
+    }
+
+    if (hasUpdates) {
+      await adminAuditLogRepository.log({
+        tenantId: guard.tenantId,
+        userId: guard.sessionUser.sub,
+        action: 'tenant.update_settings',
+        metadata: {
+          requestId,
+          changes: {
+            timezone: tzUpdated ? timezoneForLog : undefined,
+            outboundEnabled: outboundUpdated ? payload.outboundEnabled : undefined
+          }
+        },
+      });
+    }
 
     return finalize(NextResponse.json({
       tenantId: guard.tenantId,
-      timezone,
-      updated: true,
+      timezone: tzUpdated ? timezoneForLog : existingTenant.timezone,
+      outboundEnabled: outboundUpdated ? payload.outboundEnabled : existingTenant.outboundEnabled,
+      updated: hasUpdates,
     }));
   } catch (error) {
     structuredLogger.error('tenant_settings_put_failed', {
@@ -115,5 +132,26 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, (error as Error).message),
       ErrorCode.VALIDATION_ERROR,
     );
+  }
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  try {
+    const tenantId = extractTenantIdFromTenantRoute(request);
+    const guard = await requireSessionTenantMatch(request, tenantId);
+    if (!guard.ok) return guard.response;
+
+    const existingTenant = await tenantRepository.getTenantById(guard.tenantId);
+    if (!existingTenant) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      tenantId: existingTenant.id,
+      timezone: existingTenant.timezone,
+      outboundEnabled: existingTenant.outboundEnabled,
+    });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to GET tenant settings' }, { status: 500 });
   }
 }
