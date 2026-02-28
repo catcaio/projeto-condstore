@@ -120,6 +120,13 @@
       "when": 1772290163230,
       "tag": "0028_worried_lady_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1772292221791,
+      "tag": "0029_common_salo",
+      "breakpoints": true
     }
   ]
 }

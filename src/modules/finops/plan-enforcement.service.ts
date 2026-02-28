@@ -159,6 +159,41 @@ class PlanEnforcementService {
             maxPercent: (maxPercent * 100).toFixed(1)
         };
     }
+
+    async incrementAndEnforceSyncLimits(tenantId: string, filesToSyncCount: number): Promise<{ allowed: boolean, reason?: string }> {
+        try {
+            const tenant = await tenantRepository.getTenantById(tenantId);
+            const plan = (tenant?.plan || 'starter') as PlanId;
+            const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.starter;
+
+            if (filesToSyncCount > limits.knowledge_max_files_per_sync) {
+                return { allowed: false, reason: `Limite de arquivos por sync excedido (${limits.knowledge_max_files_per_sync})` };
+            }
+
+            const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+            const cacheKey = `finops:syncs:${tenantId}:${today}`;
+
+            let currentSyncs = 0;
+            if (redisClient.isAvailable()) {
+                const redis = redisClient.getRawClient();
+                if (redis) {
+                    currentSyncs = await redis.incr(cacheKey);
+                    if (currentSyncs === 1) {
+                        await redis.expire(cacheKey, 86400); // 24h
+                    }
+                }
+            }
+
+            if (currentSyncs > limits.knowledge_max_syncs_per_day) {
+                return { allowed: false, reason: `Limite diário de sincronizações alcançado (${limits.knowledge_max_syncs_per_day})` };
+            }
+
+            return { allowed: true };
+        } catch (err) {
+            logger.error('Failed to enforce sync limits (fail-open)', err as Error, { tenantId });
+            return { allowed: true };
+        }
+    }
 }
 
 export const planEnforcementService = new PlanEnforcementService();

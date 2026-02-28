@@ -671,6 +671,12 @@ export const tenantCollections = mysqlTable('tenant_collections', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
+    sourceType: varchar('source_type', { length: 32 }).default('manual').notNull(),
+    connectorType: varchar('connector_type', { length: 32 }),
+    autoSync: boolean('auto_sync').default(false).notNull(),
+    lastSyncAt: timestamp('last_sync_at'),
+    syncStatus: varchar('sync_status', { length: 32 }).default('idle').notNull(),
+    connectorConfig: json('connector_config'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 export type TenantCollectionRecord = typeof tenantCollections.$inferSelect;
