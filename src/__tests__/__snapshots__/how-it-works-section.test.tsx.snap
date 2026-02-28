@@ -2,9 +2,13 @@
 
 exports[`HowItWorksSection > snapshot da estrutura 1`] = `
 <section
-  className="w-full max-w-[var(--container-max-width)] mx-auto px-6 lg:px-8 py-20"
+  className="w-full max-w-[var(--container-max-width)] mx-auto px-6 lg:px-8 py-20 relative"
   id="como-funciona"
 >
+  <SectionTracker
+    page="landing"
+    section="como_funciona"
+  />
   <div
     className="text-center mb-16"
   >

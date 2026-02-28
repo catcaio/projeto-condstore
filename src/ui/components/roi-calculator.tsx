@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/ui/components/button';
-import Link from 'next/link';
+import { TrackedLink, SectionTracker, trackEvent } from '@/ui/lib/track-client';
 
 export function calculateRoi(volume: number, ticket: number, whatsappCv: number, custoFrete: number) {
     const economiaOperacional = volume * custoFrete;
@@ -22,8 +22,22 @@ export function RoiCalculator() {
 
     const { economiaOperacional, aumentoConversao, totalRecuperado } = calculateRoi(volume, ticket, whatsappCv, custoFrete);
 
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            trackEvent({
+                type: 'roi_change',
+                page: 'pricing',
+                section: 'roi',
+                element: 'calculator',
+                metadata: { volume, ticket, whatsappCv, custoFrete, totalRecuperado }
+            });
+        }, 1000);
+        return () => clearTimeout(handler);
+    }, [volume, ticket, whatsappCv, custoFrete, totalRecuperado]);
+
     return (
-        <div id="simular-roi" className="w-full max-w-4xl mx-auto mb-20 bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)]">
+        <div id="simular-roi" className="w-full max-w-4xl mx-auto mb-20 bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)] relative">
+            <SectionTracker page="pricing" section="roi" />
             <div className="text-center mb-10">
                 <h2 className="text-2xl md:text-3xl font-bold text-[hsl(var(--ui-text))] mb-2">Descubra quanto você pode recuperar com automação</h2>
                 <p className="text-[hsl(var(--ui-text-muted))]">Simule em 15 segundos</p>
@@ -101,11 +115,11 @@ export function RoiCalculator() {
                         </div>
                     </div>
 
-                    <Link href="/login" passHref className="w-full mt-auto">
+                    <TrackedLink href="/login" passHref trackPage="pricing" trackSection="roi" trackElement="roi_primary" className="w-full mt-auto" legacyBehavior>
                         <Button variant="primary" size="lg" className="w-full shadow-[var(--shadow-soft)] font-bold text-base">
                             Testar grátis agora
                         </Button>
-                    </Link>
+                    </TrackedLink>
                 </div>
             </div>
         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plug, MessageCircle, LayoutDashboard } from 'lucide-react';
+import { SectionTracker } from '@/ui/lib/track-client';
 
 export function HowItWorksSection() {
     const steps = [
@@ -21,7 +22,8 @@ export function HowItWorksSection() {
     ];
 
     return (
-        <section id="como-funciona" className="w-full max-w-[var(--container-max-width)] mx-auto px-6 lg:px-8 py-20">
+        <section id="como-funciona" className="w-full max-w-[var(--container-max-width)] mx-auto px-6 lg:px-8 py-20 relative">
+            <SectionTracker page="landing" section="como_funciona" />
             <div className="text-center mb-16">
                 <h2 className="text-3xl font-bold text-[hsl(var(--ui-text))] mb-4 tracking-tight">
                     Como funciona

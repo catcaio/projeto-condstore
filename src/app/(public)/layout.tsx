@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { TrackedLink } from '@/ui/lib/track-client';
 
 export default function PublicLayout({
     children,
@@ -33,18 +34,26 @@ export default function PublicLayout({
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <Link
+                        <TrackedLink
                             href="/login"
                             className="text-sm font-semibold hover:text-[hsl(var(--ui-text-muted))] transition-colors"
+                            trackPage="shared"
+                            trackSection="navbar"
+                            trackElement="login"
+                            legacyBehavior
                         >
                             Entrar
-                        </Link>
-                        <Link
+                        </TrackedLink>
+                        <TrackedLink
                             href={isDev ? '/cockpit/audit?status=success' : '/login'}
                             className="inline-flex h-9 items-center justify-center rounded-[var(--radius-button)] bg-[hsl(var(--ui-accent-blue))] px-4 text-sm font-medium text-white transition-colors hover:bg-[hsl(var(--ui-accent-blue-strong))] shadow-[var(--shadow-soft)]"
+                            trackPage="shared"
+                            trackSection="navbar"
+                            trackElement="navbar_pricing"
+                            legacyBehavior
                         >
                             Começar grátis
-                        </Link>
+                        </TrackedLink>
                     </div>
                 </div>
             </header>

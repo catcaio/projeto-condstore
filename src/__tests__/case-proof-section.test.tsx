@@ -27,10 +27,14 @@ describe('CaseProofSection', () => {
         // Verifica a estrutura base como Server Component test
         expect(result).toMatchInlineSnapshot(`
           <section
-            className="w-full max-w-[var(--container-max-width)] mx-auto px-6 lg:px-8 mb-16 mt-8"
+            className="w-full max-w-[var(--container-max-width)] mx-auto px-6 lg:px-8 mb-16 relative"
           >
+            <SectionTracker
+              page="landing"
+              section="case_proof"
+            />
             <div
-              className="bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 md:p-12 shadow-[var(--shadow-soft)] flex flex-col items-center text-center"
+              className="bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 md:p-12 shadow-[var(--shadow-soft)] hover:shadow-lg transition-shadow relative overflow-hidden"
             >
               <h2
                 className="text-3xl font-bold text-[hsl(var(--ui-text))] mb-2 tracking-tight"
@@ -103,9 +107,12 @@ describe('CaseProofSection', () => {
               <div
                 className="mt-4 flex justify-end w-full"
               >
-                <ForwardRef(LinkComponent)
-                  href="/pricing"
+                <TrackedLink
+                  href="#como-funciona"
                   passHref={true}
+                  trackElement="caseproof_demo"
+                  trackPage="landing"
+                  trackSection="case_proof"
                 >
                   <ForwardRef(Button2)
                     className="font-semibold text-[hsl(var(--ui-accent-blue))] hover:text-[hsl(var(--ui-accent-blue-strong))] hover:bg-[hsl(var(--ui-accent-blue)/0.1)]"
@@ -113,7 +120,7 @@ describe('CaseProofSection', () => {
                   >
                     Ver como funciona →
                   </ForwardRef(Button2)>
-                </ForwardRef(LinkComponent)>
+                </TrackedLink>
               </div>
             </div>
           </section>

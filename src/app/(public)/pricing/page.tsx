@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { Button } from '@/ui/components/button';
+import { TrackedLink, SectionTracker } from '@/ui/lib/track-client';
 import { RoiCalculator } from '@/ui/components/roi-calculator';
 import { CaseProofSection } from '@/ui/components/case-proof-section';
 
@@ -16,7 +16,8 @@ export default function PricingPage() {
             <CaseProofSection />
             <RoiCalculator />
 
-            <div id="planos" className="text-center mb-16 pt-8">
+            <div id="planos" className="text-center mb-16 pt-8 relative">
+                <SectionTracker page="pricing" section="planos" />
                 <h1 className="text-[var(--text-hero)] font-bold text-[hsl(var(--ui-text))] leading-tight tracking-tight mb-4">
                     Planos simples e flexíveis
                 </h1>
@@ -38,11 +39,11 @@ export default function PricingPage() {
                         <li className="flex gap-x-3"><Check className="h-5 w-5 text-[hsl(var(--ui-success))]" />Cotação rápida nos Correios</li>
                         <li className="flex gap-x-3"><Check className="h-5 w-5 text-[hsl(var(--ui-success))]" />Dashboard Analytics</li>
                     </ul>
-                    <Link href="/login" passHref className="mt-8">
+                    <TrackedLink href="/login" passHref className="mt-8" trackPage="pricing" trackSection="planos" trackElement="plano_starter" legacyBehavior>
                         <Button variant="primary" className="w-full">
                             Começar Grátis
                         </Button>
-                    </Link>
+                    </TrackedLink>
                 </div>
 
                 {/* ESSENCIAL (Recomendado) */}
@@ -59,11 +60,11 @@ export default function PricingPage() {
                         <li className="flex gap-x-3 text-[hsl(var(--ui-text))]"><Check className="h-5 w-5 text-[hsl(var(--ui-accent-blue))]" />Rastreio e Webhooks UTM</li>
                         <li className="flex gap-x-3 text-[hsl(var(--ui-text))]"><Check className="h-5 w-5 text-[hsl(var(--ui-accent-blue))]" />Integração WhatsApp</li>
                     </ul>
-                    <Link href="/login" passHref className="mt-8">
+                    <TrackedLink href="/login" passHref className="mt-8" trackPage="pricing" trackSection="planos" trackElement="plano_essencial" legacyBehavior>
                         <Button variant="primary" className="w-full">
                             Plano Essencial
                         </Button>
-                    </Link>
+                    </TrackedLink>
                 </div>
 
                 {/* GROWTH */}
@@ -77,11 +78,11 @@ export default function PricingPage() {
                         <li className="flex gap-x-3"><Check className="h-5 w-5 text-[hsl(var(--ui-success))]" />RBAC Completo (Manager)</li>
                         <li className="flex gap-x-3"><Check className="h-5 w-5 text-[hsl(var(--ui-success))]" />Suporte e SLA Prioritários</li>
                     </ul>
-                    <Link href="/login" passHref className="mt-8">
+                    <TrackedLink href="/login" passHref className="mt-8" trackPage="pricing" trackSection="planos" trackElement="plano_growth" legacyBehavior>
                         <Button variant="primary" className="w-full">
                             Plano Growth
                         </Button>
-                    </Link>
+                    </TrackedLink>
                 </div>
 
             </div>

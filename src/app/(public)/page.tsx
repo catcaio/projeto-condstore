@@ -3,12 +3,14 @@ import { Truck, BarChart3, Bot, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/ui/components/button';
 import { CaseProofSection } from '@/ui/components/case-proof-section';
 import { HowItWorksSection } from '@/ui/components/how-it-works-section';
+import { TrackedLink, SectionTracker } from '@/ui/lib/track-client';
 
 export default function PublicHomePage() {
     const isDev = process.env.NODE_ENV === 'development';
 
     return (
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 py-20 lg:py-32 flex flex-col items-center text-center gap-16">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 py-20 lg:py-32 flex flex-col items-center text-center gap-16 relative">
+            <SectionTracker page="landing" section="hero" />
 
             <div className="max-w-3xl space-y-6">
                 <h1 className="text-[var(--text-hero)] font-bold text-[hsl(var(--ui-text))] leading-tight tracking-tight mb-4">
@@ -20,16 +22,16 @@ export default function PublicHomePage() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-                    <Link href="/pricing" passHref>
+                    <TrackedLink href="/pricing" passHref trackPage="landing" trackSection="hero" trackElement="hero_primary" legacyBehavior>
                         <Button variant="primary" size="lg" className="w-full sm:w-auto">
                             Começar agora
                         </Button>
-                    </Link>
-                    <Link href="#como-funciona" passHref>
+                    </TrackedLink>
+                    <TrackedLink href="#como-funciona" passHref trackPage="landing" trackSection="hero" trackElement="hero_demo" legacyBehavior>
                         <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                             Ver demo
                         </Button>
-                    </Link>
+                    </TrackedLink>
                 </div>
             </div>
 
@@ -92,9 +94,9 @@ export default function PublicHomePage() {
                         <p className="text-[hsl(var(--ui-text-muted))] text-sm">Escalável com 99.9% de uptime real</p>
                     </div>
                 </div>
-                <Link href="/pricing" passHref>
+                <TrackedLink href="/pricing" passHref trackPage="landing" trackSection="bottom_cta" trackElement="bottom_primary" legacyBehavior>
                     <Button variant="primary">Criar conta</Button>
-                </Link>
+                </TrackedLink>
             </div>
 
         </div>

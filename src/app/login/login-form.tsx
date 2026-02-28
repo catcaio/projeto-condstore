@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertCircle, LockKeyhole, Mail, ShieldCheck, Truck } from 'lucide-react';
+import { trackEvent } from '@/ui/lib/track-client';
 import { Badge, Button, Card, CardContent, CardHeader, ListGroup, ListItem, Separator, TextField } from '@/ui/components';
 import { ThemeToggle } from '@/ui/theme';
 
@@ -14,6 +15,21 @@ export function LoginForm({ buildLabel }: LoginFormProps) {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [entryData, setEntryData] = useState<string | null>(null);
+
+    useEffect(() => {
+        const match = document.cookie.match(/(?:^|; )condstore_entry=([^;]*)/);
+        if (match && match[1]) {
+            setEntryData(match[1]);
+            const [src, el] = match[1].split(':');
+            trackEvent({
+                type: 'entry_start',
+                page: 'auth',
+                section: 'login',
+                metadata: { src, element: el }
+            });
+        }
+    }, []);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -32,6 +48,16 @@ export function LoginForm({ buildLabel }: LoginFormProps) {
             if (!res.ok || !data.success) {
                 setError(data.error || 'Erro ao fazer login');
                 return;
+            }
+
+            if (entryData) {
+                const [src, el] = entryData.split(':');
+                trackEvent({
+                    type: 'entry_success',
+                    page: 'auth',
+                    section: 'login',
+                    metadata: { src, element: el }
+                });
             }
 
             window.location.href = '/home';
