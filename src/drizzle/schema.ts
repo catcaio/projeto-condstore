@@ -218,6 +218,9 @@ export const users = mysqlTable('users', {
 export type UserRecord = typeof users.$inferSelect;
 export type NewUserRecord = typeof users.$inferInsert;
 
+export type TenantKnowledgeSourceRecord = typeof tenantKnowledgeSources.$inferSelect;
+export type NewTenantKnowledgeSourceRecord = typeof tenantKnowledgeSources.$inferInsert;
+
 // --- Funnel Events (Instrumented WhatsApp Flow) ---
 
 export const freightFunnelEvents = mysqlTable('freight_funnel_events', {
@@ -786,6 +789,7 @@ export const tenantSecrets = mysqlTable('tenant_secrets', {
     valueEncrypted: text('value_encrypted').notNull(),
     valueHash: varchar('value_hash', { length: 64 }).notNull(), // sha256 to detect changes
     lastRotatedAt: timestamp('last_rotated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    lastVerifiedAt: timestamp('last_verified_at'),
     rotatedByUserId: varchar('rotated_by_user_id', { length: 36 }),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
@@ -798,3 +802,12 @@ export const tenantSecrets = mysqlTable('tenant_secrets', {
 
 export type TenantSecretRecord = typeof tenantSecrets.$inferSelect;
 export type NewTenantSecretRecord = typeof tenantSecrets.$inferInsert;
+
+export const tenantKnowledgeSources = mysqlTable('tenant_knowledge_sources', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(), // uuid
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // 'faq', 'manual', 'website'
+    name: varchar('name', { length: 255 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('draft'), // 'draft', 'syncing', 'active', 'error'
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+});

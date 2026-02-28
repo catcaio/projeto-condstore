@@ -1,0 +1,1 @@
+ALTER TABLE `tenant_secrets` ADD `last_verified_at` timestamp;

@@ -6,6 +6,7 @@ import { sql } from 'drizzle-orm';
 import packageJson from '../../../../../package.json';
 import { getDb } from '../../../../infra/db';
 import { redisClient } from '../../../../infra/redis.client';
+import { getRateLimiterFallbackMetrics } from '../../../../infra/security/rate-limiter';
 import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '../../../../infra/config/internal-token';
 import { makeRequestId, attachRequestIdHeader } from '../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse } from '../../../../infra/http/error-response';
@@ -18,6 +19,7 @@ interface DiagStatus {
   redis: 'ok' | 'fail';
   uptimeSeconds: number;
   version: string;
+  rateLimiterFallbackActive: { count: number; lastSeenAt: number | null };
 }
 
 function detectGitSha(): string | null {
@@ -100,6 +102,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       redis: redisStatus,
       uptimeSeconds: Math.floor(process.uptime()),
       version: packageJson.version,
+      rateLimiterFallbackActive: getRateLimiterFallbackMetrics(),
     };
 
     const response = NextResponse.json(payload, { status: 200 });

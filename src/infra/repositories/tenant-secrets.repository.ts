@@ -24,6 +24,7 @@ export const tenantSecretsRepository = {
             scope: tenantSecrets.scope,
             keyName: tenantSecrets.keyName,
             lastRotatedAt: tenantSecrets.lastRotatedAt,
+            lastVerifiedAt: tenantSecrets.lastVerifiedAt,
             rotatedByUserId: tenantSecrets.rotatedByUserId,
             createdAt: tenantSecrets.createdAt,
             updatedAt: tenantSecrets.updatedAt,
@@ -43,8 +44,30 @@ export const tenantSecretsRepository = {
                     valueEncrypted: data.valueEncrypted,
                     valueHash: data.valueHash,
                     lastRotatedAt: data.lastRotatedAt,
+                    lastVerifiedAt: null, // Clear on rotation
                     rotatedByUserId: data.rotatedByUserId || null,
                 }
             });
     },
+
+    async markAsVerified(tenantId: string, scope: string, keyName: string, verifiedAt: Date = new Date()) {
+        const db = await getDb();
+        await db.update(tenantSecrets)
+            .set({ lastVerifiedAt: verifiedAt })
+            .where(and(
+                eq(tenantSecrets.tenantId, tenantId),
+                eq(tenantSecrets.scope, scope),
+                eq(tenantSecrets.keyName, keyName)
+            ));
+    },
+
+    async markScopeAsVerified(tenantId: string, scope: string, verifiedAt: Date = new Date()) {
+        const db = await getDb();
+        await db.update(tenantSecrets)
+            .set({ lastVerifiedAt: verifiedAt })
+            .where(and(
+                eq(tenantSecrets.tenantId, tenantId),
+                eq(tenantSecrets.scope, scope)
+            ));
+    }
 };

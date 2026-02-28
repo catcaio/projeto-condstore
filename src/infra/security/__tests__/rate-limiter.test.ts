@@ -74,9 +74,10 @@ describe('security rate-limiter redis failure hardening', () => {
       limit: 5,
     });
     expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
-      'rate_limiter_redis_failure_fail_open',
+      'rate_limiter_fallback_active',
       expect.objectContaining({
-        eventType: 'rate_limiter',
+        eventType: 'rate_limiter_fallback_active',
+        strategy: 'fail_open',
         scope: 'auth.login',
         keyHash: '0123456789abcdef',
         reason: 'redis_unavailable',
@@ -131,8 +132,10 @@ describe('security rate-limiter redis failure hardening', () => {
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(5);
     expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
-      'rate_limiter_redis_failure_fail_open',
+      'rate_limiter_fallback_active',
       expect.objectContaining({
+        eventType: 'rate_limiter_fallback_active',
+        strategy: 'fail_open',
         scope: 'auth.login',
         keyHash: '0123456789abcdef',
         reason: 'redis_error',
