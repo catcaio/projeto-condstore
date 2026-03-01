@@ -73,22 +73,34 @@ export class DomineEventsRepository {
 
     async lockAndGetNextEvent(tenantId: string): Promise<{ id: string } | null> {
         const db = await getDb();
-        const { sql, or, isNull, lte } = await import('drizzle-orm');
+        const { sql, and, or, eq, isNull, lte } = await import('drizzle-orm');
 
         // Note: For MySQL, standard UPDATE ... LIMIT 1 is atomic and acts as a queue pop.
-        // We find one queued, mark it processing and return its ID. 
+        // We find one queued OR a stuck processing event, mark it processing and return its ID. 
         // We use a specific variable assignment trick or two queries simulating a lock.
         // Since drizzle does not support returning on mysql UPDATE, we'll use a transaction with FOR UPDATE.
 
         return await db.transaction(async (tx) => {
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
             const next = await tx.select({ id: domineEvents.id })
                 .from(domineEvents)
                 .where(and(
                     eq(domineEvents.tenantId, tenantId),
-                    eq(domineEvents.status, 'queued'),
                     or(
-                        isNull(domineEvents.nextRetryAt),
-                        lte(domineEvents.nextRetryAt, new Date())
+                        // Path A: It's queued and ready OR ready for retry
+                        and(
+                            eq(domineEvents.status, 'queued'),
+                            or(
+                                isNull(domineEvents.nextRetryAt),
+                                lte(domineEvents.nextRetryAt, new Date())
+                            )
+                        ),
+                        // Path B: It's processing but the lock expired (e.g. process crashed)
+                        and(
+                            eq(domineEvents.status, 'processing'),
+                            lte(domineEvents.updatedAt, fiveMinutesAgo)
+                        )
                     )
                 ))
                 .orderBy(domineEvents.createdAt)
@@ -99,8 +111,10 @@ export class DomineEventsRepository {
             if (next.length === 0) return null;
 
             const targetId = next[0].id;
+
+            // Set it to processing again and explicitly bump timestamp
             await tx.update(domineEvents)
-                .set({ status: 'processing' })
+                .set({ status: 'processing', updatedAt: new Date() })
                 .where(eq(domineEvents.id, targetId));
 
             return { id: targetId };
