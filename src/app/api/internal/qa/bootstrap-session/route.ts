@@ -5,15 +5,10 @@ import { logger } from '@/infra/logger';
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
-    const isCIAloowed = process.env.CI === 'true' || process.env.NODE_ENV !== 'production';
-
-    if (!isCIAloowed) {
-        return NextResponse.json({
-            error: 'Forbidden',
-            message: 'This endpoint is available in CI/development mode only'
-        }, { status: 403 });
-    }
+export async function POST(request: NextRequest) {
+    const isCI = process.env.CI === 'true';
+    const isDev = process.env.NODE_ENV !== 'production';
+    const isCIAloowed = isCI || isDev;
 
     const token = request.headers.get('x-internal-token') || request.nextUrl.searchParams.get('token');
 
@@ -24,9 +19,35 @@ export async function GET(request: NextRequest) {
         'condstore_dev_bypass_local_991'
     ].filter(Boolean);
 
-    if (!token || !validTokens.includes(token)) {
+    const hasInternalTokenHeader = !!token;
+    const tokenMatched = !!token && validTokens.includes(token);
+
+    // Logging only specific flags (never the token itself)
+    logger.info('[QA Bootstrap Auth Context]', {
+        hasInternalTokenHeader,
+        isCI,
+        tokenMatched,
+        path: request.nextUrl.pathname
+    });
+
+    if (!isCIAloowed) {
         return NextResponse.json({
-            error: 'Unauthorized',
+            error: "Unauthorized internal access",
+            reason: "not_ci"
+        }, { status: 401 });
+    }
+
+    if (!hasInternalTokenHeader) {
+        return NextResponse.json({
+            error: "Unauthorized internal access",
+            reason: "missing_token"
+        }, { status: 401 });
+    }
+
+    if (!tokenMatched) {
+        return NextResponse.json({
+            error: "Unauthorized internal access",
+            reason: "bad_token"
         }, { status: 401 });
     }
 

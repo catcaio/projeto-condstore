@@ -35,6 +35,7 @@ async function runQa() {
     if (isDev || process.env.CI === 'true') {
         console.log(`[QA] Bootstrapping dev session...`);
         const sessionRes = await fetch(`${BASE_URL}/api/internal/qa/bootstrap-session`, {
+            method: 'POST',
             headers: { 'x-internal-token': INTERNAL_TOKEN }
         });
         if (!sessionRes.ok) {
@@ -54,6 +55,7 @@ async function runQa() {
 
         console.log(`[QA] Bootstrapping no-plan session...`);
         const sessionRes2 = await fetch(`${BASE_URL}/api/internal/qa/bootstrap-session?tenantId=mock-no-plan&role=operator`, {
+            method: 'POST',
             headers: { 'x-internal-token': INTERNAL_TOKEN }
         });
         const setCookieHeader2 = sessionRes2.headers.get('set-cookie');
@@ -61,6 +63,7 @@ async function runQa() {
 
         console.log(`[QA] Bootstrapping no-role session...`);
         const sessionRes3 = await fetch(`${BASE_URL}/api/internal/qa/bootstrap-session?role=viewer`, {
+            method: 'POST',
             headers: { 'x-internal-token': INTERNAL_TOKEN }
         });
         const setCookieHeader3 = sessionRes3.headers.get('set-cookie');
@@ -236,7 +239,7 @@ async function runQa() {
                 if (!isResolved && (out.includes('Ready in') || out.includes('ready on'))) {
                     isResolved = true;
                     try {
-                        const res = await fetch(`http://localhost:${prodPort}/api/internal/qa/bootstrap-session`);
+                        const res = await fetch(`http://localhost:${prodPort}/api/internal/qa/bootstrap-session`, { method: 'POST' });
                         const html = await res.text();
                         await fs.writeFile(path.join(artifactsDir, 'prod_safety.html'), html, 'utf-8');
                         if (res.status === 401 || res.status === 403) {
@@ -258,7 +261,7 @@ async function runQa() {
                 // console.error('[NEXT STDERR]', out);
                 if (!isResolved && (out.includes('ready on') || out.includes('Ready in'))) {
                     isResolved = true;
-                    fetch(`http://localhost:${prodPort}/api/internal/qa/bootstrap-session`)
+                    fetch(`http://localhost:${prodPort}/api/internal/qa/bootstrap-session`, { method: 'POST' })
                         .then(async res => {
                             const html = await res.text();
                             await fs.writeFile(path.join(artifactsDir, 'prod_safety.html'), html, 'utf-8');

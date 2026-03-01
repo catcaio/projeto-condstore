@@ -146,8 +146,17 @@ export async function proxy(req: NextRequest) {
     const diagToken = process.env.INTERNAL_DIAG_TOKEN?.trim();
     const exportToken = process.env.INTERNAL_EXPORT_TOKEN?.trim();
     const jobToken = process.env.INTERNAL_JOB_TOKEN?.trim();
+    const qaToken = process.env.INTERNAL_TOKEN?.trim();
 
-    const isAuthorized = token && (token === diagToken || token === exportToken || token === jobToken);
+    const isQaBootstrap = req.nextUrl.pathname === '/api/internal/qa/bootstrap-session';
+    const isCI = process.env.CI === 'true';
+
+    let isAuthorized = token && (token === diagToken || token === exportToken || token === jobToken);
+
+    // Exception specifically for QA automation
+    if (!isAuthorized && isQaBootstrap && isCI && token && token === qaToken) {
+      isAuthorized = true;
+    }
 
     if (!isAuthorized) {
       return setRequestIdHeader(
