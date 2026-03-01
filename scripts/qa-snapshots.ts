@@ -10,7 +10,13 @@ const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3002;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
-const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN || 'condstore_dev_bypass_local_991';
+const QA_BOOTSTRAP_TOKEN = process.env.QA_BOOTSTRAP_TOKEN || 'condstore_dev_bypass_local_991';
+
+const QA_HEADERS = {
+    'Content-Type': 'application/json',
+    'x-qa-token': QA_BOOTSTRAP_TOKEN,
+    'x-github-actions': 'true'
+};
 
 async function ensureDir(dirPath: string) {
     try {
@@ -32,11 +38,22 @@ async function runQa() {
     let headersNoPlan: Record<string, string> = { 'Content-Type': 'application/json' };
     let headersNoRole: Record<string, string> = { 'Content-Type': 'application/json' };
 
-    if (isDev || process.env.CI === 'true') {
+    if (isDev || process.env.GITHUB_ACTIONS === 'true') {
+        console.log(`[QA] Running setup...`);
+        const setupRes = await fetch(`${BASE_URL}/api/internal/qa/setup`, {
+            method: 'POST',
+            headers: QA_HEADERS
+        });
+        if (!setupRes.ok) {
+            console.error(`[QA] Failed to run setup! HTTP ${setupRes.status}`);
+            console.error(await setupRes.text());
+            process.exit(1);
+        }
+
         console.log(`[QA] Bootstrapping dev session...`);
         const sessionRes = await fetch(`${BASE_URL}/api/internal/qa/bootstrap-session`, {
             method: 'POST',
-            headers: { 'x-internal-token': INTERNAL_TOKEN }
+            headers: QA_HEADERS
         });
         if (!sessionRes.ok) {
             console.error(`[QA] Failed to bootstrap session! HTTP ${sessionRes.status}`);
@@ -56,7 +73,7 @@ async function runQa() {
         console.log(`[QA] Bootstrapping no-plan session...`);
         const sessionRes2 = await fetch(`${BASE_URL}/api/internal/qa/bootstrap-session?tenantId=mock-no-plan&role=operator`, {
             method: 'POST',
-            headers: { 'x-internal-token': INTERNAL_TOKEN }
+            headers: QA_HEADERS
         });
         const setCookieHeader2 = sessionRes2.headers.get('set-cookie');
         if (setCookieHeader2) headersNoPlan['Cookie'] = setCookieHeader2.split(';')[0];
@@ -64,7 +81,7 @@ async function runQa() {
         console.log(`[QA] Bootstrapping no-role session...`);
         const sessionRes3 = await fetch(`${BASE_URL}/api/internal/qa/bootstrap-session?role=viewer`, {
             method: 'POST',
-            headers: { 'x-internal-token': INTERNAL_TOKEN }
+            headers: QA_HEADERS
         });
         const setCookieHeader3 = sessionRes3.headers.get('set-cookie');
         if (setCookieHeader3) headersNoRole['Cookie'] = setCookieHeader3.split(';')[0];

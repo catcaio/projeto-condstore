@@ -5,7 +5,7 @@ export function isDevRuntime(): boolean {
 }
 
 export function isQaAutomation(): boolean {
-  return process.env.CI === 'true' && process.env.NODE_ENV === 'production';
+  return process.env.GITHUB_ACTIONS === 'true' && process.env.NODE_ENV === 'production';
 }
 
 export function assertDevOnly(requestId?: string): NextResponse | undefined {

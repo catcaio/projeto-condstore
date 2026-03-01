@@ -150,19 +150,20 @@ export async function proxy(req: NextRequest) {
 
   // Internal API Guard (migrated from removed middleware.ts)
   if (process.env.NODE_ENV === 'production' && req.nextUrl.pathname.startsWith('/api/internal/')) {
-    const token = req.headers.get('x-internal-token');
+    const token = req.headers.get('x-internal-token') || req.headers.get('x-qa-token');
     const diagToken = process.env.INTERNAL_DIAG_TOKEN?.trim();
     const exportToken = process.env.INTERNAL_EXPORT_TOKEN?.trim();
     const jobToken = process.env.INTERNAL_JOB_TOKEN?.trim();
-    const qaToken = process.env.INTERNAL_TOKEN?.trim();
+    const qaToken = process.env.QA_BOOTSTRAP_TOKEN?.trim();
 
-    const isQaBootstrap = req.nextUrl.pathname === '/api/internal/qa/bootstrap-session';
-    const isCI = process.env.CI === 'true';
+    const isQaBootstrap = req.nextUrl.pathname === '/api/internal/qa/bootstrap-session' || req.nextUrl.pathname === '/api/internal/qa/setup';
+    const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
+    const hasGithubHeader = req.headers.get('x-github-actions') === 'true';
 
     let isAuthorized = token && (token === diagToken || token === exportToken || token === jobToken);
 
     // Exception specifically for QA automation
-    if (!isAuthorized && isQaBootstrap && token && token === (qaToken || 'condstore_dev_bypass_local_991')) {
+    if (!isAuthorized && isQaBootstrap && isGithubActions && hasGithubHeader && token && qaToken && token === qaToken) {
       isAuthorized = true;
     }
 
