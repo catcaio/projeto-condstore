@@ -5,7 +5,13 @@ import { getSessionUser } from "../../../../../infra/auth/session";
 
 export async function GET(request: NextRequest) {
     const session = await getSessionUser(request);
-    const tenantId = session?.tenantId || "LOJACOND";
+    if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const tenantId = session.tenantId;
+    if (!tenantId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     if (!isDomineEnabled(tenantId)) {
         return NextResponse.json({ error: "Domine not enabled for this tenant" }, { status: 404 });

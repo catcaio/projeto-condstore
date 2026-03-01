@@ -32,9 +32,11 @@ async function runQa() {
     let headersNoPlan: Record<string, string> = { 'Content-Type': 'application/json' };
     let headersNoRole: Record<string, string> = { 'Content-Type': 'application/json' };
 
-    if (isDev) {
+    if (isDev || process.env.CI === 'true') {
         console.log(`[QA] Bootstrapping dev session...`);
-        const sessionRes = await fetch(`${BASE_URL}/api/internal/dev/session?token=${INTERNAL_TOKEN}`);
+        const sessionRes = await fetch(`${BASE_URL}/api/internal/qa/bootstrap-session`, {
+            headers: { 'x-internal-token': INTERNAL_TOKEN }
+        });
         if (!sessionRes.ok) {
             console.error(`[QA] Failed to bootstrap session! HTTP ${sessionRes.status}`);
             console.error(await sessionRes.text());
@@ -51,16 +53,20 @@ async function runQa() {
         headers['Cookie'] = cookieString;
 
         console.log(`[QA] Bootstrapping no-plan session...`);
-        const sessionRes2 = await fetch(`${BASE_URL}/api/internal/dev/session?token=${INTERNAL_TOKEN}&tenantId=mock-no-plan&role=operator`);
+        const sessionRes2 = await fetch(`${BASE_URL}/api/internal/qa/bootstrap-session?tenantId=mock-no-plan&role=operator`, {
+            headers: { 'x-internal-token': INTERNAL_TOKEN }
+        });
         const setCookieHeader2 = sessionRes2.headers.get('set-cookie');
         if (setCookieHeader2) headersNoPlan['Cookie'] = setCookieHeader2.split(';')[0];
 
         console.log(`[QA] Bootstrapping no-role session...`);
-        const sessionRes3 = await fetch(`${BASE_URL}/api/internal/dev/session?token=${INTERNAL_TOKEN}&role=viewer`);
+        const sessionRes3 = await fetch(`${BASE_URL}/api/internal/qa/bootstrap-session?role=viewer`, {
+            headers: { 'x-internal-token': INTERNAL_TOKEN }
+        });
         const setCookieHeader3 = sessionRes3.headers.get('set-cookie');
         if (setCookieHeader3) headersNoRole['Cookie'] = setCookieHeader3.split(';')[0];
     } else {
-        console.log(`[QA] Skipping dev session bootstrap (production mode detected)`);
+        console.log(`[QA] Skipping dev session bootstrap (not CI and not Dev)`);
     }
 
     // 1.5 Create a Saved View via API (QA View)
@@ -230,14 +236,14 @@ async function runQa() {
                 if (!isResolved && (out.includes('Ready in') || out.includes('ready on'))) {
                     isResolved = true;
                     try {
-                        const res = await fetch(`http://localhost:${prodPort}/api/internal/dev/session`);
+                        const res = await fetch(`http://localhost:${prodPort}/api/internal/qa/bootstrap-session`);
                         const html = await res.text();
                         await fs.writeFile(path.join(artifactsDir, 'prod_safety.html'), html, 'utf-8');
-                        if (res.status === 403) {
-                            console.log(`[QA] PROD-SAFETY: OK. Dev session returned 403 in production.`);
+                        if (res.status === 401 || res.status === 403) {
+                            console.log(`[QA] PROD-SAFETY: OK. Dev session returned ${res.status} in production.`);
                             resolve();
                         } else {
-                            reject(new Error(`PROD-SAFETY FAIL: Expected 403, got ${res.status}`));
+                            reject(new Error(`PROD-SAFETY FAIL: Expected 401 or 403, got ${res.status}`));
                         }
                     } catch (err) {
                         reject(err);
@@ -252,15 +258,15 @@ async function runQa() {
                 // console.error('[NEXT STDERR]', out);
                 if (!isResolved && (out.includes('ready on') || out.includes('Ready in'))) {
                     isResolved = true;
-                    fetch(`http://localhost:${prodPort}/api/internal/dev/session`)
+                    fetch(`http://localhost:${prodPort}/api/internal/qa/bootstrap-session`)
                         .then(async res => {
                             const html = await res.text();
                             await fs.writeFile(path.join(artifactsDir, 'prod_safety.html'), html, 'utf-8');
-                            if (res.status === 403) {
-                                console.log(`[QA] PROD-SAFETY: OK. Dev session returned 403 in production.`);
+                            if (res.status === 401 || res.status === 403) {
+                                console.log(`[QA] PROD-SAFETY: OK. Dev session returned ${res.status} in production.`);
                                 resolve();
                             } else {
-                                reject(new Error(`PROD-SAFETY FAIL: Expected 403, got ${res.status}`));
+                                reject(new Error(`PROD-SAFETY FAIL: Expected 401 or 403, got ${res.status}`));
                             }
                         })
                         .catch(reject)
