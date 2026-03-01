@@ -5,53 +5,69 @@ import { redisClient } from '@/infra/redis.client';
 import { metricsRollupStatusRepository } from '@/modules/metrics/metrics-rollup-status.repository';
 
 export async function getBillingSummary(tenantId: string) {
-    const db = await getDb();
+    try {
+        const db = await getDb();
 
-    // Attempt to get active subscription first
-    const subResult = await db.select()
-        .from(tenantSubscriptions)
-        .where(and(eq(tenantSubscriptions.tenantId, tenantId), eq(tenantSubscriptions.status, 'active')))
-        .limit(1);
+        // Attempt to get active subscription first
+        const subResult = await db.select()
+            .from(tenantSubscriptions)
+            .where(and(eq(tenantSubscriptions.tenantId, tenantId), eq(tenantSubscriptions.status, 'active')))
+            .limit(1);
 
-    const sub = subResult[0];
+        const sub = subResult[0];
 
-    const budgetResult = await db.select({
-        monthlyBudgetUsd: tenantBudgets.monthlyBudgetUsd,
-        currentMonthUsd: tenantBudgets.currentMonthUsd,
-        currentLockState: tenantBudgets.currentLockState,
-        burnRatePerDay: tenantBudgets.burnRatePerDay,
-    })
-        .from(tenantBudgets)
-        .where(eq(tenantBudgets.tenantId, tenantId))
-        .limit(1);
+        const budgetResult = await db.select({
+            monthlyBudgetUsd: tenantBudgets.monthlyBudgetUsd,
+            currentMonthUsd: tenantBudgets.currentMonthUsd,
+            currentLockState: tenantBudgets.currentLockState,
+            burnRatePerDay: tenantBudgets.burnRatePerDay,
+        })
+            .from(tenantBudgets)
+            .where(eq(tenantBudgets.tenantId, tenantId))
+            .limit(1);
 
-    const budget = budgetResult[0] ?? {
-        monthlyBudgetUsd: '0',
-        currentMonthUsd: '0',
-        currentLockState: 'unlocked',
-        burnRatePerDay: '0',
-    };
+        const budget = budgetResult[0] ?? {
+            monthlyBudgetUsd: '0',
+            currentMonthUsd: '0',
+            currentLockState: 'unlocked',
+            burnRatePerDay: '0',
+        };
 
-    // Fallback to tenants table if no subscription is present
-    const tResult = await db.select({
-        plan: tenants.plan,
-        planStatus: tenants.planStatus,
-    }).from(tenants).where(eq(tenants.id, tenantId)).limit(1);
+        // Fallback to tenants table if no subscription is present
+        const tResult = await db.select({
+            plan: tenants.plan,
+            planStatus: tenants.planStatus,
+        }).from(tenants).where(eq(tenants.id, tenantId)).limit(1);
 
-    const tenant = tResult[0];
+        const tenant = tResult[0];
 
-    return {
-        planId: sub?.planId ?? tenant?.plan ?? 'FREE',
-        status: sub?.status ?? tenant?.planStatus ?? 'active',
-        currentPeriodEnd: sub?.currentPeriodEnd ?? null,
-        cancelAtPeriodEnd: sub?.cancelAtPeriodEnd ?? false,
-        budget: {
-            monthlyUsd: Number(budget.monthlyBudgetUsd),
-            currentUsd: Number(budget.currentMonthUsd),
-            state: budget.currentLockState,
-            burnRate: Number(budget.burnRatePerDay),
-        }
-    };
+        return {
+            planId: sub?.planId ?? tenant?.plan ?? 'FREE',
+            status: sub?.status ?? tenant?.planStatus ?? 'active',
+            currentPeriodEnd: sub?.currentPeriodEnd ?? null,
+            cancelAtPeriodEnd: sub?.cancelAtPeriodEnd ?? false,
+            budget: {
+                monthlyUsd: Number(budget.monthlyBudgetUsd),
+                currentUsd: Number(budget.currentMonthUsd),
+                state: budget.currentLockState,
+                burnRate: Number(budget.burnRatePerDay),
+            }
+        };
+    } catch (error) {
+        console.error('getBillingSummary error:', error);
+        return {
+            planId: 'FREE',
+            status: 'active',
+            currentPeriodEnd: null,
+            cancelAtPeriodEnd: false,
+            budget: {
+                monthlyUsd: 0,
+                currentUsd: 0,
+                state: 'unlocked',
+                burnRate: 0,
+            }
+        };
+    }
 }
 
 export async function getUsageSummary(tenantId: string) {
