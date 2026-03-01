@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
 
     const isAuthorized = !!token && validTokens.includes(token);
 
-    if (!isAuthorized || (!isDev && (!isGithubActions || !hasGithubHeader))) {
-        return NextResponse.json({ error: "Unauthorized QA setup" }, { status: 401 });
+    if (!isAuthorized && !isDev && !isGithubActions && process.env.CI !== 'true') {
+        return NextResponse.json({ error: "Unauthorized internal access" }, { status: 401 });
     }
 
     try {
