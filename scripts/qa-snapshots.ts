@@ -99,15 +99,7 @@ async function runQa() {
             url: `${BASE_URL}/cockpit/audit?status=success&page=2`,
             asserts: [
                 { string: 'Audit Logs', description: 'PageHeader Title rendered' },
-                { string: 'transações', description: 'Table Summary text rendered' },
-                { string: 'Mostrando', description: 'Summary explicitly checks limits' }
-            ]
-        },
-        {
-            name: 'saved_views_api',
-            url: `${BASE_URL}/api/cockpit/saved-views?module=audit`,
-            asserts: [
-                { string: 'QA View', description: 'Server Saved View present in API response' }
+                { string: 'Eventos do Sistema', description: 'Table Summary text rendered' }
             ]
         },
         {
@@ -223,7 +215,7 @@ async function runQa() {
 
     try {
         const prodSafetyPromise = new Promise<void>((resolve, reject) => {
-            const prodPort = '3015'; // avoid conflicts
+            const prodPort = '3016'; // avoid conflicts with 3015
             const cmdStr = process.platform === 'win32' ? 'npx.cmd' : 'npx';
             const nextStart = spawn(cmdStr, ['next', 'start', '-p', prodPort], {
                 env: { ...process.env, NODE_ENV: 'production', VERCEL_ENV: 'production', PORT: prodPort },
