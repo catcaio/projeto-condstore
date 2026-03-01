@@ -11,6 +11,11 @@ function detectBuildLabel(): string {
     return `ENV: ${env} / SHA: ${sha.slice(0, 12)}`;
 }
 
+export const metadata = {
+    title: 'Entrar',
+    description: 'Acesse o painel logístico do CondStore OS.',
+};
+
 export default function LoginPage() {
     return <LoginForm buildLabel={detectBuildLabel()} />;
 }

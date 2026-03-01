@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Truck, BarChart3, Bot, CheckCircle2 } from 'lucide-react';
+import { Truck, BarChart3, Bot, CheckCircle2, LifeBuoy, PackageOpen, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/ui/components/button';
 import { CaseProofSection } from '@/ui/components/case-proof-section';
 import { HowItWorksSection } from '@/ui/components/how-it-works-section';
@@ -8,6 +8,13 @@ import dynamic from 'next/dynamic';
 import { ENABLE_CONCEPT_LAYER } from '@/config/flags';
 
 const ConceptHero = dynamic(() => import("../(marketing)/concept-layer/ConceptHero"), { ssr: true });
+
+export const metadata = {
+    title: 'LojaCond | Automação Logística',
+    description: 'Automatize o frete da sua loja. Rescue, Logistics e Full OS integrados.',
+};
+
+export const revalidate = 86400; // 24h caching for Edge network
 
 export default function PublicHomePage() {
     const isDev = process.env.NODE_ENV === 'development';
@@ -46,33 +53,42 @@ export default function PublicHomePage() {
                 <HowItWorksSection />
 
                 <div className="py-12 border-y border-[hsl(var(--ui-border)/0.5)] w-full grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="flex flex-col items-center text-center gap-4">
+                    {/* RESCUE BLOCK */}
+                    <div className="flex flex-col items-center text-center gap-4 bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)] hover:shadow-lg transition-all">
+                        <div className="h-14 w-14 rounded-full bg-[hsl(var(--ui-danger)/0.1)] flex items-center justify-center text-[hsl(var(--ui-danger))]">
+                            <LifeBuoy className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-[hsl(var(--ui-text))]">Rescue</h3>
+                            <p className="text-sm font-semibold text-[hsl(var(--ui-danger))] mt-1 mb-2">Recuperação e Retenção</p>
+                            <p className="text-sm text-[hsl(var(--ui-text-muted))]">Fluxos de WhatsApp nativos que reengajam boletos, pix não pagos e carrinhos abandonados conectando sua transportadora à conversão.</p>
+                        </div>
+                    </div>
+
+                    {/* LOGISTICS BLOCK */}
+                    <div className="flex flex-col items-center text-center gap-4 bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)] hover:shadow-lg transition-all relative">
+                        <div className="absolute top-0 right-4 transform -translate-y-1/2 rounded-[var(--radius-button)] py-1 px-3 bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue))] text-[10px] font-bold uppercase tracking-wider">
+                            Core
+                        </div>
                         <div className="h-14 w-14 rounded-full bg-[hsl(var(--ui-accent-blue)/0.1)] flex items-center justify-center text-[hsl(var(--ui-accent-blue))]">
-                            <Truck className="h-6 w-6" />
+                            <PackageOpen className="h-6 w-6" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-[hsl(var(--ui-text))]">Cotação Global</h3>
-                            <p className="text-sm text-[hsl(var(--ui-text-muted))] mt-2">Escolha sempre o melhor preço para sua entrega, conectado a mais de 30 operadoras logísticas.</p>
+                            <h3 className="text-xl font-bold text-[hsl(var(--ui-text))]">Logistics</h3>
+                            <p className="text-sm font-semibold text-[hsl(var(--ui-accent-blue))] mt-1 mb-2">Gateway & Cotação Zero-touch</p>
+                            <p className="text-sm text-[hsl(var(--ui-text-muted))]">Acesso a mais de 30 operadoras logísticas. Você controla as margens por UTM e garante a entrega mais barata em mili-segundos.</p>
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center text-center gap-4">
-                        <div className="h-14 w-14 rounded-full bg-[hsl(var(--ui-accent-purple)/0.1)] flex items-center justify-center text-[hsl(var(--ui-accent-purple))]">
-                            <BarChart3 className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-[hsl(var(--ui-text))]">Atribuição Precisa</h3>
-                            <p className="text-sm text-[hsl(var(--ui-text-muted))] mt-2">Saiba exatamente qual campanha de tráfego está gerando cotações com UTMs dinâmicas.</p>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col items-center text-center gap-4">
+                    {/* FULL OS BLOCK */}
+                    <div className="flex flex-col items-center text-center gap-4 bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)] hover:shadow-lg transition-all">
                         <div className="h-14 w-14 rounded-full bg-[hsl(var(--ui-success)/0.1)] flex items-center justify-center text-[hsl(var(--ui-success))]">
-                            <Bot className="h-6 w-6" />
+                            <LayoutDashboard className="h-6 w-6" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-[hsl(var(--ui-text))]">Automação Rápida</h3>
-                            <p className="text-sm text-[hsl(var(--ui-text-muted))] mt-2">Respostas padronizadas, regras de fallback, rastreamento direto no celular do cliente.</p>
+                            <h3 className="text-xl font-bold text-[hsl(var(--ui-text))]">Full OS</h3>
+                            <p className="text-sm font-semibold text-[hsl(var(--ui-success))] mt-1 mb-2">Visibilidade Total</p>
+                            <p className="text-sm text-[hsl(var(--ui-text-muted))]">Relatórios avançados integrando Custo de Frete, Custo de Aquisição (CAC) e rastreamento de IA (Frank) unificando toda sua frota.</p>
                         </div>
                     </div>
                 </div>

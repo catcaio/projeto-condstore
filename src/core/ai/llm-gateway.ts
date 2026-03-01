@@ -344,6 +344,7 @@ class ObservedProvider implements AIProvider {
             query: input.user,
             docsLimit: getRagDocsMaxChunks(),
             chatLimit: getRagChatMaxChunks(),
+            phoneHash: input.sessionId,
           });
           const docsMinScore = getRagDocsMinScore();
           const chatMinScore = getRagChatMinScore();

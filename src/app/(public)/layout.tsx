@@ -28,6 +28,7 @@ export default function PublicLayout({
                             LojaCond
                         </Link>
                         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[hsl(var(--ui-text-muted))]">
+                            <Link href="/about" className="hover:text-[hsl(var(--ui-text))] transition-colors">Sobre</Link>
                             <Link href="/pricing" className="hover:text-[hsl(var(--ui-text))] transition-colors">Preços</Link>
                             <Link href="/docs" className="hover:text-[hsl(var(--ui-text))] transition-colors">Documentação</Link>
                         </nav>
@@ -69,6 +70,7 @@ export default function PublicLayout({
                     </div>
 
                     <div className="flex gap-6 text-sm text-[hsl(var(--ui-text-muted))]">
+                        <Link href="/about" className="hover:text-[hsl(var(--ui-text))]">Sobre</Link>
                         <Link href="/docs" className="hover:text-[hsl(var(--ui-text))]">Documentação</Link>
                         <Link href="#" className="hover:text-[hsl(var(--ui-text))]">Status</Link>
                         <Link href="#" className="hover:text-[hsl(var(--ui-text))]">Contato</Link>

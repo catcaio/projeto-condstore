@@ -871,3 +871,35 @@ export type DomineOrderRecord = typeof domineOrders.$inferSelect;
 export type NewDomineOrderRecord = typeof domineOrders.$inferInsert;
 export type DomineFreightQuoteRecord = typeof domineFreightQuotes.$inferSelect;
 export type NewDomineFreightQuoteRecord = typeof domineFreightQuotes.$inferInsert;
+
+// --- LGPD Consent Engine ---
+
+export const endUserConsents = mysqlTable('end_user_consents', {
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    phoneHash: varchar('phone_hash', { length: 64 }).notNull(),
+    consentGiven: boolean('consent_given').notNull().default(false),
+    consentTimestamp: timestamp('consent_timestamp'),
+    consentSource: varchar('consent_source', { length: 50 }),
+    blockedAttempts: int('blocked_attempts').notNull().default(0),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    pk: primaryKey({ columns: [table.tenantId, table.phoneHash], name: 'pk_end_user_consents' }),
+}));
+
+export const userConsentsLog = mysqlTable('user_consents_log', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    phoneHash: varchar('phone_hash', { length: 64 }).notNull(),
+    consentGiven: boolean('consent_given').notNull(),
+    timestamp: timestamp('timestamp').defaultNow().notNull(),
+    ipHash: varchar('ip_hash', { length: 64 }),
+    source: varchar('source', { length: 50 }),
+}, (table) => ({
+    tenantPhoneIdx: index('idx_user_consents_log_tenant_phone').on(table.tenantId, table.phoneHash),
+}));
+
+export type EndUserConsentRecord = typeof endUserConsents.$inferSelect;
+export type NewEndUserConsentRecord = typeof endUserConsents.$inferInsert;
+export type UserConsentsLogRecord = typeof userConsentsLog.$inferSelect;
+export type NewUserConsentsLogRecord = typeof userConsentsLog.$inferInsert;

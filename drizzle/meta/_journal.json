@@ -176,6 +176,20 @@
       "when": 1772316924832,
       "tag": "0036_friendly_tinkerer",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "5",
+      "when": 1772400180076,
+      "tag": "0037_thin_slayback",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "5",
+      "when": 1772402813937,
+      "tag": "0038_tranquil_dagger",
+      "breakpoints": true
     }
   ]
 }

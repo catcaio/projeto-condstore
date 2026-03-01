@@ -46,6 +46,7 @@ import { ErrorCode, errorResponse } from "../../../infra/http/error-response";
 import { structuredLogger } from "../../../infra/log/logger";
 import { applyRateLimitHeaders, hashRateLimitKeyForLog, rateLimiter } from "../../../infra/security/rate-limiter";
 import { webhookEventRepository, hashPayload } from "../../../infra/repositories/webhook-event.repository";
+import { endUserConsentRepository } from "../../../infra/repositories/end-user-consent.repository";
 import { publishEvent } from "../../../core/events/event-bus";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -358,8 +359,55 @@ export async function POST(request: NextRequest) {
       return finish(twimlEmpty(requestId), 'DUPLICATE_DB_DEDUP');
     }
 
-    // ── 11. Persist inbound message (sanitized, no PII in payload) ───────────
+    // ── 11. LGPD Consent Wall & Persist inbound message ───────────
     const messageText = incomingMessage.body ?? "";
+
+    const userConsent = await endUserConsentRepository.getConsent(tenantId, phoneHash);
+    const hasConsent = userConsent?.consentGiven === true;
+
+    if (!hasConsent) {
+      const messageTextLower = messageText.toLowerCase().trim();
+      const isAccepting = ['sim', 'aceito', 'concordo', 'ok', 'sim, eu aceito', 'yes'].includes(messageTextLower);
+
+      if (isAccepting) {
+        // Record opt-in
+        await endUserConsentRepository.recordOptIn(tenantId, phoneHash, 'whatsapp');
+        structuredLogger.info('lgpd_consent_granted', { tenantId, phoneHash, route, eventType: 'lgpd_consent_granted' });
+        // Continue normal execution, treating this as a generic conversational start
+      } else {
+        // Reject ingestion
+        await endUserConsentRepository.incrementBlockedAttempts(tenantId, phoneHash);
+        structuredLogger.warn('lgpd_ingestion_blocked', { tenantId, phoneHash, reason: 'missing_consent', route, eventType: 'lgpd_ingestion_blocked' });
+        const replyMessage = "Para continuar, confirme que aceita nossa política de privacidade enviando 'Sim' ou 'Aceito'.";
+
+        // Save the inbound message, but strictly scrub the PII/body to prevent leaks into the DB
+        await messageRepository.saveInboundMessage({
+          messageSid: incomingMessage.messageSid,
+          tenantId,
+          fromPhone: fromNormalized,
+          toPhone: payload["To"] || null,
+          body: "[CONTEÚDO BLOQUEADO - AGUARDANDO CONSENTIMENTO LGPD]",
+          direction: "inbound",
+          intent: "UNKNOWN",
+          intentConfidence: null,
+          rawPayload: JSON.stringify({ MessageSid: payload["MessageSid"], blocked: true, reason: 'lgpd' }),
+        });
+
+        recordSuccess();
+        void webhookEventRepository.markProcessed('twilio', messageSid);
+
+        const blockLatencyMs = Date.now() - startTime;
+        logger.info('webhook_request_end', {
+          requestId,
+          status: 200,
+          latencyMs: blockLatencyMs,
+          tenantId,
+          blocked: true
+        });
+        return finish(twimlOk(replyMessage, requestId));
+      }
+    }
+
     const intentResult = intentClassifier.classify(messageText);
     const intent = intentResult.intent;
     const confidence = intentResult.confidence;

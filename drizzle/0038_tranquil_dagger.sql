@@ -1,0 +1,1 @@
+ALTER TABLE `end_user_consents` ADD `blocked_attempts` int DEFAULT 0 NOT NULL;

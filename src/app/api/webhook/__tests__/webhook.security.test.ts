@@ -56,6 +56,15 @@ vi.mock("../../../../infra/repositories/attribution-click.repository", () => ({
     },
 }));
 
+vi.mock("../../../../infra/repositories/end-user-consent.repository", () => ({
+    endUserConsentRepository: {
+        getConsent: vi.fn(),
+        recordOptIn: vi.fn(),
+        revokeConsent: vi.fn(),
+        incrementBlockedAttempts: vi.fn(),
+    },
+}));
+
 vi.mock("../../../../infra/repositories/inbound-message-dedup.repository", () => ({
     inboundMessageDedupRepository: {
         tryAcquire: vi.fn(),
@@ -145,6 +154,7 @@ import { sessionManager } from "../../../../core/conversation/session-manager";
 import { rateLimiter } from "../../../../infra/security/rate-limiter";
 import { webhookEventRepository } from "../../../../infra/repositories/webhook-event.repository";
 import { publishEvent } from "../../../../core/events/event-bus";
+import { endUserConsentRepository } from "../../../../infra/repositories/end-user-consent.repository";
 
 // ── Import route under test (after all mocks are hoisted) ────────────────────
 import { POST } from "../route";
@@ -152,7 +162,7 @@ import { POST } from "../route";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const VALID_FORM_BODY =
-    "MessageSid=SM123&From=whatsapp%3A%2B5511987654321&To=whatsapp%3A%2B5511999999999&Body=oi";
+    "MessageSid=SM123&From=whatsapp%3A%2B5511999999999&To=whatsapp%3A%2B5511988888888&Body=testing";
 
 function makeRequest(
     body = VALID_FORM_BODY,
@@ -160,7 +170,7 @@ function makeRequest(
 ): NextRequest {
     const headersMap = new Map<string, string>([
         ["content-type", "application/x-www-form-urlencoded"],
-        ["x-twilio-signature", "some-sig"],
+        ["x-twilio-signature", "valid-signature"],
         ...Object.entries(extraHeaders),
     ]);
     return {
@@ -190,12 +200,25 @@ function mockNotDuplicate() {
 }
 
 function mockHappyPath(reply = "Olá! Qual CEP de destino?") {
+    (verifyTwilioRequest as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    (tenantRepository.resolveTenantByTwilioNumber as ReturnType<typeof vi.fn>)
+        .mockResolvedValue({ id: "tenant-1" });
+    (rateLimiter.limit as ReturnType<typeof vi.fn>).mockResolvedValue({
+        allowed: true, remaining: 29, resetAt: Date.now() + 60000, limit: 30,
+    });
+    (webhookEventRepository.tryInsert as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+    (inboundMessageDedupRepository.tryAcquire as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+    (twilioProvider.parseIncomingMessage as ReturnType<typeof vi.fn>)
+        .mockReturnValue({ messageSid: "SM123", from: "whatsapp:+5511999999999", body: "testing" });
     (freightController.handleIncoming as ReturnType<typeof vi.fn>)
         .mockResolvedValue(reply);
-    (twilioProvider.parseIncomingMessage as ReturnType<typeof vi.fn>)
-        .mockReturnValue({ messageSid: "SM123", from: "whatsapp:+5511987654321", body: "oi" });
     (messageRepository.saveInboundMessage as ReturnType<typeof vi.fn>)
         .mockResolvedValue(undefined);
+    (attributionClickRepository.consumeByToken as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (sessionManager.getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (webhookEventRepository.markProcessed as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    (publishEvent as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    (endUserConsentRepository.getConsent as ReturnType<typeof vi.fn>).mockResolvedValue({ consentGiven: true, consentTimestamp: new Date(), consentSource: "manual" });
 }
 
 // ── Test suite ────────────────────────────────────────────────────────────────
