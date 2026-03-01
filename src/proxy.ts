@@ -140,6 +140,14 @@ export async function proxy(req: NextRequest) {
   const headers = new Headers(req.headers);
   headers.set('x-request-id', requestId);
 
+  // 1. STRIP ALL SPOOFABLE HEADERS GLOBALLY
+  headers.delete('x-tenant-id');
+  headers.delete('x-auth-tenant-id');
+  headers.delete('x-auth-user-id');
+  headers.delete('x-auth-role');
+  headers.delete('x-role');
+  headers.delete('x-user-id');
+
   // Internal API Guard (migrated from removed middleware.ts)
   if (process.env.NODE_ENV === 'production' && req.nextUrl.pathname.startsWith('/api/internal/')) {
     const token = req.headers.get('x-internal-token');
@@ -196,9 +204,6 @@ export async function proxy(req: NextRequest) {
     return unauthorizedResponse(req, requestId);
   }
 
-  headers.delete('x-tenant-id');
-  headers.delete('x-user-id');
-  headers.delete('x-role');
   headers.set('x-auth-user-id', session.sub);
   headers.set('x-auth-tenant-id', session.tenantId);
   headers.set('x-auth-role', session.role);

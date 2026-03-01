@@ -3,8 +3,11 @@ export const runtime = "nodejs";
 import { NextResponse, NextRequest } from "next/server";
 import { getQdrantConfig, qdrantHealth } from "@/infra/vector/qdrant.client";
 import { withRequestTrace } from "@/infra/http/request-trace";
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 
 async function handler(request: NextRequest): Promise<NextResponse> {
+  const internalGuard = requireInternalToken(request);
+  if (!internalGuard.ok) return internalGuard.response;
   const cfg = getQdrantConfig();
 
   try {

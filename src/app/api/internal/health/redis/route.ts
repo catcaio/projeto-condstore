@@ -17,8 +17,11 @@ export const runtime = "nodejs";
 import { NextResponse, NextRequest } from "next/server";
 import { redisClient } from "@/infra/redis.client";
 import { withRequestTrace } from "@/infra/http/request-trace";
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 
 async function handler(request: NextRequest): Promise<NextResponse> {
+  const internalGuard = requireInternalToken(request);
+  if (!internalGuard.ok) return internalGuard.response;
   const timestamp = new Date().toISOString();
 
   // Redis não configurado — fallback em memória, comportamento esperado em dev

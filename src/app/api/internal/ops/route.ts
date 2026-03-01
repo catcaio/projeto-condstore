@@ -6,12 +6,11 @@ import { freightFunnelEvents } from "@/drizzle/schema";
 
 export const runtime = "nodejs";
 
+import { requireAdmin } from '@/infra/auth/guards';
+
 export async function GET(request: NextRequest) {
-    // 1. Auth & Authorization
-    const user = await getSessionUser(request);
-    if (!user || user.role !== "admin") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth.response;
 
     try {
         const db = await getDb();

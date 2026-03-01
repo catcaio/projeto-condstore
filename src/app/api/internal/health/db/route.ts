@@ -14,8 +14,11 @@ import { sql } from "drizzle-orm";
 import { getDb } from "@/infra/db";
 import { respondInfraError } from "@/infra/http/infra-error";
 import { withRequestTrace } from "@/infra/http/request-trace";
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 
 async function handler(request: NextRequest): Promise<NextResponse> {
+  const internalGuard = requireInternalToken(request);
+  if (!internalGuard.ok) return internalGuard.response;
   const start = Date.now();
   try {
     const db = await getDb();

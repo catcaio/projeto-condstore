@@ -7,12 +7,16 @@
  * Resposta 200: { ok: true, url, models[] }
  * Resposta 503: { ok: false, error, url }
  */
+import { NextRequest, NextResponse } from "next/server";
+import { withRequestTrace } from "@/infra/http/request-trace";
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
+
 export const runtime = "nodejs";
 
-import { NextResponse, NextRequest } from "next/server";
-import { withRequestTrace } from "@/infra/http/request-trace";
-
 async function handler(request: NextRequest): Promise<NextResponse> {
+  const internalGuard = requireInternalToken(request);
+  if (!internalGuard.ok) return internalGuard.response;
+
   const baseUrl =
     process.env.DEFAULT_LMSTUDIO_BASE_URL ??
     process.env.DEFAULT_CLOUD_BASE_URL;

@@ -52,7 +52,13 @@ async function checkDb(): Promise<ComponentStatus> {
     }
 }
 
-export async function GET() {
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
+import { NextRequest } from "next/server";
+
+export async function GET(request: NextRequest) {
+    const internalGuard = requireInternalToken(request);
+    if (!internalGuard.ok) return internalGuard.response;
+
     const [signature, rateLimit, db, redis] = await Promise.all([
         checkSignature(),
         checkRedis(), // rateLimit health = redis connectivity

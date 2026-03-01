@@ -235,10 +235,11 @@ async function runQa() {
 
             nextStart.stdout.on('data', async (data) => {
                 const out = data.toString();
-                // console.log('[NEXT STDOUT]', out);
+                console.log('[NEXT STDOUT]', out);
                 if (!isResolved && (out.includes('Ready in') || out.includes('ready on'))) {
                     isResolved = true;
                     try {
+                        await new Promise(r => setTimeout(r, 1000)); // wait for server to fully bind
                         const res = await fetch(`http://localhost:${prodPort}/api/internal/qa/bootstrap-session`, { method: 'POST' });
                         const html = await res.text();
                         await fs.writeFile(path.join(artifactsDir, 'prod_safety.html'), html, 'utf-8');
@@ -258,22 +259,24 @@ async function runQa() {
 
             nextStart.stderr.on('data', (data) => {
                 const out = data.toString();
-                // console.error('[NEXT STDERR]', out);
+                console.error('[NEXT STDERR]', out);
                 if (!isResolved && (out.includes('ready on') || out.includes('Ready in'))) {
                     isResolved = true;
-                    fetch(`http://localhost:${prodPort}/api/internal/qa/bootstrap-session`, { method: 'POST' })
-                        .then(async res => {
-                            const html = await res.text();
-                            await fs.writeFile(path.join(artifactsDir, 'prod_safety.html'), html, 'utf-8');
-                            if (res.status === 401 || res.status === 403) {
-                                console.log(`[QA] PROD-SAFETY: OK. Dev session returned ${res.status} in production.`);
-                                resolve();
-                            } else {
-                                reject(new Error(`PROD-SAFETY FAIL: Expected 401 or 403, got ${res.status}`));
-                            }
-                        })
-                        .catch(reject)
-                        .finally(() => nextStart.kill());
+                    setTimeout(() => {
+                        fetch(`http://localhost:${prodPort}/api/internal/qa/bootstrap-session`, { method: 'POST' })
+                            .then(async res => {
+                                const html = await res.text();
+                                await fs.writeFile(path.join(artifactsDir, 'prod_safety.html'), html, 'utf-8');
+                                if (res.status === 401 || res.status === 403) {
+                                    console.log(`[QA] PROD-SAFETY: OK. Dev session returned ${res.status} in production.`);
+                                    resolve();
+                                } else {
+                                    reject(new Error(`PROD-SAFETY FAIL: Expected 401 or 403, got ${res.status}`));
+                                }
+                            })
+                            .catch(reject)
+                            .finally(() => nextStart.kill());
+                    }, 1000);
                 }
             });
 

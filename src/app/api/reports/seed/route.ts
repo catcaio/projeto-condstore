@@ -2,6 +2,8 @@ import { NextResponse, NextRequest } from "next/server";
 import { randomUUID } from "crypto";
 import { getDb } from "@/infra/db"; // Use the existing db connection logic
 import { sql } from "drizzle-orm";
+import { logger } from '@/infra/logger';
+import { makeRequestId } from '@/infra/http/request-trace';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,7 +51,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
     return NextResponse.json({ ok: true, success: true });
   } catch (err: any) {
-    console.error("[/api/reports/seed] error", err);
-    return NextResponse.json({ ok: false, success: false, error: err?.message ?? String(err) }, { status: 500 });
+    const requestId = makeRequestId(request);
+    logger.error('[/api/reports/seed] error', err as Error, { requestId });
+    return NextResponse.json({ ok: false, success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }

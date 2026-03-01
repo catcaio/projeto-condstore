@@ -29,7 +29,12 @@ function parseConfig() {
   };
 }
 
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
+
 async function handler(request: NextRequest): Promise<NextResponse> {
+  const internalGuard = requireInternalToken(request);
+  if (!internalGuard.ok) return internalGuard.response;
+
   const tenantId = request.nextUrl.searchParams.get('tenantId')?.trim();
   if (!tenantId) {
     return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });

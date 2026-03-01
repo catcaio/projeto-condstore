@@ -27,6 +27,9 @@ jobs:
       - name: Run typecheck
         run: npm run typecheck
 
+      - name: Verify Schema Drift
+        run: npm run db:verify
+
       - name: Build project
         run: npm run build
 

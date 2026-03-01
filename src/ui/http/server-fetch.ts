@@ -29,8 +29,8 @@ export async function serverFetchJson<T>(url: string, init?: RequestInit): Promi
                 status: res.status,
                 requestId,
                 error: {
-                    message: body?.error || body?.message || `HTTP ${res.status}`,
-                    code: body?.code,
+                    message: typeof body?.error === 'string' ? body.error : (body?.error?.message || body?.message || `HTTP ${res.status}`),
+                    code: body?.code || body?.error?.code,
                     requestId
                 }
             };

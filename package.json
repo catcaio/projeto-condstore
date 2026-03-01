@@ -20,6 +20,7 @@
     "release:check": "node scripts/release-check.mjs",
     "staging:smoke": "node --import tsx scripts/smoke/staging-smoke.ts",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "db:verify": "node --import tsx scripts/db-verify.ts",
     "qa:snapshots": "node --import tsx scripts/qa-snapshots.ts",
     "lint:design-system": "vitest run src/__tests__/design-system.test.ts",
     "worker:finops": "node --import tsx src/workers/finops-worker.ts",

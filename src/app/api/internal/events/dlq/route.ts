@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { redisClient } from "../../../../../infra/redis.client";
 import { z } from "zod";
 
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
+
 const querySchema = z.object({
     stream: z.string().default("events:finops"),
 });
 
 export async function GET(req: NextRequest) {
-    const token = req.headers.get("x-internal-token");
-    if (token !== process.env.INTERNAL_JOB_TOKEN && process.env.NODE_ENV === "production") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const internalGuard = requireInternalToken(req);
+    if (!internalGuard.ok) return internalGuard.response;
 
     const { searchParams } = new URL(req.url);
     const result = querySchema.safeParse(Object.fromEntries(searchParams));

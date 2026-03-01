@@ -10,6 +10,7 @@ import { getDb } from '@/infra/db';
 import { tenants } from '../../../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { auditService } from '../../../../modules/audit/audit.service';
+import { logger } from '@/infra/logger';
 
 export const runtime = 'nodejs'; // Use Node.js runtime for Stripe streaming/raw parsing safely
 
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
         try {
             event = verifyStripeSignature(rawBody, signature);
         } catch (err: any) {
-            console.error(`Webhook signature verification failed: ${err.message}`);
+            logger.error('Webhook signature verification failed', err as Error, { message: err?.message });
             return NextResponse.json({ error: 'Webhook Error: Invalid signature' }, { status: 400 });
         }
 

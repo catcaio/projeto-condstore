@@ -3,6 +3,8 @@ import { getSessionUser } from '@/infra/auth/session';
 import { getDb } from '@/infra/db';
 import { tenants } from '../../../../drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { logger } from '@/infra/logger';
+import { makeRequestId } from '@/infra/http/request-trace';
 
 export async function GET(req: NextRequest) {
     // ── Auth: tenantId MUST come from the verified session, never from query params ──
@@ -50,10 +52,8 @@ export async function GET(req: NextRequest) {
         res.cookies.set('entitled', isEntitled ? '1' : '0', cookieOptions);
         return res;
     } catch (error: any) {
-        console.error('Failed to fetch billing subscription:', error);
-        return NextResponse.json(
-            { error: 'Internal Server Error' },
-            { status: 500 }
-        );
+        const requestId = makeRequestId(req);
+        logger.error('Failed to fetch billing subscription', error as Error, { tenantId, requestId });
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
