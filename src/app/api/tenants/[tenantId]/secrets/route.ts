@@ -8,7 +8,7 @@ import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/inf
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { structuredLogger } from '@/infra/log/logger';
 
-export async function GET(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { tenantId: st
         const res = NextResponse.json({ secrets: metadataList });
         return applyRateLimitHeaders(res, rlDecision);
     } catch (error: any) {
-        structuredLogger.error('Failed to get secrets metadata', { err: error.message, tenantId: guard.tenantId ?? params.tenantId, requestId });
+        structuredLogger.error('Failed to get secrets metadata', { err: error.message, tenantId: guard.tenantId ?? (await params).tenantId, requestId });
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

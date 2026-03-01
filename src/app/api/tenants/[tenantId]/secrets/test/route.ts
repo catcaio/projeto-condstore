@@ -14,7 +14,7 @@ import { adminAuditLogRepository } from '@/infra/repositories/admin-audit-log.re
 import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 
-export async function POST(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
         const res = NextResponse.json({ ok: testResult, message });
         return applyRateLimitHeaders(res, rlDecision);
     } catch (error: any) {
-        structuredLogger.error('Failed to test secret', { err: error.message, tenantId: guard.tenantId ?? params.tenantId, requestId });
+        structuredLogger.error('Failed to test secret', { err: error.message, tenantId: guard.tenantId ?? (await params).tenantId, requestId });
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

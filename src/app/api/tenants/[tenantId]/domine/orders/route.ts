@@ -5,7 +5,7 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { getInternalExportTokenOrThrow } from '@/infra/config/internal-token';
 
-export async function GET(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: { tenantId: st
     }
 
     try {
-        const orders = await domineReadRepository.listOrders(params.tenantId, 50);
+        const orders = await domineReadRepository.listOrders((await params).tenantId, 50);
         return NextResponse.json({ data: orders });
     } catch (e: any) {
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, e.message);

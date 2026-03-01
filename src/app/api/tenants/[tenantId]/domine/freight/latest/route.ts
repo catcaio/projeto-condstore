@@ -7,7 +7,7 @@ import { getDb } from '@/infra/db';
 import { domineFreightQuotes } from '@/drizzle/schema';
 import { eq, desc } from 'drizzle-orm';
 
-export async function GET(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: { tenantId: st
     try {
         const db = await getDb();
         const latest = await db.select().from(domineFreightQuotes)
-            .where(eq(domineFreightQuotes.tenantId, params.tenantId))
+            .where(eq(domineFreightQuotes.tenantId, (await params).tenantId))
             .orderBy(desc(domineFreightQuotes.createdAt))
             .limit(1);
 

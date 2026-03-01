@@ -13,7 +13,7 @@ const eventSchema = z.object({
     totals: z.any().optional(),
 }).passthrough();
 
-export async function POST(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
         };
 
         const result = await domineEventBus.publish(
-            params.tenantId,
+            (await params).tenantId,
             'connector',
             payload.type,
             redactedPayload,

@@ -11,7 +11,7 @@ import crypto from 'crypto';
 import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 
-export async function POST(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 

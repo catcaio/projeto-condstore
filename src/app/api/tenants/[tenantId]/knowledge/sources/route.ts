@@ -6,12 +6,12 @@ import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { makeRequestId } from '@/infra/http/request-trace';
 
-export async function GET(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const auth = await requireAdmin(req, { requestId });
     if (!auth.ok) return auth.response;
 
-    if (auth.session.tenantId !== params.tenantId) {
+    if (auth.session.tenantId !== (await params).tenantId) {
         return NextResponse.json({ error: 'Tenant mismatch' }, { status: 403 });
     }
 
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { tenantId: st
         const db = await getDb();
         const sources = await db.select()
             .from(tenantKnowledgeSources)
-            .where(eq(tenantKnowledgeSources.tenantId, params.tenantId));
+            .where(eq(tenantKnowledgeSources.tenantId, (await params).tenantId));
 
         return NextResponse.json({ sources });
     } catch (error: any) {
@@ -27,12 +27,12 @@ export async function GET(req: NextRequest, { params }: { params: { tenantId: st
     }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const auth = await requireAdmin(req, { requestId });
     if (!auth.ok) return auth.response;
 
-    if (auth.session.tenantId !== params.tenantId) {
+    if (auth.session.tenantId !== (await params).tenantId) {
         return NextResponse.json({ error: 'Tenant mismatch' }, { status: 403 });
     }
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
 
         await db.insert(tenantKnowledgeSources).values({
             id,
-            tenantId: params.tenantId,
+            tenantId: (await params).tenantId,
             type,
             name,
             status: 'draft',

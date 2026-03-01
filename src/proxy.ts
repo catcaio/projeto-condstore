@@ -20,6 +20,7 @@ export const config = {
     '/api/events',
     '/api/tenants/:tenantId/ai-provider/:path*',
     '/api/tenants/:tenantId/settings/:path*',
+    '/api/internal/:path*',
   ],
 };
 
@@ -138,6 +139,28 @@ export async function proxy(req: NextRequest) {
   const requestId = getOrCreateRequestId(req);
   const headers = new Headers(req.headers);
   headers.set('x-request-id', requestId);
+
+  // Internal API Guard (migrated from removed middleware.ts)
+  if (process.env.NODE_ENV === 'production' && req.nextUrl.pathname.startsWith('/api/internal/')) {
+    const token = req.headers.get('x-internal-token');
+    const diagToken = process.env.INTERNAL_DIAG_TOKEN?.trim();
+    const exportToken = process.env.INTERNAL_EXPORT_TOKEN?.trim();
+    const jobToken = process.env.INTERNAL_JOB_TOKEN?.trim();
+
+    const isAuthorized = token && (token === diagToken || token === exportToken || token === jobToken);
+
+    if (!isAuthorized) {
+      return setRequestIdHeader(
+        NextResponse.json({ error: 'Unauthorized internal access' }, { status: 401 }),
+        requestId
+      );
+    }
+
+    return setRequestIdHeader(
+      NextResponse.next({ request: { headers } }),
+      requestId
+    );
+  }
 
   if (!isCockpitProtectedPath(req.nextUrl.pathname)) {
     return setRequestIdHeader(

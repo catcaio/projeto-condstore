@@ -5,7 +5,7 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { adminAuditLogRepository } from '@/infra/repositories/admin-audit-log.repository';
 import { tenantIncidentsRepository } from '@/infra/repositories/tenant-incidents.repository';
 
-export async function GET(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 

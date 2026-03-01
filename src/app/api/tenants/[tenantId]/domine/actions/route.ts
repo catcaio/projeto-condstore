@@ -14,7 +14,7 @@ const actionsSchema = z.object({
     parameters: z.any()
 });
 
-export async function POST(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
 
         if (action === 'lookup_order') {
             const { orderId } = parameters;
-            const order = await domineReadRepository.getOrder(params.tenantId, orderId);
+            const order = await domineReadRepository.getOrder((await params).tenantId, orderId);
             return NextResponse.json({ ok: true, data: order || null });
         }
 
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: { tenantId: s
                 return NextResponse.json({ ok: true, data: q[0] || null });
             } else {
                 const latest = await db.select().from(domineFreightQuotes)
-                    .where(eq(domineFreightQuotes.tenantId, params.tenantId))
+                    .where(eq(domineFreightQuotes.tenantId, (await params).tenantId))
                     .orderBy(desc(domineFreightQuotes.createdAt))
                     .limit(1);
                 return NextResponse.json({ ok: true, data: latest[0] || null });

@@ -4,7 +4,7 @@ import { domineEventsRepository } from '@/infra/repositories/domine-events.repos
 import { makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 
-export async function GET(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 

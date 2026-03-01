@@ -32,7 +32,7 @@ describe('Health Route (Tenant Cockpit)', () => {
             sessionUser: { role: 'user', sub: 'u1' }
         });
 
-        const res = await GET(req, { params: { tenantId: 't1' } }) as NextResponse;
+        const res = await GET(req, { params: Promise.resolve({ tenantId: 't1' }) }) as NextResponse;
 
         expect(res.status).toBe(403);
         const data = await res.json();
@@ -51,7 +51,7 @@ describe('Health Route (Tenant Cockpit)', () => {
             response: NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
         });
 
-        const res = await GET(req, { params: { tenantId: 't1' } }) as NextResponse;
+        const res = await GET(req, { params: Promise.resolve({ tenantId: 't1' }) }) as NextResponse;
 
         expect(res.status).toBe(403);
         const data = await res.json();

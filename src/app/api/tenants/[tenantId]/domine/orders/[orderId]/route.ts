@@ -5,7 +5,7 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { getInternalExportTokenOrThrow } from '@/infra/config/internal-token';
 
-export async function GET(req: NextRequest, { params }: { params: { tenantId: string, orderId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string, orderId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: { tenantId: st
     }
 
     try {
-        const order = await domineReadRepository.getOrder(params.tenantId, params.orderId);
+        const order = await domineReadRepository.getOrder((await params).tenantId, (await params).orderId);
         if (!order) {
             return errorResponse(ErrorCode.UNKNOWN, 404, requestId, 'Order not found');
         }

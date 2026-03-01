@@ -13,12 +13,13 @@ import { rateLimiter, applyRateLimitHeaders } from '@/infra/security/rate-limite
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { tenantSecretsRepository } from '@/infra/repositories/tenant-secrets.repository';
 
-export async function GET(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string }> }) {
     const requestId = makeRequestId(req);
-    const tenantId = extractTenantIdFromTenantRoute(req);
+    const resolvedParams = await params;
+    const tenantIdFromRoute = resolvedParams.tenantId;
 
     // 1. Session and Tenant Match
-    const guard = await requireSessionTenantMatch(req, tenantId);
+    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
     if (!guard.ok) return guard.response;
 
     // 2. Admin verification
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: { tenantId: st
     }
 
     // 3. Rate Limit
-    const limitDecision = await rateLimiter.limit('health_api', `tenant:${tenantId}`, {
+    const limitDecision = await rateLimiter.limit('health_api', `tenant:${tenantIdFromRoute}`, {
         windowSec: 60,
         max: 30,
     });
@@ -59,13 +60,13 @@ export async function GET(req: NextRequest, { params }: { params: { tenantId: st
 
         const tenantResult = await db.select()
             .from(tenants)
-            .where(eq(tenants.id, params.tenantId))
+            .where(eq(tenants.id, tenantIdFromRoute))
             .limit(1);
         const tenant = tenantResult[0];
 
-        const circuitBreakers = circuitBreaker.getStatus().filter(cb => cb.tenantId === params.tenantId);
+        const circuitBreakers = circuitBreaker.getStatus().filter(cb => cb.tenantId === tenantIdFromRoute);
 
-        const allSecretsMeta = await tenantSecretsRepository.getMetadataByTenant(params.tenantId);
+        const allSecretsMeta = await tenantSecretsRepository.getMetadataByTenant(tenantIdFromRoute);
         const unverifiedSecrets = allSecretsMeta.filter(s => s.lastVerifiedAt === null && s.lastRotatedAt !== null).map(s => s.scope);
 
         return NextResponse.json({

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { middleware } from '../../../middleware';
+import { proxy } from '../../../proxy';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-describe('Production Smoke Test - Middleware', () => {
+describe('Production Smoke Test - Proxy', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
@@ -14,18 +14,18 @@ describe('Production Smoke Test - Middleware', () => {
         process.env = originalEnv;
     });
 
-    it('bloqueia /api/internal/* sem token em producao', () => {
+    it('bloqueia /api/internal/* sem token em producao', async () => {
         vi.stubEnv('NODE_ENV', 'production');
         process.env.INTERNAL_DIAG_TOKEN = 'secret123';
 
         const req = new NextRequest('http://localhost:3000/api/internal/diag');
-        const res = middleware(req) as NextResponse;
+        const res = await proxy(req) as NextResponse;
 
         expect(res).toBeDefined();
         expect(res.status).toBe(401);
     });
 
-    it('permite /api/internal/* com token valido em producao', () => {
+    it('permite /api/internal/* com token valido em producao', async () => {
         vi.stubEnv('NODE_ENV', 'production');
         process.env.INTERNAL_DIAG_TOKEN = 'secret123';
 
@@ -33,25 +33,25 @@ describe('Production Smoke Test - Middleware', () => {
             headers: new Headers({ 'x-internal-token': 'secret123' })
         });
 
-        const res = middleware(req) as NextResponse;
+        const res = await proxy(req) as NextResponse;
         expect(res.status).not.toBe(401);
     });
 
-    it('NÃO bloqueia /api/webhooks/* sem token', () => {
+    it('NÃO bloqueia /api/webhooks/* sem token', async () => {
         vi.stubEnv('NODE_ENV', 'production');
         process.env.INTERNAL_DIAG_TOKEN = 'secret123';
 
         const req = new NextRequest('http://localhost:3000/api/webhooks/twilio');
-        const res = middleware(req) as NextResponse;
+        const res = await proxy(req) as NextResponse;
 
         expect(res.status).not.toBe(401);
     });
 
-    it('NÃO bloqueia /api/internal/* em dev', () => {
+    it('NÃO bloqueia /api/internal/* em dev', async () => {
         vi.stubEnv('NODE_ENV', 'development');
 
         const req = new NextRequest('http://localhost:3000/api/internal/diag');
-        const res = middleware(req) as NextResponse;
+        const res = await proxy(req) as NextResponse;
 
         expect(res.status).not.toBe(401);
     });
