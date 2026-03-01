@@ -8,7 +8,8 @@ export const metadata = {
     title: 'DLQ Manager | Domine | Condstore',
 };
 
-export default async function DomineDLQPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+export default async function DomineDLQPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+    const resolvedParams = await searchParams;
     const headersList = await headers();
     const tenantId = headersList.get('x-auth-tenant-id');
     const role = headersList.get('x-auth-role');
@@ -26,7 +27,7 @@ export default async function DomineDLQPage({ searchParams }: { searchParams: { 
         );
     }
 
-    const page = Number(searchParams.page) || 1;
+    const page = Number(resolvedParams.page) || 1;
     const limit = 20;
     const offset = (page - 1) * limit;
 
@@ -87,7 +88,7 @@ export default async function DomineDLQPage({ searchParams }: { searchParams: { 
                                                 {new Date(evt.processedAt || evt.createdAt).toLocaleString()}
                                             </td>
                                             <td className="px-4 py-3 text-right">
-                                                <RetryButton tenantId={tenantId} eventId={evt.id} disabled={isIncidentMode} />
+                                                <RetryButton eventId={evt.id} disabled={isIncidentMode} />
                                             </td>
                                         </tr>
                                     ))
@@ -100,6 +101,19 @@ export default async function DomineDLQPage({ searchParams }: { searchParams: { 
 
             <div className="flex justify-between items-center text-sm text-[hsl(var(--cockpit-text-muted))]">
                 <p>Mostrando {dlqEvents.length} de {totalCount}</p>
+
+                <div className="flex gap-2">
+                    {page > 1 && (
+                        <a href={`/cockpit/domine/dlq?page=${page - 1}`} className="px-3 py-1 rounded inline-flex border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] hover:bg-[hsl(var(--cockpit-bg))] text-[hsl(var(--cockpit-text))]">
+                            Anterior
+                        </a>
+                    )}
+                    {page * limit < totalCount && (
+                        <a href={`/cockpit/domine/dlq?page=${page + 1}`} className="px-3 py-1 rounded inline-flex border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] hover:bg-[hsl(var(--cockpit-bg))] text-[hsl(var(--cockpit-text))]">
+                            Próxima
+                        </a>
+                    )}
+                </div>
             </div>
         </div>
     );

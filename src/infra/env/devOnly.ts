@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 
 export function isDevRuntime(): boolean {
-  return process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development' || process.env.CI === 'true';
+  return process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development';
+}
+
+export function isQaAutomation(): boolean {
+  return process.env.CI === 'true' && process.env.NODE_ENV === 'production';
 }
 
 export function assertDevOnly(requestId?: string): NextResponse | undefined {

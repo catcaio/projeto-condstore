@@ -6,13 +6,13 @@ import { Play } from 'lucide-react';
 import { runProcessorNow } from '../actions';
 import { useRouter } from 'next/navigation';
 
-export function RunProcessorButton({ tenantId, disabled }: { tenantId: string; disabled?: boolean }) {
+export function RunProcessorButton({ disabled }: { disabled?: boolean }) {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
 
     const handleRun = () => {
         startTransition(async () => {
-            const result = await runProcessorNow(tenantId);
+            const result = await runProcessorNow();
             if (result.success) {
                 alert(result.message);
                 router.refresh();

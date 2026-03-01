@@ -29,8 +29,8 @@ export default async function DomineOverviewPage() {
     }
 
     const [counts, recentEvents] = await Promise.all([
-        getDomineOverviewCounts(tenantId),
-        domineEventsRepository.listEvents(tenantId, { limit: 10 })
+        getDomineOverviewCounts(),
+        domineEventsRepository.listEvents(tenantId, { limit: 20 })
     ]);
 
     const isIncidentMode = process.env.INCIDENT_MODE === 'true';
@@ -48,7 +48,7 @@ export default async function DomineOverviewPage() {
                     {isIncidentMode && (
                         <Badge variant="outline" className="text-red-500 border-red-500">Incident Mode Active</Badge>
                     )}
-                    <RunProcessorButton tenantId={tenantId} disabled={isIncidentMode} />
+                    <RunProcessorButton disabled={isIncidentMode} />
                 </div>
             </div>
 

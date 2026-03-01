@@ -18,7 +18,7 @@ import {
   parseWindow as parseWindowDays,
   type MetricsWindowPreset,
 } from '../../../../../infra/time/window';
-import { isDevRuntime } from '../../../../../infra/env/devOnly';
+import { isDevRuntime, isQaAutomation } from '../../../../../infra/env/devOnly';
 
 export const runtime = 'nodejs';
 
@@ -401,7 +401,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin(request, { requestId });
   if (!auth.ok) return finalize(auth.response, auth.code);
 
-  const entitlement = isDevRuntime()
+  const entitlement = (isDevRuntime() || isQaAutomation())
     ? { errorResponse: null, tenantId: auth.session.tenantId }
     : await requireActivePlan(request);
 
@@ -457,7 +457,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     let payload: AcquisitionMetricsResponse | null = null;
 
     try {
-      if (!isDevRuntime()) {
+      if (!isDevRuntime() && !isQaAutomation()) {
         const rollupRows = await queryRollupBuckets(tenantId, groupBy, range);
         if (rollupRows.length > 0) {
           const buckets = buildBucketsFromRollupRows(rollupRows);
@@ -548,7 +548,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const searchParams = request.nextUrl.searchParams;
     let filteredBuckets = [...payload.buckets];
 
-    if (isDevRuntime() && filteredBuckets.length === 0) {
+    if ((isDevRuntime() || isQaAutomation()) && filteredBuckets.length === 0) {
       const mockSources = ['facebook', 'google', 'instagram', 'tiktok', 'email', 'organic', 'referral', 'affiliate', 'twitter', 'linkedin', 'direct', 'bing', 'criteo'];
       const mockCampaigns = ['blackfriday', 'summer_sale', 'welcome', 'retargeting', 'brand', 'lookalike', 'influencer', 'promo23', 'newsletter', 'flashsale', 'launch', 'bfcm', 'xmas'];
 

@@ -62,7 +62,7 @@ export const MODULES: ModuleConfig[] = [
         routes: [
             { pattern: "/cockpit/domine", title: "DOMINE CONSOLE" },
             { pattern: "/cockpit/domine/dlq", title: "DLQ MANAGER" },
-            { pattern: "/cockpit/domine/connectors", title: "CONECTORES" }
+            { pattern: "/cockpit/domine/health", title: "DOMINE HEALTH" }
         ],
     },
     {
