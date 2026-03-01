@@ -44,6 +44,15 @@ vi.mock("../../../../infra/repositories/attribution-click.repository", () => ({
     },
 }));
 
+vi.mock("../../../../infra/repositories/end-user-consent.repository", () => ({
+    endUserConsentRepository: {
+        getConsent: vi.fn(),
+        recordOptIn: vi.fn(),
+        revokeConsent: vi.fn(),
+        incrementBlockedAttempts: vi.fn(),
+    },
+}));
+
 vi.mock("../../../../infra/repositories/inbound-message-dedup.repository", () => ({
     inboundMessageDedupRepository: {
         tryAcquire: vi.fn(),
@@ -126,6 +135,7 @@ import { recordFailure } from "../../../../infra/circuit-breaker";
 import { messageRepository } from "../../../../infra/repositories/message.repository";
 import { sessionManager } from "../../../../core/conversation/session-manager";
 import { attributionClickRepository } from "../../../../infra/repositories/attribution-click.repository";
+import { endUserConsentRepository } from "../../../../infra/repositories/end-user-consent.repository";
 
 // ── Import route under test ──────────────────────────────────────────────────
 import { POST } from "../route";
@@ -171,6 +181,7 @@ function setupHappyPath() {
     (webhookEventRepository.markProcessed as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     (webhookEventRepository.markFailed as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     (publishEvent as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    (endUserConsentRepository.getConsent as ReturnType<typeof vi.fn>).mockResolvedValue({ consentGiven: true, consentTimestamp: new Date(), consentSource: "manual" });
 }
 
 // ── Test suite ────────────────────────────────────────────────────────────────
@@ -315,5 +326,36 @@ describe("POST /api/webhook — webhook hardening", () => {
         expect(first.status).toBe(200);
         expect(second.status).toBe(200);
         expect(freightController.handleIncoming).toHaveBeenCalledTimes(1);
+    });
+
+    // ── 8. LGPD Consent Gate ──────────────────────────────────────────────────
+
+    it("blocks ingestion and returns transactional phrase when consent is missing", async () => {
+        setupHappyPath();
+        (endUserConsentRepository.getConsent as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+        const res = await POST(makeRequest());
+
+        expect(res.status).toBe(200);
+        const text = await res.text();
+        expect(text).toContain("Para continuar, confirme que aceita nossa pol");
+        expect(freightController.handleIncoming).not.toHaveBeenCalled();
+        expect(messageRepository.saveInboundMessage).toHaveBeenCalledWith(expect.objectContaining({
+            body: "[CONTEÚDO BLOQUEADO - AGUARDANDO CONSENTIMENTO LGPD]"
+        }));
+    });
+
+    it("records opt-in when user answers 'sim' to unconsented block", async () => {
+        setupHappyPath();
+        (endUserConsentRepository.getConsent as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+        (twilioProvider.parseIncomingMessage as ReturnType<typeof vi.fn>)
+            .mockReturnValue({ messageSid: "SM456", from: "whatsapp:+5511987654321", body: "Sim" });
+
+        const optInRequest = makeRequest(VALID_FORM_BODY.replace("Body=oi", "Body=Sim"));
+        const res = await POST(optInRequest);
+
+        expect(res.status).toBe(200);
+        expect(endUserConsentRepository.recordOptIn).toHaveBeenCalled();
+        expect(freightController.handleIncoming).toHaveBeenCalled();
     });
 });

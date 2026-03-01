@@ -9,6 +9,8 @@ export const metadata = {
     description: 'Planos unificados para escalar sua operação sem surpresas.',
 };
 
+export const revalidate = 86400; // 24h caching for Edge network
+
 export default function PricingPage() {
     return (
         <div className="mx-auto max-w-7xl px-6 lg:px-8 py-20 lg:py-32 flex flex-col items-center">

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireActivePlan } from '../../../../modules/billing/requireActivePlan';
 import { requireAdmin } from '../../../../infra/auth/guards';
 import { getDb } from '@/infra/db';
-import { tenantEvents } from '../../../../drizzle/schema';
-import { eq, desc, asc, and, gte, lte, like, sql } from 'drizzle-orm';
+import { tenantEvents, domineEvents, userConsentsLog } from '../../../../drizzle/schema';
+import { eq, desc, asc, and, gte, lte, sql } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import { isDevRuntime } from '@/infra/env/devOnly';
 
@@ -83,15 +83,43 @@ export async function GET(request: NextRequest) {
                 db.select().from(tenantEvents).where(and(...conditions)).orderBy(orderClause).limit(limit).offset(offset)
             ]);
 
-            total = Number(countResult[0]?.count || 0);
+            // Also fetch cross-domain events for this timeframe/tenant
+            const [domineFails, privacyLogs] = await Promise.all([
+                db.select().from(domineEvents).where(and(eq(domineEvents.tenantId, tenantId), eq(domineEvents.status, 'failed'))).orderBy(desc(domineEvents.createdAt)).limit(limit),
+                db.select().from(userConsentsLog).where(eq(userConsentsLog.tenantId, tenantId)).orderBy(desc(userConsentsLog.timestamp)).limit(limit)
+            ]);
 
-            serializedEvents = events.map(event => ({
+            total = Number(countResult[0]?.count || 0) + domineFails.length + privacyLogs.length;
+
+            const baseEvents = events.map(event => ({
                 id: event.id,
                 tenantId: event.tenantId,
                 type: event.type,
                 payload: event.payload ? JSON.parse(event.payload as string) : {},
                 createdAt: event.createdAt
             }));
+
+            const crossDomine = domineFails.map(d => ({
+                id: d.id,
+                tenantId: d.tenantId,
+                type: `PROCESSOR_FAILURE`,
+                payload: { resource: `Event ${d.type}`, status: 'failure', error: d.errorMessage },
+                createdAt: d.createdAt
+            }));
+
+            const crossPrivacy = privacyLogs.map(p => ({
+                id: p.id,
+                tenantId: p.tenantId,
+                type: `PRIVACY_ACTION`,
+                payload: { resource: `Consent ${p.phoneHash.substring(0, 8)}...`, status: 'success', source: p.source },
+                createdAt: p.timestamp
+            }));
+
+            // Merge and sort
+            serializedEvents = [...baseEvents, ...crossDomine, ...crossPrivacy].sort((a, b) => {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }).slice(0, limit);
+
         } catch (dbError) {
             if (!isDevRuntime()) throw dbError;
             logger.warn('DB error in audit, falling back to mock events', { error: String(dbError) });

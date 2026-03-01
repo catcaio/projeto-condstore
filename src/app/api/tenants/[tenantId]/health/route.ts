@@ -5,8 +5,8 @@ import { getRateLimiterFallbackMetrics } from '@/infra/security/rate-limiter';
 import { circuitBreaker } from '@/infra/security/circuit-breaker';
 import { redisClient } from '@/infra/redis.client';
 import { getDb } from '@/infra/db';
-import { eq, sql } from 'drizzle-orm';
-import { tenants } from '@/drizzle/schema';
+import { tenants, domineEvents, endUserConsents } from '@/drizzle/schema';
+import { and, desc, asc, eq, sql } from 'drizzle-orm';
 
 import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
 import { rateLimiter, applyRateLimitHeaders } from '@/infra/security/rate-limiter';
@@ -69,6 +69,28 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
         const allSecretsMeta = await tenantSecretsRepository.getMetadataByTenant(tenantIdFromRoute);
         const unverifiedSecrets = allSecretsMeta.filter(s => s.lastVerifiedAt === null && s.lastRotatedAt !== null).map(s => s.scope);
 
+        // Domine and Privacy Metrics
+        const dlqCountResult = await db.select({ count: sql<number>`count(*)` })
+            .from(domineEvents)
+            .where(and(eq(domineEvents.tenantId, tenantIdFromRoute), eq(domineEvents.status, 'failed')));
+        const dlqCount = Number(dlqCountResult[0]?.count || 0);
+
+        const oldestPendingResult = await db.select({ createdAt: domineEvents.createdAt })
+            .from(domineEvents)
+            .where(and(eq(domineEvents.tenantId, tenantIdFromRoute), eq(domineEvents.status, 'queued')))
+            .orderBy(asc(domineEvents.createdAt))
+            .limit(1);
+
+        let oldestEventAgeMs = 0;
+        if (oldestPendingResult.length > 0) {
+            oldestEventAgeMs = Date.now() - new Date(oldestPendingResult[0].createdAt).getTime();
+        }
+
+        const blockedResult = await db.select({ totalBlocked: sql<number>`sum(${endUserConsents.blockedAttempts})` })
+            .from(endUserConsents)
+            .where(eq(endUserConsents.tenantId, tenantIdFromRoute));
+        const totalBlocked = Number(blockedResult[0]?.totalBlocked || 0);
+
         return NextResponse.json({
             db: dbOk ? 'ok' : 'fail',
             redis: redisOk ? 'ok' : 'fail',
@@ -77,6 +99,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
             outboundEnabled: tenant?.outboundEnabled,
             incidentMode: tenant?.incidentMode,
             unverifiedSecrets,
+            domineMetrics: {
+                dlqDepth: dlqCount,
+                oldestEventAgeMs
+            },
+            privacyMetrics: {
+                totalBlocked
+            }
         });
     } catch (error: any) {
         return NextResponse.json({ error: 'Failed to fetch health summary' }, { status: 500 });

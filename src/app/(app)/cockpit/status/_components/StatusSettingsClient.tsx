@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useTransition } from 'react';
 import Link from 'next/link';
-import { runGoNoGoChecks } from './actions';
+import { runGoNoGoChecks, toggleIncidentMode, toggleOutbound, runProcessorNow } from './actions';
 
 interface GoNoGoResults {
     internalTokenValid: boolean;
@@ -33,6 +33,13 @@ interface HealthSummary {
     outboundEnabled: boolean;
     incidentMode: boolean;
     unverifiedSecrets: string[];
+    domineMetrics: {
+        dlqDepth: number;
+        oldestEventAgeMs: number;
+    };
+    privacyMetrics: {
+        totalBlocked: number;
+    };
 }
 
 export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
@@ -43,8 +50,9 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
     const [goNoGoLoading, setGoNoGoLoading] = useState(false);
     const [goNoGoResult, setGoNoGoResult] = useState<GoNoGoResults | null>(null);
 
+    const [isPending, startTransition] = useTransition();
+
     const [domineEvents, setDomineEvents] = useState<any[]>([]);
-    const [dlqCount, setDlqCount] = useState(0);
 
     const fetchStatus = useCallback(async () => {
         setLoading(true);
@@ -60,8 +68,6 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
             if (eventsRes.ok) {
                 const data = await eventsRes.json();
                 setDomineEvents(data.data || []);
-                const failures = (data.data || []).filter((e: any) => e.status === 'failed');
-                setDlqCount(failures.length); // just an approximation for UI given the endpoint
             }
         } catch (e) {
             console.error('Failed to load status');
@@ -115,6 +121,16 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
                         <div className={`text-2xl font-bold ${stats.outboundEnabled ? 'text-zinc-100' : 'text-red-500'}`}>
                             {stats.outboundEnabled ? 'ONLINE' : 'LOCKED'}
                         </div>
+                        <button
+                            disabled={isPending}
+                            onClick={() => startTransition(async () => {
+                                await toggleOutbound(tenantId, stats.outboundEnabled);
+                                fetchStatus();
+                            })}
+                            className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white disabled:opacity-50"
+                        >
+                            Toggle
+                        </button>
                     </div>
                     {stats.outboundEnabled ? (
                         <p className="text-xs text-zinc-500 mt-2">Tráfego externo habilitado.</p>
@@ -130,6 +146,16 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
                         <div className={`text-2xl font-bold ${stats.incidentMode ? 'text-amber-500' : 'text-zinc-400'}`}>
                             {stats.incidentMode ? 'ATIVO' : 'IDLE'}
                         </div>
+                        <button
+                            disabled={isPending}
+                            onClick={() => startTransition(async () => {
+                                await toggleIncidentMode(tenantId, stats.incidentMode);
+                                fetchStatus();
+                            })}
+                            className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white disabled:opacity-50"
+                        >
+                            Toggle
+                        </button>
                     </div>
                     {stats.incidentMode && (
                         <p className="text-xs text-amber-400 mt-2">Modo passivo forçando bypass de inbound.</p>
@@ -202,15 +228,28 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
                     </div>
                 </div>
 
-                {/* Domine Events (Spine Pilot) */}
-                <div className="p-5 rounded-2xl border bg-zinc-900 border-zinc-800 md:col-span-2 lg:col-span-3">
-                    <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-sm text-zinc-400 font-medium">Domine Event Spine (Latest 20)</h3>
-                        {dlqCount > 0 && (
-                            <span className="px-2 py-0.5 rounded text-xs bg-red-950/40 text-red-500 border border-red-900/50">
-                                {dlqCount} events in DLQ (from latest)
-                            </span>
-                        )}
+                <div className="p-5 rounded-2xl border bg-zinc-900 border-zinc-800 md:col-span-2 xl:col-span-3">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 className="text-sm text-zinc-400 font-medium">Domine Event Spine (Latest Events & Health)</h3>
+                            <div className="flex gap-4 mt-2">
+                                <div className="text-xs text-zinc-500">
+                                    Queue Delay: {stats.domineMetrics.oldestEventAgeMs > 0
+                                        ? <span className={stats.domineMetrics.oldestEventAgeMs > 60000 ? 'text-amber-500 font-bold' : 'text-emerald-400'}>{Math.floor(stats.domineMetrics.oldestEventAgeMs / 1000)}s</span>
+                                        : <span className="text-emerald-400 font-medium">Real-time (0s)</span>}
+                                </div>
+                                <div className="text-xs text-zinc-500">
+                                    Global DLQ: {stats.domineMetrics.dlqDepth > 0
+                                        ? <span className="text-red-500 font-bold">{stats.domineMetrics.dlqDepth} rotas falhas</span>
+                                        : <span className="text-emerald-400 font-medium">Zero Drop</span>}
+                                </div>
+                                <div className="text-xs text-zinc-500">
+                                    Privacy Guards: {stats.privacyMetrics.totalBlocked > 0
+                                        ? <span className="text-amber-500 font-bold">{stats.privacyMetrics.totalBlocked} blocks ativos</span>
+                                        : <span className="text-zinc-400 font-medium">Nenhum</span>}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     {domineEvents.length === 0 ? (
                         <div className="text-sm text-zinc-500 mt-2">Nenhum evento registrado ainda.</div>

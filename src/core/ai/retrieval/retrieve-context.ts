@@ -4,6 +4,8 @@ import { embed } from '@/infra/ai/embeddings.client';
 import { getDb } from '@/infra/db';
 import { frankEvents } from '@/drizzle/schema';
 import { getQdrantCollectionName, searchPoints } from '@/infra/vector/qdrant.client';
+import { endUserConsentRepository } from '@/infra/repositories/end-user-consent.repository';
+import { structuredLogger } from '@/infra/log/logger';
 
 export type RetrievedChunk = {
   score: number;
@@ -36,6 +38,7 @@ interface RetrieveContextMultiInput {
   query: string;
   docsLimit?: number;
   chatLimit?: number;
+  phoneHash?: string;
 }
 
 export type RetrieveContextMultiResult = {
@@ -324,6 +327,26 @@ export async function retrieveContextMulti(
 
   if (!tenantId) throw new Error('tenantId is required');
   if (!query) throw new Error('query is required');
+
+  if (input.phoneHash) {
+    const consent = await endUserConsentRepository.getConsent(tenantId, input.phoneHash);
+    if (!consent || !consent.consentGiven) {
+      await endUserConsentRepository.incrementBlockedAttempts(tenantId, input.phoneHash);
+      structuredLogger.warn('lgpd_retrieval_blocked', {
+        tenantId,
+        phoneHash: input.phoneHash,
+        reason: 'missing_consent',
+        eventType: 'lgpd_retrieval_blocked',
+      });
+      return {
+        query,
+        docs: [],
+        chat: [],
+        chunks: [],
+        cacheHit: false,
+      };
+    }
+  }
 
   const totalDesired = Math.max(1, docsLimit + chatLimit);
   const base = await retrieveContextRaw({ tenantId, query, limit: totalDesired });

@@ -64,3 +64,56 @@ export async function runGoNoGoChecks(tenantId: string) {
 
     return results;
 }
+
+export async function toggleIncidentMode(tenantId: string, current: boolean) {
+    const session = await getServerSessionUser();
+    if (!session || session.role !== 'admin' || session.tenantId !== tenantId) {
+        throw new Error('Unauthorized');
+    }
+    const { getDb } = await import('@/infra/db');
+    const { tenants } = await import('@/drizzle/schema');
+    const { eq } = await import('drizzle-orm');
+    const db = await getDb();
+    await db.update(tenants).set({ incidentMode: !current }).where(eq(tenants.id, tenantId));
+    return !current;
+}
+
+export async function toggleOutbound(tenantId: string, current: boolean) {
+    const session = await getServerSessionUser();
+    if (!session || session.role !== 'admin' || session.tenantId !== tenantId) {
+        throw new Error('Unauthorized');
+    }
+    const { getDb } = await import('@/infra/db');
+    const { tenants } = await import('@/drizzle/schema');
+    const { eq } = await import('drizzle-orm');
+    const db = await getDb();
+    await db.update(tenants).set({ outboundEnabled: !current }).where(eq(tenants.id, tenantId));
+    return !current;
+}
+
+export async function runProcessorNow(tenantId: string) {
+    const session = await getServerSessionUser();
+    if (!session || session.role !== 'admin' || session.tenantId !== tenantId) {
+        throw new Error('Unauthorized');
+    }
+    const { domineEventBus } = await import('@/modules/domine/event-bus.service');
+    const { getDb } = await import('@/infra/db');
+    const { domineEvents } = await import('@/drizzle/schema');
+    const { eq, and } = await import('drizzle-orm');
+
+    try {
+        const db = await getDb();
+        const pending = await db.select({ id: domineEvents.id })
+            .from(domineEvents)
+            .where(and(eq(domineEvents.tenantId, tenantId), eq(domineEvents.status, 'queued')))
+            .limit(10);
+
+        for (const evt of pending) {
+            await domineEventBus.processAsync(tenantId, evt.id);
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}

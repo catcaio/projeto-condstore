@@ -144,6 +144,28 @@ export async function countPoints(
   return { status: response.status, body };
 }
 
+export async function deletePointsByFilter(
+  collection: string,
+  filter: QdrantSearchFilter,
+): Promise<{ status: number; body?: unknown }> {
+  const response = await qdrantRequest(
+    `/collections/${encodeURIComponent(collection)}/points/delete`,
+    {
+      method: 'POST',
+      body: {
+        filter,
+      },
+    }
+  );
+
+  const body = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(`Qdrant deletePointsByFilter failed (${response.status}): ${typeof body === 'string' ? body : JSON.stringify(body)}`);
+  }
+
+  return { status: response.status, body };
+}
+
 export async function getCollectionInfo(collection: string): Promise<{ status: number; body?: unknown }> {
   const response = await qdrantRequest(`/collections/${encodeURIComponent(collection)}`, { method: 'GET' });
   const body = await parseJsonResponse(response);
