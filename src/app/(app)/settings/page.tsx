@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { SettingsPage, SettingsSection, SettingsRow } from '@/ui/settings';
 import { Badge } from '@/ui/components';
 import {
@@ -27,7 +28,7 @@ export default async function Settings(props: { searchParams: Promise<{ [key: st
   const tenantId = actAsSuperAdmin ? inspectTenantId : sessionTenantId;
 
   if (!tenantId) {
-    return <div>Tenant ID não encontrado.</div>;
+    redirect('/login');
   }
 
   const { domain, env, gitSha, stripeEnabled } = getEnvironmentInfo();
@@ -40,13 +41,22 @@ export default async function Settings(props: { searchParams: Promise<{ [key: st
 
   if (!basics) {
     return (
-      <SettingsPage title="Configurações" description="Tenant Inválido">
-        <div className="p-12 text-center">
-          <h2 className="text-2xl font-bold mb-4 text-[hsl(var(--ui-danger-ink))]">Tenant não encontrado</h2>
-          <p className="text-[hsl(var(--ui-text-muted))] mb-6">Não conseguimos localizar o registro operacional deste Tenant no banco de dados.</p>
-          <Link href="/login" className="text-blue-500 hover:underline">Voltar para o Login</Link>
+      <div className="flex h-[80vh] w-full flex-col items-center justify-center">
+        <div className="max-w-md text-center">
+          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-[hsl(var(--ui-danger-ink))]" />
+          <h2 className="text-2xl font-bold mb-4 text-[hsl(var(--ui-text))]">Identidade Inválida</h2>
+          <p className="text-[hsl(var(--ui-text-muted))] mb-8">
+            O tenant fornecido pelo seu token não existe no banco de dados.
+            Por favor, faça login novamente para reconstruir sua sessão.
+          </p>
+          <Link
+            href="/login"
+            className="inline-flex h-9 items-center justify-center rounded-md bg-[hsl(var(--ui-bg-surface-active))] px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[hsl(var(--ui-bg-surface-hover))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[hsl(var(--ui-ring))]"
+          >
+            Voltar para o Login
+          </Link>
         </div>
-      </SettingsPage>
+      </div>
     );
   }
 

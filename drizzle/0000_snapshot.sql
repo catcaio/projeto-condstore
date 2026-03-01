@@ -1,0 +1,1 @@
+-- Migration snapshot stub for legacy reasons

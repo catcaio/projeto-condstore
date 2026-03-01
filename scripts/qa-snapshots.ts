@@ -50,20 +50,9 @@ async function runQa() {
             process.exit(1);
         }
 
-        console.log(`[QA] Bootstrapping dev session...`);
-        const sessionRes = await fetch(`${BASE_URL}/api/internal/qa/bootstrap-session`, {
-            method: 'POST',
-            headers: QA_HEADERS
-        });
-        if (!sessionRes.ok) {
-            console.error(`[QA] Failed to bootstrap session! HTTP ${sessionRes.status}`);
-            console.error(await sessionRes.text());
-            process.exit(1);
-        }
-
-        const setCookieHeader = sessionRes.headers.get('set-cookie');
+        const setCookieHeader = setupRes.headers.get('set-cookie');
         if (!setCookieHeader) {
-            console.error(`[QA] No Set-Cookie header found in session bootstrap!`);
+            console.error(`[QA] No Set-Cookie header found in setup!`);
             process.exit(1);
         }
 
