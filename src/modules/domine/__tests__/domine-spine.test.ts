@@ -11,7 +11,9 @@ vi.mock('@/infra/repositories/domine-events.repository', () => ({
         markProcessed: vi.fn(),
         sendToDLQ: vi.fn(),
         listEvents: vi.fn(),
-        getDLQCount: vi.fn()
+        getDLQCount: vi.fn(),
+        lockAndGetNextEvent: vi.fn(),
+        getDomineOperationalStats: vi.fn().mockResolvedValue({ oldestUnprocessedEventAge: 0 })
     }
 }));
 
@@ -68,9 +70,10 @@ describe('Domine Minimal Event Spine', () => {
             }
         };
 
+        vi.mocked(domineEventsRepository.lockAndGetNextEvent).mockResolvedValueOnce({ id: eventId }).mockResolvedValueOnce(null);
         vi.mocked(domineEventsRepository.getById).mockResolvedValueOnce(mockEvent as any);
 
-        await domineEventBus.processAsync('tenant-123', eventId);
+        await domineEventBus.processAsync('tenant-123');
 
         // Check if read model was updated
         expect(domineReadRepository.upsertOrder).toHaveBeenCalledWith(
@@ -97,12 +100,19 @@ describe('Domine Minimal Event Spine', () => {
             payloadJson: {}
         };
 
+        vi.mocked(domineEventsRepository.lockAndGetNextEvent).mockResolvedValueOnce({ id: eventId }).mockResolvedValueOnce(null);
         vi.mocked(domineEventsRepository.getById).mockResolvedValueOnce(mockEvent as any);
-        vi.mocked(domineEventsRepository.getDLQCount).mockResolvedValueOnce(1); // not hitting incident limit
+        // Pretend this is the first failure
+        vi.mocked(domineEventsRepository.getDLQCount).mockResolvedValueOnce(0);
 
-        await domineEventBus.processAsync('tenant-123', eventId);
+        await domineEventBus.processAsync('tenant-123');
 
         expect(domineReadRepository.upsertOrder).not.toHaveBeenCalled();
-        expect(domineEventsRepository.sendToDLQ).toHaveBeenCalledWith(eventId, 'PROC_ERR', 'orderId missing from payload constraints');
+        expect(domineEventsRepository.sendToDLQ).toHaveBeenCalledWith(
+            eventId,
+            'PROC_ERR',
+            'orderId missing from payload constraints',
+            expect.any(Date) // Should calculate nextRetryAt
+        );
     });
 });

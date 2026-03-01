@@ -838,6 +838,7 @@ export const domineEvents = mysqlTable('domine_events', {
     errorCode: varchar('error_code', { length: 100 }),
     errorMessage: text('error_message'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    nextRetryAt: timestamp('next_retry_at'),
 }, (table) => ({
     tenantIdempotencyIdx: uniqueIndex('uq_domine_events_tenant_idempotency').on(table.tenantId, table.idempotencyKey),
     tenantStatusIdx: index('idx_domine_events_tenant_status').on(table.tenantId, table.status),

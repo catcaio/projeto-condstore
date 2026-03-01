@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
-import { getDomineOverviewCounts } from './actions';
 import { domineEventsRepository } from '@/infra/repositories/domine-events.repository';
 import { Card, CardContent, CardHeader, Badge } from '@/ui/components';
 import { RunProcessorButton } from './_components/run-processor-button';
+import { AlertCircle } from 'lucide-react';
 
 export const metadata = {
     title: 'Domine Console | Condstore',
@@ -18,7 +18,6 @@ export default async function DomineOverviewPage() {
         redirect('/login');
     }
 
-    // Role Guard: strictly admin for this module
     if (role !== 'admin') {
         return (
             <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -28,12 +27,14 @@ export default async function DomineOverviewPage() {
         );
     }
 
-    const [counts, recentEvents] = await Promise.all([
-        getDomineOverviewCounts(),
+    const [stats, recentEvents] = await Promise.all([
+        domineEventsRepository.getDomineOperationalStats(tenantId),
         domineEventsRepository.listEvents(tenantId, { limit: 20 })
     ]);
 
     const isIncidentMode = process.env.INCIDENT_MODE === 'true';
+    const isBacklogCritical = stats.oldestUnprocessedEventAge > 15 * 60 * 1000; // >15 minutos
+    const oldestBacklogMin = Math.floor(stats.oldestUnprocessedEventAge / 60000);
 
     return (
         <div className="space-y-6">
@@ -52,29 +53,54 @@ export default async function DomineOverviewPage() {
                 </div>
             </div>
 
+            {isBacklogCritical && (
+                <div className="rounded-lg border border-orange-500/30 bg-orange-500/10 p-4 text-orange-600 flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 mt-0.5" />
+                    <div>
+                        <h4 className="font-semibold">Backlog Crítico Detectado</h4>
+                        <p className="text-sm mt-1">
+                            Há eventos na fila esperando processamento há mais de {oldestBacklogMin} minutos.
+                            Geralmente isso indica que o processador parou ou está travado.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <Card variant="elevated">
                     <CardHeader heading="Queued" />
                     <CardContent>
-                        <p className="text-3xl font-semibold">{counts.queued || 0}</p>
+                        <p className="text-3xl font-semibold">{stats.totalQueued}</p>
+                        <p className="text-xs text-[hsl(var(--cockpit-text-muted))] mt-1">
+                            Mais antigo: {oldestBacklogMin} min
+                        </p>
                     </CardContent>
                 </Card>
                 <Card variant="elevated">
-                    <CardHeader heading="Processing" />
+                    <CardHeader heading="Processing Rate" />
                     <CardContent>
-                        <p className="text-3xl font-semibold text-[hsl(var(--ui-accent-blue))]">{counts.processing || 0}</p>
+                        <p className="text-3xl font-semibold text-[hsl(var(--ui-accent-blue))]">{stats.totalProcessedLastHour}</p>
+                        <p className="text-xs text-[hsl(var(--cockpit-text-muted))] mt-1">
+                            Processados na última hora
+                        </p>
                     </CardContent>
                 </Card>
                 <Card variant="elevated">
-                    <CardHeader heading="Processed" />
+                    <CardHeader heading="Active Locks" />
                     <CardContent>
-                        <p className="text-3xl font-semibold text-green-600">{counts.processed || 0}</p>
+                        <p className="text-3xl font-semibold text-[hsl(var(--cockpit-text))]">{stats.totalProcessing}</p>
+                        <p className="text-xs text-[hsl(var(--cockpit-text-muted))] mt-1">
+                            Eventos 'processing'
+                        </p>
                     </CardContent>
                 </Card>
                 <Card variant="elevated">
                     <CardHeader heading="Failed (DLQ)" />
                     <CardContent>
-                        <p className="text-3xl font-semibold text-red-500">{counts.failed || 0}</p>
+                        <p className="text-3xl font-semibold text-red-500">{stats.totalInDLQ}</p>
+                        <p className="text-xs text-red-400 mt-1">
+                            {stats.totalFailedLastHour} falhas recentes
+                        </p>
                     </CardContent>
                 </Card>
             </section>

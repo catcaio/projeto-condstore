@@ -18,45 +18,6 @@ async function getAuthContext() {
     return { tenantId };
 }
 
-export async function getDomineOverviewCounts() {
-    const { tenantId } = await getAuthContext();
-    const requestId = randomUUID();
-    const startTime = Date.now();
-    try {
-        const db = await getDb();
-        const rows = await db
-            .select({
-                status: domineEvents.status,
-                count: count(),
-            })
-            .from(domineEvents)
-            .where(eq(domineEvents.tenantId, tenantId))
-            .groupBy(domineEvents.status);
-
-        const counts = {
-            queued: 0,
-            processing: 0,
-            processed: 0,
-            failed: 0,
-        };
-
-        for (const row of rows) {
-            if (row.status in counts) {
-                counts[row.status as keyof typeof counts] = Number(row.count);
-            }
-        }
-
-        logger.info('Domine Overview Fetched', {
-            requestId, tenantId, action: 'get_overview_counts', duration: Date.now() - startTime, outcome: 'success'
-        });
-        return counts;
-    } catch (e: any) {
-        logger.error('Domine Overview Error', e, {
-            requestId, tenantId, action: 'get_overview_counts', duration: Date.now() - startTime, outcome: 'failure'
-        });
-        throw e;
-    }
-}
 
 export async function runProcessorNow() {
     const { tenantId } = await getAuthContext();
