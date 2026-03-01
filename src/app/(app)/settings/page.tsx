@@ -38,6 +38,18 @@ export default async function Settings(props: { searchParams: Promise<{ [key: st
 
   const isRoot = isSuperAdmin(role);
 
+  if (!basics) {
+    return (
+      <SettingsPage title="Configurações" description="Tenant Inválido">
+        <div className="p-12 text-center">
+          <h2 className="text-2xl font-bold mb-4 text-[hsl(var(--ui-danger-ink))]">Tenant não encontrado</h2>
+          <p className="text-[hsl(var(--ui-text-muted))] mb-6">Não conseguimos localizar o registro operacional deste Tenant no banco de dados.</p>
+          <Link href="/login" className="text-blue-500 hover:underline">Voltar para o Login</Link>
+        </div>
+      </SettingsPage>
+    );
+  }
+
   // Status mappings
   const getStripeBadge = (status: string, enabled: boolean) => {
     if (!enabled) return <Badge variant="muted">Not Configured</Badge>;
@@ -56,12 +68,12 @@ export default async function Settings(props: { searchParams: Promise<{ [key: st
         <SettingsRow
           icon={<Box className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
           label="Tenant ID"
-          value={<span className="font-mono text-xs">{basics?.id}</span>}
+          value={<span className="font-mono text-xs">{basics.id}</span>}
         />
         <SettingsRow
           icon={<Fingerprint className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
           label="Nome do Tenant"
-          value={basics?.name ?? 'Desconhecido'}
+          value={basics.name}
         />
       </SettingsSection>
 

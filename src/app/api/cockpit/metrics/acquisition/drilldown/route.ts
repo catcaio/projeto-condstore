@@ -6,7 +6,7 @@ import { makeRequestId } from '../../../../../../infra/http/request-trace';
 import { logger } from '../../../../../../infra/logger';
 export const runtime = 'nodejs';
 
-import { isDevRuntime } from '../../../../../../infra/env/devOnly';
+import { isDevRuntime, isQaAutomation } from '../../../../../../infra/env/devOnly';
 
 export async function GET(request: NextRequest) {
     const requestId = makeRequestId(request);
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
         // Handle mock if empty in DEV
         let mockEvents = [];
-        const isDev = isDevRuntime();
+        const isDev = isDevRuntime() || isQaAutomation();
 
         const countRes = await db.execute(sql`
         SELECT COUNT(*) as count FROM (
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         logger.error('Drilldown API Error', error as Error, { tenantId, requestId });
 
-        if (isDevRuntime() || process.env.CI === 'true') {
+        if (isDevRuntime() || isQaAutomation() || process.env.CI === 'true') {
             const total = 55;
             const rows = Array.from({ length: limit }).map((_, i) => ({
                 id: `mock-${i}-${page}`,

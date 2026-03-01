@@ -51,6 +51,21 @@ export const MODULES: ModuleConfig[] = [
         ],
     },
     {
+        id: "domine",
+        label: "Domine",
+        group: "Core",
+        icon: Activity,
+        route: "/cockpit/domine",
+        authModule: "cockpit",
+        requiredRoles: ["admin"],
+        navVisible: true,
+        routes: [
+            { pattern: "/cockpit/domine", title: "DOMINE CONSOLE" },
+            { pattern: "/cockpit/domine/dlq", title: "DLQ MANAGER" },
+            { pattern: "/cockpit/domine/health", title: "DOMINE HEALTH" }
+        ],
+    },
+    {
         id: "knowledge",
         label: "Knowledge & AI",
         group: "Core",

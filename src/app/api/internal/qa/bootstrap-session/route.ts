@@ -6,17 +6,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-    const isCI = process.env.CI === 'true';
+    const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
     const isDev = process.env.NODE_ENV !== 'production';
-    const isCIAloowed = isCI || isDev;
+    const hasGithubHeader = request.headers.get('x-github-actions') === 'true';
 
-    const token = request.headers.get('x-internal-token') || request.nextUrl.searchParams.get('token');
+    const token = request.headers.get('x-qa-token') || request.nextUrl.searchParams.get('token');
 
-    // Allow either the CI token or existing dev token
+    // Allow QA_BOOTSTRAP_TOKEN or dev fallback if local
     const validTokens = [
-        process.env.INTERNAL_DIAG_TOKEN?.trim(),
-        process.env.INTERNAL_TOKEN?.trim(),
-        'condstore_dev_bypass_local_991'
+        process.env.QA_BOOTSTRAP_TOKEN?.trim(),
+        isDev ? 'condstore_dev_bypass_local_991' : null
     ].filter(Boolean);
 
     const hasInternalTokenHeader = !!token;
@@ -25,15 +24,16 @@ export async function POST(request: NextRequest) {
     // Logging only specific flags (never the token itself)
     logger.info('[QA Bootstrap Auth Context]', {
         hasInternalTokenHeader,
-        isCI,
+        isGithubActions,
+        hasGithubHeader,
         tokenMatched,
         path: request.nextUrl.pathname
     });
 
-    if (!isCIAloowed) {
+    if (!isDev && (!isGithubActions || !hasGithubHeader)) {
         return NextResponse.json({
             error: "Unauthorized internal access",
-            reason: "not_ci"
+            reason: "not_github_actions"
         }, { status: 401 });
     }
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const forceRole = request.nextUrl.searchParams.get('role') || 'admin';
-        const forceTenant = request.nextUrl.searchParams.get('tenantId') || 'LOJACOND';
+        const forceTenant = request.nextUrl.searchParams.get('tenantId') || 'qa-tenant';
 
         const user = {
             id: 'mock-admin',

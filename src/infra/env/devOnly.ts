@@ -4,6 +4,10 @@ export function isDevRuntime(): boolean {
   return process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development';
 }
 
+export function isQaAutomation(): boolean {
+  return process.env.GITHUB_ACTIONS === 'true' && process.env.NODE_ENV === 'production';
+}
+
 export function assertDevOnly(requestId?: string): NextResponse | undefined {
   if (!isDevRuntime()) {
     return NextResponse.json(

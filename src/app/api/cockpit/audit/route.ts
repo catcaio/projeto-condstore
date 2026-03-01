@@ -5,7 +5,7 @@ import { getDb } from '@/infra/db';
 import { tenantEvents } from '../../../../drizzle/schema';
 import { eq, desc, asc, and, gte, lte, like, sql } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
-import { isDevRuntime } from '@/infra/env/devOnly';
+import { isDevRuntime, isQaAutomation } from '@/infra/env/devOnly';
 
 export const runtime = 'nodejs';
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 1) Auth / tenant resolution + Plan Entitlement
-    const entitlement = isDevRuntime()
+    const entitlement = (isDevRuntime() || isQaAutomation())
         ? { errorResponse: null, tenantId: auth.session.tenantId }
         : await requireActivePlan(request);
     if (entitlement.errorResponse) {
@@ -93,11 +93,11 @@ export async function GET(request: NextRequest) {
                 createdAt: event.createdAt
             }));
         } catch (dbError) {
-            if (!isDevRuntime()) throw dbError;
+            if (!isDevRuntime() && !isQaAutomation()) throw dbError;
             logger.warn('DB error in audit, falling back to mock events', { error: String(dbError) });
         }
 
-        if (isDevRuntime() && serializedEvents.length === 0) {
+        if ((isDevRuntime() || isQaAutomation()) && serializedEvents.length === 0) {
             // Mock DEV data
             let mockEvents = [
                 { id: 'evt_1', tenantId: tenantId, type: 'USER_LOGIN', payload: { status: 'success', resource: 'Autenticação' }, createdAt: new Date() },

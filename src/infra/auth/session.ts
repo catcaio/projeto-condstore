@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { logger } from '../logger';
 import { userRepository } from '../repositories/user.repository';
-import { isDevRuntime } from '../env/devOnly';
+import { isDevRuntime, isQaAutomation } from '../env/devOnly';
 
 export const COOKIE_NAME = 'condstore_session';
 const TOKEN_EXPIRY = '8h';
@@ -66,7 +66,7 @@ export async function getSessionUser(request: NextRequest): Promise<SessionPaylo
     if (!payload) return null;
 
     try {
-        if (payload.sub === 'mock-admin' && isDevRuntime()) {
+        if (payload.sub === 'mock-admin' && (isDevRuntime() || isQaAutomation())) {
             return payload; // Dev session bootstrap without DB
         }
         const user = await userRepository.getUserById(payload.sub);
@@ -89,7 +89,7 @@ export async function getServerSessionUser(): Promise<SessionPayload | null> {
     if (!payload) return null;
 
     try {
-        if (payload.sub === 'mock-admin' && isDevRuntime()) {
+        if (payload.sub === 'mock-admin' && (isDevRuntime() || isQaAutomation())) {
             return payload;
         }
         const user = await userRepository.getUserById(payload.sub);

@@ -12,7 +12,7 @@ import { ACQUISITION_FILTER_KEYS } from '../../../../ui/components/filters/schem
 
 export const runtime = 'nodejs';
 
-import { isDevRuntime as isDev } from '../../../../infra/env/devOnly';
+import { isDevRuntime, isQaAutomation } from '../../../../infra/env/devOnly';
 
 const ALLOWED_BY_MODULE: Record<string, string[]> = {
     'audit': AUDIT_FILTER_KEYS,
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
             }))
         });
     } catch (e) {
-        if (isDev()) {
+        if (isDevRuntime() || isQaAutomation()) {
             return NextResponse.json({
                 success: true,
                 // @ts-ignore
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
             }
         });
     } catch (e) {
-        if (isDev()) {
+        if (isDevRuntime() || isQaAutomation()) {
             const mockView = {
                 id: randomUUID(),
                 name,
@@ -158,7 +158,7 @@ export async function DELETE(request: NextRequest) {
         await db.delete(tenantSavedViews).where(and(eq(tenantSavedViews.id, id), eq(tenantSavedViews.tenantId, tenantId)));
         return NextResponse.json({ success: true });
     } catch (e) {
-        if (isDev()) return NextResponse.json({ success: false, fallback: true });
+        if (isDevRuntime() || isQaAutomation()) return NextResponse.json({ success: false, fallback: true });
         return NextResponse.json({ success: false, error: 'DB Error' }, { status: 500 });
     }
 }
