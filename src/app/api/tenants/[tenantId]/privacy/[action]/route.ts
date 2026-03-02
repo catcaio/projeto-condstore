@@ -5,7 +5,7 @@ import { requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { endUserConsentRepository } from '@/infra/repositories/end-user-consent.repository';
 import { getDb } from '@/infra/db';
-import { messages } from '@/drizzle/schema';
+import { messages, customerAccounts } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string, action: string }> }) {
@@ -22,28 +22,51 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ten
 
     try {
         const body = await req.json();
-        const { phoneHash } = body;
+        const { phoneHash, organizationId } = body;
 
-        if (!phoneHash) {
-            return NextResponse.json({ error: 'Phone hash is required' }, { status: 400 });
+        if (!phoneHash && !organizationId) {
+            return NextResponse.json({ error: 'Phone hash or organizationId is required' }, { status: 400 });
         }
 
         switch (action) {
             case 'revoke':
-                await endUserConsentRepository.revokeConsent(tenantId, phoneHash, 'admin_api', 'Admin forced revocation');
-                return NextResponse.json({ success: true, message: 'Consent revoked' });
+                if (phoneHash) {
+                    await endUserConsentRepository.revokeConsent(tenantId, phoneHash, 'admin_api', 'Admin forced revocation');
+                }
+
+                if (organizationId) {
+                    const db = await getDb();
+                    await db.update(customerAccounts)
+                        .set({ status: 'revoked' })
+                        .where(and(eq(customerAccounts.tenantId, tenantId), eq(customerAccounts.organizationId, organizationId)));
+                }
+
+                return NextResponse.json({ success: true, message: 'Consent/Access revoked' });
 
             case 'purge':
-                // 1. Revoke first to block future ingestion
-                await endUserConsentRepository.revokeConsent(tenantId, phoneHash, 'admin_api', 'Admin hard purge');
-
-                // 2. Erase from SQL / Conversational History
                 const db = await getDb();
-                await db.delete(messages).where(and(eq(messages.tenantId, tenantId), eq(messages.phoneHash, phoneHash)));
+
+                if (phoneHash) {
+                    // 1. Revoke first to block future ingestion
+                    await endUserConsentRepository.revokeConsent(tenantId, phoneHash, 'admin_api', 'Admin hard purge');
+
+                    // 2. Erase from SQL / Conversational History
+                    await db.delete(messages).where(and(eq(messages.tenantId, tenantId), eq(messages.phoneHash, phoneHash)));
+                }
+
+                if (organizationId) {
+                    await db.update(customerAccounts)
+                        .set({ status: 'revoked' })
+                        .where(and(eq(customerAccounts.tenantId, tenantId), eq(customerAccounts.organizationId, organizationId)));
+                }
 
                 return NextResponse.json({ success: true, message: 'Identity purged from knowledge base' });
 
             case 'export':
+                if (!phoneHash) {
+                    return NextResponse.json({ error: 'Export requires phoneHash currently' }, { status: 400 });
+                }
+
                 // For exporting, we'll pull the consent record as a baseline, and returning as a downloadable structure
                 const consent = await endUserConsentRepository.getConsent(tenantId, phoneHash);
                 if (!consent) {
