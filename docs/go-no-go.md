@@ -13,6 +13,8 @@ Este checklist automatizável garante que as validações de integração e pol�
 - [ ] O Guardião Middleware de bloqueio ativou perfeitamente nos patterns `/api/internal/*`.
 - [ ] Rotas sem chave restrita retornam erro `401 Unauthorized` obrigatório.
 - [ ] Exceção de Health API e rotas públicas confirmadas pass-through.
+- [ ] REGRA ARQUITETURAL: Todas as rotas baseadas em `/api/internal/*` exigem o uso do módulo `requireInternalToken()`, seja retornando o buffer seguro via Rate Limit ou trancando a requisição caso não o encontre.
+- [ ] REGRA ARQUITETURAL: Todas as operações Administrativas Cockpit (`/api/cockpit/*`) e suas derivações (`domine/summary`, `connectors`) exigem isoladamente o middleware explícito `requireAdmin()` interceptando qualquer fluxo que exponha dados de multi-tenant agregados.
 
 ### 3) Disjuntor Operacional de Tenant (Kill Switch)
 - [ ] Chave de Kill Switch habilitada por tenant (`outboundEnabled`).

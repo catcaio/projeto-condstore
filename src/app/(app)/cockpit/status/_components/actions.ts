@@ -60,8 +60,6 @@ export async function runGoNoGoChecks(tenantId: string) {
         results.incidentOff = tenant?.incidentMode === false;
     } catch { }
 
-    results.passed = results.internalTokenValid && results.dbOk && results.redisOk && results.secretsVerified && results.incidentOff;
-
     return results;
 }
 
