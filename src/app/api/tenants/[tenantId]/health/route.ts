@@ -82,8 +82,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
             .limit(1);
 
         let oldestEventAgeMs = 0;
+        let processorStalled = false;
         if (oldestPendingResult.length > 0) {
             oldestEventAgeMs = Date.now() - new Date(oldestPendingResult[0].createdAt).getTime();
+            // Consider the processor stalled if an event is pending for more than 15 minutes
+            processorStalled = oldestEventAgeMs > 15 * 60 * 1000;
         }
 
         const blockedResult = await db.select({ totalBlocked: sql<number>`sum(${endUserConsents.blockedAttempts})` })
@@ -91,7 +94,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
             .where(eq(endUserConsents.tenantId, tenantIdFromRoute));
         const totalBlocked = Number(blockedResult[0]?.totalBlocked || 0);
 
+        function calculateSystemHealth(metrics: {
+            incidentMode: boolean;
+            dlqDepth: number;
+            oldestEventAgeMs: number;
+            processorStalled: boolean;
+        }) {
+            if (metrics.incidentMode || metrics.processorStalled) return 'CRITICAL';
+            if (metrics.dlqDepth > 0 || metrics.oldestEventAgeMs > 300000) return 'WARNING';
+            return 'HEALTHY';
+        }
+
+        const systemHealth = calculateSystemHealth({
+            incidentMode: tenant?.incidentMode || false,
+            dlqDepth: dlqCount,
+            oldestEventAgeMs,
+            processorStalled
+        });
+
         return NextResponse.json({
+            systemHealth,
             db: dbOk ? 'ok' : 'fail',
             redis: redisOk ? 'ok' : 'fail',
             rateLimiterFallback: fallbacks,
@@ -101,7 +123,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
             unverifiedSecrets,
             domineMetrics: {
                 dlqDepth: dlqCount,
-                oldestEventAgeMs
+                oldestEventAgeMs,
+                processorStalled
             },
             privacyMetrics: {
                 totalBlocked

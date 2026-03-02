@@ -26,6 +26,7 @@ interface RateLimiterFallback {
 }
 
 interface HealthSummary {
+    systemHealth: 'HEALTHY' | 'WARNING' | 'CRITICAL';
     db: 'ok' | 'fail';
     redis: 'ok' | 'fail';
     rateLimiterFallback: RateLimiterFallback;
@@ -36,6 +37,7 @@ interface HealthSummary {
     domineMetrics: {
         dlqDepth: number;
         oldestEventAgeMs: number;
+        processorStalled: boolean;
     };
     privacyMetrics: {
         totalBlocked: number;
@@ -64,10 +66,17 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
                 setLastUpdated(new Date());
             }
 
-            const eventsRes = await fetch(`/api/tenants/${tenantId}/domine/events?limit=20`);
+            const eventsRes = await fetch(`/api/cockpit/audit?limit=25`);
             if (eventsRes.ok) {
                 const data = await eventsRes.json();
-                setDomineEvents(data.data || []);
+                const relevantTypes = ['PROCESSOR_FAILURE', 'PRIVACY_ACTION', 'INCIDENT_TRIGGERED', 'MANUAL_PURGE', 'TOGGLE_OUTBOUND', 'TOGGLE_INCIDENT'];
+                const filtered = (data.events || []).filter((e: any) =>
+                    relevantTypes.includes(e.type) ||
+                    e.payload?.status === 'failure' ||
+                    e.type.includes('PURGE') ||
+                    e.type.includes('REVOKE')
+                ).slice(0, 5);
+                setDomineEvents(filtered);
             }
         } catch (e) {
             console.error('Failed to load status');
@@ -113,175 +122,208 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Outbound & Kill Switch */}
-                <div className={`p-5 rounded-2xl border transition-colors ${stats.outboundEnabled ? 'bg-zinc-900 border-zinc-800' : 'bg-red-950/30 border-red-900/50'}`}>
-                    <h3 className="text-sm text-zinc-400 font-medium mb-1">Kill Switch (Outbound)</h3>
-                    <div className="flex items-center gap-3">
-                        <div className={`text-2xl font-bold ${stats.outboundEnabled ? 'text-zinc-100' : 'text-red-500'}`}>
-                            {stats.outboundEnabled ? 'ONLINE' : 'LOCKED'}
-                        </div>
-                        <button
-                            disabled={isPending}
-                            onClick={() => startTransition(async () => {
-                                await toggleOutbound(tenantId, stats.outboundEnabled);
-                                fetchStatus();
-                            })}
-                            className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white disabled:opacity-50"
-                        >
-                            Toggle
-                        </button>
-                    </div>
-                    {stats.outboundEnabled ? (
-                        <p className="text-xs text-zinc-500 mt-2">Tráfego externo habilitado.</p>
-                    ) : (
-                        <p className="text-xs text-red-400 mt-2">Todas chamadas externas suspensas.</p>
-                    )}
-                </div>
+            {/* [ DECISION CENTER / ALERT INTELLIGENCE ] */}
+            {(() => {
+                const health = stats.systemHealth || 'HEALTHY';
 
-                {/* Incident Mode */}
-                <div className={`p-5 rounded-2xl border transition-colors ${stats.incidentMode ? 'bg-amber-950/30 border-amber-900/50' : 'bg-zinc-900 border-zinc-800'}`}>
-                    <h3 className="text-sm text-zinc-400 font-medium mb-1">Incident Mode</h3>
-                    <div className="flex items-center gap-3">
-                        <div className={`text-2xl font-bold ${stats.incidentMode ? 'text-amber-500' : 'text-zinc-400'}`}>
-                            {stats.incidentMode ? 'ATIVO' : 'IDLE'}
-                        </div>
-                        <button
-                            disabled={isPending}
-                            onClick={() => startTransition(async () => {
-                                await toggleIncidentMode(tenantId, stats.incidentMode);
-                                fetchStatus();
-                            })}
-                            className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white disabled:opacity-50"
-                        >
-                            Toggle
-                        </button>
-                    </div>
-                    {stats.incidentMode && (
-                        <p className="text-xs text-amber-400 mt-2">Modo passivo forçando bypass de inbound.</p>
-                    )}
-                </div>
+                const alerts = [];
+                if (health === 'CRITICAL' || stats.incidentMode) {
+                    alerts.push({
+                        id: 'critical-incident',
+                        message: 'Critical Failure detected. Immediate investigation required.',
+                        actionLabel: 'Investigate Now',
+                        actionFn: () => { /* Future link to incident dashboard */ }
+                    });
+                }
 
-                {/* Circuit Breakers */}
-                <div className="p-5 rounded-2xl border bg-zinc-900 border-zinc-800">
-                    <h3 className="text-sm text-zinc-400 font-medium mb-1">Circuit Breakers Abertos</h3>
-                    <div className="flex flex-col gap-1 mt-2">
-                        {stats.circuitBreakers.length === 0 ? (
-                            <div className="text-sm font-semibold text-emerald-400">Todos os circuitos fechados</div>
-                        ) : (
-                            stats.circuitBreakers.map((cb, idx) => (
-                                <div key={idx} className="text-sm font-medium text-red-400 flex justify-between">
-                                    <span>{cb.provider}</span>
-                                    <span>{cb.failures} falhas</span>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
+                if (stats.domineMetrics.processorStalled) {
+                    alerts.push({
+                        id: 'processor-stalled',
+                        message: 'Event processor appears to be stalled.',
+                        actionLabel: 'Run Processor',
+                        actionFn: () => runProcessorNow(tenantId)
+                    });
+                } else if (stats.domineMetrics.oldestEventAgeMs > 600000) { // 10 min
+                    alerts.push({
+                        id: 'queue-delayed',
+                        message: 'Events are queueing up beyond acceptable SLA.',
+                        actionLabel: 'Run Processor',
+                        actionFn: () => runProcessorNow(tenantId)
+                    });
+                }
 
-                {/* Databases */}
-                <div className="p-5 rounded-2xl border bg-zinc-900 border-zinc-800">
-                    <h3 className="text-sm text-zinc-400 font-medium mb-1">Database / Redis Ping</h3>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                        <div className="flex flex-col">
-                            <span className="text-xs text-zinc-500 uppercase">Principal</span>
-                            <span className={`text-sm font-bold ${stats.db === 'ok' ? 'text-emerald-400' : 'text-red-500'}`}>{stats.db === 'ok' ? 'OK' : 'FAIL'}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs text-zinc-500 uppercase">Cache (Redis)</span>
-                            <span className={`text-sm font-bold ${stats.redis === 'ok' ? 'text-emerald-400' : 'text-amber-500'}`}>{stats.redis === 'ok' ? 'OK' : 'FAIL'}</span>
-                        </div>
-                    </div>
-                </div>
+                if (stats.domineMetrics.dlqDepth > 5) {
+                    alerts.push({
+                        id: 'high-dlq',
+                        message: 'High volume of failed events in Dead Letter Queue.',
+                        actionLabel: 'Review Queue',
+                        actionHref: '/cockpit/domine/dlq'
+                    });
+                }
 
-                {/* Rate Limiter Fail-open */}
-                <div className={`p-5 rounded-2xl border ${stats.rateLimiterFallback.count > 0 ? 'bg-zinc-900 border-amber-900/50' : 'bg-zinc-900 border-zinc-800'}`}>
-                    <h3 className="text-sm text-zinc-400 font-medium mb-1">Rate Limiter Fallback</h3>
-                    <div className="mt-2 text-sm text-zinc-300">
-                        {stats.rateLimiterFallback.count === 0 ? (
-                            <span className="text-emerald-400 font-semibold">Saudável</span>
-                        ) : (
-                            <div className="flex flex-col">
-                                <span className="font-semibold text-amber-500">Ativado ({stats.rateLimiterFallback.count} hits)</span>
-                                {stats.rateLimiterFallback.lastSeenAt && (
-                                    <span className="text-xs text-zinc-500">Último disparo: {new Date(stats.rateLimiterFallback.lastSeenAt).toLocaleTimeString()}</span>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Secrets Governance */}
-                <div className={`p-5 rounded-2xl border ${stats.unverifiedSecrets.length > 0 ? 'bg-amber-950/20 border-amber-900/50' : 'bg-zinc-900 border-zinc-800'}`}>
-                    <h3 className="text-sm text-zinc-400 font-medium mb-1">Segredos Pendentes de Teste</h3>
-                    <div className="mt-2 text-sm text-zinc-300">
-                        {stats.unverifiedSecrets.length === 0 ? (
-                            <span className="text-emerald-400 font-semibold">Tudo verificado</span>
-                        ) : (
-                            <div className="flex flex-col">
-                                <span className="font-semibold text-amber-500">{stats.unverifiedSecrets.length} escopos rotacionados e não verificados</span>
-                                <div className="flex gap-2 text-xs mt-1 text-amber-500/80">
-                                    {stats.unverifiedSecrets.map(s => <span key={s}>[{s}]</span>)}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="p-5 rounded-2xl border bg-zinc-900 border-zinc-800 md:col-span-2 xl:col-span-3">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 className="text-sm text-zinc-400 font-medium">Domine Event Spine (Latest Events & Health)</h3>
-                            <div className="flex gap-4 mt-2">
-                                <div className="text-xs text-zinc-500">
-                                    Queue Delay: {stats.domineMetrics.oldestEventAgeMs > 0
-                                        ? <span className={stats.domineMetrics.oldestEventAgeMs > 60000 ? 'text-amber-500 font-bold' : 'text-emerald-400'}>{Math.floor(stats.domineMetrics.oldestEventAgeMs / 1000)}s</span>
-                                        : <span className="text-emerald-400 font-medium">Real-time (0s)</span>}
-                                </div>
-                                <div className="text-xs text-zinc-500">
-                                    Global DLQ: {stats.domineMetrics.dlqDepth > 0
-                                        ? <span className="text-red-500 font-bold">{stats.domineMetrics.dlqDepth} rotas falhas</span>
-                                        : <span className="text-emerald-400 font-medium">Zero Drop</span>}
-                                </div>
-                                <div className="text-xs text-zinc-500">
-                                    Privacy Guards: {stats.privacyMetrics.totalBlocked > 0
-                                        ? <span className="text-amber-500 font-bold">{stats.privacyMetrics.totalBlocked} blocks ativos</span>
-                                        : <span className="text-zinc-400 font-medium">Nenhum</span>}
-                                </div>
+                if (alerts.length === 0) {
+                    return (
+                        <div className="p-8 rounded-2xl border bg-emerald-950/20 border-emerald-900/50 flex flex-col items-center justify-center gap-2 text-emerald-400">
+                            <h2 className="text-sm font-bold uppercase tracking-widest opacity-80">System Health</h2>
+                            <div className="flex items-center gap-3">
+                                <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                                <div className="text-2xl font-black tracking-tight">System Stable</div>
                             </div>
                         </div>
-                    </div>
-                    {domineEvents.length === 0 ? (
-                        <div className="text-sm text-zinc-500 mt-2">Nenhum evento registrado ainda.</div>
-                    ) : (
-                        <div className="mt-2 text-sm text-zinc-300 max-h-48 overflow-y-auto">
-                            <table className="w-full text-left font-mono text-xs">
-                                <thead>
-                                    <tr className="text-zinc-500">
-                                        <th className="pb-2 font-medium">Time (UTC)</th>
-                                        <th className="pb-2 font-medium">Type</th>
-                                        <th className="pb-2 font-medium">Source</th>
-                                        <th className="pb-2 font-medium text-right">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {domineEvents.map(e => (
-                                        <tr key={e.id} className="border-t border-zinc-800/50">
-                                            <td className="py-2 text-zinc-400">{new Date(e.createdAt).toLocaleString()}</td>
-                                            <td className="py-2 break-all">{e.type}</td>
-                                            <td className="py-2 text-zinc-500">{e.source}</td>
-                                            <td className="py-2 text-right">
-                                                <span className={`px-2 py-0.5 rounded ${e.status === 'processed' ? 'text-emerald-400' : e.status === 'failed' ? 'bg-red-950/50 text-red-500 border border-red-900/50' : 'text-amber-500'}`}>
-                                                    {e.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                    );
+                }
+
+                return (
+                    <div className="rounded-2xl border bg-zinc-900 border-red-900/50 overflow-hidden">
+                        <div className="bg-red-950/40 px-5 py-3 border-b border-red-900/50 flex items-center gap-3">
+                            <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-red-400">Attention Required</h2>
                         </div>
-                    )}
+                        <div className="divide-y divide-zinc-800">
+                            {alerts.map((alert) => (
+                                <div key={alert.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-1">
+                                            <span className="text-lg">⚠️</span>
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-zinc-200">{alert.message}</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        {alert.actionHref ? (
+                                            <Link href={alert.actionHref} className="whitespace-nowrap px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition inline-block">
+                                                {alert.actionLabel}
+                                            </Link>
+                                        ) : (
+                                            <button
+                                                disabled={isPending}
+                                                onClick={() => {
+                                                    startTransition(async () => {
+                                                        if (alert.actionFn) {
+                                                            await alert.actionFn();
+                                                            fetchStatus();
+                                                        }
+                                                    });
+                                                }}
+                                                className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-lg transition disabled:opacity-50 ${health === 'CRITICAL' ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-zinc-800 hover:bg-zinc-700 text-white'}`}
+                                            >
+                                                {alert.actionLabel}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })()}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* [ INCIDENT + OUTBOUND + PROCESSOR ] */}
+                <div className="p-5 rounded-2xl border bg-zinc-900 border-zinc-800 space-y-4">
+                    <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">System Triggers</h3>
+
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm text-zinc-400 font-medium">Incident Mode</span>
+                        <div className="flex items-center gap-3">
+                            <span className={`text-sm font-bold ${stats.incidentMode ? 'text-red-500 bg-red-950/50 px-2 py-0.5 rounded' : 'text-zinc-500'}`}>
+                                {stats.incidentMode ? 'ACTIVE' : 'IDLE'}
+                            </span>
+                            <button
+                                disabled={isPending}
+                                onClick={() => startTransition(async () => {
+                                    await toggleIncidentMode(tenantId, stats.incidentMode);
+                                    fetchStatus();
+                                })}
+                                className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white disabled:opacity-50"
+                            >
+                                Toggle
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm text-zinc-400 font-medium">Outbound Traffic</span>
+                        <div className="flex items-center gap-3">
+                            <span className={`text-sm font-bold ${stats.outboundEnabled ? 'text-emerald-400' : 'text-red-500 bg-red-950/50 px-2 py-0.5 rounded'}`}>
+                                {stats.outboundEnabled ? 'ENABLED' : 'DISABLED'}
+                            </span>
+                            <button
+                                disabled={isPending}
+                                onClick={() => startTransition(async () => {
+                                    await toggleOutbound(tenantId, stats.outboundEnabled);
+                                    fetchStatus();
+                                })}
+                                className="text-xs px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-white disabled:opacity-50"
+                            >
+                                Toggle
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm text-zinc-400 font-medium">Processor</span>
+                        <div className="flex items-center gap-3">
+                            <span className={`text-sm font-bold ${stats.domineMetrics.processorStalled ? 'text-red-500 bg-red-950/50 px-2 py-0.5 rounded' : 'text-emerald-400'}`}>
+                                {stats.domineMetrics.processorStalled ? 'STALLED' : 'RUNNING'}
+                            </span>
+                        </div>
+                    </div>
                 </div>
+
+                {/* [ DLQ + EVENT AGE + LGPD BLOCKS ] */}
+                <div className="p-5 rounded-2xl border bg-zinc-900 border-zinc-800 space-y-4 flex flex-col justify-between">
+                    <div>
+                        <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">Telemetry</h3>
+
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-sm text-zinc-400 font-medium">DLQ Depth</span>
+                            <span className={`text-lg font-black ${stats.domineMetrics.dlqDepth > 0 ? 'text-red-500' : 'text-emerald-400'}`}>
+                                {stats.domineMetrics.dlqDepth}
+                            </span>
+                        </div>
+
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-sm text-zinc-400 font-medium">Oldest Pending Event</span>
+                            <span className={`text-lg font-black ${stats.domineMetrics.oldestEventAgeMs > 300000 ? 'text-amber-500' : 'text-emerald-400'}`}>
+                                {stats.domineMetrics.oldestEventAgeMs > 0 ? `${Math.floor(stats.domineMetrics.oldestEventAgeMs / 60000)}m` : '0m'}
+                            </span>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-zinc-400 font-medium">LGPD Blocked Attempts (24h)</span>
+                            <span className={`text-lg font-black ${stats.privacyMetrics.totalBlocked > 0 ? 'text-amber-500' : 'text-zinc-500'}`}>
+                                {stats.privacyMetrics.totalBlocked}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* [ Últimos 5 eventos relevantes ] */}
+            <div className="p-5 rounded-2xl border bg-zinc-900 border-zinc-800">
+                <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">Últimos Eventos Relevantes</h3>
+                {domineEvents.length === 0 ? (
+                    <div className="text-sm text-zinc-500 py-4 text-center">Sistema operando normalmente. Nenhum evento crítico recente.</div>
+                ) : (
+                    <div className="space-y-2">
+                        {domineEvents.map((evt: any) => (
+                            <div key={evt.id} className="p-3 bg-black/40 border border-zinc-800/80 rounded flex justify-between items-center">
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs font-mono text-zinc-400">{new Date(evt.createdAt).toLocaleString()}</span>
+                                    <span className="text-sm font-bold text-zinc-200">{evt.type}</span>
+                                    {evt.payload?.resource && <span className="text-xs text-zinc-500">{evt.payload.resource}</span>}
+                                </div>
+                                <div>
+                                    <span className={`px-2 py-1 text-xs font-bold rounded ${evt.payload?.status === 'failure' || evt.type.includes('FAILURE') ? 'bg-red-950/40 text-red-500 border border-red-900/50' : 'bg-amber-950/40 text-amber-500 border border-amber-900/50'}`}>
+                                        {evt.payload?.status || 'TRIGGERED'}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Quick Links */}

@@ -6,19 +6,39 @@ import { hashPassword } from '@/infra/auth/password';
 import { sql, eq } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 
+import { getInternalExportTokenOrThrow } from '@/infra/config/internal-token';
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-    if (process.env.IS_DEV !== 'true') {
-        return NextResponse.json({ success: false, error: 'Forbidden in production' }, { status: 403 });
-    }
-
     try {
-        const token = request.headers.get('x-seed-token');
+        if (process.env.IS_DEV !== 'true') {
+            const allowed = process.env.ALLOW_SEED_ADMIN === 'true';
+            if (!allowed) {
+                logger.warn('seed_admin.blocked', { reason: 'ALLOW_SEED_ADMIN not true in non-dev env' });
+                return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+            }
 
-        if (!token || token !== process.env.SEED_TOKEN) {
-            return NextResponse.json({ success: false, error: 'Unauthorized: missing or invalid seed token' }, { status: 401 });
+            const token = request.headers.get('x-internal-token') || request.nextUrl.searchParams.get('internal_token');
+            let expectedInternalToken;
+            try {
+                expectedInternalToken = getInternalExportTokenOrThrow();
+            } catch {
+                return NextResponse.json({ success: false, error: 'Internal token not configured completely' }, { status: 403 });
+            }
+
+            if (!token || token !== expectedInternalToken) {
+                logger.warn('seed_admin.blocked', { reason: 'Invalid or missing internal token' });
+                return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+            }
+        } else {
+            // In Development: Use SEED_TOKEN checking (header or query)
+            const token = request.headers.get('x-seed-token') || request.nextUrl.searchParams.get('seed_token');
+            if (!token || token !== process.env.SEED_TOKEN) {
+                logger.warn('seed_admin.blocked', { reason: 'Invalid or missing dev seed token' });
+                return NextResponse.json({ success: false, error: 'Unauthorized: missing or invalid seed token' }, { status: 401 });
+            }
         }
 
         const dbUrl = process.env.DATABASE_URL;
