@@ -6,6 +6,7 @@ import { sql } from 'drizzle-orm';
 export const tenants = mysqlTable('tenants', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     name: varchar('name', { length: 255 }).notNull(),
+    slug: varchar('slug', { length: 255 }).unique(),
     twilioNumber: varchar('twilio_number', { length: 30 }).notNull().unique(),
     timezone: varchar('timezone', { length: 64 }).notNull().default('America/Sao_Paulo'),
     stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),

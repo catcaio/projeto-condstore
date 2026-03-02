@@ -189,6 +189,67 @@ export class TenantRepository {
     }
 
     /**
+     * Helper: Normalize Slug (Centralized logic)
+     * Enforces lowercase and removes spaces.
+     */
+    private normalizeSlug(input: string): string {
+        if (!input) return '';
+        return input.trim().toLowerCase().replace(/\s+/g, '-');
+    }
+
+    /**
+     * Resolve tenant by Slug with strict logging and normalization.
+     */
+    async resolveTenantBySlug(rawSlug: string): Promise<TenantRecord> {
+        const correlationId = `SLUG-${Date.now().toString(36)}`;
+
+        // 1. Normalization
+        const normalizedSlug = this.normalizeSlug(rawSlug);
+
+        // 2. Cache Lookup (Reusing existing memory strategy, keyed by explicit prefix)
+        const cacheKey = `slug:${normalizedSlug}`;
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+            logger.info(`[${correlationId}] Tenant resolved from CACHE via Slug`, { tenantId: cached.id });
+            return cached;
+        }
+
+        // 3. Database Lookup
+        try {
+            const db = await getDb();
+
+            const results = await db
+                .select()
+                .from(tenants)
+                .where(eq(tenants.slug, normalizedSlug))
+                .limit(1);
+
+            if (results.length === 0) {
+                throw new BusinessError(
+                    ErrorCode.TENANT_NOT_FOUND,
+                    `Tenant not found for slug: ${normalizedSlug}`
+                );
+            }
+
+            const tenant = results[0];
+
+            // 4. Cache Update
+            this.cache.set(cacheKey, tenant);
+
+            return tenant;
+
+        } catch (error) {
+            if (error instanceof BusinessError) throw error;
+
+            logger.error(`[${correlationId}] Database error during tenant slug resolution`, error as Error);
+            throw new InfrastructureError(
+                ErrorCode.INTERNAL_ERROR,
+                'Failed to resolve tenant due to database error'
+            );
+        }
+    }
+
+    /**
      * Get tenant by ID.
      */
     async getTenantById(tenantId: string): Promise<TenantRecord | null> {
