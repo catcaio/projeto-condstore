@@ -7,34 +7,61 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
     const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
-    const isDev = process.env.NODE_ENV !== 'production';
+    const isCI = isGithubActions || process.env.CI === 'true';
     const hasGithubHeader = request.headers.get('x-github-actions') === 'true';
 
     const token = request.headers.get('x-qa-token') || request.nextUrl.searchParams.get('token');
-
-    const hasInternalTokenHeader = !!token;
+    const hasTokenHeader = !!token;
     const isProdEnvironment = process.env.VERCEL_ENV === 'production';
 
     // 1. In real production, unequivocally block this route.
     if (isProdEnvironment) {
-        logger.warn('[QA Bootstrap] BLOCKED: Attempted to run QA route in production environment', { path: request.nextUrl.pathname });
-        return NextResponse.json({ error: "Unauthorized internal access", reason: "production_blocked" }, { status: 403 });
-    }
-
-    // 2. We must have a properly configured server token
-    const serverQaToken = process.env.QA_BOOTSTRAP_TOKEN?.trim();
-    if (!serverQaToken) {
-        logger.warn('[QA Bootstrap] BLOCKED: Server missing QA_BOOTSTRAP_TOKEN', { path: request.nextUrl.pathname });
-        return NextResponse.json({ error: "Unauthorized internal access", reason: "server_misconfigured" }, { status: 401 });
-    }
-
-    // 3. The token provided in request must match exactly. We don't fall back to bypass strings anymore.
-    if (!hasInternalTokenHeader || token !== serverQaToken) {
-        logger.warn('[QA Bootstrap Auth Context] BLOCKED', {
-            reason: "bad_token",
-            path: request.nextUrl.pathname
+        logger.warn('[QA Bootstrap] BLOCKED: production_blocked', {
+            path: request.nextUrl.pathname,
+            method: request.method,
+            isCI,
+            hasTokenHeader,
+            isGithubActions,
         });
-        return NextResponse.json({ error: "Unauthorized internal access", reason: "bad_token" }, { status: 401 });
+        return NextResponse.json({ error: "Unauthorized internal access", code: "production_blocked" }, { status: 403 });
+    }
+
+    // 2. Resolve expected server token — QA_BOOTSTRAP_TOKEN preferred; INTERNAL_TOKEN as CI fallback.
+    const serverQaToken = process.env.QA_BOOTSTRAP_TOKEN?.trim()
+        || (isCI ? process.env.INTERNAL_TOKEN?.trim() : undefined);
+
+    if (!serverQaToken) {
+        logger.warn('[QA Bootstrap] BLOCKED: server_misconfigured', {
+            path: request.nextUrl.pathname,
+            method: request.method,
+            isCI,
+            hasTokenHeader,
+            hasQaBootstrapToken: !!process.env.QA_BOOTSTRAP_TOKEN,
+            hasInternalToken: !!process.env.INTERNAL_TOKEN,
+        });
+        return NextResponse.json({ error: "Unauthorized internal access", code: "server_misconfigured" }, { status: 401 });
+    }
+
+    // 3. Verify token — constant-time boolean, never log the value.
+    const tokenMatched = hasTokenHeader && token === serverQaToken;
+
+    logger.info('[QA Bootstrap] Auth context', {
+        path: request.nextUrl.pathname,
+        method: request.method,
+        isCI,
+        isGithubActions,
+        hasGithubHeader,
+        hasTokenHeader,
+        tokenMatched,
+    });
+
+    if (!tokenMatched) {
+        logger.warn('[QA Bootstrap] BLOCKED: bad_token', {
+            path: request.nextUrl.pathname,
+            hasTokenHeader,
+            tokenMatched,
+        });
+        return NextResponse.json({ error: "Unauthorized internal access", code: "bad_token" }, { status: 401 });
     }
 
     try {
@@ -72,6 +99,18 @@ export async function POST(request: NextRequest) {
             path: '/',
             maxAge: 8 * 60 * 60, // 8 hours
         });
+
+        // Safety assert: ensure Set-Cookie was actually emitted
+        if (!response.headers.get('set-cookie')) {
+            logger.error('QA Bootstrap: Set-Cookie not present after cookie.set()', undefined, {
+                cookieName: COOKIE_NAME,
+                role: user.role,
+                tenantId: user.tenantId,
+            });
+            return NextResponse.json({ error: 'Session cookie could not be set', code: 'bootstrap_cookie_missing' }, { status: 500 });
+        }
+
+        logger.info('QA session bootstrapped OK', { email: user.email, role: user.role, tenantId: user.tenantId });
 
         return response;
 

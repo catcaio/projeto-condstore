@@ -41,6 +41,9 @@ jobs:
           INTERNAL_TOKEN: fake_workflow_token_99
           DATABASE_URL: mysql://root:root@localhost:3306/condstore_dev
           AUTH_SECRET: dev-secret-ci
+          QA_BOOTSTRAP_TOKEN: ci-qa-bootstrap-token-99
+          GITHUB_ACTIONS: "true"
+          CI: "true"
         run: |
           npm run start -- -p 3002 &
           echo "Waiting for Next.js to start..."
