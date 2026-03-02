@@ -903,3 +903,105 @@ export type EndUserConsentRecord = typeof endUserConsents.$inferSelect;
 export type NewEndUserConsentRecord = typeof endUserConsents.$inferInsert;
 export type UserConsentsLogRecord = typeof userConsentsLog.$inferSelect;
 export type NewUserConsentsLogRecord = typeof userConsentsLog.$inferInsert;
+
+// --- Central do Comprador (Customer Central Foundation) ---
+
+export const organizations = mysqlTable('organizations', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    legalName: varchar('legal_name', { length: 255 }).notNull(),
+    tradeName: varchar('trade_name', { length: 255 }),
+    cnpjHash: varchar('cnpj_hash', { length: 64 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('active'),
+    purgeAt: timestamp('purge_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantIdIndex: index('idx_organizations_tenant_id').on(table.tenantId),
+    cnpjHashIndex: index('idx_organizations_cnpj_hash').on(table.cnpjHash),
+}));
+
+export const sites = mysqlTable('sites', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    organizationId: varchar('organization_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    addressRedacted: text('address_redacted'),
+    purgeAt: timestamp('purge_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    orgIndex: index('idx_sites_organization_id').on(table.organizationId),
+}));
+
+export const customerAccounts = mysqlTable('customer_accounts', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    userId: varchar('user_id', { length: 36 }).notNull(),
+    organizationId: varchar('organization_id', { length: 36 }).notNull(),
+    role: varchar('role', { length: 50 }).notNull(), // OWNER | MANAGER | EMPLOYEE
+    status: varchar('status', { length: 50 }).notNull().default('active'),
+    purgeAt: timestamp('purge_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    userIndex: index('idx_customer_accounts_user_id').on(table.userId),
+    orgIndex: index('idx_customer_accounts_organization_id').on(table.organizationId),
+}));
+
+export const customerTimelineEvents = mysqlTable('customer_timeline_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    organizationId: varchar('organization_id', { length: 36 }).notNull(),
+    entityType: varchar('entity_type', { length: 50 }).notNull(), // QUOTE | ORDER | SHIPMENT | INVOICE | SUPPORT
+    entityId: varchar('entity_id', { length: 128 }).notNull(),
+    status: varchar('status', { length: 100 }).notNull(),
+    messagePublic: text('message_public').notNull(),
+    metadataJson: json('metadata_json'),
+    purgeAt: timestamp('purge_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantOrgCreatedIdx: index('idx_customer_timeline_tenant_org_created').on(table.tenantId, table.organizationId, table.createdAt),
+    entityIdx: index('idx_customer_timeline_entity').on(table.entityType, table.entityId),
+}));
+
+export const deliveryProofs = mysqlTable('delivery_proofs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    organizationId: varchar('organization_id', { length: 36 }).notNull(),
+    shipmentId: varchar('shipment_id', { length: 128 }).notNull(),
+    photoUrl: text('photo_url'),
+    receiverName: varchar('receiver_name', { length: 255 }),
+    signedAt: timestamp('signed_at'),
+    geoHash: varchar('geo_hash', { length: 64 }),
+    metadataJson: json('metadata_json'),
+    purgeAt: timestamp('purge_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    shipmentIdx: index('idx_delivery_proofs_shipment_id').on(table.shipmentId),
+}));
+
+export const invoices = mysqlTable('invoices', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    organizationId: varchar('organization_id', { length: 36 }).notNull(),
+    orderId: varchar('order_id', { length: 128 }),
+    amountCents: int('amount_cents').notNull(),
+    dueDate: timestamp('due_date').notNull(),
+    status: varchar('status', { length: 50 }).notNull(),
+    boletoUrl: text('boleto_url'),
+    purgeAt: timestamp('purge_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    orgIdx: index('idx_invoices_organization_id').on(table.organizationId),
+}));
+
+export type OrganizationRecord = typeof organizations.$inferSelect;
+export type NewOrganizationRecord = typeof organizations.$inferInsert;
+export type SiteRecord = typeof sites.$inferSelect;
+export type NewSiteRecord = typeof sites.$inferInsert;
+export type CustomerAccountRecord = typeof customerAccounts.$inferSelect;
+export type NewCustomerAccountRecord = typeof customerAccounts.$inferInsert;
+export type CustomerTimelineEventRecord = typeof customerTimelineEvents.$inferSelect;
+export type NewCustomerTimelineEventRecord = typeof customerTimelineEvents.$inferInsert;
+export type DeliveryProofRecord = typeof deliveryProofs.$inferSelect;
+export type NewDeliveryProofRecord = typeof deliveryProofs.$inferInsert;
+export type InvoiceRecord = typeof invoices.$inferSelect;
+export type NewInvoiceRecord = typeof invoices.$inferInsert;

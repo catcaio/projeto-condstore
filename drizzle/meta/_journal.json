@@ -190,6 +190,13 @@
       "when": 1772402813937,
       "tag": "0038_tranquil_dagger",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "5",
+      "when": 1772423114389,
+      "tag": "0039_light_shadow_king",
+      "breakpoints": true
     }
   ]
 }
