@@ -21,8 +21,8 @@ class RedisService {
       try {
         this.redisInstance = new Redis(process.env.REDIS_URL, {
           lazyConnect: true,
-          connectTimeout: 5000,
-          maxRetriesPerRequest: 1
+          connectTimeout: 1000,
+          maxRetriesPerRequest: 0
         });
         this.redisInstance.on('error', (err: Error) => {
           logger.error('Redis connection error', err);

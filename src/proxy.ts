@@ -9,18 +9,7 @@ type MiddlewareRole = (typeof ALLOWED_ROLES)[number];
 
 export const config = {
   matcher: [
-    '/cockpit/:path*',
-    '/home/:path*',
-    '/inbox/:path*',
-    '/freight/simulations/:path*',
-    '/attribution/:path*',
-    '/settings/:path*',
-    '/api/cockpit/:path*',
-    '/api/webhook',
-    '/api/events',
-    '/api/tenants/:tenantId/ai-provider/:path*',
-    '/api/tenants/:tenantId/settings/:path*',
-    '/api/internal/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|assets|login|api/auth).*)',
   ],
 };
 

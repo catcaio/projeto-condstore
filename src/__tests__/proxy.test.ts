@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { proxy } from "../proxy";
+import { proxy, config } from "../proxy";
 import * as jose from "jose";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 vi.mock("jose", () => ({
     jwtVerify: vi.fn()
 }));
+
+describe("Proxy Config (Matcher)", () => {
+    it("should explicity bypass NextJS static assets and auth paths", () => {
+        const regexStr = config.matcher[0].replace('^', '').replace('$', '');
+        const regex = new RegExp(`^${regexStr}$`);
+
+        expect(regex.test('/cockpit/dashboard')).toBe(true);
+        expect(regex.test('/api/cockpit/summary')).toBe(true);
+        expect(regex.test('/api/internal/dlq')).toBe(true);
+
+        expect(regex.test('/api/auth/login')).toBe(false);
+        expect(regex.test('/login')).toBe(false);
+        expect(regex.test('/_next/static/js/main.js')).toBe(false);
+    });
+});
 
 describe("Proxy Edge Middleware", () => {
     beforeEach(() => {
