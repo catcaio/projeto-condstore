@@ -16,6 +16,10 @@ function parseEnabledTenants(): string[] {
 }
 
 function parseConfig() {
+  const isDefaultEnabled = String(process.env.RAG_ENABLED_DEFAULT || 'false').toLowerCase() === 'true';
+  const hasTenants = parseEnabledTenants().length > 0;
+  const isKeyPresent = !!process.env.OPENAI_API_KEY;
+
   return {
     RAG_ENABLED_DEFAULT: String(process.env.RAG_ENABLED_DEFAULT || 'false'),
     RAG_ENABLED_TENANTS: parseEnabledTenants(),
@@ -26,6 +30,8 @@ function parseConfig() {
     RAG_MIN_AVG_SCORE: Number.parseFloat(process.env.RAG_MIN_AVG_SCORE || '0.78') || 0.78,
     RAG_MAX_CONTEXT_CHARS: Number.parseInt(process.env.RAG_MAX_CONTEXT_CHARS || '1500', 10) || 1500,
     qdrantCollection: getQdrantCollectionName(),
+    OPENAI_API_KEY_PRESENT: isKeyPresent,
+    EMBEDDINGS_PROVIDER_CONFIGURED: isKeyPresent && (isDefaultEnabled || hasTenants),
   };
 }
 

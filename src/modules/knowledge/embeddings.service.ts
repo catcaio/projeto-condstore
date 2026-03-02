@@ -1,15 +1,26 @@
 import { getDb } from '../../infra/db';
 import { tenantDocumentChunks } from '../../drizzle/schema';
 import { OpenAIEmbeddingProvider } from './embeddings/openai.provider';
+import { DisabledEmbeddingProvider } from './embeddings/disabled.provider';
 import { EmbeddingProvider } from './embeddings/provider';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '../../infra/logger';
+
+function isRagEnabledByEnv(): boolean {
+    const isDefaultEnabled = String(process.env.RAG_ENABLED_DEFAULT || 'false').toLowerCase() === 'true';
+    const hasTenantsEnabled = String(process.env.RAG_ENABLED_TENANTS || '').trim().length > 0;
+    return isDefaultEnabled || hasTenantsEnabled;
+}
 
 export class EmbeddingsService {
     private provider: EmbeddingProvider;
 
     constructor() {
-        this.provider = new OpenAIEmbeddingProvider();
+        if (isRagEnabledByEnv() && process.env.OPENAI_API_KEY) {
+            this.provider = new OpenAIEmbeddingProvider();
+        } else {
+            this.provider = new DisabledEmbeddingProvider();
+        }
     }
 
     async generateAndStoreEmbeddings(versionId: string, tenantId: string) {
@@ -59,6 +70,17 @@ export class EmbeddingsService {
 
         logger.info('Embeddings generated and stored successfully', { versionId, tenantId, chunksCount: chunks.length });
     }
+
+    async embedBatch(texts: string[]): Promise<number[][]> {
+        return this.provider.embedBatch(texts);
+    }
 }
 
-export const embeddingsService = new EmbeddingsService();
+let embeddingsServiceSingleton: EmbeddingsService | null = null;
+
+export function getEmbeddingsService(): EmbeddingsService {
+    if (!embeddingsServiceSingleton) {
+        embeddingsServiceSingleton = new EmbeddingsService();
+    }
+    return embeddingsServiceSingleton;
+}

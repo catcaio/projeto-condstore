@@ -9,9 +9,6 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
 
     constructor() {
         this.apiKey = process.env.OPENAI_API_KEY || '';
-        if (!this.apiKey) {
-            logger.warn('OPENAI_API_KEY is not set. OpenAIEmbeddingProvider will fail.');
-        }
     }
 
     private async delay(ms: number) {
@@ -19,6 +16,12 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
     }
 
     async embedBatch(texts: string[]): Promise<number[][]> {
+        if (!this.apiKey) {
+            const error = new Error('Embeddings não configurado (RAG desabilitado ou OPENAI_API_KEY ausente).');
+            (error as any).code = 'embeddings_not_configured';
+            throw error;
+        }
+
         if (!texts || texts.length === 0) return [];
 
         let attempts = 0;
