@@ -44,10 +44,17 @@ export function LoginForm({ buildLabel }: LoginFormProps) {
                 body: JSON.stringify({ email, password }),
             });
 
-            const data = await res.json();
+            const text = await res.text();
+            let data: any = null;
+            try { data = JSON.parse(text); } catch { }
 
-            if (!res.ok || !data.success) {
-                setError(data.error || 'Erro ao fazer login');
+            if (!res.ok || !data?.success) {
+                if (data?.error) {
+                    setError(data.error);
+                } else {
+                    const reqId = res.headers.get('x-request-id') || 'desconhecido';
+                    setError(`Falha no servidor (não-JSON) Status ${res.status}. ID: ${reqId}`);
+                }
                 return;
             }
 
