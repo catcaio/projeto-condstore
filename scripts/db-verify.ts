@@ -2,6 +2,10 @@ import { execSync } from 'child_process';
 
 console.log('=> Starting Schema Drift Verification...');
 
+if (!process.env.DATABASE_URL) {
+    console.log('=> DATABASE_URL not found. Running offline check (drizzle-kit generate)...');
+}
+
 try {
     // Generate migrations based on current schema.ts
     execSync('npx drizzle-kit generate', { encoding: 'utf-8', stdio: 'inherit' });
