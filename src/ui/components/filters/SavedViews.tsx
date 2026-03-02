@@ -155,7 +155,6 @@ export function SavedViews<T extends Record<string, any>>({
                                     placeholder="Nome da view..."
                                     value={saveName}
                                     onChange={e => setSaveName(e.target.value)}
-                                    // eslint-disable-next-line jsx-a11y/no-autofocus
                                     autoFocus
                                 />
                                 <div className="flex gap-2">

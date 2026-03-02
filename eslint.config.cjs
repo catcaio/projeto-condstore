@@ -14,7 +14,12 @@ const tsPlugin = {
 
 module.exports = [
   {
-    ignores: ['.next/**', 'node_modules/**', 'dist/**', 'drizzle/**'],
+    ignores: ['.next/**', '.next*/**', 'node_modules/**', 'dist/**', 'drizzle/**', '.claude/**', '.vercel/**', 'coverage/**', 'out/**'],
+  },
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: false,
+    },
   },
   {
     files: ['**/*.{js,jsx}'],

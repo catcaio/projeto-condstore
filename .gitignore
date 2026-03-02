@@ -184,3 +184,11 @@ ai-eval/
 *.pem
 id_ed25519*
 id_rsa*
+
+.next
+.next-ready*
+.claude
+.claude/**
+.vercel
+coverage
+out
