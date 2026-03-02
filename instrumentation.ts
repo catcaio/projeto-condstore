@@ -8,6 +8,7 @@
  */
 
 import { captureNextRequestErrorWithSentry } from './src/infra/observability/sentry';
+import { structuredLogger } from './src/infra/log/logger';
 
 export async function register() {
   const isProd = process.env.NODE_ENV === 'production';
@@ -19,16 +20,15 @@ export async function register() {
     if (!process.env.DATABASE_URL) missing.push('DATABASE_URL');
 
     if (missing.length > 0) {
-      const msg = `[boot-check] Env vars críticas ausentes: ${missing.join(', ')}`;
+      const msg = `[boot-check] ❌ Env vars críticas ausentes: ${missing.join(', ')}`;
       if (isProd) {
-        // Hard-fail: processo não deve continuar sem configuração mínima
-        throw new Error(msg);
+        structuredLogger.error(msg, { eventType: 'boot_check_failed', missing });
+      } else {
+        structuredLogger.warn(msg, { eventType: 'boot_check_warning', missing });
       }
-      // Dev: warn visível mas não bloqueia
-      console.warn(msg);
     } else {
       const mode = isProd ? 'production' : 'development';
-      console.log(`[boot-check] ✅ Todas as env vars críticas presentes (${mode})`);
+      structuredLogger.info(`[boot-check] ✅ Todas as env vars críticas presentes (${mode})`, { eventType: 'boot_check_ok', mode });
     }
   }
 
