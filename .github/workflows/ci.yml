@@ -30,6 +30,9 @@ jobs:
       - name: Verify Schema Drift
         run: npm run db:verify
 
+      - name: Guardrails Public API
+        run: node --import tsx scripts/guardrails-public-api.ts
+
       - name: Build project
         run: npm run build
 

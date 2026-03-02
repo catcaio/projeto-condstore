@@ -153,15 +153,16 @@ export async function getInboxConversations(
         rowsFetchedTotal += events.length;
 
         for (const e of events) {
-            if (!e.refToken && !e.anonId) continue;
+            if (!e.attributionId && !e.anonId) continue; // publicEvents has anonId/attributionId, not refToken
             let groupKey;
             try {
-                groupKey = buildConversationKey({ tenantId, refToken: e.refToken || e.anonId });
+                // If it doesn't align tightly with phone, it drops back to anonId grouping
+                groupKey = buildConversationKey({ tenantId, refToken: e.attributionId || e.anonId });
             } catch {
                 continue;
             }
 
-            const convo = getOrInit(groupKey, e.refToken || e.anonId!, undefined, e.refToken || undefined);
+            const convo = getOrInit(groupKey, e.attributionId || e.anonId!, undefined, e.attributionId || undefined);
 
             if (e.createdAt > convo.lastActivityAt) {
                 convo.lastActivityAt = e.createdAt;

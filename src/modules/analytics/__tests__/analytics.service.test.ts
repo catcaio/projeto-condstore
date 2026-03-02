@@ -24,7 +24,7 @@ describe('analyticsService.logEvent', () => {
     });
 
     expect(valuesMock).toHaveBeenCalledTimes(1);
-    expect(valuesMock.mock.calls[0][0].props).toBeNull();
+    expect(valuesMock.mock.calls[0][0].payloadJson.props).toBeNull();
   });
 
   it('sends props as null when props is empty object', async () => {
@@ -39,7 +39,7 @@ describe('analyticsService.logEvent', () => {
     });
 
     expect(valuesMock).toHaveBeenCalledTimes(1);
-    expect(valuesMock.mock.calls[0][0].props).toBeNull();
+    expect(valuesMock.mock.calls[0][0].payloadJson.props).toStrictEqual({});
   });
 
   it('stringifies props when object has content', async () => {
@@ -55,7 +55,7 @@ describe('analyticsService.logEvent', () => {
 
     expect(valuesMock).toHaveBeenCalledTimes(1);
     expect(valuesMock.mock.calls[0][0].tenantId).toBe('tenant-1');
-    expect(valuesMock.mock.calls[0][0].props).toBe(JSON.stringify({ source: 'hero_cta' }));
+    expect(valuesMock.mock.calls[0][0].payloadJson.props).toStrictEqual({ source: 'hero_cta' });
   });
 
   it('persists attribution fields when provided', async () => {
@@ -76,12 +76,11 @@ describe('analyticsService.logEvent', () => {
     });
 
     expect(valuesMock).toHaveBeenCalledTimes(1);
-    expect(valuesMock.mock.calls[0][0]).toMatchObject({
+    expect(valuesMock.mock.calls[0][0].payloadJson).toMatchObject({
       utmSource: 'google',
       utmMedium: 'cpc',
       utmCampaign: 'summer',
-      refToken: 'ref-123',
-      clickId: 'gclid-1',
     });
+    expect(valuesMock.mock.calls[0][0].attributionId).toBe('gclid-1');
   });
 });
