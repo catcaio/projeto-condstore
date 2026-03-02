@@ -33,6 +33,16 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Validate Required Secrets
+        env:
+          QA_BOOTSTRAP_TOKEN: ${{ secrets.QA_BOOTSTRAP_TOKEN }}
+        run: |
+          if [ -z "$QA_BOOTSTRAP_TOKEN" ]; then
+            echo "::error::Secret QA_BOOTSTRAP_TOKEN is not configured. Go to Settings → Secrets and variables → Actions and add QA_BOOTSTRAP_TOKEN."
+            exit 1
+          fi
+          echo "QA_BOOTSTRAP_TOKEN is set."
+
       - name: Start Server & Run QA Snapshots
         env:
           PORT: 3002
@@ -41,7 +51,7 @@ jobs:
           INTERNAL_TOKEN: fake_workflow_token_99
           DATABASE_URL: mysql://root:root@localhost:3306/condstore_dev
           AUTH_SECRET: dev-secret-ci
-          QA_BOOTSTRAP_TOKEN: ci-qa-bootstrap-token-99
+          QA_BOOTSTRAP_TOKEN: ${{ secrets.QA_BOOTSTRAP_TOKEN }}
           GITHUB_ACTIONS: "true"
           CI: "true"
         run: |

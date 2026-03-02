@@ -10,7 +10,11 @@ const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3002;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
-const QA_BOOTSTRAP_TOKEN = process.env.QA_BOOTSTRAP_TOKEN || 'ci-qa-bootstrap-token-99';
+const QA_BOOTSTRAP_TOKEN = process.env.QA_BOOTSTRAP_TOKEN;
+if (!QA_BOOTSTRAP_TOKEN) {
+    console.error('[QA] FATAL: QA_BOOTSTRAP_TOKEN env var not set. Cannot bootstrap session. Set it via your CI secrets or .env.local for local runs.');
+    process.exit(1);
+}
 
 const QA_HEADERS = {
     'Content-Type': 'application/json',
