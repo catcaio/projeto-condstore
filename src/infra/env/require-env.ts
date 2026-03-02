@@ -17,7 +17,6 @@ export function assertCriticalEnvSetup() {
     if (process.env.NODE_ENV === "test" || process.env.CI === "true") return; // Bypass rigid checks for CI runners
 
     requireEnv("DATABASE_URL");
-    requireEnv("AUTH_SECRET");
 
     if (process.env.NODE_ENV === 'production') {
         requireEnv("INTERNAL_TOKEN");

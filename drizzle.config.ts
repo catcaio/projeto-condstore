@@ -2,10 +2,7 @@ import { defineConfig } from "drizzle-kit";
 import * as fs from "fs";
 import * as path from "path";
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is required to run drizzle commands");
-}
+const connectionString = process.env.DATABASE_URL || "";
 
 const caPath = path.resolve("./certs/ca.pem");
 // Se ca.pem não existir, não sobrescreve SSL — a URL já carrega os params SSL (?ssl=...).
@@ -18,8 +15,12 @@ export default defineConfig({
   schema: "./src/drizzle/schema.ts",
   out: "./drizzle",
   dialect: "mysql",
-  dbCredentials: {
-    url: connectionString,
-    ...sslConfig,
-  },
+  ...(connectionString
+    ? {
+      dbCredentials: {
+        url: connectionString,
+        ...sslConfig,
+      },
+    }
+    : {}),
 });
