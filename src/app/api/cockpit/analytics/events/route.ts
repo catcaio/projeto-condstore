@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import { requireAdmin } from '@/infra/auth/guards';
 import { publicEvents } from '../../../../../drizzle/schema';
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const filters = [eq(publicEvents.tenantId, tenantId)];
 
   if (event) {
-    filters.push(eq(publicEvents.event, event));
+    filters.push(eq(publicEvents.eventType, event));
   }
 
   if (anonId) {
@@ -78,11 +78,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const events = await db
       .select({
         id: publicEvents.id,
-        event: publicEvents.event,
+        event: publicEvents.eventType,
         anonId: publicEvents.anonId,
-        path: publicEvents.path,
-        props: publicEvents.props,
-        userAgent: publicEvents.userAgent,
+        path: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${publicEvents.payloadJson}, '$.path'))`,
+        props: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${publicEvents.payloadJson}, '$.props'))`,
+        userAgent: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${publicEvents.payloadJson}, '$.userAgent'))`,
         createdAt: publicEvents.createdAt,
       })
       .from(publicEvents)

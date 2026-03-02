@@ -308,27 +308,20 @@ export type NewProjectReportRecord = typeof projectReports.$inferInsert;
 
 export const publicEvents = mysqlTable('public_events', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
-    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }),
     anonId: varchar('anon_id', { length: 128 }).notNull(),
-    event: varchar('event', { length: 64 }).notNull(),
-    path: varchar('path', { length: 200 }).notNull(),
-    props: text('props'), // JSON stringified up to 4096 chars evaluated at runtime
-    userAgent: text('user_agent'),
-    utmSource: varchar('utm_source', { length: 255 }),
-    utmMedium: varchar('utm_medium', { length: 255 }),
-    utmCampaign: varchar('utm_campaign', { length: 255 }),
-    utmTerm: varchar('utm_term', { length: 255 }),
-    utmContent: varchar('utm_content', { length: 255 }),
-    refToken: varchar('ref_token', { length: 128 }),
-    clickId: varchar('click_id', { length: 255 }),
+    eventType: varchar('event_type', { length: 64 }).notNull(),
+    attributionId: varchar('attribution_id', { length: 36 }),
+    payloadJson: json('payload_json'),
+    ipHash: varchar('ip_hash', { length: 64 }),
+    uaHash: varchar('ua_hash', { length: 64 }),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => {
     return {
         tenantTimeIdx: index('idx_public_events_tenant_created_at').on(table.tenantId, table.createdAt),
-        eventTimeIdx: index('idx_public_events_event_time').on(table.event, table.createdAt),
+        eventTimeIdx: index('idx_public_events_event_time').on(table.eventType, table.createdAt),
         anonIdTimeIdx: index('idx_public_events_anon_time').on(table.anonId, table.createdAt),
-        utmSourceTimeIdx: index('idx_public_events_utm_source_time').on(table.tenantId, table.utmSource, table.createdAt),
-        utmCampaignTimeIdx: index('idx_public_events_utm_campaign_time').on(table.tenantId, table.utmCampaign, table.createdAt),
+        attributionIdIdx: index('idx_public_events_attribution_id').on(table.attributionId),
     };
 });
 

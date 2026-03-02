@@ -157,8 +157,8 @@ export async function getConversationTimeline(tenantId: string, id: string, limi
                 items.push({
                     id: p.id,
                     kind: 'public_event',
-                    title: p.event,
-                    body: p.path,
+                    title: p.eventType,
+                    body: p.payloadJson ? JSON.parse(p.payloadJson as string).path : '',
                     createdAt: p.createdAt,
                 });
             });
