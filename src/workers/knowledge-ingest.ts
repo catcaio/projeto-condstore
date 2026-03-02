@@ -5,7 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { redisClient } from '../infra/redis.client';
 import { knowledgeStorage } from '../modules/knowledge/storage';
 import { chunkDocument } from '../modules/knowledge/chunker';
-import { embeddingsService } from '../modules/knowledge/embeddings.service';
+import { getEmbeddingsService } from '../modules/knowledge/embeddings.service';
 import { logger } from '../infra/logger';
 
 const STREAM_NAME = 'knowledge_ingest';
@@ -113,7 +113,7 @@ async function processMessage(messageId: string, fields: string[]) {
             );
 
             // 6. Generate Embeddings using service
-            await embeddingsService.generateAndStoreEmbeddings(versionId, tenantId);
+            await getEmbeddingsService().generateAndStoreEmbeddings(versionId, tenantId);
         }
 
         // 7. Update status to ready_indexed

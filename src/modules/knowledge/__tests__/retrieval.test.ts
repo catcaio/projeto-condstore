@@ -1,6 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { RetrievalService } from '../retrieval.service';
 import { buildGroundedAnswer } from '../answer-builder';
+import { getEmbeddingsService } from '../embeddings.service';
+
+vi.mock('../embeddings.service', () => ({
+    getEmbeddingsService: vi.fn().mockReturnValue({
+        embedBatch: vi.fn().mockResolvedValue([[0.1, 0.2, 0.3]])
+    })
+}));
 
 // Create a mock DB class
 const mockDb = {
@@ -25,11 +32,6 @@ describe('Knowledge Retrieval & Identity', () => {
         // We will assert the behavior of the cosine logic.
 
         const rs = new RetrievalService();
-
-        // Mock the embedder to return an embedding for query
-        (rs as any).provider = {
-            embedBatch: vi.fn().mockResolvedValue([[0.1, 0.2, 0.3]])
-        };
 
         // If the DB was faulty and returned cross-tenant data, we should ideally catch it, 
         // but Drizzle ensures `tenantDocumentChunks.tenantId = tenantId`

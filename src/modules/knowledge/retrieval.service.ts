@@ -1,7 +1,6 @@
 import { getDb } from '../../infra/db';
 import { tenantDocumentChunks, tenantDocumentVersions, tenantDocuments } from '../../drizzle/schema';
-import { OpenAIEmbeddingProvider } from './embeddings/openai.provider';
-import { EmbeddingProvider } from './embeddings/provider';
+import { getEmbeddingsService } from './embeddings.service';
 import { logger } from '../../infra/logger';
 import { VectorStore } from './vector/vector-store';
 import { LocalCosineVectorStore } from './vector/local-cosine-adapter';
@@ -27,12 +26,10 @@ export interface RetrievalResult {
 }
 
 export class RetrievalService {
-    private provider: EmbeddingProvider;
     private localStore: VectorStore;
     private nativeStore: VectorStore;
 
     constructor() {
-        this.provider = new OpenAIEmbeddingProvider();
         this.localStore = new LocalCosineVectorStore();
         this.nativeStore = new TiDBVectorStore();
     }
@@ -54,7 +51,7 @@ export class RetrievalService {
 
         try {
             // 1. Embed query
-            const [queryEmbedding] = await this.provider.embedBatch([query]);
+            const [queryEmbedding] = await getEmbeddingsService().embedBatch([query]);
             if (!queryEmbedding || queryEmbedding.length === 0) {
                 return { chunks: [], confidence: 0 };
             }
