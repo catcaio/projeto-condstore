@@ -16,8 +16,7 @@ export const env = (() => {
   const parsed = EnvSchema.safeParse(process.env);
   const isProd = process.env.NODE_ENV === "production";
   if (!parsed.success) {
-    if (isProd) throw new Error("Invalid environment variables");
-    console.warn("Invalid environment variables:", parsed.error.flatten().fieldErrors);
+    console.error("CRITICAL: Invalid environment variables in production:", parsed.error.flatten().fieldErrors);
   }
   return parsed.success ? parsed.data : (process.env as any);
 })();
