@@ -17,6 +17,8 @@ import { isDevRuntime } from '@/infra/env/devOnly';
 const loginSchema = z.object({
     email: z.string().email('Email inválido'),
     password: z.string().min(1, 'Senha obrigatória'),
+    slug: z.string().optional(),
+    redirectMode: z.enum(['employee', 'manager', 'admin']).optional(),
 });
 
 type LoginFailureReason = 'user_not_found' | 'password_mismatch' | 'schema_error' | 'rate_limited';
@@ -101,7 +103,7 @@ async function _POST(request: NextRequest) {
             );
         }
 
-        const { email, password } = validation.data;
+        const { email, password, slug, redirectMode } = validation.data;
         const normalizedEmail = email.trim().toLowerCase();
         loginEmailHash = hashLoginEmailForLog(normalizedEmail);
 
@@ -183,9 +185,19 @@ async function _POST(request: NextRequest) {
             ip: request.headers.get("x-forwarded-for") ?? "unknown"
         });
 
+        let redirectUrl = '/home';
+        if (redirectMode === 'employee') {
+            redirectUrl = slug ? `/t/${slug}/cockpit/app` : `/cockpit/app`;
+        } else if (redirectMode === 'manager') {
+            redirectUrl = slug ? `/t/${slug}/cockpit` : `/cockpit`;
+        } else {
+            redirectUrl = `/cockpit`;
+        }
+
         const response = NextResponse.json({
             success: true,
             user: { email: user.email, role: user.role },
+            redirectUrl,
         });
 
         response.cookies.set(COOKIE_NAME, token, {

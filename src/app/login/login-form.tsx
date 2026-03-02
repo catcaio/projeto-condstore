@@ -9,9 +9,19 @@ import { ThemeToggle } from '@/ui/theme';
 
 interface LoginFormProps {
     buildLabel: string;
+    title?: string;
+    description?: string;
+    slug?: string;
+    redirectMode?: 'employee' | 'manager' | 'admin';
 }
 
-export function LoginForm({ buildLabel }: LoginFormProps) {
+export function LoginForm({
+    buildLabel,
+    title = 'CondStore OS',
+    description = 'Painel logístico',
+    slug,
+    redirectMode = 'admin'
+}: LoginFormProps) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -41,7 +51,12 @@ export function LoginForm({ buildLabel }: LoginFormProps) {
             const res = await safeFetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({
+                    email,
+                    password,
+                    slug,
+                    redirectMode
+                }),
             });
 
             const data = await res.json();
@@ -61,7 +76,11 @@ export function LoginForm({ buildLabel }: LoginFormProps) {
                 });
             }
 
-            window.location.href = '/home';
+            if (data.redirectUrl) {
+                window.location.href = data.redirectUrl;
+            } else {
+                window.location.href = '/home';
+            }
         } catch {
             setError('Erro de conexão. Tente novamente.');
         } finally {
@@ -86,15 +105,15 @@ export function LoginForm({ buildLabel }: LoginFormProps) {
                                 </span>
                                 <div>
                                     <h1 className="text-xl font-semibold tracking-tight text-[hsl(var(--ui-text))]">
-                                        CondStore OS
+                                        {title}
                                     </h1>
                                     <p className="text-xs font-normal text-[hsl(var(--ui-text-muted))]">
-                                        Painel logístico
+                                        {description}
                                     </p>
                                 </div>
                             </div>
                         }
-                        actions={<Badge variant="outline">FRONT-01</Badge>}
+                        actions={<Badge variant="outline">{redirectMode.toUpperCase()}</Badge>}
                     />
                     <CardContent className="space-y-4">
                         <div className="rounded-xl bg-[hsl(var(--ui-muted))] px-3 py-2">

@@ -21,6 +21,8 @@ export const config = {
     '/api/tenants/:tenantId/ai-provider/:path*',
     '/api/tenants/:tenantId/settings/:path*',
     '/api/internal/:path*',
+    '/t/:slug/cockpit/:path*',
+    '/t/:slug/gestao/:path*',
   ],
 };
 
@@ -84,7 +86,9 @@ function isProtectedUi(pathname: string): boolean {
     pathname === '/inbox' || pathname.startsWith('/inbox/') ||
     pathname === '/freight/simulations' || pathname.startsWith('/freight/simulations/') ||
     pathname === '/attribution' || pathname.startsWith('/attribution/') ||
-    pathname === '/settings' || pathname.startsWith('/settings/')
+    pathname === '/settings' || pathname.startsWith('/settings/') ||
+    /^\/t\/[^/]+\/cockpit(\/|$)/.test(pathname) ||
+    /^\/t\/[^/]+\/gestao(\/|$)/.test(pathname)
   );
 }
 
@@ -211,6 +215,12 @@ export async function proxy(req: NextRequest) {
   const session = await verifyMiddlewareSessionToken(token);
   if (!session) {
     return unauthorizedResponse(req, requestId);
+  }
+
+  // Bifurcated Route RBAC Checks
+  const isTenantGestao = /^\/t\/[^/]+\/gestao(\/|$)/.test(req.nextUrl.pathname);
+  if (isTenantGestao && session.role !== 'admin' && session.role !== 'manager') {
+    return NextResponse.rewrite(new URL('/403', req.url)); // Forbid Employee accessing Manager portal
   }
 
   headers.set('x-auth-user-id', session.sub);

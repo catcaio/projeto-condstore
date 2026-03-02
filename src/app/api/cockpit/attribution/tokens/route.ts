@@ -31,7 +31,7 @@ function buildTrackingPath(input: {
     utm_content: '{adgroup}-{ad}',
     utm_term: '{keyword}',
   });
-  return `/t/${input.token}?${params.toString()}`;
+  return `/track/${input.token}?${params.toString()}`;
 }
 
 function generateToken(): string {
