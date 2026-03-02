@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3002;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
-const QA_BOOTSTRAP_TOKEN = process.env.QA_BOOTSTRAP_TOKEN || 'condstore_dev_bypass_local_991';
+const QA_BOOTSTRAP_TOKEN = process.env.QA_BOOTSTRAP_TOKEN || 'local_fallback_token_for_tests';
 
 const QA_HEADERS = {
     'Content-Type': 'application/json',
@@ -38,7 +38,9 @@ async function runQa() {
     let headersNoPlan: Record<string, string> = { 'Content-Type': 'application/json' };
     let headersNoRole: Record<string, string> = { 'Content-Type': 'application/json' };
 
-    if (isDev || process.env.GITHUB_ACTIONS === 'true') {
+    // Always attempt setup if we have a token, the server will block securely if it's production.
+    // Ensure we trigger it correctly
+    if (true) {
         console.log(`[QA] Running setup...`);
         const setupRes = await fetch(`${BASE_URL}/api/internal/qa/setup`, {
             method: 'POST',

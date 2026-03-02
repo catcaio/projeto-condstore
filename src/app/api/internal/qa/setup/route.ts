@@ -13,16 +13,25 @@ export async function POST(request: NextRequest) {
     const hasGithubHeader = request.headers.get('x-github-actions') === 'true';
 
     const token = request.headers.get('x-qa-token') || request.nextUrl.searchParams.get('token');
+    const hasInternalTokenHeader = !!token;
+    const isProdEnvironment = process.env.VERCEL_ENV === 'production';
 
-    const validTokens = [
-        process.env.QA_BOOTSTRAP_TOKEN?.trim(),
-        isDev ? 'condstore_dev_bypass_local_991' : null
-    ].filter(Boolean);
+    // 1. In real production, unequivocally block this route.
+    if (isProdEnvironment) {
+        logger.warn('[QA Setup] BLOCKED: Attempted to run QA route in production environment');
+        return NextResponse.json({ error: "Unauthorized internal access", reason: "production_blocked" }, { status: 403 });
+    }
 
-    const isAuthorized = !!token && validTokens.includes(token);
+    // 2. We must have a properly configured server token
+    const serverQaToken = process.env.QA_BOOTSTRAP_TOKEN?.trim();
+    if (!serverQaToken) {
+        logger.warn('[QA Setup] BLOCKED: Server missing QA_BOOTSTRAP_TOKEN');
+        return NextResponse.json({ error: "Unauthorized internal access", reason: "server_misconfigured" }, { status: 401 });
+    }
 
-    if (!isAuthorized && !isDev && !isGithubActions && process.env.CI !== 'true') {
-        return NextResponse.json({ error: "Unauthorized internal access" }, { status: 401 });
+    // 3. The token provided in request must match exactly. We don't fall back to bypass strings anymore.
+    if (!hasInternalTokenHeader || token !== serverQaToken) {
+        return NextResponse.json({ error: "Unauthorized internal access", reason: "bad_token" }, { status: 401 });
     }
 
     try {

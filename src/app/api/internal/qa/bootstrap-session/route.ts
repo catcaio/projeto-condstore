@@ -12,43 +12,29 @@ export async function POST(request: NextRequest) {
 
     const token = request.headers.get('x-qa-token') || request.nextUrl.searchParams.get('token');
 
-    // Allow QA_BOOTSTRAP_TOKEN or dev fallback if local
-    const validTokens = [
-        process.env.QA_BOOTSTRAP_TOKEN?.trim(),
-        isDev ? 'condstore_dev_bypass_local_991' : null
-    ].filter(Boolean);
-
     const hasInternalTokenHeader = !!token;
-    const tokenMatched = !!token && validTokens.includes(token);
+    const isProdEnvironment = process.env.VERCEL_ENV === 'production';
 
-    // Logging only specific flags (never the token itself)
-    logger.info('[QA Bootstrap Auth Context]', {
-        hasInternalTokenHeader,
-        isGithubActions,
-        hasGithubHeader,
-        tokenMatched,
-        path: request.nextUrl.pathname
-    });
-
-    if (!isDev && (!isGithubActions || !hasGithubHeader)) {
-        return NextResponse.json({
-            error: "Unauthorized internal access",
-            reason: "not_github_actions"
-        }, { status: 401 });
+    // 1. In real production, unequivocally block this route.
+    if (isProdEnvironment) {
+        logger.warn('[QA Bootstrap] BLOCKED: Attempted to run QA route in production environment', { path: request.nextUrl.pathname });
+        return NextResponse.json({ error: "Unauthorized internal access", reason: "production_blocked" }, { status: 403 });
     }
 
-    if (!hasInternalTokenHeader) {
-        return NextResponse.json({
-            error: "Unauthorized internal access",
-            reason: "missing_token"
-        }, { status: 401 });
+    // 2. We must have a properly configured server token
+    const serverQaToken = process.env.QA_BOOTSTRAP_TOKEN?.trim();
+    if (!serverQaToken) {
+        logger.warn('[QA Bootstrap] BLOCKED: Server missing QA_BOOTSTRAP_TOKEN', { path: request.nextUrl.pathname });
+        return NextResponse.json({ error: "Unauthorized internal access", reason: "server_misconfigured" }, { status: 401 });
     }
 
-    if (!tokenMatched) {
-        return NextResponse.json({
-            error: "Unauthorized internal access",
-            reason: "bad_token"
-        }, { status: 401 });
+    // 3. The token provided in request must match exactly. We don't fall back to bypass strings anymore.
+    if (!hasInternalTokenHeader || token !== serverQaToken) {
+        logger.warn('[QA Bootstrap Auth Context] BLOCKED', {
+            reason: "bad_token",
+            path: request.nextUrl.pathname
+        });
+        return NextResponse.json({ error: "Unauthorized internal access", reason: "bad_token" }, { status: 401 });
     }
 
     try {
