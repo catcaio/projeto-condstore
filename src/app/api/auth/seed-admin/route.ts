@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextResponse, NextRequest } from 'next/server';
 import { randomUUID } from 'crypto';
 import { getDb } from '@/infra/db';
@@ -11,7 +12,7 @@ import { getInternalExportTokenOrThrow } from '@/infra/config/internal-token';
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     try {
         if (process.env.IS_DEV !== 'true') {
             const allowed = process.env.ALLOW_SEED_ADMIN === 'true';
@@ -97,3 +98,5 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: false, error: error?.message ?? String(error) }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

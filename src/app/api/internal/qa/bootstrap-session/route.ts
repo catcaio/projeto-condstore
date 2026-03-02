@@ -1,3 +1,5 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { NextRequest, NextResponse } from 'next/server';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
@@ -5,7 +7,10 @@ import { logger } from '@/infra/logger';
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
+  const internalGuard = requireInternalToken(request);
+  if (!internalGuard.ok) return internalGuard.response;
+
     const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
     const isDev = process.env.NODE_ENV !== 'production';
     const hasGithubHeader = request.headers.get('x-github-actions') === 'true';
@@ -80,3 +85,5 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Erro ao gerar dev session' }, { status: 500 });
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

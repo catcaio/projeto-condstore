@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextResponse } from "next/server";
 import { redisClient } from "@/infra/redis.client";
 
@@ -8,7 +9,7 @@ function requiredEnv(name: string) {
   return { name, ok: !!v, value: v ? "set" : "missing" };
 }
 
-export async function GET() {
+async function _GET() {
   const startedAt = Date.now();
 
   // 🔥 Ajusta aqui se quiser exigir mais variáveis
@@ -55,3 +56,5 @@ export async function GET() {
     { status: ok ? 200 : 503 }
   );
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

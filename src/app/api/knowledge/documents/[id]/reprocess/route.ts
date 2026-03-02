@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { tenantDocuments, tenantDocumentVersions, tenantIngestionJobs } from '@/drizzle/schema';
@@ -8,7 +9,7 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { redisClient } from '@/infra/redis.client';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function _POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id: documentId } = await params;
     const requestId = makeRequestId(request);
     const authResult = await requireKnowledgePermission(request, 'knowledge:reprocess', { requestId });
@@ -94,3 +95,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         return errorResponse("INTERNAL_ERROR" as any, 500, requestId, 'Failed to queue document for reprocessing');
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

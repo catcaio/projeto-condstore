@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { tenantDocumentVersions, tenantIngestionJobs } from '@/drizzle/schema';
@@ -15,7 +16,7 @@ const UploadCompleteSchema = z.object({
     sha256: z.string().length(64),
 });
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     const requestId = makeRequestId(request);
     const authResult = await requireKnowledgePermission(request, 'knowledge:upload', { requestId });
 
@@ -113,3 +114,5 @@ export async function POST(request: NextRequest) {
         return errorResponse("INTERNAL_ERROR" as any, 500, requestId, 'Failed to complete upload');
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

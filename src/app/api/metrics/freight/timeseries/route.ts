@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -5,7 +6,7 @@ import { metricsRepository } from '../../../../../modules/metrics/metrics.reposi
 import { logger } from '@/infra/logger';
 import { requireActivePlan } from '../../../../../modules/billing/requireActivePlan';
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     try {
         const entitlement = await requireActivePlan(request);
         if (entitlement.errorResponse) {
@@ -24,3 +25,5 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

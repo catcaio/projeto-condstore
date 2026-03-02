@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 export const dynamic = 'force-dynamic';
 
 /**
@@ -20,7 +21,7 @@ import { getDb } from '../../../../../infra/db';
 import { plans } from '../../../../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
     const requestId = makeRequestId(request);
 
     // ── Auth ─────────────────────────────────────────────────────────────────
@@ -104,3 +105,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Failed to create Stripe checkout session.');
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { COOKIE_NAME, getSessionUser } from '@/infra/auth/session';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
@@ -16,7 +17,7 @@ function clearAuthCookie(response: NextResponse): NextResponse {
     return response;
 }
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     const requestId = makeRequestId(request);
     try {
         const session = await getSessionUser(request);
@@ -34,3 +35,5 @@ export async function POST(request: NextRequest) {
         return response;
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

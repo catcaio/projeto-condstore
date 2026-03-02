@@ -1,3 +1,5 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/infra/auth/session";
 import { getDb } from "@/infra/db";
@@ -8,7 +10,10 @@ export const runtime = "nodejs";
 
 import { requireAdmin } from '@/infra/auth/guards';
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
+  const internalGuard = requireInternalToken(request);
+  if (!internalGuard.ok) return internalGuard.response;
+
     const auth = await requireAdmin(request);
     if (!auth.ok) return auth.response;
 
@@ -63,3 +68,5 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

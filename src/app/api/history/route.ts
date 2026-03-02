@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { simulationRepository } from '../../../infra/repositories/simulation.repository';
 import { requireActivePlan } from '../../../modules/billing/requireActivePlan';
@@ -5,7 +6,7 @@ import { logger } from '@/infra/logger';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     // 1) Auth / tenant resolution + Plan Entitlement
     const entitlement = await requireActivePlan(request);
     if (entitlement.errorResponse) {
@@ -48,3 +49,5 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { freightService } from '../../../modules/freight/freight.service';
 import { simulationRepository } from '../../../infra/repositories/simulation.repository';
@@ -24,7 +25,7 @@ const simulateSchema = z.object({
   }).optional(),
 });
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
   const startTime = Date.now();
   let tenantId: string | undefined;
 
@@ -164,3 +165,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

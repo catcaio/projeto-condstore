@@ -1,3 +1,5 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +33,7 @@ interface ReconcileItem {
     action: string;
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
     const requestId = makeRequestId();
 
     // ── Auth ──────────────────────────────────────────────────────────────────
@@ -173,3 +175,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         requestId,
     );
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

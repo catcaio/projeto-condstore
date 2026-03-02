@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 const planData = [
     { id: 'starter', stripePriceId: 'price_starter_placeholder' },
@@ -8,7 +9,7 @@ import { getSessionUser } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
 import { createStripeCheckoutSession } from '../../../lib/billing/stripe';
 
-export async function POST(req: NextRequest) {
+async function _POST(req: NextRequest) {
     try {
         // ── Auth: tenantId MUST come from the verified session, never from the body ──
         const session = await getSessionUser(req);
@@ -57,3 +58,5 @@ export async function POST(req: NextRequest) {
         );
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

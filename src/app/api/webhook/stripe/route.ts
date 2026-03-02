@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 export const runtime = 'nodejs';
 
 /**
@@ -459,7 +460,7 @@ async function handleSubscriptionUpdated(
 
 // ── Main handler ────────────────────────────────────────────────────────────────
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
     const sig = request.headers.get('stripe-signature');
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -585,3 +586,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ received: true }, { status: 200 });
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

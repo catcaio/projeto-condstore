@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { tenantDocuments } from '@/drizzle/schema';
@@ -12,7 +13,7 @@ const MarkSensitiveSchema = z.object({
     isSensitive: z.boolean(),
 });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function _POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id: documentId } = await params;
     const requestId = makeRequestId(request);
     const authResult = await requireKnowledgePermission(request, 'knowledge:mark_sensitive', { requestId });
@@ -68,3 +69,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         return errorResponse("INTERNAL_ERROR" as any, 500, requestId, 'Failed to update document metadata');
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

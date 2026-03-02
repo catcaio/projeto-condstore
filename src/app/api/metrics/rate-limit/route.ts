@@ -1,9 +1,10 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextResponse } from "next/server";
 import { redisClient } from "@/infra/redis.client";
 
 export const runtime = "nodejs";
 
-export async function GET(req: Request) {
+async function _GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const tenantId = searchParams.get("tenant");
 
@@ -31,3 +32,5 @@ export async function GET(req: Request) {
     buckets: data
   });
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

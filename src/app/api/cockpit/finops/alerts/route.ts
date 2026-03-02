@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '../../../../../infra/db';
 import { finopsAlertEvents } from '../../../../../drizzle/schema';
@@ -9,7 +10,7 @@ import { logger } from '../../../../../infra/logger';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const requestId = makeRequestId(request);
 
     try {
@@ -40,3 +41,5 @@ export async function GET(request: NextRequest) {
         return errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Erro ao carregar os alertas do FinOps.');
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

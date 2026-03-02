@@ -1,7 +1,8 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/infra/auth/session';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
   const session = await getSessionUser(request);
 
   if (!session?.sub || !session?.tenantId) {
@@ -21,3 +22,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     { status: 200, headers: { 'Cache-Control': 'no-store' } }
   );
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

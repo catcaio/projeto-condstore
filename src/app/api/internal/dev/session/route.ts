@@ -1,3 +1,5 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { users } from '@/drizzle/schema';
@@ -9,7 +11,10 @@ import { assertDevOnly } from '@/infra/env/devOnly';
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
+  const internalGuard = requireInternalToken(request);
+  if (!internalGuard.ok) return internalGuard.response;
+
     const devGuard = assertDevOnly();
     if (devGuard) return devGuard;
 
@@ -79,3 +84,5 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Erro ao gerar dev session' }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

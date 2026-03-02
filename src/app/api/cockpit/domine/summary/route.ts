@@ -1,9 +1,10 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from "next/server";
 import { DomineSummary } from "../../../../../domine/contracts/domineSummary";
 import { isDomineEnabled } from "../../../../../domine/tenant";
 import { requireAdmin } from '@/infra/auth/guards';
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const auth = await requireAdmin(request);
     if (!auth.ok) return auth.response;
     const { tenantId } = auth.session;
@@ -24,3 +25,5 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(payload);
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

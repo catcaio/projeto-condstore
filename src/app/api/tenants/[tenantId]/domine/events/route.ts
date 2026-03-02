@@ -1,14 +1,15 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { extractTenantIdFromTenantRoute, getAuthContext } from '@/infra/auth/tenant-route-guard';
 import { domineEventsRepository } from '@/infra/repositories/domine-events.repository';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+async function _GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
-    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+    const guard = await getAuthContext(req, tenantIdFromRoute);
     if (!guard.ok) return guard.response;
 
     if (guard.sessionUser.role !== 'admin') {
@@ -35,3 +36,5 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
         return errorResponse(ErrorCode.VALIDATION_ERROR, 500, requestId, e.message);
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

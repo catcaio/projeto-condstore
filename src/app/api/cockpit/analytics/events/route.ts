@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
@@ -38,7 +39,7 @@ function safeParseProps(raw: string | null): EventProps | { _parseError: true; r
   }
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin(request);
   if (!auth.ok) {
     return auth.response;
@@ -112,3 +113,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed to load analytics events' }, { status: 500 });
   }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

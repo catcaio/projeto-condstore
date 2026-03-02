@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { tenantDocuments, tenantDocumentVersions } from '@/drizzle/schema';
@@ -7,7 +8,7 @@ import { eq, desc, sql } from 'drizzle-orm';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const requestId = makeRequestId(request);
     const authResult = await requireKnowledgePermission(request, 'knowledge:read', { requestId });
 
@@ -64,3 +65,5 @@ export async function GET(request: NextRequest) {
         return errorResponse("INTERNAL_ERROR" as any, 500, requestId, 'Failed to fetch documents');
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

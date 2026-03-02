@@ -1,16 +1,17 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { extractTenantIdFromTenantRoute, getAuthContext } from '@/infra/auth/tenant-route-guard';
 import { getDb } from '@/infra/db';
 import { tenantKnowledgeSources } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { adminAuditLogRepository } from '@/infra/repositories/admin-audit-log.repository';
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string; sourceId: string  }> }) {
+async function _POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string; sourceId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
-    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+    const guard = await getAuthContext(req, tenantIdFromRoute);
     if (!guard.ok) return guard.response;
 
     if (guard.sessionUser.role !== 'admin') {
@@ -40,3 +41,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ten
         return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

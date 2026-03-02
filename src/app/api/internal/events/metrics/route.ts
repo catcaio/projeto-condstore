@@ -1,3 +1,5 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +34,7 @@ const DEFAULT_GROUP = 'finops-group';
 const WEBHOOK_STREAM = 'events:webhook';
 const WEBHOOK_GROUP = 'webhook-group';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();
     const requestId = makeRequestId(request);
     const route = '/api/internal/events/metrics';
@@ -93,3 +95,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return response;
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

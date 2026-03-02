@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { requireAdmin } from '../infra/auth/guards';
-import { requireSessionTenantMatch, requireInternalToken } from '../infra/auth/tenant-route-guard';
+import { getAuthContext, requireInternalToken } from '../infra/auth/tenant-route-guard';
 import * as sessionModule from '../infra/auth/session';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
@@ -32,10 +32,10 @@ describe('RBAC Security Guards', () => {
         expect((result as any).response?.status).toBe(403);
     });
 
-    it('requireSessionTenantMatch should block cross-tenant IDOR attacks', async () => {
+    it('getAuthContext should block cross-tenant IDOR attacks', async () => {
         vi.mocked(sessionModule.getSessionUser).mockResolvedValueOnce({ sub: '123', tenantId: 'tnt-abc', role: 'admin' } as any);
         const req = new NextRequest('http://localhost/api/tnt-xyz/data');
-        const result = await requireSessionTenantMatch(req, 'tnt-xyz');
+        const result = await getAuthContext(req, 'tnt-xyz');
 
         expect(result.ok).toBe(false);
         expect((result as any).response?.status).toBe(403);

@@ -1,3 +1,5 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { tenants, users } from '@/drizzle/schema';
@@ -7,7 +9,10 @@ import { isDevRuntime, isQaAutomation } from '@/infra/env/devOnly';
 
 export const runtime = "nodejs";
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
+  const internalGuard = requireInternalToken(request);
+  if (!internalGuard.ok) return internalGuard.response;
+
     const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
     const isDev = isDevRuntime();
     const hasGithubHeader = request.headers.get('x-github-actions') === 'true';
@@ -78,3 +83,5 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Database setup failed', details: e.message }, { status: 500 });
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

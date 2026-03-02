@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireActivePlan } from '../../../../modules/billing/requireActivePlan';
 import { requireAdmin } from '../../../../infra/auth/guards';
@@ -9,7 +10,7 @@ import { isDevRuntime, isQaAutomation } from '@/infra/env/devOnly';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const auth = await requireAdmin(request);
     if (!auth.ok) {
         return auth.response;
@@ -197,3 +198,5 @@ export async function GET(request: NextRequest) {
         }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

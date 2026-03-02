@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../../infra/auth/guards';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '../../../../../infra/http/error-response';
@@ -21,7 +22,7 @@ function statusCacheKey(tenantId: string): string {
   return `cockpit:ops:status:${tenantId}`;
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/cockpit/ops/run-rollup';
@@ -138,3 +139,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return finalize(errorResponse(code, status, requestId, message), code);
   }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

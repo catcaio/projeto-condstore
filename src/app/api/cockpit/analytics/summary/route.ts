@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
@@ -56,7 +57,7 @@ function toRate(numerator: number, denominator: number): number {
   return Number(((numerator / denominator) * 100).toFixed(1));
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin(request);
   if (!auth.ok) {
     return auth.response;
@@ -146,3 +147,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed to load analytics summary' }, { status: 500 });
   }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

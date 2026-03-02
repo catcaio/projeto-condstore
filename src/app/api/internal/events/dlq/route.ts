@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from "next/server";
 import { redisClient } from "../../../../../infra/redis.client";
 import { z } from "zod";
@@ -8,7 +9,7 @@ const querySchema = z.object({
     stream: z.string().default("events:finops"),
 });
 
-export async function GET(req: NextRequest) {
+async function _GET(req: NextRequest) {
     const internalGuard = requireInternalToken(req);
     if (!internalGuard.ok) return internalGuard.response;
 
@@ -55,3 +56,5 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Failed to read DLQ" }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

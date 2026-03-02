@@ -47,6 +47,32 @@ export async function requireSessionTenantMatch(
   return { ok: true, tenantId: sessionUser.tenantId, sessionUser };
 }
 
+export async function getAuthContext(
+  request: NextRequest,
+  tenantId?: string | undefined, // Note: tenantId parameter is optional to satisfy migration paths but the function inherently derives from the session identity 
+): Promise<{ ok: true; sessionUser: SessionPayload; tenantId: string } | { ok: false; response: NextResponse }> {
+  const sessionUser = await getSessionUser(request);
+  if (!sessionUser?.tenantId) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 }),
+    };
+  }
+
+  // If a specific tenant constraint is requested, enforce it
+  if (tenantId) {
+    const normalizedTenantId = tenantId.trim();
+    if (sessionUser.tenantId !== normalizedTenantId) {
+      return {
+        ok: false,
+        response: NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 }),
+      };
+    }
+  }
+
+  return { ok: true, tenantId: sessionUser.tenantId, sessionUser };
+}
+
 export async function requireAdminSession(
   request: NextRequest,
 ): Promise<{ ok: true; sessionUser: SessionPayload; tenantId: string } | { ok: false; response: NextResponse }> {

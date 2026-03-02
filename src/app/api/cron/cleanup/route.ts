@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -108,10 +109,14 @@ async function handleCronCleanup(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
   return handleCronCleanup(request);
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
   return handleCronCleanup(request);
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const POST = withGlobalErrorInterceptor(_POST);

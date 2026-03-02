@@ -1,15 +1,16 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { extractTenantIdFromTenantRoute, getAuthContext } from '@/infra/auth/tenant-route-guard';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { adminAuditLogRepository } from '@/infra/repositories/admin-audit-log.repository';
 import { tenantIncidentsRepository } from '@/infra/repositories/tenant-incidents.repository';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+async function _GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
-    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+    const guard = await getAuthContext(req, tenantIdFromRoute);
     if (!guard.ok) return guard.response;
 
     if (guard.sessionUser.role !== 'admin') {
@@ -47,3 +48,5 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

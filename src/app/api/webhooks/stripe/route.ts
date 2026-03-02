@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextResponse } from 'next/server';
 import { verifyStripeSignature, StripeEvent } from '../../../../lib/billing/signature';
 const planData = [
@@ -14,7 +15,7 @@ import { logger } from '@/infra/logger';
 
 export const runtime = 'nodejs'; // Use Node.js runtime for Stripe streaming/raw parsing safely
 
-export async function POST(req: Request) {
+async function _POST(req: Request) {
     try {
         const rawBody = await req.text();
         const signature = req.headers.get('stripe-signature');
@@ -192,3 +193,5 @@ async function handleSubscriptionEvent(event: StripeEvent) {
     }
 }
 
+
+export const POST = withGlobalErrorInterceptor(_POST);

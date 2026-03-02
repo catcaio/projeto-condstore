@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 /**
  * GET /api/cockpit/metrics
  *
@@ -36,7 +37,7 @@ interface CockpitMetrics {
 
 const CACHE_TTL_SECONDS = 30;
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/cockpit/metrics';
@@ -166,3 +167,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return finalize(errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Failed to load metrics'), ErrorCode.DB_ERROR);
   }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

@@ -1,3 +1,5 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +28,7 @@ function isProductionVercelEnv(): boolean {
   return process.env.VERCEL_ENV?.trim().toLowerCase() === 'production';
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
 
@@ -128,3 +130,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Admin password reset failed');
   }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

@@ -1,19 +1,20 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { makeRequestId } from '@/infra/http/request-trace';
-import { requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { getAuthContext } from '@/infra/auth/tenant-route-guard';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { endUserConsentRepository } from '@/infra/repositories/end-user-consent.repository';
 import { getDb } from '@/infra/db';
 import { messages } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string, action: string }> }) {
+async function _POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string, action: string }> }) {
     const requestId = makeRequestId(req);
     const resolvedParams = await params;
     const { tenantId, action } = resolvedParams;
 
-    const guard = await requireSessionTenantMatch(req, tenantId);
+    const guard = await getAuthContext(req, tenantId);
     if (!guard.ok) return guard.response;
 
     if (guard.sessionUser.role !== 'admin') {
@@ -71,3 +72,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ten
         return NextResponse.json({ error: e.message || 'Internal server error' }, { status: 500 });
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

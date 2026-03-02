@@ -1,3 +1,4 @@
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 

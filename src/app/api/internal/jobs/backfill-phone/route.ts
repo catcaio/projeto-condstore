@@ -1,3 +1,5 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +19,7 @@ interface BackfillPhoneBody {
 const INTERNAL_AUDIT_TENANT_ID = 'internal-system';
 const INTERNAL_AUDIT_USER_ID = 'internal-job';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/internal/jobs/backfill-phone';
@@ -93,3 +95,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Phone PII backfill failed');
   }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

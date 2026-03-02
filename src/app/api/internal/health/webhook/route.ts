@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 /**
  * GET /api/internal/health/webhook
  *
@@ -55,7 +56,7 @@ async function checkDb(): Promise<ComponentStatus> {
 import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { NextRequest } from "next/server";
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const internalGuard = requireInternalToken(request);
     if (!internalGuard.ok) return internalGuard.response;
 
@@ -86,3 +87,5 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(body, { status: healthy ? 200 : 503 });
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

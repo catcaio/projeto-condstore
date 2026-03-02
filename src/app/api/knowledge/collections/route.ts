@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '../../../../infra/db';
 import { tenantCollections, tenantDocuments } from '../../../../drizzle/schema';
@@ -15,7 +16,7 @@ const CreateCollectionSchema = z.object({
     connectorType: z.string().nullable().optional(),
 });
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const requestId = makeRequestId(request);
     const authResult = await requireKnowledgePermission(request, 'knowledge:read', { requestId });
 
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     const requestId = makeRequestId(request);
     // Manager/Admin needed to CREATE collection + configure syncing if integration
     const authResult = await requireKnowledgePermission(request, 'knowledge:manage', { requestId });
@@ -72,3 +73,7 @@ export async function POST(request: NextRequest) {
         return errorResponse("INTERNAL_ERROR" as any, 500, requestId);
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const POST = withGlobalErrorInterceptor(_POST);

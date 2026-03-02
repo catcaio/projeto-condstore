@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ async function isAuthorized(request: NextRequest): Promise<boolean> {
 
 // ── Handler ──────────────────────────────────────────────────────────────────
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();
     const requestId = makeRequestId(request);
     const route = '/api/supreme/ecosystem';
@@ -98,3 +99,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Ecosystem map collection failed');
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

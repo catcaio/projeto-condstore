@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash, randomUUID } from 'crypto';
 import { projectReportRepository } from '@/infra/repositories/project-report.repository';
@@ -10,7 +11,7 @@ import { logger } from '@/infra/logger';
  * Ingests a project evolution report.
  * Protected by session auth OR ADMIN_TOKEN env var.
  */
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     try {
         // 1. Authentication
         const adminToken = process.env.ADMIN_TOKEN;
@@ -72,3 +73,5 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/infra/logger';
 import { verifyTwilioRequest } from '../../../../server/twilio/verifyWebhook';
@@ -13,7 +14,7 @@ export const runtime = "nodejs";
  *
  * Always responds 200 TwiML so Twilio doesn't keep retrying.
  */
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     const rawBody = await request.text();
 
     // ── Guard: TWILIO_AUTH_TOKEN must be configured ─────────────────────────────
@@ -70,3 +71,5 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'text/xml' },
     });
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

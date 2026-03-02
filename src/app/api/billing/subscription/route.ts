@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/infra/auth/session';
 import { getDb } from '@/infra/db';
@@ -6,7 +7,7 @@ import { eq } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import { makeRequestId } from '@/infra/http/request-trace';
 
-export async function GET(req: NextRequest) {
+async function _GET(req: NextRequest) {
     // ── Auth: tenantId MUST come from the verified session, never from query params ──
     const session = await getSessionUser(req);
     if (!session?.tenantId) {
@@ -57,3 +58,5 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

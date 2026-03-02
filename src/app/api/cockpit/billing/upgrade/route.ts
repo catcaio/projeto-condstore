@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 export const dynamic = 'force-dynamic';
 
 /**
@@ -22,7 +23,7 @@ import {
     BillingServiceError,
 } from '../../../../../modules/billing/billing.service';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
     const requestId = makeRequestId(request);
 
     structuredLogger.info('billing_upgrade_request', {
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  * GET /api/cockpit/billing/upgrade
  * Returns available plans for the upgrade selector UI.
  */
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
     const requestId = makeRequestId(request);
 
     const auth = await requireAdmin(request, { requestId });
@@ -119,3 +120,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Failed to load plans');
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const POST = withGlobalErrorInterceptor(_POST);

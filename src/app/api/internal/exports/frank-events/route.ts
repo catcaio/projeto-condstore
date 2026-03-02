@@ -1,3 +1,5 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { NextRequest, NextResponse } from 'next/server';
 import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import { frankEvents } from '@/drizzle/schema';
@@ -242,7 +244,10 @@ function serializeFrankRowToNdjson(
   })}\n`;
 }
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
+  const internalGuard = requireInternalToken(request);
+  if (!internalGuard.ok) return internalGuard.response;
+
   const requestId = makeRequestId(request);
   const startTime = Date.now();
 
@@ -451,3 +456,5 @@ export async function GET(request: NextRequest) {
     },
   });
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

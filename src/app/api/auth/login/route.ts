@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 export const runtime = "nodejs";
 
 import crypto from 'node:crypto';
@@ -66,7 +67,7 @@ function logLoginDiagnostic(input: {
     structuredLogger.warn('auth_login_rejected', context);
 }
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID?.() ?? `${Date.now()}`;
     // 5) Validação de Variáveis de Ambiente e Fallback
     const dbUrl = process.env.DATABASE_URL;
@@ -242,3 +243,5 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

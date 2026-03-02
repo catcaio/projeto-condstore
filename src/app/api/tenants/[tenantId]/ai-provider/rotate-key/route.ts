@@ -1,9 +1,10 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { tenantAiProviderRepository } from '../../../../../../infra/repositories/tenant-ai-provider.repository';
 import { checkRedisRateLimit } from '../../../../../../infra/rate-limit/redis-rate-limiter';
 import {
   extractTenantIdFromTenantRoute,
-  requireSessionTenantMatch,
+  getAuthContext,
 } from '../../../../../../infra/auth/tenant-route-guard';
 import { attachRequestIdHeader, makeRequestId } from '../../../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '../../../../../../infra/http/error-response';
@@ -25,7 +26,7 @@ async function enforceRateLimit(actorId: string, requestId: string, tenantId: st
   return null;
 }
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/tenants/[tenantId]/ai-provider/rotate-key';
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
   try {
     const tenantId = extractTenantIdFromTenantRoute(request);
     tenantIdForLog = tenantId;
-    const guard = await requireSessionTenantMatch(request, tenantId);
+    const guard = await getAuthContext(request, tenantId);
     if (!guard.ok) return finalize(guard.response);
     userIdForLog = guard.sessionUser.sub;
     if (guard.sessionUser.role !== 'admin') {
@@ -94,3 +95,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

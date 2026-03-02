@@ -1,7 +1,8 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from "next/server";
 import { redisClient } from "@/infra/redis.client";
 
-export async function GET(req: NextRequest) {
+async function _GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const tenantId = searchParams.get("tenantId");
   if (!tenantId) return NextResponse.json({ error: "tenantId required" }, { status: 400 });
@@ -31,3 +32,5 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ tenantId, buckets, near, blocked });
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

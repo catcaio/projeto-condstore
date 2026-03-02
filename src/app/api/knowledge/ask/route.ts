@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '../../../../infra/db';
 import { tenantKnowledgeQueries } from '../../../../drizzle/schema';
@@ -16,7 +17,7 @@ const AskQuerySchema = z.object({
     includeSensitive: z.boolean().optional().default(false),
 });
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     const requestId = makeRequestId(request);
     const authResult = await requireKnowledgePermission(request, 'knowledge:ask', { requestId });
 
@@ -106,3 +107,5 @@ export async function POST(request: NextRequest) {
         return errorResponse("INTERNAL_ERROR" as any, 500, requestId, 'Ocorreu um erro interno de inferência');
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

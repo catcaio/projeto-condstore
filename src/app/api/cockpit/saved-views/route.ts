@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { sql, and, eq } from 'drizzle-orm';
 import { getDb } from '../../../../infra/db';
@@ -20,7 +21,7 @@ const ALLOWED_BY_MODULE: Record<string, string[]> = {
     'acquisition_drilldown': ACQUISITION_FILTER_KEYS
 };
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const requestId = makeRequestId(request);
     const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     const requestId = makeRequestId(request);
     const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
     }
 }
 
-export async function DELETE(request: NextRequest) {
+async function _DELETE(request: NextRequest) {
     const requestId = makeRequestId(request);
     const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
@@ -162,3 +163,9 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'DB Error' }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const POST = withGlobalErrorInterceptor(_POST);
+
+export const DELETE = withGlobalErrorInterceptor(_DELETE);

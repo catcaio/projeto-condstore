@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { tenantSecretsRepository } from '@/infra/repositories/tenant-secrets.repository';
@@ -8,15 +9,15 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { structuredLogger } from '@/infra/log/logger';
 import crypto from 'crypto';
 
-import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { extractTenantIdFromTenantRoute, getAuthContext } from '@/infra/auth/tenant-route-guard';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+async function _POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
     // 1. Session and Tenant Match
-    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+    const guard = await getAuthContext(req, tenantIdFromRoute);
     if (!guard.ok) return guard.response;
 
     // 2. Admin verification
@@ -86,3 +87,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ten
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

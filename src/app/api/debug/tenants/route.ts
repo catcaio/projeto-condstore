@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 /**
  * Debug endpoint to list all tenants.
  * Only available in development mode.
@@ -8,7 +9,7 @@ import { NextResponse } from 'next/server';
 import { tenantRepository } from '../../../../infra/repositories/tenant.repository';
 import { assertDevOnly } from '@/infra/env/devOnly';
 
-export async function GET() {
+async function _GET() {
     const devGuard = assertDevOnly();
     if (devGuard) return devGuard;
 
@@ -34,3 +35,5 @@ export async function GET() {
         );
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { getDb } from '../../../../infra/db';
@@ -15,7 +16,7 @@ export function finopsCacheKey(tenantId: string): string {
     return `cockpit:finops:${tenantId}`;
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();
     const requestId = makeRequestId(request);
     const route = '/api/cockpit/finops';
@@ -146,3 +147,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         return finalize(errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Internal server error'), ErrorCode.DB_ERROR);
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

@@ -1,3 +1,5 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +10,7 @@ import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/
 import { structuredLogger } from '../../../../../infra/log/logger';
 import { runFinopsReconciliation } from '../../../../../modules/jobs/finops-reconciliation.worker';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();
     const requestId = makeRequestId(request);
     const route = '/api/internal/jobs/finops-reconciliation';
@@ -69,3 +71,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return errorResponse(ErrorCode.DB_ERROR, 500, requestId, (error as Error).message || 'Worker failed');
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

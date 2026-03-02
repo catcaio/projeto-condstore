@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '../../../../../infra/db';
 import { tenantBudgets, finopsLockEvents } from '../../../../../drizzle/schema';
@@ -11,7 +12,7 @@ import { finopsCacheKey } from '../../../../../infra/repositories/token-usage-ev
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     const requestId = makeRequestId(request);
 
     try {
@@ -78,3 +79,5 @@ export async function POST(request: NextRequest) {
         return errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Erro ao desbloquear orçamento.');
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

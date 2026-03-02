@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/infra/db";
 import { messages, freightFunnelEvents } from "@/drizzle/schema";
@@ -8,12 +9,18 @@ import { makeRequestId } from "@/infra/http/request-trace";
 import { structuredLogger } from "@/infra/log/logger";
 import { vectorPurgeService } from "@/modules/privacy/vector-purge.service";
 
-export async function DELETE(
+import { getAuthContext } from "@/infra/auth/tenant-route-guard";
+
+async function _DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ tenantId: string }> }
 ) {
     const requestId = makeRequestId(request);
     const { tenantId } = await params;
+
+    // Auth + Tenant Boundary check
+    const auth = await getAuthContext(request, tenantId);
+    if (!auth.ok) return auth.response;
 
     try {
         const body = await request.json();
@@ -74,3 +81,5 @@ export async function DELETE(
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, "Failed to purge user data.");
     }
 }
+
+export const DELETE = withGlobalErrorInterceptor(_DELETE);

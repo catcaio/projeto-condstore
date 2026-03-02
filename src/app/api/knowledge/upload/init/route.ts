@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { tenantDocuments, tenantDocumentVersions } from '@/drizzle/schema';
@@ -18,7 +19,7 @@ const UploadInitSchema = z.object({
     isSensitive: z.boolean().optional().default(false),
 });
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     const requestId = makeRequestId(request);
     const authResult = await requireKnowledgePermission(request, 'knowledge:upload', { requestId });
 
@@ -135,3 +136,5 @@ export async function POST(request: NextRequest) {
         return errorResponse("INTERNAL_ERROR" as any, 500, requestId, 'Failed to initialize upload');
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

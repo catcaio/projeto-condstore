@@ -1,11 +1,12 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { extractTenantIdFromTenantRoute, getAuthContext } from '@/infra/auth/tenant-route-guard';
 import { domineReadRepository } from '@/infra/repositories/domine-read.repository';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { getInternalExportTokenOrThrow } from '@/infra/config/internal-token';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+async function _GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
 
     // Fallback to Admin session
     if (!isAuthorized) {
-        const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+        const guard = await getAuthContext(req, tenantIdFromRoute);
         if (guard.ok && guard.sessionUser.role === 'admin') {
             isAuthorized = true;
         }
@@ -39,3 +40,5 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, e.message);
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

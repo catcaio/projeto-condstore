@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { getDb } from '../../../../../infra/db';
@@ -91,7 +92,7 @@ function writeToCache(cacheKey: string, tenantId: string, payload: FreightMetric
   }
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/cockpit/metrics/freight';
@@ -266,3 +267,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 }
 
+
+export const GET = withGlobalErrorInterceptor(_GET);

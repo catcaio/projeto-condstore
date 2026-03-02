@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { getDb } from '../../../../../../infra/db';
@@ -8,7 +9,7 @@ export const runtime = 'nodejs';
 
 import { isDevRuntime, isQaAutomation } from '../../../../../../infra/env/devOnly';
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const requestId = makeRequestId(request);
     const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
@@ -111,3 +112,5 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Database error' }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

@@ -1,9 +1,10 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { tenantAiProviderRepository, type UpsertTenantAIProviderInput } from '../../../../../infra/repositories/tenant-ai-provider.repository';
 import { checkRedisRateLimit } from '../../../../../infra/rate-limit/redis-rate-limiter';
 import {
   extractTenantIdFromTenantRoute,
-  requireSessionTenantMatch,
+  getAuthContext,
 } from '../../../../../infra/auth/tenant-route-guard';
 import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '../../../../../infra/http/error-response';
@@ -34,7 +35,7 @@ function toBoolean(value: unknown): boolean | undefined {
   return undefined;
 }
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/tenants/[tenantId]/ai-provider';
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
   try {
     const tenantId = extractTenantIdFromTenantRoute(request);
     tenantIdForLog = tenantId;
-    const guard = await requireSessionTenantMatch(request, tenantId);
+    const guard = await getAuthContext(request, tenantId);
     if (!guard.ok) return finalize(guard.response);
     userIdForLog = guard.sessionUser.sub;
     if (guard.sessionUser.role !== 'admin') {
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
+async function _PUT(request: NextRequest) {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/tenants/[tenantId]/ai-provider';
@@ -144,7 +145,7 @@ export async function PUT(request: NextRequest) {
   try {
     const tenantId = extractTenantIdFromTenantRoute(request);
     tenantIdForLog = tenantId;
-    const guard = await requireSessionTenantMatch(request, tenantId);
+    const guard = await getAuthContext(request, tenantId);
     if (!guard.ok) return finalize(guard.response);
     userIdForLog = guard.sessionUser.sub;
     if (guard.sessionUser.role !== 'admin') {
@@ -199,3 +200,7 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const PUT = withGlobalErrorInterceptor(_PUT);

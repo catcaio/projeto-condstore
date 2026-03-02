@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { randomBytes, randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../../infra/auth/guards';
@@ -37,7 +38,7 @@ function generateToken(): string {
   return randomBytes(12).toString('base64url');
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function _POST(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin(request);
   if (!auth.ok) return auth.response;
 
@@ -158,3 +159,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     final_url_template: buildTemplatePath(),
   });
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const POST = withGlobalErrorInterceptor(_POST);

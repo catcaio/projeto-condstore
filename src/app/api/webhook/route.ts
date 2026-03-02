@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 /**
  * Twilio WhatsApp Webhook — Hardened.
  *
@@ -84,7 +85,7 @@ function twimlEmpty(requestId?: string): NextResponse {
 
 // ─── POST /api/webhook ────────────────────────────────────────────────────────
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
   const startTime = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/webhook';
@@ -593,7 +594,7 @@ export async function POST(request: NextRequest) {
 /**
  * Minimal liveness check (use /api/internal/health/webhook for deep health).
  */
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
   const requestId = makeRequestId(request);
   const response = NextResponse.json(
     {
@@ -604,3 +605,7 @@ export async function GET(request: NextRequest) {
   );
   return attachRequestIdHeader(response, requestId);
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const POST = withGlobalErrorInterceptor(_POST);

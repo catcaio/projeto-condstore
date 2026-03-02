@@ -1,5 +1,6 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { extractTenantIdFromTenantRoute, getAuthContext } from '@/infra/auth/tenant-route-guard';
 import { domineEventBus } from '@/modules/domine/event-bus.service';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
@@ -11,11 +12,11 @@ const schema = z.object({
     payload: z.any().optional(),
 });
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+async function _POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
-    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+    const guard = await getAuthContext(req, tenantIdFromRoute);
     if (!guard.ok) return guard.response;
 
     if (guard.sessionUser.role !== 'admin') {
@@ -45,3 +46,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ten
         return errorResponse(ErrorCode.VALIDATION_ERROR, 500, requestId, e.message);
     }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

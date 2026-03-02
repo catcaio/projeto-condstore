@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { errorResponse, ErrorCode } from '../../../../infra/http/error-response';
 import { makeRequestId } from '../../../../infra/http/request-trace';
@@ -7,7 +8,7 @@ import { requireAdmin } from '@/infra/auth/guards';
 
 export const revalidate = 60; // Route Segment config: cache for 60s
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const requestId = makeRequestId(request);
 
     const auth = await requireAdmin(request, { requestId });
@@ -26,3 +27,5 @@ export async function GET(request: NextRequest) {
         return errorResponse("INTERNAL_ERROR" as any, 500, requestId);
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

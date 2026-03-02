@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextResponse, NextRequest } from "next/server";
 import mysql from "mysql2/promise";
 import { isInternalTokenAuthorized } from '@/infra/config/internal-token';
@@ -294,14 +295,18 @@ async function handler(request: NextRequest) {
     }
 }
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     return handler(request);
 }
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     void request;
     return NextResponse.json(
         { success: false, error: 'Method Not Allowed' },
         { status: 405, headers: { Allow: 'POST' } },
     );
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const POST = withGlobalErrorInterceptor(_POST);

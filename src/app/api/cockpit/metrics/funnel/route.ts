@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
@@ -46,7 +47,7 @@ interface FunnelMetricsResponse {
     };
 }
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const startedAt = Date.now();
     const requestId = makeRequestId(request);
     const route = '/api/cockpit/metrics/funnel';
@@ -251,3 +252,5 @@ export async function GET(request: NextRequest) {
         return finalize(errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Failed to load funnel metrics'), ErrorCode.DB_ERROR);
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

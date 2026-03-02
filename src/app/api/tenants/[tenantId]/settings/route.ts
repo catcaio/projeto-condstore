@@ -1,7 +1,8 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   extractTenantIdFromTenantRoute,
-  requireSessionTenantMatch,
+  getAuthContext,
 } from '../../../../../infra/auth/tenant-route-guard';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '../../../../../infra/http/error-response';
 import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/request-trace';
@@ -21,7 +22,7 @@ interface TenantSettingsPayload {
   incidentMode?: boolean;
 }
 
-export async function PUT(request: NextRequest): Promise<NextResponse> {
+async function _PUT(request: NextRequest): Promise<NextResponse> {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/tenants/[tenantId]/settings';
@@ -56,7 +57,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     const tenantId = extractTenantIdFromTenantRoute(request);
     tenantIdForLog = tenantId;
 
-    const guard = await requireSessionTenantMatch(request, tenantId);
+    const guard = await getAuthContext(request, tenantId);
     if (!guard.ok) return finalize(guard.response);
 
     userIdForLog = guard.sessionUser.sub;
@@ -186,10 +187,10 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function _GET(request: NextRequest): Promise<NextResponse> {
   try {
     const tenantId = extractTenantIdFromTenantRoute(request);
-    const guard = await requireSessionTenantMatch(request, tenantId);
+    const guard = await getAuthContext(request, tenantId);
     if (!guard.ok) return guard.response;
 
     const existingTenant = await tenantRepository.getTenantById(guard.tenantId);
@@ -207,3 +208,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed to GET tenant settings' }, { status: 500 });
   }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const PUT = withGlobalErrorInterceptor(_PUT);

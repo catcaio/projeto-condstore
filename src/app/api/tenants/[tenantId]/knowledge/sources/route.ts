@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
@@ -6,7 +7,7 @@ import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { makeRequestId } from '@/infra/http/request-trace';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+async function _GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const auth = await requireAdmin(req, { requestId });
     if (!auth.ok) return auth.response;
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
     }
 }
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+async function _POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const auth = await requireAdmin(req, { requestId });
     if (!auth.ok) return auth.response;
@@ -61,3 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ten
         return NextResponse.json({ error: 'Failed to create knowledge source' }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const POST = withGlobalErrorInterceptor(_POST);

@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextResponse, NextRequest } from "next/server";
 import { randomUUID } from "crypto";
 import { getDb } from "@/infra/db"; // Use the existing db connection logic
@@ -8,7 +9,7 @@ import { makeRequestId } from '@/infra/http/request-trace';
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
   if (process.env.IS_DEV !== 'true') {
     return NextResponse.json({ success: false, error: 'Forbidden in production' }, { status: 403 });
   }
@@ -56,3 +57,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const POST = withGlobalErrorInterceptor(_POST);

@@ -1,7 +1,8 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextResponse, NextRequest } from 'next/server';
 import { isInternalTokenAuthorized } from '@/infra/config/internal-token';
 
-export async function POST(request: NextRequest) {
+async function _POST(request: NextRequest) {
     const token = request.headers.get('x-internal-token');
     if (!isInternalTokenAuthorized(token)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 }
 
-export async function GET(request: NextRequest) {
+async function _GET(request: NextRequest) {
     const token = request.headers.get('x-internal-token');
     if (!isInternalTokenAuthorized(token)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -34,3 +35,7 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString()
     });
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
+
+export const POST = withGlobalErrorInterceptor(_POST);

@@ -1,3 +1,4 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { makeRequestId } from '@/infra/http/request-trace';
@@ -8,18 +9,18 @@ import { getDb } from '@/infra/db';
 import { tenants, domineEvents, endUserConsents } from '@/drizzle/schema';
 import { and, desc, asc, eq, sql } from 'drizzle-orm';
 
-import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { extractTenantIdFromTenantRoute, getAuthContext } from '@/infra/auth/tenant-route-guard';
 import { rateLimiter, applyRateLimitHeaders } from '@/infra/security/rate-limiter';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { tenantSecretsRepository } from '@/infra/repositories/tenant-secrets.repository';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string }> }) {
+async function _GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string }> }) {
     const requestId = makeRequestId(req);
     const resolvedParams = await params;
     const tenantIdFromRoute = resolvedParams.tenantId;
 
     // 1. Session and Tenant Match
-    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+    const guard = await getAuthContext(req, tenantIdFromRoute);
     if (!guard.ok) return guard.response;
 
     // 2. Admin verification
@@ -134,3 +135,5 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
         return NextResponse.json({ error: 'Failed to fetch health summary' }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);

@@ -1,19 +1,20 @@
+import { withGlobalErrorInterceptor } from '@/infra/http/with-global-error-interceptor';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { tenantSecretsRepository } from '@/infra/repositories/tenant-secrets.repository';
 import { rateLimiter, applyRateLimitHeaders } from '@/infra/security/rate-limiter';
 import { makeRequestId } from '@/infra/http/request-trace';
 
-import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { extractTenantIdFromTenantRoute, getAuthContext } from '@/infra/auth/tenant-route-guard';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { structuredLogger } from '@/infra/log/logger';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+async function _GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
     // 1. Session and Tenant Match
-    const guard = await requireSessionTenantMatch(req, tenantIdFromRoute);
+    const guard = await getAuthContext(req, tenantIdFromRoute);
     if (!guard.ok) return guard.response;
 
     // 2. Admin verification
@@ -42,3 +43,5 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export const GET = withGlobalErrorInterceptor(_GET);
