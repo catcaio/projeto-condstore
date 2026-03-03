@@ -5,7 +5,7 @@ import { Badge } from '@/ui/components';
 import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
 import { ShieldCheck, Database, Activity } from 'lucide-react';
 import { getSystemHealth } from './queries';
-import { getSystemStatus } from './system-status/queries';
+import { getSystemStatus } from './status/queries';
 import Link from 'next/link';
 
 import { BillingSection } from './components/billing-section';

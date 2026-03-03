@@ -18,41 +18,57 @@ export function AppNav({ role, tenantId }: AppNavProps) {
 
     return (
         <div className="space-y-6">
-            <SettingsSection title="Workspace">
-                <SettingsRow
-                    icon={<Home className="h-5 w-5 text-[hsl(var(--ui-text))] " />}
-                    label="Home"
-                    href={homeHref}
-                />
+            <SettingsSection title="OPERATIONS">
                 <SettingsRow
                     icon={<Activity className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Cockpit"
-                    href={cockpitHref}
-                />
-                <SettingsRow
-                    icon={<Inbox className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Inbox"
-                    href={inboxHref}
+                    label="Status"
+                    href={isSuper && tenantId ? { pathname: '/cockpit/status', query: { tenantId } } : "/cockpit/status"}
                 />
                 <SettingsRow
                     icon={<Target className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Origem & Conversão"
-                    href={attrHref}
+                    label="Audit Logs"
+                    href={isSuper && tenantId ? { pathname: '/cockpit/status/audit', query: { tenantId } } : "/cockpit/status/audit"}
                 />
+                <SettingsRow
+                    icon={<Inbox className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Strategic Facts"
+                    href={isSuper && tenantId ? { pathname: '/cockpit/strategic-facts', query: { tenantId } } : "/cockpit/strategic-facts"}
+                />
+            </SettingsSection>
+
+            <SettingsSection title="DOMINE">
                 <SettingsRow
                     icon={<Package className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Fretes"
-                    href={isSuper && tenantId ? { pathname: '/freight/simulations', query: { tenantId } } : "/freight/simulations"}
+                    label="Overview"
+                    href={isSuper && tenantId ? { pathname: '/cockpit/domine', query: { tenantId } } : "/cockpit/domine"}
                 />
                 <SettingsRow
-                    icon={<Settings className="h-5 w-5" />}
-                    label="Configurações"
-                    href="/settings"
+                    icon={<ShieldAlert className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="DLQ (Dead Letter Queue)"
+                    href={isSuper && tenantId ? { pathname: '/cockpit/domine/dlq', query: { tenantId } } : "/cockpit/domine/dlq"}
+                />
+                <SettingsRow
+                    icon={<Activity className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Health"
+                    href={isSuper && tenantId ? { pathname: '/cockpit/domine/health', query: { tenantId } } : "/cockpit/domine/health"}
+                />
+            </SettingsSection>
+
+            <SettingsSection title="SETTINGS">
+                <SettingsRow
+                    icon={<ShieldAlert className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Security"
+                    href={isSuper && tenantId ? { pathname: '/cockpit/settings/security', query: { tenantId } } : "/cockpit/settings/security"}
+                />
+                <SettingsRow
+                    icon={<Settings className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
+                    label="Knowledge Base"
+                    href={isSuper && tenantId ? { pathname: '/cockpit/settings/knowledge', query: { tenantId } } : "/cockpit/settings/knowledge"}
                 />
             </SettingsSection>
 
             {isSuper && (
-                <SettingsSection title="System Administration">
+                <SettingsSection title="GLOBAL ADMIN">
                     <SettingsRow
                         icon={<ShieldAlert className="h-5 w-5 text-[hsl(var(--ui-danger))]" />}
                         label={
