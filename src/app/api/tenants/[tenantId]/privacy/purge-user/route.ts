@@ -10,6 +10,7 @@ import { errorResponse, ErrorCode } from "@/infra/http/error-response";
 import { makeRequestId } from "@/infra/http/request-trace";
 import { structuredLogger } from "@/infra/log/logger";
 import { vectorPurgeService } from "@/modules/privacy/vector-purge.service";
+import { requireAdminSession } from "@/infra/auth/tenant-route-guard";
 
 export async function DELETE(
     request: NextRequest,
@@ -17,6 +18,17 @@ export async function DELETE(
 ) {
     const requestId = makeRequestId(request);
     const { tenantId } = await params;
+
+    // P0 SECURITY: Auth guard — admin + tenant match required for destructive purge
+    const authResult = await requireAdminSession(request);
+    if (!authResult.ok) {
+        structuredLogger.warn("lgpd_purge_unauthorized", { requestId, tenantId, reason: "no_session_or_not_admin" });
+        return authResult.response;
+    }
+    if (authResult.tenantId !== tenantId) {
+        structuredLogger.warn("lgpd_purge_tenant_mismatch", { requestId, tenantId, sessionTenant: authResult.tenantId });
+        return NextResponse.json({ error: "FORBIDDEN", message: "Tenant mismatch" }, { status: 403 });
+    }
 
     try {
         const body = await request.json();

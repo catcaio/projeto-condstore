@@ -16,6 +16,14 @@ interface LimitOptions {
   blockSec?: number;
 }
 
+export type RouteSensitivity = 'critical' | 'public_safe';
+
+/** Scopes explicitly classified as safe for fail-open on Redis failure */
+const SAFE_PUBLIC_SCOPES = new Set([
+  'public_home', 'public_docs', 'public_pricing', 'public_robots', 'public_sitemap',
+  'cotacao_intent', 'cotacao_quotes'
+]);
+
 interface MemoryBucket {
   count: number;
   expiresAt: number;
@@ -224,6 +232,7 @@ export class RateLimiter {
   ): Promise<RateLimitDecision> {
     const keyHash = hashRateLimitKeyInternal(key);
     const errorName = error instanceof Error ? error.name : undefined;
+    const sensitivity: RouteSensitivity = SAFE_PUBLIC_SCOPES.has(scope) ? 'public_safe' : 'critical';
 
     if (isMemoryFallbackEnabled()) {
       structuredLogger.warn('rate_limiter_redis_failure_memory_fallback', {
@@ -231,23 +240,27 @@ export class RateLimiter {
         scope,
         keyHash,
         reason,
+        sensitivity,
         ...(errorName ? { errorName } : {}),
       });
       return this.limitWithMemory(scope, key, options, now);
     }
 
-    if (isRateLimitFailClosedOverrideEnabled()) {
-      structuredLogger.error('rate_limiter_redis_failure_fail_closed_override', {
+    // P0: Default to fail-closed for critical scopes (webhook, auth, internal, ingest)
+    if (sensitivity === 'critical') {
+      structuredLogger.error('rate_limiter_redis_failure_fail_closed', {
         eventType: 'rate_limiter',
         scope,
         keyHash,
         reason,
-        failClosedOverride: true,
+        rateLimitMode: 'fail_closed',
+        sensitivity,
         ...(errorName ? { errorName } : {}),
       });
       return failClosedDecision(now, options);
     }
 
+    // Fail-open only for explicitly safe public routes
     fallbackMetrics.count += 1;
     fallbackMetrics.lastSeenAt = now;
 
@@ -258,7 +271,8 @@ export class RateLimiter {
       scope,
       keyHash,
       reason,
-      failClosedOverride: false,
+      rateLimitMode: 'fail_open',
+      sensitivity,
       ...(errorName ? { errorName } : {}),
     });
     return failOpenDecision(now, options);

@@ -66,3 +66,25 @@ To prevent undocumented or accidentally public endpoints from reaching productio
 
 ### Safe QA Bootstrapping
 Automated E2E tests (Playwright) bypass CAPTCHA and MFA bottlenecks by invoking `/api/internal/qa/bootstrap-session`. This path is exclusively authorized by verifying the `x-qa-token` via GitHub Action environment validation, ensuring that dynamic test seeds are physically impossible to trigger via public gateways.
+
+## 5. Security Policies
+
+### Auth Boundary
+All tenant-scoped API routes under `/api/tenants/[tenantId]/**` require authenticated sessions. Destructive operations (e.g., `DELETE /api/tenants/[tenantId]/privacy/purge-user`) additionally require `admin` role and strict tenant match via `requireAdminSession()`. The `proxy.ts` middleware strips all spoofable auth headers (`x-tenant-id`, `x-auth-*`) from incoming requests before any route handler executes.
+
+### Public Surface Map
+The following routes are explicitly **public** (no auth required): `/`, `/cotacao`, `/docs`, `/login`, `/pricing`, `/robots.txt`, `/sitemap.xml`. These are excluded from the `proxy.ts` matcher and served as static or ISR pages.
+
+### Sensitive Routes List
+Routes classified as **critical** for rate-limiting and access control:
+- `/api/internal/**` — requires `x-internal-token`
+- `/api/webhook/**` — requires webhook signature verification
+- `/api/tenants/[tenantId]/privacy/**` — requires admin session + tenant match
+- `/api/auth/**` — login/logout boundaries
+- `/api/cockpit/**` — requires authenticated cookie session
+
+### Rate-Limit Policy
+The rate limiter classifies route scopes into two sensitivity levels:
+- **`critical`** (default): On Redis failure, the limiter **fails closed** (blocks the request). Applies to webhook, auth, internal, ingest, and all unclassified routes.
+- **`public_safe`**: On Redis failure, the limiter **fails open** (allows the request). Applies only to explicitly safe public routes (home, docs, pricing, cotacao).
+

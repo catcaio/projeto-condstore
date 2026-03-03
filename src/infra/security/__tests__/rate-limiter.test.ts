@@ -58,40 +58,7 @@ describe('security rate-limiter redis failure hardening', () => {
     delete process.env.RATE_LIMIT_FAIL_CLOSED;
   });
 
-  it('fails open in production when redis is unavailable', async () => {
-    const limiter = new RateLimiter();
-    const now = Date.now();
-
-    const result = await limiter.limit('auth.login', '1.2.3.4:user@example.com', {
-      max: 5,
-      windowSec: 60,
-    });
-
-    expect(result).toEqual({
-      allowed: true,
-      remaining: 5,
-      resetAt: now + 60_000,
-      limit: 5,
-    });
-    expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
-      'rate_limiter_fallback_active',
-      expect.objectContaining({
-        eventType: 'rate_limiter_fallback_active',
-        strategy: 'fail_open',
-        scope: 'auth.login',
-        keyHash: '0123456789abcdef',
-        reason: 'redis_unavailable',
-        failClosedOverride: false,
-      }),
-    );
-
-    const logContext = mockStructuredLogger.warn.mock.calls[0]?.[1];
-    expect(logContext).not.toHaveProperty('key');
-    expect(JSON.stringify(logContext)).not.toContain('user@example.com');
-  });
-
-  it('fails closed only when RATE_LIMIT_FAIL_CLOSED=true is explicitly set', async () => {
-    process.env.RATE_LIMIT_FAIL_CLOSED = 'true';
+  it('fails closed in production for critical scopes when redis is unavailable', async () => {
     const limiter = new RateLimiter();
     const now = Date.now();
 
@@ -107,18 +74,50 @@ describe('security rate-limiter redis failure hardening', () => {
       limit: 5,
     });
     expect(mockStructuredLogger.error).toHaveBeenCalledWith(
-      'rate_limiter_redis_failure_fail_closed_override',
+      'rate_limiter_redis_failure_fail_closed',
       expect.objectContaining({
         eventType: 'rate_limiter',
         scope: 'auth.login',
         keyHash: '0123456789abcdef',
         reason: 'redis_unavailable',
-        failClosedOverride: true,
+        rateLimitMode: 'fail_closed',
+        sensitivity: 'critical',
+      }),
+    );
+
+    const logContext = mockStructuredLogger.error.mock.calls[0]?.[1];
+    expect(logContext).not.toHaveProperty('key');
+    expect(JSON.stringify(logContext)).not.toContain('user@example.com');
+  });
+
+  it('fails open for public_safe scopes when redis is unavailable', async () => {
+    const limiter = new RateLimiter();
+    const now = Date.now();
+
+    const result = await limiter.limit('cotacao_quotes', '1.2.3.4:user@example.com', {
+      max: 30,
+      windowSec: 60,
+    });
+
+    expect(result).toEqual({
+      allowed: true,
+      remaining: 30,
+      resetAt: now + 60_000,
+      limit: 30,
+    });
+    expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
+      'rate_limiter_fallback_active',
+      expect.objectContaining({
+        eventType: 'rate_limiter_fallback_active',
+        strategy: 'fail_open',
+        scope: 'cotacao_quotes',
+        rateLimitMode: 'fail_open',
+        sensitivity: 'public_safe',
       }),
     );
   });
 
-  it('fails open in production when redis operation fails while available', async () => {
+  it('fails closed in production for critical scopes when redis operation fails while available', async () => {
     mockRedis.isAvailable.mockReturnValue(true);
     mockRedis.incr.mockResolvedValue(0);
     mockRedis.get.mockResolvedValue(0);
@@ -129,17 +128,17 @@ describe('security rate-limiter redis failure hardening', () => {
       windowSec: 60,
     });
 
-    expect(result.allowed).toBe(true);
-    expect(result.remaining).toBe(5);
-    expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
-      'rate_limiter_fallback_active',
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);
+    expect(mockStructuredLogger.error).toHaveBeenCalledWith(
+      'rate_limiter_redis_failure_fail_closed',
       expect.objectContaining({
-        eventType: 'rate_limiter_fallback_active',
-        strategy: 'fail_open',
+        eventType: 'rate_limiter',
         scope: 'auth.login',
         keyHash: '0123456789abcdef',
         reason: 'redis_error',
-        failClosedOverride: false,
+        rateLimitMode: 'fail_closed',
+        sensitivity: 'critical',
         errorName: 'Error',
       }),
     );

@@ -11,6 +11,15 @@ vi.mock('@/infra/repositories/end-user-consent.repository', () => ({
 vi.mock('@/infra/http/request-trace', () => ({
     makeRequestId: () => 'req-123'
 }));
+vi.mock('@/modules/privacy/vector-purge.service', () => ({
+    vectorPurgeService: { deleteEmbeddingsByUser: vi.fn() }
+}));
+
+// Mock the admin session guard — allow by default for existing functional tests
+const mockRequireAdminSession = vi.fn();
+vi.mock('@/infra/auth/tenant-route-guard', () => ({
+    requireAdminSession: (...args: any[]) => mockRequireAdminSession(...args),
+}));
 
 import { DELETE as purgeUserRoute } from '@/app/api/tenants/[tenantId]/privacy/purge-user/route';
 import { getDb } from '@/infra/db';
@@ -22,6 +31,13 @@ describe('LGPD Purge User Route (Customer Central)', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+
+        // Default: admin session passes with matching tenant
+        mockRequireAdminSession.mockResolvedValue({
+            ok: true,
+            sessionUser: { sub: 'admin-1', tenantId: 'tenant-1', role: 'admin' },
+            tenantId: 'tenant-1',
+        });
 
         mockTx = {
             delete: vi.fn().mockReturnThis(),
