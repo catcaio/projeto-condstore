@@ -151,6 +151,8 @@ export function buildTags(
         tags.push('domain:privacy');
     } else if (type.startsWith('public_')) {
         tags.push('domain:public');
+    } else if (type.startsWith('concierge_')) {
+        tags.push('domain:concierge');
     }
 
     return tags;

@@ -16,7 +16,8 @@ export type OrchestratorEventType =
     | 'privacy_purge_requested'
     | 'privacy_purge_completed'
     | 'incident_raised'
-    | 'human_escalation_requested';
+    | 'human_escalation_requested'
+    | 'concierge_decision_made';
 
 /** Severity classification for orchestrator records. */
 export type OrchestratorSeverity = 'info' | 'warning' | 'critical';

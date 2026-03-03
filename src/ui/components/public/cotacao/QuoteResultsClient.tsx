@@ -4,7 +4,6 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { Box, Truck, Zap, PackageSearch, HelpCircle, X, MapPin, Weight, ArrowRight, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trackEvent } from '@/ui/lib/track';
-import { CONCIERGE_V1 } from '@/config/flags';
 import { runConciergePipeline } from '@/modules/concierge/concierge.wiring';
 import type { ConciergeResult } from '@/modules/concierge/concierge.wiring';
 
@@ -224,9 +223,9 @@ export default function QuoteResultsClient({ intentId }: { intentId: string }) {
     const hasTrackedView = useRef(false);
     const hasTrackedConcierge = useRef(false);
 
-    // ── Concierge V1 (feature-flagged, safe fallback) ──
+    // ── Concierge (official decision engine) ──
     const conciergeResult: ConciergeResult | null = useMemo(() => {
-        if (!CONCIERGE_V1 || !data?.summary) return null;
+        if (!data?.summary) return null;
         try {
             const result = runConciergePipeline(
                 data.summary.originCep,
@@ -241,10 +240,26 @@ export default function QuoteResultsClient({ intentId }: { intentId: string }) {
                     metadata: {
                         intentId,
                         optionsCount: result.options.length,
-                        bestScore: result.recommendation.bestOptionId,
+                        bestScore: result.options[0]?.score,
                         hasTradeoff: !!result.recommendation.tradeoff,
                     },
                 });
+
+                // Register strategic fact (best-effort, metrics-only, zero PII)
+                const avg = result.options.reduce((s, o) => s + o.score, 0) / result.options.length;
+                fetch('/api/internal/concierge-fact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        correlationId: intentId,
+                        optionsCount: result.options.length,
+                        bestScore: result.options[0]?.score,
+                        hasTradeoff: !!result.recommendation.tradeoff,
+                        scoreAverage: Math.round(avg * 100) / 100,
+                    }),
+                    keepalive: true,
+                }).catch(() => { /* best-effort */ });
+
                 hasTrackedConcierge.current = true;
             }
             if (!result && !hasTrackedConcierge.current) {

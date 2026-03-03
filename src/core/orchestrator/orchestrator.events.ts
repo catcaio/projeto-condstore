@@ -104,4 +104,10 @@ export const EVENT_CATALOG: Record<OrchestratorEventType, EventCatalogEntry> = {
         requiresTenantId: false,
         extraRedactionKeys: [],
     },
+    concierge_decision_made: {
+        defaultSeverity: 'info',
+        allowedSources: ['public'],
+        requiresTenantId: false,
+        extraRedactionKeys: ['originCep', 'destinationCep', 'weight', 'cep'],
+    },
 } as const;
