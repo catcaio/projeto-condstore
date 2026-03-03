@@ -43,4 +43,4 @@ This document defines the canonical route architecture for the Condstore OS publ
 | `/dashboard` | Tenant-specific operational overview (Placeholder) | Tenant User | TBD |
 
 ---
-*Note: Any routes not listed above within `/cockpit/` (e.g., `/cockpit/system-status`) are considered orphans and will be redirected to their canonical counterparts.*
+*Note: Any routes not listed above within `/cockpit/` are considered orphans and will be redirected to their canonical counterparts.*
