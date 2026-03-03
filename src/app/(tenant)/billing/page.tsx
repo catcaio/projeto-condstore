@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { getOrCreateClientUserId } from '../../lib/billing/clientUserId';
-import { fetchSubscription } from '../../lib/billing/getSubscription';
-import { SubscriptionRecord } from '../../lib/billing/types';
-import { BillingStatusCard } from '../../components/billing/BillingStatusCard';
-import { track } from '../../../utils/track';
-import { Section } from '../../../ui/primitives/Section';
+import { getOrCreateClientUserId } from '@/lib/billing/clientUserId';
+import { fetchSubscription } from '@/lib/billing/getSubscription';
+import { SubscriptionRecord } from '@/lib/billing/types';
+import { BillingStatusCard } from '@/components/billing/BillingStatusCard';
+import { track } from '../../../../utils/track';
+import { Section } from '../../../../ui/primitives/Section';
 
 export default function BillingPage() {
     const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);

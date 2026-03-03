@@ -84,10 +84,8 @@ describe('Login API Route Hardening', () => {
         expect(data.error).toBe('Email ou senha inválidos');
     });
 
-    it('should return 500 JSON if critical envs missing (simulated 503/500), never HTML', async () => {
-        // Remove critical variables to trigger the fallback block inside POST
-        delete process.env.DATABASE_URL;
-        process.env.NODE_ENV = 'production';
+    it('should return 500 JSON if DB throws critical exception (simulated 503/500), never HTML', async () => {
+        vi.mocked(userRepository.getUserByEmail).mockRejectedValue(new Error('Simulated Database Connection Error'));
 
         const req = new NextRequest('http://localhost:3000/api/auth/login', {
             method: 'POST',
@@ -102,6 +100,5 @@ describe('Login API Route Hardening', () => {
         expect(data.success).toBe(false);
         expect(data.error).toBeDefined();
 
-        process.env.NODE_ENV = 'test'; // Restore for next tests
     });
 });

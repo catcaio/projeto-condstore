@@ -5,8 +5,8 @@ import { SettingsPage, SettingsSection, SettingsRow } from '@/ui/settings';
 import { Badge, Progress, Button } from '@/ui/components';
 import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
 import { getHomeFinancialSnapshot, getHomeAttributionSnapshot, getHomeInboxSnapshot } from './queries';
-import { ConversationRow } from '../inbox/components/conversation-row';
-import { AttributionRow } from '../attribution/components/attribution-row';
+import { ConversationRow } from '@/app/(tenant)/inbox/components/conversation-row';
+import { AttributionRow } from '@/app/(system)/attribution/components/attribution-row';
 import { CreditCard, DollarSign } from 'lucide-react';
 
 export const metadata = {
@@ -129,7 +129,7 @@ async function ActivitySection({ tenantId, inspectTenantId }: { tenantId: string
     return (
         <SettingsSection title={`Fila Operacional: ${items.openCount} Open, ${items.pendingCount} Pending`}>
             {items.recentActivity.length > 0 ? (
-                items.recentActivity.map(item => <ConversationRow key={item.convoId} item={item} />)
+                items.recentActivity.map((item: any) => <ConversationRow key={item.convoId} item={item} />)
             ) : (
                 <div className="px-4 py-8 text-center text-sm text-[hsl(var(--ui-text-muted))]">
                     Fila vazia.

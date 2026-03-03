@@ -1,10 +1,10 @@
 "use client";
 
 import React from 'react';
-import { Section } from '../../../../ui/primitives/Section';
-import { Card } from '../../../../ui/primitives/Card';
-import { Stack } from '../../../../ui/primitives/Stack';
-import { Button } from '../../../../ui/primitives/Button';
+import { Section } from '../../../../../ui/primitives/Section';
+import { Card } from '../../../../../ui/primitives/Card';
+import { Stack } from '../../../../../ui/primitives/Stack';
+import { Button } from '../../../../../ui/primitives/Button';
 
 export default function ManageBillingPage() {
     return (

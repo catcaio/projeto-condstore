@@ -7,7 +7,7 @@ import { TrackedLink, SectionTracker } from '@/ui/lib/track-client';
 import dynamic from 'next/dynamic';
 import { ENABLE_CONCEPT_LAYER } from '@/config/flags';
 
-const ConceptHero = dynamic(() => import("../(marketing)/concept-layer/ConceptHero"), { ssr: true });
+const ConceptHero = dynamic(() => import("./concept-layer/ConceptHero"), { ssr: true });
 
 export const metadata = {
     title: 'LojaCond | Automação Logística',

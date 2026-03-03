@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { errorResponse, ErrorCode } from '../../../../infra/http/error-response';
 import { makeRequestId } from '../../../../infra/http/request-trace';
-import { getSystemStatus } from '../../../../app/(app)/cockpit/system-status/queries';
+import { getSystemStatus } from '@/app/(tenant)/cockpit/system-status/queries';
 import { logger } from '../../../../infra/logger';
 import { requireAdmin } from '@/infra/auth/guards';
 

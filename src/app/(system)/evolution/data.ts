@@ -58,7 +58,7 @@ export async function getCommits(): Promise<GitHubCommit[]> {
 
 export async function getBuildInfo() {
     return {
-        version: (await import('../../../package.json')).version as string,
+        version: (await import('../../../../package.json')).version as string,
         env: (process.env.VERCEL_ENV || 'development') as string,
         serverTime: new Date().toISOString(),
         serverTimestamp: new Date().getTime(),
