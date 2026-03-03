@@ -1,6 +1,15 @@
 import React from 'react';
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { TrackedLink } from '@/ui/lib/track-client';
+import { BrandHeader } from '@/ui/components/brand/BrandHeader';
+
+export const metadata: Metadata = {
+    icons: {
+        icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+        shortcut: ['/favicon.svg']
+    }
+};
 
 export default function PublicLayout({
     children,
@@ -21,43 +30,7 @@ export default function PublicLayout({
                 </div>
             )}
 
-            <header className="sticky top-0 z-50 w-full border-b border-[hsl(var(--ui-border)/0.5)] bg-[hsl(var(--ui-surface)/0.8)] backdrop-blur-sm">
-                <div className="mx-auto flex h-16 max-w-[var(--container-max-width)] items-center justify-between px-6 lg:px-8">
-                    <div className="flex items-center gap-10">
-                        <Link href="/" className="font-bold text-xl tracking-tighter">
-                            LojaCond
-                        </Link>
-                        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[hsl(var(--ui-text-muted))]">
-                            <Link href="/about" className="hover:text-[hsl(var(--ui-text))] transition-colors">Sobre</Link>
-                            <Link href="/pricing" className="hover:text-[hsl(var(--ui-text))] transition-colors">Preços</Link>
-                            <Link href="/docs" className="hover:text-[hsl(var(--ui-text))] transition-colors">Documentação</Link>
-                        </nav>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <TrackedLink
-                            href="/login"
-                            className="text-sm font-semibold hover:text-[hsl(var(--ui-text-muted))] transition-colors"
-                            trackPage="shared"
-                            trackSection="navbar"
-                            trackElement="login"
-                            legacyBehavior
-                        >
-                            Entrar
-                        </TrackedLink>
-                        <TrackedLink
-                            href={isDev ? '/cockpit/audit?status=success' : '/login'}
-                            className="inline-flex h-9 items-center justify-center rounded-[var(--radius-button)] bg-[hsl(var(--ui-accent-blue))] px-4 text-sm font-medium text-white transition-colors hover:bg-[hsl(var(--ui-accent-blue-strong))] shadow-[var(--shadow-soft)]"
-                            trackPage="shared"
-                            trackSection="navbar"
-                            trackElement="navbar_pricing"
-                            legacyBehavior
-                        >
-                            Começar grátis
-                        </TrackedLink>
-                    </div>
-                </div>
-            </header>
+            <BrandHeader />
 
             <main className="flex-1">
                 {children}

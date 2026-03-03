@@ -1,0 +1,17 @@
+<svg viewBox="0 0 600 160" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(80, 80) scale(0.65)" stroke="#ffffff" stroke-width="3" stroke-linejoin="round">
+    <path d="M -40 -23 L 0 -46 L 40 -23 L 0 0 Z" fill="#5DAAC6" />
+    <path d="M -40 -23 L 0 0 L 0 46 L -40 23 Z" fill="#1C4E6E" />
+    <path d="M 0 0 L 40 -23 L 40 23 L 0 46 Z" fill="#0E2433" />
+    <path d="M 0 -92 L 40 -115 L 80 -92 L 40 -69 Z" fill="#5DAAC6" />
+    <path d="M 0 -92 L 40 -69 L 40 -23 L 0 -46 Z" fill="#1C4E6E" />
+    <path d="M 40 -69 L 80 -92 L 80 -46 L 40 -23 Z" fill="#0E2433" />
+    <path d="M 0 46 L 40 23 L 80 46 L 40 69 Z" fill="#5DAAC6" />
+    <path d="M 0 46 L 40 69 L 40 115 L 0 92 Z" fill="#1C4E6E" />
+    <path d="M 40 69 L 80 46 L 80 92 L 40 115 Z" fill="#0E2433" />
+  </g>
+  <g font-family="system-ui, -apple-system, sans-serif">
+    <text x="150" y="94" font-size="52" font-weight="800" fill="#0E2433" letter-spacing="-0.03em">CONDSTORE<tspan font-weight="400" fill="#5DAAC6"> OS</tspan></text>
+    <text x="154" y="122" font-size="14" font-weight="600" fill="#1C4E6E" letter-spacing="0.1em">UM COMPLEXO SEM COMPLEXIDADE.</text>
+  </g>
+</svg>
