@@ -98,6 +98,12 @@ describe('GET /api/public/cotacao/quotes', () => {
         expect(body.quotes.length).toBeGreaterThanOrEqual(5);
         expect(body.bestPriceId).toBeDefined();
         expect(body.bestSpeedId).toBeDefined();
+        expect(body.bestScoreId).toBeDefined();
+        expect(body.summary).toMatchObject({
+            originCep: '01310100',
+            destinationCep: '80010000',
+            weightInKg: 2,
+        });
 
         // No PII
         for (const q of body.quotes) {

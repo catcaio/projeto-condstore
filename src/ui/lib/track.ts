@@ -1,7 +1,8 @@
 import { safeFetch } from './safe-fetch';
 
 export interface TrackingEvent {
-    type: 'view_section' | 'click_cta' | 'roi_change' | 'entry_start' | 'entry_success';
+    type: 'view_section' | 'click_cta' | 'roi_change' | 'entry_start' | 'entry_success'
+    | 'cotacao_result_viewed' | 'cotacao_card_clicked' | 'cotacao_filter_changed' | 'cotacao_upgrade_cta_clicked';
     page: string;
     section: string;
     element?: string;

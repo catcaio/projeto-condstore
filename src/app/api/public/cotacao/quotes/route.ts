@@ -120,7 +120,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
             packageType: (payload?.packageType as 'box' | 'envelope') ?? 'box',
         };
 
-        const { quotes, bestPriceId, bestSpeedId } = getSimulatedQuotes(quoteInput, intentIdRaw);
+        const { quotes, bestPriceId, bestSpeedId, bestScoreId } = getSimulatedQuotes(quoteInput, intentIdRaw);
 
         // Sanitized quote payload for event logging (no PII)
         const sanitizedQuotesPayload = quotes.map((q) => ({
@@ -128,41 +128,53 @@ async function handler(request: NextRequest): Promise<NextResponse> {
             serviceName: q.serviceName,
             price: q.price,
             estimatedDeliveryDays: q.estimatedDeliveryDays,
+            priorityScore: q.priorityScore,
         }));
+
+        const userAgentHash = sha256Hex(request.headers.get('user-agent')) ?? 'ua_unknown';
 
         // --- Log event ---
         await publicEventsRepository.create({
             id: crypto.randomUUID(),
-            tenantId,
-            anonId,
+            tenantId: process.env.PUBLIC_TENANT_ID ?? '',
             eventType: 'cotacao_quotes_generated',
-            attributionId: intent.attributionId ?? undefined,
+            anonId,
+            attributionId: intent.attributionId,
+            ipHash,
+            uaHash: userAgentHash,
             payloadJson: {
-                intentId: intentIdRaw,
                 quotesCount: quotes.length,
                 bestPriceId,
                 bestSpeedId,
+                bestScoreId,
                 simulated: true,
                 quotes: sanitizedQuotesPayload,
             },
-            ipHash,
-            uaHash: sha256Hex(request.headers.get('user-agent')) ?? 'ua_unknown',
         });
 
-        const responseBody = {
+        // Formata summary pro UI
+        const summary = {
+            originCep: quoteInput.originCep,
+            destinationCep: quoteInput.destinationCep,
+            weightInKg: quoteInput.weightInKg,
+        };
+
+        const responsePayload = {
             intentId: intentIdRaw,
             simulated: true,
             quotes,
             bestPriceId,
             bestSpeedId,
+            bestScoreId,
+            summary,
         };
 
         // --- Cache in Redis ---
         try {
-            await redisClient.set(cacheKey, responseBody, CACHE_TTL_SECONDS);
+            await redisClient.set(cacheKey, responsePayload, CACHE_TTL_SECONDS);
         } catch { /* non-fatal */ }
 
-        return applyRateLimitHeaders(NextResponse.json(responseBody), rateDecision);
+        return applyRateLimitHeaders(NextResponse.json(responsePayload), rateDecision);
 
     } catch (err) {
         structuredLogger.error('cotacao_quotes_api_error', {
