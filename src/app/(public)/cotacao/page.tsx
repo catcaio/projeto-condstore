@@ -39,7 +39,9 @@ export default function PublicCotacaoPage() {
                 throw new Error(data.error?.message || 'Erro ao simular cotação');
             }
 
-            setResult({ intentId: data.intentId });
+            // Redirect to result page
+            window.location.href = `/cotacao/result?intentId=${data.intentId}`;
+            return;
         } catch (err: any) {
             setResult({ error: err.message });
         } finally {
