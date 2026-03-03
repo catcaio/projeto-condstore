@@ -1,46 +1,68 @@
-# Arquitetura Master - Condstore OS
+# CONDSTORE OS Architecture Reference
 
-## Visão em Alto Nível das Camadas
+This document outlines the core structural design, internal orchestration patterns, and security mechanisms governing the CONDSTORE OS platform. It is the definitive reference for engineers contributing to the codebase.
 
-O sistema Condstore baseia-se num back-end sólido (Next.js 14) dividido em módulos operacionais independentes para separar intenção, custo e infraestrutura local (WhatsApp + API Privada), orquestrando fluxos em uma base multi-tenant de ponta a ponta.
+## 1. System Topology & Layers
 
-- **Camada SaaS (Isolation Layer):** Gerencia assinaturas, billing e Tenant Isolation Restrito via SQL RLS abstrato/explicit queries pelo tenantId em todos os ORM wrappers de Drizzle / TiDB + RateLimit em Redis por usuário.
-- **Data/Event Plane:** Pipeline responsivo por trás da recepção dos SMS/Mensagens via Twilio assíncrono.
-- **Control Plane:** Módulo de Decisão de Negócios/Frank AI que processa pedidos baseando-se em Contexto, Prompts Estritos controlados via Registry Database e tools determinísticas.
-- **Background Workers:** Redis Stream Consumers (`worker:finops`) rodando desacoplados do request/response model pro alívio estrito contra timeouts via processamentos colateais longos como Resets mensais ou Invalidações de Cache.
+The system uses a rigidly separated topology, decoupling public ingestion from internal state processing to protect the event loop and constrain the blast radius of API degradation.
 
-## Principais Fluxos de Informação
+```text
+[ Client (Public) ]       [ Client (Tenant/Cockpit) ]       [ GitHub CI / Tools ]
+         |                              |                             |
+         v                              v                             | (CI Guardrails)
++-------------------+         +-------------------+                   v
+|  Public Surface   |         | Tenant/Cockpit    |         [ Pre-Commit Hooks ]
+|  (Auth: None)     |         | (Auth: Cookie)    |         [ Route Reg Verify ]
++-------------------+         +-------------------+         [ Env Leak Scanner ]
+         |                              |                             |
+         +-------------+----------------+                             |
+                       |
+               [ Next.js Middleware ] -> (Surface Evaluator / Rate Limiter)
+                       |
+         +-------------+----------------+
+         |                              |
++-------------------+         +-------------------+
+|  Internal Layer   |         |   Worker Layer    |
+| (Auth: Tokens)    |         | (Auth: Signatures)|
++-------------------+         +-------------------+
+         |                              |
+         +-------------+----------------+
+                       |
+                 [ Data & State ]
+          (TiDB / PostgreSQL / Drizzle)
+               (Redis Streams/Cache)
+```
 
-### 1. Request -> FinOps -> State -> AI Gateway
-Quando um usuário engaja via Zap ou Bot Web:
-- A mensagem bate na Route Handler de Webhook assinada.
-- O Sistema recupera o `TenantState` antes do dispatch no Gateway (`getTenantState`), calculando o BudgetUSD corrente vs Limite via `token_usage_events`. 
-- Caso bloqueado, devolve o fallback Upsell localmente travando requisição ao Provider; Se degradado faz hot-swap pra modelo lite (gpt-4o-mini). Caso OK flui.
-- Antes da LLM requestar OpenAi, os Inputs passam por filtros PII e Injections e recebem o "Prompt Ativo" referenciado pelo módulo via `ai_prompts` table. Retorna gerando Events no DB e atualizando usage stats no repository side.
+## 2. Public Quotation Data Flow (Concurrent Engine)
 
-### 2. Side-Effects via Event publish -> Worker -> DLQ
-Ao invés de estourar a transaction:
-- Modificações longas produzem `{ publishEvent({ type: 'LOCK', data }) }` no stream do Redis (`events:finops`).
-- Scripts externos (Processos contínuos via terminal Node) retiram no pattern Consumer Groups/Block esses UUIDs rodando os handles (envios de emails de lock, atualizações orçamentárias pesadas, clearCache front). Confirmam a leitura com `ACK`.
-- Se crasharem, caem numa série exponencial de retrys (até 5). Rompendo os limites ganham passagens "fire-and-forget" de desvio ao Storage de `event:finops:dlq` mantendo fluidez dos bons.
+The `/cotacao` engine is engineered for resilience against upstream logistics API failures. It abstracts individual carriers behind standardized adapters.
 
-### 3. Monthly Reset Triggers (Lazy)
-Em vez de dependermos puramente de crons sensíveis:
-- A engine avalia no instante de invocação de state a timestamp de "lastReset" persistida por tenant. 
-- Virou o mês base americana/SP? Ela despacha como evento silencioso o "MONTHLY RESET" da conta (acumulando resíduos das ultimas frações prev-month numa table de auditoria) zerando consumos USD pra prosseguir atendendo até os top nodes sem corromper Request principal da AI, executado apenas por debaixo das rotas em Background.
+1. **Intention Registration:** A user visits the quote page. An anonymous session identity (`condstore_anon`) is created and tied to an `intentId`.
+2. **Concurrent Fetch:** The `/api/public/cotacao/quotes` endpoint is hit. The `ConcurrentQuoteEngine` orchestrates parallel requests to multiple `CarrierAdapter` instances via `Promise.allSettled`.
+3. **Timeout Gating:** Each outbound request is bound by an explicit `Promise.race` sequence (e.g., 6000ms). Any carrier exceeding this SLA falls back into a deterministic failure state without halting the overall request.
+4. **Ranking & Delivery:** Returning quotes are structurally normalized and sorted across multiple calculated views (e.g., Cheapest, Fastest, Best Value).
+5. **PII Sanitization & Observability:** Before returning the data, the engine strips any PII. The sanitized summary (success count, timeout count, latency) is flushed asynchronously to the Domine Operational Layer.
 
-## FinOps & AI Database Schema (Resumo)
-As lógicas essenciais de controle repousam em:
-- `tenant_budgets`: Armazenam os thresholds, USD atual e estados (`locked`, `degraded`).
-- `finops_alert_events` e `finops_lock_events`: Armazenam gatilhos operacionais acionados sempre que se cruza o threshold. Lock guarda "se travou e porque" junto da data (pra analytics/recuperação).
-- `frank_events` / `ai_decision_logs`: Logam cada transação I/O da Máquina principal rastreando token/rag info.
-- `ai_prompts` e `ai_eval_runs`: Versões das instruções base carregadas pelo sistema antes de montar o contexto gerador em conjunto da pontuação off-line obtida por teste contra injection/PIIs.
+## 3. Domine Minimal Operational Layer
 
-## Contratos Internos e Proteções
-- **Tokens Internos (`x-internal-token`):** API Crons de rollups diários ou inspeções diretas em Dead-Letter Queues das mensagerias dependem do Header processual que cruza validades ambientais para operar isolados em webhooks/cronjobs externos e admin portals. Sequer o middleware permite.
-- **RBAC (Role Based Access):** Autenticações web por default usam `sessionVersion` com invalidações seguras.
+Domine acts as the telemetry and orchestration spine. In its current architectural phase, it serves as a non-blocking "read-model" consumer.
 
-## Design System como Infraestrutura Oficial
-- Toda folha de estilo da web está atrelada à Infraestrutura global de Design baseada em variáveis CSS do `:root`.
-- Uso estrito das coleções de "Tokens": `typography`, `light` (Cloud Dancer), `dark` e camada combinadora `semantic` para layouts.
-- Scripts de Lint Customizados do CI (`npm run lint:design-system`) processam pro-ativamente Regex no fonte evitando vazamentos nocivos paralelos de hex codes (`#fff`) assegurando uniformidade absoluta e testabilidade na automação (Visual Regression Testing via Playwright Snapshot Update).
+- **Event Interception:** Edge surfaces (like the Quote Engine) emit raw metric events (e.g., `quote_completed`, `carrier_failed`) directly to internal repositories or Redis log streams.
+- **Aggregation:** A background worker or cron-job summarizes these daily streams.
+- **Cockpit Observability:** The Cockpit (`/cockpit/domine`) visualizes these aggregated metrics (Average Response Time, SLA breaches per carrier). If latency consistently exceeds thresholds, strategic facts are synthesized entirely offline to advise tenant administrators without polling dynamic production tables.
+
+## 4. End-to-End Governance and Protection
+
+The system is rigorously protected against architectural decay (human error or "footguns") through synchronous validation protocols.
+
+### Surface Map Enforcement
+All internal and external networking boundaries are documented in `docs/surface-map.md`. 
+- **The Proxy Guarantee:** `proxy.ts` (the Next.js middleware) dynamically implements these boundaries. It ensures that `/api/internal/**` requires standard `x-internal-token` and immediately strips spoofable client headers.
+
+### Route Registry Guard
+To prevent undocumented or accidentally public endpoints from reaching production:
+1. `scripts/routes-inventory.ts` automatically maps every physical file matching Next.js App Router definitions across `src/app/**`.
+2. The CI pipeline invokes `routes:verify`. If the inventory detects a route not explicitly documented in `docs/routes-registry.md`, the pipeline executes a hard fail prior to the Typecheck stage.
+
+### Safe QA Bootstrapping
+Automated E2E tests (Playwright) bypass CAPTCHA and MFA bottlenecks by invoking `/api/internal/qa/bootstrap-session`. This path is exclusively authorized by verifying the `x-qa-token` via GitHub Action environment validation, ensuring that dynamic test seeds are physically impossible to trigger via public gateways.
