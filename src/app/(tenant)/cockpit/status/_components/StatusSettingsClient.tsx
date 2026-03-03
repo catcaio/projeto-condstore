@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { runGoNoGoChecks, toggleIncidentMode, toggleOutbound, runProcessorNow } from './actions';
+import { ConciergeStatusCard } from './ConciergeStatusCard';
 
 interface GoNoGoResults {
     internalTokenValid: boolean;
@@ -300,6 +301,9 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
                     </div>
                 </div>
             </div>
+
+            {/* Concierge Status */}
+            <ConciergeStatusCard />
 
             {/* [ Últimos 5 eventos relevantes ] */}
             <div className="p-5 rounded-2xl border bg-zinc-900 border-zinc-800">

@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { Box, Truck, Zap, PackageSearch, HelpCircle, X, MapPin, Weight, ArrowRight } from 'lucide-react';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { Box, Truck, Zap, PackageSearch, HelpCircle, X, MapPin, Weight, ArrowRight, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trackEvent } from '@/ui/lib/track';
+import { CONCIERGE_V1 } from '@/config/flags';
+import { runConciergePipeline } from '@/modules/concierge/concierge.wiring';
+import type { ConciergeResult } from '@/modules/concierge/concierge.wiring';
 
 interface Quote {
     carrierCode: string;
@@ -219,6 +222,54 @@ export default function QuoteResultsClient({ intentId }: { intentId: string }) {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const hasTrackedView = useRef(false);
+    const hasTrackedConcierge = useRef(false);
+
+    // ── Concierge V1 (feature-flagged, safe fallback) ──
+    const conciergeResult: ConciergeResult | null = useMemo(() => {
+        if (!CONCIERGE_V1 || !data?.summary) return null;
+        try {
+            const result = runConciergePipeline(
+                data.summary.originCep,
+                data.summary.destinationCep,
+                data.summary.weightInKg,
+            );
+            if (result && !hasTrackedConcierge.current) {
+                trackEvent({
+                    type: 'cotacao_concierge_recommendation_shown',
+                    page: '/cotacao',
+                    section: 'concierge',
+                    metadata: {
+                        intentId,
+                        optionsCount: result.options.length,
+                        bestScore: result.recommendation.bestOptionId,
+                        hasTradeoff: !!result.recommendation.tradeoff,
+                    },
+                });
+                hasTrackedConcierge.current = true;
+            }
+            if (!result && !hasTrackedConcierge.current) {
+                trackEvent({
+                    type: 'cotacao_concierge_fallback_used',
+                    page: '/cotacao',
+                    section: 'concierge',
+                    metadata: { intentId, reason: 'pipeline_returned_null' },
+                });
+                hasTrackedConcierge.current = true;
+            }
+            return result;
+        } catch {
+            if (!hasTrackedConcierge.current) {
+                trackEvent({
+                    type: 'cotacao_concierge_fallback_used',
+                    page: '/cotacao',
+                    section: 'concierge',
+                    metadata: { intentId, reason: 'pipeline_exception' },
+                });
+                hasTrackedConcierge.current = true;
+            }
+            return null;
+        }
+    }, [data, intentId]);
 
     useEffect(() => {
         let isMounted = true;
@@ -333,6 +384,29 @@ export default function QuoteResultsClient({ intentId }: { intentId: string }) {
                     </motion.div>
                 )}
             </div>
+
+            {/* Concierge Recommendation (feature-flagged) */}
+            {conciergeResult && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-8 rounded-2xl border border-blue-100 bg-blue-50/50 p-6 shadow-sm"
+                >
+                    <div className="flex items-center gap-3 mb-3">
+                        <Sparkles className="w-5 h-5 text-blue-500" />
+                        <h3 className="text-lg font-bold text-zinc-800">Recomendação Inteligente</h3>
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Beta</span>
+                    </div>
+                    <p className="text-sm text-zinc-600 leading-relaxed">
+                        {conciergeResult.recommendation.explanation}
+                    </p>
+                    {conciergeResult.recommendation.tradeoff && (
+                        <p className="text-xs text-zinc-500 mt-2 italic">
+                            {conciergeResult.recommendation.tradeoff}
+                        </p>
+                    )}
+                </motion.div>
+            )}
 
             {/* Cards Grid */}
             <motion.div
