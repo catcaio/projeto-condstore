@@ -2,6 +2,8 @@ import { getDb } from '../db';
 import { domineEvents, domineOrders, domineFreightQuotes } from '../../drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import crypto from 'crypto';
+import { registerIncident } from '@/core/orchestrator/orchestrator.service';
+import { structuredLogger } from '@/infra/log/logger';
 
 export class DomineEventsRepository {
     async publish(data: {
@@ -56,6 +58,18 @@ export class DomineEventsRepository {
         await db.update(domineEvents)
             .set({ status: 'failed', errorCode, errorMessage: errorMessage ?? null, processedAt: new Date() })
             .where(eq(domineEvents.id, id));
+
+        // ── Orchestrator Wiring B (best-effort) ──
+        try {
+            const row = await this.getById(id);
+            const tenantId = row?.tenantId ?? '';
+            await registerIncident(
+                { source: 'domine', tenantId, correlationId: id },
+                { eventId: id, reasonCode: errorCode, attempts: 1 },
+            );
+        } catch {
+            structuredLogger.warn('orchestrator_wiring_b_failed', { eventType: 'domine_dlq_wiring' });
+        }
     }
 
     async listEvents(tenantId: string, filters: { type?: string, status?: string, limit?: number, offset?: number }) {

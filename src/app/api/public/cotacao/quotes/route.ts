@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getTracedRequestId, makeRequestId, withRequestTrace } from '@/infra/http/request-trace';
 import { sha256Hex } from '@/infra/attribution/hash';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
+import { registerStrategicFact } from '@/core/orchestrator/orchestrator.service';
 import { structuredLogger } from '@/infra/log/logger';
 import { applyRateLimitHeaders, hashRateLimitKeyForLog, rateLimiter } from '@/infra/security/rate-limiter';
 import { redisClient } from '@/infra/redis.client';
@@ -151,6 +152,17 @@ async function handler(request: NextRequest): Promise<NextResponse> {
                 quotes: sanitizedQuotesPayload,
             },
         });
+
+        // ── Orchestrator Wiring A (best-effort) ──
+        try {
+            await registerStrategicFact(
+                'public_quotes_generated',
+                { source: 'public', requestId, correlationId: intentIdRaw },
+                { intentId: intentIdRaw, quotesCount: quotes.length, simulated: true },
+            );
+        } catch {
+            structuredLogger.warn('orchestrator_wiring_a_failed', { requestId, route });
+        }
 
         // Formata summary pro UI
         const summary = {
