@@ -1,0 +1,19 @@
+# CONDSTORE OS — Code Ownership Rules
+# Changes to these paths require explicit review.
+
+# Security & Auth
+src/proxy.ts                          @catcaio
+src/infra/auth/                       @catcaio
+src/infra/security/                   @catcaio
+
+# Internal API Surface (Zero-Trust boundary)
+src/app/api/internal/                 @catcaio
+
+# CI/CD & Scripts
+scripts/                              @catcaio
+.github/workflows/                    @catcaio
+
+# Governance Docs
+docs/surface-map.md                   @catcaio
+docs/routes-registry.md               @catcaio
+docs/routes-map.md                    @catcaio
