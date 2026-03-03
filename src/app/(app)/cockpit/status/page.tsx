@@ -1,6 +1,7 @@
 import { getServerSessionUser } from '@/infra/auth/session';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { redirect } from 'next/navigation';
+import { CockpitPage } from '@/ui/cockpit/layout/CockpitPage';
 import { StatusSettingsClient } from './_components/StatusSettingsClient';
 
 export const metadata = {
@@ -15,17 +16,11 @@ export default async function StatusPage({ params }: { params: { tenantId?: stri
     }
 
     return (
-        <div className="mx-auto max-w-4xl p-6 space-y-8 animate-in fade-in zoom-in duration-500">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-                    <span>Central de Controle Operacional</span>
-                </h1>
-                <p className="text-zinc-400">
-                    Visão em tempo real da integridade estrutural, modos de incidente e governança de segredos.
-                </p>
-            </div>
-
+        <CockpitPage
+            title="STATUS & RESILIÊNCIA"
+            description="Visão em tempo real da integridade estrutural, modos de incidente e governança de segredos."
+        >
             <StatusSettingsClient tenantId={session.tenantId} />
-        </div>
+        </CockpitPage>
     );
 }

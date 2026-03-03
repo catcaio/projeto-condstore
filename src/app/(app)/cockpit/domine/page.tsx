@@ -4,6 +4,7 @@ import { getDomineOverviewCounts } from './actions';
 import { domineEventsRepository } from '@/infra/repositories/domine-events.repository';
 import { Card, CardContent, CardHeader, Badge } from '@/ui/components';
 import { RunProcessorButton } from './_components/run-processor-button';
+import { CockpitPage } from '@/ui/cockpit/layout/CockpitPage';
 
 export const metadata = {
     title: 'Domine Console | Condstore',
@@ -36,22 +37,18 @@ export default async function DomineOverviewPage() {
     const isIncidentMode = process.env.INCIDENT_MODE === 'true';
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--cockpit-text))]">Domine Console</h1>
-                    <p className="text-sm text-[hsl(var(--cockpit-text-muted))] mt-1">
-                        Overview do motor de processamento assíncrono e eventos.
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
+        <CockpitPage
+            title="DOMINE CONSOLE"
+            description="Overview do motor de processamento assíncrono e eventos."
+            actions={
+                <>
                     {isIncidentMode && (
                         <Badge variant="outline" className="text-red-500 border-red-500">Incident Mode Active</Badge>
                     )}
                     <RunProcessorButton disabled={isIncidentMode} />
-                </div>
-            </div>
-
+                </>
+            }
+        >
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <Card variant="elevated">
                     <CardHeader heading="Queued" />
@@ -130,6 +127,6 @@ export default async function DomineOverviewPage() {
                     </div>
                 </div>
             </section>
-        </div>
+        </CockpitPage>
     );
 }

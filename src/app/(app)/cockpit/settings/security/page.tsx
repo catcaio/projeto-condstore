@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { SettingsPage } from '@/ui/settings';
+import { CockpitPage } from '@/ui/cockpit/layout/CockpitPage';
 import { SecuritySettingsClient } from './_components/SecuritySettingsClient';
 
 export default async function SecuritySettingsPage() {
@@ -9,11 +9,11 @@ export default async function SecuritySettingsPage() {
     if (!tenantId) return <div>Sem contexto</div>;
 
     return (
-        <SettingsPage
-            title="Segurança e Chaves"
+        <CockpitPage
+            title="SECURITY & KEYS"
             description="Gerenciamento de integrações, tokens internos e criptografia."
         >
             <SecuritySettingsClient tenantId={tenantId} />
-        </SettingsPage>
+        </CockpitPage>
     );
 }

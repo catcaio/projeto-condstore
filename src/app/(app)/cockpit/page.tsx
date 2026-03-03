@@ -5,7 +5,7 @@ import { Badge } from '@/ui/components';
 import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
 import { ShieldCheck, Database, Activity } from 'lucide-react';
 import { getSystemHealth } from './queries';
-import { getSystemStatus } from './system-status/queries';
+import { getSystemStatus } from './status/queries';
 import Link from 'next/link';
 
 import { BillingSection } from './components/billing-section';
@@ -37,7 +37,7 @@ export default async function CockpitPage(props: { searchParams: Promise<{ [key:
         <SettingsPage
             title="Cockpit Operacional"
             description="Visão em tempo real das operações e saúde do sistema"
-            headerAction={<Link href="/cockpit/system-status" className="text-xs text-[hsl(var(--ui-accent-blue))] font-medium hover:underline flex items-center gap-1">Ver Centro de Comando &rarr;</Link>}
+            headerAction={<Link href="/cockpit/status" className="text-xs text-[hsl(var(--ui-accent-blue))] font-medium hover:underline flex items-center gap-1">Ver Centro de Comando &rarr;</Link>}
         >
             {/* MINI STATUS BAR */}
             <div className="flex gap-2 mb-6 w-full overflow-x-auto pb-2 scrollbar-hide shrink-0">

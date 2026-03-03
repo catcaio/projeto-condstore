@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getSystemStatus } from '../../../app/(app)/cockpit/system-status/queries';
+import { getSystemStatus } from '../../../app/(app)/cockpit/status/queries';
 import { planEnforcementService } from '../../finops/plan-enforcement.service';
 
 vi.mock('../../finops/plan-enforcement.service', () => ({

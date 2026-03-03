@@ -28,7 +28,7 @@
 | cockpit/ops/run-rollup/route.ts | requireAdmin | OK |
 | cockpit/ops/status/route.ts | requireAdmin | OK |
 | cockpit/saved-views/route.ts | requireAdmin | OK |
-| cockpit/system-status/route.ts | NONE | COCKPIT_WITHOUT_ADMIN |
+| cockpit/status/route.ts | NONE | COCKPIT_WITHOUT_ADMIN |
 | cron/cleanup/route.ts | NONE | NO_GUARD |
 | db/migrate/route.ts | isInternalTokenAuthorized | OK |
 | debug/tenants/route.ts | NONE | NO_GUARD |
