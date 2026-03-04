@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
-import { getDomineOverviewCounts } from './actions';
+import { getDomineOverviewCounts, getLatestFreightQuotesAction } from './actions';
 import { domineEventsRepository } from '@/infra/repositories/domine-events.repository';
 import { Card, CardContent, CardHeader, Badge } from '@/ui/components';
 import { RunProcessorButton } from './_components/run-processor-button';
@@ -29,9 +29,10 @@ export default async function DomineOverviewPage() {
         );
     }
 
-    const [counts, recentEvents] = await Promise.all([
+    const [counts, recentEvents, recentQuotes] = await Promise.all([
         getDomineOverviewCounts(),
-        domineEventsRepository.listEvents(tenantId, { limit: 20 })
+        domineEventsRepository.listEvents(tenantId, { limit: 20 }),
+        getLatestFreightQuotesAction(20)
     ]);
 
     const isIncidentMode = process.env.INCIDENT_MODE === 'true';
@@ -72,6 +73,12 @@ export default async function DomineOverviewPage() {
                     <CardHeader heading="Failed (DLQ)" />
                     <CardContent>
                         <p className="text-3xl font-semibold text-red-500">{counts.failed || 0}</p>
+                    </CardContent>
+                </Card>
+                <Card variant="elevated">
+                    <CardHeader heading="Oldest Queued (min)" />
+                    <CardContent>
+                        <p className="text-3xl font-semibold text-yellow-600">{counts.oldestAgeMinutes || 0}</p>
                     </CardContent>
                 </Card>
             </section>
@@ -118,6 +125,56 @@ export default async function DomineOverviewPage() {
                                             </td>
                                             <td className="px-4 py-3 text-[hsl(var(--cockpit-text-muted))]">
                                                 {new Date(evt.createdAt).toLocaleString()}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section className="mt-8">
+                <h2 className="text-xl font-semibold tracking-tight text-[hsl(var(--cockpit-text))] mb-4">Cotações de Frete Recentes</h2>
+                <div className="rounded-xl border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="border-b border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-bg))]">
+                                <tr>
+                                    <th className="px-4 py-3 font-medium">Ref</th>
+                                    <th className="px-4 py-3 font-medium">Data</th>
+                                    <th className="px-4 py-3 font-medium">Origem ➔ Destino</th>
+                                    <th className="px-4 py-3 font-medium">Melhor Opção</th>
+                                    <th className="px-4 py-3 font-medium">Fonte</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[hsl(var(--cockpit-border))]">
+                                {recentQuotes.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-4 py-4 text-center text-[hsl(var(--cockpit-text-muted))]">
+                                            Nenhuma cotação registrada.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    recentQuotes.map(q => (
+                                        <tr key={q.id} className="hover:bg-[hsl(var(--cockpit-bg))]">
+                                            <td className="px-4 py-3">
+                                                <div className="font-mono text-xs">{q.correlationId.split('_').pop()}</div>
+                                            </td>
+                                            <td className="px-4 py-3 text-[hsl(var(--cockpit-text-muted))]">
+                                                {new Date(q.createdAt).toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {q.originZip || '?'} ➔ {q.destZip || '?'}
+                                            </td>
+                                            <td className="px-4 py-3 font-medium">
+                                                {q.bestPriceCents
+                                                    ? `R$ ${(q.bestPriceCents / 100).toFixed(2)} (${q.bestCarrier} - ${q.bestEtaDays}d)`
+                                                    : <span className="text-[hsl(var(--cockpit-text-muted))]">Processando...</span>}
+                                            </td>
+                                            <td className="px-4 py-3 text-[hsl(var(--cockpit-text-muted))]">
+                                                {q.source}
                                             </td>
                                         </tr>
                                     ))

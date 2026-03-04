@@ -3,6 +3,7 @@
 import { getDb } from '@/infra/db';
 import { domineEvents } from '@/drizzle/schema';
 import { eq, count, and, desc } from 'drizzle-orm';
+import { domineReadRepository } from '@/infra/repositories/domine-read.repository';
 
 import { logger } from '@/infra/logger';
 import { randomUUID } from 'crypto';
@@ -46,10 +47,21 @@ export async function getDomineOverviewCounts() {
             }
         }
 
+        const oldestQueued = await db
+            .select({ createdAt: domineEvents.createdAt })
+            .from(domineEvents)
+            .where(and(eq(domineEvents.tenantId, tenantId), eq(domineEvents.status, 'queued')))
+            .orderBy(domineEvents.createdAt)
+            .limit(1);
+
+        const oldestAgeMinutes = oldestQueued.length > 0
+            ? Math.floor((Date.now() - new Date(oldestQueued[0].createdAt).getTime()) / 60000)
+            : 0;
+
         logger.info('Domine Overview Fetched', {
             requestId, tenantId, action: 'get_overview_counts', duration: Date.now() - startTime, outcome: 'success'
         });
-        return counts;
+        return { ...counts, oldestAgeMinutes };
     } catch (e: any) {
         logger.error('Domine Overview Error', e, {
             requestId, tenantId, action: 'get_overview_counts', duration: Date.now() - startTime, outcome: 'failure'
@@ -83,6 +95,11 @@ export async function getRecentWebhookEvents(limit: number = 20) {
         .limit(limit);
 
     return events;
+}
+
+export async function getLatestFreightQuotesAction(limit: number = 20) {
+    const { tenantId } = await getAuthContext();
+    return domineReadRepository.getLatestFreightQuotes(tenantId, limit);
 }
 
 export async function runProcessorNow() {

@@ -1,0 +1,1 @@
+DROP TABLE `domine_freight_quotes`;

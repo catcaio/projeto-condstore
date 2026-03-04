@@ -17,7 +17,7 @@ import type {
 import { unifiedQuoteEngine } from './quote-engine';
 import { redisClient } from '../../infra/redis.client';
 import { freightSimulationLogRepository } from '../../infra/repositories/freight-simulation-log.repository';
-import { domineEventBus } from '../domine/event-bus.service';
+import { domineIntakeService } from '../../domine/domine-intake.service';
 
 
 
@@ -39,6 +39,22 @@ class FreightService {
       // Calculate total weight
       const unitWeight = request.unitWeight || appConfig.freight.defaultUnitWeight;
       const totalWeight = unitWeight * request.quantity;
+      const correlationId = request.requestId || `quote_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+      if (request.tenantId) {
+        void domineIntakeService.publish({
+          tenantId: request.tenantId,
+          type: 'FREIGHT_QUOTE_REQUESTED',
+          source: 'connector',
+          payload: {
+            correlationId,
+            requestId: request.requestId,
+            destinationZip: request.destinationCep,
+            weight: totalWeight,
+            dims: request.dimensions ? `${request.dimensions.width}x${request.dimensions.height}x${request.dimensions.length}` : null
+          }
+        }).catch(e => logger.warn('domine_publish_req_fail', { error: e.message }));
+      }
 
       logger.info('Calculating freight', {
         destinationCep: request.destinationCep,
@@ -70,20 +86,23 @@ class FreightService {
         });
 
         // Publish to Domine (fire and forget)
-        const quoteId = `quote_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        void domineEventBus.publish(
-          request.tenantId,
-          'connector',
-          'freight_quoted',
-          {
-            quoteId,
-            destinationCep: request.destinationCep,
-            totalWeight,
-            bestPrice: bestOption.price,
-            optionsCount: sortedOptions.length
-          },
-          { idempotencyKey: quoteId }
-        ).catch(e => logger.error('domine_publish_fail', e));
+        void domineIntakeService.publish({
+          tenantId: request.tenantId,
+          type: 'FREIGHT_QUOTE_COMPLETED',
+          source: 'connector',
+          payload: {
+            correlationId,
+            bestCarrier: bestOption.carrier || bestOption.id?.split('-')[0] || 'unknown',
+            bestPriceCents: Math.round(bestOption.price * 100),
+            bestEtaDays: bestOption.deliveryTime,
+            quotesJsonRedacted: sortedOptions.map(o => ({
+              carrier: o.carrier || o.id?.split('-')[0],
+              service: o.service,
+              price: o.price,
+              eta: o.deliveryTime
+            }))
+          }
+        }).catch(e => logger.warn('domine_publish_comp_fail', { error: e.message }));
       }
 
       // Cache the result

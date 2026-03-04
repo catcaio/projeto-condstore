@@ -14,7 +14,7 @@ const actionsSchema = z.object({
     parameters: z.any()
 });
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -56,10 +56,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ten
 
         if (action === 'lookup_freight') {
             // we can look up latest or specific quote
-            const { quoteId } = parameters;
+            const { correlationId } = parameters;
             const db = await getDb();
-            if (quoteId) {
-                const q = await db.select().from(domineFreightQuotes).where(eq(domineFreightQuotes.quoteId, quoteId)).limit(1);
+            if (correlationId) {
+                const q = await db.select().from(domineFreightQuotes).where(eq(domineFreightQuotes.correlationId, correlationId)).limit(1);
                 return NextResponse.json({ ok: true, data: q[0] || null });
             } else {
                 const latest = await db.select().from(domineFreightQuotes)

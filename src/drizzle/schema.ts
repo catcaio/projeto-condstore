@@ -930,12 +930,20 @@ export const domineOrders = mysqlTable('domine_orders', {
 export const domineFreightQuotes = mysqlTable('domine_freight_quotes', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    quoteId: varchar('quote_id', { length: 100 }).notNull(),
-    orderId: varchar('order_id', { length: 100 }),
-    summary: json('summary'),
+    correlationId: varchar('correlation_id', { length: 100 }).notNull(),
+    requestId: varchar('request_id', { length: 100 }),
+    source: varchar('source', { length: 50 }).notNull(),
+    originZip: varchar('origin_zip', { length: 20 }),
+    destZip: varchar('dest_zip', { length: 20 }),
+    weight: int('weight'),
+    dims: varchar('dims', { length: 100 }),
+    quotesJsonRedacted: json('quotes_json_redacted'),
+    bestCarrier: varchar('best_carrier', { length: 100 }),
+    bestPriceCents: int('best_price_cents'),
+    bestEtaDays: int('best_eta_days'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
-    tenantQuoteIdx: uniqueIndex('uq_domine_freight_quotes_tenant_quote').on(table.tenantId, table.quoteId),
+    tenantCorrelationIdx: uniqueIndex('uq_domine_freight_quotes_correlation').on(table.tenantId, table.correlationId),
 }));
 
 export type DomineEventRecord = typeof domineEvents.$inferSelect;

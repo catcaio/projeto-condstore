@@ -19,12 +19,16 @@ export async function processDomineEvent(event: {
         await domineReadRepository.upsertOrder(event.tenantId, orderId, status, totals);
     }
     else if (event.type === 'freight_quoted') {
-        const quoteId = event.payloadJson?.quoteId;
-        if (!quoteId) throw new Error('quoteId missing for freight_quoted');
+        const correlationId = event.payloadJson?.correlationId || event.payloadJson?.quoteId;
+        if (!correlationId) throw new Error('correlationId missing for freight_quoted');
 
         console.log(`[DOMINE] Quoted info processing:`, event.payloadJson);
         const { orderId, ...summary } = event.payloadJson;
-        await domineReadRepository.upsertFreightQuote(event.tenantId, quoteId, summary, orderId);
+        await domineReadRepository.upsertFreightQuoteReadModel({
+            tenantId: event.tenantId,
+            correlationId,
+            quotesJsonRedacted: summary,
+        });
     }
     else {
         console.warn(`[DOMINE] No processor mapped for event type: ${event.type}`);
