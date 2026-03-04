@@ -151,6 +151,20 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        if (!user.passwordHash) {
+            logLoginDiagnostic({
+                level: 'warn',
+                reason: 'password_mismatch',
+                requestId,
+                emailHash: loginEmailHash,
+                tenantId: user.tenantId,
+            });
+            return NextResponse.json(
+                { success: false, error: 'Esta conta usa login social. Tente "Entrar com Google".' },
+                { status: 401 }
+            );
+        }
+
         const valid = verifyPassword(password, user.passwordHash);
         if (!valid) {
             logLoginDiagnostic({

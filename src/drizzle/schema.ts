@@ -209,15 +209,49 @@ export type NewFrankRolloutDecisionRecord = typeof frankRolloutDecisions.$inferI
 export const users = mysqlTable('users', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     email: varchar('email', { length: 255 }).notNull().unique(),
-    passwordHash: varchar('password_hash', { length: 512 }).notNull(),
+    name: varchar('name', { length: 255 }),
+    passwordHash: varchar('password_hash', { length: 512 }),
+    authProvider: varchar('auth_provider', { length: 20 }).notNull().default('email'),
+    providerId: varchar('provider_id', { length: 255 }),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
     role: varchar('role', { length: 20 }).notNull().default('operator'),
     sessionVersion: int('session_version').notNull().default(1),
+    emailVerifyToken: varchar('email_verify_token', { length: 128 }),
+    emailVerifiedAt: timestamp('email_verified_at'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export type UserRecord = typeof users.$inferSelect;
 export type NewUserRecord = typeof users.$inferInsert;
+
+// --- Invites ---
+
+export const invites = mysqlTable('invites', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    token: varchar('token', { length: 128 }).notNull().unique(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    role: varchar('role', { length: 20 }).notNull(),
+    email: varchar('email', { length: 255 }),
+    expiresAt: timestamp('expires_at').notNull(),
+    usedAt: timestamp('used_at'),
+    createdBy: varchar('created_by', { length: 36 }),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type InviteRecord = typeof invites.$inferSelect;
+export type NewInviteRecord = typeof invites.$inferInsert;
+
+// --- Tenant Signup Policies ---
+
+export const tenantSignupPolicies = mysqlTable('tenant_signup_policies', {
+    tenantId: varchar('tenant_id', { length: 36 }).primaryKey().notNull(),
+    selfSignupEnabled: boolean('self_signup_enabled').notNull().default(false),
+    allowedDomains: json('allowed_domains').$type<string[]>().default([]),
+    allowedEmails: json('allowed_emails').$type<string[]>().default([]),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type TenantSignupPolicyRecord = typeof tenantSignupPolicies.$inferSelect;
 
 export type TenantKnowledgeSourceRecord = typeof tenantKnowledgeSources.$inferSelect;
 export type NewTenantKnowledgeSourceRecord = typeof tenantKnowledgeSources.$inferInsert;

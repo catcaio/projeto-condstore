@@ -7,10 +7,15 @@
 | `/` | Page |
 | `/about` | Page |
 | `/api/app/events` | API |
+| `/api/auth/email/send-verify` | API |
+| `/api/auth/email/verify` | API |
+| `/api/auth/google` | API |
+| `/api/auth/google/callback` | API |
 | `/api/auth/login` | API |
 | `/api/auth/logout` | API |
 | `/api/auth/me` | API |
 | `/api/auth/seed-admin` | API |
+| `/api/auth/signup` | API |
 | `/api/billing/subscription` | API |
 | `/api/checkout` | API |
 | `/api/cockpit/analytics/events` | API |
@@ -151,5 +156,6 @@
 | `/painel-logistico` | Page |
 | `/pricing` | Page |
 | `/settings` | Page |
+| `/signup` | Page |
 | `/supreme` | Page |
 | `/t/[token]` | Page |

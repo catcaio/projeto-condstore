@@ -9,6 +9,11 @@
 | /api/auth/logout | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/auth/me | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/auth/seed-admin | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/auth/signup | POST | public | none | auth | live | Email signup with role selection and invite validation |
+| /api/auth/google | GET | public | none | auth | live | Google OAuth initiation (redirect to consent screen) |
+| /api/auth/google/callback | GET | public | none | auth | live | Google OAuth callback (code exchange + session) |
+| /api/auth/email/send-verify | POST | public | none | auth | live | Resend email verification link |
+| /api/auth/email/verify | GET | public | none | auth | live | Email verification token handler |
 | /api/billing/subscription | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/checkout | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cockpit/analytics/events | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -151,5 +156,6 @@
 | /painel-logistico | TBA | public | none | PUBLIC | live | Auto-detected |
 | /pricing | TBA | public | none | PUBLIC | live | Auto-detected |
 | /settings | TBA | public | none | PUBLIC | live | Auto-detected |
+| /signup | GET | public | none | auth | live | User registration page with role selection |
 | /supreme | TBA | public | none | PUBLIC | live | Auto-detected |
 | /t/[token] | TBA | public | none | PUBLIC | live | Auto-detected |
