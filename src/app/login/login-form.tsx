@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 interface LoginFormProps {
     buildLabel: string;
+    googleEnabled?: boolean;
 }
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -23,7 +24,7 @@ function GoogleIcon({ className }: { className?: string }) {
     );
 }
 
-export function LoginForm({ buildLabel }: LoginFormProps) {
+export function LoginForm({ buildLabel, googleEnabled = false }: LoginFormProps) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -131,26 +132,30 @@ export function LoginForm({ buildLabel }: LoginFormProps) {
                             </p>
                         </div>
 
-                        {/* Google Login */}
-                        <Button
-                            type="button"
-                            onClick={handleGoogleLogin}
-                            disabled={googleLoading}
-                            className="w-full"
-                            size="lg"
-                            variant="secondary"
-                            id="google-login-btn"
-                        >
-                            <GoogleIcon className="mr-2 h-5 w-5" />
-                            {googleLoading ? 'Redirecionando...' : 'Entrar com Google'}
-                        </Button>
+                        {/* Google Login (only shown when configured) */}
+                        {googleEnabled && (
+                            <>
+                                <Button
+                                    type="button"
+                                    onClick={handleGoogleLogin}
+                                    disabled={googleLoading}
+                                    className="w-full"
+                                    size="lg"
+                                    variant="secondary"
+                                    id="google-login-btn"
+                                >
+                                    <GoogleIcon className="mr-2 h-5 w-5" />
+                                    {googleLoading ? 'Redirecionando...' : 'Entrar com Google'}
+                                </Button>
 
-                        {/* Divider */}
-                        <div className="flex items-center gap-3">
-                            <div className="h-px flex-1 bg-[hsl(var(--ui-border))]" />
-                            <span className="text-xs font-medium text-[hsl(var(--ui-text-muted))]">ou</span>
-                            <div className="h-px flex-1 bg-[hsl(var(--ui-border))]" />
-                        </div>
+                                {/* Divider */}
+                                <div className="flex items-center gap-3">
+                                    <div className="h-px flex-1 bg-[hsl(var(--ui-border))]" />
+                                    <span className="text-xs font-medium text-[hsl(var(--ui-text-muted))]">ou</span>
+                                    <div className="h-px flex-1 bg-[hsl(var(--ui-border))]" />
+                                </div>
+                            </>
+                        )}
 
                         {/* Email/Password Form */}
                         <form onSubmit={handleSubmit} className="space-y-4">

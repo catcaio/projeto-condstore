@@ -17,5 +17,6 @@ export const metadata = {
 };
 
 export default function LoginPage() {
-    return <LoginForm buildLabel={detectBuildLabel()} />;
+    const googleEnabled = !!process.env.GOOGLE_CLIENT_ID;
+    return <LoginForm buildLabel={detectBuildLabel()} googleEnabled={googleEnabled} />;
 }

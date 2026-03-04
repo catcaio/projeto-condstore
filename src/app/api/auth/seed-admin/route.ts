@@ -1,10 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { randomUUID } from 'crypto';
 import { getDb } from '@/infra/db';
-import { users } from '@/drizzle/schema';
+import { users, tenantSignupPolicies } from '@/drizzle/schema';
 import { hashPassword } from '@/infra/auth/password';
+import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { sql, eq } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
+import { structuredLogger } from '@/infra/log/logger';
 
 import { getInternalExportTokenOrThrow } from '@/infra/config/internal-token';
 
@@ -50,7 +52,7 @@ export async function GET(request: NextRequest) {
         }
 
         const db = await getDb();
-        const adminEmail = 'admin@condstore.local';
+        const adminEmail = process.env.ADMIN_SEED_EMAIL || 'admin@condstore.local';
         const adminSeedPassword = process.env.ADMIN_SEED_PASSWORD;
         if (!adminSeedPassword) {
             return NextResponse.json(
@@ -59,36 +61,120 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Ensure tenant exists for admin user to link to
-        // We'll insert a fallback default tenant if none exists, or fetch the first one.
+        // Ensure tenant exists
         let tenantId = 'condstore-admin-tenant';
         const existingTenants = await db.execute(sql`SELECT id FROM tenants LIMIT 1`);
 
         if (Array.isArray(existingTenants) && existingTenants.length > 0 && Array.isArray(existingTenants[0]) && existingTenants[0].length > 0) {
             tenantId = (existingTenants[0][0] as any).id;
         } else {
-            // Insert default tenant if missing
             await db.execute(sql`
                 INSERT IGNORE INTO tenants (id, name, twilio_number) 
                 VALUES (${tenantId}, 'Condstore Admin', 'whatsapp:+5511999999999')
            `);
         }
 
-        // Check if user exists
+        // ── Ensure tenant_signup_policies exists ──────────────────────────
+        const existingPolicy = await db.select().from(tenantSignupPolicies).where(eq(tenantSignupPolicies.tenantId, tenantId)).limit(1);
+        if (existingPolicy.length === 0) {
+            await db.insert(tenantSignupPolicies).values({
+                tenantId,
+                selfSignupEnabled: true,
+                allowedDomains: [],
+                allowedEmails: [adminEmail.toLowerCase()],
+            });
+            structuredLogger.info('seed_admin_signup_policy_created', {
+                eventType: 'admin_bootstrap',
+                tenantId,
+            });
+        }
+
+        // ── Create or update admin user ───────────────────────────────────
         const existingAdmin = await db.select().from(users).where(eq(users.email, adminEmail)).limit(1);
 
         if (existingAdmin.length === 0) {
             const passwordHash = hashPassword(adminSeedPassword);
+            const userId = randomUUID();
 
             await db.insert(users).values({
-                id: randomUUID(),
+                id: userId,
                 email: adminEmail,
+                name: 'Admin',
                 passwordHash: passwordHash,
+                authProvider: 'email',
                 tenantId: tenantId,
                 role: 'admin',
+                emailVerifiedAt: new Date(), // Auto-verified for seed admin
             });
 
-            return NextResponse.json({ success: true, message: 'Admin user created successfully.' });
+            // Create session and return cookie for instant login
+            const sessionToken = await createSessionToken({
+                id: userId,
+                email: adminEmail,
+                tenantId: tenantId,
+                role: 'admin',
+                sessionVersion: 1,
+            });
+
+            structuredLogger.info('admin_bootstrap_user_created', {
+                eventType: 'admin_bootstrap',
+                userId,
+                tenantId,
+                email: adminEmail,
+            });
+
+            const response = NextResponse.json({
+                success: true,
+                message: 'Admin user created successfully. Session cookie set — redirect to /home.',
+                tenantId,
+            });
+
+            response.cookies.set(COOKIE_NAME, sessionToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                path: '/',
+                maxAge: 8 * 60 * 60,
+            });
+
+            return response;
+        }
+
+        // User exists — reset password and issue session
+        const passwordHash = hashPassword(adminSeedPassword);
+        await db.execute(sql`
+            UPDATE users
+            SET password_hash = ${passwordHash},
+                session_version = session_version + 1,
+                email_verified_at = COALESCE(email_verified_at, NOW())
+            WHERE email = ${adminEmail}
+        `);
+
+        const updatedUser = await db.select().from(users).where(eq(users.email, adminEmail)).limit(1);
+        if (updatedUser[0]) {
+            const sessionToken = await createSessionToken({
+                id: updatedUser[0].id,
+                email: updatedUser[0].email,
+                tenantId: updatedUser[0].tenantId,
+                role: updatedUser[0].role,
+                sessionVersion: updatedUser[0].sessionVersion,
+            });
+
+            const response = NextResponse.json({
+                success: true,
+                message: 'Admin password reset and session created. Redirect to /home.',
+                tenantId: updatedUser[0].tenantId,
+            });
+
+            response.cookies.set(COOKIE_NAME, sessionToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                path: '/',
+                maxAge: 8 * 60 * 60,
+            });
+
+            return response;
         }
 
         return NextResponse.json({ success: true, message: 'Admin user already exists.' });
