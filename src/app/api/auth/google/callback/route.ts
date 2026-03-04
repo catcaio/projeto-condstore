@@ -5,11 +5,7 @@ import { getDb } from '@/infra/db';
 import { users } from '@/drizzle/schema';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { structuredLogger } from '@/infra/log/logger';
-import { eq, and } from 'drizzle-orm';
-
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const REDIRECT_URI_BASE = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+import { eq } from 'drizzle-orm';
 
 interface GoogleTokenResponse {
     access_token: string;
@@ -26,6 +22,10 @@ interface GoogleUserInfo {
 }
 
 export async function GET(request: NextRequest) {
+    const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+    const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+    const REDIRECT_URI_BASE = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
     const code = request.nextUrl.searchParams.get('code');
     const baseUrl = REDIRECT_URI_BASE;
 
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.redirect(`${baseUrl}/login?error=google_token_failed`);
         }
 
-        const tokenData: GoogleTokenResponse = await tokenRes.json();
+        const tokenData = await tokenRes.json() as GoogleTokenResponse;
 
         // ── 2. Get user info ──────────────────────────────────────────
         const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.redirect(`${baseUrl}/login?error=google_userinfo_failed`);
         }
 
-        const googleUser: GoogleUserInfo = await userInfoRes.json();
+        const googleUser = await userInfoRes.json() as GoogleUserInfo;
         const normalizedEmail = googleUser.email.toLowerCase().trim();
 
         // ── 3. Find existing user ─────────────────────────────────────

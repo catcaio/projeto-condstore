@@ -47,6 +47,7 @@
 | `/api/history` | API |
 | `/api/internal/auth/reset-admin` | API |
 | `/api/internal/billing/reconcile-stripe` | API |
+| `/api/internal/bootstrap-admin` | API |
 | `/api/internal/dev/session` | API |
 | `/api/internal/diag` | API |
 | `/api/internal/events/dlq` | API |
