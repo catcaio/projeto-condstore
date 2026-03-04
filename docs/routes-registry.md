@@ -63,6 +63,7 @@
 | /api/internal/health/webhook | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/backfill-phone | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/cleanup-retention | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/internal/jobs/domine-process | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/finops-reconciliation | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/rollup-backfill | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/rollup-daily | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -98,7 +99,10 @@
 | /api/tenants/[tenantId]/audit | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/domine/actions | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/domine/connectors/orders/event | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/tenants/[tenantId]/domine/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/tenants/[tenantId]/domine/dlq/retry | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/domine/events | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/tenants/[tenantId]/domine/events/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/domine/events/publish | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/domine/freight/latest | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/domine/orders | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -107,6 +111,7 @@
 | /api/tenants/[tenantId]/knowledge/sources | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/knowledge/sources/[sourceId]/ready | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/privacy/[action] | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/tenants/[tenantId]/privacy/export-user | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/privacy/purge-user | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/secrets | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/secrets/rotate | TBA | public | none | PUBLIC | live | Auto-detected |
