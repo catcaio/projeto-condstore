@@ -16,12 +16,22 @@ interface LimitOptions {
   blockSec?: number;
 }
 
-export type RouteSensitivity = 'critical' | 'public_safe';
+export type RouteSensitivity = 'critical' | 'public_safe' | 'failopen_memory';
 
 /** Scopes explicitly classified as safe for fail-open on Redis failure */
 const SAFE_PUBLIC_SCOPES = new Set([
   'public_home', 'public_docs', 'public_pricing', 'public_robots', 'public_sitemap',
   'cotacao_intent', 'cotacao_quotes'
+]);
+
+/**
+ * Scopes that use in-memory fallback (NOT fail-closed) when Redis is down,
+ * even in production. These are user-facing auth flows where blocking everyone
+ * with 429 is worse than allowing through with local-only rate limiting.
+ * Critical scopes (webhooks, internal, purge-user) remain fail-closed.
+ */
+const FAILOPEN_WITH_MEMORY_SCOPES = new Set([
+  'auth.login',
 ]);
 
 interface MemoryBucket {
@@ -33,10 +43,20 @@ interface MemoryBlock {
   until: number;
 }
 
+// ─── Circuit breaker for Redis ────────────────────────────────────────────
+interface CircuitBreakerState {
+  consecutiveFailures: number;
+  openUntil: number; // timestamp ms — skip Redis until this time
+}
+
+const CIRCUIT_BREAKER_THRESHOLD = 3;  // open after N consecutive failures
+const CIRCUIT_BREAKER_COOLDOWN_MS = 30_000; // skip Redis for 30s once open
+
 const globalForRateLimiter = globalThis as typeof globalThis & {
   __condstoreRateLimiterBuckets?: Map<string, MemoryBucket>;
   __condstoreRateLimiterBlocks?: Map<string, MemoryBlock>;
   __condstoreRateLimiterFallbackMetrics?: { count: number; lastSeenAt: number | null };
+  __condstoreRateLimiterCircuitBreaker?: CircuitBreakerState;
 };
 
 const memoryBuckets =
@@ -51,8 +71,42 @@ const fallbackMetrics =
   globalForRateLimiter.__condstoreRateLimiterFallbackMetrics ??
   (globalForRateLimiter.__condstoreRateLimiterFallbackMetrics = { count: 0, lastSeenAt: null });
 
+const circuitBreaker =
+  globalForRateLimiter.__condstoreRateLimiterCircuitBreaker ??
+  (globalForRateLimiter.__condstoreRateLimiterCircuitBreaker = { consecutiveFailures: 0, openUntil: 0 });
+
+function isCircuitBreakerOpen(now: number): boolean {
+  return circuitBreaker.openUntil > now;
+}
+
+function recordRedisSuccess(): void {
+  circuitBreaker.consecutiveFailures = 0;
+}
+
+function recordRedisFailure(now: number): void {
+  circuitBreaker.consecutiveFailures += 1;
+  if (circuitBreaker.consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+    circuitBreaker.openUntil = now + CIRCUIT_BREAKER_COOLDOWN_MS;
+    structuredLogger.warn('rate_limiter_circuit_breaker_open', {
+      eventType: 'rate_limiter',
+      consecutiveFailures: circuitBreaker.consecutiveFailures,
+      cooldownMs: CIRCUIT_BREAKER_COOLDOWN_MS,
+    });
+  }
+}
+
 export function getRateLimiterFallbackMetrics() {
   return { ...fallbackMetrics };
+}
+
+/** Reset all in-memory state (for testing). */
+export function resetRateLimiterState(): void {
+  memoryBuckets.clear();
+  memoryBlocks.clear();
+  fallbackMetrics.count = 0;
+  fallbackMetrics.lastSeenAt = null;
+  circuitBreaker.consecutiveFailures = 0;
+  circuitBreaker.openUntil = 0;
 }
 
 function nowMs(): number {
@@ -147,10 +201,22 @@ export class RateLimiter {
 
     const now = nowMs();
 
+    // Circuit breaker: skip Redis entirely for failopen scopes when breaker is open
+    if (FAILOPEN_WITH_MEMORY_SCOPES.has(normalizedScope) && isCircuitBreakerOpen(now)) {
+      structuredLogger.info('rate_limiter_circuit_breaker_skip_redis', {
+        eventType: 'rate_limiter',
+        scope: normalizedScope,
+      });
+      return this.limitWithMemory(normalizedScope, normalizedKey, options, now);
+    }
+
     if (redisClient.isAvailable()) {
       try {
-        return await this.limitWithRedis(normalizedScope, normalizedKey, options, now);
+        const decision = await this.limitWithRedis(normalizedScope, normalizedKey, options, now);
+        recordRedisSuccess();
+        return decision;
       } catch (error) {
+        recordRedisFailure(now);
         return await this.handleRedisFailure(normalizedScope, normalizedKey, options, now, 'redis_error', error);
       }
     }
@@ -159,6 +225,7 @@ export class RateLimiter {
       return this.limitWithMemory(normalizedScope, normalizedKey, options, now);
     }
 
+    recordRedisFailure(now);
     return await this.handleRedisFailure(normalizedScope, normalizedKey, options, now, 'redis_unavailable');
   }
 
@@ -232,7 +299,27 @@ export class RateLimiter {
   ): Promise<RateLimitDecision> {
     const keyHash = hashRateLimitKeyInternal(key);
     const errorName = error instanceof Error ? error.name : undefined;
-    const sensitivity: RouteSensitivity = SAFE_PUBLIC_SCOPES.has(scope) ? 'public_safe' : 'critical';
+    const sensitivity: RouteSensitivity = FAILOPEN_WITH_MEMORY_SCOPES.has(scope)
+      ? 'failopen_memory'
+      : SAFE_PUBLIC_SCOPES.has(scope)
+        ? 'public_safe'
+        : 'critical';
+
+    // Failopen-with-memory scopes (auth_login): use in-memory fallback even in production
+    if (sensitivity === 'failopen_memory') {
+      fallbackMetrics.count += 1;
+      fallbackMetrics.lastSeenAt = now;
+      structuredLogger.warn('rate_limiter_fallback_local_used', {
+        eventType: 'rate_limiter',
+        scope,
+        keyHash,
+        reason,
+        rateLimitMode: 'failopen_memory',
+        sensitivity,
+        ...(errorName ? { errorName } : {}),
+      });
+      return this.limitWithMemory(scope, key, options, now);
+    }
 
     if (isMemoryFallbackEnabled()) {
       structuredLogger.warn('rate_limiter_redis_failure_memory_fallback', {
@@ -246,7 +333,7 @@ export class RateLimiter {
       return this.limitWithMemory(scope, key, options, now);
     }
 
-    // P0: Default to fail-closed for critical scopes (webhook, auth, internal, ingest)
+    // P0: Default to fail-closed for critical scopes (webhook, internal, ingest)
     if (sensitivity === 'critical') {
       structuredLogger.error('rate_limiter_redis_failure_fail_closed', {
         eventType: 'rate_limiter',
