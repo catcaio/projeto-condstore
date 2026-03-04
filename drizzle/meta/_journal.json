@@ -197,6 +197,20 @@
       "when": 1772423114389,
       "tag": "0039_light_shadow_king",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1772634516359,
+      "tag": "0040_snapshot_alignment",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "5",
+      "when": 1772634532890,
+      "tag": "0041_youthful_ben_grimm",
+      "breakpoints": true
     }
   ]
 }

@@ -836,6 +836,35 @@ export const domineEvents = mysqlTable('domine_events', {
     tenantStatusIdx: index('idx_domine_events_tenant_status').on(table.tenantId, table.status),
 }));
 
+export const domineTenantIntakeConfigs = mysqlTable('domine_tenant_intake_configs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    tenantKey: varchar('tenant_key', { length: 128 }).notNull(),
+    secret: varchar('secret', { length: 255 }),
+    allowUnsignedIntake: boolean('allow_unsigned_intake').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    tenantKeyIdx: uniqueIndex('uq_domine_tenant_intake_configs_key').on(table.tenantKey),
+    tenantIdIdx: index('idx_domine_tenant_intake_configs_tenant').on(table.tenantId),
+}));
+
+export const domineIntakeEvents = mysqlTable('domine_intake_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    source: varchar('source', { length: 50 }).notNull(),
+    eventType: varchar('event_type', { length: 128 }).notNull(),
+    externalId: varchar('external_id', { length: 128 }).notNull(),
+    occurredAt: timestamp('occurred_at').notNull(),
+    receivedAt: timestamp('received_at').defaultNow().notNull(),
+    payloadRedacted: json('payload_redacted'),
+    status: varchar('status', { length: 30 }).notNull().default('queued'), // queued | rejected | duplicate
+    rejectionReason: text('rejection_reason'),
+}, (table) => ({
+    idempotencyIdx: uniqueIndex('uq_domine_intake_events_idempotency').on(table.tenantId, table.source, table.eventType, table.externalId),
+    tenantStatusIdx: index('idx_domine_intake_events_tenant_status').on(table.tenantId, table.status),
+}));
+
 export const domineOrders = mysqlTable('domine_orders', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
