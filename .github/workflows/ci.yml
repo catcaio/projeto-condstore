@@ -45,14 +45,14 @@ jobs:
       - name: Run tests
         run: npm run test:ci
 
+      - name: Build project
+        run: npm run build
+
       - name: Verify Schema Drift
         run: npm run db:verify
 
       - name: Guardrails Public API
         run: node --import tsx scripts/guardrails-public-api.ts
-
-      - name: Build project
-        run: npm run build
 
       - name: Verify clean worktree
         run: |
