@@ -27,13 +27,25 @@ Run-Gate "Build" "npm run build"
 
 # Optional gates (run only if scripts exist)
 if (Test-Path "scripts/routes-verify.ts") {
-    Run-Gate "Routes Verify" "npm run routes:verify"
+    Run-Gate "Routes Guardrail Sync" "npm run routes:sync"
 }
 if (Test-Path "scripts/check-env-leak.mjs") {
     Run-Gate "Env Leak Check" "node scripts/check-env-leak.mjs"
 }
 
 Write-Host ""
+Write-Host ">> Gate: Verify Clean Worktree" -ForegroundColor Yellow
+$dirty = git status --porcelain
+if ($dirty) {
+    Write-Host "FAILED: Verify Clean Worktree" -ForegroundColor Red
+    Write-Host "Worktree is dirty after gates. Unstaged changes detected. Did you forget to commit generated files?" -ForegroundColor Red
+    Write-Host $dirty
+    exit 1
+}
+Write-Host "PASSED: Verify Clean Worktree" -ForegroundColor Green
+
+Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host " ALL GATES PASSED" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
+

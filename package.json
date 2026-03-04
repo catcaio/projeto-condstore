@@ -25,6 +25,7 @@
     "db:verify": "node --import tsx scripts/db-verify.ts",
     "routes:inventory": "node --import tsx scripts/routes-inventory.ts",
     "routes:verify": "node --import tsx scripts/routes-verify.ts",
+    "routes:sync": "npm run routes:inventory && npm run routes:verify",
     "qa:snapshots": "node --import tsx scripts/qa-snapshots.ts",
     "lint:design-system": "vitest run src/__tests__/design-system.test.ts",
     "worker:finops": "node --import tsx src/workers/finops-worker.ts",

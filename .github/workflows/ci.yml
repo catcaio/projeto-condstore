@@ -32,9 +32,7 @@ jobs:
         run: node scripts/check-env-leak.mjs
 
       - name: Verify Routes Guardrail
-        run: |
-          npm run routes:inventory
-          npm run routes:verify
+        run: npm run routes:sync
 
       - name: Run typecheck
         run: npm run typecheck
