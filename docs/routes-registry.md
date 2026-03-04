@@ -30,6 +30,7 @@
 | /api/cockpit/ops/run-rollup | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cockpit/ops/status | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cockpit/saved-views | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/cockpit/status | TBA | internal | required | cockpit | live | Returns system health status for Cockpit dashboard |
 | /api/cockpit/system-status | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cron/cleanup | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/db/migrate | TBA | public | none | PUBLIC | live | Auto-detected |

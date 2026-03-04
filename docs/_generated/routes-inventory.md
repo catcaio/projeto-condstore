@@ -32,7 +32,7 @@
 | `/api/cockpit/ops/run-rollup` | API |
 | `/api/cockpit/ops/status` | API |
 | `/api/cockpit/saved-views` | API |
-| `/api/cockpit/system-status` | API |
+| `/api/cockpit/status` | API |
 | `/api/cron/cleanup` | API |
 | `/api/db/migrate` | API |
 | `/api/debug/tenants` | API |
@@ -134,7 +134,6 @@
 | `/cockpit/settings/security` | Page |
 | `/cockpit/status` | Page |
 | `/cockpit/status/audit` | Page |
-| `/cockpit/system-status` | Page |
 | `/concept-layer-preview` | Page |
 | `/cotacao` | Page |
 | `/cotacao/result` | Page |
