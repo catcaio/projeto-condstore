@@ -186,7 +186,8 @@ export async function POST(request: NextRequest) {
         });
 
         // ── 4. Send email verification ────────────────────────────────────
-        const verifyUrl = `${process.env.NEXTAUTH_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}/api/auth/email/verify?token=${emailVerifyToken}`;
+        const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+        const verifyUrl = `${baseUrl}/api/auth/email/verify?token=${emailVerifyToken}`;
 
         if (process.env.NODE_ENV !== 'production') {
             structuredLogger.info('email_verify_link_dev', {
