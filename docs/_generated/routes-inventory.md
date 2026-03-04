@@ -36,6 +36,7 @@
 | `/api/cron/cleanup` | API |
 | `/api/db/migrate` | API |
 | `/api/debug/tenants` | API |
+| `/api/domine/intake` | API |
 | `/api/events` | API |
 | `/api/health` | API |
 | `/api/history` | API |

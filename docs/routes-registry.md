@@ -35,6 +35,7 @@
 | /api/cron/cleanup | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/db/migrate | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/debug/tenants | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/domine/intake | POST | public | controlled | domine | live | Universal Intake v1 — versioned, idempotent event ingestion |
 | /api/events | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/health | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/history | TBA | public | none | PUBLIC | live | Auto-detected |

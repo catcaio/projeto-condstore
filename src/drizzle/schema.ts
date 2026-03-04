@@ -827,13 +827,16 @@ export const domineEvents = mysqlTable('domine_events', {
     idempotencyKey: varchar('idempotency_key', { length: 255 }).notNull(),
     payloadJson: json('payload_json'),
     processedAt: timestamp('processed_at'),
-    status: varchar('status', { length: 30 }).notNull().default('queued'),
+    status: varchar('status', { length: 30 }).notNull().default('queued'), // queued | processing | completed | failed | dead_letter
+    retryCount: int('retry_count').notNull().default(0),
+    nextRetryAt: timestamp('next_retry_at'),
     errorCode: varchar('error_code', { length: 100 }),
     errorMessage: text('error_message'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
     tenantIdempotencyIdx: uniqueIndex('uq_domine_events_tenant_idempotency').on(table.tenantId, table.idempotencyKey),
     tenantStatusIdx: index('idx_domine_events_tenant_status').on(table.tenantId, table.status),
+    nextRetryIdx: index('idx_domine_events_next_retry').on(table.status, table.nextRetryAt),
 }));
 
 export const domineTenantIntakeConfigs = mysqlTable('domine_tenant_intake_configs', {
@@ -863,6 +866,20 @@ export const domineIntakeEvents = mysqlTable('domine_intake_events', {
 }, (table) => ({
     idempotencyIdx: uniqueIndex('uq_domine_intake_events_idempotency').on(table.tenantId, table.source, table.eventType, table.externalId),
     tenantStatusIdx: index('idx_domine_intake_events_tenant_status').on(table.tenantId, table.status),
+}));
+
+export const domineEventsDlq = mysqlTable('domine_events_dlq', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    eventId: varchar('event_id', { length: 36 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    eventType: varchar('event_type', { length: 128 }).notNull(),
+    payloadJson: json('payload_json'),
+    failureReason: text('failure_reason').notNull(),
+    retryCount: int('retry_count').notNull().default(0),
+    failedAt: timestamp('failed_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantIdx: index('idx_domine_events_dlq_tenant').on(table.tenantId),
+    failedAtIdx: index('idx_domine_events_dlq_failed_at').on(table.failedAt),
 }));
 
 export const domineOrders = mysqlTable('domine_orders', {
