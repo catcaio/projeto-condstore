@@ -1,8 +1,6 @@
-import { migrate } from 'drizzle-orm/mysql2/migrator';
-import { drizzle } from 'drizzle-orm/mysql2';
-import mysql from 'mysql2/promise';
 import * as dotenv from 'dotenv';
 import path from 'path';
+import { execSync } from 'child_process';
 
 // Load from .env.production if it exists, otherwise rely on system envs (for CI)
 dotenv.config({ path: path.resolve(process.cwd(), '.env.production') });
@@ -16,35 +14,18 @@ async function main() {
         process.exit(1);
     }
 
+    // Set DATABASE_URL for the underlying script
+    process.env.DATABASE_URL = dbUrl;
+
     console.log(`Connecting to: ${dbUrl.split('@')[1] || 'URL hidden'}...`);
 
-    let connection;
     try {
-        connection = await mysql.createConnection({
-            uri: dbUrl,
-            ssl: { rejectUnauthorized: true }
-        });
-    } catch (e: any) {
-        console.error('❌ Failed to connect to DB', e.message);
-        process.exit(1);
-    }
-
-    try {
-        const db = drizzle(connection);
-        console.log('Running migrator...');
-
-        // Ensure to path string correctly. In CI this is root/drizzle
-        const migrationsFolder = path.resolve(process.cwd(), 'drizzle');
-        console.log(`Using migrations folder: ${migrationsFolder}`);
-
-        await migrate(db, { migrationsFolder });
-
+        console.log('Running robust SQL migration executor...');
+        execSync('node scripts/run-sql-migrations.mjs', { stdio: 'inherit' });
         console.log('✅ Migrations applied successfully.');
     } catch (e: any) {
         console.error('❌ Migration failed:', e);
         process.exit(1);
-    } finally {
-        await connection.end();
     }
 }
 

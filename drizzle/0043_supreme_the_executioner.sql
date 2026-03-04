@@ -15,8 +15,8 @@ CREATE TABLE `invites` (
 CREATE TABLE `tenant_signup_policies` (
 	`tenant_id` varchar(36) NOT NULL,
 	`self_signup_enabled` boolean NOT NULL DEFAULT false,
-	`allowed_domains` json DEFAULT ('[]'),
-	`allowed_emails` json DEFAULT ('[]'),
+	`allowed_domains` json DEFAULT NULL,
+	`allowed_emails` json DEFAULT NULL,
 	`updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT `tenant_signup_policies_tenant_id` PRIMARY KEY(`tenant_id`)
 );
