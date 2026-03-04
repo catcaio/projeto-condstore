@@ -1,0 +1,32 @@
+name: Production DB Migrate
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "yes" to confirm migration on PROD'
+        required: true
+        type: string
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    if: inputs.confirm == 'yes'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run Schema Migrations
+        env:
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: npx tsx scripts/db-migrate.ts

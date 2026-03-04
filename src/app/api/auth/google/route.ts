@@ -2,15 +2,12 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-const REDIRECT_URI_BASE = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-
 export async function GET() {
+    const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+    const REDIRECT_URI_BASE = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
     if (!GOOGLE_CLIENT_ID) {
-        return NextResponse.json(
-            { error: 'Google OAuth não configurado' },
-            { status: 503 }
-        );
+        return NextResponse.redirect(`${REDIRECT_URI_BASE}/login?error=google_not_configured`);
     }
 
     const redirectUri = `${REDIRECT_URI_BASE}/api/auth/google/callback`;

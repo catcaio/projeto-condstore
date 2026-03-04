@@ -48,6 +48,7 @@
 | /api/internal/billing/reconcile-stripe | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/dev/session | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/diag | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/internal/bootstrap-admin | POST | internal | required | ops | live | One-time secure admin bootstrap |
 | /api/internal/events/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/events/metrics | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/exports/frank-events | TBA | public | none | PUBLIC | live | Auto-detected |
