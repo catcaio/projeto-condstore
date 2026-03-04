@@ -1,11 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 
 export async function POST(request: NextRequest) {
-    const token = request.headers.get('x-internal-token');
-    if (!isInternalTokenAuthorized(token)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = requireInternalToken(request, { purpose: ['any'] });
+    if (!authResult.ok) return authResult.response;
     try {
         const body = await request.json();
         return NextResponse.json({
@@ -24,10 +22,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-    const token = request.headers.get('x-internal-token');
-    if (!isInternalTokenAuthorized(token)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const authResult = requireInternalToken(request, { purpose: ['any'] });
+    if (!authResult.ok) return authResult.response;
     return NextResponse.json({
         ok: true,
         message: 'Logistics Panel API (GET)',

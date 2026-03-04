@@ -43,13 +43,14 @@ The `/cotacao` engine is engineered for resilience against upstream logistics AP
 4. **Ranking & Delivery:** Returning quotes are structurally normalized and sorted across multiple calculated views (e.g., Cheapest, Fastest, Best Value).
 5. **PII Sanitization & Observability:** Before returning the data, the engine strips any PII. The sanitized summary (success count, timeout count, latency) is flushed asynchronously to the Domine Operational Layer.
 
-## 3. Domine Minimal Operational Layer
+## 3. Domine Event Spine
 
-Domine acts as the telemetry and orchestration spine. In its current architectural phase, it serves as a non-blocking "read-model" consumer.
+Domine acts as the central event-driven orchestration spine for Condstore OS. It decouples heavy synchronous processing from the HTTP layer, transitioning the architecture into an async worker-based model.
 
-- **Event Interception:** Edge surfaces (like the Quote Engine) emit raw metric events (e.g., `quote_completed`, `carrier_failed`) directly to internal repositories or Redis log streams.
-- **Aggregation:** A background worker or cron-job summarizes these daily streams.
-- **Cockpit Observability:** The Cockpit (`/cockpit/domine`) visualizes these aggregated metrics (Average Response Time, SLA breaches per carrier). If latency consistently exceeds thresholds, strategic facts are synthesized entirely offline to advise tenant administrators without polling dynamic production tables.
+- **Event Dispatch (Publish/Subscribe):** Edge surfaces (like Quote APIs or Stripe Webhooks) validate payloads synchronously and immediately publish standard `DomineEvent`s (e.g., `FREIGHT_QUOTE_REQUESTED`, `WEBHOOK_RECEIVED`, `FINOPS_EVENT`) to the internal event bus.
+- **Async Workers:** Dedicated background processes (`quote-worker`, `webhook-worker`, `finops-worker`, `knowledge-sync`) subscribe to these events, executing heavy lifting (calculating freight, reconciling billing, syncing vectors) resiliently.
+- **Frontend Compatibility:** Where synchronous HTTP responses are still required by frontends (e.g., waiting for quotes), the API layer uses `waitForEvent` with bounded timeouts to await worker completion before returning.
+- **Observability:** Workers register `processed`, `failed`, and `retry` states consistently, emitting telemetry into the Domine Operational Layer.
 
 ## 4. End-to-End Governance and Protection
 

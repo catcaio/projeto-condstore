@@ -10,8 +10,8 @@ import { publicEventsRepository } from '@/infra/repositories/public-events.repos
 import { getDb } from '@/infra/db';
 import { publicEvents } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { getSimulatedQuotes } from '@/modules/shipping/simulated/simulated-quote-engine';
 import type { QuoteInput } from '@/modules/shipping/carriers/types';
+import { publishEvent, eventBus } from '@/domine/event-bus';
 import { sanitizeQuoteIntentPayload } from '@/modules/cotacao-publica/sanitization';
 
 const CACHE_TTL_SECONDS = 600; // 10 minutes
@@ -33,6 +33,8 @@ async function handler(request: NextRequest): Promise<NextResponse> {
         // --- Rate Limit ---
         const rawIp = getClientIp(request);
         const ipHash = sha256Hex(rawIp) ?? 'ip_unknown';
+        const authHeader = request.headers.get('user-agent');
+        const uaHash = sha256Hex(authHeader) ?? 'ua_unknown';
         const rateLimitKey = `cotacao_quotes_ip:${ipHash}`;
 
         const rateDecision = await rateLimiter.limit('cotacao_quotes', rateLimitKey, {
@@ -120,42 +122,63 @@ async function handler(request: NextRequest): Promise<NextResponse> {
             packageType: (payload?.packageType as 'box' | 'envelope') ?? 'box',
         };
 
-        const { quotes, bestPriceId, bestSpeedId } = getSimulatedQuotes(quoteInput, intentIdRaw);
-
-        // Sanitized quote payload for event logging (no PII)
-        const sanitizedQuotesPayload = quotes.map((q) => ({
-            carrierCode: q.carrierCode,
-            serviceName: q.serviceName,
-            price: q.price,
-            estimatedDeliveryDays: q.estimatedDeliveryDays,
-        }));
-
-        // --- Log event ---
-        await publicEventsRepository.create({
+        // --- Dispatch Event to Domine Spine ---
+        publishEvent({
             id: crypto.randomUUID(),
             tenantId,
-            anonId,
-            eventType: 'cotacao_quotes_generated',
-            attributionId: intent.attributionId ?? undefined,
-            payloadJson: {
-                intentId: intentIdRaw,
-                quotesCount: quotes.length,
-                bestPriceId,
-                bestSpeedId,
-                simulated: true,
-                quotes: sanitizedQuotesPayload,
-            },
-            ipHash,
-            uaHash: sha256Hex(request.headers.get('user-agent')) ?? 'ua_unknown',
+            type: 'FREIGHT_QUOTE_REQUESTED',
+            source: 'http_api',
+            payload: { quoteInput, intentIdRaw, anonId, ipHash, uaHash, attributionId: intent.attributionId },
+            createdAt: new Date(),
+            version: 1
         });
 
-        const responseBody = {
-            intentId: intentIdRaw,
-            simulated: true,
-            quotes,
-            bestPriceId,
-            bestSpeedId,
-        };
+        // --- Wait for the worker to process (maintain frontend compatibility) ---
+        let responseBody;
+        try {
+            const completedEvent = await eventBus.waitForEvent<any>(
+                'FREIGHT_QUOTE_COMPLETED',
+                (e) => e.payload.intentIdRaw === intentIdRaw,
+                15000 // 15s timeout
+            );
+            responseBody = completedEvent.payload.result;
+
+            // Log event internally after it's done by worker, or worker could log it.
+            // Preserving original HTTP logging here exactly as before.
+            const { quotes, bestPriceId, bestSpeedId } = responseBody;
+            const sanitizedQuotesPayload = quotes.map((q: any) => ({
+                carrierCode: q.carrierCode,
+                serviceName: q.serviceName,
+                price: q.price,
+                estimatedDeliveryDays: q.estimatedDeliveryDays,
+            }));
+
+            await publicEventsRepository.create({
+                id: crypto.randomUUID(),
+                tenantId,
+                anonId,
+                eventType: 'cotacao_quotes_generated',
+                attributionId: intent.attributionId ?? undefined,
+                payloadJson: {
+                    intentId: intentIdRaw,
+                    quotesCount: quotes.length,
+                    bestPriceId,
+                    bestSpeedId,
+                    simulated: true,
+                    quotes: sanitizedQuotesPayload,
+                },
+                ipHash,
+                uaHash, // using request uaHash from earlier
+            });
+
+        } catch (error) {
+            structuredLogger.error('cotacao_quotes_event_timeout', {
+                requestId, tenantId, route,
+                eventType: 'route_error',
+                intentIdRaw,
+            });
+            return errorResponse(ErrorCode.UNKNOWN, 504, requestId, 'Quote Engine Timeout');
+        }
 
         // --- Cache in Redis ---
         try {

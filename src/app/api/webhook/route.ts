@@ -534,7 +534,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // ── 12c. Mark webhook event as processed ─────────────────────────────────
+    // ── 12d. Persist to domine_events for async audit trail (fire-and-forget) ──
+    try {
+      const { domineIntakeService } = await import('../../../domine/domine-intake.service');
+      await domineIntakeService.publish({
+        tenantId: 'LOJACOND',
+        type: 'WEBHOOK_RECEIVED',
+        source: 'webhook',
+        payload: {
+          source: 'twilio',
+          providerEventId: messageSid,
+          kind: intent,
+          minimalData: { phoneHash, confidence },
+        },
+        idempotencyKey: `twilio:${messageSid}`,
+      });
+    } catch {
+      // Non-blocking: intake failure must never break webhook response
+    }
+
+    // ── 12c. Mark webhook event as processed ─────────────────────────────
     void webhookEventRepository.markProcessed('twilio', messageSid);
 
     const successLatencyMs = Date.now() - startTime;

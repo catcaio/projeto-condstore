@@ -7,7 +7,7 @@ import packageJson from '../../../../../package.json';
 import { getDb } from '../../../../infra/db';
 import { redisClient } from '../../../../infra/redis.client';
 import { getRateLimiterFallbackMetrics } from '../../../../infra/security/rate-limiter';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '../../../../infra/config/internal-token';
+import { requireInternalToken } from '../../../../infra/auth/tenant-route-guard';
 import { makeRequestId, attachRequestIdHeader } from '../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse } from '../../../../infra/http/error-response';
 import { structuredLogger } from '../../../../infra/log/logger';
@@ -44,28 +44,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   });
 
   try {
-    try {
-      getInternalExportTokenOrThrow();
-    } catch (error) {
-      structuredLogger.error('internal_diag_token_not_configured', {
-        requestId,
-        route,
-        eventType: 'internal_diag_error',
-        errorCode: ErrorCode.AUTH_REQUIRED,
-        error,
-      });
-      return errorResponse(
-        ErrorCode.AUTH_REQUIRED,
-        500,
-        requestId,
-        'INTERNAL_EXPORT_TOKEN not configured',
-      );
-    }
-
-    const token = request.headers.get('x-internal-token');
-    if (!isInternalTokenAuthorized(token)) {
-      return errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'Unauthorized');
-    }
+    const authResult = requireInternalToken(request, { purpose: ['diag', 'export'] });
+    if (!authResult.ok) return authResult.response;
 
     let dbStatus: DiagStatus['db'] = 'fail';
     let redisStatus: DiagStatus['redis'] = 'fail';

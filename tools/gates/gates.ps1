@@ -10,7 +10,8 @@ Write-Host "========================================" -ForegroundColor Cyan
 
 function Run-Gate {
     param([string]$Name, [string]$Command)
-    Write-Host "`n>> Gate: $Name" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host ">> Gate: $Name" -ForegroundColor Yellow
     Invoke-Expression $Command
     if ($LASTEXITCODE -ne 0) {
         Write-Host "FAILED: $Name" -ForegroundColor Red
@@ -32,6 +33,7 @@ if (Test-Path "scripts/check-env-leak.mjs") {
     Run-Gate "Env Leak Check" "node scripts/check-env-leak.mjs"
 }
 
-Write-Host "`n========================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Green
 Write-Host " ALL GATES PASSED" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green

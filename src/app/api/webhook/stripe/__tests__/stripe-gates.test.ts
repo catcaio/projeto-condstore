@@ -114,8 +114,9 @@ vi.mock('../../../../../modules/billing/billing.service', () => ({
 
 // ── Imports after mocks ───────────────────────────────────────────────────────
 
-import { POST } from '../route';
+import { processStripeEvent } from '../../../../../modules/billing/stripe-webhook.service';
 import { getDb } from '../../../../../infra/db';
+import type Stripe from 'stripe';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -198,11 +199,9 @@ describe('A. checkout.session.completed — gates', () => {
         const event = makeCheckoutEvent({ payment_status: 'unpaid' });
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        expect(res.status).toBe(200);
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('payment_not_paid');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('payment_not_paid');
         expect(mockUpgrade).not.toHaveBeenCalled();
     });
 
@@ -212,11 +211,9 @@ describe('A. checkout.session.completed — gates', () => {
         });
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        expect(res.status).toBe(200);
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('unknown_price');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('unknown_price');
         expect(mockUpgrade).not.toHaveBeenCalled();
     });
 
@@ -227,11 +224,9 @@ describe('A. checkout.session.completed — gates', () => {
         });
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        expect(res.status).toBe(200);
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('missing_tenant_binding');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('missing_tenant_binding');
         expect(mockUpgrade).not.toHaveBeenCalled();
     });
 
@@ -239,10 +234,9 @@ describe('A. checkout.session.completed — gates', () => {
         const event = makeCheckoutEvent({ mode: 'payment' });
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('mode_not_subscription');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('mode_not_subscription');
         expect(mockUpgrade).not.toHaveBeenCalled();
     });
 
@@ -250,11 +244,9 @@ describe('A. checkout.session.completed — gates', () => {
         const event = makeCheckoutEvent();
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        expect(res.status).toBe(200);
-        const body = await res.json();
-        expect(body.received).toBe(true);
-        expect(body.ignored).toBeUndefined();
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.processed).toBe(true);
+        expect(res.ignored).toBe(false);
         expect(mockUpgrade).toHaveBeenCalledWith('tenant-1', 'plan_pro', expect.stringContaining('stripe:'));
     });
 });
@@ -284,10 +276,9 @@ describe('B. invoice.paid — gates', () => {
         const event = makeInvoiceEvent('sub_canceled');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('already_canceled');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('already_canceled');
         // Nenhum update de status deve ter sido feito
         expect(_updateCapture.some((v) => v.status === 'active')).toBe(false);
     });
@@ -303,10 +294,9 @@ describe('B. invoice.paid — gates', () => {
         const event = makeInvoiceEvent('sub_was_canceled');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('already_canceled');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('already_canceled');
     });
 
     it('B3: sem matching subscription → ignored reason="no_matching_subscription"', async () => {
@@ -314,10 +304,9 @@ describe('B. invoice.paid — gates', () => {
         const event = makeInvoiceEvent('sub_not_found');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('no_matching_subscription');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('no_matching_subscription');
     });
 
     it('B4: subscription ativa (past_due) → reativa normalmente', async () => {
@@ -331,10 +320,9 @@ describe('B. invoice.paid — gates', () => {
         const event = makeInvoiceEvent('sub_past_due');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.received).toBe(true);
-        expect(body.ignored).toBeUndefined();
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.processed).toBe(true);
+        expect(res.ignored).toBe(false);
     });
 });
 
@@ -362,10 +350,9 @@ describe('C. customer.subscription.deleted — gates', () => {
         const event = makeSubDeletedEvent('sub_already_canceled');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('already_canceled');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('already_canceled');
         // Nenhum update deve ter sido feito (já cancelado)
         expect(_updateCapture.some((v) => v.status === 'canceled')).toBe(false);
     });
@@ -375,10 +362,9 @@ describe('C. customer.subscription.deleted — gates', () => {
         const event = makeSubDeletedEvent('sub_ghost');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('no_matching_subscription');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('no_matching_subscription');
     });
 
     it('C3: ativo → cancela (status=canceled, endedAt set)', async () => {
@@ -392,10 +378,9 @@ describe('C. customer.subscription.deleted — gates', () => {
         const event = makeSubDeletedEvent('sub_active_to_cancel');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.received).toBe(true);
-        expect(body.ignored).toBeUndefined();
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.processed).toBe(true);
+        expect(res.ignored).toBe(false);
         const cancelUpdate = _updateCapture.find((v) => v.status === 'canceled');
         expect(cancelUpdate).toBeDefined();
         expect(cancelUpdate.endedAt).toBeInstanceOf(Date);

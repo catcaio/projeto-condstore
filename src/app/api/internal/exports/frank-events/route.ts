@@ -4,7 +4,7 @@ import { frankEvents } from '@/drizzle/schema';
 import { getDb } from '@/infra/db';
 import { logger } from '@/infra/logger';
 import { sanitizeFrankPayload } from '@/core/ai/frank-event-sanitize';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { makeRequestId } from '@/infra/http/request-trace';
 
 export const runtime = 'nodejs';
@@ -252,23 +252,11 @@ export async function GET(request: NextRequest) {
     path: '/api/internal/exports/frank-events',
   });
 
-  try {
-    getInternalExportTokenOrThrow();
-  } catch (error) {
-    const latencyMs = Date.now() - startTime;
-    logger.error('frank_events_export_failed', error instanceof Error ? error : new Error(String(error)), {
-      requestId,
-      latencyMs,
-      phase: 'token_validation',
-    });
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'INTERNAL_EXPORT_TOKEN not configured', requestId },
-      { status: 500, headers: { 'X-Request-Id': requestId } },
-    );
-  }
-  const token = request.headers.get('x-internal-token');
-  if (!isInternalTokenAuthorized(token)) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized', requestId }, { status: 401 });
+  const authResult = requireInternalToken(request, { purpose: ['export', 'diag'] });
+  if (!authResult.ok) {
+    const response = NextResponse.json({ ok: false, error: 'Unauthorized', requestId }, { status: 401 });
+    response.headers.set('X-Request-Id', requestId);
+    return response;
   }
 
   const tenantId = request.nextUrl.searchParams.get('tenantId')?.trim();

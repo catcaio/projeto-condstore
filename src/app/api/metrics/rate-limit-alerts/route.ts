@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redisClient } from "@/infra/redis.client";
+import { requireAdminSession } from "@/infra/auth/tenant-route-guard";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const tenantId = searchParams.get("tenantId");
-  if (!tenantId) return NextResponse.json({ error: "tenantId required" }, { status: 400 });
+  const authResult = await requireAdminSession(req);
+  if (!authResult.ok) return authResult.response;
+
+  const { tenantId } = authResult;
 
   const bucketsKey = `rl:alerts:buckets:${tenantId}`;
   const buckets = (await redisClient.get<string[]>(bucketsKey)) ?? [];
@@ -14,9 +16,9 @@ export async function GET(req: NextRequest) {
 
   for (const bucket of buckets) {
     const nearCountKey = `rl:alerts:count:near:${tenantId}:${bucket}`;
-    const nearLastKey  = `rl:alerts:last:near:${tenantId}:${bucket}`;
-    const blkCountKey  = `rl:alerts:count:blocked:${tenantId}:${bucket}`;
-    const blkLastKey   = `rl:alerts:last:blocked:${tenantId}:${bucket}`;
+    const nearLastKey = `rl:alerts:last:near:${tenantId}:${bucket}`;
+    const blkCountKey = `rl:alerts:count:blocked:${tenantId}:${bucket}`;
+    const blkLastKey = `rl:alerts:last:blocked:${tenantId}:${bucket}`;
 
     const [nc, nl, bc, bl] = await Promise.all([
       redisClient.get<number>(nearCountKey),

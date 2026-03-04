@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { logger } from '@/infra/logger';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { withRequestTrace } from '@/infra/http/request-trace';
 import { gateEvaluate, type GateThresholds, type ModelMetrics } from '@/infra/frank/frank-gate';
 
@@ -27,26 +27,8 @@ interface GateErrorResponse {
 }
 
 async function handler(request: NextRequest): Promise<NextResponse> {
-  try {
-    getInternalExportTokenOrThrow();
-  } catch (error) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error instanceof Error ? error.message : 'INTERNAL_EXPORT_TOKEN not configured',
-        timestamp: new Date().toISOString(),
-      },
-      { status: 500 },
-    );
-  }
-
-  const token = request.headers.get('x-internal-token');
-  if (!isInternalTokenAuthorized(token)) {
-    return NextResponse.json(
-      { ok: false, error: 'Unauthorized', timestamp: new Date().toISOString() },
-      { status: 401 },
-    );
-  }
+  const authResult = requireInternalToken(request, { purpose: ['export', 'diag'] });
+  if (!authResult.ok) return authResult.response;
 
   const tenantId = request.nextUrl.searchParams.get('tenantId')?.trim();
   if (!tenantId) {

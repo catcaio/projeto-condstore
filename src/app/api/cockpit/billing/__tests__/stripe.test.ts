@@ -112,6 +112,12 @@ vi.mock('../../../../../core/stripe/stripe-client', () => ({
     }),
 }));
 
+const mockPublishEvent = vi.fn();
+vi.mock('../../../../../domine/event-bus', () => ({
+    publishEvent: (...args: any[]) => mockPublishEvent(...args),
+    eventBus: { waitForEvent: vi.fn() }
+}));
+
 // Billing service mock
 const mockUpgradeTenantPlan = vi.fn().mockResolvedValue({
     status: 'upgraded', plan: 'Pro', planId: 'plan_pro', newBudget: 500,
@@ -235,6 +241,7 @@ describe('POST /api/webhook/stripe', () => {
         _shouldDuplicate = false;
         process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
         mockUpgradeTenantPlan.mockResolvedValue({ status: 'upgraded', plan: 'Pro', planId: 'plan_pro', newBudget: 500 });
+        mockPublishEvent.mockClear();
         vi.mocked(getDb).mockResolvedValue(makeMockDb() as any);
     });
 
@@ -260,16 +267,15 @@ describe('POST /api/webhook/stripe', () => {
         expect(body.received).toBe(true);
     });
 
-    it('calls upgradeTenantPlan with correct args on checkout.session.completed', async () => {
+    it('publishes a WEBHOOK_RECEIVED event to domine bus on checkout.session.completed', async () => {
         mockConstructEvent.mockReturnValue(CHECKOUT_EVENT);
 
         const res = await webhookPOST(makeWebhookReq(CHECKOUT_EVENT));
         expect(res.status).toBe(200);
-        expect(mockUpgradeTenantPlan).toHaveBeenCalledWith(
-            'tenant-1',
-            'plan_pro',
-            expect.stringContaining('stripe:'),
-        );
+        expect(mockPublishEvent).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'WEBHOOK_RECEIVED',
+            source: 'stripe_webhook',
+        }));
     });
 
     it('inserts a stripe_events record with event id and type', async () => {

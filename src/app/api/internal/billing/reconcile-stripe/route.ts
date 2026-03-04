@@ -17,7 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, and, inArray, isNotNull } from 'drizzle-orm';
 import { getDb } from '../../../../../infra/db';
 import { tenantSubscriptions } from '../../../../../drizzle/schema';
-import { isInternalTokenAuthorized } from '../../../../../infra/config/internal-token';
+import { requireInternalToken } from '../../../../../infra/auth/tenant-route-guard';
 import { getStripe } from '../../../../../core/stripe/stripe-client';
 import { reconcileSubscriptionFromStripe, type LocalSubscription, type ReconcilePatch } from '../../../../../modules/billing/reconcile-stripe';
 import { structuredLogger } from '../../../../../infra/log/logger';
@@ -35,12 +35,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const requestId = makeRequestId();
 
     // ── Auth ──────────────────────────────────────────────────────────────────
-    const token = request.headers.get('x-internal-token');
-    if (!isInternalTokenAuthorized(token)) {
-        return attachRequestIdHeader(
-            NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
-            requestId,
-        );
+    const authResult = requireInternalToken(request, { purpose: ['jobs', 'export', 'diag'] });
+    if (!authResult.ok) {
+        return attachRequestIdHeader(authResult.response, requestId);
     }
 
     // ── Parse body ────────────────────────────────────────────────────────────

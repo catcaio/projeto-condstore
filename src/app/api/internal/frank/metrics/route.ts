@@ -6,7 +6,7 @@ import { and, eq, gte, sql, desc } from 'drizzle-orm';
 import { frankEvents } from '@/drizzle/schema';
 import { getDb } from '@/infra/db';
 import { logger } from '@/infra/logger';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { withRequestTrace } from '@/infra/http/request-trace';
 
 interface MetricsRow {
@@ -20,19 +20,8 @@ interface MetricsRow {
 }
 
 async function handler(request: NextRequest): Promise<NextResponse> {
-  try {
-    getInternalExportTokenOrThrow();
-  } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'INTERNAL_EXPORT_TOKEN not configured' },
-      { status: 500 },
-    );
-  }
-
-  const token = request.headers.get('x-internal-token');
-  if (!isInternalTokenAuthorized(token)) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  }
+  const authResult = requireInternalToken(request, { purpose: ['export', 'diag'] });
+  if (!authResult.ok) return authResult.response;
 
   const tenantId = request.nextUrl.searchParams.get('tenantId')?.trim();
   if (!tenantId) {

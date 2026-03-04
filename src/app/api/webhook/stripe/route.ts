@@ -45,28 +45,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { getStripe, getPlanIdFromPriceId, getPriceWhitelist } from '../../../../core/stripe/stripe-client';
 import { getDb } from '../../../../infra/db';
-import { stripeEvents, tenantSubscriptions } from '../../../../drizzle/schema';
+import { stripeEvents } from '../../../../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { upgradeTenantPlan, BillingServiceError } from '../../../../modules/billing/billing.service';
 import { structuredLogger } from '../../../../infra/log/logger';
-
-// ── Types ──────────────────────────────────────────────────────────────────────
+import { publishEvent } from '../../../../domine/event-bus';
 
 interface InsertResult {
     inserted: boolean;
     errorKind?: 'duplicate' | 'db_error';
     error?: unknown;
 }
-
-/** Resultado normalizado de um handler de evento */
-interface HandlerResult {
-    processed: boolean;
-    ignored: boolean;
-    reason?: string;
-}
-
-const IGNORED = (reason: string): HandlerResult => ({ processed: false, ignored: true, reason });
-const PROCESSED = (): HandlerResult => ({ processed: true, ignored: false });
 
 // ── Idempotency guard ──────────────────────────────────────────────────────────
 
@@ -99,363 +87,7 @@ async function insertStripeEventOnce(
     }
 }
 
-// ── Helper: extract price ID from checkout session ────────────────────────────
-// The priceId lives in session.line_items, which requires an API call.
-// As an optimization, the server also encodes `planId` in metadata at checkout time
-// so we can re-derive the priceId locally without an extra API round-trip.
-// We also accept `priceId` directly in metadata as a belt-and-suspenders approach.
 
-function extractPriceIdFromSession(session: Stripe.Checkout.Session): string | null {
-    // Path 1: priceId stored directly in metadata (belt)
-    if (session.metadata?.priceId) return session.metadata.priceId;
-
-    // Path 2: derive from planId metadata + env map
-    const planId = session.metadata?.planId;
-    if (planId) {
-        // Import-time resolution via stripe-client
-        const whitelist = getPriceWhitelist();
-        // Build reverse map planId→priceId inline
-        const envMap: Record<string, string | undefined> = {
-            plan_growth: process.env.STRIPE_PRICE_GROWTH,
-            plan_pro: process.env.STRIPE_PRICE_PRO,
-            plan_scale: process.env.STRIPE_PRICE_SCALE,
-        };
-        const priceId = envMap[planId];
-        if (priceId && whitelist.has(priceId)) return priceId;
-    }
-
-    // Path 3: cannot resolve — caller will perform API lookup or gate
-    return null;
-}
-
-// ── A. checkout.session.completed ─────────────────────────────────────────────
-
-async function handleCheckoutCompleted(
-    session: Stripe.Checkout.Session,
-): Promise<HandlerResult> {
-    // ── Gate 1: session.mode must be "subscription" ──────────────────────────
-    if (session.mode !== 'subscription') {
-        structuredLogger.info('stripe_checkout_wrong_mode', {
-            sessionId: session.id,
-            mode: session.mode,
-            eventType: 'stripe_webhook',
-        });
-        return IGNORED('mode_not_subscription');
-    }
-
-    // ── Gate 2: payment_status must be "paid" ────────────────────────────────
-    if (session.payment_status !== 'paid') {
-        structuredLogger.info('stripe_checkout_not_paid', {
-            sessionId: session.id,
-            paymentStatus: session.payment_status,
-            eventType: 'stripe_webhook',
-        });
-        return IGNORED('payment_not_paid');
-    }
-
-    // ── Gate 3: resolve and whitelist-check priceId ───────────────────────────
-    const priceId = extractPriceIdFromSession(session);
-    const whitelist = getPriceWhitelist();
-
-    if (!priceId || !whitelist.has(priceId)) {
-        structuredLogger.warn('stripe_checkout_unknown_price', {
-            sessionId: session.id,
-            priceId: priceId ?? 'null',
-            eventType: 'stripe_webhook',
-        });
-        return IGNORED('unknown_price');
-    }
-
-    // Derive internal planId from priceId
-    const resolvedPlanId = getPlanIdFromPriceId(priceId);
-    if (!resolvedPlanId) {
-        return IGNORED('unknown_price');
-    }
-
-    // ── Gate 4: tenantId binding ──────────────────────────────────────────────
-    const tenantId =
-        session.metadata?.tenantId ??
-        (typeof session.client_reference_id === 'string' ? session.client_reference_id : null);
-
-    if (!tenantId || tenantId.trim().length === 0) {
-        structuredLogger.warn('stripe_checkout_missing_tenant', {
-            sessionId: session.id,
-            eventType: 'stripe_webhook',
-            binding_status: 'unbound',
-        });
-        return IGNORED('missing_tenant_binding');
-    }
-
-    // ── All gates passed → process ────────────────────────────────────────────
-    await upgradeTenantPlan(tenantId, resolvedPlanId, `stripe:${session.id}`);
-
-    // Persist Stripe IDs
-    const stripeCustomerId = typeof session.customer === 'string'
-        ? session.customer
-        : (session.customer as Stripe.Customer | null)?.id ?? null;
-
-    const stripeSubId = typeof session.subscription === 'string'
-        ? session.subscription
-        : (session.subscription as Stripe.Subscription | null)?.id ?? null;
-
-    if (stripeCustomerId || stripeSubId) {
-        const db = await getDb();
-        await db
-            .update(tenantSubscriptions)
-            .set({
-                ...(stripeCustomerId ? { stripeCustomerId } : {}),
-                ...(stripeSubId ? { stripeSubscriptionId: stripeSubId } : {}),
-            })
-            .where(
-                and(
-                    eq(tenantSubscriptions.tenantId, tenantId),
-                    eq(tenantSubscriptions.status, 'active'),
-                ),
-            );
-    }
-
-    structuredLogger.info('stripe_checkout_completed_processed', {
-        tenantId,
-        planId: resolvedPlanId,
-        priceId,
-        sessionId: session.id,
-        eventType: 'stripe_webhook',
-    });
-
-    return PROCESSED();
-}
-
-// ── B. invoice.paid ───────────────────────────────────────────────────────────
-
-async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<HandlerResult> {
-    // Stripe SDK >=14 compat: subscription can be in parent.subscription_details
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const inv = invoice as any;
-    const invoiceSubId: string | null =
-        (typeof inv.subscription === 'string' ? inv.subscription : null) ??
-        (typeof inv.subscription?.id === 'string' ? inv.subscription.id : null) ??
-        (typeof inv.parent?.subscription_details?.subscription === 'string'
-            ? inv.parent.subscription_details.subscription
-            : null);
-
-    if (!invoiceSubId) {
-        return IGNORED('no_subscription_id');
-    }
-
-    // ── Load current tenant subscription from DB ──────────────────────────────
-    const db = await getDb();
-    const rows = await db
-        .select()
-        .from(tenantSubscriptions)
-        .where(eq(tenantSubscriptions.stripeSubscriptionId, invoiceSubId))
-        .limit(1);
-
-    const sub = rows[0] ?? null;
-
-    // ── Gate: subscription binding must exist ─────────────────────────────────
-    if (!sub) {
-        structuredLogger.warn('stripe_invoice_no_matching_subscription', {
-            invoiceSubId,
-            eventType: 'stripe_webhook',
-        });
-        return IGNORED('no_matching_subscription');
-    }
-
-    // ── Gate: cross-check invoice.subscription === sub.stripeSubscriptionId ───
-    if (sub.stripeSubscriptionId !== invoiceSubId) {
-        return IGNORED('subscription_id_mismatch');
-    }
-
-    // ── Gate: do NOT reactivate a canceled subscription ───────────────────────
-    if (sub.status === 'canceled' || sub.endedAt !== null) {
-        structuredLogger.info('stripe_invoice_paid_skipped_canceled', {
-            tenantId: sub.tenantId,
-            stripeSubscriptionId: invoiceSubId,
-            status: sub.status,
-            endedAt: sub.endedAt,
-            eventType: 'stripe_webhook',
-        });
-        return IGNORED('already_canceled');
-    }
-
-    // ── All gates passed → set active (idempotent) ───────────────────────────
-    await db
-        .update(tenantSubscriptions)
-        .set({ status: 'active', endedAt: null })
-        .where(
-            and(
-                eq(tenantSubscriptions.stripeSubscriptionId, invoiceSubId),
-                eq(tenantSubscriptions.status, 'past_due'), // only escalate from past_due
-            ),
-        );
-
-    structuredLogger.info('stripe_invoice_paid_processed', {
-        tenantId: sub.tenantId,
-        stripeSubscriptionId: invoiceSubId,
-        eventType: 'stripe_webhook',
-    });
-
-    return PROCESSED();
-}
-
-// ── C. customer.subscription.deleted ──────────────────────────────────────────
-
-async function handleSubscriptionDeleted(
-    subscription: Stripe.Subscription,
-): Promise<HandlerResult> {
-    const db = await getDb();
-
-    // Load current record
-    const rows = await db
-        .select()
-        .from(tenantSubscriptions)
-        .where(eq(tenantSubscriptions.stripeSubscriptionId, subscription.id))
-        .limit(1);
-
-    const sub = rows[0] ?? null;
-
-    // ── Gate: must have a matching subscription ───────────────────────────────
-    if (!sub) {
-        structuredLogger.warn('stripe_sub_deleted_no_match', {
-            stripeSubscriptionId: subscription.id,
-            eventType: 'stripe_webhook',
-        });
-        return IGNORED('no_matching_subscription');
-    }
-
-    // ── Gate: already canceled → no-op (idempotent) ──────────────────────────
-    if (sub.status === 'canceled') {
-        structuredLogger.info('stripe_sub_deleted_already_canceled', {
-            tenantId: sub.tenantId,
-            stripeSubscriptionId: subscription.id,
-            eventType: 'stripe_webhook',
-        });
-        return IGNORED('already_canceled');
-    }
-
-    // ── Cancel ────────────────────────────────────────────────────────────────
-    await db
-        .update(tenantSubscriptions)
-        .set({ status: 'canceled', endedAt: new Date() })
-        .where(eq(tenantSubscriptions.stripeSubscriptionId, subscription.id));
-
-    structuredLogger.info('stripe_subscription_deleted_processed', {
-        tenantId: sub.tenantId,
-        stripeSubscriptionId: subscription.id,
-        eventType: 'stripe_webhook',
-    });
-
-    return PROCESSED();
-}
-
-// ── D. invoice.payment_failed ─────────────────────────────────────────────────
-
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<HandlerResult> {
-    // Usamos same logic de extract sub id
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const inv = invoice as any;
-    const invoiceSubId: string | null =
-        (typeof inv.subscription === 'string' ? inv.subscription : null) ??
-        (typeof inv.subscription?.id === 'string' ? inv.subscription.id : null) ??
-        (typeof inv.parent?.subscription_details?.subscription === 'string'
-            ? inv.parent.subscription_details.subscription
-            : null);
-
-    if (!invoiceSubId) {
-        return IGNORED('no_subscription_id');
-    }
-
-    const db = await getDb();
-    const rows = await db
-        .select()
-        .from(tenantSubscriptions)
-        .where(eq(tenantSubscriptions.stripeSubscriptionId, invoiceSubId))
-        .limit(1);
-
-    const sub = rows[0] ?? null;
-
-    if (!sub) {
-        return IGNORED('no_matching_subscription');
-    }
-
-    if (sub.status === 'canceled' || sub.endedAt !== null) {
-        return IGNORED('already_canceled');
-    }
-
-    await db
-        .update(tenantSubscriptions)
-        .set({ status: 'past_due', lastPaymentFailedAt: new Date() })
-        .where(eq(tenantSubscriptions.stripeSubscriptionId, invoiceSubId));
-
-    structuredLogger.info('stripe_invoice_payment_failed_processed', {
-        tenantId: sub.tenantId,
-        stripeSubscriptionId: invoiceSubId,
-        eventType: 'stripe_webhook',
-    });
-
-    return PROCESSED();
-}
-
-// ── E. customer.subscription.updated ──────────────────────────────────────────
-
-async function handleSubscriptionUpdated(
-    subscription: Stripe.Subscription,
-): Promise<HandlerResult> {
-    const db = await getDb();
-
-    const rows = await db
-        .select()
-        .from(tenantSubscriptions)
-        .where(eq(tenantSubscriptions.stripeSubscriptionId, subscription.id))
-        .limit(1);
-
-    const sub = rows[0] ?? null;
-
-    if (!sub) {
-        return IGNORED('no_matching_subscription');
-    }
-
-    if (sub.status === 'canceled' || sub.endedAt !== null) {
-        return IGNORED('already_canceled');
-    }
-
-    const stripeStatus = subscription.status;
-    let newStatus = sub.status;
-
-    // Regras mansas sem cortar cancel_at_period_end
-    if (['past_due', 'unpaid', 'incomplete'].includes(stripeStatus)) {
-        newStatus = 'past_due';
-    } else if (['active', 'trialing'].includes(stripeStatus)) {
-        newStatus = 'active';
-    }
-
-    // Persiste campos adicionais pro dashboard
-    const cancelAtPeriodEnd = subscription.cancel_at_period_end ?? false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const subAny = subscription as any;
-    const currentPeriodEnd = subAny.current_period_end
-        ? new Date(subAny.current_period_end * 1000)
-        : null;
-
-    await db
-        .update(tenantSubscriptions)
-        .set({
-            status: newStatus,
-            cancelAtPeriodEnd,
-            ...(currentPeriodEnd ? { currentPeriodEnd } : {})
-        })
-        .where(eq(tenantSubscriptions.stripeSubscriptionId, subscription.id));
-
-    structuredLogger.info('stripe_subscription_updated_processed', {
-        tenantId: sub.tenantId,
-        stripeSubscriptionId: subscription.id,
-        newStatus,
-        cancelAtPeriodEnd,
-        eventType: 'stripe_webhook',
-    });
-
-    return PROCESSED();
-}
 
 // ── Main handler ────────────────────────────────────────────────────────────────
 
@@ -524,63 +156,34 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
     }
 
-    // ── Dispatch ──────────────────────────────────────────────────────────────
-    let handlerResult: HandlerResult = PROCESSED();
+    // ── Dispatch to in-memory event bus ────────────────────────────────────
+    publishEvent({
+        id: crypto.randomUUID(),
+        tenantId: null, // Precise tenant mapping is done inside the worker handlers
+        type: 'WEBHOOK_RECEIVED',
+        source: 'stripe_webhook',
+        payload: { stripeEvent: event },
+        createdAt: new Date(),
+        version: 1
+    });
 
+    // ── Persist to domine_events for pull-based processing (fire-and-forget) ──
     try {
-        switch (event.type) {
-            case 'checkout.session.completed':
-                handlerResult = await handleCheckoutCompleted(
-                    event.data.object as Stripe.Checkout.Session,
-                );
-                break;
-
-            case 'invoice.paid':
-                handlerResult = await handleInvoicePaid(event.data.object as Stripe.Invoice);
-                break;
-
-            case 'invoice.payment_failed':
-                handlerResult = await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
-                break;
-
-            case 'customer.subscription.updated':
-                handlerResult = await handleSubscriptionUpdated(
-                    event.data.object as Stripe.Subscription,
-                );
-                break;
-
-            case 'customer.subscription.deleted':
-                handlerResult = await handleSubscriptionDeleted(
-                    event.data.object as Stripe.Subscription,
-                );
-                break;
-
-            default:
-                structuredLogger.info('stripe_event_unhandled', {
-                    eventId: event.id,
-                    type: event.type,
-                    eventType: 'stripe_webhook',
-                });
-        }
-    } catch (err) {
-        structuredLogger.error('stripe_event_processing_failed', {
-            eventId: event.id,
-            type: event.type,
-            errorCode: err instanceof BillingServiceError ? err.code : 'UNKNOWN',
-            error: err,
-            eventType: 'stripe_webhook',
+        const { domineIntakeService } = await import('../../../../domine/domine-intake.service');
+        await domineIntakeService.publish({
+            tenantId: 'LOJACOND',
+            type: 'WEBHOOK_RECEIVED',
+            source: 'webhook',
+            payload: {
+                source: 'stripe',
+                providerEventId: event.id,
+                kind: event.type,
+                minimalData: { priceId: null, customerId: null },
+            },
+            idempotencyKey: `stripe:${event.id}`,
         });
-        return NextResponse.json(
-            { received: true, error: 'Processing failed — event recorded for manual replay.' },
-            { status: 200 },
-        );
-    }
-
-    if (handlerResult.ignored) {
-        return NextResponse.json(
-            { received: true, ignored: true, reason: handlerResult.reason },
-            { status: 200 },
-        );
+    } catch {
+        // Non-blocking: intake failure must never break webhook response
     }
 
     return NextResponse.json({ received: true }, { status: 200 });

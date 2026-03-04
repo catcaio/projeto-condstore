@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import mysql from "mysql2/promise";
-import { isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { logger } from '@/infra/logger';
 
 export const runtime = "nodejs";
@@ -246,11 +246,9 @@ const MIGRATIONS = [
 
 async function handler(request: NextRequest) {
     try {
-        const token = request.headers.get('x-internal-token');
+        const authResult = requireInternalToken(request, { purpose: ['any'] });
 
-        if (!isInternalTokenAuthorized(token)) {
-            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-        }
+        if (!authResult.ok) return authResult.response;
 
         const dbUrl = process.env.DATABASE_URL;
         if (!dbUrl) {

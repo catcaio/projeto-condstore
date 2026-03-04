@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getStreamLag, getDLQCount } from '../../../../../core/events/event-metrics';
-import { isInternalTokenAuthorized, getInternalExportTokenOrThrow } from '../../../../../infra/config/internal-token';
+import { requireInternalToken } from '../../../../../infra/auth/tenant-route-guard';
 import { makeRequestId, attachRequestIdHeader } from '../../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse } from '../../../../../infra/http/error-response';
 import { structuredLogger } from '../../../../../infra/log/logger';
@@ -40,16 +40,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     structuredLogger.info('internal_events_metrics_start', { requestId, route });
 
     // ── Auth ─────────────────────────────────────────────────────────────
-    try {
-        getInternalExportTokenOrThrow();
-    } catch {
-        return errorResponse(ErrorCode.AUTH_REQUIRED, 500, requestId, 'INTERNAL_EXPORT_TOKEN not configured');
-    }
-
-    const token = request.headers.get('x-internal-token');
-    if (!isInternalTokenAuthorized(token)) {
-        return errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'Unauthorized');
-    }
+    const authResult = requireInternalToken(request, { purpose: ['diag', 'export'] });
+    if (!authResult.ok) return authResult.response;
 
     // ── Params ────────────────────────────────────────────────────────────
     const { searchParams } = new URL(request.url);

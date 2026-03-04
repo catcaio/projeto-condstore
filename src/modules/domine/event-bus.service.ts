@@ -53,7 +53,7 @@ export class DomineEventBus {
             await domineEventsRepository.markProcessed(eventId);
         } catch (error: any) {
             structuredLogger.error('domine_event_failed', { eventId, type: event.type, err: error.message });
-            await domineEventsRepository.sendToDLQ(eventId, 'PROC_ERR', error.message);
+            await domineEventsRepository.sendToDLQ(eventId, error.message || 'PROC_ERR');
 
             // Check if we exceed N
             const failCount = await domineEventsRepository.getDLQCount(tenantId);

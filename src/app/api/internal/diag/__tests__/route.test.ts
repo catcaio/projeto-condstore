@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET } from '../route';
 import { getDb } from '../../../../../infra/db';
 import { redisClient } from '../../../../../infra/redis.client';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '../../../../../infra/config/internal-token';
+import { requireInternalToken } from '../../../../../infra/auth/tenant-route-guard';
 
 vi.mock('../../../../../infra/db', () => ({
   getDb: vi.fn(),
@@ -14,9 +14,8 @@ vi.mock('../../../../../infra/redis.client', () => ({
   },
 }));
 
-vi.mock('../../../../../infra/config/internal-token', () => ({
-  getInternalExportTokenOrThrow: vi.fn(),
-  isInternalTokenAuthorized: vi.fn(),
+vi.mock('../../../../../infra/auth/tenant-route-guard', () => ({
+  requireInternalToken: vi.fn(),
 }));
 
 function makeRequest(headers?: Record<string, string>) {
@@ -28,8 +27,7 @@ function makeRequest(headers?: Record<string, string>) {
 describe('GET /api/internal/diag', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getInternalExportTokenOrThrow).mockReturnValue('internal-test-token');
-    vi.mocked(isInternalTokenAuthorized).mockReturnValue(true);
+    vi.mocked(requireInternalToken).mockReturnValue({ ok: true as const } as any);
     vi.mocked(redisClient.ping).mockResolvedValue(true as never);
     vi.mocked(getDb).mockResolvedValue({
       execute: vi.fn().mockResolvedValue(undefined),
@@ -37,7 +35,13 @@ describe('GET /api/internal/diag', () => {
   });
 
   it('requires internal token', async () => {
-    vi.mocked(isInternalTokenAuthorized).mockReturnValue(false);
+    vi.mocked(requireInternalToken).mockReturnValue({
+      ok: false as const,
+      response: new Response(JSON.stringify({ ok: false, error: { code: 'AUTH_REQUIRED' } }), {
+        status: 401,
+        headers: { 'x-request-id': 'req-test' }
+      }) as any
+    });
 
     const response = await GET(makeRequest());
     const body = await response.json();

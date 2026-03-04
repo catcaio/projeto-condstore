@@ -97,6 +97,12 @@ vi.mock('../../../../../modules/billing/billing.service', () => ({
     },
 }));
 
+const mockPublishEvent = vi.fn();
+vi.mock('../../../../../domine/event-bus', () => ({
+    publishEvent: (...args: any[]) => mockPublishEvent(...args),
+    eventBus: { waitForEvent: vi.fn() }
+}));
+
 // ── Imports (after mocks) ─────────────────────────────────────────────────────
 
 import { POST } from '../route';
@@ -141,12 +147,9 @@ describe('Stripe Webhook — DB Idempotency', () => {
 
         // Clear call history (not implementations)
         mockConstructEvent.mockClear();
-        mockUpgrade.mockClear();
+        mockPublishEvent.mockClear();
 
         mockConstructEvent.mockReturnValue(CHECKOUT_EVENT);
-        mockUpgrade.mockResolvedValue({
-            status: 'upgraded', plan: 'Pro', planId: 'plan_pro', newBudget: 500,
-        });
         process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
 
         // Reinstall getDb mock with fresh insert counter
@@ -184,12 +187,10 @@ describe('Stripe Webhook — DB Idempotency', () => {
         const body2 = await res2.json();
         expect(body2.duplicate).toBe(true);
 
-        // upgradeTenantPlan deve ter sido chamado APENAS 1 vez
-        expect(mockUpgrade).toHaveBeenCalledTimes(1);
-        expect(mockUpgrade).toHaveBeenCalledWith(
-            'tenant-1',
-            'plan_pro',
-            expect.stringContaining('stripe:'),
+        // publishEvent deve ter sido chamado APENAS 1 vez
+        expect(mockPublishEvent).toHaveBeenCalledTimes(1);
+        expect(mockPublishEvent).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'WEBHOOK_RECEIVED', source: 'stripe_webhook' })
         );
     });
 
@@ -197,11 +198,13 @@ describe('Stripe Webhook — DB Idempotency', () => {
         await POST(makeReq(CHECKOUT_EVENT));
         await POST(makeReq(CHECKOUT_EVENT));
 
+        // Filter to only stripe_events inserts (those with stripeEventId), ignoring domine_events inserts
+        const stripeInserts = _insertCapture.filter((c: any) => c.stripeEventId !== undefined);
         // Devem ter ocorrido 2 tentativas de insert
-        expect(_insertCapture.length).toBe(2);
+        expect(stripeInserts.length).toBe(2);
         // Ambas com o mesmo stripe_event_id
-        expect(_insertCapture[0].stripeEventId ?? _insertCapture[0].id).toBe(STRIPE_EVENT_ID);
-        expect(_insertCapture[1].stripeEventId ?? _insertCapture[1].id).toBe(STRIPE_EVENT_ID);
+        expect(stripeInserts[0].stripeEventId ?? stripeInserts[0].id).toBe(STRIPE_EVENT_ID);
+        expect(stripeInserts[1].stripeEventId ?? stripeInserts[1].id).toBe(STRIPE_EVENT_ID);
     });
 
     // ── GATES ────────────────────────────────────────────────────────────────────
@@ -233,8 +236,8 @@ describe('Stripe Webhook — DB Idempotency', () => {
         await POST(makeReq(eventA));
         await POST(makeReq(eventB));
 
-        // Cada evento é único → upgradeTenantPlan chamado 2 vezes
-        expect(mockUpgrade).toHaveBeenCalledTimes(2);
+        // Cada evento é único → publishEvent chamado 2 vezes
+        expect(mockPublishEvent).toHaveBeenCalledTimes(2);
     });
 
     // ── AUDIT ─────────────────────────────────────────────────────────────────────

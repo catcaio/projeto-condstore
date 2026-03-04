@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { runQdrantReindex } from '@/infra/vector/qdrant-reindex';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { withRequestTrace } from '@/infra/http/request-trace';
 
 interface ReindexBody {
@@ -18,8 +18,7 @@ function isAuthorized(request: NextRequest): boolean {
   if (process.env.NODE_ENV !== 'production') {
     return true;
   }
-  const token = request.headers.get('x-internal-token');
-  return isInternalTokenAuthorized(token);
+  return requireInternalToken(request, { purpose: ['export', 'diag'] }).ok;
 }
 
 function parseBody(body: ReindexBody): { error: NextResponse } | { input: { tenantId: string; docs?: boolean; chat?: boolean; sinceHours?: number; full: boolean } } {
@@ -44,15 +43,7 @@ function parseBody(body: ReindexBody): { error: NextResponse } | { input: { tena
 }
 
 async function handler(request: NextRequest): Promise<NextResponse> {
-  try {
-    // In dev this generates an ephemeral token (logged once); in prod it throws if missing.
-    getInternalExportTokenOrThrow();
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'INTERNAL_EXPORT_TOKEN not configured' },
-      { status: 500 },
-    );
-  }
+
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

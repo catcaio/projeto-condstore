@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { logger } from '@/infra/logger';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { respondInfraError } from '@/infra/http/infra-error';
 import { getTracedRequestId, withRequestTrace } from '@/infra/http/request-trace';
 import { listOverrides } from '@/infra/frank/frank-override-store';
@@ -19,19 +19,8 @@ type SchedulerBody = {
 };
 
 async function handler(request: NextRequest): Promise<NextResponse> {
-  try {
-    getInternalExportTokenOrThrow();
-  } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'INTERNAL_EXPORT_TOKEN not configured' },
-      { status: 500 },
-    );
-  }
-
-  const token = request.headers.get('x-internal-token');
-  if (!isInternalTokenAuthorized(token)) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  }
+  const authResult = requireInternalToken(request, { purpose: ['jobs', 'export', 'diag'] });
+  if (!authResult.ok) return authResult.response;
 
   let body: SchedulerBody = {};
   try {

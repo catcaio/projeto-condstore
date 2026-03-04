@@ -20,6 +20,28 @@ vi.mock('@/infra/repositories/attribution-click.repository', () => ({
 
 vi.mock('@/infra/log/logger');
 
+vi.mock('@/domine/event-bus', () => ({
+    publishEvent: vi.fn(),
+    eventBus: {
+        waitForEvent: vi.fn().mockResolvedValue({
+            payload: {
+                result: {
+                    simulated: true,
+                    quotes: [
+                        { carrierCode: 'c1', serviceName: 's1', price: 10, estimatedDeliveryDays: 2 },
+                        { carrierCode: 'c2', serviceName: 's2', price: 12, estimatedDeliveryDays: 3 },
+                        { carrierCode: 'c3', serviceName: 's3', price: 15, estimatedDeliveryDays: 4 },
+                        { carrierCode: 'c4', serviceName: 's4', price: 20, estimatedDeliveryDays: 5 },
+                        { carrierCode: 'c5', serviceName: 's5', price: 25, estimatedDeliveryDays: 6 }
+                    ],
+                    bestPriceId: 'qp_best',
+                    bestSpeedId: 'qs_best',
+                }
+            }
+        })
+    }
+}));
+
 const MOCK_INTENT_ID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 
 const mockDbSelect = vi.fn();

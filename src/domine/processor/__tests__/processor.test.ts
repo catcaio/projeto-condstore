@@ -28,11 +28,13 @@ describe('Retry Policy', () => {
         expect(shouldMoveToDLQ(MAX_RETRIES)).toBe(true);
     });
 
-    it('first retry is immediate (0ms delay)', () => {
+    it('first retry has 1m delay', () => {
         const before = Date.now();
         const next = getNextRetryAt(0);
         expect(next!.getTime()).toBeGreaterThanOrEqual(before);
-        expect(next!.getTime() - before).toBeLessThan(100); // ~immediate
+        // ~60 seconds delay (1m backoff)
+        expect(next!.getTime() - before).toBeGreaterThanOrEqual(59_000);
+        expect(next!.getTime() - before).toBeLessThan(61_000);
     });
 
     it('subsequent retries have increasing delays', () => {

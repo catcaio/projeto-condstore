@@ -14,9 +14,8 @@ import { NextRequest } from 'next/server';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
-vi.mock('../../../../../infra/config/internal-token', () => ({
-    getInternalExportTokenOrThrow: vi.fn(() => 'test-token-xyz'),
-    isInternalTokenAuthorized: vi.fn((t: string | null) => t === 'test-token-xyz'),
+vi.mock('../../../../../infra/auth/tenant-route-guard', () => ({
+    requireInternalToken: vi.fn(),
 }));
 
 vi.mock('../../../../../infra/auth/session', () => ({
@@ -37,7 +36,7 @@ vi.mock('../../../../../infra/http/request-trace', () => ({
 import { GET } from '../route';
 import { getEcosystemMap } from '../../../../../core/supreme/ecosystem-map.service';
 import { getSessionUser } from '../../../../../infra/auth/session';
-import { isInternalTokenAuthorized } from '../../../../../infra/config/internal-token';
+import { requireInternalToken } from '../../../../../infra/auth/tenant-route-guard';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -83,7 +82,7 @@ describe('GET /api/supreme/ecosystem', () => {
     // ── Auth ──────────────────────────────────────────────────────────────────
 
     it('returns 401 when no token and no super_admin session', async () => {
-        (isInternalTokenAuthorized as ReturnType<typeof vi.fn>).mockReturnValue(false);
+        (requireInternalToken as ReturnType<typeof vi.fn>).mockReturnValue({ ok: false });
         (getSessionUser as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
         const res = await GET(makeRequest());
@@ -95,7 +94,7 @@ describe('GET /api/supreme/ecosystem', () => {
     });
 
     it('returns 401 when token is wrong', async () => {
-        (isInternalTokenAuthorized as ReturnType<typeof vi.fn>).mockReturnValue(false);
+        (requireInternalToken as ReturnType<typeof vi.fn>).mockReturnValue({ ok: false });
 
         const res = await GET(makeRequest('wrong-token'));
 
@@ -106,7 +105,7 @@ describe('GET /api/supreme/ecosystem', () => {
     // ── Valid via x-internal-token ─────────────────────────────────────────────
 
     it('returns 200 with correct shape when x-internal-token is valid', async () => {
-        (isInternalTokenAuthorized as ReturnType<typeof vi.fn>).mockReturnValue(true);
+        (requireInternalToken as ReturnType<typeof vi.fn>).mockReturnValue({ ok: true });
 
         const res = await GET(makeRequest('test-token-xyz'));
 
@@ -124,7 +123,7 @@ describe('GET /api/supreme/ecosystem', () => {
     // ── Valid via super_admin session ──────────────────────────────────────────
 
     it('returns 200 when session role is super_admin', async () => {
-        (isInternalTokenAuthorized as ReturnType<typeof vi.fn>).mockReturnValue(false);
+        (requireInternalToken as ReturnType<typeof vi.fn>).mockReturnValue({ ok: false });
         (getSessionUser as ReturnType<typeof vi.fn>).mockResolvedValue({
             sub: 'user-1',
             email: 'admin@condstore.com',
@@ -143,7 +142,7 @@ describe('GET /api/supreme/ecosystem', () => {
     // ── topBurn ordering ──────────────────────────────────────────────────────
 
     it('topBurn is returned ordered by burnRatePerDay descending', async () => {
-        (isInternalTokenAuthorized as ReturnType<typeof vi.fn>).mockReturnValue(true);
+        (requireInternalToken as ReturnType<typeof vi.fn>).mockReturnValue({ ok: true });
 
         const res = await GET(makeRequest('test-token-xyz'));
         const body = await res.json();
@@ -158,7 +157,7 @@ describe('GET /api/supreme/ecosystem', () => {
     // ── Error resilience ──────────────────────────────────────────────────────
 
     it('returns 500 when getEcosystemMap throws', async () => {
-        (isInternalTokenAuthorized as ReturnType<typeof vi.fn>).mockReturnValue(true);
+        (requireInternalToken as ReturnType<typeof vi.fn>).mockReturnValue({ ok: true });
         (getEcosystemMap as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('DB unavailable'));
 
         const res = await GET(makeRequest('test-token-xyz'));

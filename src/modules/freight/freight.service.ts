@@ -7,7 +7,6 @@
 import { appConfig } from '../../config/app.config';
 import { BusinessError, ErrorCode } from '../../infra/errors';
 import { logger } from '../../infra/logger';
-import { melhorEnvioProvider } from '../../providers/melhorenvio.provider';
 import type {
   FreightOption,
   FreightRequest,
@@ -15,8 +14,8 @@ import type {
   FreightStrategy,
   WeightDecision,
 } from './freight.types';
+import { unifiedQuoteEngine } from './quote-engine';
 import { redisClient } from '../../infra/redis.client';
-import { freightTableProvider } from '../../infra/freight-table';
 import { freightSimulationLogRepository } from '../../infra/repositories/freight-simulation-log.repository';
 import { domineEventBus } from '../domine/event-bus.service';
 
@@ -47,16 +46,8 @@ class FreightService {
         totalWeight,
       });
 
-      // Determine strategy based on weight
-      const decision = this.decideStrategy(totalWeight);
-
-      logger.debug('Freight strategy determined', {
-        strategy: decision.strategy,
-        reason: decision.reason,
-      });
-
-      // Fetch quotes based on strategy
-      const options = await this.fetchQuotes(request, totalWeight, decision.strategy);
+      // Fetch quotes using unified quote engine
+      let options = await unifiedQuoteEngine.getQuotes(request);
 
       // Sort and limit options
       const sortedOptions = this.sortAndLimitOptions(options);
@@ -147,103 +138,7 @@ class FreightService {
     }
   }
 
-  /**
-   * Decide freight strategy based on total weight.
-   */
-  private decideStrategy(totalWeight: number): WeightDecision {
-    if (totalWeight <= 10) {
-      return {
-        totalWeight,
-        strategy: 'MELHORENVIO_ONLY' as FreightStrategy,
-        reason: 'Weight ≤10kg: Using Melhor Envio only',
-      };
-    }
 
-    if (totalWeight > 10 && totalWeight <= 15) {
-      return {
-        totalWeight,
-        strategy: 'BOTH' as FreightStrategy,
-        reason: 'Weight 10-15kg: Using both Melhor Envio and Tabela',
-      };
-    }
-
-    return {
-      totalWeight,
-      strategy: 'TABELA_ONLY' as FreightStrategy,
-      reason: 'Weight >15kg: Using Tabela only',
-    };
-  }
-
-  /**
-   * Fetch quotes from providers based on strategy.
-   */
-  private async fetchQuotes(
-    request: FreightRequest,
-    totalWeight: number,
-    strategy: FreightStrategy
-  ): Promise<FreightOption[]> {
-    const options: FreightOption[] = [];
-
-    try {
-      // Fetch from Melhor Envio
-      if (strategy === 'MELHORENVIO_ONLY' || strategy === 'BOTH') {
-        const meQuotes = await melhorEnvioProvider.calculateShipping({
-          tenantId: request.tenantId || 'system',
-          destinationCep: request.destinationCep,
-          totalWeight,
-          quantity: request.quantity,
-          dimensions: request.dimensions,
-        });
-
-        options.push(...meQuotes);
-      }
-
-      // Fetch from Tabela
-      if (strategy === 'TABELA_ONLY' || strategy === 'BOTH') {
-        try {
-          const quote = await freightTableProvider.getFreightByCep(request.destinationCep, totalWeight);
-
-          if (quote) {
-            options.push({
-              id: `tabela-${quote.cep_inicio}-${quote.cep_fim}`,
-              carrier: 'Transportadora Econômica',
-              service: 'Standard',
-              price: quote.valor,
-              deliveryTime: quote.prazo,
-              source: 'tabela'
-            });
-          }
-        } catch (err) {
-          logger.warn('Failed to get table quote', {}, err as Error);
-        }
-      }
-
-      if (options.length === 0) {
-        throw new BusinessError(
-          ErrorCode.NO_FREIGHT_OPTIONS,
-          'No freight options available for this destination',
-          { destinationCep: request.destinationCep, totalWeight }
-        );
-      }
-
-      return options;
-    } catch (error) {
-      if (error instanceof BusinessError) {
-        throw error;
-      }
-
-      logger.error('Failed to fetch quotes from providers', error as Error, {
-        strategy,
-        totalWeight,
-      });
-
-      throw new BusinessError(
-        ErrorCode.FREIGHT_CALCULATION_ERROR,
-        'Failed to fetch freight quotes',
-        { strategy, totalWeight }
-      );
-    }
-  }
 
   /**
    * Sort options by price (ascending) and delivery time (ascending).

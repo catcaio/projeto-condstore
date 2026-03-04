@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getEcosystemMap } from '../../../../core/supreme/ecosystem-map.service';
-import { isInternalTokenAuthorized, getInternalExportTokenOrThrow } from '../../../../infra/config/internal-token';
+import { requireInternalToken } from '../../../../infra/auth/tenant-route-guard';
 import { getSessionUser } from '../../../../infra/auth/session';
 import { makeRequestId, attachRequestIdHeader } from '../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse } from '../../../../infra/http/error-response';
@@ -25,13 +25,8 @@ import { structuredLogger } from '../../../../infra/log/logger';
 
 async function isAuthorized(request: NextRequest): Promise<boolean> {
     // Path A: x-internal-token
-    try {
-        getInternalExportTokenOrThrow();
-        const token = request.headers.get('x-internal-token');
-        if (isInternalTokenAuthorized(token)) return true;
-    } catch {
-        // token not configured — fall through to session check
-    }
+    const authResult = requireInternalToken(request, { purpose: ['export', 'diag'] });
+    if (authResult.ok) return true;
 
     // Path B: session role = super_admin
     try {

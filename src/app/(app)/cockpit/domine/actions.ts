@@ -2,7 +2,7 @@
 
 import { getDb } from '@/infra/db';
 import { domineEvents } from '@/drizzle/schema';
-import { eq, count, and } from 'drizzle-orm';
+import { eq, count, and, desc } from 'drizzle-orm';
 
 import { logger } from '@/infra/logger';
 import { randomUUID } from 'crypto';
@@ -56,6 +56,33 @@ export async function getDomineOverviewCounts() {
         });
         throw e;
     }
+}
+
+/**
+ * Fetch last N WEBHOOK_RECEIVED events for the cockpit dashboard.
+ */
+export async function getRecentWebhookEvents(limit: number = 20) {
+    const { tenantId } = await getAuthContext();
+    const db = await getDb();
+
+    const events = await db.select({
+        id: domineEvents.id,
+        type: domineEvents.type,
+        source: domineEvents.source,
+        status: domineEvents.status,
+        createdAt: domineEvents.createdAt,
+        processedAt: domineEvents.processedAt,
+        errorCode: domineEvents.errorCode,
+    })
+        .from(domineEvents)
+        .where(and(
+            eq(domineEvents.tenantId, tenantId),
+            eq(domineEvents.type, 'WEBHOOK_RECEIVED'),
+        ))
+        .orderBy(desc(domineEvents.createdAt))
+        .limit(limit);
+
+    return events;
 }
 
 export async function runProcessorNow() {

@@ -3,15 +3,14 @@ import { POST as postRollupDaily } from '../rollup-daily/route';
 import { POST as postRollupBackfill } from '../rollup-backfill/route';
 import { POST as postCleanupRetention } from '../cleanup-retention/route';
 import { POST as postBackfillPhone } from '../backfill-phone/route';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '../../../../../infra/config/internal-token';
+import { requireInternalToken } from '../../../../../infra/auth/tenant-route-guard';
 import { adminAuditLogRepository } from '../../../../../infra/repositories/admin-audit-log.repository';
 import { runDailyMetricsRollup, runRollupBackfill } from '../../../../../modules/metrics/rollup-daily.service';
 import { runRetentionCleanup } from '../../../../../modules/metrics/retention-cleanup.service';
 import { backfillPhonePii } from '../../../../../modules/jobs/backfillPhonePii';
 
-vi.mock('../../../../../infra/config/internal-token', () => ({
-  getInternalExportTokenOrThrow: vi.fn(),
-  isInternalTokenAuthorized: vi.fn(),
+vi.mock('../../../../../infra/auth/tenant-route-guard', () => ({
+  requireInternalToken: vi.fn(),
 }));
 
 vi.mock('@/infra/logger', () => ({
@@ -64,8 +63,7 @@ function makeRequest(url: string, token?: string, body?: unknown): Request {
 describe('internal jobs RBAC', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getInternalExportTokenOrThrow).mockReturnValue('internal-test-token');
-    vi.mocked(isInternalTokenAuthorized).mockReturnValue(true);
+    vi.mocked(requireInternalToken).mockReturnValue({ ok: true as const } as any);
     vi.mocked(runDailyMetricsRollup).mockResolvedValue({
       day: '2026-02-24',
       rowsWritten: 3,
@@ -102,7 +100,12 @@ describe('internal jobs RBAC', () => {
   });
 
   it('requires internal token on all job endpoints', async () => {
-    vi.mocked(isInternalTokenAuthorized).mockReturnValue(false);
+    vi.mocked(requireInternalToken).mockReturnValue({
+      ok: false as const,
+      // The routes themselves now return the specific errorResponse payload, but the guard's response isn't used directly here except when ok is false. 
+      // Actually wait, our routes do: if (!authResult.ok) return errorResponse(...)
+      // So the guard's response isn't even returned directly in these job scripts. It just needs to return ok: false.
+    } as any);
 
     const [rollupRes, backfillRes, cleanupRes, piiBackfillRes] = await Promise.all([
       postRollupDaily(makeRequest('http://localhost/api/internal/jobs/rollup-daily') as never),

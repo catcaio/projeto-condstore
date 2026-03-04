@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractTenantIdFromTenantRoute, requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
-import { domineEventBus } from '@/modules/domine/event-bus.service';
+import { domineIntakeService, DomineIntakeError } from '@/domine/domine-intake.service';
+import { PublishInputSchema } from '@/domine/contracts/event';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
-import { z } from 'zod';
 
-const schema = z.object({
-    type: z.string().min(1).max(128),
-    idempotencyKey: z.string().min(1).max(255),
-    payload: z.any().optional(),
-});
-
-export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ tenantId: string }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -24,24 +18,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ten
 
     try {
         const body = await req.json();
-        const parsed = schema.safeParse(body);
+
+        const parsed = PublishInputSchema.safeParse({
+            tenantId: guard.tenantId,
+            type: body.type,
+            source: body.source ?? 'cockpit',
+            payload: body.payload,
+            idempotencyKey: body.idempotencyKey,
+        });
 
         if (!parsed.success) {
-            return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid body structure.');
+            const msg = parsed.error.issues.map(i => i.message).join('; ');
+            return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, msg);
         }
 
-        const { type, idempotencyKey, payload } = parsed.data;
-
-        const result = await domineEventBus.publish(
-            guard.tenantId,
-            'cockpit',
-            type,
-            payload || {},
-            { idempotencyKey, triggeredByUserId: guard.sessionUser.sub }
-        );
+        const result = await domineIntakeService.publish(parsed.data);
 
         return NextResponse.json({ ok: true, result });
     } catch (e: any) {
-        return errorResponse(ErrorCode.VALIDATION_ERROR, 500, requestId, e.message);
+        if (e instanceof DomineIntakeError) {
+            const status = e.code === 'TENANT_NOT_ENABLED' ? 403 : 400;
+            return errorResponse(e.code as ErrorCode, status, requestId, e.message);
+        }
+        return errorResponse(ErrorCode.UNKNOWN, 500, requestId, e.message);
     }
 }

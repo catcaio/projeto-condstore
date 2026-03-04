@@ -1,7 +1,7 @@
 ﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { hashPassword } from '@/infra/auth/password';
 import { COOKIE_NAME } from '@/infra/auth/session';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 
 const authState = vi.hoisted(() => ({
   user: {
@@ -54,9 +54,8 @@ const mockStructuredLogger = vi.hoisted(() => ({
   debug: vi.fn(),
 }));
 
-vi.mock('@/infra/config/internal-token', () => ({
-  getInternalExportTokenOrThrow: vi.fn(),
-  isInternalTokenAuthorized: vi.fn(),
+vi.mock('@/infra/auth/tenant-route-guard', () => ({
+  requireInternalToken: vi.fn(),
 }));
 
 vi.mock('@/infra/repositories/user.repository', () => ({
@@ -118,8 +117,7 @@ describe('POST /api/internal/auth/reset-admin', () => {
     vi.stubEnv('AUTH_SECRET', 'test-auth-secret');
     vi.stubEnv('DATABASE_URL', 'mysql://test:test@localhost:3306/test');
 
-    vi.mocked(getInternalExportTokenOrThrow).mockReturnValue('internal-test-token');
-    vi.mocked(isInternalTokenAuthorized).mockReturnValue(true);
+    vi.mocked(requireInternalToken).mockReturnValue({ ok: true as const } as any);
   });
 
   afterEach(() => {
@@ -127,7 +125,13 @@ describe('POST /api/internal/auth/reset-admin', () => {
   });
 
   it('returns 401 when internal token is missing/invalid', async () => {
-    vi.mocked(isInternalTokenAuthorized).mockReturnValue(false);
+    vi.mocked(requireInternalToken).mockReturnValue({
+      ok: false as const,
+      response: new Response(JSON.stringify({ ok: false, error: { code: 'AUTH_REQUIRED' } }), {
+        status: 401,
+        headers: { 'x-request-id': 'req-reset-admin' }
+      }) as any
+    });
 
     const response = await resetAdminPost(
       makeResetRequest({ email: authState.user.email, newPassword: 'Condstore@123' }) as never,

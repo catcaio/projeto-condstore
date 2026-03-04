@@ -1,13 +1,13 @@
 /**
  * Retry policy for Domine Event Processing.
- * Exponential backoff: immediate → 30s → 5m → 30m → DLQ
+ * Backoff schedule: 1m → 5m → 15m → 60m → DLQ
  */
 
 const RETRY_DELAYS_MS = [
-    0,           // 1st retry: immediate
-    30_000,      // 2nd retry: 30s
-    300_000,     // 3rd retry: 5m
-    1_800_000,   // 4th retry: 30m
+    60_000,       // 1st retry: 1m
+    300_000,      // 2nd retry: 5m
+    900_000,      // 3rd retry: 15m
+    3_600_000,    // 4th retry: 60m (cap)
 ];
 
 export const MAX_RETRIES = RETRY_DELAYS_MS.length;

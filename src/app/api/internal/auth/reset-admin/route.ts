@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '@/infra/config/internal-token';
+import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
 import { structuredLogger } from '@/infra/log/logger';
@@ -40,28 +40,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Not allowed in production');
     }
 
-    try {
-      getInternalExportTokenOrThrow();
-    } catch (error) {
-      structuredLogger.error('internal_reset_admin_token_not_configured', {
-        requestId,
-        route,
-        eventType: 'internal_auth_reset_admin',
-        errorCode: ErrorCode.AUTH_REQUIRED,
-        error,
-      });
-      return errorResponse(
-        ErrorCode.AUTH_REQUIRED,
-        500,
-        requestId,
-        'INTERNAL_DIAG_TOKEN/INTERNAL_EXPORT_TOKEN not configured',
-      );
-    }
-
-    const token = request.headers.get('x-internal-token');
-    if (!isInternalTokenAuthorized(token)) {
-      return errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'Unauthorized');
-    }
+    const authResult = requireInternalToken(request, { purpose: ['diag', 'export'] });
+    if (!authResult.ok) return authResult.response;
 
     let body: unknown;
     try {

@@ -103,6 +103,6 @@ describe('Domine Minimal Event Spine', () => {
         await domineEventBus.processAsync('tenant-123', eventId);
 
         expect(domineReadRepository.upsertOrder).not.toHaveBeenCalled();
-        expect(domineEventsRepository.sendToDLQ).toHaveBeenCalledWith(eventId, 'PROC_ERR', 'orderId missing from payload constraints');
+        expect(domineEventsRepository.sendToDLQ).toHaveBeenCalledWith(eventId, 'orderId missing from payload constraints');
     });
 });

@@ -9,25 +9,12 @@ import { planEnforcementService } from '../modules/finops/plan-enforcement.servi
 import { logger } from '../infra/logger';
 import crypto from 'crypto';
 
-const STREAM_NAME = 'knowledge_sync';
-const GROUP_NAME = 'knowledge_sync_group';
-const CONSUMER_NAME = `worker-sync-${process.pid}`;
+import { subscribeEvent } from '../domine/event-bus';
+import { DomineEvent } from '../domine/events/types';
+
 const INGEST_STREAM_NAME = 'knowledge_ingest';
 
-async function setupStream() {
-    const redis = redisClient.getRawClient();
-    if (!redis) return false;
-    try {
-        await redis.xgroup('CREATE', STREAM_NAME, GROUP_NAME, '0', 'MKSTREAM');
-        logger.info('Knowledge sync Consumer Group created');
-    } catch (err: any) {
-        if (!err.message.includes('BUSYGROUP')) {
-            logger.error('Failed to create Knowledge sync group', err as Error);
-            return false;
-        }
-    }
-    return true;
-}
+
 
 async function processSyncAction(collectionId: string, tenantId: string, connectorType: string) {
     logger.info(`Starting Knowledge Sync: ${collectionId} | ${connectorType}`, { tenantId });
@@ -175,61 +162,32 @@ async function processSyncAction(collectionId: string, tenantId: string, connect
     }
 }
 
-async function runSyncWorker() {
-    if (!redisClient.isAvailable()) {
-        logger.error('Redis not available. Exiting sync worker.');
-        return;
-    }
-    const redis = redisClient.getRawClient();
-    if (!redis) return;
+export function startKnowledgeSyncWorker() {
+    logger.info('Starting Knowledge Sync Worker on Domine Event...');
 
-    logger.info(`Starting Knowledge Sync Worker ${CONSUMER_NAME}...`);
-    await setupStream();
+    subscribeEvent('KNOWLEDGE_SYNC_REQUESTED', async (event: DomineEvent) => {
+        const payload = event.payload as any;
+        const tenantId = payload.tenantId || event.tenantId;
+        const { collectionId, connectorType } = payload;
 
-    let running = true;
-    process.on('SIGTERM', () => { running = false; });
-    process.on('SIGINT', () => { running = false; });
-
-    while (running) {
         try {
-            const results = await redis.xreadgroup(
-                'GROUP', GROUP_NAME, CONSUMER_NAME,
-                'COUNT', 1,
-                'BLOCK', 5000,
-                'STREAMS', STREAM_NAME, '>'
-            ) as any;
-
-            if (results && results.length > 0) {
-                const stream = results[0];
-                const messages = stream[1];
-
-                for (const message of messages) {
-                    const [messageId, fields] = message;
-
-                    const payload: Record<string, string> = {};
-                    for (let i = 0; i < fields.length; i += 2) {
-                        payload[fields[i]] = fields[i + 1];
-                    }
-
-                    if (payload.tenantId && payload.collectionId && payload.connectorType) {
-                        await processSyncAction(payload.collectionId, payload.tenantId, payload.connectorType);
-                    }
-
-                    await redis.xack(STREAM_NAME, GROUP_NAME, messageId);
-                }
+            if (tenantId && collectionId && connectorType) {
+                await processSyncAction(collectionId, tenantId, connectorType);
+                logger.info('knowledge_sync_processed', { eventId: event.id, tenantId, collectionId });
+            } else {
+                logger.warn('knowledge_sync_ignored_missing_data', { eventId: event.id, payload });
             }
         } catch (error) {
-            logger.error('Sync Worker loop error', error as Error);
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            logger.error('knowledge_sync_failed', error as Error, { eventId: event.id, tenantId, collectionId });
+            // For now, no implicit DLQ in Domine Event Bus in-memory. Just logged as failed.
         }
-    }
-
-    logger.info('Sync Worker stopped safely.');
+    });
 }
 
 if (require.main === module) {
-    runSyncWorker().catch(e => {
-        console.error(e);
+    if (!redisClient.isAvailable()) {
+        logger.error('Redis not available. Exiting sync worker.');
         process.exit(1);
-    });
+    }
+    startKnowledgeSyncWorker();
 }

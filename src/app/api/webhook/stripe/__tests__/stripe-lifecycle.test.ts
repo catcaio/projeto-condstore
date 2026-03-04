@@ -93,8 +93,9 @@ vi.mock('../../../../../modules/billing/billing.service', () => ({
 
 // ── Imports ───────────────────────────────────────────────────────────────────
 
-import { POST } from '../route';
+import { processStripeEvent } from '../../../../../modules/billing/stripe-webhook.service';
 import { getDb } from '../../../../../infra/db';
+import type Stripe from 'stripe';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -164,11 +165,9 @@ describe('Lifecycle: invoice.payment_failed', () => {
         const event = makePaymentFailedEvent('sub_live_active');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(res.status).toBe(200);
-        expect(body.received).toBe(true);
-        expect(body.ignored).toBeUndefined();
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.processed).toBe(true);
+        expect(res.ignored).toBe(false);
 
         const update = _updateCapture[0];
         expect(update).toBeDefined();
@@ -187,10 +186,9 @@ describe('Lifecycle: invoice.payment_failed', () => {
         const event = makePaymentFailedEvent('sub_live_canceled');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('already_canceled');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('already_canceled');
         expect(_updateCapture.length).toBe(0);
     });
 });
@@ -215,9 +213,8 @@ describe('Lifecycle: customer.subscription.updated', () => {
         const event = makeSubUpdatedEvent('sub_upd_1', 'past_due');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.received).toBe(true);
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.processed).toBe(true);
 
         const update = _updateCapture[0];
         expect(update.status).toBe('past_due');
@@ -231,7 +228,7 @@ describe('Lifecycle: customer.subscription.updated', () => {
         const event = makeSubUpdatedEvent('sub_upd_2', 'active');
         mockConstructEvent.mockReturnValue(event);
 
-        await POST(makeReq(event));
+        await processStripeEvent(event as Stripe.Event);
         expect(_updateCapture[0].status).toBe('active');
     });
 
@@ -242,7 +239,7 @@ describe('Lifecycle: customer.subscription.updated', () => {
         const event = makeSubUpdatedEvent('sub_upd_3', 'active', { cancel_at_period_end: true });
         mockConstructEvent.mockReturnValue(event);
 
-        await POST(makeReq(event));
+        await processStripeEvent(event as Stripe.Event);
         const update = _updateCapture[0];
         expect(update.status).toBe('active'); // status main não muda pra canceled
         expect(update.cancelAtPeriodEnd).toBe(true);
@@ -256,10 +253,9 @@ describe('Lifecycle: customer.subscription.updated', () => {
         const event = makeSubUpdatedEvent('sub_upd_4', 'active');
         mockConstructEvent.mockReturnValue(event);
 
-        const res = await POST(makeReq(event));
-        const body = await res.json();
-        expect(body.ignored).toBe(true);
-        expect(body.reason).toBe('already_canceled');
+        const res = await processStripeEvent(event as Stripe.Event);
+        expect(res.ignored).toBe(true);
+        expect(res.reason).toBe('already_canceled');
         expect(_updateCapture.length).toBe(0);
     });
 });

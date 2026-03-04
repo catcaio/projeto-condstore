@@ -1,15 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { redisClient } from "@/infra/redis.client";
+import { requireAdminSession } from "@/infra/auth/tenant-route-guard";
 
 export const runtime = "nodejs";
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const tenantId = searchParams.get("tenant");
+export async function GET(req: NextRequest) {
+  const authResult = await requireAdminSession(req);
+  if (!authResult.ok) return authResult.response;
 
-  if (!tenantId) {
-    return NextResponse.json({ error: "tenant required" }, { status: 400 });
-  }
+  const { tenantId } = authResult;
 
   const redis = redisClient;
   if (!redis) {

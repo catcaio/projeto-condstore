@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getInternalExportTokenOrThrow, isInternalTokenAuthorized } from '../../../../../infra/config/internal-token';
+import { requireInternalToken } from '../../../../../infra/auth/tenant-route-guard';
 import { ErrorCode, errorResponse } from '../../../../../infra/http/error-response';
 import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/request-trace';
 import { structuredLogger } from '../../../../../infra/log/logger';
@@ -20,16 +20,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   });
 
   try {
-    try {
-      getInternalExportTokenOrThrow();
-    } catch (error) {
-      return errorResponse(ErrorCode.AUTH_REQUIRED, 500, requestId, 'INTERNAL_EXPORT_TOKEN not configured', { error: (error as Error).message });
-    }
-
-    const token = request.headers.get('x-internal-token');
-    if (!isInternalTokenAuthorized(token)) {
-      return errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'Unauthorized');
-    }
+    const authResult = requireInternalToken(request, { purpose: ['jobs'] });
+    if (!authResult.ok) return errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'Unauthorized');
 
     let body: { day?: string } = {};
     try {
