@@ -64,6 +64,7 @@
 | `/api/internal/health/webhook` | API |
 | `/api/internal/jobs/backfill-phone` | API |
 | `/api/internal/jobs/cleanup-retention` | API |
+| `/api/internal/jobs/domine-process` | API |
 | `/api/internal/jobs/finops-reconciliation` | API |
 | `/api/internal/jobs/rollup-backfill` | API |
 | `/api/internal/jobs/rollup-daily` | API |
@@ -99,7 +100,10 @@
 | `/api/tenants/[tenantId]/audit` | API |
 | `/api/tenants/[tenantId]/domine/actions` | API |
 | `/api/tenants/[tenantId]/domine/connectors/orders/event` | API |
+| `/api/tenants/[tenantId]/domine/dlq` | API |
+| `/api/tenants/[tenantId]/domine/dlq/retry` | API |
 | `/api/tenants/[tenantId]/domine/events` | API |
+| `/api/tenants/[tenantId]/domine/events/[id]` | API |
 | `/api/tenants/[tenantId]/domine/events/publish` | API |
 | `/api/tenants/[tenantId]/domine/freight/latest` | API |
 | `/api/tenants/[tenantId]/domine/orders` | API |
@@ -108,6 +112,7 @@
 | `/api/tenants/[tenantId]/knowledge/sources` | API |
 | `/api/tenants/[tenantId]/knowledge/sources/[sourceId]/ready` | API |
 | `/api/tenants/[tenantId]/privacy/[action]` | API |
+| `/api/tenants/[tenantId]/privacy/export-user` | API |
 | `/api/tenants/[tenantId]/privacy/purge-user` | API |
 | `/api/tenants/[tenantId]/secrets` | API |
 | `/api/tenants/[tenantId]/secrets/rotate` | API |
@@ -116,7 +121,6 @@
 | `/api/webhook` | API |
 | `/api/webhook/fallback` | API |
 | `/api/webhook/stripe` | API |
-| `/api/webhooks/stripe` | API |
 | `/attribution` | Page |
 | `/billing` | Page |
 | `/billing/manage` | Page |
