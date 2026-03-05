@@ -136,6 +136,27 @@ export default async function MarcianoPlaceholderPage(props: { params: Promise<{
                         </div>
                     </section>
                 </div>
+
+                {/* DOMINE Event Feed Placeholder */}
+                <section className="p-6 rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] shadow-sm flex flex-col gap-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <h2 className={cn("font-bold text-[hsl(var(--ui-text))] tracking-tight", isTvMode ? "text-2xl" : "text-xl")}>
+                            Eventos DOMINE (Feed ao Vivo)
+                        </h2>
+                        <span className="inline-flex items-center rounded-md border border-[hsl(var(--ui-accent-blue)/0.2)] bg-[hsl(var(--ui-accent-blue)/0.1)] px-2.5 py-0.5 text-xs font-semibold tracking-wide text-[hsl(var(--ui-accent-blue))] ml-auto">
+                            Tempo Real
+                        </span>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                        <div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-[hsl(var(--ui-border))] rounded-xl bg-[hsl(var(--ui-bg))]/50">
+                            <Database className={cn("mb-3 opacity-50 text-[hsl(var(--ui-text-muted))]", isTvMode ? "w-10 h-10" : "w-6 h-6")} />
+                            <p className="font-medium text-[hsl(var(--ui-text))]">Feed de Eventos Vazio</p>
+                            <p className="text-sm text-[hsl(var(--ui-text-muted))] mt-1 max-w-sm">
+                                Nenhum evento do DOMINE foi registrado para este setor ainda. Conecte sua fonte para visualizar a atividade em tempo real.
+                            </p>
+                        </div>
+                    </div>
+                </section>
             </div>
         </main>
     );

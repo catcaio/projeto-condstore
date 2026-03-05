@@ -1138,3 +1138,17 @@ export const deliveryLocationEvents = mysqlTable('delivery_location_events', {
 
 export type DeliveryLocationEventRecord = typeof deliveryLocationEvents.$inferSelect;
 export type NewDeliveryLocationEventRecord = typeof deliveryLocationEvents.$inferInsert;
+
+export const userUiPrefs = mysqlTable('user_ui_prefs', {
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    userId: varchar('user_id', { length: 36 }).notNull(),
+    key: varchar('key', { length: 100 }).notNull(),
+    payloadJson: json('payload_json').notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    pk: primaryKey({ columns: [table.tenantId, table.userId, table.key] }),
+    tenantUserIdx: index('idx_user_ui_prefs_tenant_user').on(table.tenantId, table.userId),
+}));
+
+export type UserUiPrefRecord = typeof userUiPrefs.$inferSelect;
+export type NewUserUiPrefRecord = typeof userUiPrefs.$inferInsert;

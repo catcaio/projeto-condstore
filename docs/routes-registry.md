@@ -139,6 +139,7 @@
 | /cockpit/domine/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/domine/health | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/finops/alerts | TBA | public | none | PUBLIC | live | Auto-detected |
+| /cockpit/funcionalidades | GET | internal | required | cockpit | live | Cockpit module pinning for TV and dashboard |
 | /cockpit/knowledge | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/knowledge/ask | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/knowledge/collections | TBA | public | none | PUBLIC | live | Auto-detected |

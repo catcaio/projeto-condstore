@@ -139,6 +139,7 @@
 | `/cockpit/domine/dlq` | Page |
 | `/cockpit/domine/health` | Page |
 | `/cockpit/finops/alerts` | Page |
+| `/cockpit/funcionalidades` | Page |
 | `/cockpit/knowledge` | Page |
 | `/cockpit/knowledge/ask` | Page |
 | `/cockpit/knowledge/collections` | Page |

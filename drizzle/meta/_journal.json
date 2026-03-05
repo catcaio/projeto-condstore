@@ -246,6 +246,13 @@
       "when": 1772669503973,
       "tag": "0046_short_yellowjacket",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "5",
+      "when": 1772673910321,
+      "tag": "0047_clumsy_the_anarchist",
+      "breakpoints": true
     }
   ]
 }
