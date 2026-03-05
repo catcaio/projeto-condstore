@@ -14,6 +14,7 @@
 | /api/auth/google/callback | GET | public | none | auth | live | Google OAuth callback (code exchange + session) |
 | /api/auth/email/send-verify | POST | public | none | auth | live | Resend email verification link |
 | /api/auth/email/verify | GET | public | none | auth | live | Email verification token handler |
+| /api/auth/invite | POST | internal | required | auth | live | Team invite link handler |
 | /api/billing/subscription | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/checkout | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cockpit/analytics/events | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -137,6 +138,7 @@
 | /cockpit/deliveries | GET | internal | required | cockpit | live | Monitoramento de Entregas |
 | /cockpit/domine | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/domine/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
+| /cockpit/equipe | GET | internal | required | cockpit | live | Team management page |
 | /cockpit/domine/health | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/finops/alerts | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/funcionalidades | GET | internal | required | cockpit | live | Cockpit module pinning for TV and dashboard |

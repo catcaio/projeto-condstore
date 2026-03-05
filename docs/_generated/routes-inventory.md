@@ -11,6 +11,7 @@
 | `/api/auth/email/verify` | API |
 | `/api/auth/google` | API |
 | `/api/auth/google/callback` | API |
+| `/api/auth/invite` | API |
 | `/api/auth/login` | API |
 | `/api/auth/logout` | API |
 | `/api/auth/me` | API |
@@ -139,6 +140,7 @@
 | `/cockpit/domine` | Page |
 | `/cockpit/domine/dlq` | Page |
 | `/cockpit/domine/health` | Page |
+| `/cockpit/equipe` | Page |
 | `/cockpit/finops/alerts` | Page |
 | `/cockpit/funcionalidades` | Page |
 | `/cockpit/knowledge` | Page |
