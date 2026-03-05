@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 5. Ensure Signup Policies exist 
-        const existingPolicy = await db.select().from(tenantSignupPolicies).where(eq(tenantSignupPolicies.tenantId, tenantId)).limit(1);
+        const existingPolicy = await db.select().from(tenantSignupPolicies).where(eq(tenantSignupPolicies.tenantId, tenantId));
         if (existingPolicy.length === 0) {
             await db.insert(tenantSignupPolicies).values({
                 tenantId,
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 6. Create the Admin User logic
-        const existingUser = await db.select().from(users).where(eq(users.email, adminEmail)).limit(1);
+        const existingUser = await db.select().from(users).where(eq(users.email, adminEmail));
         let userId;
 
         if (existingUser.length > 0) {

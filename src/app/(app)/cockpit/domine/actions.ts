@@ -52,7 +52,7 @@ export async function getDomineOverviewCounts() {
             .from(domineEvents)
             .where(and(eq(domineEvents.tenantId, tenantId), eq(domineEvents.status, 'queued')))
             .orderBy(domineEvents.createdAt)
-            .limit(1);
+            ;
 
         const oldestAgeMinutes = oldestQueued.length > 0
             ? Math.floor((Date.now() - new Date(oldestQueued[0].createdAt).getTime()) / 60000)

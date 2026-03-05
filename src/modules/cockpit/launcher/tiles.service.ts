@@ -45,7 +45,7 @@ export async function getVisibleTiles({ tenantId, role }: CalculateVisibleTilesP
             const tenantResult = await db.select({ incidentMode: tenants.incidentMode })
                 .from(tenants)
                 .where(eq(tenants.id, tenantId))
-                .limit(1);
+                ;
             incidentMode = tenantResult[0]?.incidentMode || false;
         } catch (e) {
             console.error('Failed to augment tile badges', e);

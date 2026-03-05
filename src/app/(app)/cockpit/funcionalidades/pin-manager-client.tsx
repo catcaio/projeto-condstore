@@ -47,9 +47,9 @@ export function PinManagerClient({
                     return (
                         <div
                             key={tile.id}
-                            className={`flex items-center justify-between p-4 rounded-lg border transition-all ${isPinned
-                                ? 'border-[hsl(var(--ui-brand))] bg-[hsl(var(--ui-brand))]/5'
-                                : 'border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))]'
+                            className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ease-out hover:shadow-md hover:scale-[1.01] ${isPinned
+                                ? 'border-[hsl(var(--ui-brand))] bg-[hsl(var(--ui-brand))]/5 ring-1 ring-[hsl(var(--ui-brand))/0.2]'
+                                : 'border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] hover:border-[hsl(var(--ui-border-active))]'
                                 }`}
                         >
                             <div className="flex flex-col gap-1 pr-4">

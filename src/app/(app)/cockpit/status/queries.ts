@@ -34,13 +34,13 @@ export async function getSystemStatus(tenantId: string, role: string): Promise<S
         .from(tenantKnowledgeQueries)
         .where(eq(tenantKnowledgeQueries.tenantId, tenantId))
         .orderBy(desc(tenantKnowledgeQueries.createdAt))
-        .limit(1);
+        ;
 
     const [lastEmbed] = await db.select({ date: tenantDocumentVersions.createdAt })
         .from(tenantDocumentVersions)
         .where(and(eq(tenantDocumentVersions.tenantId, tenantId), eq(tenantDocumentVersions.status, 'ready_indexed')))
         .orderBy(desc(tenantDocumentVersions.createdAt))
-        .limit(1);
+        ;
 
     // 3. Knowledge
     const [{ docsTotal }] = await db.select({ docsTotal: count() })
@@ -59,7 +59,7 @@ export async function getSystemStatus(tenantId: string, role: string): Promise<S
         .from(tenantCollections)
         .where(eq(tenantCollections.tenantId, tenantId))
         .orderBy(desc(tenantCollections.lastSyncAt))
-        .limit(1);
+        ;
 
     // Redis stream queue depth (best effort)
     let ingestQueueDepth: number | string = 'unknown';
@@ -83,14 +83,14 @@ export async function getSystemStatus(tenantId: string, role: string): Promise<S
         .from(messages)
         .where(and(eq(messages.tenantId, tenantId), eq(messages.direction, 'inbound' as any)))
         .orderBy(desc(messages.createdAt))
-        .limit(1)
+        
         .catch(() => [{ date: null }]);
 
     const [lastOutbound] = await db.select({ date: messages.createdAt })
         .from(messages)
         .where(and(eq(messages.tenantId, tenantId), eq(messages.direction, 'outbound' as any)))
         .orderBy(desc(messages.createdAt))
-        .limit(1)
+        
         .catch(() => [{ date: null }]);
 
     const outboundBlockedByFinops = finopsData.state === 'locked' || finopsData.state === 'degraded';

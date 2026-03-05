@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         const db = await getDb();
 
         // 1. Busca p/ incrementar revision
-        const budgetRowRows = await db.select().from(tenantBudgets).where(eq(tenantBudgets.tenantId, tenantId)).limit(1);
+        const budgetRowRows = await db.select().from(tenantBudgets).where(eq(tenantBudgets.tenantId, tenantId));
         if (budgetRowRows.length === 0) {
             return errorResponse(ErrorCode.VALIDATION_ERROR, 404, requestId, 'Tenant budget não encontrado.');
         }

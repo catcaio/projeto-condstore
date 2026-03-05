@@ -67,7 +67,7 @@ export class FrankEventsRepository {
             eq(frankEvents.kind, input.kind),
             gte(frankEvents.createdAt, threshold),
           ))
-          .limit(1);
+          ;
 
         if (existing) {
           logger.debug('frank_events duplicate skipped', {

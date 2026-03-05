@@ -167,7 +167,18 @@
 | /inbox/conversations/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
 | /login | TBA | public | none | PUBLIC | live | Auto-detected |
 | /painel-logistico | TBA | public | none | PUBLIC | live | Auto-detected |
-| /pricing | TBA | public | none | PUBLIC | live | Auto-detected |
+| /planos/crm | TBA | public | none | PUBLIC | live | Auto-detected |
+| /planos/domine | TBA | public | none | PUBLIC | live | Auto-detected |
+| /planos/envios | TBA | public | none | PUBLIC | live | Auto-detected |
+| /produtos/crm | TBA | public | none | PUBLIC | live | Auto-detected |
+| /produtos/domine | TBA | public | none | PUBLIC | live | Auto-detected |
+| /produtos/envios | TBA | public | none | PUBLIC | live | Auto-detected |
+| /gargalos-logisticos | TBA | public | none | PUBLIC | live | Auto-detected |
+| /integracoes | TBA | public | none | PUBLIC | live | Auto-detected |
+| /tecnologias | TBA | public | none | PUBLIC | live | Auto-detected |
+| /plataforma | TBA | public | none | PUBLIC | live | Auto-detected |
+| /plataforma/cockpit | TBA | public | none | PUBLIC | live | Auto-detected |
+| /avaliacao | TBA | public | none | PUBLIC | live | Auto-detected |
 | /settings | TBA | public | none | PUBLIC | live | Auto-detected |
 | /signup | GET | public | none | auth | live | User registration page with role selection |
 | /supreme | TBA | public | none | PUBLIC | live | Auto-detected |

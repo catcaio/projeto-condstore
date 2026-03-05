@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from '../route';
 import { getDb } from '../../../../../../infra/db';
 import { getSessionUser } from '../../../../../../infra/auth/session';

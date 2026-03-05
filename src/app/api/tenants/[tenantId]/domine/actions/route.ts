@@ -59,13 +59,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ten
             const { correlationId } = parameters;
             const db = await getDb();
             if (correlationId) {
-                const q = await db.select().from(domineFreightQuotes).where(eq(domineFreightQuotes.correlationId, correlationId)).limit(1);
+                const q = await db.select().from(domineFreightQuotes).where(eq(domineFreightQuotes.correlationId, correlationId));
                 return NextResponse.json({ ok: true, data: q[0] || null });
             } else {
                 const latest = await db.select().from(domineFreightQuotes)
                     .where(eq(domineFreightQuotes.tenantId, (await params).tenantId))
-                    .orderBy(desc(domineFreightQuotes.createdAt))
-                    .limit(1);
+                    .orderBy(desc(domineFreightQuotes.createdAt));
                 return NextResponse.json({ ok: true, data: latest[0] || null });
             }
         }

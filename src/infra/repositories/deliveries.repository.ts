@@ -27,7 +27,7 @@ export const deliveriesRepository = {
                     eq(deliveries.id, deliveryId),
                     eq(deliveries.tenantId, tenantId)
                 ))
-                .limit(1);
+                ;
 
             if (delivery.length === 0) {
                 structuredLogger.warn('delivery_not_found', { tenantId, deliveryId });
@@ -68,7 +68,7 @@ export const deliveriesRepository = {
         const db = await getDb();
         const results = await db.select().from(deliveries)
             .where(and(eq(deliveries.id, deliveryId), eq(deliveries.tenantId, tenantId)))
-            .limit(1);
+            ;
         return results[0] || null;
     },
 

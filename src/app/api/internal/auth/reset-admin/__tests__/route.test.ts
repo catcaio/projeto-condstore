@@ -1,4 +1,4 @@
-﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { hashPassword } from '@/infra/auth/password';
 import { COOKIE_NAME } from '@/infra/auth/session';
 import { requireInternalToken } from '@/infra/auth/tenant-route-guard';

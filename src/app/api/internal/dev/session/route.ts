@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
                 .select()
                 .from(users)
                 .where(eq(users.role, 'admin'))
-                .limit(1);
+                ;
             if (results.length > 0) user = results[0];
         } catch (dbError) {
             logger.warn('Failed to query DB for dev session, using mock user', { error: String(dbError) });

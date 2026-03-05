@@ -132,7 +132,7 @@ export async function getTenantState(tenantId: string): Promise<ResolvedTenantSt
             .select()
             .from(tenantBudgets)
             .where(eq(tenantBudgets.tenantId, tenantId))
-            .limit(1);
+            ;
 
         if (rows.length === 0) {
             return { state: 'unlocked', revision: 0, source: 'db' };
@@ -367,7 +367,7 @@ export async function fireFinOpsLockEvent(
                     isNull(finopsLockEvents.resolvedAt)
                 )
             )
-            .limit(1);
+            ;
 
         if (existing.length === 0) {
             await db.insert(finopsLockEvents).values({

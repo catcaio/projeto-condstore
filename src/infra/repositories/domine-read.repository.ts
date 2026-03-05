@@ -22,7 +22,7 @@ export type UpsertFreightQuoteInput = {
 export class DomineReadRepository {
     async upsertOrder(tenantId: string, orderId: string, status: string, totals: any) {
         const db = await getDb();
-        const existing = await db.select().from(domineOrders).where(and(eq(domineOrders.tenantId, tenantId), eq(domineOrders.orderId, orderId))).limit(1);
+        const existing = await db.select().from(domineOrders).where(and(eq(domineOrders.tenantId, tenantId), eq(domineOrders.orderId, orderId)));
         if (existing.length) {
             await db.update(domineOrders).set({ status, totals, updatedAt: new Date() }).where(eq(domineOrders.id, existing[0].id));
         } else {
@@ -51,7 +51,7 @@ export class DomineReadRepository {
                         eq(domineFreightQuotes.correlationId, correlationId)
                     )
                 )
-                .limit(1);
+                ;
 
             if (existing.length > 0) {
                 await db
@@ -128,7 +128,7 @@ export class DomineReadRepository {
 
     async getOrder(tenantId: string, orderId: string) {
         const db = await getDb();
-        const ro = await db.select().from(domineOrders).where(and(eq(domineOrders.tenantId, tenantId), eq(domineOrders.orderId, orderId))).limit(1);
+        const ro = await db.select().from(domineOrders).where(and(eq(domineOrders.tenantId, tenantId), eq(domineOrders.orderId, orderId)));
         return ro[0];
     }
 

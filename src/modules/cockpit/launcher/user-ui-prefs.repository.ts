@@ -21,7 +21,7 @@ export class UserUiPrefsRepository {
                     eq(userUiPrefs.key, PINS_KEY)
                 )
             )
-            .limit(1);
+            ;
 
         if (!record || !record.payloadJson) {
             return [];

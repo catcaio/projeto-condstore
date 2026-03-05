@@ -22,7 +22,7 @@ export async function getIntegrationsStatus(tenantId: string) {
         const sub = await db.select()
             .from(tenantSubscriptions)
             .where(eq(tenantSubscriptions.tenantId, tenantId))
-            .limit(1);
+            ;
 
         if (sub.length > 0) {
             stripeStatus = sub[0]?.status || 'unknown';
@@ -67,7 +67,7 @@ export async function getTenantBasics(tenantId: string) {
         createdAt: tenants.createdAt,
         plan: tenants.plan,
         planStatus: tenants.planStatus,
-    }).from(tenants).where(eq(tenants.id, tenantId)).limit(1);
+    }).from(tenants).where(eq(tenants.id, tenantId));
 
     const tenant = tResult[0];
 
@@ -76,7 +76,7 @@ export async function getTenantBasics(tenantId: string) {
         const subResult = await db.select({ planId: tenantSubscriptions.planId })
             .from(tenantSubscriptions)
             .where(and(eq(tenantSubscriptions.tenantId, tenantId), eq(tenantSubscriptions.status, 'active')))
-            .limit(1);
+            ;
 
         if (subResult.length > 0 && subResult[0]?.planId) {
             tenant.plan = subResult[0].planId;

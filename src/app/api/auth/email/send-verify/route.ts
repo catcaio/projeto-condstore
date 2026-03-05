@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
             .select()
             .from(users)
             .where(eq(users.email, normalizedEmail))
-            .limit(1);
+            ;
 
         const user = results[0];
         if (!user) {

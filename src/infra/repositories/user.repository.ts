@@ -19,8 +19,7 @@ export class UserRepository {
             const results = await db
                 .select()
                 .from(users)
-                .where(eq(users.email, normalizedEmail))
-                .limit(1);
+                .where(eq(users.email, normalizedEmail));
 
             return results.length > 0 ? results[0] : null;
         } catch (error) {
@@ -39,8 +38,7 @@ export class UserRepository {
             const results = await db
                 .select()
                 .from(users)
-                .where(eq(users.id, id))
-                .limit(1);
+                .where(eq(users.id, id));
 
             return results.length > 0 ? results[0] : null;
         } catch (error) {

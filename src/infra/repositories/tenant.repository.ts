@@ -110,7 +110,7 @@ export class TenantRepository {
                 .select()
                 .from(tenants)
                 .where(eq(tenants.twilioNumber, normalizedNumber))
-                .limit(1);
+                ;
 
             if (results.length === 0) {
                 // Log all tenants for diagnosis if not found
@@ -198,7 +198,7 @@ export class TenantRepository {
                 .select()
                 .from(tenants)
                 .where(eq(tenants.id, tenantId))
-                .limit(1);
+                ;
 
             return results.length > 0 ? results[0] : null;
         } catch (error) {

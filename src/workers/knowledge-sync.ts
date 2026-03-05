@@ -95,7 +95,7 @@ async function processSyncAction(collectionId: string, tenantId: string, connect
                     .from(tenantDocumentVersions)
                     .where(eq(tenantDocumentVersions.documentId, docId))
                     .orderBy(desc(tenantDocumentVersions.createdAt)) // Should ideally select highest
-                    .limit(1); // just a dirty mock to prevent identical files locally
+                    ; // just a dirty mock to prevent identical files locally
 
                 if (latestVersion[0]?.sha256 === bufferHash) {
                     continue; // Skip uploading, no change

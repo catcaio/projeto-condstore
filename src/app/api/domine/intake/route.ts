@@ -51,7 +51,7 @@ export const POST = withInfraErrorHandling(async (request: Request, requestId: s
         .select()
         .from(domineTenantIntakeConfigs)
         .where(eq(domineTenantIntakeConfigs.tenantKey, tenantKey))
-        .limit(1);
+        ;
 
     const config = configs[0];
     if (!config) {

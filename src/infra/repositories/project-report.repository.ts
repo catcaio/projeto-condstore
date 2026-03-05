@@ -35,7 +35,7 @@ export class ProjectReportRepository {
 
     async getReportById(id: string): Promise<ProjectReportRecord | undefined> {
         const db = await getDb();
-        const results = await db.select().from(projectReports).where(eq(projectReports.id, id)).limit(1);
+        const results = await db.select().from(projectReports).where(eq(projectReports.id, id));
         return results[0];
     }
 

@@ -26,7 +26,7 @@ export class AttributionClickRepository {
       .select()
       .from(attributionClicks)
       .where(eq(attributionClicks.token, token))
-      .limit(1);
+      ;
     return rows[0] ?? null;
   }
 

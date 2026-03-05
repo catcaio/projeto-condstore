@@ -40,7 +40,7 @@ export async function getSimulationDetail(tenantId: string, id: string) {
             eq(freightSimulationLogs.tenantId, tenantId),
             eq(freightSimulationLogs.id, id)
         ))
-        .limit(1);
+        ;
 
     return logs.length > 0 ? logs[0] : null;
 }

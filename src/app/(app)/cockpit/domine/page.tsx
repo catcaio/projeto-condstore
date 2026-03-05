@@ -29,11 +29,30 @@ export default async function DomineOverviewPage() {
         );
     }
 
-    const [counts, recentEvents, recentQuotes] = await Promise.all([
-        getDomineOverviewCounts(),
-        domineEventsRepository.listEvents(tenantId, { limit: 20 }),
-        getLatestFreightQuotesAction(20)
-    ]);
+    let counts = { queued: 0, processing: 0, processed: 0, failed: 0, oldestAgeMinutes: 0 };
+    let recentEvents: any[] = [];
+    let recentQuotes: any[] = [];
+
+    try {
+        const results = await Promise.allSettled([
+            getDomineOverviewCounts(),
+            domineEventsRepository.listEvents(tenantId, { limit: 20 }),
+            getLatestFreightQuotesAction(20)
+        ]);
+
+        if (results[0].status === 'fulfilled') counts = results[0].value;
+        if (results[1].status === 'fulfilled') recentEvents = results[1].value;
+        if (results[2].status === 'fulfilled') recentQuotes = results[2].value;
+
+        // Log errors softly without crashing the UI
+        results.forEach(res => {
+            if (res.status === 'rejected') {
+                console.error("DOMINE Console Partial Hydration Error:", res.reason);
+            }
+        });
+    } catch (err) {
+        console.error("Critical failure loading DOMINE Overview", err);
+    }
 
     const isIncidentMode = process.env.INCIDENT_MODE === 'true';
 

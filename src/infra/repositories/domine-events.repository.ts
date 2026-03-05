@@ -20,7 +20,7 @@ export class DomineEventsRepository {
             .where(and(
                 eq(domineEvents.tenantId, data.tenantId),
                 eq(domineEvents.idempotencyKey, data.idempotencyKey)
-            )).limit(1);
+            ));
 
         if (existing.length > 0) {
             return { id: existing[0].id, inserted: false };
@@ -41,7 +41,7 @@ export class DomineEventsRepository {
 
     async getById(id: string) {
         const db = await getDb();
-        const rows = await db.select().from(domineEvents).where(eq(domineEvents.id, id)).limit(1);
+        const rows = await db.select().from(domineEvents).where(eq(domineEvents.id, id));
         return rows[0];
     }
 
@@ -77,7 +77,7 @@ export class DomineEventsRepository {
                 ),
             ))
             .orderBy(domineEvents.createdAt)
-            .limit(1);
+            ;
 
         const candidate = candidates[0];
         if (!candidate) return null;
@@ -107,7 +107,7 @@ export class DomineEventsRepository {
         const db = await getDb();
 
         // Fetch current retry count
-        const rows = await db.select().from(domineEvents).where(eq(domineEvents.id, id)).limit(1);
+        const rows = await db.select().from(domineEvents).where(eq(domineEvents.id, id));
         const event = rows[0];
         if (!event) return;
 
@@ -133,7 +133,7 @@ export class DomineEventsRepository {
     async sendToDLQ(id: string, reason: string) {
         const db = await getDb();
 
-        const rows = await db.select().from(domineEvents).where(eq(domineEvents.id, id)).limit(1);
+        const rows = await db.select().from(domineEvents).where(eq(domineEvents.id, id));
         const event = rows[0];
         if (!event) return;
 
@@ -205,7 +205,7 @@ export class DomineEventsRepository {
         const db = await getDb();
         const rows = await db.select().from(domineEventsDlq)
             .where(and(eq(domineEventsDlq.id, dlqEntryId), eq(domineEventsDlq.tenantId, tenantId)))
-            .limit(1);
+            ;
 
         const dlqEntry = rows[0];
         if (!dlqEntry) return false;

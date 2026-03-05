@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
             .select()
             .from(users)
             .where(eq(users.emailVerifyToken, token))
-            .limit(1);
+            ;
 
         const user = results[0];
         if (!user) {

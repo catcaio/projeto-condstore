@@ -91,7 +91,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
                     eq(publicEvents.eventType, 'quote_intent_created'),
                 ),
             )
-            .limit(1);
+            ;
 
         const intent = intentRows[0];
         if (!intent) {

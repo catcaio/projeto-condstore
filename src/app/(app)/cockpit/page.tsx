@@ -7,9 +7,23 @@ import { Role } from '@/ui/auth/entitlements-logic';
 import { cn } from '@/lib/utils';
 import { cookies } from 'next/headers';
 import { getUserPinsAction } from '@/app/(app)/cockpit/funcionalidades/actions';
-import { Settings, LayoutGrid } from 'lucide-react';
+import { Settings, LayoutGrid, Home } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import Link from 'next/link';
+
+// Helper to map color names to Tailwind text-color utility classes for minimalist highlights
+const colorToClass: Record<string, string> = {
+    blue: 'text-blue-500 dark:text-blue-400',
+    green: 'text-emerald-500 dark:text-emerald-400',
+    red: 'text-rose-500 dark:text-rose-400',
+    yellow: 'text-amber-500 dark:text-amber-400',
+    purple: 'text-purple-500 dark:text-purple-400',
+    emerald: 'text-emerald-500 dark:text-emerald-400',
+    indigo: 'text-indigo-500 dark:text-indigo-400',
+    teal: 'text-teal-500 dark:text-teal-400',
+    amber: 'text-amber-500 dark:text-amber-400',
+    slate: 'text-slate-500 dark:text-slate-400',
+};
 
 export default async function CockpitLauncherPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;
@@ -84,20 +98,33 @@ export default async function CockpitLauncherPage(props: { searchParams: Promise
                                 <Link
                                     key={tile.id}
                                     href={tile.href}
-                                    className={cn(
-                                        "flex items-center gap-3 p-3 rounded-lg hover:bg-[hsl(var(--ui-bg))] transition-colors border border-transparent hover:border-[hsl(var(--ui-border))]",
-                                        isTvMode ? "p-4" : "p-3"
-                                    )}
+                                    className="group relative flex flex-col p-4 sm:p-5 rounded-2xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] hover:border-[hsl(var(--ui-brand)/0.4)] hover:shadow-lg transition-all duration-300 ease-out hover:-translate-y-1 overflow-hidden"
                                 >
-                                    <div className={cn(
-                                        "flex-shrink-0 flex items-center justify-center rounded-md bg-[hsl(var(--ui-brand))]/10 text-[hsl(var(--ui-brand))]",
-                                        isTvMode ? "w-12 h-12" : "w-10 h-10"
-                                    )}>
-                                        <IconComponent />
+                                    {/* Minimalist Hover Glow Effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--ui-brand)/0.03)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out pointer-events-none" />
+
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className={cn(
+                                            "flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border-active))] shadow-sm transition-all duration-300 ease-out group-hover:bg-[hsl(var(--ui-surface-hover))]",
+                                            "text-[hsl(var(--ui-text))]"
+                                        )}>
+                                            {IconComponent ? <IconComponent className="w-6 h-6 transition-transform duration-300 ease-out group-hover:scale-110" /> : <div className="w-6 h-6 border-2 border-dashed rounded-full" />}
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className={cn("font-medium text-[hsl(var(--ui-text))]", isTvMode ? "text-xl" : "text-sm")}>{tile.label}</span>
-                                        <span className={cn("text-[hsl(var(--ui-text-muted))] line-clamp-1", isTvMode ? "text-sm" : "text-xs")}>{tile.description}</span>
+
+                                    <div className="flex-1 flex flex-col">
+                                        <h3 className={cn(
+                                            "font-semibold text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-brand))] transition-colors duration-300 line-clamp-1",
+                                            isTvMode ? "text-xl sm:text-2xl mb-2" : "text-base sm:text-lg mb-1"
+                                        )}>
+                                            {tile.label}
+                                        </h3>
+                                        <p className={cn(
+                                            "text-[hsl(var(--ui-text-muted))] line-clamp-2",
+                                            isTvMode ? "text-base sm:text-lg leading-relaxed" : "text-xs sm:text-sm leading-snug"
+                                        )}>
+                                            {tile.description}
+                                        </p>
                                     </div>
                                 </Link>
                             );
@@ -133,13 +160,22 @@ export default async function CockpitLauncherPage(props: { searchParams: Promise
                         </div>
 
                         <div className="flex items-center gap-4">
+                            <Link
+                                href="/home"
+                                className="hidden lg:flex items-center gap-2 text-sm font-medium text-[hsl(var(--ui-text-muted))] bg-[hsl(var(--ui-surface-hover))] px-3 py-2 rounded-md hover:bg-[hsl(var(--ui-border))] hover:text-[hsl(var(--ui-text))] transition-colors"
+                                title="Voltar ao App"
+                            >
+                                <Home className="w-4 h-4" />
+                                <span>Voltar ao App</span>
+                            </Link>
+
                             {/* Mobile Pinned Header Link */}
                             <Link
                                 href="/cockpit/funcionalidades"
                                 className="lg:hidden flex items-center gap-2 text-sm font-medium text-[hsl(var(--ui-brand))] bg-[hsl(var(--ui-brand))]/10 px-3 py-2 rounded-md hover:bg-[hsl(var(--ui-brand))]/20 transition-colors"
                             >
                                 <Settings className="w-4 h-4" />
-                                Suas Funcionalidades
+                                <span>Configurar</span>
                             </Link>
 
                             <TvToggle initialTvMode={isTvMode} />

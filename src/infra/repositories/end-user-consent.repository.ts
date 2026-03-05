@@ -10,7 +10,7 @@ export const endUserConsentRepository = {
             .select()
             .from(endUserConsents)
             .where(and(eq(endUserConsents.tenantId, tenantId), eq(endUserConsents.phoneHash, phoneHash)))
-            .limit(1);
+            ;
         return record || null;
     },
 

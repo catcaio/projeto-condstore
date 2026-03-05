@@ -158,7 +158,7 @@ export class MessageRepository {
                 .select({ messageSid: messages.messageSid })
                 .from(messages)
                 .where(eq(messages.messageSid, messageSid))
-                .limit(1);
+                ;
             return !!row;
         } catch (error) {
             // On error, return false so the request is NOT blocked (fail-open for idempotency)
