@@ -11,7 +11,8 @@ export type WebhookEventStatus = 'received' | 'processed' | 'failed';
 
 export interface WebhookEventInsert {
     provider: string;
-    externalId: string;
+    eventId: string;
+    eventType: string;
     payloadHash: string;
 }
 
@@ -46,7 +47,8 @@ export class WebhookEventRepository {
             await db.insert(webhookEvents).values({
                 id: randomUUID(),
                 provider: data.provider,
-                externalId: data.externalId,
+                eventId: data.eventId,
+                eventType: data.eventType,
                 receivedAt: new Date(),
                 payloadHash: data.payloadHash,
                 status: 'received' as const,
@@ -63,7 +65,7 @@ export class WebhookEventRepository {
     /**
      * Mark a webhook event as processed (set processed_at + status='processed').
      */
-    async markProcessed(provider: string, externalId: string): Promise<void> {
+    async markProcessed(provider: string, eventId: string): Promise<void> {
         try {
             const db = await getDb();
             await db
@@ -75,13 +77,13 @@ export class WebhookEventRepository {
                 .where(
                     and(
                         eq(webhookEvents.provider, provider),
-                        eq(webhookEvents.externalId, externalId),
+                        eq(webhookEvents.eventId, eventId),
                     ),
                 );
         } catch (err) {
             logger.error('webhook_event_mark_processed_failed', err as Error, {
                 provider,
-                externalId,
+                eventId,
             });
         }
     }
@@ -89,7 +91,7 @@ export class WebhookEventRepository {
     /**
      * Mark a webhook event as failed (status='failed').
      */
-    async markFailed(provider: string, externalId: string): Promise<void> {
+    async markFailed(provider: string, eventId: string): Promise<void> {
         try {
             const db = await getDb();
             await db
@@ -98,13 +100,13 @@ export class WebhookEventRepository {
                 .where(
                     and(
                         eq(webhookEvents.provider, provider),
-                        eq(webhookEvents.externalId, externalId),
+                        eq(webhookEvents.eventId, eventId),
                     ),
                 );
         } catch (err) {
             logger.error('webhook_event_mark_failed_failed', err as Error, {
                 provider,
-                externalId,
+                eventId,
             });
         }
     }

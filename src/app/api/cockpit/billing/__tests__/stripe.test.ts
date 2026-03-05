@@ -69,6 +69,21 @@ function makeMockDb() {
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
+vi.mock('../../../../../lib/infra/locks', () => ({
+    withDistributedLock: vi.fn((key, ttl, cb) => cb())
+}));
+
+vi.mock('../../../../../infra/repositories/webhook-event.repository', () => ({
+    webhookEventRepository: {
+        tryInsert: vi.fn().mockImplementation(() => {
+            if (_shouldDuplicate) return Promise.resolve(false);
+            return Promise.resolve(true);
+        }),
+        markProcessed: vi.fn(),
+        markFailed: vi.fn(),
+    }
+}));
+
 vi.mock('../../../../../infra/db', () => ({
     getDb: vi.fn().mockImplementation(() => Promise.resolve(makeMockDb())),
 }));
@@ -153,6 +168,7 @@ import { POST as checkoutPOST } from '../checkout/route';
 import { POST as webhookPOST } from '../../../webhook/stripe/route';
 import { isStripeEnabled, getPriceIdForPlan } from '../../../../../core/stripe/stripe-client';
 import { getDb } from '../../../../../infra/db';
+import { webhookEventRepository } from '../../../../../infra/repositories/webhook-event.repository';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -270,6 +286,7 @@ describe('POST /api/webhook/stripe', () => {
         process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
         mockUpgradeTenantPlan.mockResolvedValue({ status: 'upgraded', plan: 'Pro', planId: 'plan_pro', newBudget: 500 });
         mockPublishEvent.mockClear();
+        vi.mocked(webhookEventRepository.tryInsert).mockClear();
         vi.mocked(getDb).mockResolvedValue(makeMockDb() as any);
     });
 
@@ -311,8 +328,11 @@ describe('POST /api/webhook/stripe', () => {
 
         await webhookPOST(makeWebhookReq(CHECKOUT_EVENT));
 
-        const saved = _insertCapture.find((v) => v.id === 'evt_001');
-        expect(saved).toBeDefined();
-        expect(saved.type).toBe('checkout.session.completed');
+        expect(webhookEventRepository.tryInsert).toHaveBeenCalledWith({
+            provider: 'stripe',
+            eventId: 'evt_001',
+            eventType: 'checkout.session.completed',
+            payloadHash: expect.any(String),
+        });
     });
 });

@@ -15,6 +15,11 @@ import { NextRequest } from "next/server";
 
 // ── Mocks — hoisted ──────────────────────────────────────────────────────────
 
+vi.mock("../../../../infra/log/logger", () => ({
+    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+    structuredLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+}));
+
 vi.mock("../../../../server/twilio/verifyWebhook", () => ({
     verifyTwilioRequest: vi.fn(),
 }));
@@ -71,6 +76,11 @@ vi.mock("../../../../infra/repositories/webhook-event.repository", () => ({
 
 vi.mock("../../../../core/events/event-bus", () => ({
     publishEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../../../infra/security/distributed-lock", () => ({
+    acquireLock: vi.fn().mockResolvedValue({ acquired: true, token: "mock-token" }),
+    releaseLock: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../../../../modules/freight/freight.controller", () => ({
@@ -136,6 +146,7 @@ import { messageRepository } from "../../../../infra/repositories/message.reposi
 import { sessionManager } from "../../../../core/conversation/session-manager";
 import { attributionClickRepository } from "../../../../infra/repositories/attribution-click.repository";
 import { endUserConsentRepository } from "../../../../infra/repositories/end-user-consent.repository";
+import * as distributedLock from "../../../../infra/security/distributed-lock";
 
 // ── Import route under test ──────────────────────────────────────────────────
 import { POST } from "../route";
@@ -227,7 +238,8 @@ describe("POST /api/webhook — webhook hardening", () => {
         expect(res.status).toBe(200);
         expect(webhookEventRepository.tryInsert).toHaveBeenCalledWith({
             provider: 'twilio',
-            externalId: 'SM456',
+            eventId: 'SM456',
+            eventType: 'message',
             payloadHash: 'sha256-mock-hash',
         });
         expect(webhookEventRepository.markProcessed).toHaveBeenCalledWith('twilio', 'SM456');
@@ -252,6 +264,18 @@ describe("POST /api/webhook — webhook hardening", () => {
         expect(res.status).toBe(200); // TwiML fallback
         expect(webhookEventRepository.markFailed).toHaveBeenCalledWith('twilio', 'SM456');
         expect(recordFailure).toHaveBeenCalled();
+    });
+
+    it("returns 200 with fallback message if the distributed lock is already held", async () => {
+        setupHappyPath();
+        (distributedLock.acquireLock as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ acquired: false, token: "xxx" });
+
+        const res = await POST(makeRequest());
+
+        expect(res.status).toBe(200);
+        const text = await res.text();
+        expect(text).toContain("<Message>Desculpe, ocorreu um erro");
+        expect(webhookEventRepository.markFailed).toHaveBeenCalledWith('twilio', 'SM456');
     });
 
     // ── 4. Invalid signature → 401 ──────────────────────────────────────────

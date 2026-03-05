@@ -42,84 +42,19 @@ export const runtime = 'nodejs';
 
 import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import type Stripe from 'stripe';
-import { getStripe, getPlanIdFromPriceId, getPriceWhitelist } from '../../../../core/stripe/stripe-client';
-import { getDb } from '../../../../infra/db';
-import { stripeEvents } from '../../../../drizzle/schema';
-import { eq, and } from 'drizzle-orm';
 import { structuredLogger } from '../../../../infra/log/logger';
 import { publishEvent } from '../../../../domine/event-bus';
-
-interface InsertResult {
-    inserted: boolean;
-    errorKind?: 'duplicate' | 'db_error';
-    error?: unknown;
-}
-
-// ── Idempotency guard ──────────────────────────────────────────────────────────
-
-function isDuplicateEntry(err: unknown): boolean {
-    const e = err as { code?: string; message?: string };
-    return e?.code === 'ER_DUP_ENTRY' || Boolean(e?.message?.includes('Duplicate entry'));
-}
-
-async function insertStripeEventOnce(
-    stripeEventId: string,
-    type: string,
-    rawBody: string,
-    stripeCreatedAt?: Date,
-): Promise<InsertResult> {
-    try {
-        const db = await getDb();
-        const payloadHash = createHash('sha256').update(rawBody).digest('hex').slice(0, 64);
-        await db.insert(stripeEvents).values({
-            id: stripeEventId,
-            stripeEventId,
-            receivedAt: new Date(),
-            type,
-            stripeCreatedAt: stripeCreatedAt ?? null,
-            payloadHash,
-        });
-        return { inserted: true };
-    } catch (err) {
-        if (isDuplicateEntry(err)) return { inserted: false, errorKind: 'duplicate' };
-        return { inserted: false, errorKind: 'db_error', error: err };
-    }
-}
-
-
-
-// ── Main handler ────────────────────────────────────────────────────────────────
+import { verifyStripeSignature } from '../../../../lib/security/webhook-verifier';
+import { registerWebhookEvent } from '../../../../lib/security/webhook-dedupe';
+import { withDistributedLock } from '../../../../lib/infra/locks';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-    const sig = request.headers.get('stripe-signature');
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-        structuredLogger.error('stripe_webhook_secret_missing', {
-            eventType: 'stripe_webhook',
-            errorCode: 'CONFIGURATION_ERROR',
-        });
-        return NextResponse.json({ error: 'Webhook not configured.' }, { status: 500 });
-    }
-
-    if (!sig) {
-        return NextResponse.json({ error: 'Missing Stripe-Signature header.' }, { status: 400 });
-    }
-
     const rawBody = await request.text();
 
     // ── Verify signature ──────────────────────────────────────────────────────
-    let event: Stripe.Event;
-    try {
-        const stripe = getStripe();
-        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-    } catch (err) {
-        structuredLogger.warn('stripe_signature_invalid', {
-            error: (err as Error).message,
-            eventType: 'stripe_webhook',
-        });
-        return NextResponse.json({ error: 'Invalid signature.' }, { status: 400 });
+    const { ok, event, error } = await verifyStripeSignature(request, rawBody);
+    if (!ok || !event) {
+        return NextResponse.json({ error: error || 'Invalid signature.' }, { status: 400 });
     }
 
     structuredLogger.info('stripe_webhook_received', {
@@ -129,62 +64,51 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     // ── Idempotency gate ──────────────────────────────────────────────────────
-    const stripeCreatedAt = event.created ? new Date(event.created * 1000) : undefined;
-    const idempotencyResult = await insertStripeEventOnce(
-        event.id,
-        event.type,
-        rawBody,
-        stripeCreatedAt,
-    );
+    const pHash = createHash('sha256').update(rawBody).digest('hex').slice(0, 64);
+    const requestId = request.headers.get('x-request-id') ?? undefined;
+    const dedupeResult = await registerWebhookEvent('stripe', event.id, event.type, pHash, requestId);
 
-    if (idempotencyResult.errorKind === 'db_error') {
-        structuredLogger.error('stripe_event_save_failed', {
-            eventId: event.id,
-            type: event.type,
-            error: idempotencyResult.error,
-            eventType: 'stripe_webhook',
-        });
+    if (dedupeResult === 'error') {
         return NextResponse.json({ error: 'Failed to record event.' }, { status: 500 });
     }
 
-    if (!idempotencyResult.inserted) {
-        structuredLogger.info('stripe_event_duplicate_skipped', {
-            eventId: event.id,
-            type: event.type,
-            eventType: 'stripe_webhook',
-        });
+    if (dedupeResult === 'duplicate_event') {
         return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
     }
 
-    // ── Dispatch to in-memory event bus ────────────────────────────────────
-    publishEvent({
-        id: crypto.randomUUID(),
-        tenantId: null, // Precise tenant mapping is done inside the worker handlers
-        type: 'WEBHOOK_RECEIVED',
-        source: 'stripe_webhook',
-        payload: { stripeEvent: event },
-        createdAt: new Date(),
-        version: 1
-    });
+    // Wrap execution in distributed lock to prevent concurrent races across container replicas
+    return await withDistributedLock(`lock:webhook:stripe:${event.id}`, 60, async () => {
 
-    // ── Persist to domine_events for pull-based processing (fire-and-forget) ──
-    try {
-        const { domineIntakeService } = await import('../../../../domine/domine-intake.service');
-        await domineIntakeService.publish({
-            tenantId: 'LOJACOND',
+        // ── Dispatch to in-memory event bus ────────────────────────────────────
+        publishEvent({
+            id: crypto.randomUUID(),
+            tenantId: null, // Precise tenant mapping is done inside the worker handlers
             type: 'WEBHOOK_RECEIVED',
-            source: 'webhook',
-            payload: {
-                source: 'stripe',
-                providerEventId: event.id,
-                kind: event.type,
-                minimalData: { priceId: null, customerId: null },
-            },
-            idempotencyKey: `stripe:${event.id}`,
+            source: 'stripe_webhook',
+            payload: { stripeEvent: event },
+            createdAt: new Date(),
+            version: 1
         });
-    } catch {
-        // Non-blocking: intake failure must never break webhook response
-    }
 
-    return NextResponse.json({ received: true }, { status: 200 });
+        // ── Persist to domine_events for pull-based processing (fire-and-forget) ──
+        try {
+            const { domineIntakeService } = await import('../../../../domine/domine-intake.service');
+            await domineIntakeService.publish({
+                tenantId: 'LOJACOND',
+                type: 'WEBHOOK_RECEIVED',
+                source: 'webhook',
+                payload: {
+                    source: 'stripe',
+                    providerEventId: event.id,
+                    kind: event.type,
+                    minimalData: { priceId: null, customerId: null },
+                },
+                idempotencyKey: `stripe:${event.id}`,
+            });
+        } catch {
+            // Non-blocking: intake failure must never break webhook response
+        }
+
+        return NextResponse.json({ received: true }, { status: 200 });
+    }, requestId);
 }

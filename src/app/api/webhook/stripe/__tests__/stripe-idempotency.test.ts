@@ -18,48 +18,26 @@ import { NextRequest } from 'next/server';
 
 // ── Mock state ────────────────────────────────────────────────────────────────
 
-// Simula UNIQUE(stripe_event_id) do banco: cada event_id só pode ser inserido 1x
+// Simula UNIQUE do banco: cada event_id só pode ser inserido 1x
 const _insertedEventIds = new Set<string>();
-const _insertCapture: any[] = [];
-
-// ── Mock factory ──────────────────────────────────────────────────────────────
-
-function makeMockInsert() {
-    return (_table: any) => ({
-        values: (vals: any) => {
-            _insertCapture.push({ ...vals });
-
-            const eventId: string = vals.stripeEventId ?? vals.id;
-
-            if (_insertedEventIds.has(eventId)) {
-                // UNIQUE violation — simula ER_DUP_ENTRY do MySQL
-                const err: any = new Error(
-                    `Duplicate entry '${eventId}' for key 'uq_stripe_events_event_id'`
-                );
-                err.code = 'ER_DUP_ENTRY';
-                // Return Thenable that rejects (Drizzle uses `await` on the builder)
-                return {
-                    execute: () => Promise.reject(err),
-                    then: (resolve: any, reject: any) => Promise.reject(err).then(resolve, reject),
-                };
-            }
-
-            // Success: register the event ID in the Set
-            _insertedEventIds.add(eventId);
-            return {
-                execute: () => Promise.resolve(),
-                then: (resolve: any) => Promise.resolve().then(resolve),
-            };
-        },
-    });
-}
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
+
+vi.mock('../../../../../lib/infra/locks', () => ({
+    withDistributedLock: vi.fn((key, ttl, cb) => cb())
+}));
+
+vi.mock('../../../../../infra/repositories/webhook-event.repository', () => ({
+    webhookEventRepository: {
+        tryInsert: vi.fn(),
+        markProcessed: vi.fn(),
+        markFailed: vi.fn(),
+    }
+}));
 
 vi.mock('../../../../../infra/db', () => ({
     getDb: vi.fn().mockImplementation(() =>
         Promise.resolve({
-            insert: makeMockInsert(),
             update: (_t: any) => ({
                 set: (_v: any) => ({
                     where: () => ({ execute: () => Promise.resolve() }),
@@ -106,7 +84,7 @@ vi.mock('../../../../../domine/event-bus', () => ({
 // ── Imports (after mocks) ─────────────────────────────────────────────────────
 
 import { POST } from '../route';
-import { getDb } from '../../../../../infra/db';
+import { webhookEventRepository } from '../../../../../infra/repositories/webhook-event.repository';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -143,32 +121,22 @@ function makeReq(event: object, sig = 'valid-sig'): NextRequest {
 describe('Stripe Webhook — DB Idempotency', () => {
     beforeEach(() => {
         _insertedEventIds.clear();
-        _insertCapture.length = 0;
 
         // Clear call history (not implementations)
         mockConstructEvent.mockClear();
         mockPublishEvent.mockClear();
+        vi.mocked(webhookEventRepository.tryInsert).mockClear();
 
         mockConstructEvent.mockReturnValue(CHECKOUT_EVENT);
         process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
 
-        // Reinstall getDb mock with fresh insert counter
-        vi.mocked(getDb).mockImplementation(() =>
-            Promise.resolve({
-                insert: makeMockInsert(),
-                update: (_t: any) => ({
-                    set: (_v: any) => ({
-                        where: () => ({
-                            then: (res: any) => Promise.resolve().then(res),
-                            execute: () => Promise.resolve(),
-                        }),
-                    }),
-                }),
-                select: () => ({
-                    from: () => ({ where: () => ({ limit: () => Promise.resolve([]), then: (resolve: any) => resolve([]), }) }),
-                }),
-            } as any)
-        );
+        vi.mocked(webhookEventRepository.tryInsert).mockImplementation(async (data: any) => {
+            if (_insertedEventIds.has(data.eventId)) {
+                return false; // Duplicate
+            }
+            _insertedEventIds.add(data.eventId);
+            return true; // Success
+        });
     });
 
     // ── CORE ─────────────────────────────────────────────────────────────────────
@@ -194,17 +162,16 @@ describe('Stripe Webhook — DB Idempotency', () => {
         );
     });
 
-    it('CORE: INSERT de stripe_events tentado 2 vezes, mas apenas 1 aceito (UNIQUE gate)', async () => {
+    it('CORE: INSERT de webhook_events tentado 2 vezes, mas apenas 1 aceito', async () => {
         await POST(makeReq(CHECKOUT_EVENT));
         await POST(makeReq(CHECKOUT_EVENT));
 
-        // Filter to only stripe_events inserts (those with stripeEventId), ignoring domine_events inserts
-        const stripeInserts = _insertCapture.filter((c: any) => c.stripeEventId !== undefined);
-        // Devem ter ocorrido 2 tentativas de insert
-        expect(stripeInserts.length).toBe(2);
-        // Ambas com o mesmo stripe_event_id
-        expect(stripeInserts[0].stripeEventId ?? stripeInserts[0].id).toBe(STRIPE_EVENT_ID);
-        expect(stripeInserts[1].stripeEventId ?? stripeInserts[1].id).toBe(STRIPE_EVENT_ID);
+        expect(webhookEventRepository.tryInsert).toHaveBeenCalledTimes(2);
+
+        // As duas chamadas possuíam o mesmo event.id
+        const calls = vi.mocked(webhookEventRepository.tryInsert).mock.calls;
+        expect(calls[0][0].eventId).toBe(STRIPE_EVENT_ID);
+        expect(calls[1][0].eventId).toBe(STRIPE_EVENT_ID);
     });
 
     // ── GATES ────────────────────────────────────────────────────────────────────
@@ -242,21 +209,22 @@ describe('Stripe Webhook — DB Idempotency', () => {
 
     // ── AUDIT ─────────────────────────────────────────────────────────────────────
 
-    it('AUDIT: insertStripeEventOnce salva payloadHash e stripeCreatedAt', async () => {
+    it('AUDIT: registerWebhookEvent passa payloadHash', async () => {
         await POST(makeReq(CHECKOUT_EVENT));
 
-        const first = _insertCapture[0];
+        const calls = vi.mocked(webhookEventRepository.tryInsert).mock.calls;
+        const first = calls[0][0];
+
         expect(first).toBeDefined();
         expect(typeof first.payloadHash).toBe('string');
         expect(first.payloadHash.length).toBeGreaterThan(0);
-        expect(first.stripeCreatedAt).toBeInstanceOf(Date);
     });
 
-    it('AUDIT: stripe_event_id salvo igual ao event.id do Stripe', async () => {
+    it('AUDIT: eventId salvo igual ao event.id do Stripe', async () => {
         await POST(makeReq(CHECKOUT_EVENT));
 
-        const first = _insertCapture[0];
-        const savedId = first.stripeEventId ?? first.id;
+        const calls = vi.mocked(webhookEventRepository.tryInsert).mock.calls;
+        const savedId = calls[0][0].eventId;
         expect(savedId).toBe(STRIPE_EVENT_ID);
     });
 });

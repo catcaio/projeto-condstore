@@ -23,6 +23,18 @@ vi.mock('../../../../../infra/log/logger', () => ({
     structuredLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock('../../../../../lib/infra/locks', () => ({
+    withDistributedLock: vi.fn((key, ttl, cb) => cb())
+}));
+
+vi.mock('../../../../../infra/repositories/webhook-event.repository', () => ({
+    webhookEventRepository: {
+        tryInsert: vi.fn().mockResolvedValue(true),
+        markProcessed: vi.fn(),
+        markFailed: vi.fn(),
+    }
+}));
+
 import { POST } from '../route';
 
 function makeReq(body: unknown, sig: string | null = 'valid'): NextRequest {

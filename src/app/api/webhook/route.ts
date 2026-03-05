@@ -26,7 +26,9 @@ import { sanitizeMessage, validateWebhookPayload } from "../../../lib/validation
 import { messageRepository } from "../../../infra/repositories/message.repository";
 import { tenantRepository } from "../../../infra/repositories/tenant.repository";
 import { aiDecisionLogRepository } from "../../../infra/repositories/ai-decision-log.repository";
-import { verifyTwilioRequest } from "../../../server/twilio/verifyWebhook";
+import { verifyTwilioSignature } from "../../../lib/security/webhook-verifier";
+import { registerWebhookEvent } from "../../../lib/security/webhook-dedupe";
+import { withDistributedLock } from "../../../lib/infra/locks";
 import { freightController } from "../../../modules/freight/freight.controller";
 import { normalizeAndHash, isValidPhone } from "../../../lib/phone";
 import { intentClassifier } from "../../../core/conversation/intent-classifier";
@@ -177,7 +179,7 @@ export async function POST(request: NextRequest) {
   });
 
   // ── 4. Signature verification — always mandatory, no bypass ────────────────
-  const signatureValid = verifyTwilioRequest(request, rawBody, payload);
+  const signatureValid = verifyTwilioSignature(request, rawBody, payload);
   if (!signatureValid) {
     logger.warn("Webhook rejected: invalid or missing Twilio signature", {
       event: "webhook_invalid_signature",
@@ -241,334 +243,326 @@ export async function POST(request: NextRequest) {
 
     // ── 6b. Persistent webhook_events idempotency ─────────────────────────────
     const pHash = hashPayload(rawBody);
-    const isNew = await webhookEventRepository.tryInsert({
-      provider: 'twilio',
-      externalId: messageSid,
-      payloadHash: pHash,
-    });
-    if (!isNew) {
-      structuredLogger.info('webhook_duplicate_persistent', {
-        requestId,
-        route,
-        eventType: 'webhook_duplicate_persistent',
-        provider: 'twilio',
-        externalId: messageSid,
-        durationMs: Date.now() - startTime,
-      });
+    const dedupeResult = await registerWebhookEvent('twilio', messageSid, 'message', pHash, requestId);
+    if (dedupeResult === 'duplicate_event') {
       return finish(twimlEmpty(requestId), 'DUPLICATE_WEBHOOK_EVENT');
     }
 
-    // ── 7. Resolve tenant EARLY — needed for per-tenant rate limit ───────────
-    const twilioNumberRaw = payload["To"];
-    if (!twilioNumberRaw) {
-      logger.warn("Webhook rejected: missing To field", {
-        event: "webhook_missing_to",
-        ...safeCtx,
-      });
-      return finish(twimlOk("Erro interno: payload inválido.", requestId), ErrorCode.VALIDATION_ERROR);
-    }
+    // Wrap the rest of the execution in a distributed lock to prevent race conditions
+    return await withDistributedLock(`lock:webhook:twilio:${messageSid}`, 60, async () => {
 
-    let tenant: Awaited<ReturnType<typeof tenantRepository.resolveTenantByTwilioNumber>>;
-    try {
-      tenant = await tenantRepository.resolveTenantByTwilioNumber(twilioNumberRaw);
-    } catch (err) {
-      if ((err as any)?.code === "TENANT_NOT_FOUND") {
-        logger.warn("Webhook rejected: tenant not found", {
-          event: "webhook_tenant_not_found",
+      // ── 7. Resolve tenant EARLY — needed for per-tenant rate limit ───────────
+      const twilioNumberRaw = payload["To"];
+      if (!twilioNumberRaw) {
+        logger.warn("Webhook rejected: missing To field", {
+          event: "webhook_missing_to",
           ...safeCtx,
         });
-        return finish(errorResponse(ErrorCode.FORBIDDEN, 403, requestId, "Tenant not found"), ErrorCode.FORBIDDEN);
+        return finish(twimlOk("Erro interno: payload inválido.", requestId), ErrorCode.VALIDATION_ERROR);
       }
-      logger.error("Tenant resolution failed", err as Error, {
-        event: "webhook_tenant_resolution_error",
-        ...safeCtx,
-      });
-      return finish(twimlOk("Serviço indisponível temporariamente.", requestId), ErrorCode.DB_ERROR);
-    }
 
-    if (tenant.incidentMode) {
-      logger.warn("Webhook bypass: tenant is in incident mode", {
-        event: "webhook_tenant_incident_mode",
-        tenantId: tenant.id,
-        ...safeCtx,
-      });
-      return finish(twimlOk("Estamos passando por instabilidade, retornaremos em instantes.", requestId), 'INCIDENT_MODE_ACTIVE');
-    }
-
-    const tenantId = tenant.id.toString();
-    tenantIdForLog = tenantId;
-    // Pre-compute hash from payload["From"] so rate-limit and idempotency logs
-    // use a stable key before the full parse step.  The normalised form used for
-    // DB storage is derived again from the parsed incomingMessage below.
-    const phoneHash = normalizeAndHash(payload["From"] || "").hash;
-
-    // ── 8. Rate limit (tenant + sender) ──────────────────────────────────────
-    const twilioRateKey = `${tenantId}:${(payload["From"] || "").trim().toLowerCase() || "unknown"}`;
-    const twilioRateDecision = await rateLimiter.limit('twilio', twilioRateKey, {
-      windowSec: 60,
-      max: 30,
-    });
-    if (!twilioRateDecision.allowed) {
-      structuredLogger.warn('rate_limited', {
-        requestId,
-        route,
-        tenantId,
-        eventType: 'RATE_LIMITED',
-        scope: 'twilio',
-        keyHash: hashRateLimitKeyForLog(twilioRateKey),
-        remaining: twilioRateDecision.remaining,
-      });
-      return finish(
-        applyRateLimitHeaders(
-          errorResponse(ErrorCode.RATE_LIMITED, 429, requestId, 'Rate limit exceeded'),
-          twilioRateDecision,
-        ),
-        ErrorCode.RATE_LIMITED,
-      );
-    }
-
-    // ── 9. Validate and sanitize payload ─────────────────────────────────────
-    validateWebhookPayload(payload);
-
-    const incomingMessage = twilioProvider.parseIncomingMessage(payload as any);
-    incomingMessage.body = sanitizeMessage(incomingMessage.body);
-
-    // Re-normalise from the parsed message body (may differ slightly from rawFrom).
-    // We use phoneFromNormalized (from the "From" header) as the canonical DB value
-    // because incomingMessage.from could carry the same whitespace/case variations.
-    const fromNormalized = normalizeAndHash(incomingMessage.from).normalized;
-    if (!isValidPhone(fromNormalized)) {
-      logger.warn("Webhook rejected: invalid From number format", {
-        event: "webhook_invalid_from",
-        tenantId,
-        ...safeCtx,
-      });
-      return finish(twimlOk("Número inválido. Tente novamente.", requestId), ErrorCode.VALIDATION_ERROR);
-    }
-
-    // ── 10. DB idempotency guard (authoritative replay protection) ───────────
-    const dedupAcquired = await inboundMessageDedupRepository.tryAcquire(messageSid, tenantId);
-    if (!dedupAcquired) {
-      structuredLogger.info('webhook_duplicate_db_dedup', {
-        requestId,
-        route,
-        tenantId,
-        eventType: 'webhook_duplicate',
-        durationMs: Date.now() - startTime,
-      });
-      return finish(twimlEmpty(requestId), 'DUPLICATE_DB_DEDUP');
-    }
-
-    // ── 11. LGPD Consent Wall & Persist inbound message ───────────
-    const messageText = incomingMessage.body ?? "";
-
-    const userConsent = await endUserConsentRepository.getConsent(tenantId, phoneHash);
-    const hasConsent = userConsent?.consentGiven === true;
-
-    if (!hasConsent) {
-      const messageTextLower = messageText.toLowerCase().trim();
-      const isAccepting = ['sim', 'aceito', 'concordo', 'ok', 'sim, eu aceito', 'yes'].includes(messageTextLower);
-
-      if (isAccepting) {
-        // Record opt-in
-        await endUserConsentRepository.recordOptIn(tenantId, phoneHash, 'whatsapp');
-        structuredLogger.info('lgpd_consent_granted', { tenantId, phoneHash, route, eventType: 'lgpd_consent_granted' });
-        // Continue normal execution, treating this as a generic conversational start
-      } else {
-        // Reject ingestion
-        await endUserConsentRepository.incrementBlockedAttempts(tenantId, phoneHash);
-        structuredLogger.warn('lgpd_ingestion_blocked', { tenantId, phoneHash, reason: 'missing_consent', route, eventType: 'lgpd_ingestion_blocked' });
-        const replyMessage = "Para continuar, confirme que aceita nossa política de privacidade enviando 'Sim' ou 'Aceito'.";
-
-        // Save the inbound message, but strictly scrub the PII/body to prevent leaks into the DB
-        await messageRepository.saveInboundMessage({
-          messageSid: incomingMessage.messageSid,
-          tenantId,
-          fromPhone: fromNormalized,
-          toPhone: payload["To"] || null,
-          body: "[CONTEÚDO BLOQUEADO - AGUARDANDO CONSENTIMENTO LGPD]",
-          direction: "inbound",
-          intent: "UNKNOWN",
-          intentConfidence: null,
-          rawPayload: JSON.stringify({ MessageSid: payload["MessageSid"], blocked: true, reason: 'lgpd' }),
-        });
-
-        recordSuccess();
-        void webhookEventRepository.markProcessed('twilio', messageSid);
-
-        const blockLatencyMs = Date.now() - startTime;
-        logger.info('webhook_request_end', {
-          requestId,
-          status: 200,
-          latencyMs: blockLatencyMs,
-          tenantId,
-          blocked: true
-        });
-        return finish(twimlOk(replyMessage, requestId));
-      }
-    }
-
-    const intentResult = intentClassifier.classify(messageText);
-    const intent = intentResult.intent;
-    const confidence = intentResult.confidence;
-    let inboundAttribution: AttributionSnapshot | null = null;
-
-    const attributionToken = extractAttributionTokenFromText(messageText);
-    if (attributionToken) {
-      const consumed = await attributionClickRepository.consumeByToken(attributionToken, {
-        requestId,
-        tenantId,
-      });
-      if (consumed?.attribution) {
-        inboundAttribution = consumed.attribution;
-
-        const existingSession = await sessionManager.getSession(tenantId, fromNormalized);
-        if (existingSession) {
-          await sessionManager.updateSession(tenantId, fromNormalized, {
-            attribution: consumed.attribution,
+      let tenant: Awaited<ReturnType<typeof tenantRepository.resolveTenantByTwilioNumber>>;
+      try {
+        tenant = await tenantRepository.resolveTenantByTwilioNumber(twilioNumberRaw);
+      } catch (err) {
+        if ((err as any)?.code === "TENANT_NOT_FOUND") {
+          logger.warn("Webhook rejected: tenant not found", {
+            event: "webhook_tenant_not_found",
+            ...safeCtx,
           });
+          return finish(errorResponse(ErrorCode.FORBIDDEN, 403, requestId, "Tenant not found"), ErrorCode.FORBIDDEN);
+        }
+        logger.error("Tenant resolution failed", err as Error, {
+          event: "webhook_tenant_resolution_error",
+          ...safeCtx,
+        });
+        return finish(twimlOk("Serviço indisponível temporariamente.", requestId), ErrorCode.DB_ERROR);
+      }
+
+      if (tenant.incidentMode) {
+        logger.warn("Webhook bypass: tenant is in incident mode", {
+          event: "webhook_tenant_incident_mode",
+          tenantId: tenant.id,
+          ...safeCtx,
+        });
+        return finish(twimlOk("Estamos passando por instabilidade, retornaremos em instantes.", requestId), 'INCIDENT_MODE_ACTIVE');
+      }
+
+      const tenantId = tenant.id.toString();
+      tenantIdForLog = tenantId;
+      // Pre-compute hash from payload["From"] so rate-limit and idempotency logs
+      // use a stable key before the full parse step.  The normalised form used for
+      // DB storage is derived again from the parsed incomingMessage below.
+      const phoneHash = normalizeAndHash(payload["From"] || "").hash;
+
+      // ── 8. Rate limit (tenant + sender) ──────────────────────────────────────
+      const twilioRateKey = `${tenantId}:${(payload["From"] || "").trim().toLowerCase() || "unknown"}`;
+      const twilioRateDecision = await rateLimiter.limit('twilio', twilioRateKey, {
+        windowSec: 60,
+        max: 30,
+      });
+      if (!twilioRateDecision.allowed) {
+        structuredLogger.warn('rate_limited', {
+          requestId,
+          route,
+          tenantId,
+          eventType: 'RATE_LIMITED',
+          scope: 'twilio',
+          keyHash: hashRateLimitKeyForLog(twilioRateKey),
+          remaining: twilioRateDecision.remaining,
+        });
+        return finish(
+          applyRateLimitHeaders(
+            errorResponse(ErrorCode.RATE_LIMITED, 429, requestId, 'Rate limit exceeded'),
+            twilioRateDecision,
+          ),
+          ErrorCode.RATE_LIMITED,
+        );
+      }
+
+      // ── 9. Validate and sanitize payload ─────────────────────────────────────
+      validateWebhookPayload(payload);
+
+      const incomingMessage = twilioProvider.parseIncomingMessage(payload as any);
+      incomingMessage.body = sanitizeMessage(incomingMessage.body);
+
+      // Re-normalise from the parsed message body (may differ slightly from rawFrom).
+      // We use phoneFromNormalized (from the "From" header) as the canonical DB value
+      // because incomingMessage.from could carry the same whitespace/case variations.
+      const fromNormalized = normalizeAndHash(incomingMessage.from).normalized;
+      if (!isValidPhone(fromNormalized)) {
+        logger.warn("Webhook rejected: invalid From number format", {
+          event: "webhook_invalid_from",
+          tenantId,
+          ...safeCtx,
+        });
+        return finish(twimlOk("Número inválido. Tente novamente.", requestId), ErrorCode.VALIDATION_ERROR);
+      }
+
+      // ── 10. DB idempotency guard (authoritative replay protection) ───────────
+      const dedupAcquired = await inboundMessageDedupRepository.tryAcquire(messageSid, tenantId);
+      if (!dedupAcquired) {
+        structuredLogger.info('webhook_duplicate_db_dedup', {
+          requestId,
+          route,
+          tenantId,
+          eventType: 'webhook_duplicate',
+          durationMs: Date.now() - startTime,
+        });
+        return finish(twimlEmpty(requestId), 'DUPLICATE_DB_DEDUP');
+      }
+
+      // ── 11. LGPD Consent Wall & Persist inbound message ───────────
+      const messageText = incomingMessage.body ?? "";
+
+      const userConsent = await endUserConsentRepository.getConsent(tenantId, phoneHash);
+      const hasConsent = userConsent?.consentGiven === true;
+
+      if (!hasConsent) {
+        const messageTextLower = messageText.toLowerCase().trim();
+        const isAccepting = ['sim', 'aceito', 'concordo', 'ok', 'sim, eu aceito', 'yes'].includes(messageTextLower);
+
+        if (isAccepting) {
+          // Record opt-in
+          await endUserConsentRepository.recordOptIn(tenantId, phoneHash, 'whatsapp');
+          structuredLogger.info('lgpd_consent_granted', { tenantId, phoneHash, route, eventType: 'lgpd_consent_granted' });
+          // Continue normal execution, treating this as a generic conversational start
+        } else {
+          // Reject ingestion
+          await endUserConsentRepository.incrementBlockedAttempts(tenantId, phoneHash);
+          structuredLogger.warn('lgpd_ingestion_blocked', { tenantId, phoneHash, reason: 'missing_consent', route, eventType: 'lgpd_ingestion_blocked' });
+          const replyMessage = "Para continuar, confirme que aceita nossa política de privacidade enviando 'Sim' ou 'Aceito'.";
+
+          // Save the inbound message, but strictly scrub the PII/body to prevent leaks into the DB
+          await messageRepository.saveInboundMessage({
+            messageSid: incomingMessage.messageSid,
+            tenantId,
+            fromPhone: fromNormalized,
+            toPhone: payload["To"] || null,
+            body: "[CONTEÚDO BLOQUEADO - AGUARDANDO CONSENTIMENTO LGPD]",
+            direction: "inbound",
+            intent: "UNKNOWN",
+            intentConfidence: null,
+            rawPayload: JSON.stringify({ MessageSid: payload["MessageSid"], blocked: true, reason: 'lgpd' }),
+          });
+
+          recordSuccess();
+          void webhookEventRepository.markProcessed('twilio', messageSid);
+
+          const blockLatencyMs = Date.now() - startTime;
+          logger.info('webhook_request_end', {
+            requestId,
+            status: 200,
+            latencyMs: blockLatencyMs,
+            tenantId,
+            blocked: true
+          });
+          return finish(twimlOk(replyMessage, requestId));
         }
       }
-    }
 
-    const sanitizedPayload = {
-      MessageSid: payload["MessageSid"],
-      AccountSid: payload["AccountSid"],
-      MessagingServiceSid: payload["MessagingServiceSid"],
-      NumMedia: payload["NumMedia"],
-      intent,
-      confidence,
-    };
+      const intentResult = intentClassifier.classify(messageText);
+      const intent = intentResult.intent;
+      const confidence = intentResult.confidence;
+      let inboundAttribution: AttributionSnapshot | null = null;
 
-    const confidenceDecimal = typeof confidence === 'number' ? confidence.toFixed(4) : null;
+      const attributionToken = extractAttributionTokenFromText(messageText);
+      if (attributionToken) {
+        const consumed = await attributionClickRepository.consumeByToken(attributionToken, {
+          requestId,
+          tenantId,
+        });
+        if (consumed?.attribution) {
+          inboundAttribution = consumed.attribution;
 
-    await messageRepository.saveInboundMessage({
-      messageSid: incomingMessage.messageSid,
-      tenantId,
-      fromPhone: fromNormalized,
-      toPhone: payload["To"] || null,
-      body: incomingMessage.body,
-      direction: "inbound",
-      intent,
-      intentConfidence: confidenceDecimal,
-      rawPayload: JSON.stringify(sanitizedPayload),
-    });
+          const existingSession = await sessionManager.getSession(tenantId, fromNormalized);
+          if (existingSession) {
+            await sessionManager.updateSession(tenantId, fromNormalized, {
+              attribution: consumed.attribution,
+            });
+          }
+        }
+      }
 
-    // ── 11b. Update context cache (fire-and-forget, non-blocking) ─────────────
-    // Keeps the Redis snapshot fresh so Frank has conversation history on the
-    // next request without hitting the DB.  Failures are silently swallowed
-    // inside appendMessage — they must never break the webhook flow.
-    void appendMessage(tenantId, phoneHash, {
-      body: messageText,
-      direction: "inbound",
-      intent,
-      intentConfidence: (typeof confidence === 'number' ? confidence : null),
-      createdAt: new Date().toISOString(),
-    });
-
-    // ── 12. Business logic ────────────────────────────────────────────────────
-    logger.debug("Delegating to FreightController (state machine)");
-    const replyMessage = await freightController.handleIncoming(
-      tenantId,
-      fromNormalized,
-      messageText,
-      messageSid,
-      inboundAttribution,
-      requestId,
-    );
-
-    const latencyMs = Date.now() - startTime;
-
-    if (intent !== "UNKNOWN") {
-      void aiDecisionLogRepository.saveDecisionLog({
-        tenantId,
-        messageId: messageSid,
-        providerEventId: messageSid,
-        provider: "intent_classifier",
-        model: "rules-v1",
+      const sanitizedPayload = {
+        MessageSid: payload["MessageSid"],
+        AccountSid: payload["AccountSid"],
+        MessagingServiceSid: payload["MessagingServiceSid"],
+        NumMedia: payload["NumMedia"],
         intent,
         confidence,
+      };
+
+      const confidenceDecimal = typeof confidence === 'number' ? confidence.toFixed(4) : null;
+
+      await messageRepository.saveInboundMessage({
+        messageSid: incomingMessage.messageSid,
+        tenantId,
+        fromPhone: fromNormalized,
+        toPhone: payload["To"] || null,
+        body: incomingMessage.body,
+        direction: "inbound",
+        intent,
+        intentConfidence: confidenceDecimal,
+        rawPayload: JSON.stringify(sanitizedPayload),
+      });
+
+      // ── 11b. Update context cache (fire-and-forget, non-blocking) ─────────────
+      // Keeps the Redis snapshot fresh so Frank has conversation history on the
+      // next request without hitting the DB.  Failures are silently swallowed
+      // inside appendMessage — they must never break the webhook flow.
+      void appendMessage(tenantId, phoneHash, {
+        body: messageText,
+        direction: "inbound",
+        intent,
+        intentConfidence: (typeof confidence === 'number' ? confidence : null),
+        createdAt: new Date().toISOString(),
+      });
+
+      // ── 12. Business logic ────────────────────────────────────────────────────
+      logger.debug("Delegating to FreightController (state machine)");
+      const replyMessage = await freightController.handleIncoming(
+        tenantId,
+        fromNormalized,
+        messageText,
+        messageSid,
+        inboundAttribution,
+        requestId,
+      );
+
+      const latencyMs = Date.now() - startTime;
+
+      if (intent !== "UNKNOWN") {
+        void aiDecisionLogRepository.saveDecisionLog({
+          tenantId,
+          messageId: messageSid,
+          providerEventId: messageSid,
+          provider: "intent_classifier",
+          model: "rules-v1",
+          intent,
+          confidence,
+          responseType: "twiml_ok",
+          latencyMs,
+        });
+      }
+
+      // ── 13. Structured audit log ──────────────────────────────────────────────
+      logger.info("Webhook processed", {
+        event: "webhook_processed",
+        tenantId,
+        phoneHash,
+        providerEventId: messageSid,
+        intent,
+        confidence,
+        state: "handled",
         responseType: "twiml_ok",
         latencyMs,
       });
-    }
 
-    // ── 13. Structured audit log ──────────────────────────────────────────────
-    logger.info("Webhook processed", {
-      event: "webhook_processed",
-      tenantId,
-      phoneHash,
-      providerEventId: messageSid,
-      intent,
-      confidence,
-      state: "handled",
-      responseType: "twiml_ok",
-      latencyMs,
-    });
+      // Circuit breaker: mark success
+      recordSuccess();
 
-    // Circuit breaker: mark success
-    recordSuccess();
+      // ── 12b. Publish to event bus (fire-and-forget, fallback below) ──────────
+      try {
+        await publishEvent({
+          stream: WEBHOOK_STREAM,
+          type: 'WEBHOOK_INBOUND',
+          tenantId,
+          data: {
+            messageSid,
+            phoneHash,
+            intent,
+            confidence,
+          },
+          requestId,
+        });
+      } catch (publishErr) {
+        // Event bus publish failed — this is non-blocking. The webhook
+        // already processed the message synchronously above.
+        structuredLogger.warn('webhook_event_bus_publish_failed', {
+          requestId,
+          route,
+          eventType: 'webhook_event_bus_publish_failed',
+          error: publishErr,
+        });
+      }
 
-    // ── 12b. Publish to event bus (fire-and-forget, fallback below) ──────────
-    try {
-      await publishEvent({
-        stream: WEBHOOK_STREAM,
-        type: 'WEBHOOK_INBOUND',
+      // ── 12d. Persist to domine_events for async audit trail (fire-and-forget) ──
+      try {
+        const { domineIntakeService } = await import('../../../domine/domine-intake.service');
+        await domineIntakeService.publish({
+          tenantId: 'LOJACOND',
+          type: 'WEBHOOK_RECEIVED',
+          source: 'webhook',
+          payload: {
+            source: 'twilio',
+            providerEventId: messageSid,
+            kind: intent,
+            minimalData: { phoneHash, confidence },
+          },
+          idempotencyKey: `twilio:${messageSid}`,
+        });
+      } catch {
+        // Non-blocking: intake failure must never break webhook response
+      }
+
+      // ── 12c. Mark webhook event as processed ─────────────────────────────
+      void webhookEventRepository.markProcessed('twilio', messageSid);
+
+      const successLatencyMs = Date.now() - startTime;
+      logger.info('webhook_request_end', {
+        requestId,
+        status: 200,
+        latencyMs: successLatencyMs,
         tenantId,
-        data: {
-          messageSid,
-          phoneHash,
-          intent,
-          confidence,
-        },
-        requestId,
       });
-    } catch (publishErr) {
-      // Event bus publish failed — this is non-blocking. The webhook
-      // already processed the message synchronously above.
-      structuredLogger.warn('webhook_event_bus_publish_failed', {
-        requestId,
-        route,
-        eventType: 'webhook_event_bus_publish_failed',
-        error: publishErr,
-      });
-    }
 
-    // ── 12d. Persist to domine_events for async audit trail (fire-and-forget) ──
-    try {
-      const { domineIntakeService } = await import('../../../domine/domine-intake.service');
-      await domineIntakeService.publish({
-        tenantId: 'LOJACOND',
-        type: 'WEBHOOK_RECEIVED',
-        source: 'webhook',
-        payload: {
-          source: 'twilio',
-          providerEventId: messageSid,
-          kind: intent,
-          minimalData: { phoneHash, confidence },
-        },
-        idempotencyKey: `twilio:${messageSid}`,
-      });
-    } catch {
-      // Non-blocking: intake failure must never break webhook response
-    }
+      if (!replyMessage) {
+        return finish(twimlEmpty(requestId));
+      }
 
-    // ── 12c. Mark webhook event as processed ─────────────────────────────
-    void webhookEventRepository.markProcessed('twilio', messageSid);
-
-    const successLatencyMs = Date.now() - startTime;
-    logger.info('webhook_request_end', {
-      requestId,
-      status: 200,
-      latencyMs: successLatencyMs,
-      tenantId,
-    });
-
-    if (!replyMessage) {
-      return finish(twimlEmpty(requestId));
-    }
-
-    return finish(twimlOk(replyMessage, requestId));
+      return finish(twimlOk(replyMessage, requestId));
+    }, requestId); // End of distributed lock
   } catch (err) {
     const errorLatencyMs = Date.now() - startTime;
 
@@ -602,6 +596,7 @@ export async function POST(request: NextRequest) {
       errorCode: ErrorCode.UNKNOWN,
       error: err,
     });
+    console.error("WEBHOOK_ERROR:", err);
 
     return finish(twimlOk("Desculpe, ocorreu um erro. Tente novamente mais tarde.", requestId), ErrorCode.UNKNOWN);
   }

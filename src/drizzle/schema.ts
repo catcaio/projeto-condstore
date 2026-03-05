@@ -661,13 +661,14 @@ export type NewAiEvalRunRecord = typeof aiEvalRuns.$inferInsert;
 export const webhookEvents = mysqlTable('webhook_events', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     provider: varchar('provider', { length: 32 }).notNull(), // e.g. "twilio"
-    externalId: varchar('external_id', { length: 128 }).notNull(), // messageSid/eventId
+    eventId: varchar('event_id', { length: 128 }).notNull(), // messageSid/eventId
+    eventType: varchar('event_type', { length: 128 }).notNull(),
     receivedAt: timestamp('received_at').notNull(),
     payloadHash: varchar('payload_hash', { length: 128 }).notNull(),
     processedAt: timestamp('processed_at'),
     status: varchar('status', { length: 32 }).notNull(), // 'received' | 'processed' | 'failed'
 }, (table) => ({
-    providerExternalIdx: uniqueIndex('idx_webhook_events_provider_external').on(table.provider, table.externalId),
+    providerEventIdx: uniqueIndex('idx_webhook_events_provider_event').on(table.provider, table.eventId),
 }));
 
 export type WebhookEventRecord = typeof webhookEvents.$inferSelect;
