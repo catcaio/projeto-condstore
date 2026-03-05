@@ -45,14 +45,14 @@ export function CockpitShowcase() {
     return (
         <div className="w-full max-w-5xl mx-auto mt-16 flex flex-col items-center">
             {/* Role Selectors */}
-            <div className="flex flex-wrap justify-center gap-4 mb-12">
+            <div className="flex flex-wrap justify-center gap-3 mb-8 md:mb-12 px-4">
                 {(Object.keys(roleProfiles) as Array<keyof typeof roleProfiles>).map((role) => (
                     <button
                         key={role}
                         onClick={() => setActiveRole(role)}
-                        className={`px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 border-2 ${activeRole === role
-                                ? 'bg-[#0A2540] text-white border-[#0A2540] shadow-xl scale-105'
-                                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
+                        className={`px-4 md:px-6 py-2 md:py-3 rounded-full text-xs md:text-sm font-bold transition-all duration-300 border-2 ${activeRole === role
+                            ? 'bg-[#0A2540] text-white border-[#0A2540] shadow-xl scale-105'
+                            : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700'
                             }`}
                     >
                         {roleProfiles[role].label}
@@ -79,10 +79,10 @@ export function CockpitShowcase() {
                 </div>
 
                 {/* App Grid inside the window */}
-                <div className="p-10">
+                <div className="p-6 md:p-10">
                     <motion.div
                         layout
-                        className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-8 justify-items-center"
+                        className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 md:gap-8 justify-items-center"
                     >
                         <AnimatePresence mode="popLayout">
                             {currentApps.map((app) => (
@@ -95,10 +95,10 @@ export function CockpitShowcase() {
                                     key={app.id}
                                     className="flex flex-col items-center gap-3 w-24 group"
                                 >
-                                    <div className={`w-16 h-16 rounded-2xl ${app.color} flex items-center justify-center text-white shadow-lg cursor-pointer transform transition-transform group-hover:-translate-y-2 group-hover:shadow-xl`}>
-                                        <app.icon className="w-8 h-8" />
+                                    <div className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl ${app.color} flex items-center justify-center text-white shadow-lg cursor-pointer transform transition-transform group-hover:-translate-y-2 group-hover:shadow-xl`}>
+                                        <app.icon className="w-6 h-6 md:w-8 md:h-8" />
                                     </div>
-                                    <span className="text-xs font-semibold text-center text-gray-600 leading-tight">
+                                    <span className="text-[10px] md:text-xs font-semibold text-center text-gray-600 leading-tight">
                                         {app.name}
                                     </span>
                                 </motion.div>
