@@ -2,20 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { proxy } from "../proxy";
 import * as jose from "jose";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { safeCompare } from "../lib/security/safe-compare";
 
 vi.mock("jose", () => ({
     jwtVerify: vi.fn()
 }));
 
-describe("Proxy Edge Middleware", () => {
+vi.mock("../lib/security/safe-compare", () => ({
+    safeCompare: vi.fn((a, b) => a === b && a !== undefined && a !== null)
+}));
+
+describe("Global Edge Proxy Enforcement", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.unstubAllEnvs();
         (process.env as any).NODE_ENV = "test";
         process.env.AUTH_SECRET = "supersecret";
     });
 
     function makeRequest(url: string, headers: Record<string, string>, cookies: Record<string, string> = {}) {
-        const req = new NextRequest(`http://localhost${url}`);
+        const req = new NextRequest(`https://app.condstore.com${url}`);
         for (const [key, val] of Object.entries(headers)) {
             req.headers.set(key, val);
         }
@@ -25,75 +31,124 @@ describe("Proxy Edge Middleware", () => {
         return req;
     }
 
-    it("should strip x-tenant-id unconditionally on unprotected routes to prevent IDOR", async () => {
-        // Unprotected route (/api/events) doesn't enforce session auth
-        // But the middleware must still strip spoofed tenant IDs
-        const req = makeRequest("/api/events", {
-            "x-tenant-id": "hacker-tenant",
-            "x-role": "admin",
-            "x-auth-user-id": "hacked"
+    describe("General Header Stripping", () => {
+        it("should strip spoofable headers before passing to next", async () => {
+            const req = makeRequest("/api/internal/test", {
+                "x-tenant-id": "spoofed",
+                "x-auth-tenant-id": "spoofed",
+                "x-auth-role": "admin",
+                "x-auth-user-id": "hacked",
+                "x-auth-email": "hacker@test.com",
+                "x-internal-token": "valid"
+            });
+            process.env.INTERNAL_TOKEN = "valid";
+
+            const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
+                const h = args?.request?.headers as Headers;
+                expect(h.get("x-tenant-id")).toBeNull();
+                expect(h.get("x-auth-tenant-id")).toBeNull();
+                expect(h.get("x-auth-role")).toBeNull();
+                expect(h.get("x-auth-user-id")).toBeNull();
+                expect(h.get("x-auth-email")).toBeNull();
+                return new NextResponse();
+            });
+
+            const res = await proxy(req);
+            expect(nextSpy).toHaveBeenCalled();
+            nextSpy.mockRestore();
         });
-
-        const res = await proxy(req);
-
-        // Proxy passes execution to next middleware/app router
-        expect(res).toBeInstanceOf(NextResponse);
-
-        // The outbound modified headers must NOT contain the malicious ones
-        const outHeaders = res.headers; // NextResponse doesn't expose modified input headers easily, wait Next.js NextRequest overrides headers
-
-        // Actually, NextResponse.next({ request: { headers } }) applies headers internally.
-        // We can inspect the internal property or mock `Headers` to track calls, 
-        // but NextRequest headers are mutable via the returned request options.
-        // In unit bounds, we must inspect the req headers clone passed to NextResponse.next.
-        // Sadly NextResponse doesn't export it clearly. But since proxy mutates the `headers` variable and uses it:
-        expect(req.headers.get("x-tenant-id")).toBe("hacker-tenant"); // Original unmodified
-
-        // We'll mock NextResponse.next to spy on the headers passed
-        const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
-            const h = args?.request?.headers;
-            expect(h.get("x-tenant-id")).toBeNull();
-            expect(h.get("x-role")).toBeNull();
-            expect(h.get("x-auth-user-id")).toBeNull();
-            return new NextResponse();
-        });
-
-        await proxy(req);
-        expect(nextSpy).toHaveBeenCalled();
-        nextSpy.mockRestore();
     });
 
-    it("should reinject valid session context into trusted x-auth-* headers on protected routes", async () => {
-        const req = makeRequest("/api/cockpit/dashboard",
-            {
-                "x-tenant-id": "malicious"
-            },
-            {
-                "condstore_session": "valid_token"
-            }
-        );
-
-        (jose.jwtVerify as any).mockResolvedValue({
-            payload: {
-                sub: "usr_123",
-                tenantId: "tnt_456",
-                role: "admin"
-            }
+    describe("RULE 1: /api/internal/*", () => {
+        it("should block if no internal token is provided", async () => {
+            const req = makeRequest("/api/internal/jobs", {});
+            const res = await proxy(req);
+            expect(res.status).toBe(401);
+            expect(await res.json()).toEqual({ error: "Unauthorized internal access" });
         });
 
-        const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
-            const h = args?.request?.headers;
-            expect(h.get("x-tenant-id")).toBeNull();
-            expect(h.get("x-auth-tenant-id")).toBe("tnt_456");
-            expect(h.get("x-auth-user-id")).toBe("usr_123");
-            expect(h.get("x-auth-role")).toBe("admin");
-            return new NextResponse();
+        it("should parse token from x-internal-token and allow if valid", async () => {
+            process.env.INTERNAL_JOB_TOKEN = "job-token-123";
+            const req = makeRequest("/api/internal/jobs", { "x-internal-token": "job-token-123" });
+
+            const res = await proxy(req);
+            expect(res.headers.get('content-type')).not.toBe('application/json');
         });
 
-        await proxy(req);
+        it("should parse token from query string and allow if valid", async () => {
+            process.env.INTERNAL_TOKEN = "query-token";
+            const req = makeRequest("/api/internal/tasks?token=query-token", {});
+            const res = await proxy(req);
+            expect((res as any).status).toBe(200);
+        });
 
-        expect(jose.jwtVerify).toHaveBeenCalled();
-        expect(nextSpy).toHaveBeenCalled();
-        nextSpy.mockRestore();
+        it("should allow QA bootstrap bypass in actions environment", async () => {
+            process.env.QA_BOOTSTRAP_TOKEN = "qa-only";
+            process.env.GITHUB_ACTIONS = "true";
+            const req = makeRequest("/api/internal/qa/bootstrap-session", {
+                "x-qa-token": "qa-only",
+                "x-github-actions": "true"
+            });
+            const res = await proxy(req);
+            expect((res as any).status).toBe(200);
+        });
+    });
+
+    describe("RULE 2 & 3: Session Check & Tenant Authorization", () => {
+        it("should block /api/cockpit/* if session is missing", async () => {
+            const req = makeRequest("/api/cockpit/dashboard", {});
+            const res = await proxy(req);
+            expect(res.status).toBe(401);
+            expect(await res.json()).toEqual({ error: "Missing authentication token" });
+        });
+
+        it("should block /api/cockpit/* if session JWT is invalid", async () => {
+            (jose.jwtVerify as any).mockRejectedValue(new Error("Invalid token"));
+            const req = makeRequest("/api/cockpit/dashboard", {}, { condstore_session: "bad-token" });
+            const res = await proxy(req);
+            expect(res.status).toBe(401);
+        });
+
+        it("should inject x-auth headers into downstream request if session valid", async () => {
+            (jose.jwtVerify as any).mockResolvedValue({
+                payload: { sub: "usr_1", tenantId: "tnt_2", role: "admin" }
+            });
+            const req = makeRequest("/api/cockpit/dashboard", {}, { condstore_session: "good-token" });
+
+            const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
+                const h = args?.request?.headers as Headers;
+                expect(h.get("x-auth-user-id")).toBe("usr_1");
+                expect(h.get("x-auth-tenant-id")).toBe("tnt_2");
+                expect(h.get("x-auth-role")).toBe("admin");
+                return new NextResponse();
+            });
+
+            await proxy(req);
+            expect(nextSpy).toHaveBeenCalled();
+            nextSpy.mockRestore();
+        });
+
+        it("should block /api/tenants/* if JWT tenant does not match route tenant", async () => {
+            (jose.jwtVerify as any).mockResolvedValue({
+                payload: { sub: "usr_1", tenantId: "tnt_2", role: "admin" }
+            });
+            const req = makeRequest("/api/tenants/tnt_999/settings", {}, { condstore_session: "good-token" });
+            const res = await proxy(req);
+
+            expect(res.status).toBe(403);
+            expect(await res.json()).toEqual({ error: "Tenant mismatch: Forbidden cross-tenant access" });
+        });
+
+        it("should allow /api/tenants/* if JWT tenant matches route tenant", async () => {
+            (jose.jwtVerify as any).mockResolvedValue({
+                payload: { sub: "usr_1", tenantId: "tnt_2", role: "admin" }
+            });
+            const req = makeRequest("/api/tenants/tnt_2/settings", {}, { condstore_session: "good-token" });
+
+            const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation(() => new NextResponse());
+            await proxy(req);
+            expect(nextSpy).toHaveBeenCalled();
+            nextSpy.mockRestore();
+        });
     });
 });
