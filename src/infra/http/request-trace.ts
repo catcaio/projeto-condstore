@@ -21,7 +21,7 @@ const TRACE_REQUEST_ID = Symbol.for('condstore.requestId');
 export function makeRequestId(request?: NextRequest): string {
   if (request) {
     const fromHeader = request.headers.get('x-request-id')?.trim() ||
-                       request.headers.get('x-vercel-id')?.trim();
+      request.headers.get('x-vercel-id')?.trim();
     if (fromHeader) return fromHeader;
   }
   return crypto.randomUUID();
@@ -34,7 +34,7 @@ export function getTracedRequestId(request: NextRequest): string | undefined {
   const fromProp = anyReq.__requestId;
   if (typeof fromProp === 'string' && fromProp.trim()) return fromProp.trim();
   const fromHeader = request.headers.get('x-request-id')?.trim() ||
-                     request.headers.get('x-vercel-id')?.trim();
+    request.headers.get('x-vercel-id')?.trim();
   return fromHeader || undefined;
 }
 
@@ -89,10 +89,10 @@ async function buildRequestContext(request: NextRequest, requestId: string): Pro
  * - api_request_start: at beginning with requestId, method, path, tenantId
  * - api_request_end: at completion with status, latencyMs, tenantId
  */
-export function withRequestTrace(
-  handler: (request: NextRequest) => Promise<NextResponse>,
+export function withRequestTrace<UserArgs extends any[]>(
+  handler: (request: NextRequest, ...args: UserArgs) => Promise<NextResponse>,
 ) {
-  return async (request: NextRequest): Promise<NextResponse> => {
+  return async (request: NextRequest, ...args: UserArgs): Promise<NextResponse> => {
     const requestId = makeRequestId(request);
     let requestContext: RequestContext | undefined;
     // Expose requestId to handlers that need to persist/return it.
@@ -114,7 +114,7 @@ export function withRequestTrace(
       });
 
       // Execute handler
-      const response = await handler(request);
+      const response = await handler(request, ...args);
 
       // Add X-Request-Id header to response
       const latencyMs = Date.now() - startTime;

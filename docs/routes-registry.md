@@ -89,6 +89,7 @@
 | /api/painel-logistico | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/public/cotacao/intent | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/public/cotacao/quotes | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/public/delivery/[token]/location | POST | public | controlled | PUBLIC | live | Delivery GPS Webhook |
 | /api/public/events | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/reports/ingest | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/reports/seed | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -97,6 +98,8 @@
 | /api/tenants/[tenantId]/ai-provider | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/ai-provider/rotate-key | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/audit | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/tenants/[tenantId]/deliveries | GET | internal | required | admin | live | Active deliveries tracking |
+| /api/tenants/[tenantId]/deliveries/[id] | GET | internal | required | admin | live | Single delivery details |
 | /api/tenants/[tenantId]/domine/actions | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/domine/connectors/orders/event | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/domine/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -131,6 +134,7 @@
 | /cockpit/acquisition/drilldown | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/analytics | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/audit | TBA | public | none | PUBLIC | live | Auto-detected |
+| /cockpit/deliveries | GET | internal | required | cockpit | live | Monitoramento de Entregas |
 | /cockpit/domine | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/domine/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/domine/health | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -139,6 +143,8 @@
 | /cockpit/knowledge/ask | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/knowledge/collections | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId] | TBA | public | none | PUBLIC | live | Auto-detected |
+| /cockpit/marciano/[...slug] | GET | internal | required | cockpit | live | Placeholder visual para rotas Marciano |
+| /cockpit/overview | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/privacy | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/rate-limit | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/settings/knowledge | TBA | public | none | PUBLIC | live | Auto-detected |

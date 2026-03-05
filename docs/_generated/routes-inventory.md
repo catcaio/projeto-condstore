@@ -90,6 +90,7 @@
 | `/api/painel-logistico` | API |
 | `/api/public/cotacao/intent` | API |
 | `/api/public/cotacao/quotes` | API |
+| `/api/public/delivery/[token]/location` | API |
 | `/api/public/events` | API |
 | `/api/reports/ingest` | API |
 | `/api/reports/seed` | API |
@@ -98,6 +99,8 @@
 | `/api/tenants/[tenantId]/ai-provider` | API |
 | `/api/tenants/[tenantId]/ai-provider/rotate-key` | API |
 | `/api/tenants/[tenantId]/audit` | API |
+| `/api/tenants/[tenantId]/deliveries` | API |
+| `/api/tenants/[tenantId]/deliveries/[id]` | API |
 | `/api/tenants/[tenantId]/domine/actions` | API |
 | `/api/tenants/[tenantId]/domine/connectors/orders/event` | API |
 | `/api/tenants/[tenantId]/domine/dlq` | API |
@@ -131,6 +134,7 @@
 | `/cockpit/acquisition/drilldown` | Page |
 | `/cockpit/analytics` | Page |
 | `/cockpit/audit` | Page |
+| `/cockpit/deliveries` | Page |
 | `/cockpit/domine` | Page |
 | `/cockpit/domine/dlq` | Page |
 | `/cockpit/domine/health` | Page |
@@ -139,6 +143,8 @@
 | `/cockpit/knowledge/ask` | Page |
 | `/cockpit/knowledge/collections` | Page |
 | `/cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId]` | Page |
+| `/cockpit/marciano/[...slug]` | Page |
+| `/cockpit/overview` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |
 | `/cockpit/settings/knowledge` | Page |
