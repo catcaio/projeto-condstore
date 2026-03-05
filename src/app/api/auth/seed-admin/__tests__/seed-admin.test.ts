@@ -15,6 +15,15 @@ vi.mock('@/infra/logger', () => ({
     }
 }));
 
+vi.mock('@/infra/log/logger', () => ({
+    structuredLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock('@/lib/security/require-audit-log', () => ({
+    writeAuditLog: vi.fn().mockResolvedValue(undefined),
+    hashPayload: vi.fn().mockReturnValue('mock-hash'),
+}));
+
 function createMockRequest(url: string, headers: Record<string, string> = {}) {
     return new NextRequest(new URL(url), {
         method: 'GET',

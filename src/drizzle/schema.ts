@@ -466,9 +466,13 @@ export type NewMetricsRollupStatusRecord = typeof metricsRollupStatus.$inferInse
 
 export const adminAuditLog = mysqlTable('admin_audit_log', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
-    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    userId: varchar('user_id', { length: 36 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }),
+    userId: varchar('user_id', { length: 36 }),
+    actorType: varchar('actor_type', { length: 20 }).notNull().default('user'),
     action: varchar('action', { length: 64 }).notNull(),
+    scope: varchar('scope', { length: 64 }),
+    requestId: varchar('request_id', { length: 64 }),
+    payloadHash: varchar('payload_hash', { length: 64 }),
     metadata: json('metadata'),
     createdAt: datetime('created_at', { mode: 'date' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => {

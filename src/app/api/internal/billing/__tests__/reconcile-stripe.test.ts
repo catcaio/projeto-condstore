@@ -84,6 +84,11 @@ vi.mock('../../../../../lib/security/replay-protection', () => ({
     validateReplayProtection: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
+vi.mock('../../../../../lib/security/require-audit-log', () => ({
+    writeAuditLog: vi.fn().mockResolvedValue(undefined),
+    hashPayload: vi.fn().mockReturnValue('mock-hash'),
+}));
+
 vi.mock('../../../../../infra/redis.client', () => ({
     redisClient: { setNx: vi.fn().mockResolvedValue(true) },
 }));
