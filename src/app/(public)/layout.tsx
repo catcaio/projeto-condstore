@@ -50,6 +50,10 @@ export default function PublicLayout({
                                             <span className="text-indigo-600 font-bold">Condstore DOMINE</span>
                                             <span className="text-xs text-gray-500 font-normal mt-0.5">Eventos e Agentes IA</span>
                                         </Link>
+                                        <Link href="/plataforma/cockpit" className="px-5 py-3 hover:bg-gray-50 flex flex-col border-t border-gray-50">
+                                            <span className="text-purple-600 font-bold">Cockpit OS</span>
+                                            <span className="text-xs text-gray-500 font-normal mt-0.5">App Launcher B2B</span>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>
@@ -69,6 +73,7 @@ export default function PublicLayout({
                                 </div>
                             </div>
 
+                            <Link href="/integracoes" className="hover:text-[hsl(var(--ui-text))] transition-colors">Integrações (Hub)</Link>
                             <Link href="/sobre" className="hover:text-[hsl(var(--ui-text))] transition-colors">Sobre</Link>
                             <Link href="/tecnologias" className="hover:text-[hsl(var(--ui-text))] transition-colors">Tecnologia</Link>
                         </nav>
@@ -83,6 +88,15 @@ export default function PublicLayout({
                             trackElement="login"
                         >
                             Entrar
+                        </TrackedLink>
+                        <TrackedLink
+                            href="/cotacao"
+                            className="hidden lg:inline-flex h-9 items-center justify-center rounded-[var(--radius-button)] border border-[hsl(var(--ui-border))] bg-transparent px-4 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-border)/0.5)]"
+                            trackPage="shared"
+                            trackSection="navbar"
+                            trackElement="navbar_quote"
+                        >
+                            Cotação Rápida
                         </TrackedLink>
                         <TrackedLink
                             href={isDev ? '/cockpit/audit?status=success' : '/signup'}

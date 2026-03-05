@@ -63,13 +63,64 @@ export default function PublicHomePage() {
                     </div>
                 </div>
 
-                <div className="mt-8 relative w-full max-w-5xl aspect-[21/9] rounded-2xl overflow-hidden border border-[hsl(var(--ui-border)/0.5)] shadow-2xl bg-[hsl(var(--ui-surface))] flex items-center justify-center">
+                <div className="mt-8 relative w-full max-w-5xl aspect-[21/9] rounded-2xl overflow-hidden border border-[hsl(var(--ui-border)/0.5)] shadow-2xl bg-[hsl(var(--ui-surface))] flex items-center justify-center mb-12">
                     <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--ui-surface))] via-transparent to-transparent z-10 pointer-events-none" />
                     <img
                         src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop"
                         alt="Condstore OS Core Engine Visualization"
                         className="w-full h-full object-cover opacity-80 mix-blend-luminosity hover:mix-blend-normal transition-all duration-700"
                     />
+                </div>
+
+                {/* QUICK ACCESS ECOSYSTEM */}
+                <div className="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 mb-16 relative z-20">
+                    <TrackedLink
+                        href="/cotacao"
+                        trackPage="landing"
+                        trackSection="quick_access"
+                        trackElement="quick_quote"
+                        className="group flex items-center gap-4 p-5 rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] hover:bg-[hsl(var(--ui-muted)/0.5)] hover:border-[hsl(var(--ui-accent-blue)/0.4)] transition-all shadow-sm hover:shadow-md"
+                    >
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue))] group-hover:scale-110 transition-transform">
+                            <Truck className="h-6 w-6" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="text-sm font-bold text-[hsl(var(--ui-text))]">Cotação Rápida</h3>
+                            <p className="text-xs text-[hsl(var(--ui-text-muted))] mt-0.5">Faça sua simulação de frete instantânea.</p>
+                        </div>
+                    </TrackedLink>
+
+                    <TrackedLink
+                        href="/integracoes"
+                        trackPage="landing"
+                        trackSection="quick_access"
+                        trackElement="quick_integrations"
+                        className="group flex items-center gap-4 p-5 rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] hover:bg-[hsl(var(--ui-muted)/0.5)] hover:border-[hsl(var(--ui-brand)/0.4)] transition-all shadow-sm hover:shadow-md"
+                    >
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--ui-brand)/0.1)] text-[hsl(var(--ui-brand))] group-hover:scale-110 transition-transform">
+                            <PackageOpen className="h-6 w-6" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="text-sm font-bold text-[hsl(var(--ui-text))]">Integrações (Hub)</h3>
+                            <p className="text-xs text-[hsl(var(--ui-text-muted))] mt-0.5">APIs Diretas (Correios, Jadlog, Itaú e mais).</p>
+                        </div>
+                    </TrackedLink>
+
+                    <TrackedLink
+                        href="/plataforma/cockpit"
+                        trackPage="landing"
+                        trackSection="quick_access"
+                        trackElement="quick_cockpit"
+                        className="group flex items-center gap-4 p-5 rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] hover:bg-[hsl(var(--ui-muted)/0.5)] hover:border-[hsl(var(--ui-accent-purple)/0.4)] transition-all shadow-sm hover:shadow-md"
+                    >
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--ui-accent-purple)/0.1)] text-[hsl(var(--ui-accent-purple))] group-hover:scale-110 transition-transform">
+                            <LayoutDashboard className="h-6 w-6" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="text-sm font-bold text-[hsl(var(--ui-text))]">O seu Cockpit</h3>
+                            <p className="text-xs text-[hsl(var(--ui-text-muted))] mt-0.5">Explore sua Área de Trabalho Logística B2B.</p>
+                        </div>
+                    </TrackedLink>
                 </div>
 
                 <HowItWorksSection />
