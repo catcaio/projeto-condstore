@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser, type SessionPayload } from './session';
+import { safeCompare } from '../../lib/security/safe-compare';
 
 export function extractTenantIdFromTenantRoute(request: NextRequest): string {
   const segments = request.nextUrl.pathname.split('/').filter(Boolean);
@@ -82,13 +83,13 @@ export function requireInternalToken(
 
   // QA Bootstrap
   if (purposes.includes('qa_bootstrap') || purposes.includes('any')) {
-    if (process.env.QA_BOOTSTRAP_TOKEN && qaToken === process.env.QA_BOOTSTRAP_TOKEN) return { ok: true };
+    if (safeCompare(qaToken, process.env.QA_BOOTSTRAP_TOKEN)) return { ok: true };
   }
 
   // Jobs / Cron
   if (purposes.includes('jobs') || purposes.includes('any')) {
-    if (process.env.INTERNAL_JOB_TOKEN && token === process.env.INTERNAL_JOB_TOKEN) return { ok: true };
-    if (process.env.INTERNAL_TOKEN && token === process.env.INTERNAL_TOKEN) return { ok: true }; // legacy fallback
+    if (safeCompare(token, process.env.INTERNAL_JOB_TOKEN)) return { ok: true };
+    if (safeCompare(token, process.env.INTERNAL_TOKEN)) return { ok: true }; // legacy fallback
   }
 
   // Diag & Export
@@ -96,13 +97,13 @@ export function requireInternalToken(
     // try/catch so we don't break routes that don't need export token if it's missing in prod
     try {
       const diagOrExportToken = getInternalExportTokenOrThrow();
-      if (diagOrExportToken && token === diagOrExportToken) return { ok: true };
+      if (safeCompare(token, diagOrExportToken)) return { ok: true };
     } catch {
       // Proceed to fallback error below if token is not configured and we are in prod
     }
     // Also check explicit env vars just in case
-    if (process.env.INTERNAL_DIAG_TOKEN && token === process.env.INTERNAL_DIAG_TOKEN) return { ok: true };
-    if (process.env.INTERNAL_EXPORT_TOKEN && token === process.env.INTERNAL_EXPORT_TOKEN) return { ok: true };
+    if (safeCompare(token, process.env.INTERNAL_DIAG_TOKEN)) return { ok: true };
+    if (safeCompare(token, process.env.INTERNAL_EXPORT_TOKEN)) return { ok: true };
   }
 
   return { ok: false, response: NextResponse.json({ error: 'UNAUTHORIZED', message: 'Internal token missing or invalid' }, { status: 401 }) };

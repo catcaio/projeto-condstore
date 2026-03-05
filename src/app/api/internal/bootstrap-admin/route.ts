@@ -4,6 +4,7 @@ import { getDb } from '@/infra/db';
 import { users, tenantSignupPolicies } from '@/drizzle/schema';
 import { sql, eq } from 'drizzle-orm';
 import { structuredLogger } from '@/infra/log/logger';
+import { safeCompare } from '@/lib/security/safe-compare';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Tokens not configured in environment' }, { status: 503 });
         }
 
-        if (internalToken !== expectedInternalToken || bootstrapToken !== expectedBootstrapToken) {
+        if (!safeCompare(internalToken, expectedInternalToken) || !safeCompare(bootstrapToken, expectedBootstrapToken)) {
             structuredLogger.warn('bootstrap_admin_unauthorized', { eventType: 'admin_bootstrap' });
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }

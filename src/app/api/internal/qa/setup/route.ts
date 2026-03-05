@@ -4,6 +4,7 @@ import { tenants, users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import { isDevRuntime, isQaAutomation } from '@/infra/env/devOnly';
+import { safeCompare } from '@/lib/security/safe-compare';
 
 export const runtime = "nodejs";
 
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. The token provided in request must match exactly. We don't fall back to bypass strings anymore.
-    if (!hasInternalTokenHeader || token !== serverQaToken) {
+    if (!hasInternalTokenHeader || !safeCompare(token, serverQaToken)) {
         return NextResponse.json({ error: "Unauthorized internal access", reason: "bad_token" }, { status: 401 });
     }
 

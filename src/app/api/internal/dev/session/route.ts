@@ -5,6 +5,7 @@ import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { eq } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import { assertDevOnly } from '@/infra/env/devOnly';
+import { safeCompare } from '@/lib/security/safe-compare';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     if (devGuard) return devGuard;
 
     const token = request.headers.get('x-internal-token') || request.nextUrl.searchParams.get('token');
-    if (!token || token !== process.env.INTERNAL_TOKEN) {
+    if (!safeCompare(token, process.env.INTERNAL_TOKEN)) {
         return NextResponse.json({
             error: 'Token interno não fornecido ou inválido',
             instruction: 'Defina INTERNAL_TOKEN no .env.local e passe via header x-internal-token ou ?token='

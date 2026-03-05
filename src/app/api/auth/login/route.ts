@@ -12,6 +12,7 @@ import { hashRateLimitKeyForLog, rateLimiter } from '@/infra/security/rate-limit
 import { auditService } from '@/modules/audit/audit.service';
 import { InfrastructureError, getUserMessage } from '@/infra/errors';
 import { isDevRuntime } from '@/infra/env/devOnly';
+import { safeCompare } from '@/lib/security/safe-compare';
 
 const loginSchema = z.object({
     email: z.string().email('Email inválido'),
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
         let shouldBypassRateLimit = false;
         if (
             isDevRuntime() &&
-            request.headers.get('x-internal-token') === process.env.INTERNAL_TOKEN &&
+            safeCompare(request.headers.get('x-internal-token'), process.env.INTERNAL_TOKEN) &&
             process.env.INTERNAL_TOKEN
         ) {
             shouldBypassRateLimit = true;

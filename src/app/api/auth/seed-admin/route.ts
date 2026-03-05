@@ -7,6 +7,7 @@ import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { sql, eq } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import { structuredLogger } from '@/infra/log/logger';
+import { safeCompare } from '@/lib/security/safe-compare';
 
 import { getInternalExportTokenOrThrow } from '@/infra/config/internal-token';
 
@@ -30,14 +31,14 @@ export async function GET(request: NextRequest) {
                 return NextResponse.json({ success: false, error: 'Internal token not configured completely' }, { status: 403 });
             }
 
-            if (!token || token !== expectedInternalToken) {
+            if (!safeCompare(token, expectedInternalToken)) {
                 logger.warn('seed_admin.blocked', { reason: 'Invalid or missing internal token' });
                 return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
             }
         } else {
             // In Development: Use SEED_TOKEN checking (header or query)
             const token = request.headers.get('x-seed-token') || request.nextUrl.searchParams.get('seed_token');
-            if (!token || token !== process.env.SEED_TOKEN) {
+            if (!safeCompare(token, process.env.SEED_TOKEN)) {
                 logger.warn('seed_admin.blocked', { reason: 'Invalid or missing dev seed token' });
                 return NextResponse.json({ success: false, error: 'Unauthorized: missing or invalid seed token' }, { status: 401 });
             }

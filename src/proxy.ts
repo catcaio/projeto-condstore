@@ -1,5 +1,6 @@
 import { jwtVerify, type JWTPayload } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
+import { safeCompare } from './lib/security/safe-compare';
 
 const SESSION_COOKIE_NAME = 'condstore_session';
 const ALLOWED_ROLES = ['admin', 'operator', 'manager', 'viewer'] as const;
@@ -168,10 +169,10 @@ export async function proxy(req: NextRequest) {
     const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
     const hasGithubHeader = req.headers.get('x-github-actions') === 'true';
 
-    let isAuthorized = token && (token === diagToken || token === exportToken || token === jobToken);
+    let isAuthorized = safeCompare(token, diagToken) || safeCompare(token, exportToken) || safeCompare(token, jobToken);
 
     // Exception specifically for QA automation
-    if (!isAuthorized && isQaBootstrap && isGithubActions && hasGithubHeader && token && qaToken && token === qaToken) {
+    if (!isAuthorized && isQaBootstrap && isGithubActions && hasGithubHeader && safeCompare(token, qaToken)) {
       isAuthorized = true;
     }
 

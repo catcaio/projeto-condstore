@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
+import { safeCompare } from '@/lib/security/safe-compare';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Verify token — constant-time boolean, never log the value.
-    const tokenMatched = hasTokenHeader && token === serverQaToken;
+    const tokenMatched = hasTokenHeader && safeCompare(token, serverQaToken);
 
     logger.info('[QA Bootstrap] Auth context', {
         path: request.nextUrl.pathname,
