@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../../infra/auth/guards';
 import { withIdempotency } from '@/lib/http/with-idempotency';
+import { withReplayProtection } from '@/lib/http/with-replay-protection';
 import { makeRequestId, attachRequestIdHeader } from '../../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse } from '../../../../../infra/http/error-response';
 import { structuredLogger } from '../../../../../infra/log/logger';
@@ -23,7 +24,7 @@ import {
     BillingServiceError,
 } from '../../../../../modules/billing/billing.service';
 
-export const POST = withIdempotency(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withReplayProtection(withIdempotency(async (request: NextRequest): Promise<NextResponse> => {
     const requestId = makeRequestId(request);
 
     structuredLogger.info('billing_upgrade_request', {
@@ -91,7 +92,7 @@ export const POST = withIdempotency(async (request: NextRequest): Promise<NextRe
 
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Upgrade failed. Please try again.');
     }
-});
+}));
 
 /**
  * GET /api/cockpit/billing/upgrade

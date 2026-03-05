@@ -19,6 +19,7 @@ import { getDb } from '../../../../../infra/db';
 import { tenantSubscriptions } from '../../../../../drizzle/schema';
 import { requireInternalToken } from '../../../../../infra/auth/tenant-route-guard';
 import { withIdempotency } from '@/lib/http/with-idempotency';
+import { withReplayProtection } from '@/lib/http/with-replay-protection';
 import { getStripe } from '../../../../../core/stripe/stripe-client';
 import { reconcileSubscriptionFromStripe, type LocalSubscription, type ReconcilePatch } from '../../../../../modules/billing/reconcile-stripe';
 import { structuredLogger } from '../../../../../infra/log/logger';
@@ -32,7 +33,7 @@ interface ReconcileItem {
     action: string;
 }
 
-export const POST = withIdempotency(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withReplayProtection(withIdempotency(async (request: NextRequest): Promise<NextResponse> => {
     const requestId = makeRequestId();
 
     try {
@@ -175,4 +176,4 @@ export const POST = withIdempotency(async (request: NextRequest): Promise<NextRe
         structuredLogger.error('[Billing Reconcile] Job failed', { error });
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-});
+}));

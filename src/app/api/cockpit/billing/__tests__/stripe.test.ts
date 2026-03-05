@@ -94,6 +94,13 @@ vi.mock('../../../../../infra/http/error-response', async (importOriginal) => {
     return await importOriginal();
 });
 
+vi.mock('../../../../../lib/security/replay-protection', () => ({
+    validateReplayProtection: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
+vi.mock('../../../../../infra/redis.client', () => ({
+    redisClient: { setNx: vi.fn().mockResolvedValue(true) },
+}));
 // Stripe client mock
 const mockCheckoutCreate = vi.fn();
 const mockConstructEvent = vi.fn();

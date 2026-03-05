@@ -80,6 +80,13 @@ vi.mock('../../../../../modules/billing/reconcile-stripe', async (importOriginal
     return await importOriginal();
 });
 
+vi.mock('../../../../../lib/security/replay-protection', () => ({
+    validateReplayProtection: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
+vi.mock('../../../../../infra/redis.client', () => ({
+    redisClient: { setNx: vi.fn().mockResolvedValue(true) },
+}));
 // ── Import ────────────────────────────────────────────────────────────────────
 
 import { POST } from '../reconcile-stripe/route';

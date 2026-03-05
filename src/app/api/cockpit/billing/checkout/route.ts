@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../../infra/auth/guards';
 import { requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
 import { withIdempotency } from '@/lib/http/with-idempotency';
+import { withReplayProtection } from '@/lib/http/with-replay-protection';
 import { makeRequestId, attachRequestIdHeader } from '../../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse } from '../../../../../infra/http/error-response';
 import { structuredLogger } from '../../../../../infra/log/logger';
@@ -22,7 +23,7 @@ import { getDb } from '../../../../../infra/db';
 import { plans } from '../../../../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-export const POST = withIdempotency(async (request: NextRequest): Promise<NextResponse> => {
+export const POST = withReplayProtection(withIdempotency(async (request: NextRequest): Promise<NextResponse> => {
     const requestId = makeRequestId(request);
 
     // ── Auth ─────────────────────────────────────────────────────────────────
@@ -105,4 +106,4 @@ export const POST = withIdempotency(async (request: NextRequest): Promise<NextRe
         });
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Failed to create Stripe checkout session.');
     }
-});
+}));
