@@ -18,21 +18,19 @@ interface LimitOptions {
 
 export type RouteSensitivity = 'critical' | 'public_safe' | 'failopen_memory';
 
-/** Scopes explicitly classified as safe for fail-open on Redis failure */
-const SAFE_PUBLIC_SCOPES = new Set([
-  'public_home', 'public_docs', 'public_pricing', 'public_robots', 'public_sitemap',
-  'cotacao_intent', 'cotacao_quotes'
-]);
-
 /**
  * Scopes that use in-memory fallback (NOT fail-closed) when Redis is down,
- * even in production. These are user-facing auth flows where blocking everyone
- * with 429 is worse than allowing through with local-only rate limiting.
- * Critical scopes (webhooks, internal, purge-user) remain fail-closed.
+ * even in production. These are user-facing auth flows and public endpoints where 
+ * blocking everyone with 429/503 is worse than allowing through with local-only rate limiting.
+ * Critical scopes (webhooks, internal, purge-user, etc) remain strictly fail-closed.
  */
-const FAILOPEN_WITH_MEMORY_SCOPES = new Set([
+const FALLBACK_MEMORY_SCOPES = new Set([
   'auth.login',
+  'public_home', 'public_docs', 'public_pricing', 'public_robots', 'public_sitemap',
+  'cotacao_intent', 'cotacao_quotes', 'public_events'
 ]);
+
+
 
 interface MemoryBucket {
   count: number;
@@ -175,14 +173,7 @@ function failClosedDecision(now: number, options: LimitOptions): RateLimitDecisi
   };
 }
 
-function failOpenDecision(now: number, options: LimitOptions): RateLimitDecision {
-  return {
-    allowed: true,
-    remaining: options.max,
-    resetAt: now + options.windowSec * 1000,
-    limit: options.max,
-  };
-}
+
 
 async function getRedisNumber(key: string): Promise<number> {
   const value = await redisClient.get<number>(key);
@@ -201,8 +192,8 @@ export class RateLimiter {
 
     const now = nowMs();
 
-    // Circuit breaker: skip Redis entirely for failopen scopes when breaker is open
-    if (FAILOPEN_WITH_MEMORY_SCOPES.has(normalizedScope) && isCircuitBreakerOpen(now)) {
+    // Circuit breaker: skip Redis entirely for fallback memory scopes when breaker is open
+    if (FALLBACK_MEMORY_SCOPES.has(normalizedScope) && isCircuitBreakerOpen(now)) {
       structuredLogger.info('rate_limiter_circuit_breaker_skip_redis', {
         eventType: 'rate_limiter',
         scope: normalizedScope,
@@ -299,13 +290,11 @@ export class RateLimiter {
   ): Promise<RateLimitDecision> {
     const keyHash = hashRateLimitKeyInternal(key);
     const errorName = error instanceof Error ? error.name : undefined;
-    const sensitivity: RouteSensitivity = FAILOPEN_WITH_MEMORY_SCOPES.has(scope)
+    const sensitivity: RouteSensitivity = FALLBACK_MEMORY_SCOPES.has(scope)
       ? 'failopen_memory'
-      : SAFE_PUBLIC_SCOPES.has(scope)
-        ? 'public_safe'
-        : 'critical';
+      : 'critical';
 
-    // Failopen-with-memory scopes (auth_login): use in-memory fallback even in production
+    // Fallback memory scopes (auth_login, public endpoints): use in-memory fallback even in production
     if (sensitivity === 'failopen_memory') {
       fallbackMetrics.count += 1;
       fallbackMetrics.lastSeenAt = now;
@@ -333,36 +322,17 @@ export class RateLimiter {
       return this.limitWithMemory(scope, key, options, now);
     }
 
-    // P0: Default to fail-closed for critical scopes (webhook, internal, ingest)
-    if (sensitivity === 'critical') {
-      structuredLogger.error('rate_limiter_redis_failure_fail_closed', {
-        eventType: 'rate_limiter',
-        scope,
-        keyHash,
-        reason,
-        rateLimitMode: 'fail_closed',
-        sensitivity,
-        ...(errorName ? { errorName } : {}),
-      });
-      return failClosedDecision(now, options);
-    }
-
-    // Fail-open only for explicitly safe public routes
-    fallbackMetrics.count += 1;
-    fallbackMetrics.lastSeenAt = now;
-
-    structuredLogger.warn('rate_limiter_fallback_active', {
-      eventType: 'rate_limiter_fallback_active',
-      strategy: 'fail_open',
-      env: process.env.NODE_ENV ?? 'development',
+    // P0: strictly fail-closed for critical scopes (webhook, internal, ingest, etc)
+    structuredLogger.error('rate_limiter_redis_failure_fail_closed', {
+      eventType: 'rate_limiter',
       scope,
       keyHash,
       reason,
-      rateLimitMode: 'fail_open',
+      rateLimitMode: 'fail_closed',
       sensitivity,
       ...(errorName ? { errorName } : {}),
     });
-    return failOpenDecision(now, options);
+    return failClosedDecision(now, options);
   }
 
   private async limitWithMemory(scope: string, key: string, options: LimitOptions, now: number): Promise<RateLimitDecision> {

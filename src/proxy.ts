@@ -22,6 +22,7 @@ export const config = {
     '/api/tenants/:tenantId/ai-provider/:path*',
     '/api/tenants/:tenantId/settings/:path*',
     '/api/internal/:path*',
+    '/api/public/:path*',
   ],
 };
 
@@ -156,6 +157,16 @@ export async function proxy(req: NextRequest) {
   headers.delete('x-auth-role');
   headers.delete('x-role');
   headers.delete('x-user-id');
+
+  // Emergency Public Endpoints Kill Switch (blocks all /api/public/* with 503)
+  if (req.nextUrl.pathname.startsWith('/api/public/')) {
+    if (process.env.PUBLIC_ENDPOINTS_DISABLED === 'true') {
+      return setRequestIdHeader(
+        NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 503 }),
+        requestId
+      );
+    }
+  }
 
   // Internal API Guard (migrated from removed middleware.ts)
   if (process.env.NODE_ENV === 'production' && req.nextUrl.pathname.startsWith('/api/internal/')) {

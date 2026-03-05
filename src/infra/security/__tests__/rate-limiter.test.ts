@@ -141,30 +141,30 @@ describe('security rate-limiter redis failure hardening', () => {
     expect(result.remaining).toBe(0);
   });
 
-  it('fails open for public_safe scopes when redis is unavailable', async () => {
+  it('uses memory fallback for public_safe scopes when redis is unavailable', async () => {
     const limiter = new RateLimiter();
-    const now = Date.now();
 
     const result = await limiter.limit('cotacao_quotes', '1.2.3.4:user@example.com', {
       max: 30,
       windowSec: 60,
     });
 
-    expect(result).toEqual({
-      allowed: true,
-      remaining: 30,
-      resetAt: now + 60_000,
-      limit: 30,
-    });
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBeGreaterThan(0);
     expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
-      'rate_limiter_fallback_active',
+      'rate_limiter_fallback_local_used',
       expect.objectContaining({
-        eventType: 'rate_limiter_fallback_active',
-        strategy: 'fail_open',
+        eventType: 'rate_limiter',
         scope: 'cotacao_quotes',
-        rateLimitMode: 'fail_open',
-        sensitivity: 'public_safe',
+        rateLimitMode: 'failopen_memory',
+        sensitivity: 'failopen_memory',
       }),
+    );
+
+    // Should NOT call fail_open log anymore
+    expect(mockStructuredLogger.warn).not.toHaveBeenCalledWith(
+      'rate_limiter_fallback_active',
+      expect.anything(),
     );
   });
 
