@@ -23,7 +23,7 @@ export default function PricingPage() {
 
 function PlanosHero() {
     return (
-        <section className="relative w-full pt-32 pb-48 flex flex-col items-center overflow-hidden bg-gradient-to-b from-[#E8F0FE] to-[#F4F7FA]">
+        <section data-testid="pricing-hero" className="relative w-full pt-32 pb-48 flex flex-col items-center overflow-hidden bg-gradient-to-b from-[#E8F0FE] to-[#F4F7FA]">
             {/* Olist Style Blue Glow */}
             <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#1a56db] rounded-full blur-[150px] opacity-10 pointer-events-none -translate-y-1/2 translate-x-1/2" />
 

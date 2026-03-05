@@ -39,7 +39,7 @@ export function PricingTable({
     };
 
     return (
-        <div className="w-full overflow-x-auto pb-12 pt-16 relative">
+        <div data-testid="pricing-plans" className="w-full overflow-x-auto pb-12 pt-16 relative">
             <div className="text-center mb-16">
                 <h2 className="text-4xl md:text-5xl font-extrabold text-[#0A2540] tracking-tight">{title}</h2>
             </div>
@@ -52,9 +52,9 @@ export function PricingTable({
                             <span className="text-lg font-bold text-[#425466]">Comparativo</span>
                         </th>
                         {planos.map((p, i) => (
-                            <th key={i} className={`p-6 text-center border-b border-gray-200 ${i === planos.length - 1 ? 'rounded-tr-2xl' : ''}`} style={{ width: `${75 / planos.length}%` }}>
+                            <th key={i} data-testid="pricing-plan-card" className={`p-6 text-center border-b border-gray-200 ${i === planos.length - 1 ? 'rounded-tr-2xl' : ''}`} style={{ width: `${75 / planos.length}%` }}>
                                 <div className="flex flex-col items-center gap-4">
-                                    <span className="text-2xl font-bold text-[#0A2540] tracking-tight">{p.name}</span>
+                                    <span data-testid="pricing-plan-price" className="text-2xl font-bold text-[#0A2540] tracking-tight">{p.name}</span>
                                     <TrackedLink href="/login" passHref trackPage="pricing_table" trackSection="table" trackElement={`cta_${p.name.toLowerCase()}`} legacyBehavior>
                                         <Button className={`w-full max-w-[160px] rounded-full font-bold h-10 ${p.color}`}>
                                             {p.cta}
@@ -118,6 +118,6 @@ export function PricingTable({
                     })}
                 </tbody>
             </table>
-        </div>
+        </div >
     );
 }

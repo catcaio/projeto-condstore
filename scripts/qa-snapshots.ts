@@ -195,11 +195,13 @@ async function runQa() {
         },
         {
             name: 'pricing',
-            url: `${BASE_URL}/pricing`,
+            url: `${BASE_URL}/planos/envios`,
             headers: {},
             asserts: [
-                { string: 'Planos simples e flexíveis', description: 'Pricing header rendered' },
-                { string: 'R$ 0', description: 'Pricing card rendered' }
+                { string: 'data-testid="pricing-hero"', description: 'Pricing hero section rendered' },
+                { string: 'data-testid="pricing-plans"', description: 'Pricing plans table rendered' },
+                { string: 'data-testid="pricing-plan-card"', description: 'At least one pricing plan card rendered' },
+                { string: 'data-testid="pricing-plan-price"', description: 'At least one pricing plan price rendered' }
             ]
         }
     ];
