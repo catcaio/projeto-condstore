@@ -23,7 +23,7 @@ export default function DocsPage() {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+            <div data-testid="public-docs-content" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
 
                 {/* REST API CARD */}
                 <div className="group flex flex-col bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-2xl p-8 hover:border-[hsl(var(--ui-accent-purple)/0.4)] transition-colors relative overflow-hidden">

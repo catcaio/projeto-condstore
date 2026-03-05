@@ -34,7 +34,7 @@ export default function PublicHomePage() {
                         </span>
                         A CPU da Logística Brasileira
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-extrabold text-[hsl(var(--ui-text))] leading-[1.1] tracking-tight mb-6">
+                    <h1 data-testid="public-hero-title" className="text-5xl md:text-7xl font-extrabold text-[hsl(var(--ui-text))] leading-[1.1] tracking-tight mb-6">
                         O motor de processamento central para <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--ui-accent-blue))] to-[hsl(var(--ui-accent-blue-strong))]">operações complexas.</span>
                     </h1>
                     <p className="text-lg md:text-2xl text-[hsl(var(--ui-text-muted))] max-w-2xl leading-relaxed">
@@ -44,6 +44,7 @@ export default function PublicHomePage() {
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-10">
                         <TrackedLink
                             href="/pricing"
+                            data-testid="public-primary-cta"
                             trackPage="landing"
                             trackSection="hero"
                             trackElement="hero_primary"
