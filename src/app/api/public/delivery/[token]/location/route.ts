@@ -6,7 +6,17 @@ import { ErrorCode, errorResponse } from '../../../../../../infra/http/error-res
 import { structuredLogger } from '../../../../../../infra/log/logger';
 import { applyRateLimitHeaders, hashRateLimitKeyForLog, rateLimiter } from '../../../../../../infra/security/rate-limiter';
 import { domineEventsRepository } from '../../../../../../infra/repositories/domine-events.repository';
+import { publicEventsRepository } from '../../../../../../infra/repositories/public-events.repository';
 import { sha256Hex } from '../../../../../../infra/attribution/hash';
+
+// LGPD payload sanitization
+function sanitizeLocationPayload(data: any) {
+    return {
+        lat: data.lat,
+        lng: data.lng,
+        accuracy: data.accuracy,
+    };
+}
 
 const locationSchema = z.object({
     lat: z.number().min(-90).max(90),
@@ -99,6 +109,24 @@ async function handler(
                 lng,
                 accuracy,
                 timestamp,
+            }
+        });
+
+        const sanitizedPayload = sanitizeLocationPayload(parseResult.data);
+
+        let anonId = request.cookies.get('condstore_anon')?.value;
+        if (!anonId) anonId = crypto.randomUUID();
+
+        await publicEventsRepository.create({
+            id: crypto.randomUUID(),
+            anonId,
+            tenantId,
+            eventType: 'DELIVERY_LOCATION_UPDATED',
+            ipHash,
+            uaHash: sha256Hex(request.headers.get('user-agent')) || 'unknown',
+            payloadJson: {
+                deliveryId,
+                ...sanitizedPayload
             }
         });
 

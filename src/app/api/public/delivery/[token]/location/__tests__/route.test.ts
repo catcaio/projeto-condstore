@@ -12,6 +12,12 @@ vi.mock('../../../../../../../infra/repositories/domine-events.repository', () =
     }
 }));
 
+vi.mock('../../../../../../../infra/repositories/public-events.repository', () => ({
+    publicEventsRepository: {
+        create: vi.fn(),
+    }
+}));
+
 vi.mock('../../../../../../../infra/security/rate-limiter', () => ({
     rateLimiter: {
         limit: vi.fn(),
