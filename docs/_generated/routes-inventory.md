@@ -65,6 +65,7 @@
 | `/api/internal/health/webhook` | API |
 | `/api/internal/jobs/backfill-phone` | API |
 | `/api/internal/jobs/cleanup-retention` | API |
+| `/api/internal/jobs/data-retention` | API |
 | `/api/internal/jobs/domine-process` | API |
 | `/api/internal/jobs/finops-reconciliation` | API |
 | `/api/internal/jobs/rollup-backfill` | API |

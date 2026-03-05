@@ -64,6 +64,7 @@
 | /api/internal/health/webhook | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/backfill-phone | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/cleanup-retention | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/internal/jobs/data-retention | POST | internal | requireInternalToken | lgpd | live | LGPD automated data retention purge (purge_at) |
 | /api/internal/jobs/domine-process | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/finops-reconciliation | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/rollup-backfill | TBA | public | none | PUBLIC | live | Auto-detected |
