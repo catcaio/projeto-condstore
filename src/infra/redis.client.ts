@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import { logger } from './logger';
+import { globalCircuitBreaker } from '../lib/resilience/circuit-breaker';
 
 interface CacheEntry<T> {
   value: T;
@@ -46,7 +47,7 @@ class RedisService {
   async ping(): Promise<boolean> {
     if (this.isAvailable()) {
       try {
-        const res = await this.redisInstance!.ping();
+        const res = await globalCircuitBreaker.execute('redis', () => this.redisInstance!.ping());
         return res === 'PONG';
       } catch (e) {
         return false;
@@ -58,7 +59,7 @@ class RedisService {
   async keys(pattern: string): Promise<string[]> {
     if (this.isAvailable()) {
       try {
-        return await this.redisInstance!.keys(pattern);
+        return await globalCircuitBreaker.execute('redis', () => this.redisInstance!.keys(pattern));
       } catch (e) {
         logger.error('Redis KEYS error', e as Error, { pattern });
         return [];
@@ -78,7 +79,7 @@ class RedisService {
   async get<T>(key: string): Promise<T | null> {
     if (this.isAvailable()) {
       try {
-        const val = await this.redisInstance!.get(key);
+        const val = await globalCircuitBreaker.execute('redis', () => this.redisInstance!.get(key));
         return val ? JSON.parse(val) as T : null;
       } catch (e) {
         logger.error('Redis GET error', e as Error, { key });
@@ -100,9 +101,9 @@ class RedisService {
       try {
         const serialized = JSON.stringify(value);
         if (ttlSeconds) {
-          await this.redisInstance!.set(key, serialized, 'EX', ttlSeconds);
+          await globalCircuitBreaker.execute('redis', () => this.redisInstance!.set(key, serialized, 'EX', ttlSeconds));
         } else {
-          await this.redisInstance!.set(key, serialized);
+          await globalCircuitBreaker.execute('redis', () => this.redisInstance!.set(key, serialized));
         }
       } catch (e) {
         logger.error('Redis SET error', e as Error, { key });
@@ -119,10 +120,10 @@ class RedisService {
       try {
         const serialized = JSON.stringify(value);
         if (ttlSeconds) {
-          const result = await (this.redisInstance as any).set(key, serialized, 'EX', ttlSeconds, 'NX');
+          const result = await globalCircuitBreaker.execute('redis', () => (this.redisInstance as any).set(key, serialized, 'EX', ttlSeconds, 'NX'));
           return result === 'OK';
         }
-        const result = await (this.redisInstance as any).set(key, serialized, 'NX');
+        const result = await globalCircuitBreaker.execute('redis', () => (this.redisInstance as any).set(key, serialized, 'NX'));
         return result === 'OK';
       } catch (e) {
         logger.error('Redis SET NX error', e as Error, { key });
@@ -141,7 +142,7 @@ class RedisService {
   async del(key: string): Promise<void> {
     if (this.isAvailable()) {
       try {
-        await this.redisInstance!.del(key);
+        await globalCircuitBreaker.execute('redis', () => this.redisInstance!.del(key));
       } catch (e) {
         logger.error('Redis DEL error', e as Error, { key });
       }
@@ -153,7 +154,7 @@ class RedisService {
   async incr(key: string): Promise<number> {
     if (this.isAvailable()) {
       try {
-        return await this.redisInstance!.incr(key);
+        return await globalCircuitBreaker.execute('redis', () => this.redisInstance!.incr(key));
       } catch (e) {
         logger.error('Redis INCR error', e as Error, { key });
         return 0; // soft fail
@@ -176,7 +177,7 @@ class RedisService {
   async expire(key: string, ttlSeconds: number): Promise<void> {
     if (this.isAvailable()) {
       try {
-        await this.redisInstance!.expire(key, ttlSeconds);
+        await globalCircuitBreaker.execute('redis', () => this.redisInstance!.expire(key, ttlSeconds));
       } catch (e) {
         logger.error('Redis EXPIRE error', e as Error, { key });
       }
@@ -191,7 +192,7 @@ class RedisService {
   async eval(script: string, numberOfKeys: number, ...args: Array<string | number>): Promise<unknown> {
     if (this.isAvailable()) {
       try {
-        return await (this.redisInstance as any).eval(script, numberOfKeys, ...args);
+        return await globalCircuitBreaker.execute('redis', () => (this.redisInstance as any).eval(script, numberOfKeys, ...args));
       } catch (e) {
         logger.error('Redis EVAL error', e as Error, { numberOfKeys });
         throw e;
@@ -204,7 +205,7 @@ class RedisService {
   async ttl(key: string): Promise<number> {
     if (this.isAvailable()) {
       try {
-        return await this.redisInstance!.ttl(key);
+        return await globalCircuitBreaker.execute('redis', () => this.redisInstance!.ttl(key));
       } catch (e) {
         logger.error('Redis TTL error', e as Error, { key });
         return -2; // conventional response for missing/error

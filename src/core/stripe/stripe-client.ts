@@ -10,6 +10,7 @@
  */
 
 import Stripe from 'stripe';
+import { withCircuitBreaker } from '@/lib/resilience/circuit-breaker';
 
 const API_VERSION = '2026-02-25.clover' as const;
 
@@ -27,9 +28,10 @@ export function getStripe(): Stripe {
         throw new Error('STRIPE_SECRET_KEY is not set.');
     }
     if (!_stripe) {
-        _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+        const client = new Stripe(process.env.STRIPE_SECRET_KEY, {
             apiVersion: API_VERSION,
         });
+        _stripe = withCircuitBreaker('stripe', client);
     }
     return _stripe;
 }

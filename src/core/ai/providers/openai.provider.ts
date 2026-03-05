@@ -1,4 +1,5 @@
 import type { AIProvider, ChatInput, ChatOutput, EmbeddingsInput, EmbeddingsOutput } from '../provider.interface';
+import { withCircuitBreaker } from '@/lib/resilience/circuit-breaker';
 
 export interface OpenAIProviderConfig {
   baseUrl: string;
@@ -29,6 +30,8 @@ export class OpenAIProvider implements AIProvider {
     this.model = config.model;
     this.embedModel = config.embedModel;
     this.timeoutMs = config.timeoutMs;
+
+    return withCircuitBreaker('openai', this);
   }
 
   async chat(input: ChatInput): Promise<ChatOutput> {

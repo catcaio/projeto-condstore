@@ -3,7 +3,7 @@ import { ErrorCode, ProviderError } from '../infra/errors';
 import { logger } from '../infra/logger';
 import { tenantRepository } from '../infra/repositories/tenant.repository';
 import { structuredLogger } from '../infra/log/logger';
-import { circuitBreaker } from '../infra/security/circuit-breaker';
+import { withCircuitBreaker } from '@/lib/resilience/circuit-breaker';
 
 export interface IncomingMessage {
   from: string;
@@ -102,15 +102,6 @@ class TwilioProvider {
       return false;
     }
 
-    if (circuitBreaker.isOpen(tenantId, 'twilio')) {
-      structuredLogger.warn('twilio_outbound_blocked_by_circuit_breaker', {
-        tenantId,
-        to: message.to,
-        eventType: 'twilio_outbound_blocked',
-      });
-      return false;
-    }
-
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const startTime = Date.now();
@@ -152,13 +143,9 @@ class TwilioProvider {
           messageSid: (await response.json()).sid,
         });
 
-        circuitBreaker.recordSuccess(tenantId, 'twilio');
         return true;
       } catch (error) {
         lastError = error as Error;
-
-        // Notify circuit breaker of failure
-        await circuitBreaker.recordFailure(tenantId, 'twilio');
 
         if (attempt < maxRetries && error instanceof ProviderError && error.isRetryable) {
           const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
@@ -175,5 +162,5 @@ class TwilioProvider {
   }
 }
 
-// Export singleton instance
-export const twilioProvider = new TwilioProvider();
+// Export singleton instance wrapped with circuit breaker
+export const twilioProvider = withCircuitBreaker('twilio', new TwilioProvider());
