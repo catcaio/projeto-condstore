@@ -5,7 +5,12 @@ import { promptRegistry } from '../prompt-registry';
 
 // Mock DB interactions for Prompt Registry
 const mockDbSelectLimit = vi.hoisted(() => vi.fn());
-const mockDbFrom = vi.hoisted(() => vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ limit: mockDbSelectLimit }) }));
+const mockDbFrom = vi.hoisted(() => vi.fn().mockReturnValue({
+    where: vi.fn().mockReturnValue({
+        limit: mockDbSelectLimit,
+        then: (resolve: any, reject: any) => mockDbSelectLimit().then(resolve, reject)
+    })
+}));
 const mockDbSelect = vi.hoisted(() => vi.fn().mockReturnValue({ from: mockDbFrom }));
 
 // Mock without limit for list

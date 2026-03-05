@@ -66,7 +66,7 @@ vi.mock('../../../../../infra/db', () => ({
                 }),
             }),
             select: () => ({
-                from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }),
+                from: () => ({ where: () => ({ limit: () => Promise.resolve([]), then: (resolve: any) => resolve([]), }) }),
             }),
         })
     ),
@@ -165,7 +165,7 @@ describe('Stripe Webhook — DB Idempotency', () => {
                     }),
                 }),
                 select: () => ({
-                    from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }),
+                    from: () => ({ where: () => ({ limit: () => Promise.resolve([]), then: (resolve: any) => resolve([]), }) }),
                 }),
             } as any)
         );

@@ -26,6 +26,12 @@ function makeSelectChain() {
                     if (selectCallCount === 2) return Promise.resolve(budgetRows);
                     return Promise.resolve([]);
                 },
+                then: (_resolve: any) => {
+                    selectCallCount++;
+                    if (selectCallCount === 1) return _resolve(planRows);
+                    if (selectCallCount === 2) return _resolve(budgetRows);
+                    return _resolve([]);
+                },
             }),
             innerJoin: (_t2: any, _cond: any) => ({
                 where: (_c: any) => ({

@@ -5,10 +5,7 @@ import { AlertOctagon, TrendingDown, Clock, SearchX, ShieldCheck } from 'lucide-
 import { TrackedLink, SectionTracker } from '@/ui/lib/track-client';
 import { Button } from '@/ui/components/button';
 
-export const metadata = {
-    title: 'Gargalos Logísticos do Brasil | LojaCond',
-    description: 'Entenda os problemas crônicos da infraestrutura de logística nacional e como a tecnologia resolve o caos.',
-};
+
 
 export default function LogisticsBottlenecksPage() {
     return (

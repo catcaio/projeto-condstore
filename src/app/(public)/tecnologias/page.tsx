@@ -4,10 +4,7 @@ import { motion } from 'framer-motion';
 import { Database, Server, Cpu, Layers, Activity } from 'lucide-react';
 import { SectionTracker } from '@/ui/lib/track-client';
 
-export const metadata = {
-    title: 'Tecnologias Condstore OS | Edge Runtime & TiDB',
-    description: 'A arquitetura técnica por trás do sistema operacional mais resiliente para logística B2B.',
-};
+
 
 export default function TechnologyPage() {
     return (

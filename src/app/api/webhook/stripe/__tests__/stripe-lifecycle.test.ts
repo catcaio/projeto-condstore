@@ -49,6 +49,7 @@ function makeMockDb() {
             from: () => ({
                 where: () => ({
                     limit: () => Promise.resolve(_mockSubRow ? [_mockSubRow] : []),
+                    then: (resolve: any) => resolve(_mockSubRow ? [_mockSubRow] : []),
                 }),
             }),
         }),

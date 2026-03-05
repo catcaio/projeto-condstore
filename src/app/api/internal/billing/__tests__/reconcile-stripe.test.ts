@@ -29,6 +29,7 @@ function makeMockDb() {
             from: () => ({
                 where: () => ({
                     limit: () => Promise.resolve(_mockDbRows),
+                    then: (resolve: any) => resolve(_mockDbRows),
                 }),
             }),
         }),

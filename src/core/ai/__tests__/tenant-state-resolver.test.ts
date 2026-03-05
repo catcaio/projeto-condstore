@@ -61,6 +61,7 @@ function makeDbChain(rows: Record<string, unknown>[]) {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
         limit: vi.fn().mockResolvedValue(rows),
+                    then: (resolve: any) => resolve(rows),
     };
     mockDbSelect.mockReturnValue(selectChain);
 

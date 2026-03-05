@@ -131,6 +131,7 @@ describe('processEvent with mock DB', () => {
                 from: vi.fn().mockReturnValue({
                     where: vi.fn().mockReturnValue({
                         limit: vi.fn().mockResolvedValue([]),
+                    then: (resolve: any) => resolve([]),
                     }),
                 }),
             }),
@@ -159,6 +160,7 @@ describe('processEvent with mock DB', () => {
                 from: vi.fn().mockReturnValue({
                     where: vi.fn().mockReturnValue({
                         limit: vi.fn().mockResolvedValue([mockEvent]),
+                    then: (resolve: any) => resolve([mockEvent]),
                     }),
                 }),
             }),
@@ -201,6 +203,7 @@ describe('processEvent with mock DB', () => {
                 from: vi.fn().mockReturnValue({
                     where: vi.fn().mockReturnValue({
                         limit: vi.fn().mockResolvedValue([mockEvent]),
+                    then: (resolve: any) => resolve([mockEvent]),
                     }),
                 }),
             }),
@@ -243,6 +246,7 @@ describe('processEvent with mock DB', () => {
                 from: vi.fn().mockReturnValue({
                     where: vi.fn().mockReturnValue({
                         limit: vi.fn().mockResolvedValue([mockEvent]),
+                    then: (resolve: any) => resolve([mockEvent]),
                     }),
                 }),
             }),

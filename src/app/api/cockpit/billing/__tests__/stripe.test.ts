@@ -41,12 +41,16 @@ function makeMockDb() {
         }),
         select: () => ({
             from: () => ({
-                where: () => ({
-                    limit: () => Promise.resolve([{
+                where: () => {
+                    const rows = [{
                         id: 'plan_pro', name: 'Pro', active: 1,
                         monthlyPriceUsd: '99', monthlyBudgetUsd: '500',
-                    }]),
-                }),
+                    }];
+                    return {
+                        limit: () => Promise.resolve(rows),
+                        then: (resolve: any) => resolve(rows),
+                    };
+                },
             }),
         }),
         update: () => ({
