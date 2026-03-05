@@ -33,7 +33,7 @@ export default async function CockpitLauncherPage(props: { searchParams: Promise
     }
 
     // Retrieve RBAC layout
-    const { salas } = getVisibleTiles({
+    const { salas } = await getVisibleTiles({
         tenantId,
         role: roleStr as Role
     });

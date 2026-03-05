@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, Mail, Truck } from 'lucide-react';
 import { trackEvent } from '@/ui/lib/track-client';
 import { safeFetch } from '@/ui/lib/safe-fetch';
-import { Badge, Button, Card, CardContent, CardHeader, TextField } from '@/ui/components';
+import { Badge, Button, Card, CardContent, CardHeader, TextField, CondstoreLogo } from '@/ui/components';
 import { ThemeToggle } from '@/ui/theme';
 import Link from 'next/link';
 
@@ -105,21 +105,7 @@ export function LoginForm({ buildLabel, googleEnabled = false }: LoginFormProps)
                 <Card variant="elevated" className="overflow-hidden">
                     <CardHeader
                         className="pb-2"
-                        heading={
-                            <div className="flex items-center gap-3">
-                                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[hsl(var(--ui-accent-blue)/0.12)] text-[hsl(var(--ui-accent-blue))]">
-                                    <Truck className="h-5 w-5" />
-                                </span>
-                                <div>
-                                    <h1 className="text-xl font-semibold tracking-tight text-[hsl(var(--ui-text))]">
-                                        CondStore OS
-                                    </h1>
-                                    <p className="text-xs font-normal text-[hsl(var(--ui-text-muted))]">
-                                        Painel logístico
-                                    </p>
-                                </div>
-                            </div>
-                        }
+                        heading={<CondstoreLogo size="md" />}
                         actions={<Badge variant="outline">FRONT-01</Badge>}
                     />
                     <CardContent className="space-y-4">
