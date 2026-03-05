@@ -143,6 +143,7 @@
 | `/cockpit/knowledge/ask` | Page |
 | `/cockpit/knowledge/collections` | Page |
 | `/cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId]` | Page |
+| `/cockpit/marciano/[...slug]` | Page |
 | `/cockpit/overview` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |

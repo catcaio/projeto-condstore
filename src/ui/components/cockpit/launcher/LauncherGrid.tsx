@@ -3,12 +3,14 @@
 import * as React from 'react';
 import { VisibleSala } from '@/modules/cockpit/launcher/tiles.service';
 import { SalaSection } from './SalaSection';
+import { cn } from '@/lib/utils';
 
 interface LauncherGridProps {
     salas: VisibleSala[];
+    tvMode?: boolean;
 }
 
-export function LauncherGrid({ salas }: LauncherGridProps) {
+export function LauncherGrid({ salas, tvMode = false }: LauncherGridProps) {
     if (!salas || salas.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))]">
@@ -23,9 +25,12 @@ export function LauncherGrid({ salas }: LauncherGridProps) {
     }
 
     return (
-        <div className="flex flex-col gap-8 w-full max-w-6xl mx-auto px-2 sm:px-6">
+        <div className={cn(
+            "flex flex-col gap-8 w-full mx-auto px-2 sm:px-6 transition-all duration-300",
+            tvMode ? "max-w-[1920px]" : "max-w-6xl"
+        )}>
             {salas.map((sala) => (
-                <SalaSection key={sala.id} sala={sala} />
+                <SalaSection key={sala.id} sala={sala} tvMode={tvMode} />
             ))}
         </div>
     );

@@ -143,6 +143,7 @@
 | /cockpit/knowledge/ask | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/knowledge/collections | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId] | TBA | public | none | PUBLIC | live | Auto-detected |
+| /cockpit/marciano/[...slug] | GET | internal | required | cockpit | live | Placeholder visual para rotas Marciano |
 | /cockpit/overview | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/privacy | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/rate-limit | TBA | public | none | PUBLIC | live | Auto-detected |
