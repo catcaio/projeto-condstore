@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const urlObj = new URL(dbUrl);
-    console.log(`Connecting to DB: Host=${urlObj.hostname}, Database=${urlObj.pathname.replace('/', '')}`);
+    logger.info('Connecting to DB', { host: urlObj.hostname, database: urlObj.pathname.replace('/', '') });
 
     const db = await getDb();
     const id = randomUUID();

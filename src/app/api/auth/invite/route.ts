@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
                 tenantId: session.tenantId,
                 inviteUrl,
             });
-            console.log(`\n📧 URL de Convite (DEV): ${inviteUrl}\n`);
+            structuredLogger.debug('invite_link_dev_hint', { eventType: 'invite_link', tenantId: session.tenantId, urlPrefix: inviteUrl.slice(0, 40) + '…' });
         } else if (process.env.RESEND_API_KEY) {
             try {
                 await fetch('https://api.resend.com/emails', {

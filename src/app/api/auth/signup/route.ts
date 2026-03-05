@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
                 userId,
                 verifyUrl,
             });
-            console.log(`\n📧 Email verify link (dev): ${verifyUrl}\n`);
+            structuredLogger.debug('email_verify_link_dev_hint', { eventType: 'email_verify', userId, urlPrefix: verifyUrl.slice(0, 50) + '…' });
         } else if (process.env.RESEND_API_KEY) {
             try {
                 await fetch('https://api.resend.com/emails', {

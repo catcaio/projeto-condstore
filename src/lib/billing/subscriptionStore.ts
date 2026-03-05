@@ -37,7 +37,7 @@ export async function upsertSubscription(record: SubscriptionRecord): Promise<vo
     const store = readStore();
     store[record.userId] = record;
     writeStore(store);
-    console.log(`[Store] Upserted subscription for user: ${record.userId}`);
+    console.info(`[Store] Upserted subscription for user: ${record.userId}`);
 }
 
 /**
