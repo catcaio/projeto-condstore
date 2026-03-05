@@ -204,6 +204,27 @@ export const frankRolloutDecisions = mysqlTable('frank_rollout_decisions', {
 export type FrankRolloutDecisionRecord = typeof frankRolloutDecisions.$inferSelect;
 export type NewFrankRolloutDecisionRecord = typeof frankRolloutDecisions.$inferInsert;
 
+// --- Telemetry (Security) ---
+
+export const securityEdgeEvents = mysqlTable('security_edge_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    requestId: varchar('request_id', { length: 64 }).notNull(),
+    route: varchar('route', { length: 255 }).notNull(),
+    reason: varchar('reason', { length: 100 }).notNull(),
+    ipHash: varchar('ip_hash', { length: 64 }),
+    tenantClaim: varchar('tenant_claim', { length: 36 }),
+    userClaim: varchar('user_claim', { length: 36 }),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        createdAtRouteIndex: index('idx_sec_edge_events_created_at_route').on(table.createdAt, table.route),
+        tenantIndex: index('idx_sec_edge_events_tenant').on(table.tenantClaim),
+    };
+});
+
+export type SecurityEdgeEventRecord = typeof securityEdgeEvents.$inferSelect;
+export type NewSecurityEdgeEventRecord = typeof securityEdgeEvents.$inferInsert;
+
 // --- Users (Authentication) ---
 
 export const users = mysqlTable('users', {
