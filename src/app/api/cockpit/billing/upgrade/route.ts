@@ -23,76 +23,76 @@ import {
     getActivePlans,
     BillingServiceError,
 } from '../../../../../modules/billing/billing.service';
+import { withJsonBody } from '@/lib/http/with-json-body';
+import { z } from 'zod';
 
-export const POST = withReplayProtection(withIdempotency(async (request: NextRequest): Promise<NextResponse> => {
-    const requestId = makeRequestId(request);
+const upgradeSchema = z.object({
+    planId: z.string().min(1, 'planId is required')
+}).catchall(z.any());
 
-    structuredLogger.info('billing_upgrade_request', {
-        requestId,
-        route: '/api/cockpit/billing/upgrade',
-        eventType: 'billing_upgrade',
-    });
+export const POST = withReplayProtection(withIdempotency(
+    withJsonBody(
+        { schema: upgradeSchema, maxBytes: 2 * 1024 * 1024 },
+        async (request: NextRequest, ctx: any, body: z.infer<typeof upgradeSchema>) => {
+            const requestId = makeRequestId(request);
 
-    // ── Auth ─────────────────────────────────────────────────────────────────
-    const auth = await requireAdmin(request, { requestId });
-    if (!auth.ok) return auth.response;
-    const { tenantId } = auth.session;
+            structuredLogger.info('billing_upgrade_request', {
+                requestId,
+                route: '/api/cockpit/billing/upgrade',
+                eventType: 'billing_upgrade',
+            });
 
-    // ── Validate body ─────────────────────────────────────────────────────────
-    let body: { planId?: unknown };
-    try {
-        body = await request.json();
-    } catch {
-        return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid JSON body');
-    }
+            // ── Auth ─────────────────────────────────────────────────────────────────
+            const auth = await requireAdmin(request, { requestId });
+            if (!auth.ok) return auth.response;
+            const { tenantId } = auth.session;
 
-    const planId = typeof body.planId === 'string' ? body.planId.trim() : '';
-    if (!planId) {
-        return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'planId is required');
-    }
+            const planId = body.planId;
 
-    // ── Execute upgrade ───────────────────────────────────────────────────────
-    try {
-        const result = await upgradeTenantPlan(tenantId, planId, requestId);
+            // ── Execute upgrade ───────────────────────────────────────────────────────
+            try {
+                const result = await upgradeTenantPlan(tenantId, planId, requestId);
 
-        structuredLogger.info('billing_upgrade_success', {
-            requestId,
-            tenantId,
-            planId: result.planId,
-            newBudget: result.newBudget,
-            eventType: 'billing_upgrade',
-        });
+                structuredLogger.info('billing_upgrade_success', {
+                    requestId,
+                    tenantId,
+                    planId: result.planId,
+                    newBudget: result.newBudget,
+                    eventType: 'billing_upgrade',
+                });
 
-        const response = NextResponse.json({
-            status: result.status,
-            plan: result.plan,
-            planId: result.planId,
-            newBudget: result.newBudget,
-            softLimitPercent: result.softLimitPercent,
-            hardLimitPercent: result.hardLimitPercent,
-        }, { status: 200 });
+                const response = NextResponse.json({
+                    status: result.status,
+                    plan: result.plan,
+                    planId: result.planId,
+                    newBudget: result.newBudget,
+                    softLimitPercent: result.softLimitPercent,
+                    hardLimitPercent: result.hardLimitPercent,
+                }, { status: 200 });
 
-        attachRequestIdHeader(response, requestId);
-        return response;
+                attachRequestIdHeader(response, requestId);
+                return response;
 
-    } catch (err) {
-        if (err instanceof BillingServiceError) {
-            const status = err.code === 'PLAN_NOT_FOUND' || err.code === 'PLAN_INACTIVE' ? 400 : 422;
-            return errorResponse(ErrorCode.VALIDATION_ERROR, status, requestId, err.message);
+            } catch (err) {
+                if (err instanceof BillingServiceError) {
+                    const status = err.code === 'PLAN_NOT_FOUND' || err.code === 'PLAN_INACTIVE' ? 400 : 422;
+                    return errorResponse(ErrorCode.VALIDATION_ERROR, status, requestId, err.message);
+                }
+
+                structuredLogger.error('billing_upgrade_error', {
+                    requestId,
+                    tenantId,
+                    planId,
+                    eventType: 'billing_upgrade',
+                    errorCode: ErrorCode.UNKNOWN,
+                    error: err,
+                });
+
+                return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Upgrade failed. Please try again.');
+            }
         }
-
-        structuredLogger.error('billing_upgrade_error', {
-            requestId,
-            tenantId,
-            planId,
-            eventType: 'billing_upgrade',
-            errorCode: ErrorCode.UNKNOWN,
-            error: err,
-        });
-
-        return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Upgrade failed. Please try again.');
-    }
-}));
+    )
+));
 
 /**
  * GET /api/cockpit/billing/upgrade

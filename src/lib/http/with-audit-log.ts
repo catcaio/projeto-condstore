@@ -3,7 +3,7 @@ import { writeAuditLog, ActorType } from '../security/require-audit-log';
 import { structuredLogger as logger } from '../../infra/log/logger';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type HandlerWrapper = (req: NextRequest, ctx: any) => Promise<NextResponse>;
+type HandlerWrapper = (req: NextRequest, ctx: any) => Promise<Response>;
 
 export interface AuditLogConfig {
     action: string;
@@ -22,7 +22,7 @@ export interface AuditLogConfig {
  * 4. If the audit write fails → returns 503 (fail-closed), discarding the handler response.
  */
 export function withAuditLog(config: AuditLogConfig, handler: HandlerWrapper): HandlerWrapper {
-    return async (req: NextRequest, ctx?: any): Promise<NextResponse> => {
+    return async (req: NextRequest, ctx?: any): Promise<Response> => {
         const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
         const actorType = config.actorType ?? 'user';
 
@@ -30,7 +30,7 @@ export function withAuditLog(config: AuditLogConfig, handler: HandlerWrapper): H
         const tenantId = (ctx?.params?.tenantId as string) || null;
 
         // Execute the handler first
-        let response: NextResponse;
+        let response: Response;
         try {
             response = await handler(req, ctx);
         } catch (handlerError) {

@@ -157,10 +157,22 @@ import { getDb } from '../../../../../infra/db';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeCheckoutReq(body: unknown): NextRequest {
+    const bodyStr = JSON.stringify(body);
+    const bodyBuffer = Buffer.from(bodyStr);
+
     return {
         json: () => Promise.resolve(body),
-        text: () => Promise.resolve(JSON.stringify(body)),
-        headers: { get: (_k: string) => null },
+        text: () => Promise.resolve(bodyStr),
+        arrayBuffer: () => Promise.resolve(bodyBuffer),
+        headers: {
+            get: (k: string) => {
+                const key = k.toLowerCase();
+                if (key === 'content-type') return 'application/json';
+                if (key === 'content-length') return bodyBuffer.length.toString();
+                if (key === 'x-request-id') return 'test-req-id';
+                return null;
+            }
+        },
         cookies: { get: () => undefined },
         nextUrl: { pathname: '/api/cockpit/billing/checkout' },
     } as unknown as NextRequest;

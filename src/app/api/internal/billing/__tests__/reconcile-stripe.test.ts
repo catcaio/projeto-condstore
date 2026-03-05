@@ -100,9 +100,23 @@ import { getDb } from '../../../../../infra/db';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeReq(body: object, token = 'valid-token'): NextRequest {
+    const bodyStr = JSON.stringify(body);
+    const bodyBuffer = Buffer.from(bodyStr);
+
     return {
         json: () => Promise.resolve(body),
-        headers: { get: (k: string) => k === 'x-internal-token' ? token : null },
+        arrayBuffer: () => Promise.resolve(bodyBuffer),
+        headers: {
+            get: (k: string) => {
+                const key = k.toLowerCase();
+                if (key === 'x-internal-token') return token;
+                if (key === 'content-type') return 'application/json';
+                if (key === 'content-length') return bodyBuffer.length.toString();
+                if (key === 'x-request-id') return 'test-req-id';
+                return null;
+            }
+        },
+        nextUrl: { pathname: '/api/internal/billing/reconcile-stripe' },
     } as unknown as NextRequest;
 }
 

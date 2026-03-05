@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkIdempotencyKey, saveIdempotentResponse } from '../security/idempotency';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type HandlerWrapper = (req: NextRequest, ctx: any) => Promise<NextResponse>;
+type HandlerWrapper = (req: NextRequest, ctx: any) => Promise<Response>;
 
 /**
  * Wraps a Next.js App Router API handler (`POST`, `PUT`, `PATCH`, `DELETE`) with idempotency guarantees.
@@ -12,7 +12,7 @@ type HandlerWrapper = (req: NextRequest, ctx: any) => Promise<NextResponse>;
  * rather than executing the underlying `handler`.
  */
 export function withIdempotency(handler: HandlerWrapper): HandlerWrapper {
-    return async (req: NextRequest, ctx?: any): Promise<NextResponse> => {
+    return async (req: NextRequest, ctx?: any): Promise<Response> => {
         // 1. Calculate the normalized route for uniqueness mapping
         const route = req.nextUrl?.pathname || new URL(req.url || '', 'http://localhost').pathname;
         const tenantId = typeof ctx?.params?.tenantId === 'string' ? ctx.params.tenantId : undefined;
