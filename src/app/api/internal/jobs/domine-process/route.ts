@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
+import { withIdempotency } from '@/lib/http/with-idempotency';
 import { loop } from '@/domine/processor/domine-processor';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
@@ -7,7 +8,7 @@ import { structuredLogger } from '@/infra/log/logger';
 
 const TENANT_ID = 'LOJACOND';
 
-export async function POST(req: NextRequest) {
+export const POST = withIdempotency(async (req: NextRequest) => {
     const requestId = makeRequestId(req);
 
     const tokenGuard = requireInternalToken(req, { purpose: ['jobs'] });
@@ -36,4 +37,4 @@ export async function POST(req: NextRequest) {
         });
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, err.message);
     }
-}
+});

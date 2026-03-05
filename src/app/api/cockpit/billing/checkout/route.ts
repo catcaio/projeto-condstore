@@ -12,6 +12,8 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '../../../../../infra/auth/guards';
+import { requireSessionTenantMatch } from '@/infra/auth/tenant-route-guard';
+import { withIdempotency } from '@/lib/http/with-idempotency';
 import { makeRequestId, attachRequestIdHeader } from '../../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse } from '../../../../../infra/http/error-response';
 import { structuredLogger } from '../../../../../infra/log/logger';
@@ -20,7 +22,7 @@ import { getDb } from '../../../../../infra/db';
 import { plans } from '../../../../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export const POST = withIdempotency(async (request: NextRequest): Promise<NextResponse> => {
     const requestId = makeRequestId(request);
 
     // ── Auth ─────────────────────────────────────────────────────────────────
@@ -103,4 +105,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         });
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Failed to create Stripe checkout session.');
     }
-}
+});

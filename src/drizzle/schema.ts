@@ -204,6 +204,26 @@ export const frankRolloutDecisions = mysqlTable('frank_rollout_decisions', {
 export type FrankRolloutDecisionRecord = typeof frankRolloutDecisions.$inferSelect;
 export type NewFrankRolloutDecisionRecord = typeof frankRolloutDecisions.$inferInsert;
 
+// --- Idempotency Layer ---
+
+export const idempotencyRequests = mysqlTable('idempotency_requests', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    idempotencyKey: varchar('idempotency_key', { length: 120 }).notNull(),
+    route: varchar('route', { length: 255 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 120 }),
+    responseStatus: int('response_status'),
+    responseBody: json('response_body'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+}, (table) => {
+    return {
+        idempotencyKeyRouteUnique: uniqueIndex('uniq_idem_key_route').on(table.idempotencyKey, table.route),
+    };
+});
+
+export type IdempotencyRequestRecord = typeof idempotencyRequests.$inferSelect;
+export type NewIdempotencyRequestRecord = typeof idempotencyRequests.$inferInsert;
+
 // --- Telemetry (Security) ---
 
 export const securityEdgeEvents = mysqlTable('security_edge_events', {
