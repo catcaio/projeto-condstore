@@ -1086,3 +1086,55 @@ export type DeliveryProofRecord = typeof deliveryProofs.$inferSelect;
 export type NewDeliveryProofRecord = typeof deliveryProofs.$inferInsert;
 export type InvoiceRecord = typeof invoices.$inferSelect;
 export type NewInvoiceRecord = typeof invoices.$inferInsert;
+
+// --- Delivery Tracking (Entregador GPS) ---
+
+export const couriers = mysqlTable('couriers', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    phoneHash: varchar('phone_hash', { length: 64 }).notNull(),
+    active: boolean('active').default(true).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantIdx: index('idx_couriers_tenant').on(table.tenantId),
+    phoneHashIdx: index('idx_couriers_phone_hash').on(table.phoneHash),
+}));
+
+export type CourierRecord = typeof couriers.$inferSelect;
+export type NewCourierRecord = typeof couriers.$inferInsert;
+
+export const deliveries = mysqlTable('deliveries', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    orderRef: varchar('order_ref', { length: 128 }).notNull(),
+    courierId: varchar('courier_id', { length: 36 }),
+    status: varchar('status', { length: 50 }).default('created').notNull(), // created, assigned, enroute, delivered, cancelled
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    lastLat: decimal('last_lat', { precision: 10, scale: 8 }),
+    lastLng: decimal('last_lng', { precision: 11, scale: 8 }),
+    lastUpdateAt: timestamp('last_update_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantStatusIdx: index('idx_deliveries_tenant_status').on(table.tenantId, table.status),
+    courierIdx: index('idx_deliveries_courier_id').on(table.courierId),
+    tenantOrderIdx: index('idx_deliveries_tenant_order').on(table.tenantId, table.orderRef),
+}));
+
+export type DeliveryRecord = typeof deliveries.$inferSelect;
+export type NewDeliveryRecord = typeof deliveries.$inferInsert;
+
+export const deliveryLocationEvents = mysqlTable('delivery_location_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    deliveryId: varchar('delivery_id', { length: 36 }).notNull(),
+    lat: decimal('lat', { precision: 10, scale: 8 }).notNull(),
+    lng: decimal('lng', { precision: 11, scale: 8 }).notNull(),
+    accuracy: int('accuracy'), // in meters
+    recordedAt: timestamp('recorded_at').defaultNow().notNull(),
+}, (table) => ({
+    deliveryTimeIdx: index('idx_delivery_location_events_delivery_time').on(table.deliveryId, table.recordedAt),
+}));
+
+export type DeliveryLocationEventRecord = typeof deliveryLocationEvents.$inferSelect;
+export type NewDeliveryLocationEventRecord = typeof deliveryLocationEvents.$inferInsert;
