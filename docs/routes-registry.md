@@ -54,6 +54,11 @@
 | /api/internal/tenants/[tenantId]/supreme-permissions | GET, PUT | internal | required | ops | live | FRANK SUPREMO permission flags per tenant |
 | /api/internal/tenants/[tenantId]/operational-events | GET | internal | required | ops | live | Operational event query with domain/type/date filters |
 | /api/internal/tenants/[tenantId]/metrics/core | GET | internal | required | ops | live | Core business metrics from operational_events (5 domains) |
+| /api/internal/tenants/[tenantId]/actions | GET | internal | required | ops | live | List tenant actions (filter: status, scope, limit) |
+| /api/internal/tenants/[tenantId]/actions/propose | POST | internal | required | ops | live | Propose a new governed action |
+| /api/internal/tenants/[tenantId]/actions/[actionId]/approve | POST | internal | required | ops | live | Approve a PROPOSED action |
+| /api/internal/tenants/[tenantId]/actions/[actionId]/reject | POST | internal | required | ops | live | Reject a PROPOSED/APPROVED action |
+| /api/internal/tenants/[tenantId]/actions/[actionId]/execute | POST | internal | required | ops | live | Execute an APPROVED action (requires supreme permission) |
 | /api/internal/bootstrap-admin | POST | internal | required | ops | live | One-time secure admin bootstrap |
 | /api/internal/events/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/events/metrics | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -161,6 +166,7 @@
 | /cockpit/rate-limit | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/security | GET | internal | required | cockpit | live | Security Cockpit Dashboard |
 | /cockpit/metrics | GET | internal | required | cockpit | live | Business metrics cockpit (operational_events, 5 domains) |
+| /cockpit/actions | GET | internal | required | cockpit | live | Action Engine cockpit — propose/approve/reject/execute lifecycle |
 | /cockpit/settings/knowledge | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/settings/security | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/status | TBA | public | none | PUBLIC | live | Auto-detected |

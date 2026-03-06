@@ -79,6 +79,11 @@
 | `/api/internal/qdrant/reindex` | API |
 | `/api/internal/rag/stats` | API |
 | `/api/internal/security/events` | API |
+| `/api/internal/tenants/[tenantId]/actions` | API |
+| `/api/internal/tenants/[tenantId]/actions/[actionId]/approve` | API |
+| `/api/internal/tenants/[tenantId]/actions/[actionId]/execute` | API |
+| `/api/internal/tenants/[tenantId]/actions/[actionId]/reject` | API |
+| `/api/internal/tenants/[tenantId]/actions/propose` | API |
 | `/api/internal/tenants/[tenantId]/data-contract-status` | API |
 | `/api/internal/tenants/[tenantId]/metrics/core` | API |
 | `/api/internal/tenants/[tenantId]/operational-events` | API |
@@ -143,6 +148,7 @@
 | `/cockpit/acquisition` | Page |
 | `/cockpit/acquisition/activation` | Page |
 | `/cockpit/acquisition/drilldown` | Page |
+| `/cockpit/actions` | Page |
 | `/cockpit/analytics` | Page |
 | `/cockpit/audit` | Page |
 | `/cockpit/deliveries` | Page |

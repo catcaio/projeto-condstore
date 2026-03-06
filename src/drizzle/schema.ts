@@ -1270,3 +1270,27 @@ export const operationalEvents = mysqlTable('operational_events', {
 
 export type OperationalEventRecord = typeof operationalEvents.$inferSelect;
 export type NewOperationalEventRecord = typeof operationalEvents.$inferInsert;
+
+// --- Supreme Actions ---
+
+export const supremeActions = mysqlTable('supreme_actions', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    actionType: varchar('action_type', { length: 80 }).notNull(),
+    actionScope: varchar('action_scope', { length: 40 }).notNull(),
+    status: varchar('status', { length: 40 }).notNull().default('PROPOSED'),
+    proposedBy: varchar('proposed_by', { length: 40 }).notNull(),
+    approvedBy: varchar('approved_by', { length: 120 }),
+    executedBy: varchar('executed_by', { length: 40 }),
+    payload: json('payload').notNull().$type<Record<string, unknown>>(),
+    result: json('result').$type<Record<string, unknown>>(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    approvedAt: timestamp('approved_at'),
+    executedAt: timestamp('executed_at'),
+}, (table) => ({
+    idxStatusTime: index('idx_sa_tenant_status_time').on(table.tenantId, table.status, table.createdAt),
+    idxTypeTime: index('idx_sa_tenant_type_time').on(table.tenantId, table.actionType, table.createdAt),
+}));
+
+export type SupremeActionRecord = typeof supremeActions.$inferSelect;
+export type NewSupremeActionRecord = typeof supremeActions.$inferInsert;
