@@ -1294,3 +1294,29 @@ export const supremeActions = mysqlTable('supreme_actions', {
 
 export type SupremeActionRecord = typeof supremeActions.$inferSelect;
 export type NewSupremeActionRecord = typeof supremeActions.$inferInsert;
+
+// --- Supreme Findings ---
+
+export const supremeFindings = mysqlTable('supreme_findings', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    findingType: varchar('finding_type', { length: 80 }).notNull(),
+    findingDomain: varchar('finding_domain', { length: 40 }).notNull(),
+    severity: varchar('severity', { length: 20 }).notNull(),
+    title: varchar('title', { length: 160 }).notNull(),
+    summary: text('summary').notNull(),
+    evidence: json('evidence').notNull().$type<Record<string, unknown>>(),
+    recommendedActionType: varchar('recommended_action_type', { length: 80 }),
+    recommendedActionPayload: json('recommended_action_payload').$type<Record<string, unknown>>(),
+    status: varchar('status', { length: 40 }).notNull().default('OPEN'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    resolvedAt: timestamp('resolved_at'),
+}, (table) => ({
+    idxStatusTime: index('idx_sf_tenant_status_time').on(table.tenantId, table.status, table.createdAt),
+    idxDomainTime: index('idx_sf_tenant_domain_time').on(table.tenantId, table.findingDomain, table.createdAt),
+    idxSeverityTime: index('idx_sf_tenant_severity_time').on(table.tenantId, table.severity, table.createdAt),
+}));
+
+export type SupremeFindingRecord = typeof supremeFindings.$inferSelect;
+export type NewSupremeFindingRecord = typeof supremeFindings.$inferInsert;
+

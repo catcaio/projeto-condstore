@@ -88,6 +88,10 @@
 | `/api/internal/tenants/[tenantId]/metrics/core` | API |
 | `/api/internal/tenants/[tenantId]/operational-events` | API |
 | `/api/internal/tenants/[tenantId]/supreme-permissions` | API |
+| `/api/internal/tenants/[tenantId]/supreme/analyze` | API |
+| `/api/internal/tenants/[tenantId]/supreme/findings` | API |
+| `/api/internal/tenants/[tenantId]/supreme/findings/[findingId]/propose-action` | API |
+| `/api/internal/tenants/[tenantId]/supreme/findings/[findingId]/resolve` | API |
 | `/api/knowledge/ask` | API |
 | `/api/knowledge/collections` | API |
 | `/api/knowledge/collections/[id]/sync` | API |
@@ -172,6 +176,7 @@
 | `/cockpit/settings/security` | Page |
 | `/cockpit/status` | Page |
 | `/cockpit/status/audit` | Page |
+| `/cockpit/supreme` | Page |
 | `/concept-layer-preview` | Page |
 | `/cotacao` | Page |
 | `/cotacao/result` | Page |

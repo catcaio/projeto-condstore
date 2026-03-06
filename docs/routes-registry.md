@@ -59,6 +59,10 @@
 | /api/internal/tenants/[tenantId]/actions/[actionId]/approve | POST | internal | required | ops | live | Approve a PROPOSED action |
 | /api/internal/tenants/[tenantId]/actions/[actionId]/reject | POST | internal | required | ops | live | Reject a PROPOSED/APPROVED action |
 | /api/internal/tenants/[tenantId]/actions/[actionId]/execute | POST | internal | required | ops | live | Execute an APPROVED action (requires supreme permission) |
+| /api/internal/tenants/[tenantId]/supreme/findings | GET | internal | required | ops | live | FRANK SUPREMO findings (filter by status/domain) |
+| /api/internal/tenants/[tenantId]/supreme/analyze | POST | internal | required | ops | live | Run FRANK SUPREMO analysis manually |
+| /api/internal/tenants/[tenantId]/supreme/findings/[findingId]/resolve | POST | internal | required | ops | live | Mark finding as resolved |
+| /api/internal/tenants/[tenantId]/supreme/findings/[findingId]/propose-action | POST | internal | required | ops | live | Propose action to Action Engine based on finding recommendation |
 | /api/internal/bootstrap-admin | POST | internal | required | ops | live | One-time secure admin bootstrap |
 | /api/internal/events/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/events/metrics | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -167,6 +171,7 @@
 | /cockpit/security | GET | internal | required | cockpit | live | Security Cockpit Dashboard |
 | /cockpit/metrics | GET | internal | required | cockpit | live | Business metrics cockpit (operational_events, 5 domains) |
 | /cockpit/actions | GET | internal | required | cockpit | live | Action Engine cockpit — propose/approve/reject/execute lifecycle |
+| /cockpit/supreme | GET | internal | required | cockpit | live | FRANK SUPREMO findings dashboard |
 | /cockpit/settings/knowledge | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/settings/security | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/status | TBA | public | none | PUBLIC | live | Auto-detected |
