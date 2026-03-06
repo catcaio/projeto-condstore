@@ -274,6 +274,13 @@
       "when": 1772807302664,
       "tag": "0050_tenant_supreme_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "5",
+      "when": 1772809362144,
+      "tag": "0051_operational_events",
+      "breakpoints": true
     }
   ]
 }

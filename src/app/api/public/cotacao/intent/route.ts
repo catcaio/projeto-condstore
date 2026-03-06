@@ -155,6 +155,23 @@ async function handler(request: NextRequest): Promise<NextResponse> {
             uaHash,
         });
 
+        // Publish operational events (fire-and-forget — never blocks response)
+        void (async () => {
+            try {
+                const { publishOperationalEvent } = await import('@/lib/events/operational-event-bus');
+                const baseEvent = {
+                    tenantId,
+                    sessionId: anonId,
+                    attributionId: attributionId ?? undefined,
+                    payload: { intentId, utmSource: parseResult.data.utmSource ?? null },
+                };
+                if (attributionId) {
+                    await publishOperationalEvent({ ...baseEvent, eventType: 'traffic_attributed', eventDomain: 'ACQUISITION' });
+                }
+                await publishOperationalEvent({ ...baseEvent, eventType: 'lead_created', eventDomain: 'ACQUISITION' });
+            } catch { /* non-blocking */ }
+        })();
+
         const response = NextResponse.json({ intentId, next: "upgrades_pending" });
 
         // Ensure headers exist correctly

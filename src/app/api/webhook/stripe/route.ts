@@ -109,6 +109,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             // Non-blocking: intake failure must never break webhook response
         }
 
+        // ── Publish operational event for checkout.session.completed (fire-and-forget) ──
+        if (event.type === 'checkout.session.completed' || event.type === 'invoice.paid') {
+            const obj = (event.data?.object ?? {}) as Record<string, any>;
+            const tenantId = obj.metadata?.tenantId ?? obj.client_reference_id ?? null;
+            if (tenantId) {
+                void import('../../../../lib/events/operational-event-bus')
+                    .then(({ publishOperationalEvent }) =>
+                        publishOperationalEvent({
+                            tenantId,
+                            eventType: 'payment_confirmed',
+                            eventDomain: 'REVENUE',
+                            entityId: event.id,
+                            payload: { stripeEventType: event.type, customerId: obj.customer ?? null },
+                        })
+                    )
+                    .catch(() => { /* non-blocking */ });
+            }
+        }
+
         return NextResponse.json({ received: true }, { status: 200 });
     }, requestId);
 }

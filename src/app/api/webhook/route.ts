@@ -447,6 +447,20 @@ export async function POST(request: NextRequest) {
         rawPayload: JSON.stringify(sanitizedPayload),
       });
 
+      // Publish operational event (fire-and-forget)
+      void import('@/lib/events/operational-event-bus')
+        .then(({ publishOperationalEvent }) =>
+          publishOperationalEvent({
+            tenantId,
+            eventType: 'message_received',
+            eventDomain: 'OPERATIONS',
+            entityId: messageSid,
+            attributionId: inboundAttribution?.clickId ?? undefined,
+            payload: { intent, confidence },
+          })
+        )
+        .catch(() => { /* non-blocking */ });
+
       // ── 11b. Update context cache (fire-and-forget, non-blocking) ─────────────
       // Keeps the Redis snapshot fresh so Frank has conversation history on the
       // next request without hitting the DB.  Failures are silently swallowed

@@ -80,6 +80,7 @@
 | `/api/internal/rag/stats` | API |
 | `/api/internal/security/events` | API |
 | `/api/internal/tenants/[tenantId]/data-contract-status` | API |
+| `/api/internal/tenants/[tenantId]/operational-events` | API |
 | `/api/internal/tenants/[tenantId]/supreme-permissions` | API |
 | `/api/knowledge/ask` | API |
 | `/api/knowledge/collections` | API |

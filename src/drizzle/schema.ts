@@ -1248,3 +1248,25 @@ export const tenantSupremePermissions = mysqlTable('tenant_supreme_permissions',
 
 export type TenantSupremePermissionsRecord = typeof tenantSupremePermissions.$inferSelect;
 export type NewTenantSupremePermissionsRecord = typeof tenantSupremePermissions.$inferInsert;
+
+// --- Operational Events ---
+
+export const operationalEvents = mysqlTable('operational_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    eventType: varchar('event_type', { length: 80 }).notNull(),
+    eventDomain: varchar('event_domain', { length: 40 }).notNull(),
+    entityId: varchar('entity_id', { length: 120 }),
+    customerId: varchar('customer_id', { length: 120 }),
+    sessionId: varchar('session_id', { length: 120 }),
+    attributionId: varchar('attribution_id', { length: 120 }),
+    payload: json('payload').notNull().$type<Record<string, unknown>>(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxDomainTime: index('idx_op_events_tenant_domain_time').on(table.tenantId, table.eventDomain, table.createdAt),
+    idxTypeTime: index('idx_op_events_tenant_type_time').on(table.tenantId, table.eventType, table.createdAt),
+    idxCustomerTime: index('idx_op_events_tenant_customer_time').on(table.tenantId, table.customerId, table.createdAt),
+}));
+
+export type OperationalEventRecord = typeof operationalEvents.$inferSelect;
+export type NewOperationalEventRecord = typeof operationalEvents.$inferInsert;

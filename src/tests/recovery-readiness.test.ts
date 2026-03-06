@@ -154,7 +154,7 @@ describe('runRecoveryIntegrityChecks', () => {
         expect(result.critical_tables_present).toBe(true);
         expect(result.table_count_ok).toBe(true);
         expect(result.migrations_in_sync).toBe(true);
-        expect(result.latest_migration_id).toBe(50);
+        expect(result.latest_migration_id).toBe(51);
         expect(result.basic_reads_ok).toBe(true);
     });
 
@@ -250,7 +250,7 @@ describe('GET /api/internal/diag/recovery', () => {
         expect(body.db_connection_ok).toBe(true);
         expect(body.redis_connection_ok).toBe(true);
         expect(body.migrations_in_sync).toBe(true);
-        expect(body.latest_migration_id).toBe(50);
+        expect(body.latest_migration_id).toBe(51);
         expect(body.backup_envs_present).toBe(true);
         expect(body.restore_check_ready).toBe(true);
     });

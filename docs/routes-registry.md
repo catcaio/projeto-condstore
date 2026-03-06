@@ -52,6 +52,7 @@
 | /api/internal/diag/recovery | GET | internal | required | ops | live | DR readiness check: DB, Redis, migrations, backup envs |
 | /api/internal/tenants/[tenantId]/data-contract-status | GET | internal | required | ops | live | Tenant data contract readiness check (per-dimension) |
 | /api/internal/tenants/[tenantId]/supreme-permissions | GET, PUT | internal | required | ops | live | FRANK SUPREMO permission flags per tenant |
+| /api/internal/tenants/[tenantId]/operational-events | GET | internal | required | ops | live | Operational event query with domain/type/date filters |
 | /api/internal/bootstrap-admin | POST | internal | required | ops | live | One-time secure admin bootstrap |
 | /api/internal/events/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/events/metrics | TBA | public | none | PUBLIC | live | Auto-detected |
