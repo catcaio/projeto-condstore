@@ -25,6 +25,9 @@ import {
 } from '../../../../../modules/billing/billing.service';
 import { withJsonBody } from '@/lib/http/with-json-body';
 import { z } from 'zod';
+import { withDistributedLock } from '@/lib/infra/distributed-lock';
+import { billingLock } from '@/lib/infra/lock-keys';
+import { LockAcquisitionError } from '@/lib/infra/errors';
 
 const upgradeSchema = z.object({
     planId: z.string().min(1, 'planId is required')
@@ -51,44 +54,53 @@ export const POST = withReplayProtection(withIdempotency(
 
             // ── Execute upgrade ───────────────────────────────────────────────────────
             try {
-                const result = await upgradeTenantPlan(tenantId, planId, requestId);
+                return await withDistributedLock(billingLock(tenantId), 300, async () => {
+                    try {
+                        const result = await upgradeTenantPlan(tenantId, planId, requestId);
 
-                structuredLogger.info('billing_upgrade_success', {
-                    requestId,
-                    tenantId,
-                    planId: result.planId,
-                    newBudget: result.newBudget,
-                    eventType: 'billing_upgrade',
+                        structuredLogger.info('billing_upgrade_success', {
+                            requestId,
+                            tenantId,
+                            planId: result.planId,
+                            newBudget: result.newBudget,
+                            eventType: 'billing_upgrade',
+                        });
+
+                        const response = NextResponse.json({
+                            status: result.status,
+                            plan: result.plan,
+                            planId: result.planId,
+                            newBudget: result.newBudget,
+                            softLimitPercent: result.softLimitPercent,
+                            hardLimitPercent: result.hardLimitPercent,
+                        }, { status: 200 });
+
+                        attachRequestIdHeader(response, requestId);
+                        return response;
+
+                    } catch (err) {
+                        if (err instanceof BillingServiceError) {
+                            const status = err.code === 'PLAN_NOT_FOUND' || err.code === 'PLAN_INACTIVE' ? 400 : 422;
+                            return errorResponse(ErrorCode.VALIDATION_ERROR, status, requestId, err.message);
+                        }
+
+                        structuredLogger.error('billing_upgrade_error', {
+                            requestId,
+                            tenantId,
+                            planId,
+                            eventType: 'billing_upgrade',
+                            errorCode: ErrorCode.UNKNOWN,
+                            error: err,
+                        });
+
+                        return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Upgrade failed. Please try again.');
+                    }
                 });
-
-                const response = NextResponse.json({
-                    status: result.status,
-                    plan: result.plan,
-                    planId: result.planId,
-                    newBudget: result.newBudget,
-                    softLimitPercent: result.softLimitPercent,
-                    hardLimitPercent: result.hardLimitPercent,
-                }, { status: 200 });
-
-                attachRequestIdHeader(response, requestId);
-                return response;
-
             } catch (err) {
-                if (err instanceof BillingServiceError) {
-                    const status = err.code === 'PLAN_NOT_FOUND' || err.code === 'PLAN_INACTIVE' ? 400 : 422;
-                    return errorResponse(ErrorCode.VALIDATION_ERROR, status, requestId, err.message);
+                if (err instanceof LockAcquisitionError) {
+                    return errorResponse(ErrorCode.LOCK_BUSY, 423, requestId, 'Billing operation in progress. Please try again in a moment.');
                 }
-
-                structuredLogger.error('billing_upgrade_error', {
-                    requestId,
-                    tenantId,
-                    planId,
-                    eventType: 'billing_upgrade',
-                    errorCode: ErrorCode.UNKNOWN,
-                    error: err,
-                });
-
-                return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Upgrade failed. Please try again.');
+                throw err;
             }
         }
     )

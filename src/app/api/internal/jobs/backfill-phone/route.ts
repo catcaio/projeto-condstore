@@ -8,6 +8,8 @@ import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/
 import { structuredLogger } from '../../../../../infra/log/logger';
 import { adminAuditLogRepository } from '../../../../../infra/repositories/admin-audit-log.repository';
 import { backfillPhonePii } from '../../../../../modules/jobs/backfillPhonePii';
+import { withDistributedLock } from '../../../../../lib/http/with-distributed-lock';
+import { jobLock } from '../../../../../lib/infra/lock-keys';
 
 interface BackfillPhoneBody {
   batchSize?: number;
@@ -17,7 +19,7 @@ interface BackfillPhoneBody {
 const INTERNAL_AUDIT_TENANT_ID = 'internal-system';
 const INTERNAL_AUDIT_USER_ID = 'internal-job';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function postHandler(request: NextRequest): Promise<NextResponse> {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/internal/jobs/backfill-phone';
@@ -85,3 +87,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Phone PII backfill failed');
   }
 }
+
+export const POST = withDistributedLock(() => jobLock('backfill-phone'), 600, postHandler);

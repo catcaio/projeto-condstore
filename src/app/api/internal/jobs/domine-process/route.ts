@@ -9,6 +9,8 @@ import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { structuredLogger } from '@/infra/log/logger';
 import { withJsonBody } from '@/lib/http/with-json-body';
 import { z } from 'zod';
+import { withDistributedLock } from '@/lib/http/with-distributed-lock';
+import { jobLock } from '@/lib/infra/lock-keys';
 
 const domineProcessSchema = z.object({
     max: z.number().int().positive().optional(),
@@ -19,7 +21,7 @@ const TENANT_ID = 'LOJACOND';
 
 export const POST = withReplayProtection(withIdempotency(withAuditLog(
     { action: 'domine_process_job', scope: 'jobs', actorType: 'internal' },
-    withJsonBody(
+    withDistributedLock(() => jobLock('domine-process'), 300, withJsonBody(
         { schema: domineProcessSchema },
         async (req: NextRequest, ctx: any, body: z.infer<typeof domineProcessSchema>) => {
             const requestId = makeRequestId(req);
@@ -50,4 +52,5 @@ export const POST = withReplayProtection(withIdempotency(withAuditLog(
                 return errorResponse(ErrorCode.UNKNOWN, 500, requestId, err.message);
             }
         })
-)));
+    ))
+));

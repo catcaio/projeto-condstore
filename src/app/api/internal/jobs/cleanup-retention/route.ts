@@ -8,11 +8,13 @@ import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/
 import { structuredLogger } from '../../../../../infra/log/logger';
 import { adminAuditLogRepository } from '../../../../../infra/repositories/admin-audit-log.repository';
 import { runRetentionCleanup } from '../../../../../modules/metrics/retention-cleanup.service';
+import { withDistributedLock } from '../../../../../lib/http/with-distributed-lock';
+import { jobLock } from '../../../../../lib/infra/lock-keys';
 
 const INTERNAL_AUDIT_TENANT_ID = 'internal-system';
 const INTERNAL_AUDIT_USER_ID = 'internal-job';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function postHandler(request: NextRequest): Promise<NextResponse> {
   const startedAt = Date.now();
   const requestId = makeRequestId(request);
   const route = '/api/internal/jobs/cleanup-retention';
@@ -57,3 +59,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return errorResponse(ErrorCode.DB_ERROR, 500, requestId, 'Cleanup retention failed');
   }
 }
+
+export const POST = withDistributedLock(() => jobLock('cleanup-retention'), 600, postHandler);

@@ -21,6 +21,10 @@ vi.mock('@/infra/logger', () => ({
   },
 }));
 
+vi.mock('@/lib/infra/distributed-lock', () => ({
+  withDistributedLock: vi.fn(async (key, ttl, handler) => handler()),
+}));
+
 vi.mock('../../../../../modules/metrics/rollup-daily.service', () => ({
   runDailyMetricsRollup: vi.fn(),
   runRollupBackfill: vi.fn(),

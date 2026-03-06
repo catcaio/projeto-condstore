@@ -6,9 +6,11 @@ import { requireInternalToken } from '../../../../../infra/auth/tenant-route-gua
 import { ErrorCode, errorResponse } from '../../../../../infra/http/error-response';
 import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/request-trace';
 import { structuredLogger } from '../../../../../infra/log/logger';
+import { withDistributedLock } from '../../../../../lib/http/with-distributed-lock';
+import { jobLock } from '../../../../../lib/infra/lock-keys';
 import { runFinopsReconciliation } from '../../../../../modules/jobs/finops-reconciliation.worker';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function postHandler(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();
     const requestId = makeRequestId(request);
     const route = '/api/internal/jobs/finops-reconciliation';
@@ -61,3 +63,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return errorResponse(ErrorCode.DB_ERROR, 500, requestId, (error as Error).message || 'Worker failed');
     }
 }
+
+export const POST = withDistributedLock(() => jobLock('finops-reconciliation'), 600, postHandler);
