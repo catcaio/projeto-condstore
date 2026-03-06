@@ -51,6 +51,7 @@
 | `/api/internal/bootstrap-admin` | API |
 | `/api/internal/dev/session` | API |
 | `/api/internal/diag` | API |
+| `/api/internal/diag/recovery` | API |
 | `/api/internal/events/dlq` | API |
 | `/api/internal/events/metrics` | API |
 | `/api/internal/exports/frank-events` | API |
