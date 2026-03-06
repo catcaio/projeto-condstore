@@ -59,10 +59,13 @@
 | /api/internal/tenants/[tenantId]/actions/[actionId]/approve | POST | internal | required | ops | live | Approve a PROPOSED action |
 | /api/internal/tenants/[tenantId]/actions/[actionId]/reject | POST | internal | required | ops | live | Reject a PROPOSED/APPROVED action |
 | /api/internal/tenants/[tenantId]/actions/[actionId]/execute | POST | internal | required | ops | live | Execute an APPROVED action (requires supreme permission) |
-| /api/internal/tenants/[tenantId]/supreme/findings | GET | internal | required | ops | live | FRANK SUPREMO findings (filter by status/domain) |
-| /api/internal/tenants/[tenantId]/supreme/analyze | POST | internal | required | ops | live | Run FRANK SUPREMO analysis manually |
-| /api/internal/tenants/[tenantId]/supreme/findings/[findingId]/resolve | POST | internal | required | ops | live | Mark finding as resolved |
-| /api/internal/tenants/[tenantId]/supreme/findings/[findingId]/propose-action | POST | internal | required | ops | live | Propose action to Action Engine based on finding recommendation |
+| /api/internal/tenants/[tenantId]/supreme/analyze | POST | internal | requireAdmin | backend | live | FRANK SUPREMO manually trigger analysis engine |
+| /api/internal/tenants/[tenantId]/supreme/findings | GET | internal | requireAdmin | backend | live | List and filter generated findings |
+| /api/internal/tenants/[tenantId]/supreme/findings/[findingId]/propose-action | POST | internal | requireAdmin | backend | live | Forwards finding recommendation to Action Engine |
+| /api/internal/tenants/[tenantId]/supreme/findings/[findingId]/resolve | POST | internal | requireAdmin | backend | live | Mark finding as resolved manually |
+| /api/internal/playbooks | GET | internal | requireAdmin | backend | live | List global Supreme Playbooks |
+| /api/internal/playbooks/[playbookId]/toggle | POST | internal | requireAdmin | backend | live | Enable/disable a playbook |
+| /api/internal/tenants/[tenantId]/playbooks/[playbookId]/simulate | POST | internal | requireAdmin | backend | live | Execute a playbook (propose actions) against a tenant's findings |
 | /api/internal/bootstrap-admin | POST | internal | required | ops | live | One-time secure admin bootstrap |
 | /api/internal/events/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/events/metrics | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -172,6 +175,7 @@
 | /cockpit/metrics | GET | internal | required | cockpit | live | Business metrics cockpit (operational_events, 5 domains) |
 | /cockpit/actions | GET | internal | required | cockpit | live | Action Engine cockpit — propose/approve/reject/execute lifecycle |
 | /cockpit/supreme | GET | internal | required | cockpit | live | FRANK SUPREMO findings dashboard |
+| /cockpit/playbooks | GET | internal | required | cockpit | live | Supreme Playbooks management |
 | /cockpit/settings/knowledge | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/settings/security | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/status | TBA | public | none | PUBLIC | live | Auto-detected |

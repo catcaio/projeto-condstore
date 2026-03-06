@@ -10,6 +10,7 @@ import { structuredLogger } from '@/infra/log/logger';
 import { getTenantCoreMetrics } from '@/lib/metrics/cockpit-metrics-engine';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { proposeAction } from '@/lib/actions/action-engine';
+import { evaluatePlaybooks } from '@/lib/supreme/playbook-engine';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -174,6 +175,14 @@ export async function analyzeTenant(tenantId: string, rangeDays: number = 30) {
                 entityId: id,
                 payload: { findingType: f.findingType, severity: f.severity },
             });
+
+            // Auto-evaluate this finding against known Playbooks
+            // Running non-blocking intentionally or awaited? Awaited so we can return counts if needed
+            try {
+                await evaluatePlaybooks(tenantId, [{ id, findingType: f.findingType }]);
+            } catch (err: any) {
+                structuredLogger.error('supreme_analyzer_playbook_trigger_failed', { tenantId, findingId: id, error: err.message });
+            }
         }
     }
 

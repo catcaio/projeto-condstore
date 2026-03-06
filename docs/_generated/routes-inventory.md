@@ -74,6 +74,8 @@
 | `/api/internal/jobs/rollup-daily` | API |
 | `/api/internal/jobs/security-anomaly-scan` | API |
 | `/api/internal/ops` | API |
+| `/api/internal/playbooks` | API |
+| `/api/internal/playbooks/[playbookId]/toggle` | API |
 | `/api/internal/qa/bootstrap-session` | API |
 | `/api/internal/qa/setup` | API |
 | `/api/internal/qdrant/reindex` | API |
@@ -87,6 +89,7 @@
 | `/api/internal/tenants/[tenantId]/data-contract-status` | API |
 | `/api/internal/tenants/[tenantId]/metrics/core` | API |
 | `/api/internal/tenants/[tenantId]/operational-events` | API |
+| `/api/internal/tenants/[tenantId]/playbooks/[playbookId]/simulate` | API |
 | `/api/internal/tenants/[tenantId]/supreme-permissions` | API |
 | `/api/internal/tenants/[tenantId]/supreme/analyze` | API |
 | `/api/internal/tenants/[tenantId]/supreme/findings` | API |
@@ -169,6 +172,7 @@
 | `/cockpit/marciano/[...slug]` | Page |
 | `/cockpit/metrics` | Page |
 | `/cockpit/overview` | Page |
+| `/cockpit/playbooks` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |
 | `/cockpit/security` | Page |

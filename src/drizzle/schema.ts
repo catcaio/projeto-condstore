@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, decimal, int, timestamp, text, index, uniqueIndex, json, date, primaryKey, datetime, mysqlEnum, boolean } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, decimal, double, int, timestamp, text, index, uniqueIndex, json, date, primaryKey, datetime, mysqlEnum, boolean } from 'drizzle-orm/mysql-core';
 import { sql } from 'drizzle-orm';
 
 // --- Tenants (Multi-Tenant Support) ---
@@ -1319,4 +1319,26 @@ export const supremeFindings = mysqlTable('supreme_findings', {
 
 export type SupremeFindingRecord = typeof supremeFindings.$inferSelect;
 export type NewSupremeFindingRecord = typeof supremeFindings.$inferInsert;
+
+// --- Supreme Playbooks ---
+
+export const supremePlaybooks = mysqlTable('supreme_playbooks', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    playbookName: varchar('playbook_name', { length: 120 }).notNull(),
+    playbookDomain: varchar('playbook_domain', { length: 40 }).notNull(),
+    triggerFindingType: varchar('trigger_finding_type', { length: 80 }).notNull(),
+    actionSequence: json('action_sequence').notNull().$type<Array<{ action: string; delay_minutes: number; payloadTemplate?: Record<string, unknown> }>>(),
+    expectedMetric: varchar('expected_metric', { length: 80 }).notNull(),
+    successThreshold: double('success_threshold').notNull(),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxDomain: index('idx_sp_domain').on(table.playbookDomain),
+    idxTrigger: index('idx_sp_trigger').on(table.triggerFindingType),
+}));
+
+export type SupremePlaybookRecord = typeof supremePlaybooks.$inferSelect;
+export type NewSupremePlaybookRecord = typeof supremePlaybooks.$inferInsert;
+
 

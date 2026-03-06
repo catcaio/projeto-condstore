@@ -295,6 +295,13 @@
       "when": 1772813203111,
       "tag": "0053_supreme_findings",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "5",
+      "when": 1772814420739,
+      "tag": "0054_supreme_playbooks",
+      "breakpoints": true
     }
   ]
 }
