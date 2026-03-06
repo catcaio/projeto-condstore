@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getDb } from '@/infra/db';
-import { users, invites, tenantSignupPolicies } from '@/drizzle/schema';
+import { users, invites, tenantSignupPolicies, tenants, tenantBudgets } from '@/drizzle/schema';
 import { hashPassword } from '@/infra/auth/password';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { isRole } from '@/infra/auth/roles';
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         const db = await getDb();
 
         // ── 1. Check if user already exists ───────────────────────────────
-        const existing = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
+        const existing = await db.select().from(users).where(eq(users.email, normalizedEmail));
         if (existing.length > 0) {
             return NextResponse.json(
                 { success: false, error: 'Já existe uma conta com este email' },
@@ -75,8 +75,7 @@ export async function POST(request: NextRequest) {
             const inviteRows = await db
                 .select()
                 .from(invites)
-                .where(and(eq(invites.token, inviteToken), isNull(invites.usedAt)))
-                .limit(1);
+                .where(and(eq(invites.token, inviteToken), isNull(invites.usedAt)));
 
             const invite = inviteRows[0];
             if (!invite) {
@@ -128,10 +127,27 @@ export async function POST(request: NextRequest) {
         }
 
         if (!tenantId) {
-            return NextResponse.json(
-                { success: false, error: 'Não foi possível encontrar uma organização. Solicite um convite ao administrador.' },
-                { status: 400 }
-            );
+            // ZERO-TOUCH PROVISIONING
+            // If the user has no invite and isn't mapped to a domain, create a new workspace for them
+            tenantId = crypto.randomUUID();
+            resolvedRole = 'admin'; // They own their new workspace
+
+            await db.insert(tenants).values({
+                id: tenantId,
+                name: `Loja de ${name}`,
+                twilioNumber: `PENDING-${tenantId.substring(0, 8)}`, // Placeholder
+            });
+
+            await db.insert(tenantBudgets).values({
+                tenantId: tenantId,
+                monthlyTokenLimit: 100000,
+            });
+
+            structuredLogger.info('tenant_provisioned', {
+                eventType: 'provisioning',
+                tenantId,
+                userId: email,
+            });
         }
 
         // 2c. Validate privileged role access
@@ -142,18 +158,17 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // 2d. Check self-signup policy for non-invited users
-        if (!inviteToken) {
+        // 2d. Check self-signup policy for non-invited users (Skip if zero-touch provisioned)
+        if (!inviteToken && tenantId && resolvedRole !== 'admin') {
             const policyRows = await db
                 .select()
                 .from(tenantSignupPolicies)
-                .where(eq(tenantSignupPolicies.tenantId, tenantId))
-                .limit(1);
+                .where(eq(tenantSignupPolicies.tenantId, tenantId));
 
             const policy = policyRows[0];
             if (!policy?.selfSignupEnabled) {
                 return NextResponse.json(
-                    { success: false, error: 'Cadastro livre não está habilitado. Solicite um convite.' },
+                    { success: false, error: 'Cadastro livre não está habilitado para esta organização. Solicite um convite.' },
                     { status: 403 }
                 );
             }
@@ -195,7 +210,7 @@ export async function POST(request: NextRequest) {
                 userId,
                 verifyUrl,
             });
-            console.log(`\n📧 Email verify link (dev): ${verifyUrl}\n`);
+            structuredLogger.debug('email_verify_link_dev_hint', { eventType: 'email_verify', userId, urlPrefix: verifyUrl.slice(0, 50) + '…' });
         } else if (process.env.RESEND_API_KEY) {
             try {
                 await fetch('https://api.resend.com/emails', {
@@ -251,7 +266,7 @@ export async function POST(request: NextRequest) {
             error,
         });
         return NextResponse.json(
-            { success: false, error: 'Erro interno. Tente novamente.' },
+            { success: false, error: 'Erro interno. Tente novamente.', devMsg: error instanceof Error ? error.message : String(error) },
             { status: 500 }
         );
     }

@@ -87,7 +87,7 @@ export async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<Handle
     if (!invoiceSubId) return IGNORED('no_subscription_id');
 
     const db = await getDb();
-    const rows = await db.select().from(tenantSubscriptions).where(eq(tenantSubscriptions.stripeSubscriptionId, invoiceSubId)).limit(1);
+    const rows = await db.select().from(tenantSubscriptions).where(eq(tenantSubscriptions.stripeSubscriptionId, invoiceSubId));
     const sub = rows[0] ?? null;
 
     if (!sub) {
@@ -111,7 +111,7 @@ export async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<Handle
 
 export async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<HandlerResult> {
     const db = await getDb();
-    const rows = await db.select().from(tenantSubscriptions).where(eq(tenantSubscriptions.stripeSubscriptionId, subscription.id)).limit(1);
+    const rows = await db.select().from(tenantSubscriptions).where(eq(tenantSubscriptions.stripeSubscriptionId, subscription.id));
     const sub = rows[0] ?? null;
 
     if (!sub) {
@@ -139,7 +139,7 @@ export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promi
     if (!invoiceSubId) return IGNORED('no_subscription_id');
 
     const db = await getDb();
-    const rows = await db.select().from(tenantSubscriptions).where(eq(tenantSubscriptions.stripeSubscriptionId, invoiceSubId)).limit(1);
+    const rows = await db.select().from(tenantSubscriptions).where(eq(tenantSubscriptions.stripeSubscriptionId, invoiceSubId));
     const sub = rows[0] ?? null;
 
     if (!sub) return IGNORED('no_matching_subscription');
@@ -152,7 +152,7 @@ export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promi
 
 export async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<HandlerResult> {
     const db = await getDb();
-    const rows = await db.select().from(tenantSubscriptions).where(eq(tenantSubscriptions.stripeSubscriptionId, subscription.id)).limit(1);
+    const rows = await db.select().from(tenantSubscriptions).where(eq(tenantSubscriptions.stripeSubscriptionId, subscription.id));
     const sub = rows[0] ?? null;
 
     if (!sub) return IGNORED('no_matching_subscription');

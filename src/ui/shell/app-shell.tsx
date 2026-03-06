@@ -5,7 +5,7 @@ import { ThemeToggle } from '@/ui/theme';
 import { InspectBadge } from './inspect-badge';
 import { FinOpsStatusBar } from './finops-status-bar';
 import { Box } from 'lucide-react';
-import { ModuleBreadcrumb } from '@/ui/components';
+import { ModuleBreadcrumb, CondstoreLogo } from '@/ui/components';
 
 export function AppShell({
     children,
@@ -20,16 +20,15 @@ export function AppShell({
         <div className="os-root min-h-screen bg-[hsl(var(--ui-bg))] text-[hsl(var(--ui-text))] flex flex-col md:flex-row">
             {/* Sidebar / Topbar */}
             <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] flex flex-col">
-                <div className="p-4 border-b border-[hsl(var(--ui-border))] flex items-center gap-2 shrink-0">
-                    <Box className="h-5 w-5 text-[hsl(var(--ui-accent-blue))]" />
-                    <div className="flex flex-col">
-                        <span className="font-semibold text-[hsl(var(--ui-text))] tracking-tight">CONDSTORE OS</span>
-                        {tenantId && (
-                            <span className="text-[11px] text-[hsl(var(--ui-text-muted))] truncate max-w-[180px] leading-tight">
-                                {tenantId}
-                            </span>
-                        )}
+                <div className="p-4 border-b border-[hsl(var(--ui-border))] flex flex-col gap-3 shrink-0">
+                    <div className="flex justify-center pt-2 pb-1">
+                        <CondstoreLogo size="md" />
                     </div>
+                    {tenantId && (
+                        <span className="text-[11px] text-[hsl(var(--ui-text-muted))] truncate max-w-[180px] leading-tight flex justify-center">
+                            Setor: {tenantId}
+                        </span>
+                    )}
                 </div>
 
                 <div className="p-4 flex-1 overflow-y-auto">
@@ -54,7 +53,7 @@ export function AppShell({
                         </div>
                     </div>
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }

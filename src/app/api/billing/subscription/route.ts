@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
             plan: tenants.plan,
             planStatus: tenants.planStatus,
             planCurrentPeriodEnd: tenants.planCurrentPeriodEnd
-        }).from(tenants).where(eq(tenants.id, tenantId)).limit(1);
+        }).from(tenants).where(eq(tenants.id, tenantId));
 
         const cookieOptions = {
             path: '/',

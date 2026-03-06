@@ -82,7 +82,7 @@ export async function getActiveSubscription(
                 eq(tenantSubscriptions.status, 'active'),
             ),
         )
-        .limit(1);
+        ;
 
     if (rows.length === 0) return null;
     return { ...rows[0].tenant_subscriptions, plan: rows[0].plans };
@@ -123,7 +123,7 @@ export async function upgradeTenantPlan(
         .select()
         .from(plans)
         .where(eq(plans.id, newPlanId))
-        .limit(1);
+        ;
 
     if (planRows.length === 0) {
         throw new BillingServiceError('PLAN_NOT_FOUND', `Plan '${newPlanId}' not found.`);
@@ -139,7 +139,7 @@ export async function upgradeTenantPlan(
         .select({ stateRevision: tenantBudgets.stateRevision })
         .from(tenantBudgets)
         .where(eq(tenantBudgets.tenantId, tenantId))
-        .limit(1);
+        ;
 
     if (budgetRows.length === 0) {
         throw new BillingServiceError(

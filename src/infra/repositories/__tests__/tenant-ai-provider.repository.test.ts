@@ -8,15 +8,22 @@ vi.mock('../../logger', () => ({
   },
 }));
 
-const mockDb = vi.hoisted(() => ({
-  select: vi.fn().mockReturnThis(),
+const mockDbLimit = vi.hoisted(() => vi.fn());
+const selectChain = vi.hoisted(() => ({
   from: vi.fn().mockReturnThis(),
   where: vi.fn().mockReturnThis(),
-  limit: vi.fn(),
+  limit: mockDbLimit,
+  then: (resolve: any, reject: any) => mockDbLimit().then(resolve, reject),
+}));
+
+const mockDb = vi.hoisted(() => ({
+  select: vi.fn().mockReturnValue(selectChain),
   insert: vi.fn().mockReturnThis(),
-  values: vi.fn(),
+  values: vi.fn().mockResolvedValue(undefined),
   update: vi.fn().mockReturnThis(),
   set: vi.fn().mockReturnThis(),
+  where: vi.fn().mockReturnThis(),
+  limit: mockDbLimit,
 }));
 
 vi.mock('../../db', () => ({

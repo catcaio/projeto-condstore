@@ -64,7 +64,7 @@ export async function runMonthlyReset(
                 .select({ stateRevision: tenantBudgets.stateRevision })
                 .from(tenantBudgets)
                 .where(eq(tenantBudgets.tenantId, tenantId))
-                .limit(1);
+                ;
 
             const revision = budgetRows.length > 0 ? (budgetRows[0].stateRevision ?? 1) + 1 : 2;
 

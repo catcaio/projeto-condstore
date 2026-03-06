@@ -18,14 +18,23 @@ import type { ContextMessage } from '../context-cache';
 
 // ── DB + AI mocks (Redis intentionally NOT mocked — we use in-memory fallback) ─
 
-const mockDbChain = vi.hoisted(() => ({
-    select: vi.fn().mockReturnThis(),
+const mockDbLimit = vi.hoisted(() => vi.fn().mockResolvedValue([]));
+const selectChain = vi.hoisted(() => ({
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockResolvedValue([]),
+    limit: mockDbLimit,
+    then: (resolve: any, reject: any) => mockDbLimit().then(resolve).catch(reject),
+}));
+
+const mockDbChain = vi.hoisted(() => ({
     insert: vi.fn().mockReturnThis(),
     values: vi.fn().mockResolvedValue(undefined),
+    select: vi.fn().mockReturnValue(selectChain),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: mockDbLimit,
 }));
 
 vi.mock('../db', () => ({

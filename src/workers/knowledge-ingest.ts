@@ -72,7 +72,7 @@ async function processMessage(messageId: string, fields: string[]) {
         // Find latest job for this version
         const [job] = await db.select().from(tenantIngestionJobs)
             .where(eq(tenantIngestionJobs.versionId, versionId))
-            .limit(1); // naive latest for this worker logic
+            ; // naive latest for this worker logic
 
         if (job) {
             await db.update(tenantIngestionJobs)

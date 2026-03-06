@@ -2,6 +2,7 @@ import { getDb } from '../db';
 import { eq, or, like } from 'drizzle-orm';
 import { tenants, type TenantRecord } from '../../drizzle/schema';
 import { logger } from '../logger';
+import { structuredLogger } from '../log/logger';
 import { ErrorCode, InfrastructureError, BusinessError } from '../errors';
 
 /**
@@ -110,7 +111,7 @@ export class TenantRepository {
                 .select()
                 .from(tenants)
                 .where(eq(tenants.twilioNumber, normalizedNumber))
-                .limit(1);
+                ;
 
             if (results.length === 0) {
                 // Log all tenants for diagnosis if not found
@@ -142,7 +143,7 @@ export class TenantRepository {
             // Enhanced error logging
             if (error instanceof BusinessError) throw error;
 
-            console.error(`[${correlationId}] CRITICAL DATABASE ERROR:`, error);
+            structuredLogger.error(`[${correlationId}] CRITICAL DATABASE ERROR`, { error });
             logger.error(`[${correlationId}] Database error during tenant resolution`, error as Error);
 
             throw new InfrastructureError(
@@ -198,7 +199,7 @@ export class TenantRepository {
                 .select()
                 .from(tenants)
                 .where(eq(tenants.id, tenantId))
-                .limit(1);
+                ;
 
             return results.length > 0 ? results[0] : null;
         } catch (error) {

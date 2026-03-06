@@ -38,7 +38,7 @@ export async function processEvent(
         .select()
         .from(domineEvents)
         .where(eq(domineEvents.id, eventId))
-        .limit(1);
+        ;
 
     const event = rows[0];
     if (!event) return { status: 'not_found' };

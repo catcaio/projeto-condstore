@@ -22,7 +22,7 @@ export async function processDomineEvent(event: {
         const correlationId = event.payloadJson?.correlationId || event.payloadJson?.quoteId;
         if (!correlationId) throw new Error('correlationId missing for freight_quoted');
 
-        console.log(`[DOMINE] Quoted info processing:`, event.payloadJson);
+        console.info(`[DOMINE] Quoted info processing: correlationId=${correlationId}, type=${event.type}`);
         const { orderId, ...summary } = event.payloadJson;
         await domineReadRepository.upsertFreightQuoteReadModel({
             tenantId: event.tenantId,

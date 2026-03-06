@@ -7,7 +7,7 @@ import { getDb } from '@/infra/db';
 import { domineFreightQuotes } from '@/drizzle/schema';
 import { eq, desc } from 'drizzle-orm';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string  }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ tenantId: string }> }) {
     const requestId = makeRequestId(req);
     const tenantIdFromRoute = extractTenantIdFromTenantRoute(req);
 
@@ -35,9 +35,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ tena
     try {
         const db = await getDb();
         const latest = await db.select().from(domineFreightQuotes)
-            .where(eq(domineFreightQuotes.tenantId, (await params).tenantId))
-            .orderBy(desc(domineFreightQuotes.createdAt))
-            .limit(1);
+            .where(eq(domineFreightQuotes.tenantId, tenantIdFromRoute))
+            .orderBy(desc(domineFreightQuotes.createdAt));
 
         if (latest.length === 0) {
             return errorResponse(ErrorCode.UNKNOWN, 404, requestId, 'No quote found');

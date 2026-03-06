@@ -49,9 +49,13 @@ vi.mock('@/infra/db', () => ({
     getDb: vi.fn(async () => ({
         select: () => ({
             from: () => ({
-                where: () => ({
-                    limit: mockDbSelect,
-                }),
+                where: () => {
+                    const obj = {
+                        limit: mockDbSelect,
+                        then: (resolve: any, reject: any) => mockDbSelect().then(resolve, reject),
+                    };
+                    return obj;
+                },
             }),
         }),
     })),

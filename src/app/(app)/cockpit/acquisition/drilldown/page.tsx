@@ -48,7 +48,7 @@ export default async function AcquisitionDrilldownPage({ searchParams }: { searc
         try {
             const db = await getDb();
             const results = await db.select({ plan: tenants.plan })
-                .from(tenants).where(eq(tenants.id, tenantId)).limit(1);
+                .from(tenants).where(eq(tenants.id, tenantId));
             if (results.length > 0) {
                 const { plan } = results[0];
                 hasActivePlan = plan === 'ENTERPRISE' || plan === 'PRO' || plan === 'STARTER';

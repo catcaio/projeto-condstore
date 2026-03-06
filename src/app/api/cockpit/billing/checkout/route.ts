@@ -58,7 +58,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // ── Validate plan exists and is active ────────────────────────────────────
     try {
         const db = await getDb();
-        const planRows = await db.select().from(plans).where(eq(plans.id, planId)).limit(1);
+        const planRows = await db.select().from(plans).where(eq(plans.id, planId));
         if (planRows.length === 0 || !planRows[0].active) {
             return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, `Plan '${planId}' is inactive or not found.`);
         }

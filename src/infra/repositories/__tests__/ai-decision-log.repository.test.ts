@@ -1,14 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AiDecisionLogRepository } from '../ai-decision-log.repository';
 
+const mockDbLimit = vi.hoisted(() => vi.fn().mockResolvedValue([]));
+const mockDbWhere = vi.hoisted(() => vi.fn().mockReturnThis());
+const mockDbOrderBy = vi.hoisted(() => vi.fn().mockReturnThis());
+
+const selectChain = vi.hoisted(() => ({
+  from: vi.fn().mockReturnThis(),
+  where: mockDbWhere,
+  orderBy: mockDbOrderBy,
+  limit: mockDbLimit,
+  then: (resolve: any, reject: any) => mockDbLimit().then(resolve).catch(reject),
+}));
+
 const mockDb = vi.hoisted(() => ({
   insert: vi.fn().mockReturnThis(),
   values: vi.fn().mockResolvedValue(undefined),
-  select: vi.fn().mockReturnThis(),
+  select: vi.fn().mockReturnValue(selectChain),
   from: vi.fn().mockReturnThis(),
-  where: vi.fn().mockReturnThis(),
-  orderBy: vi.fn().mockReturnThis(),
-  limit: vi.fn().mockResolvedValue([]),
+  where: mockDbWhere,
+  orderBy: mockDbOrderBy,
+  limit: mockDbLimit,
 }));
 
 vi.mock('../../db', () => ({

@@ -59,4 +59,16 @@ module.exports = [
     },
     rules: {},
   },
+  // no-console enforcement for server-side production code only
+  {
+    files: ['src/app/api/**/*.ts', 'src/infra/**/*.ts', 'src/lib/**/*.ts', 'src/modules/**/*.ts'],
+    ignores: [
+      'src/infra/log/logger.ts',    // Logger implementation uses console.log internally
+      'src/infra/logger.ts',         // Logger implementation uses console.debug/error internally
+      'src/lib/engine/test-run.ts',  // Test runner script
+    ],
+    rules: {
+      'no-console': ['error', { allow: ['warn', 'error', 'info'] }],
+    },
+  },
 ];

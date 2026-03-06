@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
         }
 
         // ── Ensure tenant_signup_policies exists ──────────────────────────
-        const existingPolicy = await db.select().from(tenantSignupPolicies).where(eq(tenantSignupPolicies.tenantId, tenantId)).limit(1);
+        const existingPolicy = await db.select().from(tenantSignupPolicies).where(eq(tenantSignupPolicies.tenantId, tenantId));
         if (existingPolicy.length === 0) {
             await db.insert(tenantSignupPolicies).values({
                 tenantId,
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
         }
 
         // ── Create or update admin user ───────────────────────────────────
-        const existingAdmin = await db.select().from(users).where(eq(users.email, adminEmail)).limit(1);
+        const existingAdmin = await db.select().from(users).where(eq(users.email, adminEmail));
 
         if (existingAdmin.length === 0) {
             const passwordHash = hashPassword(adminSeedPassword);
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
             WHERE email = ${adminEmail}
         `);
 
-        const updatedUser = await db.select().from(users).where(eq(users.email, adminEmail)).limit(1);
+        const updatedUser = await db.select().from(users).where(eq(users.email, adminEmail));
         if (updatedUser[0]) {
             const sessionToken = await createSessionToken({
                 id: updatedUser[0].id,

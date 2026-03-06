@@ -34,6 +34,9 @@ jobs:
       - name: Verify Routes Guardrail
         run: npm run routes:sync
 
+      - name: Verify Route Security Guards
+        run: npm run routes:verify-security
+
       - name: Run typecheck
         run: npm run typecheck
 

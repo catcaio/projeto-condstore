@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
             .select()
             .from(users)
             .where(eq(users.email, normalizedEmail))
-            .limit(1);
+            ;
 
         const existingUser = existingUsers[0];
 

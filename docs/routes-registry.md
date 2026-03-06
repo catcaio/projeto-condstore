@@ -14,6 +14,7 @@
 | /api/auth/google/callback | GET | public | none | auth | live | Google OAuth callback (code exchange + session) |
 | /api/auth/email/send-verify | POST | public | none | auth | live | Resend email verification link |
 | /api/auth/email/verify | GET | public | none | auth | live | Email verification token handler |
+| /api/auth/invite | POST | internal | required | auth | live | Team invite link handler |
 | /api/billing/subscription | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/checkout | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cockpit/analytics/events | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -63,6 +64,7 @@
 | /api/internal/health/webhook | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/backfill-phone | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/cleanup-retention | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/internal/jobs/data-retention | POST | internal | requireInternalToken | lgpd | live | LGPD automated data retention purge (purge_at) |
 | /api/internal/jobs/domine-process | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/finops-reconciliation | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/rollup-backfill | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -137,8 +139,10 @@
 | /cockpit/deliveries | GET | internal | required | cockpit | live | Monitoramento de Entregas |
 | /cockpit/domine | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/domine/dlq | TBA | public | none | PUBLIC | live | Auto-detected |
+| /cockpit/equipe | GET | internal | required | cockpit | live | Team management page |
 | /cockpit/domine/health | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/finops/alerts | TBA | public | none | PUBLIC | live | Auto-detected |
+| /cockpit/funcionalidades | GET | internal | required | cockpit | live | Cockpit module pinning for TV and dashboard |
 | /cockpit/knowledge | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/knowledge/ask | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/knowledge/collections | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -166,7 +170,18 @@
 | /inbox/conversations/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
 | /login | TBA | public | none | PUBLIC | live | Auto-detected |
 | /painel-logistico | TBA | public | none | PUBLIC | live | Auto-detected |
-| /pricing | TBA | public | none | PUBLIC | live | Auto-detected |
+| /planos/crm | TBA | public | none | PUBLIC | live | Auto-detected |
+| /planos/domine | TBA | public | none | PUBLIC | live | Auto-detected |
+| /planos/envios | TBA | public | none | PUBLIC | live | Auto-detected |
+| /produtos/crm | TBA | public | none | PUBLIC | live | Auto-detected |
+| /produtos/domine | TBA | public | none | PUBLIC | live | Auto-detected |
+| /produtos/envios | TBA | public | none | PUBLIC | live | Auto-detected |
+| /gargalos-logisticos | TBA | public | none | PUBLIC | live | Auto-detected |
+| /integracoes | TBA | public | none | PUBLIC | live | Auto-detected |
+| /tecnologias | TBA | public | none | PUBLIC | live | Auto-detected |
+| /plataforma | TBA | public | none | PUBLIC | live | Auto-detected |
+| /plataforma/cockpit | TBA | public | none | PUBLIC | live | Auto-detected |
+| /avaliacao | TBA | public | none | PUBLIC | live | Auto-detected |
 | /settings | TBA | public | none | PUBLIC | live | Auto-detected |
 | /signup | GET | public | none | auth | live | User registration page with role selection |
 | /supreme | TBA | public | none | PUBLIC | live | Auto-detected |

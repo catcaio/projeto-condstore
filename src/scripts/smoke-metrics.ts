@@ -10,7 +10,7 @@ async function run() {
     // Actually, handleIncoming doesn't check if the tenant exists until it needs to, 
     // but let's use the first one available.
     const db = await getDb();
-    const firstTenant = await db.select().from(tenants).limit(1);
+    const firstTenant = await db.select().from(tenants);
     if (!firstTenant || firstTenant.length === 0) {
         console.log('No tenants found. Aborting.');
         process.exit(1);

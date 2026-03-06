@@ -13,7 +13,7 @@ export const tenantSecretsRepository = {
                 eq(tenantSecrets.scope, scope),
                 eq(tenantSecrets.keyName, keyName)
             ))
-            .limit(1);
+            ;
         return result[0];
     },
 

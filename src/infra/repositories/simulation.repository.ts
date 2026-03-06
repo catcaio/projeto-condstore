@@ -86,7 +86,7 @@ export class SimulationRepository {
             .where(eq(simulations.tenantId, tenantId))
             .groupBy(simulations.bestCarrier)
             .orderBy(desc(sql`count(*)`))
-            .limit(1);
+            ;
 
         return {
             totalSimulations: Number(result?.totalSimulations || 0),

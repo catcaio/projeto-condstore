@@ -37,7 +37,7 @@ export async function requireActivePlan(req: NextRequest): Promise<{ tenantId?: 
         const results = await db.select({
             planStatus: tenants.planStatus,
             plan: tenants.plan
-        }).from(tenants).where(eq(tenants.id, tenantId)).limit(1);
+        }).from(tenants).where(eq(tenants.id, tenantId));
 
         if (results.length === 0) {
             return { errorResponse: NextResponse.json({ error: 'Tenant not found' }, { status: 403 }) };

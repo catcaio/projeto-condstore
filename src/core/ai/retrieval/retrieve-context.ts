@@ -185,7 +185,7 @@ async function loadFrankEventText(tenantId: string, eventId: string): Promise<{ 
     })
     .from(frankEvents)
     .where(and(eq(frankEvents.tenantId, tenantId), eq(frankEvents.id, eventId)))
-    .limit(1);
+    ;
 
   if (!row) return null;
 

@@ -12,7 +12,7 @@ export async function getBillingSummary(tenantId: string) {
         const subResult = await db.select()
             .from(tenantSubscriptions)
             .where(and(eq(tenantSubscriptions.tenantId, tenantId), eq(tenantSubscriptions.status, 'active')))
-            .limit(1);
+            ;
 
         const sub = subResult[0];
 
@@ -24,7 +24,7 @@ export async function getBillingSummary(tenantId: string) {
         })
             .from(tenantBudgets)
             .where(eq(tenantBudgets.tenantId, tenantId))
-            .limit(1);
+            ;
 
         const budget = budgetResult[0] ?? {
             monthlyBudgetUsd: '0',
@@ -37,7 +37,7 @@ export async function getBillingSummary(tenantId: string) {
         const tResult = await db.select({
             plan: tenants.plan,
             planStatus: tenants.planStatus,
-        }).from(tenants).where(eq(tenants.id, tenantId)).limit(1);
+        }).from(tenants).where(eq(tenants.id, tenantId));
 
         const tenant = tResult[0];
 
@@ -82,7 +82,7 @@ export async function getUsageSummary(tenantId: string) {
     })
         .from(tenantBudgets)
         .where(eq(tenantBudgets.tenantId, tenantId))
-        .limit(1);
+        ;
 
     const tokens = tokensResult[0] ?? {
         tokensConsumed: 0,

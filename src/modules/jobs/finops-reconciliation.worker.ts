@@ -198,7 +198,7 @@ export async function runFinopsReconciliation(opts?: {
                     .select()
                     .from(tenantBudgets)
                     .where(eq(tenantBudgets.tenantId, tenantId))
-                    .limit(1);
+                    ;
 
                 if (existing.length === 0) {
                     // Primeiro evento deste tenant: inicializa com defaults
@@ -277,7 +277,7 @@ async function publishBudgetStateToRedis(tenantId: string, requestId: string): P
             .select()
             .from(tenantBudgets)
             .where(eq(tenantBudgets.tenantId, tenantId))
-            .limit(1);
+            ;
 
         if (rows.length === 0) return;
 

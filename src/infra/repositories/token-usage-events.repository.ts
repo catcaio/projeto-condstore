@@ -146,7 +146,7 @@ export class TokenUsageEventsRepository {
                 })
                 .from(tenantBudgets)
                 .where(eq(tenantBudgets.tenantId, tenantId))
-                .limit(1);
+                ;
 
             if (rows.length === 0) {
                 // No budget row yet — create a minimal one; Worker will fill the rest

@@ -35,7 +35,7 @@ export class MetricsRollupStatusRepository {
       .select()
       .from(metricsRollupStatus)
       .where(eq(metricsRollupStatus.tenantId, tenantId.trim()))
-      .limit(1);
+      ;
     return rows[0] ?? null;
   }
 

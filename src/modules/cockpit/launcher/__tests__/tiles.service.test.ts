@@ -3,11 +3,11 @@ import { getVisibleTiles } from '../tiles.service';
 import { Role } from '@/ui/auth/entitlements-logic';
 
 describe('Cockpit App Launcher Service', () => {
-    it('should return admin-only tiles for an admin role', () => {
+    it('should return admin-only tiles for an admin role', async () => {
         const adminRoles: Role[] = ['admin'];
 
         for (const role of adminRoles) {
-            const result = getVisibleTiles({ tenantId: 'test-1', role });
+            const result = await getVisibleTiles({ tenantId: 'lojacond-1', role });
 
             const hasAdminAuditTile = result.salas.some(s =>
                 s.id === 'admin' && s.tiles.some(t => t.id === 'audit')
@@ -21,11 +21,11 @@ describe('Cockpit App Launcher Service', () => {
         }
     });
 
-    it('should restrict sensitive tiles from arbitrary viewer roles', () => {
+    it('should restrict sensitive tiles from arbitrary viewer roles', async () => {
         const viewerRoles: Role[] = ['viewer', 'operator'];
 
         for (const role of viewerRoles) {
-            const result = getVisibleTiles({ tenantId: 'test-1', role });
+            const result = await getVisibleTiles({ tenantId: 'lojacond-1', role });
 
             const adminSala = result.salas.find(s => s.id === 'admin');
             const settingsSala = result.salas.find(s => s.id === 'settings');
@@ -35,8 +35,8 @@ describe('Cockpit App Launcher Service', () => {
         }
     });
 
-    it('should sort returned salas and tiles correctly', () => {
-        const result = getVisibleTiles({ tenantId: 'test-1', role: 'admin' });
+    it('should sort returned salas and tiles correctly', async () => {
+        const result = await getVisibleTiles({ tenantId: 'lojacond-1', role: 'admin' });
 
         // Salas sorting
         const salaOrders = result.salas.map(s => s.order);

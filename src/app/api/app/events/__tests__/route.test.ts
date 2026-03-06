@@ -24,7 +24,7 @@ vi.mock('../../../../../infra/redis.client', () => ({
 
 vi.mock('../../../../../infra/security/rate-limiter', () => ({
     rateLimiter: {
-        limit: vi.fn().mockResolvedValue({ allowed: true, remaining: 59 })
+        limit: vi.fn().mockResolvedValue({ allowed: true, remaining: 59 }),
     },
     hashRateLimitKeyForLog: vi.fn(),
     applyRateLimitHeaders: vi.fn((res) => res)

@@ -41,7 +41,7 @@ export class TenantAIProviderRepository {
         .select()
         .from(tenantAiProviders)
         .where(eq(tenantAiProviders.tenantId, tenantId))
-        .limit(1);
+        ;
 
       if (results.length === 0) {
         logger.info('Tenant AI provider config not found', { tenantId });
@@ -83,7 +83,7 @@ export class TenantAIProviderRepository {
       .select({ id: tenantAiProviders.id })
       .from(tenantAiProviders)
       .where(eq(tenantAiProviders.tenantId, tenantId))
-      .limit(1);
+      ;
 
     if (existing.length > 0) {
       await db

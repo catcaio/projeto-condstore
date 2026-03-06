@@ -21,7 +21,7 @@ export class PromptRegistry {
                 .select()
                 .from(aiPrompts)
                 .where(and(eq(aiPrompts.id, id), eq(aiPrompts.active, 1)))
-                .limit(1);
+                ;
 
             if (results.length === 0) return null;
 

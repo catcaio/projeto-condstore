@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         const tenantId = 'qa-tenant';
 
         // Ensure tenant exists
-        const existingTenant = await db.select().from(tenants).where(eq(tenants.id, tenantId)).limit(1);
+        const existingTenant = await db.select().from(tenants).where(eq(tenants.id, tenantId));
         if (existingTenant.length === 0) {
             await db.insert(tenants).values({
                 id: tenantId,
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         }
 
         const userId = 'mock-admin';
-        const existingUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        const existingUser = await db.select().from(users).where(eq(users.id, userId));
         if (existingUser.length === 0) {
             await db.insert(users).values({
                 id: userId,

@@ -25,5 +25,5 @@ export function assertCriticalEnvSetup() {
     // NEXT_PUBLIC_APP_URL is technically optional for Next.js internal links but critical for hooks
     requireEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
 
-    console.log("✅ Critical Environment Variables Verified.");
+    console.info("✅ Critical Environment Variables Verified.");
 }
