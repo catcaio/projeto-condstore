@@ -80,6 +80,7 @@
 | `/api/internal/rag/stats` | API |
 | `/api/internal/security/events` | API |
 | `/api/internal/tenants/[tenantId]/data-contract-status` | API |
+| `/api/internal/tenants/[tenantId]/metrics/core` | API |
 | `/api/internal/tenants/[tenantId]/operational-events` | API |
 | `/api/internal/tenants/[tenantId]/supreme-permissions` | API |
 | `/api/knowledge/ask` | API |
@@ -156,6 +157,7 @@
 | `/cockpit/knowledge/collections` | Page |
 | `/cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId]` | Page |
 | `/cockpit/marciano/[...slug]` | Page |
+| `/cockpit/metrics` | Page |
 | `/cockpit/overview` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |
