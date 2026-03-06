@@ -66,6 +66,7 @@
 | `/api/internal/health/webhook` | API |
 | `/api/internal/jobs/backfill-phone` | API |
 | `/api/internal/jobs/cleanup-retention` | API |
+| `/api/internal/jobs/data-contract-scan` | API |
 | `/api/internal/jobs/data-retention` | API |
 | `/api/internal/jobs/domine-process` | API |
 | `/api/internal/jobs/finops-reconciliation` | API |
@@ -78,6 +79,7 @@
 | `/api/internal/qdrant/reindex` | API |
 | `/api/internal/rag/stats` | API |
 | `/api/internal/security/events` | API |
+| `/api/internal/tenants/[tenantId]/data-contract-status` | API |
 | `/api/knowledge/ask` | API |
 | `/api/knowledge/collections` | API |
 | `/api/knowledge/collections/[id]/sync` | API |

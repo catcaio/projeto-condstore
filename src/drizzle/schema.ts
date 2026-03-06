@@ -1217,3 +1217,18 @@ export const userUiPrefs = mysqlTable('user_ui_prefs', {
 
 export type UserUiPrefRecord = typeof userUiPrefs.$inferSelect;
 export type NewUserUiPrefRecord = typeof userUiPrefs.$inferInsert;
+
+// --- Tenant Data Contract Status ---
+
+export const tenantDataContractStatus = mysqlTable('tenant_data_contract_status', {
+    tenantId: varchar('tenant_id', { length: 36 }).primaryKey().notNull(),
+    acquisitionReady: boolean('acquisition_ready').notNull().default(false),
+    conversionReady: boolean('conversion_ready').notNull().default(false),
+    revenueReady: boolean('revenue_ready').notNull().default(false),
+    retentionReady: boolean('retention_ready').notNull().default(false),
+    operationalReady: boolean('operational_ready').notNull().default(false),
+    lastCheckedAt: timestamp('last_checked_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type TenantDataContractStatusRecord = typeof tenantDataContractStatus.$inferSelect;
+export type NewTenantDataContractStatusRecord = typeof tenantDataContractStatus.$inferInsert;

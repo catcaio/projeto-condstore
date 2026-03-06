@@ -260,6 +260,13 @@
       "when": 1772803928749,
       "tag": "0048_security_incidents",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "5",
+      "when": 1772806321624,
+      "tag": "0049_tenant_data_contract_status",
+      "breakpoints": true
     }
   ]
 }
