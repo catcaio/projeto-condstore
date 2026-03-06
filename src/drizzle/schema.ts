@@ -1341,4 +1341,25 @@ export const supremePlaybooks = mysqlTable('supreme_playbooks', {
 export type SupremePlaybookRecord = typeof supremePlaybooks.$inferSelect;
 export type NewSupremePlaybookRecord = typeof supremePlaybooks.$inferInsert;
 
+// --- Supreme Benchmarks ---
+
+export const supremeBenchmarks = mysqlTable('supreme_benchmarks', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    benchmarkDomain: varchar('benchmark_domain', { length: 40 }).notNull(),
+    benchmarkMetric: varchar('benchmark_metric', { length: 80 }).notNull(),
+    segmentKey: varchar('segment_key', { length: 120 }).notNull(),
+    sampleSize: int('sample_size').notNull(),
+    p25: double('p25'),
+    p50: double('p50'),
+    p75: double('p75'),
+    computedAt: timestamp('computed_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxDomainMetricSegment: index('idx_sb_domain_metric_segment').on(table.benchmarkDomain, table.benchmarkMetric, table.segmentKey),
+    idxComputedAt: index('idx_sb_computed_at').on(table.computedAt),
+}));
+
+export type SupremeBenchmarkRecord = typeof supremeBenchmarks.$inferSelect;
+export type NewSupremeBenchmarkRecord = typeof supremeBenchmarks.$inferInsert;
+
+
 

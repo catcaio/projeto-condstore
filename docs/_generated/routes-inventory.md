@@ -73,6 +73,7 @@
 | `/api/internal/jobs/rollup-backfill` | API |
 | `/api/internal/jobs/rollup-daily` | API |
 | `/api/internal/jobs/security-anomaly-scan` | API |
+| `/api/internal/jobs/supreme-benchmark-refresh` | API |
 | `/api/internal/ops` | API |
 | `/api/internal/playbooks` | API |
 | `/api/internal/playbooks/[playbookId]/toggle` | API |
@@ -92,6 +93,7 @@
 | `/api/internal/tenants/[tenantId]/playbooks/[playbookId]/simulate` | API |
 | `/api/internal/tenants/[tenantId]/supreme-permissions` | API |
 | `/api/internal/tenants/[tenantId]/supreme/analyze` | API |
+| `/api/internal/tenants/[tenantId]/supreme/benchmarks` | API |
 | `/api/internal/tenants/[tenantId]/supreme/findings` | API |
 | `/api/internal/tenants/[tenantId]/supreme/findings/[findingId]/propose-action` | API |
 | `/api/internal/tenants/[tenantId]/supreme/findings/[findingId]/resolve` | API |
@@ -181,6 +183,7 @@
 | `/cockpit/status` | Page |
 | `/cockpit/status/audit` | Page |
 | `/cockpit/supreme` | Page |
+| `/cockpit/supreme/benchmarks` | Page |
 | `/concept-layer-preview` | Page |
 | `/cotacao` | Page |
 | `/cotacao/result` | Page |

@@ -63,6 +63,8 @@
 | /api/internal/tenants/[tenantId]/supreme/findings | GET | internal | requireAdmin | backend | live | List and filter generated findings |
 | /api/internal/tenants/[tenantId]/supreme/findings/[findingId]/propose-action | POST | internal | requireAdmin | backend | live | Forwards finding recommendation to Action Engine |
 | /api/internal/tenants/[tenantId]/supreme/findings/[findingId]/resolve | POST | internal | requireAdmin | backend | live | Mark finding as resolved manually |
+| /api/internal/tenants/[tenantId]/supreme/benchmarks | GET | internal | requireAdmin | backend | live | Retrieve safe percentile comparisons for the tenant |
+| /api/internal/jobs/supreme-benchmark-refresh | POST | internal | requireAdmin | backend | live | Global periodic benchmark percentile recalculation |
 | /api/internal/playbooks | GET | internal | requireAdmin | backend | live | List global Supreme Playbooks |
 | /api/internal/playbooks/[playbookId]/toggle | POST | internal | requireAdmin | backend | live | Enable/disable a playbook |
 | /api/internal/tenants/[tenantId]/playbooks/[playbookId]/simulate | POST | internal | requireAdmin | backend | live | Execute a playbook (propose actions) against a tenant's findings |
@@ -175,6 +177,7 @@
 | /cockpit/metrics | GET | internal | required | cockpit | live | Business metrics cockpit (operational_events, 5 domains) |
 | /cockpit/actions | GET | internal | required | cockpit | live | Action Engine cockpit — propose/approve/reject/execute lifecycle |
 | /cockpit/supreme | GET | internal | required | cockpit | live | FRANK SUPREMO findings dashboard |
+| /cockpit/supreme/benchmarks | GET | internal | required | cockpit | live | Benchmark comparisions between tenant and anonymous segment peer percentiles |
 | /cockpit/playbooks | GET | internal | required | cockpit | live | Supreme Playbooks management |
 | /cockpit/settings/knowledge | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/settings/security | TBA | public | none | PUBLIC | live | Auto-detected |

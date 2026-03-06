@@ -65,7 +65,7 @@ describe('FRANK SUPREMO Analyzer', () => {
             expect(res.findingsGenerated).toBeGreaterThan(0);
             const insertedVals = ins.values.mock.calls[0][0];
             expect(insertedVals.findingType).toBe('low_quote_to_order_rate');
-            expect(insertedVals.severity).toBe('HIGH');
+            expect(insertedVals.severity).toBe('MEDIUM');
         });
 
         it('creates checkout_dropoff_high finding when checkout completion is poor', async () => {
@@ -90,6 +90,7 @@ describe('FRANK SUPREMO Analyzer', () => {
             expect(res.findingsGenerated).toBeGreaterThan(0);
             const insertedVals = ins.values.mock.calls[0][0];
             expect(insertedVals.findingType).toBe('checkout_dropoff_high');
+            expect(insertedVals.severity).toBe('HIGH');
         });
 
         it('gracefully degrades and avoids throwing when prev-period metrics fail', async () => {

@@ -7,10 +7,11 @@ import { and, desc, eq } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import { supremeFindings } from '@/drizzle/schema';
 import { structuredLogger } from '@/infra/log/logger';
-import { getTenantCoreMetrics } from '@/lib/metrics/cockpit-metrics-engine';
-import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { proposeAction } from '@/lib/actions/action-engine';
 import { evaluatePlaybooks } from '@/lib/supreme/playbook-engine';
+import { getTenantBenchmarks } from '@/lib/supreme/benchmark-engine';
+import { getTenantCoreMetrics } from '@/lib/metrics/cockpit-metrics-engine';
+import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -55,17 +56,28 @@ export async function analyzeTenant(tenantId: string, rangeDays: number = 30) {
         structuredLogger.warn('supreme_analyzer_metrics_degraded', { tenantId, period: 'previous' });
     }
 
+    // 3. Fetch Tenant Benchmarks for contextual severity mapping
+    let benchmarksInfo = null;
+    try {
+        benchmarksInfo = await getTenantBenchmarks(tenantId);
+    } catch (err) {
+        // Safe to ignore, degrades cleanly
+    }
+
     const newFindings: NewFindingData[] = [];
 
     // RULE 1: CONVERSION — Low Quote to Order Rate
     if (core.conversion.quotes_total >= 10 && core.conversion.quote_to_order_rate < 0.15) {
+        const bm = benchmarksInfo?.metrics?.find((m: any) => m.metric === 'quote_to_order_rate');
+        const isBelowBaseline = bm?.positionLabel === 'below_baseline';
+
         newFindings.push({
             findingType: 'low_quote_to_order_rate',
             findingDomain: 'CONVERSION',
-            severity: 'HIGH',
+            severity: isBelowBaseline ? 'HIGH' : 'MEDIUM',
             title: 'Taxa de conversão (Cotação → Pedido) crítica',
-            summary: `Apenas ${(core.conversion.quote_to_order_rate * 100).toFixed(1)}% das cotações viram pedidos.`,
-            evidence: { rate: core.conversion.quote_to_order_rate, quotes: core.conversion.quotes_total },
+            summary: `Apenas ${(core.conversion.quote_to_order_rate * 100).toFixed(1)}% das cotações viram pedidos.${isBelowBaseline ? ' Seu mercado base (p25) normalmente opera acima de ' + Math.round((bm?.p25 ?? 0) * 100) + '%, demonstrando margem nítida de melhoria.' : ''}`,
+            evidence: { rate: core.conversion.quote_to_order_rate, quotes: core.conversion.quotes_total, benchmarkPercentileLower: bm?.p25 },
             recommendedActionType: 'adjust_quote_margin',
             recommendedActionPayload: { suggestedAdjustmentPercent: -2 }, // Suggest dropping margin slightly
         });
@@ -73,13 +85,16 @@ export async function analyzeTenant(tenantId: string, rangeDays: number = 30) {
 
     // RULE 2: CONVERSION — High Checkout Dropoff
     if (core.conversion.checkout_started_total >= 10 && core.conversion.checkout_completion_rate < 0.35) {
+        const bm = benchmarksInfo?.metrics?.find((m: any) => m.metric === 'checkout_completion_rate');
+        const isBelowBaseline = bm?.positionLabel === 'below_baseline';
+
         newFindings.push({
             findingType: 'checkout_dropoff_high',
             findingDomain: 'CONVERSION',
-            severity: 'HIGH',
+            severity: isBelowBaseline ? 'CRITICAL' : 'HIGH',
             title: 'Alta desistência no Checkout',
-            summary: `Somente ${(core.conversion.checkout_completion_rate * 100).toFixed(1)}% das sessões de checkout foram concluídas.`,
-            evidence: { rate: core.conversion.checkout_completion_rate, started: core.conversion.checkout_started_total },
+            summary: `Somente ${(core.conversion.checkout_completion_rate * 100).toFixed(1)}% das sessões de checkout foram concluídas.${isBelowBaseline ? ' A média do seu segmento base é ' + Math.round((bm?.p50 ?? 0) * 100) + '%.' : ''}`,
+            evidence: { rate: core.conversion.checkout_completion_rate, started: core.conversion.checkout_started_total, benchmarkMedian: bm?.p50 },
             recommendedActionType: 'adjust_checkout_incentive',
             recommendedActionPayload: { incentive: 'free_shipping_unlock' },
         });
