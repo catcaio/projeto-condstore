@@ -267,6 +267,13 @@
       "when": 1772806321624,
       "tag": "0049_tenant_data_contract_status",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "5",
+      "when": 1772807302664,
+      "tag": "0050_tenant_supreme_permissions",
+      "breakpoints": true
     }
   ]
 }

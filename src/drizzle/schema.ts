@@ -1232,3 +1232,19 @@ export const tenantDataContractStatus = mysqlTable('tenant_data_contract_status'
 
 export type TenantDataContractStatusRecord = typeof tenantDataContractStatus.$inferSelect;
 export type NewTenantDataContractStatusRecord = typeof tenantDataContractStatus.$inferInsert;
+
+// --- Tenant Supreme Permissions ---
+
+export const tenantSupremePermissions = mysqlTable('tenant_supreme_permissions', {
+    tenantId: varchar('tenant_id', { length: 36 }).primaryKey().notNull(),
+    allowReadMetrics: boolean('allow_read_metrics').notNull().default(true),
+    allowGenerateRecommendations: boolean('allow_generate_recommendations').notNull().default(true),
+    allowExecuteOptimizations: boolean('allow_execute_optimizations').notNull().default(false),
+    allowAdsBudgetChanges: boolean('allow_ads_budget_changes').notNull().default(false),
+    allowCrmActions: boolean('allow_crm_actions').notNull().default(false),
+    allowWhatsappAutomation: boolean('allow_whatsapp_automation').notNull().default(true),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+});
+
+export type TenantSupremePermissionsRecord = typeof tenantSupremePermissions.$inferSelect;
+export type NewTenantSupremePermissionsRecord = typeof tenantSupremePermissions.$inferInsert;
