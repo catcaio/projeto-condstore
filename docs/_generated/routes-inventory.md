@@ -75,6 +75,7 @@
 | `/api/internal/qa/setup` | API |
 | `/api/internal/qdrant/reindex` | API |
 | `/api/internal/rag/stats` | API |
+| `/api/internal/security/events` | API |
 | `/api/knowledge/ask` | API |
 | `/api/knowledge/collections` | API |
 | `/api/knowledge/collections/[id]/sync` | API |
@@ -152,6 +153,7 @@
 | `/cockpit/overview` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |
+| `/cockpit/security` | Page |
 | `/cockpit/settings/knowledge` | Page |
 | `/cockpit/settings/security` | Page |
 | `/cockpit/status` | Page |

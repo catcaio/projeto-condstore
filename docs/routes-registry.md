@@ -56,6 +56,7 @@
 | /api/internal/frank/apply-rollback | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/frank/gate | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/frank/metrics | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/internal/security/events | GET | internal | required | ops | live | Security Cockpit observability metrics |
 | /api/internal/frank/scheduler/run | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/health/ai | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/health/db | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -151,6 +152,7 @@
 | /cockpit/overview | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/privacy | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/rate-limit | TBA | public | none | PUBLIC | live | Auto-detected |
+| /cockpit/security | GET | internal | required | cockpit | live | Security Cockpit Dashboard |
 | /cockpit/settings/knowledge | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/settings/security | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/status | TBA | public | none | PUBLIC | live | Auto-detected |
