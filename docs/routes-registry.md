@@ -70,6 +70,7 @@
 | /api/internal/jobs/finops-reconciliation | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/rollup-backfill | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/rollup-daily | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/internal/jobs/security-anomaly-scan | POST | internal | required | ops | live | Periodic anomaly scan for security_edge_events |
 | /api/internal/ops | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/qa/bootstrap-session | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/qa/setup | TBA | public | none | PUBLIC | live | Auto-detected |

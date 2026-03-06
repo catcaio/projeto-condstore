@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
-import { securityEdgeEvents } from '@/drizzle/schema';
+import { securityEdgeEvents, securityIncidents } from '@/drizzle/schema';
 import { desc, sql, gte } from 'drizzle-orm';
-import { withIdempotency } from '@/lib/http/with-idempotency';
-import { withReplayProtection } from '@/lib/http/with-replay-protection';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 
@@ -67,7 +65,7 @@ export const GET = async (request: NextRequest) => {
             .orderBy(desc(sql`count(*)`))
             .limit(5);
 
-        // 5. Recent Incidents (last 20)
+        // 5. Recent raw incidents (last 20 edge events)
         const incidents = await db
             .select({
                 id: securityEdgeEvents.id,
@@ -76,14 +74,12 @@ export const GET = async (request: NextRequest) => {
                 reason: securityEdgeEvents.reason,
                 ipHash: securityEdgeEvents.ipHash,
                 tenantClaim: securityEdgeEvents.tenantClaim,
-                userClaim: securityEdgeEvents.userClaim,
             })
             .from(securityEdgeEvents)
             .orderBy(desc(securityEdgeEvents.createdAt))
             .limit(20);
 
         // 6. Events Last 24h (5min buckets)
-        // Grouping by UNIX_TIMESTAMP(created_at) DIV 300 * 300
         const bucketQuery = await db
             .select({
                 bucket: sql<number>`(UNIX_TIMESTAMP(${securityEdgeEvents.createdAt}) DIV 300) * 300`,
@@ -98,6 +94,13 @@ export const GET = async (request: NextRequest) => {
             timestamp: new Date(Number(row.bucket) * 1000).toISOString(),
             count: Number(row.count),
         }));
+
+        // 7. Active anomaly incidents (security_incidents, last 5)
+        const activeIncidents = await db
+            .select()
+            .from(securityIncidents)
+            .orderBy(desc(securityIncidents.createdAt))
+            .limit(5);
 
         return NextResponse.json({
             ok: true,
@@ -114,6 +117,16 @@ export const GET = async (request: NextRequest) => {
                     tenant_claim: inc.tenantClaim,
                 })),
                 events_last_24h: eventsLast24h,
+                active_incidents: activeIncidents.map(inc => ({
+                    id: inc.id,
+                    reason: inc.reason,
+                    count: inc.count,
+                    route: inc.route,
+                    ip_hash: inc.ipHash,
+                    window_start: inc.windowStart.toISOString(),
+                    window_end: inc.windowEnd.toISOString(),
+                    created_at: inc.createdAt.toISOString(),
+                })),
             }
         });
     } catch (err) {

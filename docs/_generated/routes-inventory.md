@@ -70,6 +70,7 @@
 | `/api/internal/jobs/finops-reconciliation` | API |
 | `/api/internal/jobs/rollup-backfill` | API |
 | `/api/internal/jobs/rollup-daily` | API |
+| `/api/internal/jobs/security-anomaly-scan` | API |
 | `/api/internal/ops` | API |
 | `/api/internal/qa/bootstrap-session` | API |
 | `/api/internal/qa/setup` | API |

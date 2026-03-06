@@ -76,7 +76,8 @@ describe('Security Dashboard API', () => {
                 ipHash: 'ip-1',
                 tenantClaim: 't1'
             }])) // incidents
-            .mockReturnValueOnce(createChainableMock([{ bucket: testBucket, count: 3 }])); // events last 24h
+            .mockReturnValueOnce(createChainableMock([{ bucket: testBucket, count: 3 }])) // events last 24h
+            .mockReturnValueOnce(createChainableMock([])); // active_incidents (security_incidents)
 
         const req = new Request('http://localhost/api/internal/security/events');
         const res = await GET(req as any);

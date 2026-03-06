@@ -1,11 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShieldAlert, Activity, Key, Globe, Ban, Skull, ShieldCheck } from "lucide-react";
+import { ShieldAlert, Activity, Key, Globe, Ban, Skull, ShieldCheck, AlertTriangle } from "lucide-react";
 import { SettingsPage, SettingsSection } from "@/ui/settings";
 import { Card } from "@/ui/components/card";
 import { Badge } from "@/ui/components/badge";
 import Link from "next/link";
+
+interface ActiveIncident {
+    id: string;
+    reason: string;
+    count: number;
+    route: string | null;
+    ip_hash: string | null;
+    window_start: string;
+    window_end: string;
+    created_at: string;
+}
 
 interface SecurityMetrics {
     total_events: number;
@@ -20,6 +31,7 @@ interface SecurityMetrics {
         tenant_claim: string;
     }[];
     events_last_24h: { timestamp: string; count: number }[];
+    active_incidents: ActiveIncident[];
 }
 
 export default function SecurityCockpitPage() {
@@ -32,9 +44,7 @@ export default function SecurityCockpitPage() {
         setError("");
         try {
             const res = await fetch("/api/internal/security/events");
-            if (!res.ok) {
-                throw new Error("Failed to load security metrics");
-            }
+            if (!res.ok) throw new Error("Failed to load security metrics");
             const json = await res.json();
             if (json.ok && json.data) {
                 setData(json.data);
@@ -48,9 +58,7 @@ export default function SecurityCockpitPage() {
         }
     }
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useEffect(() => { loadData(); }, []);
 
     if (loading && !data) {
         return (
@@ -78,11 +86,10 @@ export default function SecurityCockpitPage() {
 
     if (!data) return null;
 
-    // Metric lookups
     const blockedRequests24h = data.events_last_24h.reduce((acc, curr) => acc + curr.count, 0);
     const getCount = (reasonType: string) => data.events_by_type[reasonType] || 0;
-
     const maxChartValue = Math.max(...data.events_last_24h.map(d => d.count), 1);
+    const hasActiveIncidents = data.active_incidents && data.active_incidents.length > 0;
 
     return (
         <SettingsPage
@@ -90,15 +97,53 @@ export default function SecurityCockpitPage() {
             description="Monitoramento de eventos de segurança (Edge Security Events)"
             headerAction={<button onClick={loadData} className="text-xs px-3 py-1 bg-[hsl(var(--ui-accent-blue))] text-white rounded font-medium hover:opacity-90">Atualizar</button>}
         >
-            {/* Header / Globals */}
-            <div className="flex items-center gap-2 mb-6">
-                <Badge variant="success" className="flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3" /> Monitoramento Ativo
-                </Badge>
+            {/* Header status */}
+            <div className="flex items-center gap-3 mb-6">
+                {hasActiveIncidents ? (
+                    <Badge variant="danger" className="flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" /> {data.active_incidents.length} Anomalia(s) Ativa(s)
+                    </Badge>
+                ) : (
+                    <Badge variant="success" className="flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3" /> Monitoramento Ativo
+                    </Badge>
+                )}
                 <span className="text-sm text-[hsl(var(--ui-text-muted))]">Total de eventos (histórico): {data.total_events}</span>
             </div>
 
-            {/* WIDGETS */}
+            {/* ACTIVE ANOMALY INCIDENTS - shown prominently when there are active incidents */}
+            {hasActiveIncidents && (
+                <SettingsSection title="🚨 Incidentes de Anomalia Detectados">
+                    <div className="border border-red-500/30 rounded overflow-hidden bg-red-500/5 mb-6">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-red-500/10 border-b border-red-500/20">
+                                <tr>
+                                    <th className="px-4 py-3 font-medium text-[hsl(var(--ui-text-muted))]">Detectado em</th>
+                                    <th className="px-4 py-3 font-medium text-[hsl(var(--ui-text-muted))]">Motivo</th>
+                                    <th className="px-4 py-3 font-medium text-[hsl(var(--ui-text-muted))]">Contagem</th>
+                                    <th className="px-4 py-3 font-medium text-[hsl(var(--ui-text-muted))]">Rota</th>
+                                    <th className="px-4 py-3 font-medium text-[hsl(var(--ui-text-muted))]">Janela</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-red-500/10">
+                                {data.active_incidents.map(inc => (
+                                    <tr key={inc.id} className="hover:bg-red-500/10 transition-colors">
+                                        <td className="px-4 py-3 font-mono text-xs">{new Date(inc.created_at).toLocaleString()}</td>
+                                        <td className="px-4 py-3"><Badge variant="danger">{inc.reason}</Badge></td>
+                                        <td className="px-4 py-3 font-bold text-red-500">{inc.count}</td>
+                                        <td className="px-4 py-3 font-mono text-xs max-w-[160px] truncate">{inc.route || '-'}</td>
+                                        <td className="px-4 py-3 font-mono text-[10px] text-[hsl(var(--ui-text-muted))]">
+                                            {new Date(inc.window_start).toLocaleTimeString()} – {new Date(inc.window_end).toLocaleTimeString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </SettingsSection>
+            )}
+
+            {/* METRIC WIDGETS */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                 <MetricCard title="Blocked Requests (24h)" value={blockedRequests24h} icon={<Ban className="w-4 h-4 text-red-500" />} />
                 <MetricCard title="Public Kill Switch" value={getCount('public_kill_switch_triggered')} icon={<Skull className="w-4 h-4 text-orange-500" />} />
@@ -157,8 +202,8 @@ export default function SecurityCockpitPage() {
                 </SettingsSection>
             </div>
 
-            {/* INCIDENTS TABLE */}
-            <SettingsSection title="Últimos Incidentes">
+            {/* RAW INCIDENTS TABLE */}
+            <SettingsSection title="Últimos Eventos de Segurança">
                 <div className="border border-[hsl(var(--ui-border))] rounded overflow-hidden">
                     <table className="w-full text-left text-sm whitespace-nowrap">
                         <thead className="bg-[hsl(var(--ui-bg-subtle))] border-b border-[hsl(var(--ui-border))]">
@@ -181,8 +226,8 @@ export default function SecurityCockpitPage() {
                                     <td className="px-4 py-3 font-mono text-xs">{new Date(inc.timestamp).toLocaleString()}</td>
                                     <td className="px-4 py-3"><Badge variant="danger">{inc.reason}</Badge></td>
                                     <td className="px-4 py-3 font-mono text-xs max-w-[200px] truncate" title={inc.route}>{inc.route}</td>
-                                    <td className="px-4 py-3 font-mono text-[10px] text-[hsl(var(--ui-text-muted))] truncate max-w-[120px]" title={inc.tenant_claim}>{inc.tenant_claim || '-'}</td>
-                                    <td className="px-4 py-3 font-mono text-[10px] text-[hsl(var(--ui-text-muted))] truncate max-w-[100px]" title={inc.ip_hash}>{inc.ip_hash || '-'}</td>
+                                    <td className="px-4 py-3 font-mono text-[10px] text-[hsl(var(--ui-text-muted))] truncate max-w-[120px]">{inc.tenant_claim || '-'}</td>
+                                    <td className="px-4 py-3 font-mono text-[10px] text-[hsl(var(--ui-text-muted))] truncate max-w-[100px]">{inc.ip_hash || '-'}</td>
                                 </tr>
                             ))}
                         </tbody>

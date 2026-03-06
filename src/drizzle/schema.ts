@@ -245,6 +245,25 @@ export const securityEdgeEvents = mysqlTable('security_edge_events', {
 export type SecurityEdgeEventRecord = typeof securityEdgeEvents.$inferSelect;
 export type NewSecurityEdgeEventRecord = typeof securityEdgeEvents.$inferInsert;
 
+export const securityIncidents = mysqlTable('security_incidents', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    reason: varchar('reason', { length: 100 }).notNull(),
+    count: int('count').notNull(),
+    route: varchar('route', { length: 255 }),
+    ipHash: varchar('ip_hash', { length: 64 }),
+    windowStart: timestamp('window_start').notNull(),
+    windowEnd: timestamp('window_end').notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        createdAtIdx: index('idx_sec_incidents_created_at').on(table.createdAt),
+        reasonWindowIdx: index('idx_sec_incidents_reason_window').on(table.reason, table.windowEnd),
+    };
+});
+
+export type SecurityIncidentRecord = typeof securityIncidents.$inferSelect;
+export type NewSecurityIncidentRecord = typeof securityIncidents.$inferInsert;
+
 // --- Users (Authentication) ---
 
 export const users = mysqlTable('users', {
