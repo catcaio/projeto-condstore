@@ -1393,3 +1393,83 @@ export const packingProfiles = mysqlTable('packing_profiles', {
 
 export type PackingProfileRecord = typeof packingProfiles.$inferSelect;
 export type NewPackingProfileRecord = typeof packingProfiles.$inferInsert;
+
+// --- Carrier Policies (Freight Table Engine) ---
+
+export const carrierPolicies = mysqlTable('carrier_policies', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    carrierName: varchar('carrier_name', { length: 60 }).notNull(),
+    originCity: varchar('origin_city', { length: 80 }),
+    originState: varchar('origin_state', { length: 2 }),
+    cubageFactor: decimal('cubage_factor', { precision: 8, scale: 2 }).notNull().default('300'),
+    weightThresholdExcess: decimal('weight_threshold_excess', { precision: 8, scale: 2 }),
+    deliveryTimeDaysBase: int('delivery_time_days_base').notNull().default(7),
+    notes: text('notes'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxTenantCarrier: index('idx_carrier_policies_tenant_carrier').on(table.tenantId, table.carrierName),
+}));
+
+export type CarrierPolicyRecord = typeof carrierPolicies.$inferSelect;
+export type NewCarrierPolicyRecord = typeof carrierPolicies.$inferInsert;
+
+// --- Carrier Zones ---
+
+export const carrierZones = mysqlTable('carrier_zones', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    carrierName: varchar('carrier_name', { length: 60 }).notNull(),
+    zoneCode: varchar('zone_code', { length: 20 }).notNull(),
+    regionName: varchar('region_name', { length: 80 }),
+    capitalOrInterior: varchar('capital_or_interior', { length: 10 }),
+    state: varchar('state', { length: 2 }),
+    cepRangeStart: varchar('cep_range_start', { length: 8 }),
+    cepRangeEnd: varchar('cep_range_end', { length: 8 }),
+    notes: text('notes'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxTenantCarrierZone: index('idx_carrier_zones_tenant_carrier_zone').on(table.tenantId, table.carrierName, table.zoneCode),
+    idxTenantCarrierState: index('idx_carrier_zones_tenant_carrier_state').on(table.tenantId, table.carrierName, table.state),
+}));
+
+export type CarrierZoneRecord = typeof carrierZones.$inferSelect;
+export type NewCarrierZoneRecord = typeof carrierZones.$inferInsert;
+
+// --- Carrier Rate Rows ---
+
+export const carrierRateRows = mysqlTable('carrier_rate_rows', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    carrierName: varchar('carrier_name', { length: 60 }).notNull(),
+    zoneCode: varchar('zone_code', { length: 20 }).notNull(),
+    weightBandMax: decimal('weight_band_max', { precision: 10, scale: 2 }).notNull(),
+    basePrice: decimal('base_price', { precision: 10, scale: 2 }).notNull(),
+    excessKgPrice: decimal('excess_kg_price', { precision: 10, scale: 4 }),
+    advPercent: decimal('adv_percent', { precision: 6, scale: 4 }),
+    advMin: decimal('adv_min', { precision: 10, scale: 2 }),
+    grisPercent: decimal('gris_percent', { precision: 6, scale: 4 }),
+    grisMin: decimal('gris_min', { precision: 10, scale: 2 }),
+    tasValue: decimal('tas_value', { precision: 10, scale: 2 }),
+    trtPercent: decimal('trt_percent', { precision: 6, scale: 4 }),
+    trtMin: decimal('trt_min', { precision: 10, scale: 2 }),
+    pedagioValue: decimal('pedagio_value', { precision: 10, scale: 2 }),
+    pedagioFractionKg: decimal('pedagio_fraction_kg', { precision: 10, scale: 2 }),
+    emexValue: decimal('emex_value', { precision: 10, scale: 2 }),
+    emexPercent: decimal('emex_percent', { precision: 6, scale: 4 }),
+    txaValue: decimal('txa_value', { precision: 10, scale: 2 }),
+    fpkValue: decimal('fpk_value', { precision: 10, scale: 2 }),
+    fvPercent: decimal('fv_percent', { precision: 6, scale: 4 }),
+    deliveryTimeDays: int('delivery_time_days'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxTenantCarrierZone: index('idx_carrier_rate_rows_tenant_carrier_zone').on(table.tenantId, table.carrierName, table.zoneCode),
+    idxTenantCarrierZoneWeight: index('idx_carrier_rate_rows_lookup').on(table.tenantId, table.carrierName, table.zoneCode, table.weightBandMax),
+}));
+
+export type CarrierRateRowRecord = typeof carrierRateRows.$inferSelect;
+export type NewCarrierRateRowRecord = typeof carrierRateRows.$inferInsert;

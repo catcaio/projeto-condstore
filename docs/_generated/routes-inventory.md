@@ -59,6 +59,7 @@
 | `/api/internal/frank/gate` | API |
 | `/api/internal/frank/metrics` | API |
 | `/api/internal/frank/scheduler/run` | API |
+| `/api/internal/freight/carrier-tables` | API |
 | `/api/internal/freight/packing-profiles` | API |
 | `/api/internal/freight/packing-profiles/[id]` | API |
 | `/api/internal/freight/packing-profiles/[id]/review-status` | API |
@@ -164,6 +165,7 @@
 | `/cockpit/actions` | Page |
 | `/cockpit/analytics` | Page |
 | `/cockpit/audit` | Page |
+| `/cockpit/carrier-tables` | Page |
 | `/cockpit/deliveries` | Page |
 | `/cockpit/domine` | Page |
 | `/cockpit/domine/dlq` | Page |

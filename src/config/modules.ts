@@ -115,6 +115,19 @@ export const MODULES: ModuleConfig[] = [
         ]
     },
     {
+        id: "carrier-tables",
+        label: "Tabelas de Frete",
+        group: "Operação",
+        icon: Truck,
+        route: "/cockpit/carrier-tables",
+        authModule: "frete",
+        requiredRoles: ["admin", "manager"],
+        navVisible: true,
+        routes: [
+            { pattern: "/cockpit/carrier-tables", title: "TABELAS DE TRANSPORTADORAS" }
+        ]
+    },
+    {
         id: "deliveries",
         label: "Entregas",
         group: "Operação",

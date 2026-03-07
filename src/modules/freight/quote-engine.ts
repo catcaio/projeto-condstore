@@ -5,6 +5,7 @@ import { freightTableProvider } from '../../infra/freight-table';
 import { FreightRequest, FreightOption, FreightStrategy } from './freight.types';
 import { CarrierAdapter, QuoteInput, NormalizedQuote } from '../shipping/carriers/types';
 import { ConcurrentQuoteEngine } from '../shipping/quote-engine/ConcurrentQuoteEngine';
+import { getTableAdaptersForDestination } from './table-driven-adapter';
 
 export class MelhorEnvioAdapter implements CarrierAdapter {
     id = 'melhorenvio';
@@ -38,6 +39,7 @@ export class MelhorEnvioAdapter implements CarrierAdapter {
     }
 }
 
+/** Legacy CSV-based adapter (kept as fallback) */
 export class TabelaAdapter implements CarrierAdapter {
     id = 'tabela';
     name = 'Transportadora Econômica';
@@ -63,7 +65,7 @@ export class TabelaAdapter implements CarrierAdapter {
 
 export class UnifiedQuoteEngine {
     private melhorEnvio = new MelhorEnvioAdapter();
-    private tabela = new TabelaAdapter();
+    private tabelaLegacy = new TabelaAdapter();
 
     private decideStrategy(totalWeight: number): FreightStrategy {
         if (totalWeight <= 10) return FreightStrategy.MELHORENVIO_ONLY;
@@ -77,11 +79,35 @@ export class UnifiedQuoteEngine {
         const strategy = this.decideStrategy(totalWeight);
 
         const adapters: CarrierAdapter[] = [];
+
+        // MelhorEnvio for light packages
         if (strategy === FreightStrategy.MELHORENVIO_ONLY || strategy === FreightStrategy.BOTH) {
             adapters.push(this.melhorEnvio);
         }
+
+        // Table-driven carriers: try DB-backed adapters first
         if (strategy === FreightStrategy.TABELA_ONLY || strategy === FreightStrategy.BOTH) {
-            adapters.push(this.tabela);
+            const tenantId = request.tenantId || 'LOJACOND';
+            try {
+                const tableAdapters = await getTableAdaptersForDestination(tenantId, request.destinationCep);
+                if (tableAdapters.length > 0) {
+                    adapters.push(...tableAdapters);
+                    logger.info('quote_engine: using table-driven adapters', {
+                        carriers: tableAdapters.map(a => a.name),
+                        destination: request.destinationCep,
+                    });
+                } else {
+                    // Fallback to legacy CSV adapter
+                    adapters.push(this.tabelaLegacy);
+                    logger.info('quote_engine: no table-driven carriers, using legacy CSV');
+                }
+            } catch (err) {
+                // Fallback to legacy on error
+                adapters.push(this.tabelaLegacy);
+                logger.warn('quote_engine: table-driven lookup failed, falling back to CSV', {
+                    error: (err as Error).message,
+                });
+            }
         }
 
         const quoteInput: QuoteInput = {
@@ -104,11 +130,11 @@ export class UnifiedQuoteEngine {
 
         return result.quotes.map(q => ({
             id: `${q.carrierCode}-${q.serviceCode}`,
-            carrier: q.carrierCode, // Preserving structure
+            carrier: q.carrierCode,
             service: q.serviceName,
             price: q.price,
             deliveryTime: q.estimatedDeliveryDays,
-            source: q.carrierCode as 'melhorenvio' | 'tabela'
+            source: q.carrierCode
         }));
     }
 }

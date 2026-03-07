@@ -33,7 +33,7 @@ export interface FreightOption {
   service: string;
   price: number;
   deliveryTime: number; // days
-  source: 'melhorenvio' | 'tabela';
+  source: string; // carrier adapter code (melhorenvio, tabela_movvi, etc.)
 }
 
 /**
