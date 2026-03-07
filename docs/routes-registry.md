@@ -91,6 +91,10 @@
 | /api/internal/jobs/rollup-backfill | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/rollup-daily | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/jobs/security-anomaly-scan | POST | internal | required | ops | live | Periodic anomaly scan for security_edge_events |
+| /api/internal/freight/packing-profiles | GET,POST | internal | requireAdmin | frete | live | Packing profiles CRUD (list + create) |
+| /api/internal/freight/packing-profiles/[id] | PUT | internal | requireAdmin | frete | live | Update packing profile |
+| /api/internal/freight/packing-profiles/[id]/toggle | PATCH | internal | requireAdmin | frete | live | Toggle packing profile active state |
+| /api/internal/freight/packing-profiles/[id]/review-status | PATCH | internal | requireAdmin | frete | live | Advance packing profile review status |
 | /api/internal/ops | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/qa/bootstrap-session | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/qa/setup | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -184,6 +188,7 @@
 | /cockpit/status | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/status/audit | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/system-status | TBA | public | none | PUBLIC | live | Auto-detected |
+| /cockpit/packing-profiles | GET | internal | requireAdmin | frete | live | Packing profiles admin review UI |
 | /concept-layer-preview | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cotacao | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cotacao/result | TBA | public | none | PUBLIC | live | Auto-detected |

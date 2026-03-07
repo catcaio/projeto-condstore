@@ -1361,5 +1361,35 @@ export const supremeBenchmarks = mysqlTable('supreme_benchmarks', {
 export type SupremeBenchmarkRecord = typeof supremeBenchmarks.$inferSelect;
 export type NewSupremeBenchmarkRecord = typeof supremeBenchmarks.$inferInsert;
 
+// --- Packing Profiles (Freight Intelligence) ---
 
+export const packingProfiles = mysqlTable('packing_profiles', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    productRef: varchar('product_ref', { length: 128 }),
+    profileName: varchar('profile_name', { length: 255 }).notNull(),
+    baseHeight: decimal('base_height', { precision: 10, scale: 2 }).notNull().default('0'),
+    baseWidth: decimal('base_width', { precision: 10, scale: 2 }).notNull().default('0'),
+    baseLength: decimal('base_length', { precision: 10, scale: 2 }).notNull().default('0'),
+    baseWeight: decimal('base_weight', { precision: 10, scale: 3 }).notNull().default('0'),
+    packingMode: varchar('packing_mode', { length: 20 }).notNull().default('SINGLE_FIXED'),
+    stackable: boolean('stackable').notNull().default(false),
+    nestable: boolean('nestable').notNull().default(false),
+    requiresOwnBox: boolean('requires_own_box').notNull().default(false),
+    heightIncrementPerExtraUnit: decimal('height_increment_per_extra_unit', { precision: 10, scale: 2 }).notNull().default('0'),
+    widthIncrementPerExtraUnit: decimal('width_increment_per_extra_unit', { precision: 10, scale: 2 }).notNull().default('0'),
+    lengthIncrementPerExtraUnit: decimal('length_increment_per_extra_unit', { precision: 10, scale: 2 }).notNull().default('0'),
+    maxUnitsPerVolume: int('max_units_per_volume').notNull().default(1),
+    reviewStatus: varchar('review_status', { length: 20 }).notNull().default('DRAFT'),
+    isActive: boolean('is_active').notNull().default(false),
+    source: varchar('source', { length: 20 }).notNull().default('MANUAL'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxTenantId: index('idx_packing_profiles_tenant_id').on(table.tenantId),
+    idxTenantReviewStatus: index('idx_packing_profiles_tenant_review').on(table.tenantId, table.reviewStatus),
+    idxTenantActive: index('idx_packing_profiles_tenant_active').on(table.tenantId, table.isActive),
+}));
 
+export type PackingProfileRecord = typeof packingProfiles.$inferSelect;
+export type NewPackingProfileRecord = typeof packingProfiles.$inferInsert;

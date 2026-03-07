@@ -59,6 +59,10 @@
 | `/api/internal/frank/gate` | API |
 | `/api/internal/frank/metrics` | API |
 | `/api/internal/frank/scheduler/run` | API |
+| `/api/internal/freight/packing-profiles` | API |
+| `/api/internal/freight/packing-profiles/[id]` | API |
+| `/api/internal/freight/packing-profiles/[id]/review-status` | API |
+| `/api/internal/freight/packing-profiles/[id]/toggle` | API |
 | `/api/internal/health/ai` | API |
 | `/api/internal/health/db` | API |
 | `/api/internal/health/qdrant` | API |
@@ -174,6 +178,7 @@
 | `/cockpit/marciano/[...slug]` | Page |
 | `/cockpit/metrics` | Page |
 | `/cockpit/overview` | Page |
+| `/cockpit/packing-profiles` | Page |
 | `/cockpit/playbooks` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |

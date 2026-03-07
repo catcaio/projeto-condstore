@@ -102,6 +102,19 @@ export const MODULES: ModuleConfig[] = [
         ]
     },
     {
+        id: "packing-profiles",
+        label: "Perfis de Embalagem",
+        group: "Operação",
+        icon: Package,
+        route: "/cockpit/packing-profiles",
+        authModule: "frete",
+        requiredRoles: ["admin", "manager"],
+        navVisible: true,
+        routes: [
+            { pattern: "/cockpit/packing-profiles", title: "PERFIS DE EMBALAGEM" }
+        ]
+    },
+    {
         id: "deliveries",
         label: "Entregas",
         group: "Operação",
