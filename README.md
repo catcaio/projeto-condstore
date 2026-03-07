@@ -51,6 +51,13 @@ The platform enforces strict safety guardrails directly integrated into the loca
 - **Env Leak Detection:** Heuristic scanners prevent the commit tracking of sensitive credentials and payload signatures.
 - **QA Bootstrap Control:** A hermetic and deterministic login mechanism is enabled via isolated `/api/internal/qa/*` routes solely for automated UI regression tests, fully locked down by specialized pipeline secrets.
 
+## Database Infrastructure Baseline
+
+- Drizzle ORM + TiDB (MySQL-compatible) base infrastructure lives in `src/db`.
+- `src/db/client.ts` centralizes the `mysql2` pool creation and exports the shared Drizzle client.
+- `src/db/config.ts` contains the Drizzle Kit config (`schema`, `migrations`, `dialect=mysql`) for new schema generation flows.
+- `src/db/schema/index.ts` is the schema barrel file and currently exports placeholder schema modules only.
+
 ## Deployment
 
 - **Environments:** Vercel (Production & Preview edges), utilizing Turbopack builds and Edge Runtime for the public routing layer. 

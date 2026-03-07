@@ -60,6 +60,7 @@ Observabilidade
 - `src/app/*`: páginas, layouts e route handlers (API)
 - `src/modules/*`: regras de negócio (frete, métricas, jobs, audit, etc.)
 - `src/infra/*`: auth, logging, request tracing, repos, redis, config, observabilidade
+- `src/db/*`: baseline de acesso a banco para Drizzle (`client.ts`, `config.ts`, `schema/*`, `migrations/*`)
 - `src/ui/*`: tokens, tema e componentes UI reutilizáveis (FRONT-01)
 - `scripts/*`: utilitários e smoke tests (`scripts/smoke/staging-smoke.ts`)
 - `drizzle/*`: migrations SQL + metadata
