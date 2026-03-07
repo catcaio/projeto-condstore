@@ -22,6 +22,7 @@ const simulateSchema = z.object({
     height: z.number().positive(),
     length: z.number().positive(),
   }).optional(),
+  productRef: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { destinationCep, quantity, unitWeight, dimensions } = validation.data;
+    const { destinationCep, quantity, unitWeight, dimensions, productRef } = validation.data;
 
     logger.info('Freight simulation request', { destinationCep, quantity, tenantId });
 
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
       tenantId,
       unitWeight,
       dimensions,
+      productRef,
     });
 
     // 4. Persist simulation with tenant context in route handler

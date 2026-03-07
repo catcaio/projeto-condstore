@@ -18,6 +18,7 @@ import { unifiedQuoteEngine } from './quote-engine';
 import { redisClient } from '../../infra/redis.client';
 import { freightSimulationLogRepository } from '../../infra/repositories/freight-simulation-log.repository';
 import { domineIntakeService } from '../../domine/domine-intake.service';
+import { resolvePackingDimensions } from './packing-resolver';
 
 
 
@@ -36,9 +37,27 @@ class FreightService {
         return cached;
       }
 
-      // Calculate total weight
-      const unitWeight = request.unitWeight || appConfig.freight.defaultUnitWeight;
-      const totalWeight = unitWeight * request.quantity;
+      // Resolve packing dimensions from profile or fallback
+      const resolved = await resolvePackingDimensions({
+        tenantId: request.tenantId,
+        productRef: request.productRef,
+        quantity: request.quantity,
+        dimensions: request.dimensions,
+        unitWeight: request.unitWeight,
+        defaultUnitWeight: appConfig.freight.defaultUnitWeight,
+      });
+
+      // Enrich request with resolved dimensions
+      const enrichedRequest: FreightRequest = {
+        ...request,
+        unitWeight: resolved.unitWeight,
+        dimensions: (resolved.width > 0 && resolved.height > 0 && resolved.length > 0)
+          ? { width: resolved.width, height: resolved.height, length: resolved.length }
+          : request.dimensions,
+      };
+
+      // Calculate total weight from resolver
+      const totalWeight = resolved.totalWeight;
       const correlationId = request.requestId || `quote_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
       if (request.tenantId) {
@@ -60,10 +79,12 @@ class FreightService {
         destinationCep: request.destinationCep,
         quantity: request.quantity,
         totalWeight,
+        dimensionSource: resolved.source,
+        profileId: resolved.profileId || null,
       });
 
-      // Fetch quotes using unified quote engine
-      let options = await unifiedQuoteEngine.getQuotes(request);
+      // Fetch quotes using unified quote engine with enriched request
+      let options = await unifiedQuoteEngine.getQuotes(enrichedRequest);
 
       // Sort and limit options
       const sortedOptions = this.sortAndLimitOptions(options);
@@ -114,6 +135,7 @@ class FreightService {
         totalWeight,
         request,
         calculatedAt: new Date(),
+        dimensionSource: resolved.source,
       };
     } catch (error) {
       logger.error('Freight calculation failed', error as Error, {

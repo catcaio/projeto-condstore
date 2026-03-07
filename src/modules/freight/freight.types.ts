@@ -20,6 +20,8 @@ export interface FreightRequest {
     height: number; // cm
     length: number; // cm
   };
+  /** Product slug for packing profile lookup */
+  productRef?: string;
 }
 
 /**
@@ -44,6 +46,8 @@ export interface FreightResult {
   request: FreightRequest;
   calculatedAt: Date;
   error?: string;
+  /** Source of dimensions: packing_profile, request_override, or default */
+  dimensionSource?: 'packing_profile' | 'request_override' | 'default';
 }
 
 /**
