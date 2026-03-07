@@ -8,6 +8,12 @@ const SESSION_COOKIE_NAME = 'condstore_session';
 // Matcher scopes the middleware exactly to the requested paths to avoid overhead
 export const config = {
     matcher: [
+        '/cockpit/:path*',
+        '/home/:path*',
+        '/inbox/:path*',
+        '/freight/simulations/:path*',
+        '/attribution/:path*',
+        '/settings/:path*',
         '/api/internal/:path*',
         '/api/cockpit/:path*',
         '/api/tenants/:path*',
