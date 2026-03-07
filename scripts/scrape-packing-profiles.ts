@@ -170,16 +170,24 @@ async function scrapeProductPage(url: string): Promise<ScrapedProduct> {
 }
 
 function parseDimensions(raw: string): { length: number; width: number; height: number } | null {
-    // Normalize separators: × → x, remove "cm", extra spaces
+    // Normalize separators: decode HTML entities, then × → x, remove units
     const cleaned = raw
+        .replace(/&times;/gi, 'x')
+        .replace(/&amp;times;/gi, 'x')
         .replace(/×/g, 'x')
         .replace(/X/g, 'x')
         .replace(/cm/gi, '')
         .replace(/mm/gi, '')
+        .replace(/\s+/g, ' ')
         .trim();
 
+    // Filter out non-dimension values like "Não aplicável" or color lists
+    if (/n[ãa]o\s*aplic/i.test(cleaned) || /[a-z]{4,}/i.test(cleaned)) {
+        return null;
+    }
+
     const parts = cleaned.split(/\s*x\s*/).map(s => parseFloat(s.replace(',', '.')));
-    if (parts.length >= 3 && parts.every(p => !isNaN(p))) {
+    if (parts.length >= 3 && parts.every(p => !isNaN(p) && p > 0)) {
         let [l, w, h] = parts;
         // If values seem to be in mm (> 100), convert to cm
         if (l > 100 || w > 100 || h > 100) {
