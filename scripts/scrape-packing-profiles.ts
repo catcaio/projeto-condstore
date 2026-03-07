@@ -343,11 +343,13 @@ async function main() {
 
     // Step 2: Scrape
     console.log(`\n[SCRAPE] Processing ${urls.length} product pages (concurrency=${CONCURRENCY}, delay=${DELAY_MS}ms)...\n`);
+    let scraped = 0;
     const products = await processBatch(urls, async (url) => {
         const result = await scrapeProductPage(url);
+        scraped++;
         const status = result.error ? `❌ ${result.error}` :
             (result.baseHeight !== null ? `✅ ${result.baseHeight}×${result.baseWidth}×${result.baseLength} cm, ${result.weightKg ?? '?'} kg` : '⚠️ no dims');
-        console.log(`  [${products.length}/${urls.length}] ${result.slug} — ${status}`);
+        console.log(`  [${scraped}/${urls.length}] ${result.slug} — ${status}`);
         return result;
     }, CONCURRENCY, DELAY_MS);
 
