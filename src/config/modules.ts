@@ -66,6 +66,19 @@ export const MODULES: ModuleConfig[] = [
         ],
     },
     {
+        id: "acquisition",
+        label: "Acquisition",
+        group: "Core",
+        icon: Activity,
+        route: "/cockpit/acquisition",
+        authModule: "acquisition",
+        navVisible: true,
+        routes: [
+            { pattern: "/cockpit/acquisition", title: "ACQUISITION" },
+            { pattern: "/cockpit/acquisition/drilldown", title: "DETALHES DE AQUISIÇÃO" }
+        ]
+    },
+    {
         id: "knowledge",
         label: "Knowledge & AI",
         group: "Core",

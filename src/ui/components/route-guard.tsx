@@ -107,7 +107,7 @@ export function RouteGuard({ children, moduleId }: { children: React.ReactNode, 
                         <ShieldAlert className="h-6 w-6 text-[hsl(var(--ui-danger))]" />
                     </div>
                     <div className="text-lg font-bold text-[hsl(var(--ui-text))]">
-                        Acesso Restrito
+                        {reason === 'plan' ? 'Plano necessário' : 'Sem permissão'}
                     </div>
                 </CardHeader>
                 <CardContent>
