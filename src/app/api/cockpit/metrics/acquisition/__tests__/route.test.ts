@@ -6,6 +6,7 @@ import { getDb } from '../../../../../../infra/db';
 import { metricsDailyRepository } from '../../../../../../modules/metrics/metrics-daily.repository';
 import { tenantRepository } from '../../../../../../infra/repositories/tenant.repository';
 import { redisClient } from '../../../../../../infra/redis.client';
+import { isDevRuntime, isQaAutomation } from '../../../../../../infra/env/devOnly';
 
 const mockExecute = vi.fn();
 
@@ -40,6 +41,11 @@ vi.mock('../../../../../../infra/logger', () => ({
   logger: {
     error: vi.fn(),
   },
+}));
+
+vi.mock('../../../../../../infra/env/devOnly', () => ({
+  isDevRuntime: vi.fn(() => true),
+  isQaAutomation: vi.fn(() => false),
 }));
 
 vi.mock('../../../../../../infra/repositories/tenant.repository', () => ({
@@ -135,6 +141,8 @@ describe('GET /api/cockpit/metrics/acquisition', () => {
   });
 
   it('uses rollup table for 7d window when data exists', async () => {
+    vi.mocked(isDevRuntime).mockReturnValue(false);
+    vi.mocked(isQaAutomation).mockReturnValue(false);
     vi.mocked(metricsDailyRepository.queryAcquisitionBuckets).mockResolvedValue([
       {
         bucket: 'camp_rollup',
@@ -177,6 +185,8 @@ describe('GET /api/cockpit/metrics/acquisition', () => {
   });
 
   it('keeps rollup and raw responses coherent for a 7d dataset', async () => {
+    vi.mocked(isDevRuntime).mockReturnValue(false);
+    vi.mocked(isQaAutomation).mockReturnValue(false);
     vi.mocked(metricsDailyRepository.queryAcquisitionBuckets)
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
