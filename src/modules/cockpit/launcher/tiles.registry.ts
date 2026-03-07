@@ -177,17 +177,16 @@ export const MARCIANO_SALAS: CockpitSala[] = [
     { id: 'vendas', label: 'Vendas', order: 10 },
     { id: 'operacao', label: 'Operação', order: 20 },
     { id: 'financeiro', label: 'Financeiro', order: 30 },
-    { id: 'rh', label: 'Recursos Humanos', order: 40 },
-    { id: 'relatorios', label: 'Relatórios', order: 50 },
+    { id: 'relatorios', label: 'Relatórios', order: 40 },
 ];
 
 export const MARCIANO_TILES: CockpitTile[] = [
-    // VENDAS
+    // ── VENDAS ──────────────────────────────────────────
     {
         id: 'marciano-cotacao',
         label: 'Nova Cotação',
-        description: 'Simular frete para clientes',
-        href: '/cotacao', // Real route
+        description: 'Gere cotações instantâneas para seus clientes',
+        href: '/cotacao',
         iconName: 'Calculator',
         salaId: 'vendas',
         required: { roles: ['admin', 'manager', 'operator', 'viewer'] },
@@ -196,20 +195,21 @@ export const MARCIANO_TILES: CockpitTile[] = [
     {
         id: 'marciano-pedidos',
         label: 'Meus Pedidos',
-        description: 'Gestão de ordens faturadas',
+        description: 'Gestão de ordens e pedidos faturados',
         href: '/cockpit/marciano/pedidos',
         iconName: 'PackageOpen',
         salaId: 'vendas',
         required: { roles: ['admin', 'manager', 'operator'] },
+        badge: { type: 'new', label: 'Em breve' },
         order: 20,
     },
 
-    // OPERAÇÃO
+    // ── OPERAÇÃO ────────────────────────────────────────
     {
         id: 'marciano-painel',
         label: 'Painel Logístico',
-        description: 'Rastreio e despachos',
-        href: '/painel-logistico', // Real route
+        description: 'Rastreio, despacho e operação logística',
+        href: '/painel-logistico',
         iconName: 'Truck',
         salaId: 'operacao',
         required: { roles: ['admin', 'manager', 'operator', 'viewer'] },
@@ -217,58 +217,60 @@ export const MARCIANO_TILES: CockpitTile[] = [
     },
     {
         id: 'marciano-estoque',
-        label: 'Estoque',
-        description: 'Controle de inventário',
+        label: 'Controle de Estoque',
+        description: 'Inventário, SKUs e movimentações',
         href: '/cockpit/marciano/estoque',
         iconName: 'Boxes',
         salaId: 'operacao',
         required: { roles: ['admin', 'manager', 'operator'] },
+        badge: { type: 'new', label: 'Em breve' },
         order: 20,
     },
 
-    // FINANCEIRO
+    // ── FINANCEIRO ──────────────────────────────────────
     {
         id: 'marciano-faturas',
         label: 'Faturas',
-        description: 'Boletos e notas fiscais',
+        description: 'Boletos, notas fiscais e histórico financeiro',
         href: '/cockpit/marciano/faturas',
         iconName: 'Receipt',
         salaId: 'financeiro',
         required: { roles: ['admin', 'manager'] },
+        badge: { type: 'new', label: 'Em breve' },
         order: 10,
     },
     {
         id: 'marciano-billing',
         label: 'Assinatura',
-        description: 'Plano CONDSTORE',
-        href: '/billing', // Real route
+        description: 'Gerencie seu plano e faturamento CONDSTORE',
+        href: '/billing',
         iconName: 'CreditCard',
         salaId: 'financeiro',
         required: { roles: ['admin'] },
         order: 20,
     },
 
-    // RH
+    // ── RELATÓRIOS ──────────────────────────────────────
     {
         id: 'marciano-equipe',
         label: 'Equipe',
-        description: 'Membros e acessos',
-        href: '/settings', // Real route
+        description: 'Membros, acessos e administração do time',
+        href: '/settings',
         iconName: 'Users',
-        salaId: 'rh',
+        salaId: 'relatorios',
         required: { roles: ['admin'] },
         order: 10,
     },
-
-    // RELATÓRIOS
     {
         id: 'marciano-analytics',
         label: 'Desempenho',
-        description: 'Métricas gerais da loja',
+        description: 'Métricas gerais da operação e performance',
         href: '/cockpit/marciano/analytics',
         iconName: 'LineChart',
         salaId: 'relatorios',
         required: { roles: ['admin', 'manager'] },
-        order: 10,
+        badge: { type: 'new', label: 'Em breve' },
+        order: 20,
     },
 ];
+

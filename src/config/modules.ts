@@ -25,11 +25,11 @@ export type ModuleConfig = {
 };
 
 export const MODULES: ModuleConfig[] = [
-    // Core Group
+    // ── Operação ────────────────────────────────────────
     {
         id: "cockpit",
         label: "Dashboard",
-        group: "Core",
+        group: "Operação",
         icon: LayoutDashboard,
         route: "/cockpit",
         authModule: "cockpit",
@@ -41,7 +41,7 @@ export const MODULES: ModuleConfig[] = [
     {
         id: "analytics",
         label: "Analytics",
-        group: "Core",
+        group: "Operação",
         icon: BarChart3,
         route: "/cockpit/analytics",
         authModule: "cockpit",
@@ -51,52 +51,9 @@ export const MODULES: ModuleConfig[] = [
         ],
     },
     {
-        id: "domine",
-        label: "Domine",
-        group: "Core",
-        icon: Activity,
-        route: "/cockpit/domine",
-        authModule: "cockpit",
-        requiredRoles: ["admin"],
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit/domine", title: "DOMINE CONSOLE" },
-            { pattern: "/cockpit/domine/dlq", title: "DLQ MANAGER" },
-            { pattern: "/cockpit/domine/health", title: "DOMINE HEALTH" }
-        ],
-    },
-    {
-        id: "acquisition",
-        label: "Acquisition",
-        group: "Core",
-        icon: Activity,
-        route: "/cockpit/acquisition",
-        authModule: "acquisition",
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit/acquisition", title: "ACQUISITION" },
-            { pattern: "/cockpit/acquisition/drilldown", title: "DETALHES DE AQUISIÇÃO" }
-        ]
-    },
-    {
-        id: "knowledge",
-        label: "Knowledge & AI",
-        group: "Core",
-        icon: BrainCircuit,
-        route: "/cockpit/knowledge",
-        authModule: "cockpit",
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit/knowledge", title: "KNOWLEDGE BASE" },
-            { pattern: "/cockpit/knowledge/collections", title: "COLEÇÕES" },
-            { pattern: "/cockpit/knowledge/ask", title: "FRANK ASK" },
-            { pattern: "/cockpit/knowledge/documents/:docId/versions/:versionId/chunks/:chunkId", title: "CHUNK VIEWER" },
-        ],
-    },
-    {
         id: "audit",
         label: "Audit Logs",
-        group: "Core",
+        group: "Operação",
         icon: FileText,
         route: "/cockpit/audit",
         authModule: "audit",
@@ -106,8 +63,19 @@ export const MODULES: ModuleConfig[] = [
             { pattern: "/cockpit/audit", title: "AUDITORIA" }
         ]
     },
-
-    // Operação Group
+    {
+        id: "acquisition",
+        label: "Acquisition",
+        group: "Operação",
+        icon: Activity,
+        route: "/cockpit/acquisition",
+        authModule: "acquisition",
+        navVisible: true,
+        routes: [
+            { pattern: "/cockpit/acquisition", title: "ACQUISITION" },
+            { pattern: "/cockpit/acquisition/drilldown", title: "DETALHES DE AQUISIÇÃO" }
+        ]
+    },
     {
         id: "freight-control",
         label: "Freight Hub",
@@ -134,70 +102,42 @@ export const MODULES: ModuleConfig[] = [
             { pattern: "/cockpit/deliveries", title: "ENTREGAS" }
         ]
     },
+
+    // ── Domínio ─────────────────────────────────────────
     {
-        id: "dispatch",
-        label: "Dispatch",
-        group: "Operação",
-        icon: Package,
-        route: "/modules/dispatch",
-        authModule: "dispatch",
-        requiredRoles: ["admin", "manager", "operator"],
-        requiredPlan: "pro",
+        id: "domine",
+        label: "Overview",
+        group: "Domínio",
+        icon: Activity,
+        route: "/cockpit/domine",
+        authModule: "cockpit",
+        requiredRoles: ["admin"],
         navVisible: true,
-        isPlaceholder: true,
         routes: [
-            { pattern: "/modules/dispatch", title: "DISPATCH" }
-        ]
-    },
-    {
-        id: "technicians",
-        label: "Técnicos",
-        group: "Operação",
-        icon: Users,
-        route: "/modules/technicians",
-        authModule: "operation",
-        requiredRoles: ["admin", "manager", "operator"],
-        requiredPlan: "pro",
-        navVisible: true,
-        isPlaceholder: true,
-        routes: [
-            { pattern: "/modules/technicians", title: "TÉCNICOS" },
-            { pattern: "/modules/technicians/:id", title: "PERFIL DO TÉCNICO" }
-        ]
-    },
-    {
-        id: "routes",
-        label: "Rotas",
-        group: "Operação",
-        icon: Map,
-        route: "/modules/routes",
-        authModule: "operation",
-        requiredRoles: ["admin", "manager", "operator"],
-        requiredPlan: "pro",
-        navVisible: true,
-        isPlaceholder: true,
-        routes: [
-            { pattern: "/modules/routes", title: "ROTAS DE ENTREGA" },
-            { pattern: "/modules/routes/:id", title: "DETALHES DA ROTA" }
-        ]
-    },
-    {
-        id: "events",
-        label: "Eventos Logísticos",
-        group: "Operação",
-        icon: Calendar,
-        route: "/modules/events",
-        authModule: "operation",
-        requiredRoles: ["admin", "manager", "operator", "viewer"],
-        requiredPlan: "pro",
-        navVisible: true,
-        isPlaceholder: true,
-        routes: [
-            { pattern: "/modules/events", title: "MURAL DE EVENTOS" }
-        ]
+            { pattern: "/cockpit/domine", title: "DOMINE CONSOLE" },
+            { pattern: "/cockpit/domine/dlq", title: "DLQ MANAGER" },
+            { pattern: "/cockpit/domine/health", title: "DOMINE HEALTH" }
+        ],
     },
 
-    // Atendimento Group
+    // ── Inteligência ────────────────────────────────────
+    {
+        id: "knowledge",
+        label: "Knowledge & AI",
+        group: "Inteligência",
+        icon: BrainCircuit,
+        route: "/cockpit/knowledge",
+        authModule: "cockpit",
+        navVisible: true,
+        routes: [
+            { pattern: "/cockpit/knowledge", title: "KNOWLEDGE BASE" },
+            { pattern: "/cockpit/knowledge/collections", title: "COLEÇÕES" },
+            { pattern: "/cockpit/knowledge/ask", title: "FRANK ASK" },
+            { pattern: "/cockpit/knowledge/documents/:docId/versions/:versionId/chunks/:chunkId", title: "CHUNK VIEWER" },
+        ],
+    },
+
+    // ── Atendimento ─────────────────────────────────────
     {
         id: "inbox",
         label: "Inbox",
@@ -213,10 +153,12 @@ export const MODULES: ModuleConfig[] = [
             { pattern: "/inbox/conversations/:id", title: "CONVERSA DETALHE" }
         ]
     },
+
+    // ── Configurações ───────────────────────────────────
     {
         id: "equipe",
         label: "Equipe",
-        group: "Atendimento",
+        group: "Configurações",
         icon: Users,
         route: "/cockpit/equipe",
         authModule: "admin",
@@ -226,8 +168,34 @@ export const MODULES: ModuleConfig[] = [
             { pattern: "/cockpit/equipe", title: "EQUIPE" }
         ]
     },
+    {
+        id: "rate-limit",
+        label: "Rate Limit",
+        group: "Configurações",
+        icon: Activity,
+        route: "/cockpit/rate-limit",
+        authModule: "admin",
+        requiredRoles: ["admin"],
+        navVisible: true,
+        routes: [
+            { pattern: "/cockpit/rate-limit", title: "RATE LIMITS" }
+        ]
+    },
+    {
+        id: "settings",
+        label: "Configurações",
+        group: "Configurações",
+        icon: Settings2,
+        route: "/settings",
+        authModule: "settings",
+        requiredRoles: ["admin"],
+        navVisible: true,
+        routes: [
+            { pattern: "/settings", title: "CONFIGURAÇÕES TÉCNICAS" }
+        ]
+    },
 
-    // Admin Group
+    // ── Admin ───────────────────────────────────────────
     {
         id: "finance",
         label: "Financeiro",
@@ -256,30 +224,68 @@ export const MODULES: ModuleConfig[] = [
             { pattern: "/cockpit/tenants", title: "GERENCIAMENTO DE TENANTS" }
         ]
     },
+
+    // ── Operação (Placeholder) ──────────────────────────
     {
-        id: "rate-limit",
-        label: "Rate Limit",
-        group: "Admin",
-        icon: Activity,
-        route: "/cockpit/rate-limit",
-        authModule: "admin",
-        requiredRoles: ["admin"],
-        navVisible: true,
+        id: "dispatch",
+        label: "Dispatch",
+        group: "Operação",
+        icon: Package,
+        route: "/modules/dispatch",
+        authModule: "dispatch",
+        requiredRoles: ["admin", "manager", "operator"],
+        requiredPlan: "pro",
+        navVisible: false,
+        isPlaceholder: true,
         routes: [
-            { pattern: "/cockpit/rate-limit", title: "RATE LIMITS" }
+            { pattern: "/modules/dispatch", title: "DISPATCH" }
         ]
     },
     {
-        id: "settings",
-        label: "Configurações",
-        group: "Admin",
-        icon: Settings2,
-        route: "/settings",
-        authModule: "settings",
-        requiredRoles: ["admin"],
-        navVisible: true,
+        id: "technicians",
+        label: "Técnicos",
+        group: "Operação",
+        icon: Users,
+        route: "/modules/technicians",
+        authModule: "operation",
+        requiredRoles: ["admin", "manager", "operator"],
+        requiredPlan: "pro",
+        navVisible: false,
+        isPlaceholder: true,
         routes: [
-            { pattern: "/settings", title: "CONFIGURAÇÕES TÉCNICAS" }
+            { pattern: "/modules/technicians", title: "TÉCNICOS" },
+            { pattern: "/modules/technicians/:id", title: "PERFIL DO TÉCNICO" }
         ]
-    }
+    },
+    {
+        id: "routes",
+        label: "Rotas",
+        group: "Operação",
+        icon: Map,
+        route: "/modules/routes",
+        authModule: "operation",
+        requiredRoles: ["admin", "manager", "operator"],
+        requiredPlan: "pro",
+        navVisible: false,
+        isPlaceholder: true,
+        routes: [
+            { pattern: "/modules/routes", title: "ROTAS DE ENTREGA" },
+            { pattern: "/modules/routes/:id", title: "DETALHES DA ROTA" }
+        ]
+    },
+    {
+        id: "events",
+        label: "Eventos Logísticos",
+        group: "Operação",
+        icon: Calendar,
+        route: "/modules/events",
+        authModule: "operation",
+        requiredRoles: ["admin", "manager", "operator", "viewer"],
+        requiredPlan: "pro",
+        navVisible: false,
+        isPlaceholder: true,
+        routes: [
+            { pattern: "/modules/events", title: "MURAL DE EVENTOS" }
+        ]
+    },
 ];
