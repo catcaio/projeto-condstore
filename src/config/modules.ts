@@ -89,16 +89,16 @@ export const MODULES: ModuleConfig[] = [
         ]
     },
     {
-        id: "freight-control",
+        id: "freight-hub",
         label: "Freight Hub",
         group: "Operação",
-        icon: Boxes,
-        route: "/cockpit/freight-control",
+        icon: Truck,
+        route: "/painel-logistico",
         authModule: "frete",
         requiredRoles: ["admin", "manager"],
         navVisible: true,
         routes: [
-            { pattern: "/cockpit/freight-control", title: "CONTROLE DE FRETE" }
+            { pattern: "/painel-logistico", title: "PAINEL LOGÍSTICO" }
         ]
     },
     {
