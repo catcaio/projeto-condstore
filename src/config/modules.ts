@@ -1,4 +1,4 @@
-import { LayoutDashboard, BarChart3, Boxes, Package, Settings2, FileText, Activity, Users, Map, Calendar, DollarSign, BrainCircuit } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Boxes, Package, Settings2, FileText, Activity, Users, Map, Calendar, DollarSign, BrainCircuit, MessageSquare, Truck } from 'lucide-react';
 import type { Module, Role } from '@/ui/auth/entitlements-logic';
 
 export type RouteDefinition = {
@@ -96,6 +96,32 @@ export const MODULES: ModuleConfig[] = [
 
     // Operação Group
     {
+        id: "freight-control",
+        label: "Freight Hub",
+        group: "Operação",
+        icon: Boxes,
+        route: "/cockpit/freight-control",
+        authModule: "frete",
+        requiredRoles: ["admin", "manager"],
+        navVisible: true,
+        routes: [
+            { pattern: "/cockpit/freight-control", title: "CONTROLE DE FRETE" }
+        ]
+    },
+    {
+        id: "deliveries",
+        label: "Entregas",
+        group: "Operação",
+        icon: Truck,
+        route: "/cockpit/deliveries",
+        authModule: "dispatch",
+        requiredRoles: ["admin", "manager"],
+        navVisible: true,
+        routes: [
+            { pattern: "/cockpit/deliveries", title: "ENTREGAS" }
+        ]
+    },
+    {
         id: "dispatch",
         label: "Dispatch",
         group: "Operação",
@@ -155,6 +181,36 @@ export const MODULES: ModuleConfig[] = [
         isPlaceholder: true,
         routes: [
             { pattern: "/modules/events", title: "MURAL DE EVENTOS" }
+        ]
+    },
+
+    // Atendimento Group
+    {
+        id: "inbox",
+        label: "Inbox",
+        group: "Atendimento",
+        icon: MessageSquare,
+        route: "/inbox/conversations",
+        authModule: "operation",
+        requiredRoles: ["admin", "manager", "operator"],
+        navVisible: true,
+        routes: [
+            { pattern: "/inbox", title: "INBOX" },
+            { pattern: "/inbox/conversations", title: "CONVERSAS" },
+            { pattern: "/inbox/conversations/:id", title: "CONVERSA DETALHE" }
+        ]
+    },
+    {
+        id: "equipe",
+        label: "Equipe",
+        group: "Atendimento",
+        icon: Users,
+        route: "/cockpit/equipe",
+        authModule: "admin",
+        requiredRoles: ["admin", "manager"],
+        navVisible: true,
+        routes: [
+            { pattern: "/cockpit/equipe", title: "EQUIPE" }
         ]
     },
 
