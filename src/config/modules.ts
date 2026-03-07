@@ -27,6 +27,18 @@ export type ModuleConfig = {
 export const MODULES: ModuleConfig[] = [
     // ── Operação ────────────────────────────────────────
     {
+        id: "home",
+        label: "Home",
+        group: "Operação",
+        icon: LayoutDashboard,
+        route: "/home",
+        authModule: "cockpit",
+        navVisible: false,
+        routes: [
+            { pattern: "/home", title: "HOME" }
+        ],
+    },
+    {
         id: "cockpit",
         label: "Dashboard",
         group: "Operação",

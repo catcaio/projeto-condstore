@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
                 tenantId: existingUser.tenantId,
             });
 
-            const response = NextResponse.redirect(`${baseUrl}/home`);
+            const response = NextResponse.redirect(`${baseUrl}/cockpit`);
             response.cookies.set(COOKIE_NAME, token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
