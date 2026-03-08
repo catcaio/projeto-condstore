@@ -21,11 +21,11 @@ interface ShipmentRow {
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
     pending: { label: 'Pendente', className: 'bg-[hsl(var(--ui-bg))] text-[hsl(var(--ui-text-muted))] border border-[hsl(var(--ui-border))]' },
-    posted: { label: 'Postado', className: 'bg-blue-500/10 text-blue-600 border border-blue-500/20' },
-    in_transit: { label: 'Em Trânsito', className: 'bg-amber-500/10 text-amber-600 border border-amber-500/20' },
-    delivered: { label: 'Entregue', className: 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' },
-    exception: { label: 'Exceção', className: 'bg-red-500/10 text-red-600 border border-red-500/20' },
-    cancelled: { label: 'Cancelado', className: 'bg-gray-500/10 text-gray-500 border border-gray-500/20' },
+    posted: { label: 'Postado', className: 'bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue))] border border-[hsl(var(--ui-accent-blue)/0.2)]' },
+    in_transit: { label: 'Em Trânsito', className: 'bg-[hsl(var(--ui-warning)/0.1)] text-[hsl(var(--ui-warning))] border border-[hsl(var(--ui-warning)/0.2)]' },
+    delivered: { label: 'Entregue', className: 'bg-[hsl(var(--ui-success)/0.1)] text-[hsl(var(--ui-success))] border border-[hsl(var(--ui-success)/0.2)]' },
+    exception: { label: 'Exceção', className: 'bg-[hsl(var(--ui-danger)/0.1)] text-[hsl(var(--ui-danger))] border border-[hsl(var(--ui-danger)/0.2)]' },
+    cancelled: { label: 'Cancelado', className: 'bg-[hsl(var(--ui-bg-muted))] text-[hsl(var(--ui-text-muted))] border border-[hsl(var(--ui-border))]' },
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -41,12 +41,12 @@ function DeltaCell({ delta }: { delta: number | null }) {
     if (delta === null) return <span className="text-[hsl(var(--ui-text-muted))]">—</span>;
     const abs = Math.abs(delta);
     if (delta > 0) return (
-        <span className="flex items-center gap-1 font-semibold text-red-500 tabular-nums">
+        <span className="flex items-center gap-1 font-semibold text-[hsl(var(--ui-danger))] tabular-nums">
             <TrendingUp className="w-3 h-3 shrink-0" />+R$ {abs.toFixed(2)}
         </span>
     );
     if (delta < 0) return (
-        <span className="flex items-center gap-1 font-semibold text-emerald-500 tabular-nums">
+        <span className="flex items-center gap-1 font-semibold text-[hsl(var(--ui-success))] tabular-nums">
             <TrendingDown className="w-3 h-3 shrink-0" />-R$ {abs.toFixed(2)}
         </span>
     );
@@ -145,7 +145,7 @@ export function EnviosClient() {
                     <div className="w-7 h-7 rounded-full border-[3px] border-[hsl(var(--ui-accent-blue)/0.2)] border-t-[hsl(var(--ui-accent-blue))] animate-spin" />
                 </div>
             ) : error ? (
-                <div className="p-8 text-center text-sm text-red-500">{error}</div>
+                <div className="p-8 text-center text-sm text-[hsl(var(--ui-danger))]">{error}</div>
             ) : (
                 <div className="rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] overflow-x-auto">
                     <table className="w-full text-xs">
@@ -174,7 +174,7 @@ export function EnviosClient() {
                                     <td className="px-3 py-2.5 text-[hsl(var(--ui-text-muted))]">{row.service}</td>
                                     <td className="px-3 py-2.5"><StatusBadge status={row.status} /></td>
                                     <td className="px-3 py-2.5 tabular-nums text-[hsl(var(--ui-text))]">{formatBrl(row.quotedFreight ?? row.shipmentPrice)}</td>
-                                    <td className="px-3 py-2.5 tabular-nums font-semibold text-emerald-600">{formatBrl(row.confirmedFreight)}</td>
+                                    <td className="px-3 py-2.5 tabular-nums font-semibold text-[hsl(var(--ui-success))]">{formatBrl(row.confirmedFreight)}</td>
                                     <td className="px-3 py-2.5"><DeltaCell delta={row.deltaValue} /></td>
                                     <td className="px-3 py-2.5 tabular-nums text-[hsl(var(--ui-text-muted))] whitespace-nowrap">{formatDate(row.createdAt)}</td>
                                 </tr>
