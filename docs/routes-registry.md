@@ -95,7 +95,8 @@
 | /api/internal/freight/packing-profiles/[id] | PUT | internal | requireAdmin | frete | live | Update packing profile |
 | /api/internal/freight/packing-profiles/[id]/toggle | PATCH | internal | requireAdmin | frete | live | Toggle packing profile active state |
 | /api/internal/freight/packing-profiles/[id]/review-status | PATCH | internal | requireAdmin | frete | live | Advance packing profile review status |
-| /api/internal/freight/carrier-tables | GET | internal | requireAdmin | frete | live | Carrier tables overview (policies, zones, rate summary) |
+| /api/internal/freight/carrier-tables | GET,PATCH | internal | requireAdmin | frete | live | Carrier freight tables CRUD (read + update fields) |
+| /api/internal/freight/simulate | POST | internal | requireAdmin | frete | live | Manual freight simulation with multi-volume input |
 | /api/internal/ops | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/qa/bootstrap-session | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/qa/setup | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -191,6 +192,7 @@
 | /cockpit/system-status | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/packing-profiles | GET | internal | requireAdmin | frete | live | Packing profiles admin review UI |
 | /cockpit/carrier-tables | GET | internal | requireAdmin | frete | live | Carrier freight tables operational view |
+| /cockpit/freight-simulator | GET | internal | requireAdmin | frete | live | Manual freight quotation simulator (cockpit) |
 | /concept-layer-preview | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cotacao | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cotacao/result | TBA | public | none | PUBLIC | live | Auto-detected |

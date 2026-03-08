@@ -45,6 +45,9 @@ class FreightService {
         dimensions: request.dimensions,
         unitWeight: request.unitWeight,
         defaultUnitWeight: appConfig.freight.defaultUnitWeight,
+        manualOverride: request.manualVolumes && request.manualWeight
+          ? { volumes: request.manualVolumes, totalWeight: request.manualWeight }
+          : undefined,
       });
 
       // Enrich request with resolved dimensions

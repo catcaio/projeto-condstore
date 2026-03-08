@@ -16,7 +16,7 @@ export interface ResolvedDimensions {
     unitWeight: number; // kg per unit
     totalWeight: number; // kg for all units
     volumes: number;
-    source: 'packing_profile' | 'request_override' | 'default';
+    source: 'manual_override' | 'packing_profile' | 'request_override' | 'default';
     profileId?: string;
     packingMode?: string;
 }
@@ -29,18 +29,48 @@ interface ResolveInput {
     dimensions?: { width: number; height: number; length: number };
     unitWeight?: number;
     defaultUnitWeight: number;
+    /** Manual operator override — highest priority */
+    manualOverride?: {
+        volumes: { length: number; width: number; height: number; qty: number }[];
+        totalWeight: number;
+    };
 }
 
 /**
  * Resolve final package dimensions for a freight quote.
  *
  * Priority:
+ * 0. Manual operator override (cockpit simulator)
  * 1. Explicit dimensions/weight in the request (API override)
  * 2. Active packing profile from database
  * 3. Default weight with no dimensions
  */
 export async function resolvePackingDimensions(input: ResolveInput): Promise<ResolvedDimensions> {
-    const { tenantId, productRef, quantity, dimensions, unitWeight, defaultUnitWeight } = input;
+    const { tenantId, productRef, quantity, dimensions, unitWeight, defaultUnitWeight, manualOverride } = input;
+
+    // ─── Priority 0: Manual operator override (cockpit) ─────────────────
+    if (manualOverride && manualOverride.volumes.length > 0) {
+        const totalQty = manualOverride.volumes.reduce((s, v) => s + v.qty, 0);
+        // Use the largest single volume row for representative dimensions
+        const largest = manualOverride.volumes.reduce((best, v) => {
+            const vol = v.length * v.width * v.height;
+            const bestVol = best.length * best.width * best.height;
+            return vol > bestVol ? v : best;
+        }, manualOverride.volumes[0]);
+        logger.info('packing_resolver: using manual_override', {
+            source: 'manual_override', tenantId, totalWeight: manualOverride.totalWeight,
+            volumes: totalQty, dims: `${largest.length}x${largest.width}x${largest.height}`,
+        });
+        return {
+            width: largest.width,
+            height: largest.height,
+            length: largest.length,
+            unitWeight: manualOverride.totalWeight / (totalQty || 1),
+            totalWeight: manualOverride.totalWeight,
+            volumes: totalQty,
+            source: 'manual_override',
+        };
+    }
 
     // ─── Priority 1: Explicit override from request ─────────────────────
     if (dimensions && unitWeight) {

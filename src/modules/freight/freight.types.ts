@@ -10,6 +10,8 @@ import type { AttributionSnapshot } from '../../infra/attribution/attribution.ty
  */
 export interface FreightRequest {
   destinationCep: string;
+  cepDestino?: string;
+  zoneCode?: string;
   quantity: number;
   tenantId?: string;
   attribution?: AttributionSnapshot | null;
@@ -22,6 +24,10 @@ export interface FreightRequest {
   };
   /** Product slug for packing profile lookup */
   productRef?: string;
+  /** Manual operator override — multi-volume rows (dimensions in cm) */
+  manualVolumes?: { length: number; width: number; height: number; qty: number }[];
+  /** Manual operator override — explicit total weight in kg */
+  manualWeight?: number;
 }
 
 /**
@@ -46,8 +52,8 @@ export interface FreightResult {
   request: FreightRequest;
   calculatedAt: Date;
   error?: string;
-  /** Source of dimensions: packing_profile, request_override, or default */
-  dimensionSource?: 'packing_profile' | 'request_override' | 'default';
+  /** Source of dimensions: manual_override, packing_profile, request_override, or default */
+  dimensionSource?: 'manual_override' | 'packing_profile' | 'request_override' | 'default';
 }
 
 /**

@@ -64,6 +64,7 @@
 | `/api/internal/freight/packing-profiles/[id]` | API |
 | `/api/internal/freight/packing-profiles/[id]/review-status` | API |
 | `/api/internal/freight/packing-profiles/[id]/toggle` | API |
+| `/api/internal/freight/simulate` | API |
 | `/api/internal/health/ai` | API |
 | `/api/internal/health/db` | API |
 | `/api/internal/health/qdrant` | API |
@@ -172,6 +173,7 @@
 | `/cockpit/domine/health` | Page |
 | `/cockpit/equipe` | Page |
 | `/cockpit/finops/alerts` | Page |
+| `/cockpit/freight-simulator` | Page |
 | `/cockpit/funcionalidades` | Page |
 | `/cockpit/knowledge` | Page |
 | `/cockpit/knowledge/ask` | Page |

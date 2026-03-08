@@ -9,6 +9,7 @@ import { carrierPolicies, carrierZones, carrierRateRows } from '../../drizzle/sc
 import { eq, and, gte, asc } from 'drizzle-orm';
 import { logger } from '../../infra/logger';
 import type { CarrierAdapter, QuoteInput, NormalizedQuote } from '../shipping/carriers/types';
+import { extractStateFromCep, resolveCarrierZone } from '../../core/freight/zone-resolver';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -32,59 +33,6 @@ export interface FreightBreakdown {
     fvCharge: number;
     totalFreight: number;
     deliveryDays: number;
-}
-
-// ─── CEP → State mapping ───────────────────────────────────────────────────
-
-const CEP_STATE_MAP: [number, number, string][] = [
-    [1000000, 19999999, 'SP'],
-    [20000000, 28999999, 'RJ'],
-    [29000000, 29999999, 'ES'],
-    [30000000, 39999999, 'MG'],
-    [40000000, 48999999, 'BA'],
-    [49000000, 49999999, 'SE'],
-    [50000000, 56999999, 'PE'],
-    [57000000, 57999999, 'AL'],
-    [58000000, 58999999, 'PB'],
-    [59000000, 59999999, 'RN'],
-    [60000000, 63999999, 'CE'],
-    [64000000, 64999999, 'PI'],
-    [65000000, 65999999, 'MA'],
-    [66000000, 68899999, 'PA'],
-    [68900000, 68999999, 'AP'],
-    [69000000, 69299999, 'AM'],
-    [69300000, 69399999, 'RR'],
-    [69400000, 69899999, 'AM'],
-    [69900000, 69999999, 'AC'],
-    [70000000, 72799999, 'DF'],
-    [72800000, 76799999, 'GO'],
-    [76800000, 76999999, 'RO'],
-    [77000000, 77999999, 'TO'],
-    [78000000, 78899999, 'MT'],
-    [79000000, 79999999, 'MS'],
-    [80000000, 87999999, 'PR'],
-    [88000000, 89999999, 'SC'],
-    [90000000, 99999999, 'RS'],
-];
-
-function cepToState(cep: string): string | null {
-    const num = parseInt(cep.replace(/\D/g, ''), 10);
-    for (const [start, end, state] of CEP_STATE_MAP) {
-        if (num >= start && num <= end) return state;
-    }
-    return null;
-}
-
-function isCapitalCep(cep: string, state: string): boolean {
-    const num = parseInt(cep.replace(/\D/g, ''), 10);
-    const capitalRanges: Record<string, [number, number]> = {
-        SP: [1000000, 8999999], RJ: [20000000, 23999999], MG: [30000000, 31999999],
-        PR: [80000000, 82999999], RS: [90000000, 91999999], SC: [88000000, 88999999],
-        BA: [40000000, 41999999], CE: [60000000, 61999999], PE: [50000000, 52999999],
-    };
-    const range = capitalRanges[state];
-    if (!range) return false;
-    return num >= range[0] && num <= range[1];
 }
 
 // ─── Adapter ────────────────────────────────────────────────────────────────
@@ -132,7 +80,7 @@ export class TableDrivenAdapter implements CarrierAdapter {
 
     async calculateFreight(input: QuoteInput): Promise<FreightBreakdown | null> {
         const db = await getDb();
-        const state = cepToState(input.destinationCep);
+        const state = extractStateFromCep(input.destinationCep);
         if (!state) {
             logger.debug(`table_driven: no state for CEP ${input.destinationCep}`);
             return null;
@@ -149,8 +97,13 @@ export class TableDrivenAdapter implements CarrierAdapter {
         const policy = policies[0];
 
         // 2. Resolve zone
-        const zone = await this.resolveZone(db, state, input.destinationCep);
-        if (!zone) {
+        const zoneCode = await resolveCarrierZone({
+            tenantId: this.tenantId,
+            carrierName: this.carrierName,
+            cep: input.destinationCep
+        });
+
+        if (!zoneCode) {
             logger.debug(`table_driven: no zone for ${this.carrierName}/${state}`);
             return null;
         }
@@ -165,13 +118,13 @@ export class TableDrivenAdapter implements CarrierAdapter {
         const rateRows = await db.select().from(carrierRateRows).where(and(
             eq(carrierRateRows.tenantId, this.tenantId),
             eq(carrierRateRows.carrierName, this.carrierName),
-            eq(carrierRateRows.zoneCode, zone.zoneCode),
+            eq(carrierRateRows.zoneCode, zoneCode),
             eq(carrierRateRows.isActive, true),
             gte(carrierRateRows.weightBandMax, String(chargedWeight)),
         )).orderBy(asc(carrierRateRows.weightBandMax)).limit(1);
 
         if (rateRows.length === 0) {
-            logger.debug(`table_driven: no rate band for ${this.carrierName}/${zone.zoneCode}/${chargedWeight}kg`);
+            logger.debug(`table_driven: no rate band for ${this.carrierName}/${zoneCode}/${chargedWeight}kg`);
             return null;
         }
         const rate = rateRows[0];
@@ -216,7 +169,7 @@ export class TableDrivenAdapter implements CarrierAdapter {
         const deliveryDays = rate.deliveryTimeDays || policy.deliveryTimeDaysBase;
 
         logger.info('table_driven: freight calculated', {
-            carrier: this.carrierName, zone: zone.zoneCode,
+            carrier: this.carrierName, zone: zoneCode,
             realWeight, cubedWeight: Math.round(cubedWeight * 100) / 100,
             chargedWeight, band: weightBand,
             base: basePrice, total: Math.round(totalFreight * 100) / 100,
@@ -225,7 +178,7 @@ export class TableDrivenAdapter implements CarrierAdapter {
 
         return {
             carrierName: this.carrierName,
-            zoneCode: zone.zoneCode,
+            zoneCode,
             realWeightKg: realWeight,
             cubedWeightKg: Math.round(cubedWeight * 100) / 100,
             chargedWeightKg: chargedWeight,
@@ -244,39 +197,6 @@ export class TableDrivenAdapter implements CarrierAdapter {
             totalFreight: round2(totalFreight),
             deliveryDays,
         };
-    }
-
-    private async resolveZone(db: any, state: string, cep: string) {
-        const cepNum = cep.replace(/\D/g, '').padEnd(8, '0');
-
-        // Try CEP range match first
-        const zones = await db.select().from(carrierZones).where(and(
-            eq(carrierZones.tenantId, this.tenantId),
-            eq(carrierZones.carrierName, this.carrierName),
-            eq(carrierZones.state, state),
-            eq(carrierZones.isActive, true),
-        ));
-
-        if (zones.length === 0) return null;
-        if (zones.length === 1) return zones[0];
-
-        // Multiple zones for same state (e.g., SP_CAP vs SP_INT)
-        // Check CEP ranges
-        for (const z of zones) {
-            if (z.cepRangeStart && z.cepRangeEnd) {
-                if (cepNum >= z.cepRangeStart && cepNum <= z.cepRangeEnd) return z;
-            }
-        }
-
-        // Fallback: check capital/interior
-        const isCap = isCapitalCep(cep, state);
-        const capZone = zones.find((z: any) => z.capitalOrInterior === 'CAPITAL');
-        const intZone = zones.find((z: any) => z.capitalOrInterior === 'INTERIOR');
-        if (isCap && capZone) return capZone;
-        if (!isCap && intZone) return intZone;
-
-        // Default to first
-        return zones[0];
     }
 
     private computeCubedWeight(input: QuoteInput, cubageFactor: number): number {
@@ -310,7 +230,7 @@ export async function getTableAdaptersForDestination(
     tenantId: string,
     destinationCep: string,
 ): Promise<TableDrivenAdapter[]> {
-    const state = cepToState(destinationCep);
+    const state = extractStateFromCep(destinationCep);
     if (!state) return [];
 
     const db = await getDb();
