@@ -84,8 +84,9 @@ export async function logFreightSimulation(input: SimulationLogInput): Promise<s
             breakdownJson: input.breakdownJson ?? null,
             strategyUsed: input.strategyUsed ?? null,
         });
-    } catch {
+    } catch (err) {
         // Non-blocking — don't crash freight calculation if logging fails
+        console.error('logFreightSimulation inserted failed:', err);
     }
 
     return id;

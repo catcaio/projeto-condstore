@@ -51,7 +51,7 @@ export interface CreateShipmentResult {
     status: string;
 }
 
-const ME_API_URL = 'https://melhorenvio.com.br/api/v2/me/cart';
+const ME_API_URL = 'https://sandbox.melhorenvio.com.br/api/v2/me/cart';
 
 export async function createShipmentFromQuote(input: CreateShipmentInput): Promise<CreateShipmentResult> {
     const token = process.env.MELHOR_ENVIO_TOKEN;
@@ -60,24 +60,51 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         throw new Error('MELHOR_ENVIO_TOKEN not configured');
     }
 
+    const fromName = process.env.MELHOR_ENVIO_FROM_NAME || 'LojaCond';
+    const fromEmail = process.env.MELHOR_ENVIO_FROM_EMAIL || 'contato@lojacond.com.br';
+    const fromPhone = process.env.MELHOR_ENVIO_FROM_PHONE || '48999999999';
+    const fromDocument = process.env.MELHOR_ENVIO_FROM_DOCUMENT;
+    const fromCompanyDocument = process.env.MELHOR_ENVIO_FROM_COMPANY_DOCUMENT;
+    const fromPostalCode = process.env.MELHOR_ENVIO_FROM_POSTAL_CODE;
+    const fromAddress = process.env.MELHOR_ENVIO_FROM_ADDRESS;
+    const fromNumber = process.env.MELHOR_ENVIO_FROM_NUMBER;
+    const fromComplement = process.env.MELHOR_ENVIO_FROM_COMPLEMENT || '';
+    const fromDistrict = process.env.MELHOR_ENVIO_FROM_DISTRICT;
+    const fromCity = process.env.MELHOR_ENVIO_FROM_CITY;
+    const fromState = process.env.MELHOR_ENVIO_FROM_STATE;
+
+    if (!fromPostalCode || !fromAddress || !fromNumber || !fromDistrict || !fromCity || !fromState) {
+        throw new Error('Missing required ME sender address fields in environment variables.');
+    }
+    if (!fromDocument && !fromCompanyDocument) {
+        throw new Error('At least one of MELHOR_ENVIO_FROM_DOCUMENT or MELHOR_ENVIO_FROM_COMPANY_DOCUMENT must be provided.');
+    }
+
+    const cleanDoc = fromDocument?.replace(/\D/g, '') || '';
+    const cleanCnpj = fromCompanyDocument?.replace(/\D/g, '') || '';
+
+    if (fromDocument && cleanDoc.length !== 11) throw new Error('MELHOR_ENVIO_FROM_DOCUMENT must be a valid 11-digit CPF format.');
+    if (fromCompanyDocument && cleanCnpj.length !== 14) throw new Error('MELHOR_ENVIO_FROM_COMPANY_DOCUMENT must be a valid 14-digit CNPJ format.');
+
     try {
         const payload = {
             service: input.serviceId,
             agency: 1, // Store default agency
             from: {
-                name: 'LojaCond',
-                phone: '48999999999',
-                email: 'contato@lojacond.com.br',
-                document: '00000000000000',
-                company_document: '00000000000000',
+                name: fromName,
+                phone: fromPhone,
+                email: fromEmail,
+                document: cleanDoc || cleanCnpj,
+                ...(cleanCnpj ? { company_document: cleanCnpj } : {}),
                 state_register: '',
-                address: 'Rua Origem',
-                complement: '',
-                number: '123',
-                district: 'Centro',
-                city: 'Florianópolis',
+                address: fromAddress,
+                complement: fromComplement,
+                number: fromNumber,
+                district: fromDistrict,
+                city: fromCity,
+                state_abbr: fromState,
                 country_id: 'BR',
-                postal_code: input.originCep.replace(/\D/g, ''),
+                postal_code: fromPostalCode.replace(/\D/g, ''),
                 note: '',
             },
             to: {
@@ -142,7 +169,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         const data: any = await res.json();
 
         // Checkout the cart immediately to generate the label
-        const checkoutRes = await fetch('https://melhorenvio.com.br/api/v2/me/shipment/checkout', {
+        const checkoutRes = await fetch('https://sandbox.melhorenvio.com.br/api/v2/me/shipment/checkout', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -161,7 +188,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         }
 
         // Fetch the created order to get the tracking code
-        const printRes = await fetch('https://melhorenvio.com.br/api/v2/me/shipment/print', {
+        const printRes = await fetch('https://sandbox.melhorenvio.com.br/api/v2/me/shipment/print', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -203,7 +230,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         return {
             shipmentId,
             trackingCode,
-            trackingUrl: `https://app.melhorenvio.com/rastreio/${trackingCode}`,
+            trackingUrl: `https://sandbox.melhorenvio.com.br/rastreio/${trackingCode}`,
             price: data.price ? parseFloat(data.price) : input.quotePrice,
             status: data.status || 'pending',
         };
