@@ -25,6 +25,29 @@ export type ModuleConfig = {
 };
 
 export const MODULES: ModuleConfig[] = [
+    // ── Nova Arquitetura Cockpit ────────────────────────
+    {
+        id: "nova-arquitetura",
+        label: "Cockpit Geral",
+        group: "Geral",
+        icon: LayoutDashboard,
+        route: "/dashboard",
+        authModule: "cockpit",
+        navVisible: false,
+        routes: [
+            { pattern: "/dashboard", title: "Dashboard" },
+            { pattern: "/vendas/cotacao", title: "Nova Cotação" },
+            { pattern: "/vendas/pedidos", title: "Pedidos" },
+            { pattern: "/vendas/clientes", title: "Clientes" },
+            { pattern: "/logistica/simulador", title: "Simulador de Frete" },
+            { pattern: "/logistica/envios", title: "Envios" },
+            { pattern: "/logistica/rastreamento", title: "Rastreamento" },
+            { pattern: "/logistica/insights", title: "Insights Logísticos" },
+            { pattern: "/operacao/inbox", title: "Inbox" },
+            { pattern: "/operacao/fila", title: "Fila Operacional" }
+        ]
+    },
+
     // ── Operação ────────────────────────────────────────
     {
         id: "home",
