@@ -1,8 +1,10 @@
 /**
- * Operational Settings Loader.
+ * Operational Settings Loader — with in-memory cache.
  *
  * Loads freight/packing operational settings from the DB (cockpit-managed).
  * Falls back to safe defaults when DB values are not set.
+ *
+ * Cache: 60s TTL per tenant. Invalidated by invalidateSettingsCache().
  */
 
 import { getDb } from '../../infra/db';
@@ -32,7 +34,31 @@ export const DEFAULTS = {
 
 export type SettingKey = keyof typeof DEFAULTS;
 
-// ─── Loader ─────────────────────────────────────────────────────────────────
+// ─── Cache ──────────────────────────────────────────────────────────────────
+
+const CACHE_TTL_MS = 60_000; // 60 seconds
+
+interface CacheEntry {
+    settings: OperationalSettings;
+    ruleVersion: number;
+    cachedAt: number;
+}
+
+const cache = new Map<string, CacheEntry>();
+
+function cacheKey(tenantId: string): string {
+    return `operational_settings:${tenantId}`;
+}
+
+/**
+ * Invalidate the settings cache for a tenant.
+ * Call this after PATCH /api/internal/freight/operational-settings.
+ */
+export function invalidateSettingsCache(tenantId: string): void {
+    cache.delete(cacheKey(tenantId));
+}
+
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface OperationalSettings {
     maxIdenticalPerVolume: number;
@@ -46,14 +72,23 @@ export interface OperationalSettings {
     defaultCubageFactor: number;
     defaultUnitWeightKg: number;
     maxFreightOptions: number;
+    /** Current rule version from DB (0 if not set) */
+    ruleVersion: number;
 }
 
 /**
- * Load operational settings for a tenant from DB.
+ * Load operational settings for a tenant from DB, with 60s cache.
  * Merges DB values with safe defaults.
  */
 export async function loadOperationalSettings(tenantId: string): Promise<OperationalSettings> {
+    const key = cacheKey(tenantId);
+    const cached = cache.get(key);
+    if (cached && (Date.now() - cached.cachedAt) < CACHE_TTL_MS) {
+        return cached.settings;
+    }
+
     let dbSettings: Record<string, string> = {};
+    let ruleVersion = 0;
 
     try {
         const db = await getDb();
@@ -65,21 +100,24 @@ export async function loadOperationalSettings(tenantId: string): Promise<Operati
         );
         for (const row of rows) {
             dbSettings[row.settingKey] = row.settingValue;
+            // Track the highest rule version across all settings
+            const rv = (row as any).ruleVersion;
+            if (typeof rv === 'number' && rv > ruleVersion) ruleVersion = rv;
         }
     } catch {
         // DB not available — use all defaults
     }
 
-    const getNum = (key: SettingKey): number =>
-        dbSettings[key] !== undefined ? parseFloat(dbSettings[key]) : DEFAULTS[key] as number;
+    const getNum = (k: SettingKey): number =>
+        dbSettings[k] !== undefined ? parseFloat(dbSettings[k]) : DEFAULTS[k] as number;
 
-    const getBool = (key: SettingKey): boolean =>
-        dbSettings[key] !== undefined ? dbSettings[key] === 'true' : DEFAULTS[key] as boolean;
+    const getBool = (k: SettingKey): boolean =>
+        dbSettings[k] !== undefined ? dbSettings[k] === 'true' : DEFAULTS[k] as boolean;
 
-    const getStr = (key: SettingKey): string =>
-        dbSettings[key] !== undefined ? dbSettings[key] : DEFAULTS[key] as string;
+    const getStr = (k: SettingKey): string =>
+        dbSettings[k] !== undefined ? dbSettings[k] : DEFAULTS[k] as string;
 
-    return {
+    const settings: OperationalSettings = {
         maxIdenticalPerVolume: getNum('max_identical_per_volume'),
         stackingIncrementCm: getNum('stacking_increment_cm'),
         maxVolumeLengthCm: getNum('max_volume_length_cm'),
@@ -91,5 +129,9 @@ export async function loadOperationalSettings(tenantId: string): Promise<Operati
         defaultCubageFactor: getNum('default_cubage_factor'),
         defaultUnitWeightKg: getNum('default_unit_weight_kg'),
         maxFreightOptions: getNum('max_freight_options'),
+        ruleVersion,
     };
+
+    cache.set(key, { settings, ruleVersion, cachedAt: Date.now() });
+    return settings;
 }

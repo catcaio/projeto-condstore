@@ -5,7 +5,7 @@ import { freightOperationalSettings, carrierPriorityRules } from '@/drizzle/sche
 import { eq, and } from 'drizzle-orm';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
-import { DEFAULTS, type SettingKey } from '@/core/freight/operational-settings';
+import { DEFAULTS, type SettingKey, invalidateSettingsCache } from '@/core/freight/operational-settings';
 import { randomUUID } from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -29,12 +29,13 @@ export async function GET(request: NextRequest) {
     );
 
     // Merge DB values with defaults so the UI always shows every setting
-    const settingsMap: Record<string, { value: string; isActive: boolean; id?: string; description?: string; category?: string }> = {};
+    const settingsMap: Record<string, { value: string; isActive: boolean; id?: string; description?: string; category?: string; ruleVersion?: number }> = {};
     for (const key of Object.keys(DEFAULTS) as SettingKey[]) {
         settingsMap[key] = {
             value: String(DEFAULTS[key]),
             isActive: true,
             description: '',
+            ruleVersion: 0,
             category: key.startsWith('max_volume') || key.startsWith('max_identical') || key.startsWith('stacking') || key.startsWith('absorb') ? 'packing' : 'freight',
         };
     }
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
             id: row.id,
             description: row.description ?? '',
             category: row.category,
+            ruleVersion: row.ruleVersion,
         };
     }
 
@@ -55,9 +57,9 @@ export async function GET(request: NextRequest) {
 const GUARDRAILS: Record<string, { min?: number; max?: number }> = {
     max_identical_per_volume: { min: 1, max: 50 },
     stacking_increment_cm: { min: 0, max: 100 },
-    max_volume_length_cm: { min: 10, max: 1000 },
-    max_volume_width_cm: { min: 10, max: 1000 },
-    max_volume_height_cm: { min: 10, max: 1000 },
+    max_volume_length_cm: { min: 10, max: 500 },
+    max_volume_width_cm: { min: 10, max: 300 },
+    max_volume_height_cm: { min: 10, max: 300 },
     default_cubage_factor: { min: 100, max: 1000 },
     default_unit_weight_kg: { min: 0.01, max: 500 },
     max_freight_options: { min: 1, max: 20 },
@@ -65,6 +67,7 @@ const GUARDRAILS: Record<string, { min?: number; max?: number }> = {
 
 /**
  * PATCH — Update a single operational setting.
+ * Invalidates the settings cache and increments rule_version.
  */
 export async function PATCH(request: NextRequest) {
     const requestId = makeRequestId(request);
@@ -96,8 +99,14 @@ export async function PATCH(request: NextRequest) {
         ).limit(1);
 
         if (existing.length > 0) {
+            const currentVersion = existing[0].ruleVersion || 1;
+            // Close previous version
             await db.update(freightOperationalSettings)
-                .set({ settingValue: String(value) })
+                .set({
+                    settingValue: String(value),
+                    ruleVersion: currentVersion + 1,
+                    activeFrom: new Date(),
+                })
                 .where(eq(freightOperationalSettings.id, existing[0].id));
         } else {
             await db.insert(freightOperationalSettings).values({
@@ -105,9 +114,14 @@ export async function PATCH(request: NextRequest) {
                 tenantId,
                 settingKey: key,
                 settingValue: String(value),
+                ruleVersion: 1,
+                activeFrom: new Date(),
                 category: key.startsWith('max_volume') || key.startsWith('max_identical') || key.startsWith('stacking') || key.startsWith('absorb') ? 'packing' : 'freight',
             });
         }
+
+        // Invalidate settings cache for this tenant
+        invalidateSettingsCache(tenantId);
 
         return NextResponse.json({ ok: true, updated: key });
     }
