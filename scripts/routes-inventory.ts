@@ -10,7 +10,7 @@ function findRoutes(dir: string, baseRoute: string = ''): string[] {
     let routes: string[] = [];
     if (!fs.existsSync(dir)) return routes;
 
-    const files = fs.readdirSync(dir);
+    const files = fs.readdirSync(dir).sort();
 
     for (const file of files) {
         // Exclude specific Next.js internal/build folders or UI co-located folders if necessary
@@ -65,7 +65,7 @@ function generateInventory() {
         fs.mkdirSync(outDir, { recursive: true });
     }
 
-    fs.writeFileSync(OUTPUT_FILE, mdLines.join('\n'));
+    fs.writeFileSync(OUTPUT_FILE, mdLines.join('\n') + '\n');
     console.log(`📄 Wrote inventory to docs/_generated/routes-inventory.md`);
 }
 
