@@ -26,7 +26,6 @@
     "routes:verify": "node --import tsx scripts/routes-verify.ts",
     "routes:sync": "npm run routes:inventory && npm run routes:verify",
     "routes:verify-security": "node --import tsx scripts/routes-verify-security.ts",
-    "validate:sandbox": "node --env-file=.env.local --import tsx scripts/validate-sandbox.ts",
     "qa:snapshots": "node --import tsx scripts/qa-snapshots.ts",
     "lint:design-system": "vitest run src/__tests__/design-system.test.ts",
     "worker:finops": "node --import tsx src/workers/finops-worker.ts",

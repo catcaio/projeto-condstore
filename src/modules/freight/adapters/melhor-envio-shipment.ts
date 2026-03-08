@@ -8,7 +8,6 @@ import { logger } from '../../../infra/logger';
 import { getDb } from '../../../infra/db';
 import { freightShipments } from '../../../drizzle/schema';
 import { randomUUID } from 'crypto';
-import { getMelhorEnvioAccessToken } from './melhor-envio-auth';
 
 export interface RecipientData {
     name: string;
@@ -52,10 +51,14 @@ export interface CreateShipmentResult {
     status: string;
 }
 
-const ME_API_URL = 'https://sandbox.melhorenvio.com.br/api/v2/me/cart';
+const ME_API_URL = 'https://melhorenvio.com.br/api/v2/me/cart';
 
 export async function createShipmentFromQuote(input: CreateShipmentInput): Promise<CreateShipmentResult> {
-    const token = await getMelhorEnvioAccessToken();
+    const token = process.env.MELHOR_ENVIO_TOKEN;
+
+    if (!token) {
+        throw new Error('MELHOR_ENVIO_TOKEN not configured');
+    }
 
     try {
         const payload = {
@@ -139,7 +142,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         const data: any = await res.json();
 
         // Checkout the cart immediately to generate the label
-        const checkoutRes = await fetch('https://sandbox.melhorenvio.com.br/api/v2/me/shipment/checkout', {
+        const checkoutRes = await fetch('https://melhorenvio.com.br/api/v2/me/shipment/checkout', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -158,7 +161,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         }
 
         // Fetch the created order to get the tracking code
-        const printRes = await fetch('https://sandbox.melhorenvio.com.br/api/v2/me/shipment/print', {
+        const printRes = await fetch('https://melhorenvio.com.br/api/v2/me/shipment/print', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

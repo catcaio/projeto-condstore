@@ -6,7 +6,6 @@
  */
 
 import { logger } from '../../../infra/logger';
-import { getMelhorEnvioAccessToken } from './melhor-envio-auth';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -32,14 +31,13 @@ export interface MelhorEnvioQuote {
 
 // ─── API call ───────────────────────────────────────────────────────────────
 
-const ME_API_URL = 'https://sandbox.melhorenvio.com.br/api/v2/me/shipment/calculate';
+const ME_API_URL = 'https://melhorenvio.com.br/api/v2/me/shipment/calculate';
 
 export async function getQuotesFromMelhorEnvio(request: MelhorEnvioQuoteRequest): Promise<MelhorEnvioQuote[]> {
-    let token: string;
-    try {
-        token = await getMelhorEnvioAccessToken();
-    } catch (err: any) {
-        logger.warn('melhor_envio_adapter: ' + err.message);
+    const token = process.env.MELHOR_ENVIO_TOKEN;
+
+    if (!token) {
+        logger.warn('melhor_envio_adapter: MELHOR_ENVIO_TOKEN not configured');
         return [];
     }
 
