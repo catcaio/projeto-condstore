@@ -117,47 +117,28 @@ export class UnifiedQuoteEngine {
             adapters.push(new MelhorEnvioAdapter(request.tenantId || 'LOJACOND'));
         }
 
-        // Table-driven carriers: try DB-backed adapters first
-        if (routingResult.strategy === 'table_carriers' || strategy === FreightStrategy.TABELA_ONLY || strategy === FreightStrategy.BOTH) {
-            const tenantId = request.tenantId || 'LOJACOND';
-            try {
-                const tableAdapters = await getTableAdaptersForDestination(tenantId, request.destinationCep);
-                if (tableAdapters.length > 0) {
-                    adapters.push(...tableAdapters);
-                    logger.info('quote_engine: using table-driven adapters', {
-                        carriers: tableAdapters.map(a => a.name),
-                        destination: request.destinationCep,
-                        routerStrategy: routingResult.strategy,
-                    });
-                } else {
-                    // Fallback to legacy CSV adapter
-                    adapters.push(this.tabelaLegacy);
-                    logger.info('quote_engine: no table-driven carriers, using legacy CSV');
-                }
-            } catch (err) {
-                // Fallback to legacy on error
-                adapters.push(this.tabelaLegacy);
-                logger.warn('quote_engine: table-driven lookup failed, falling back to CSV', {
-                    error: (err as Error).message,
+        // Table-driven carriers: ALWAYS try DB-backed adapters as complement
+        const tenantId = request.tenantId || 'LOJACOND';
+        try {
+            const tableAdapters = await getTableAdaptersForDestination(tenantId, request.destinationCep);
+            if (tableAdapters.length > 0) {
+                adapters.push(...tableAdapters);
+                logger.info('quote_engine: using table-driven adapters', {
+                    carriers: tableAdapters.map(a => a.name),
+                    destination: request.destinationCep,
+                    routerStrategy: routingResult.strategy,
                 });
+            } else if (routingResult.strategy !== 'melhor_envio') {
+                // Only fallback to legacy CSV if ME is not the primary strategy
+                adapters.push(this.tabelaLegacy);
+                logger.info('quote_engine: no table-driven carriers, using legacy CSV');
             }
-        }
-
-        // Braspress API strategy — for now uses table carriers as placeholder
-        if (routingResult.strategy === 'braspress_api' && adapters.length === 0) {
-            const tenantId = request.tenantId || 'LOJACOND';
-            try {
-                const tableAdapters = await getTableAdaptersForDestination(tenantId, request.destinationCep);
-                if (tableAdapters.length > 0) {
-                    adapters.push(...tableAdapters);
-                } else {
-                    adapters.push(this.tabelaLegacy);
-                }
-            } catch {
+        } catch (err) {
+            if (routingResult.strategy !== 'melhor_envio') {
                 adapters.push(this.tabelaLegacy);
             }
-            logger.info('quote_engine: braspress_api strategy — using available adapters as bridge', {
-                destination: request.destinationCep,
+            logger.warn('quote_engine: table-driven lookup failed, falling back', {
+                error: (err as Error).message,
             });
         }
 
