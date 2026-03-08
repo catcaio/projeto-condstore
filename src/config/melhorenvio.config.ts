@@ -12,11 +12,11 @@ interface MelhorEnvioConfig {
 }
 
 export const melhorEnvioConfig: MelhorEnvioConfig = {
-  apiUrl: process.env.MELHORENVIO_API_URL || 'https://www.melhorenvio.com.br/api/v2',
-  token: process.env.MELHORENVIO_TOKEN || '',
-  timeout: parseInt(process.env.MELHORENVIO_TIMEOUT_MS || '15000', 10),
-  maxRetries: parseInt(process.env.MELHORENVIO_MAX_RETRIES || '2', 10),
-  retryDelay: parseInt(process.env.MELHORENVIO_RETRY_DELAY_MS || '1000', 10),
+  apiUrl: process.env.MELHOR_ENVIO_API_URL || 'https://www.melhorenvio.com.br/api/v2',
+  token: process.env.MELHOR_ENVIO_TOKEN || '',
+  timeout: parseInt(process.env.MELHOR_ENVIO_TIMEOUT_MS || '15000', 10),
+  maxRetries: parseInt(process.env.MELHOR_ENVIO_MAX_RETRIES || '2', 10),
+  retryDelay: parseInt(process.env.MELHOR_ENVIO_RETRY_DELAY_MS || '1000', 10),
 };
 
 /**
