@@ -100,6 +100,8 @@
 | /api/internal/freight/operational-settings | GET,PATCH | internal | requireAdmin | frete | live | Cockpit-managed operational packing/freight settings |
 | /api/internal/freight/audit | GET | internal | requireAdmin | frete | live | Freight audit log — simulations and confirmations |
 | /api/internal/freight/memory | GET | internal | requireAdmin | frete | live | Freight memory — aggregated recurring patterns |
+| /api/internal/freight/confirm | POST | internal | requireAdmin | frete | live | Confirm freight quote and create confirmation record |
+| /api/internal/freight/insights | GET | internal | requireAdmin | frete | live | Freight insights — performance analytics and divergence |
 | /api/internal/ops | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/qa/bootstrap-session | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/qa/setup | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -199,6 +201,7 @@
 | /cockpit/packing-rules | GET | internal | requireAdmin | frete | live | Operational packing rules and freight settings control center |
 | /cockpit/freight-audit | GET | internal | requireAdmin | frete | live | Freight audit log — simulation and confirmation history |
 | /cockpit/freight-memory | GET | internal | requireAdmin | frete | live | Freight memory — aggregated recurring patterns |
+| /cockpit/freight-insights | GET | internal | requireAdmin | frete | live | Freight operational intelligence and performance analytics |
 | /concept-layer-preview | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cotacao | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cotacao/result | TBA | public | none | PUBLIC | live | Auto-detected |

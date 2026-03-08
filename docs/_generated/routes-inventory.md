@@ -61,6 +61,8 @@
 | `/api/internal/frank/scheduler/run` | API |
 | `/api/internal/freight/audit` | API |
 | `/api/internal/freight/carrier-tables` | API |
+| `/api/internal/freight/confirm` | API |
+| `/api/internal/freight/insights` | API |
 | `/api/internal/freight/memory` | API |
 | `/api/internal/freight/operational-settings` | API |
 | `/api/internal/freight/packing-profiles` | API |
@@ -177,6 +179,7 @@
 | `/cockpit/equipe` | Page |
 | `/cockpit/finops/alerts` | Page |
 | `/cockpit/freight-audit` | Page |
+| `/cockpit/freight-insights` | Page |
 | `/cockpit/freight-memory` | Page |
 | `/cockpit/freight-simulator` | Page |
 | `/cockpit/funcionalidades` | Page |

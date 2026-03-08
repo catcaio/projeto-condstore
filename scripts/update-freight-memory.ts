@@ -1,14 +1,20 @@
 /**
- * Freight Memory Aggregation Script.
+ * Freight Memory Aggregation Script — Incremental.
  *
  * Groups confirmed freight records and computes aggregate memory entries.
+ * Only processes confirmations newer than the last aggregation timestamp.
+ *
  * Usage: npx tsx scripts/update-freight-memory.ts
  */
 
 import { getDb } from '../src/infra/db';
 import { freightConfirmations, freightMemory } from '../src/drizzle/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, gt, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const STATE_FILE = path.join(__dirname, '.freight-memory-lastrun.json');
 
 function computeWeightBand(weight: number): string {
     if (weight <= 5) return '0-5';
@@ -31,26 +37,52 @@ function confidenceFromCount(count: number): string {
     return 'low';
 }
 
+function loadLastRun(): Date | null {
+    try {
+        if (fs.existsSync(STATE_FILE)) {
+            const data = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+            return new Date(data.lastRun);
+        }
+    } catch { /* noop */ }
+    return null;
+}
+
+function saveLastRun(ts: Date): void {
+    fs.writeFileSync(STATE_FILE, JSON.stringify({ lastRun: ts.toISOString() }));
+}
+
 async function main() {
     console.log('═'.repeat(60));
-    console.log('  Freight Memory Aggregation');
+    console.log('  Freight Memory Aggregation (Incremental)');
     console.log('═'.repeat(60));
+
+    const lastRun = loadLastRun();
+    const runTs = new Date();
+
+    if (lastRun) {
+        console.log(`\n  Last run: ${lastRun.toISOString()}`);
+        console.log(`  Processing confirmations since then...`);
+    } else {
+        console.log(`\n  First run — processing all confirmations`);
+    }
 
     const db = await getDb();
 
-    // Fetch all CONFIRMED confirmations
-    const confirmations = await db.select().from(freightConfirmations).where(
-        eq(freightConfirmations.status, 'CONFIRMED'),
-    );
+    // Fetch CONFIRMED confirmations (incremental: only newer than last run)
+    const conditions = [eq(freightConfirmations.status, 'CONFIRMED')];
+    if (lastRun) {
+        conditions.push(gt(freightConfirmations.createdAt, lastRun));
+    }
+
+    const confirmations = await db.select().from(freightConfirmations).where(and(...conditions));
 
     if (confirmations.length === 0) {
-        console.log('\n  No confirmed freight records found.');
-        console.log('  Memory table will not be updated.');
-        console.log('\n  To test: insert a record into freight_confirmations with status=CONFIRMED');
+        console.log('\n  No new confirmed records since last aggregation.');
+        saveLastRun(runTs);
         process.exit(0);
     }
 
-    console.log(`\n  Found ${confirmations.length} confirmed records.`);
+    console.log(`\n  Found ${confirmations.length} new confirmed records.`);
 
     // Group by aggregation key
     interface AggKey { tenantId: string; cepPrefix: string; zoneCode: string; carrierName: string; productFamily: string; weightBand: string; volumeBand: string; }
@@ -86,13 +118,9 @@ async function main() {
 
     console.log(`  Aggregated into ${groups.size} memory groups.`);
 
-    // Upsert into freight_memory
+    // Upsert into freight_memory (merge new data into existing records)
     let updated = 0;
     for (const [, group] of groups) {
-        const avg = group.totalFreight / group.count;
-        const avgDelta = group.totalDelta / group.count;
-        const confidence = confidenceFromCount(group.count);
-
         // Check if record exists
         const existing = await db.select().from(freightMemory).where(
             sql`${freightMemory.tenantId} = ${group.key.tenantId} 
@@ -103,13 +131,26 @@ async function main() {
         ).limit(1);
 
         if (existing.length > 0) {
+            // Merge: weighted average with existing counts
+            const oldCount = existing[0].confirmationsCount;
+            const oldAvg = parseFloat(String(existing[0].avgConfirmedFreight)) || 0;
+            const oldDelta = parseFloat(String(existing[0].avgDelta)) || 0;
+            const totalCount = oldCount + group.count;
+            const newAvg = ((oldAvg * oldCount) + group.totalFreight) / totalCount;
+            const newDelta = ((oldDelta * oldCount) + group.totalDelta) / totalCount;
+            const confidence = confidenceFromCount(totalCount);
+
             await db.update(freightMemory).set({
-                avgConfirmedFreight: String(Math.round(avg * 100) / 100),
-                avgDelta: String(Math.round(avgDelta * 100) / 100),
-                confirmationsCount: group.count,
+                avgConfirmedFreight: String(Math.round(newAvg * 100) / 100),
+                avgDelta: String(Math.round(newDelta * 100) / 100),
+                confirmationsCount: totalCount,
                 confidenceScore: confidence,
             }).where(eq(freightMemory.id, existing[0].id));
         } else {
+            const avg = group.totalFreight / group.count;
+            const avgDelta = group.totalDelta / group.count;
+            const confidence = confidenceFromCount(group.count);
+
             await db.insert(freightMemory).values({
                 id: randomUUID(),
                 tenantId: group.key.tenantId,
@@ -128,9 +169,12 @@ async function main() {
         updated++;
     }
 
+    saveLastRun(runTs);
+
     console.log(`  Updated ${updated} memory records.`);
+    console.log(`  Last run timestamp saved: ${runTs.toISOString()}`);
     console.log('\n' + '═'.repeat(60));
-    console.log('  ✅ Freight memory aggregation complete');
+    console.log('  ✅ Incremental freight memory aggregation complete');
     console.log('═'.repeat(60));
     process.exit(0);
 }

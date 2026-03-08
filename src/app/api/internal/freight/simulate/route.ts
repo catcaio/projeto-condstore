@@ -8,7 +8,8 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { TableDrivenAdapter } from '@/modules/freight/table-driven-adapter';
 import { resolveCarrierZone, extractStateFromCep } from '@/core/freight/zone-resolver';
 import { loadOperationalSettings } from '@/core/freight/operational-settings';
-import { logFreightSimulation, lookupFreightMemory } from '@/modules/freight/freight-audit';
+import { logFreightSimulation, computeWeightBand, computeVolumeBand } from '@/modules/freight/freight-audit';
+import { resolveFreightMemory, generateRecommendation } from '@/modules/freight/memory/memory-resolver';
 
 export const dynamic = 'force-dynamic';
 
@@ -128,13 +129,20 @@ export async function POST(request: NextRequest) {
             breakdownJson: results,
         });
 
-        // Memory diagnostic (read-only comparison)
+        // Memory diagnostic (read-only comparison) using resolver + recommendation
         const cepPrefix = cepClean.substring(0, 5);
-        const memoryResults: any[] = [];
-        for (const r of results) {
-            const mem = await lookupFreightMemory(tenantId, cepPrefix, r.carrierName, r.zoneCode);
-            memoryResults.push({ carrierName: r.carrierName, ...mem });
-        }
+        const weightBand = computeWeightBand(chargedWeight);
+        const volumeBand = computeVolumeBand(totalVolumes);
+        const memoryResults = await resolveFreightMemory({
+            tenantId,
+            cepPrefix,
+            zoneCode: bestResult?.zoneCode,
+            weightBand,
+            volumeBand,
+        });
+
+        const bestQuotedFreight = bestResult?.breakdown?.totalFreight ?? 0;
+        const recommendation = generateRecommendation(bestQuotedFreight, memoryResults);
 
         return NextResponse.json({
             ok: true,
@@ -150,6 +158,7 @@ export async function POST(request: NextRequest) {
                 volumeDetails,
                 results,
                 memoryDiagnostic: memoryResults,
+                recommendation,
             },
         });
     } catch (err) {
