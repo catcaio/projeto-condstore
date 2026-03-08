@@ -86,13 +86,13 @@ async function run() {
                 const totalVolumes = c.volumes.reduce((s, v) => s + v.qty, 0);
                 const totalCubedWeight = c.volumes.reduce((s, v) => s + ((v.length * v.width * v.height * v.qty) / 6000), 0);
                 const chargedWeight = Math.max(c.weight, totalCubedWeight);
-                
+
                 const simulationId = await logFreightSimulation({
                     tenantId,
                     cep: c.cep,
                     zoneCode: 'TEST',
                     carrierConsidered: routing.eligibleCarriers,
-                    carrierSelected: quotes[0]?.carrier || null,
+                    carrierSelected: quotes[0]?.carrier ?? undefined,
                     totalWeight: c.weight,
                     cubedWeight: totalCubedWeight,
                     chargedWeight,
