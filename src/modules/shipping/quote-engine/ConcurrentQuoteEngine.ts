@@ -1,4 +1,6 @@
 import { CarrierAdapter, NormalizedQuote, QuoteInput } from '../carriers/types';
+import { normalizeQuotes } from './normalize';
+import { rankQuotes } from './rank';
 
 export interface QuoteEngineResult {
     quotes: NormalizedQuote[];
@@ -8,6 +10,8 @@ export interface QuoteEngineResult {
         respondedCarriers: string[];
         failedCarriers: { id: string; reason: string }[];
         totalDurationMs: number;
+        rawCount: number;
+        normalizedCount: number;
     };
 }
 
@@ -56,21 +60,20 @@ export class ConcurrentQuoteEngine {
         const workers = Array.from({ length: Math.min(concurrencyLimit, adapters.length) }).map(() => execQueue());
         await Promise.all(workers);
 
-        // Ranking
-        const byPrice = [...allQuotes].sort((a, b) => a.price - b.price);
-        const bySpeed = [...allQuotes].sort((a, b) => a.estimatedDeliveryDays - b.estimatedDeliveryDays || a.price - b.price);
+        const rawCount = allQuotes.length;
+
+        // ── Normalize: validate, filter, apply safe defaults ────────────
+        const normalized = normalizeQuotes(allQuotes);
+
+        // ── Rank: deterministic weighted-score (price, delivery, tracking, health)
+        const ranked = rankQuotes(normalized, input);
+
+        // Derive best-of indicators from normalized set
+        const byPrice = [...normalized].sort((a, b) => a.price - b.price);
+        const bySpeed = [...normalized].sort((a, b) => a.estimatedDeliveryDays - b.estimatedDeliveryDays || a.price - b.price);
 
         const bestPriceId = byPrice[0]?.carrierCode ?? '';
         const bestSpeedId = bySpeed[0]?.carrierCode ?? '';
-
-        const ranked = allQuotes.map(q => ({
-            ...q,
-            priorityScore:
-                q.carrierCode === bestPriceId ? 1 :
-                    q.carrierCode === bestSpeedId ? 2 : 5
-        }));
-
-        ranked.sort((a, b) => a.priorityScore - b.priorityScore);
 
         return {
             quotes: ranked,
@@ -79,7 +82,9 @@ export class ConcurrentQuoteEngine {
             summary: {
                 respondedCarriers,
                 failedCarriers,
-                totalDurationMs: Date.now() - startTime
+                totalDurationMs: Date.now() - startTime,
+                rawCount,
+                normalizedCount: normalized.length,
             }
         };
     }

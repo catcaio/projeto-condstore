@@ -10,10 +10,15 @@ import { getTableAdaptersForDestination } from './table-driven-adapter';
 export class MelhorEnvioAdapter implements CarrierAdapter {
     id = 'melhorenvio';
     name = 'Melhor Envio';
+    private tenantId: string;
+
+    constructor(tenantId: string = 'LOJACOND') {
+        this.tenantId = tenantId;
+    }
 
     async getQuotes(input: QuoteInput): Promise<NormalizedQuote[]> {
         const meQuotes = await melhorEnvioProvider.calculateShipping({
-            tenantId: 'system',
+            tenantId: this.tenantId,
             destinationCep: input.destinationCep,
             totalWeight: input.weightInKg,
             quantity: 1,
@@ -66,7 +71,6 @@ export class TabelaAdapter implements CarrierAdapter {
 import { selectCarrierStrategy, type RoutingResult, type RoutingStrategy } from './carrier-router';
 
 export class UnifiedQuoteEngine {
-    private melhorEnvio = new MelhorEnvioAdapter();
     private tabelaLegacy = new TabelaAdapter();
 
     /** Last routing result — accessible after getQuotes() */
@@ -110,7 +114,7 @@ export class UnifiedQuoteEngine {
 
         // Route based on carrier router strategy
         if (routingResult.strategy === 'melhor_envio' || strategy === FreightStrategy.MELHORENVIO_ONLY || strategy === FreightStrategy.BOTH) {
-            adapters.push(this.melhorEnvio);
+            adapters.push(new MelhorEnvioAdapter(request.tenantId || 'LOJACOND'));
         }
 
         // Table-driven carriers: try DB-backed adapters first

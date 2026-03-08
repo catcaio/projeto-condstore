@@ -11,14 +11,30 @@ import { getDb } from '@/infra/db';
 import { freightShipments, freightSimulations } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
+import { structuredLogger } from '@/infra/log/logger';
 import { confirmFreight } from '@/modules/freight/freight-audit';
 import { upsertFreightMemory } from '@/modules/freight/freight-audit';
+import { verifyMelhorEnvioWebhook } from '@/lib/security/melhorenvio-webhook-verifier';
 
-// TODO: Validate webhook signature using secret when documented
 export async function POST(request: NextRequest) {
+    // ── Webhook signature verification ────────────────────────────────
+    const verification = verifyMelhorEnvioWebhook(request);
+    if (!verification.valid) {
+        structuredLogger.warn('webhook_melhorenvio_rejected', {
+            eventType: 'webhook_auth_failed',
+            reason: verification.reason,
+            route: '/api/webhooks/melhor-envio',
+        });
+        const status = verification.reason === 'secret_not_configured' ? 503 : 401;
+        return NextResponse.json(
+            { ok: false, error: verification.reason === 'secret_not_configured' ? 'Webhook not configured' : 'Unauthorized' },
+            { status },
+        );
+    }
+
     try {
         const body = await request.json();
-        logger.info('webhook:melhor_envio received', { event: body });
+        logger.info('webhook:melhor_envio received', { event: body.event ?? 'unknown' });
 
         // Expected format from ME: 
         // { "id": "123", "event": "tracking.updated", "payload": { "id": "123", "status": "posted", "tracking": "XX123BR" } }

@@ -10,6 +10,7 @@ import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { isRole } from '@/infra/auth/roles';
 import { structuredLogger } from '@/infra/log/logger';
 import { eq, and, isNull } from 'drizzle-orm';
+import { rateLimiter, hashRateLimitKeyForLog } from '@/infra/security/rate-limiter';
 
 const signupSchema = z.object({
     name: z.string().min(1, 'Nome obrigatório').max(255),
@@ -33,6 +34,27 @@ function isAdminAllowlisted(email: string): boolean {
 
 export async function POST(request: NextRequest) {
     const requestId = crypto.randomUUID?.() ?? `${Date.now()}`;
+
+    // ── Rate limit (IP-based, 5 per 60s) ─────────────────────────────
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';
+    const rateLimitDecision = await rateLimiter.limit('auth.signup', ip, {
+        windowSec: 60,
+        max: 5,
+    });
+    if (!rateLimitDecision.allowed) {
+        structuredLogger.warn('rate_limited', {
+            requestId,
+            route: '/api/auth/signup',
+            eventType: 'RATE_LIMITED',
+            scope: 'auth.signup',
+            keyHash: hashRateLimitKeyForLog(ip),
+            remaining: rateLimitDecision.remaining,
+        });
+        return NextResponse.json(
+            { success: false, error: 'Muitas tentativas. Aguarde um momento.' },
+            { status: 429, headers: { 'Retry-After': '60' } },
+        );
+    }
 
     try {
         const body = await request.json();

@@ -12,7 +12,7 @@ import { getTenantState } from './tenant-state-resolver';
 import { tokenUsageEventsRepository } from '../../infra/repositories/token-usage-events.repository';
 import { promptRegistry } from './prompt-registry';
 import { piiRedactor } from './pii-redactor';
-import { injectionGuard } from './injection-guard';
+import { injectionGuard, enforceInjectionPolicy } from './injection-guard';
 import { circuitBreaker } from '../../infra/security/circuit-breaker';
 import { structuredLogger } from '../../infra/log/logger';
 
@@ -247,11 +247,27 @@ class ObservedProvider implements AIProvider {
       promptVersion = activePrompt.version;
     }
 
-    // 2. Detect prompt injection
-    const injectionDetected = injectionGuard.detectInjection(input.user || '');
+    // 2. Detect and enforce prompt injection policy
+    const injectionResult = injectionGuard.analyze(input.user || '');
+    const injectionPolicy = enforceInjectionPolicy(
+      input.user || '',
+      injectionResult,
+      { tenantId: this.meta.tenantId, route: input.route },
+    );
 
-    // 3. PII Redaction
-    const sanitizedUser = piiRedactor.sanitizeInput(input.user || '');
+    // Hard block on high-risk injection
+    if (injectionPolicy.action === 'block') {
+      return {
+        text: injectionPolicy.blockedResponse!,
+        raw: { blocked: true, reason: 'injection_guard' },
+      } as unknown as ChatOutput;
+    }
+
+    // 3. PII Redaction (use degraded input if injection was low-risk)
+    const userInputForPii = injectionPolicy.action === 'degrade'
+      ? injectionPolicy.sanitizedInput
+      : (input.user || '');
+    const sanitizedUser = piiRedactor.sanitizeInput(userInputForPii);
 
     // ── Budget / state gate (ADR 006 / 007) ─────────────────────────────────
     const tenantState = await getTenantState(this.meta.tenantId);
@@ -265,7 +281,9 @@ class ObservedProvider implements AIProvider {
       stateRevision: tenantState.revision,
       configuredModel: this.meta.model,
       effectiveModel,
-      injectionDetected,
+      injectionDetected: injectionResult.detected,
+      injectionRisk: injectionResult.risk,
+      injectionAction: injectionPolicy.action,
       promptVersion
     });
 

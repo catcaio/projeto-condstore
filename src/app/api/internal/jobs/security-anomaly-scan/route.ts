@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/infra/auth/guards';
+import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 import { getDb } from '@/infra/db';
 import { securityEdgeEvents, securityIncidents } from '@/drizzle/schema';
 import { gte } from 'drizzle-orm';
@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export const POST = async (request: NextRequest) => {
     const requestId = makeRequestId(request);
 
-    const auth = await requireAdmin(request, { requestId });
+    const auth = await requireInternalAuth(request, { purpose: ['jobs'] });
     if (!auth.ok) return auth.response;
 
     try {

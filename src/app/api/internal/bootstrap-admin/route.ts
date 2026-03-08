@@ -4,7 +4,7 @@ import { getDb } from '@/infra/db';
 import { users, tenantSignupPolicies } from '@/drizzle/schema';
 import { sql, eq } from 'drizzle-orm';
 import { structuredLogger } from '@/infra/log/logger';
-import { safeCompare } from '@/lib/security/safe-compare';
+import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 import { withAuditLog } from '@/lib/http/with-audit-log';
 import { withJsonBody } from '@/lib/http/with-json-body';
 import { z } from 'zod';
@@ -23,21 +23,12 @@ export const POST = withAuditLog(
         { schema: bootstrapSchema },
         async (request: NextRequest, ctx: any, body: z.infer<typeof bootstrapSchema>) => {
             try {
-                // 1. Validate tokens
-                const internalToken = request.headers.get('x-internal-token');
-                const bootstrapToken = request.headers.get('x-bootstrap-token');
-
-                const expectedInternalToken = process.env.INTERNAL_TOKEN;
-                const expectedBootstrapToken = process.env.BOOTSTRAP_TOKEN;
-
-                if (!expectedInternalToken || !expectedBootstrapToken) {
-                    return NextResponse.json({ success: false, error: 'Tokens not configured in environment' }, { status: 503 });
-                }
-
-                if (!safeCompare(internalToken, expectedInternalToken) || !safeCompare(bootstrapToken, expectedBootstrapToken)) {
-                    structuredLogger.warn('bootstrap_admin_unauthorized', { eventType: 'admin_bootstrap' });
-                    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-                }
+                // 1. Validate tokens via unified guard
+                const authResult = await requireInternalAuth(request, {
+                    purpose: ['jobs'],
+                    requireBootstrapToken: true,
+                });
+                if (!authResult.ok) return authResult.response;
 
                 // 2. Extract explicit admin email from body
                 const adminEmail = body.email?.toLowerCase().trim() || 'rafael@condstoreos.com';

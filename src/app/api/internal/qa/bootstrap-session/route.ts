@@ -1,68 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { logger } from '@/infra/logger';
-import { safeCompare } from '@/lib/security/safe-compare';
+import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-    const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
-    const isCI = isGithubActions || process.env.CI === 'true';
-    const hasGithubHeader = request.headers.get('x-github-actions') === 'true';
-
-    const token = request.headers.get('x-qa-token') || request.nextUrl.searchParams.get('token');
-    const hasTokenHeader = !!token;
-    const isProdEnvironment = process.env.VERCEL_ENV === 'production';
-
-    // 1. In real production, unequivocally block this route.
-    if (isProdEnvironment) {
-        logger.warn('[QA Bootstrap] BLOCKED: production_blocked', {
-            path: request.nextUrl.pathname,
-            method: request.method,
-            isCI,
-            hasTokenHeader,
-            isGithubActions,
-        });
-        return NextResponse.json({ error: "Unauthorized internal access", code: "production_blocked" }, { status: 403 });
-    }
-
-    // 2. Resolve expected server token — QA_BOOTSTRAP_TOKEN preferred; INTERNAL_TOKEN as CI fallback.
-    const serverQaToken = process.env.QA_BOOTSTRAP_TOKEN?.trim()
-        || (isCI ? process.env.INTERNAL_TOKEN?.trim() : undefined);
-
-    if (!serverQaToken) {
-        logger.warn('[QA Bootstrap] BLOCKED: server_misconfigured', {
-            path: request.nextUrl.pathname,
-            method: request.method,
-            isCI,
-            hasTokenHeader,
-            hasQaBootstrapToken: !!process.env.QA_BOOTSTRAP_TOKEN,
-            hasInternalToken: !!process.env.INTERNAL_TOKEN,
-        });
-        return NextResponse.json({ error: "Unauthorized internal access", code: "server_misconfigured" }, { status: 401 });
-    }
-
-    // 3. Verify token — constant-time boolean, never log the value.
-    const tokenMatched = hasTokenHeader && safeCompare(token, serverQaToken);
-
-    logger.info('[QA Bootstrap] Auth context', {
-        path: request.nextUrl.pathname,
-        method: request.method,
-        isCI,
-        isGithubActions,
-        hasGithubHeader,
-        hasTokenHeader,
-        tokenMatched,
+    // Unified guard: blocks production, accepts QA token or internal token or admin session
+    const authResult = await requireInternalAuth(request, {
+        purpose: ['qa_bootstrap'],
+        blockInProduction: true,
     });
 
-    if (!tokenMatched) {
-        logger.warn('[QA Bootstrap] BLOCKED: bad_token', {
+    if (!authResult.ok) {
+        logger.warn('[QA Bootstrap] BLOCKED', {
             path: request.nextUrl.pathname,
-            hasTokenHeader,
-            tokenMatched,
+            method: request.method,
         });
-        return NextResponse.json({ error: "Unauthorized internal access", code: "bad_token" }, { status: 401 });
+        return authResult.response;
     }
 
     try {

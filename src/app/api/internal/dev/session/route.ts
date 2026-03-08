@@ -4,23 +4,18 @@ import { users } from '@/drizzle/schema';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { eq } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
-import { assertDevOnly } from '@/infra/env/devOnly';
-import { safeCompare } from '@/lib/security/safe-compare';
+import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-    const devGuard = assertDevOnly();
-    if (devGuard) return devGuard;
-
-    const token = request.headers.get('x-internal-token') || request.nextUrl.searchParams.get('token');
-    if (!safeCompare(token, process.env.INTERNAL_TOKEN)) {
-        return NextResponse.json({
-            error: 'Token interno não fornecido ou inválido',
-            instruction: 'Defina INTERNAL_TOKEN no .env.local e passe via header x-internal-token ou ?token='
-        }, { status: 401 });
-    }
+    // Unified guard: dev-only + requires internal token or admin session
+    const authResult = await requireInternalAuth(request, {
+        purpose: ['diag'],
+        blockUnlessDev: true,
+    });
+    if (!authResult.ok) return authResult.response;
 
     try {
         let user;

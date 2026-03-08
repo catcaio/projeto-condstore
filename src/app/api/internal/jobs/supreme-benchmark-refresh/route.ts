@@ -1,14 +1,14 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/infra/auth/guards';
+import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { computeBenchmarks } from '@/lib/supreme/benchmark-engine';
 
 export const POST = async (request: NextRequest) => {
     const requestId = makeRequestId(request);
-    const auth = await requireAdmin(request, { requestId });
+    const auth = await requireInternalAuth(request, { purpose: ['jobs'] });
     if (!auth.ok) return auth.response;
 
     try {

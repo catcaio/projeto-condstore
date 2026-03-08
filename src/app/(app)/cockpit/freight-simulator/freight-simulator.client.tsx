@@ -81,7 +81,7 @@ export function FreightSimulatorClient() {
         setError('');
         setResult(null);
         try {
-            const res = await safeFetch('/api/internal/freight/simulate', {
+            const res = await safeFetch('/api/freight/simulate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -117,7 +117,7 @@ export function FreightSimulatorClient() {
         setError('');
 
         try {
-            const res = await safeFetch('/api/internal/freight/shipments', {
+            const res = await safeFetch('/api/freight/shipments', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

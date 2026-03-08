@@ -30,6 +30,7 @@ import { normalizeAndHash, isValidPhone } from '@/lib/phone';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { handleIncomingMessage } from '@/modules/frank/whatsapp-orchestrator';
 import { webhookEventRepository, hashPayload } from '@/infra/repositories/webhook-event.repository';
+import { endUserConsentRepository } from '@/infra/repositories/end-user-consent.repository';
 
 export const dynamic = 'force-dynamic';
 
@@ -148,7 +149,55 @@ export async function POST(request: NextRequest) {
             return finish(twimlOk('Número inválido.', requestId));
         }
 
-        // ── 9. Frank orchestrator ─────────────────────────────────────────────
+        // ── 9. LGPD Consent Wall ──────────────────────────────────────────────
+        const messageText = incomingMessage.body ?? '';
+        const userConsent = await endUserConsentRepository.getConsent(tenantId, phoneHash);
+        const hasConsent = userConsent?.consentGiven === true;
+
+        if (!hasConsent) {
+            const messageTextLower = messageText.toLowerCase().trim();
+            const isAccepting = ['sim', 'aceito', 'concordo', 'ok', 'sim, eu aceito', 'yes'].includes(messageTextLower);
+
+            if (isAccepting) {
+                await endUserConsentRepository.recordOptIn(tenantId, phoneHash, 'whatsapp_frank');
+                structuredLogger.info('lgpd_consent_granted', {
+                    tenantId, phoneHash,
+                    route: '/api/whatsapp/incoming',
+                    eventType: 'lgpd_consent_granted',
+                });
+                // Fall through to normal processing
+            } else {
+                await endUserConsentRepository.incrementBlockedAttempts(tenantId, phoneHash);
+                structuredLogger.warn('lgpd_ingestion_blocked', {
+                    tenantId, phoneHash,
+                    reason: 'missing_consent',
+                    route: '/api/whatsapp/incoming',
+                    eventType: 'lgpd_ingestion_blocked',
+                });
+
+                // Persist scrubbed inbound message
+                await messageRepository.saveInboundMessage({
+                    messageSid: incomingMessage.messageSid,
+                    tenantId,
+                    fromPhone: fromNormalized,
+                    toPhone: payload['To'] || null,
+                    body: '[CONTEÚDO BLOQUEADO - AGUARDANDO CONSENTIMENTO LGPD]',
+                    direction: 'inbound',
+                    intent: 'UNKNOWN',
+                    intentConfidence: null,
+                    rawPayload: JSON.stringify({ MessageSid: payload['MessageSid'], blocked: true, reason: 'lgpd' }),
+                });
+
+                void webhookEventRepository.markProcessed('twilio_frank', messageSid);
+
+                return finish(twimlOk(
+                    "Para continuar, confirme que aceita nossa política de privacidade enviando 'Sim' ou 'Aceito'.",
+                    requestId,
+                ));
+            }
+        }
+
+        // ── 10. Frank orchestrator ────────────────────────────────────────────
         const result = await handleIncomingMessage(tenantId, incomingMessage.body, fromNormalized);
 
         // ── 10. Persist inbound message ───────────────────────────────────────

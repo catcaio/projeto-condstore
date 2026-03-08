@@ -3,36 +3,20 @@ import { getDb } from '@/infra/db';
 import { tenants, users } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
-import { isDevRuntime, isQaAutomation } from '@/infra/env/devOnly';
-import { safeCompare } from '@/lib/security/safe-compare';
+import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-    const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
-    const isDev = isDevRuntime();
-    const hasGithubHeader = request.headers.get('x-github-actions') === 'true';
+    // Unified guard: blocks production, accepts QA token or internal token or admin session
+    const authResult = await requireInternalAuth(request, {
+        purpose: ['qa_bootstrap'],
+        blockInProduction: true,
+    });
 
-    const token = request.headers.get('x-qa-token') || request.nextUrl.searchParams.get('token');
-    const hasInternalTokenHeader = !!token;
-    const isProdEnvironment = process.env.VERCEL_ENV === 'production';
-
-    // 1. In real production, unequivocally block this route.
-    if (isProdEnvironment) {
-        logger.warn('[QA Setup] BLOCKED: Attempted to run QA route in production environment');
-        return NextResponse.json({ error: "Unauthorized internal access", reason: "production_blocked" }, { status: 403 });
-    }
-
-    // 2. We must have a properly configured server token
-    const serverQaToken = process.env.QA_BOOTSTRAP_TOKEN?.trim();
-    if (!serverQaToken) {
-        logger.warn('[QA Setup] BLOCKED: Server missing QA_BOOTSTRAP_TOKEN');
-        return NextResponse.json({ error: "Unauthorized internal access", reason: "server_misconfigured" }, { status: 401 });
-    }
-
-    // 3. The token provided in request must match exactly. We don't fall back to bypass strings anymore.
-    if (!hasInternalTokenHeader || !safeCompare(token, serverQaToken)) {
-        return NextResponse.json({ error: "Unauthorized internal access", reason: "bad_token" }, { status: 401 });
+    if (!authResult.ok) {
+        logger.warn('[QA Setup] BLOCKED', { path: request.nextUrl.pathname });
+        return authResult.response;
     }
 
     try {
