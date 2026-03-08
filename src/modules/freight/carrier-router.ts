@@ -47,10 +47,8 @@ export function selectCarrierStrategy(request: RoutingRequest): RoutingResult {
     const destinationState = extractStateFromCep(request.destinationCep.replace(/\D/g, ''));
 
     // Rule 1: Light/small packages → Melhor Envio
-    if (request.chargedWeight <= MELHOR_ENVIO_MAX_WEIGHT_KG || request.longestDimensionCm <= MELHOR_ENVIO_MAX_DIMENSION_CM) {
-        const reason = request.chargedWeight <= MELHOR_ENVIO_MAX_WEIGHT_KG
-            ? `Charged weight ${request.chargedWeight}kg ≤ ${MELHOR_ENVIO_MAX_WEIGHT_KG}kg`
-            : `Longest dimension ${request.longestDimensionCm}cm ≤ ${MELHOR_ENVIO_MAX_DIMENSION_CM}cm`;
+    if (request.chargedWeight <= MELHOR_ENVIO_MAX_WEIGHT_KG && request.longestDimensionCm <= MELHOR_ENVIO_MAX_DIMENSION_CM) {
+        const reason = `Charged weight ${request.chargedWeight}kg ≤ ${MELHOR_ENVIO_MAX_WEIGHT_KG}kg AND longest dimension ${request.longestDimensionCm}cm ≤ ${MELHOR_ENVIO_MAX_DIMENSION_CM}cm`;
 
         logger.info('carrier_router: melhor_envio selected', {
             reason, chargedWeight: request.chargedWeight,
