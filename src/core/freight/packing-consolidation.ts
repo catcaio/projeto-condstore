@@ -1,24 +1,40 @@
 /**
  * Operational Packing Consolidation Rules.
- * 
+ *
  * Implements the official LojaCond logistics packing rules:
- * 1. Max 3 identical products per volume (group 1–3, split 4+)
- * 2. Physical volume limit: 300×200×200 cm
+ * 1. Max N identical products per volume (configurable, default 3)
+ * 2. Physical volume limit: configurable (default 300×200×200 cm)
  * 3. Largest product defines base volume in mixed orders
- * 4. Stacking increment: ~10cm on longest axis per extra unit
+ * 4. Stacking increment: configurable (default ~10cm) on longest axis per extra unit
  * 5. Smaller products absorbed (weight only) unless they exceed current dims
+ *
+ * All rule parameters are now configurable via PackingRuleConfig.
+ * Defaults are used when no config is provided (backward compatible).
  */
 
-// ─── Constants ──────────────────────────────────────────────────────────────
+// ─── Configurable Rule Parameters ───────────────────────────────────────────
 
-export const MAX_UNITS_PER_VOLUME = 3;
-export const STACKING_INCREMENT_CM = 10;
+export interface PackingRuleConfig {
+    maxUnitsPerVolume: number;
+    stackingIncrementCm: number;
+    physicalLimit: { length: number; width: number; height: number };
+    absorbSmallerItems: boolean;
+    absorbWeightOnly: boolean;
+}
 
-export const PHYSICAL_LIMIT = {
-    length: 300, // cm
-    width: 200,  // cm
-    height: 200, // cm
+/** Safe defaults — used when no DB config is loaded */
+export const DEFAULT_PACKING_RULES: PackingRuleConfig = {
+    maxUnitsPerVolume: 3,
+    stackingIncrementCm: 10,
+    physicalLimit: { length: 300, width: 200, height: 200 },
+    absorbSmallerItems: true,
+    absorbWeightOnly: true,
 };
+
+// Legacy exports for backward compatibility with tests
+export const MAX_UNITS_PER_VOLUME = DEFAULT_PACKING_RULES.maxUnitsPerVolume;
+export const STACKING_INCREMENT_CM = DEFAULT_PACKING_RULES.stackingIncrementCm;
+export const PHYSICAL_LIMIT = DEFAULT_PACKING_RULES.physicalLimit;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -49,26 +65,29 @@ export interface PackingResult {
 // ─── Core: Same-product consolidation ───────────────────────────────────────
 
 /**
- * Consolidate identical products into volumes of max 3 units.
- * Stacking adds ~10cm on the longest axis per extra unit.
+ * Consolidate identical products into volumes.
+ * Rules are configurable via the optional `rules` parameter.
  */
-export function consolidateIdenticalProducts(product: ProductInput): PackedVolume[] {
+export function consolidateIdenticalProducts(
+    product: ProductInput,
+    rules: PackingRuleConfig = DEFAULT_PACKING_RULES,
+): PackedVolume[] {
     const { length, width, height, weight, quantity, productRef } = product;
-    const numVolumes = Math.ceil(quantity / MAX_UNITS_PER_VOLUME);
+    const numVolumes = Math.ceil(quantity / rules.maxUnitsPerVolume);
     const result: PackedVolume[] = [];
 
     let remaining = quantity;
     for (let i = 0; i < numVolumes; i++) {
-        const unitsInThisVolume = Math.min(remaining, MAX_UNITS_PER_VOLUME);
+        const unitsInThisVolume = Math.min(remaining, rules.maxUnitsPerVolume);
         remaining -= unitsInThisVolume;
 
         // Apply stacking increment on the longest axis
         const dims = [length, width, height];
         const longestIdx = dims.indexOf(Math.max(...dims));
         const stackedDims = [...dims];
-        stackedDims[longestIdx] += (unitsInThisVolume - 1) * STACKING_INCREMENT_CM;
+        stackedDims[longestIdx] += (unitsInThisVolume - 1) * rules.stackingIncrementCm;
 
-        let vol: PackedVolume = {
+        const vol: PackedVolume = {
             length: stackedDims[0],
             width: stackedDims[1],
             height: stackedDims[2],
@@ -78,7 +97,7 @@ export function consolidateIdenticalProducts(product: ProductInput): PackedVolum
         };
 
         // Enforce physical limits (split if exceeded)
-        const splits = enforcePhysicalLimits(vol);
+        const splits = enforcePhysicalLimits(vol, rules);
         result.push(...splits);
     }
 
@@ -91,16 +110,18 @@ export function consolidateIdenticalProducts(product: ProductInput): PackedVolum
  * Consolidate a mixed order: largest product is the base volume,
  * smaller products are absorbed (weight only, unless they exceed dims).
  */
-export function consolidateMixedOrder(products: ProductInput[]): PackingResult {
+export function consolidateMixedOrder(
+    products: ProductInput[],
+    rules: PackingRuleConfig = DEFAULT_PACKING_RULES,
+): PackingResult {
     if (products.length === 0) {
         return { totalVolumes: 0, totalWeight: 0, volumes: [] };
     }
 
-    // If only one distinct product, use same-product logic
     if (products.length === 1) {
-        const vols = consolidateIdenticalProducts(products[0]);
+        const vols = consolidateIdenticalProducts(products[0], rules);
         return {
-            totalVolumes: vols.reduce((s, v) => s + 1, 0),
+            totalVolumes: vols.length,
             totalWeight: vols.reduce((s, v) => s + v.weight, 0),
             volumes: vols,
         };
@@ -108,43 +129,37 @@ export function consolidateMixedOrder(products: ProductInput[]): PackingResult {
 
     // Sort by physical volume descending (largest first)
     const sorted = [...products].sort((a, b) => {
-        const volA = a.length * a.width * a.height;
-        const volB = b.length * b.width * b.height;
-        return volB - volA;
+        return (b.length * b.width * b.height) - (a.length * a.width * a.height);
     });
 
-    // Process largest product first to create base volumes
     const largestProduct = sorted[0];
-    const baseVolumes = consolidateIdenticalProducts(largestProduct);
-
-    // Try to absorb smaller products into existing volumes
+    const baseVolumes = consolidateIdenticalProducts(largestProduct, rules);
     const remainingProducts = sorted.slice(1);
     const extraVolumes: PackedVolume[] = [];
 
     for (const smallProduct of remainingProducts) {
         let remainingQty = smallProduct.quantity;
 
-        for (let i = 0; i < baseVolumes.length && remainingQty > 0; i++) {
-            const vol = baseVolumes[i];
-            // Can absorb if the small product fits within current volume dimensions
-            const fitsInside =
-                smallProduct.length <= vol.length &&
-                smallProduct.width <= vol.width &&
-                smallProduct.height <= vol.height;
+        if (rules.absorbSmallerItems) {
+            for (let i = 0; i < baseVolumes.length && remainingQty > 0; i++) {
+                const vol = baseVolumes[i];
+                const fitsInside =
+                    smallProduct.length <= vol.length &&
+                    smallProduct.width <= vol.width &&
+                    smallProduct.height <= vol.height;
 
-            if (fitsInside) {
-                // Absorb: add weight only, dimensions unchanged
-                const absorb = Math.min(remainingQty, MAX_UNITS_PER_VOLUME);
-                vol.weight += smallProduct.weight * absorb;
-                vol.sourceProducts.push(smallProduct.productRef);
-                remainingQty -= absorb;
+                if (fitsInside) {
+                    const absorb = Math.min(remainingQty, rules.maxUnitsPerVolume);
+                    vol.weight += smallProduct.weight * absorb;
+                    vol.sourceProducts.push(smallProduct.productRef);
+                    remainingQty -= absorb;
+                }
             }
         }
 
-        // Any remaining quantity gets its own volumes
         if (remainingQty > 0) {
             const leftover: ProductInput = { ...smallProduct, quantity: remainingQty };
-            extraVolumes.push(...consolidateIdenticalProducts(leftover));
+            extraVolumes.push(...consolidateIdenticalProducts(leftover, rules));
         }
     }
 
@@ -158,32 +173,28 @@ export function consolidateMixedOrder(products: ProductInput[]): PackingResult {
 
 // ─── Physical limit enforcement ─────────────────────────────────────────────
 
-/**
- * Split a volume if it exceeds maximum physical dimensions (300×200×200 cm).
- * Returns one or more volumes.
- */
-export function enforcePhysicalLimits(vol: PackedVolume): PackedVolume[] {
-    const exceedsLength = vol.length > PHYSICAL_LIMIT.length;
-    const exceedsWidth = vol.width > PHYSICAL_LIMIT.width;
-    const exceedsHeight = vol.height > PHYSICAL_LIMIT.height;
+export function enforcePhysicalLimits(
+    vol: PackedVolume,
+    rules: PackingRuleConfig = DEFAULT_PACKING_RULES,
+): PackedVolume[] {
+    const limit = rules.physicalLimit;
+    const exceedsLength = vol.length > limit.length;
+    const exceedsWidth = vol.width > limit.width;
+    const exceedsHeight = vol.height > limit.height;
 
     if (!exceedsLength && !exceedsWidth && !exceedsHeight) {
         return [vol];
     }
 
-    // Simple split: divide the offending axis and create additional volumes
-    // Each split volume gets half the units (minimum 1)
     if (vol.stackedUnits <= 1) {
-        // Can't split a single unit further — clamp to limit and warn
         return [{
             ...vol,
-            length: Math.min(vol.length, PHYSICAL_LIMIT.length),
-            width: Math.min(vol.width, PHYSICAL_LIMIT.width),
-            height: Math.min(vol.height, PHYSICAL_LIMIT.height),
+            length: Math.min(vol.length, limit.length),
+            width: Math.min(vol.width, limit.width),
+            height: Math.min(vol.height, limit.height),
         }];
     }
 
-    // Split into 2 volumes with roughly equal units
     const halfUnits = Math.ceil(vol.stackedUnits / 2);
     const otherHalf = vol.stackedUnits - halfUnits;
     const weightPerUnit = vol.weight / vol.stackedUnits;
@@ -201,6 +212,5 @@ export function enforcePhysicalLimits(vol: PackedVolume): PackedVolume[] {
         sourceProducts: [...vol.sourceProducts],
     };
 
-    // Recursively enforce limits on each half
-    return [...enforcePhysicalLimits(vol1), ...enforcePhysicalLimits(vol2)];
+    return [...enforcePhysicalLimits(vol1, rules), ...enforcePhysicalLimits(vol2, rules)];
 }

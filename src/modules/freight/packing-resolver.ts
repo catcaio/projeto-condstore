@@ -13,9 +13,10 @@ import {
     consolidateMixedOrder,
     type PackedVolume,
     type ProductInput,
-    MAX_UNITS_PER_VOLUME,
-    STACKING_INCREMENT_CM,
+    type PackingRuleConfig,
+    DEFAULT_PACKING_RULES,
 } from '../../core/freight/packing-consolidation';
+import { loadOperationalSettings } from '../../core/freight/operational-settings';
 
 export interface ResolvedDimensions {
     width: number;   // cm
@@ -102,9 +103,23 @@ export async function resolvePackingDimensions(input: ResolveInput): Promise<Res
     // ─── Priority 2: Active packing profile from DB ─────────────────────
     if (tenantId) {
         try {
+            // Load cockpit-managed operational settings
+            const settings = await loadOperationalSettings(tenantId);
+            const rules: PackingRuleConfig = {
+                maxUnitsPerVolume: settings.maxIdenticalPerVolume,
+                stackingIncrementCm: settings.stackingIncrementCm,
+                physicalLimit: {
+                    length: settings.maxVolumeLengthCm,
+                    width: settings.maxVolumeWidthCm,
+                    height: settings.maxVolumeHeightCm,
+                },
+                absorbSmallerItems: settings.absorbSmallerItems,
+                absorbWeightOnly: settings.absorbWeightOnly,
+            };
+
             const profile = await lookupProfile(tenantId, productRef);
             if (profile) {
-                const resolved = computePackedDimensions(profile, quantity);
+                const resolved = computePackedDimensions(profile, quantity, rules);
                 logger.info('packing_resolver: using packing_profile', {
                     source: 'packing_profile',
                     tenantId,
@@ -114,6 +129,7 @@ export async function resolvePackingDimensions(input: ResolveInput): Promise<Res
                     dims: `${resolved.width}x${resolved.height}x${resolved.length}`,
                     totalWeight: resolved.totalWeight,
                     volumes: resolved.volumes,
+                    rulesSource: 'cockpit_managed',
                 });
                 return resolved;
             }
@@ -169,7 +185,7 @@ async function lookupProfile(tenantId: string, productRef?: string): Promise<Pro
 
 // ─── Packing computation ────────────────────────────────────────────────────
 
-function computePackedDimensions(profile: ProfileRow, quantity: number): ResolvedDimensions {
+function computePackedDimensions(profile: ProfileRow, quantity: number, rules: PackingRuleConfig = DEFAULT_PACKING_RULES): ResolvedDimensions {
     const baseH = parseFloat(String(profile.baseHeight)) || 0;
     const baseW = parseFloat(String(profile.baseWidth)) || 0;
     const baseL = parseFloat(String(profile.baseLength)) || 0;
@@ -186,7 +202,7 @@ function computePackedDimensions(profile: ProfileRow, quantity: number): Resolve
         quantity,
     };
 
-    const packedVolumes = consolidateIdenticalProducts(product);
+    const packedVolumes = consolidateIdenticalProducts(product, rules);
     const totalWeight = packedVolumes.reduce((s, v) => s + v.weight, 0);
 
     // Representative dims = largest volume

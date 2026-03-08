@@ -7,6 +7,7 @@ import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { TableDrivenAdapter } from '@/modules/freight/table-driven-adapter';
 import { resolveCarrierZone, extractStateFromCep } from '@/core/freight/zone-resolver';
+import { loadOperationalSettings } from '@/core/freight/operational-settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +40,10 @@ export async function POST(request: NextRequest) {
         }
 
         const tenantId = auth.session.tenantId;
-        const cubageFactor = 300; // default, will be overridden per-carrier below
+        // Load cockpit-managed operational settings
+        const opSettings = await loadOperationalSettings(tenantId);
+        const cubageFactor = opSettings.defaultCubageFactor;
+        const originCep = opSettings.defaultOriginCep;
         const state = extractStateFromCep(cep);
 
         // Determine carriers to simulate
@@ -80,7 +84,7 @@ export async function POST(request: NextRequest) {
             }, volumes[0]);
 
             const breakdown = await adapter.calculateFreight({
-                originCep: '88131640',
+                originCep: originCep,
                 destinationCep: cep.replace(/\D/g, ''),
                 weightInKg: chargedWeight,
                 widthCm: largest.width,

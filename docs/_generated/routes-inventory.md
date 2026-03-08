@@ -60,6 +60,7 @@
 | `/api/internal/frank/metrics` | API |
 | `/api/internal/frank/scheduler/run` | API |
 | `/api/internal/freight/carrier-tables` | API |
+| `/api/internal/freight/operational-settings` | API |
 | `/api/internal/freight/packing-profiles` | API |
 | `/api/internal/freight/packing-profiles/[id]` | API |
 | `/api/internal/freight/packing-profiles/[id]/review-status` | API |
@@ -183,6 +184,7 @@
 | `/cockpit/metrics` | Page |
 | `/cockpit/overview` | Page |
 | `/cockpit/packing-profiles` | Page |
+| `/cockpit/packing-rules` | Page |
 | `/cockpit/playbooks` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |

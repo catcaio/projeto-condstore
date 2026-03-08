@@ -1473,3 +1473,38 @@ export const carrierRateRows = mysqlTable('carrier_rate_rows', {
 
 export type CarrierRateRowRecord = typeof carrierRateRows.$inferSelect;
 export type NewCarrierRateRowRecord = typeof carrierRateRows.$inferInsert;
+
+// --- Freight Operational Settings (cockpit-editable) ---
+
+export const freightOperationalSettings = mysqlTable('freight_operational_settings', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    settingKey: varchar('setting_key', { length: 100 }).notNull(),
+    settingValue: varchar('setting_value', { length: 500 }).notNull(),
+    description: varchar('description', { length: 250 }),
+    category: varchar('category', { length: 50 }).notNull().default('packing'),
+    isActive: boolean('is_active').notNull().default(true),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxTenantKey: index('idx_freight_ops_settings_tenant_key').on(table.tenantId, table.settingKey),
+}));
+
+export type FreightOperationalSettingRecord = typeof freightOperationalSettings.$inferSelect;
+
+// --- Carrier Priority Rules ---
+
+export const carrierPriorityRules = mysqlTable('carrier_priority_rules', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    regionGroup: varchar('region_group', { length: 40 }).notNull(),
+    carrierName: varchar('carrier_name', { length: 60 }).notNull(),
+    priorityOrder: int('priority_order').notNull().default(1),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxTenantRegion: index('idx_carrier_priority_tenant_region').on(table.tenantId, table.regionGroup),
+}));
+
+export type CarrierPriorityRuleRecord = typeof carrierPriorityRules.$inferSelect;
