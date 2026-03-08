@@ -32,12 +32,17 @@ export interface ShippingQuote {
 }
 
 interface MelhorEnvioAPIResponse {
-  id: string;
+  id: number | string;
   name: string;
-  price: number;
-  delivery_time: number;
-  error?: boolean;
-  error_message?: string;
+  price: number | string;
+  custom_price?: number | string;
+  delivery_time: number | string;
+  error?: string | boolean;
+  company?: {
+    id: number;
+    name: string;
+    picture: string;
+  };
 }
 
 class MelhorEnvioProvider {
@@ -107,9 +112,14 @@ class MelhorEnvioProvider {
           height: dimensions.height,
           length: dimensions.length,
           weight: request.totalWeight,
+          insurance_value: 0,
           quantity: 1, // Total weight already calculated
         },
       ],
+      options: {
+        receipt: false,
+        own_hand: false,
+      },
     };
   }
 
@@ -118,13 +128,13 @@ class MelhorEnvioProvider {
    */
   private parseResponse(response: MelhorEnvioAPIResponse[]): ShippingQuote[] {
     return response
-      .filter((item) => !item.error)
+      .filter((item) => !item.error && item.price && item.delivery_time)
       .map((item) => ({
-        id: item.id,
-        carrier: item.name.split(' - ')[0] || item.name,
+        id: String(item.id),
+        carrier: item.company?.name || item.name.split(' - ')[0] || item.name,
         service: item.name,
-        price: item.price,
-        deliveryTime: item.delivery_time,
+        price: parseFloat(String(item.custom_price || item.price)),
+        deliveryTime: parseInt(String(item.delivery_time), 10),
         source: 'melhorenvio' as const,
       }));
   }
