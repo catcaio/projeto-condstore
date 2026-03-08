@@ -9,6 +9,7 @@ const PROTECTED_PREFIXES: { prefix: string; guards: string[] }[] = [
         prefix: '/api/internal/',
         guards: [
             'requireInternalToken',
+            'requireInternalAuth',
             'requireAdmin',
             'assertDevOnly',
             'x-internal-token',
