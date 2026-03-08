@@ -8,6 +8,7 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { TableDrivenAdapter } from '@/modules/freight/table-driven-adapter';
 import { resolveCarrierZone, extractStateFromCep } from '@/core/freight/zone-resolver';
 import { loadOperationalSettings } from '@/core/freight/operational-settings';
+import { logFreightSimulation, lookupFreightMemory } from '@/modules/freight/freight-audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,17 +108,48 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        // Log simulation (non-blocking)
+        const cepClean = cep.replace(/\D/g, '');
+        const bestResult = results[0];
+        const simulationId = await logFreightSimulation({
+            tenantId,
+            cep: cepClean,
+            zoneCode: bestResult?.zoneCode,
+            carrierConsidered: carrierNames,
+            carrierSelected: bestResult?.carrierName,
+            totalWeight,
+            cubedWeight: totalCubedWeight,
+            chargedWeight,
+            totalVolumes,
+            volumeDetails,
+            dimensionSource: 'manual_override',
+            packingRuleVersion: opSettings.ruleVersion,
+            quotedFreight: bestResult?.breakdown?.totalFreight,
+            breakdownJson: results,
+        });
+
+        // Memory diagnostic (read-only comparison)
+        const cepPrefix = cepClean.substring(0, 5);
+        const memoryResults: any[] = [];
+        for (const r of results) {
+            const mem = await lookupFreightMemory(tenantId, cepPrefix, r.carrierName, r.zoneCode);
+            memoryResults.push({ carrierName: r.carrierName, ...mem });
+        }
+
         return NextResponse.json({
             ok: true,
             data: {
+                simulationId,
                 state,
                 totalVolumes,
                 totalWeight,
                 totalCubedWeight: Math.round(totalCubedWeight * 100) / 100,
                 chargedWeight: Math.round(chargedWeight * 100) / 100,
                 dimensionSource: 'manual_override',
+                packingRuleVersion: opSettings.ruleVersion,
                 volumeDetails,
                 results,
+                memoryDiagnostic: memoryResults,
             },
         });
     } catch (err) {

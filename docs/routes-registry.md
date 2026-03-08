@@ -98,6 +98,8 @@
 | /api/internal/freight/carrier-tables | GET,PATCH | internal | requireAdmin | frete | live | Carrier freight tables CRUD (read + update fields) |
 | /api/internal/freight/simulate | POST | internal | requireAdmin | frete | live | Manual freight simulation with multi-volume input |
 | /api/internal/freight/operational-settings | GET,PATCH | internal | requireAdmin | frete | live | Cockpit-managed operational packing/freight settings |
+| /api/internal/freight/audit | GET | internal | requireAdmin | frete | live | Freight audit log — simulations and confirmations |
+| /api/internal/freight/memory | GET | internal | requireAdmin | frete | live | Freight memory — aggregated recurring patterns |
 | /api/internal/ops | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/qa/bootstrap-session | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/qa/setup | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -195,6 +197,8 @@
 | /cockpit/carrier-tables | GET | internal | requireAdmin | frete | live | Carrier freight tables operational view |
 | /cockpit/freight-simulator | GET | internal | requireAdmin | frete | live | Manual freight quotation simulator (cockpit) |
 | /cockpit/packing-rules | GET | internal | requireAdmin | frete | live | Operational packing rules and freight settings control center |
+| /cockpit/freight-audit | GET | internal | requireAdmin | frete | live | Freight audit log — simulation and confirmation history |
+| /cockpit/freight-memory | GET | internal | requireAdmin | frete | live | Freight memory — aggregated recurring patterns |
 | /concept-layer-preview | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cotacao | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cotacao/result | TBA | public | none | PUBLIC | live | Auto-detected |

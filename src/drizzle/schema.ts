@@ -1511,3 +1511,86 @@ export const carrierPriorityRules = mysqlTable('carrier_priority_rules', {
 }));
 
 export type CarrierPriorityRuleRecord = typeof carrierPriorityRules.$inferSelect;
+
+// --- Freight Simulations (Audit Log) ---
+
+export const freightSimulations = mysqlTable('freight_simulations', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    cep: varchar('cep', { length: 10 }).notNull(),
+    cepPrefix: varchar('cep_prefix', { length: 5 }).notNull(),
+    zoneCode: varchar('zone_code', { length: 30 }),
+    carrierConsidered: json('carrier_considered').$type<string[]>(),
+    carrierSelected: varchar('carrier_selected', { length: 60 }),
+    productHash: varchar('product_hash', { length: 64 }),
+    productRefs: json('product_refs').$type<string[]>(),
+    productFamily: json('product_family').$type<string[]>(),
+    totalWeight: decimal('total_weight', { precision: 10, scale: 2 }).notNull(),
+    cubedWeight: decimal('cubed_weight', { precision: 10, scale: 2 }),
+    chargedWeight: decimal('charged_weight', { precision: 10, scale: 2 }).notNull(),
+    totalVolumes: int('total_volumes').notNull().default(1),
+    volumeDetails: json('volume_details'),
+    dimensionSource: varchar('dimension_source', { length: 30 }),
+    packingRuleVersion: int('packing_rule_version'),
+    quotedFreight: decimal('quoted_freight', { precision: 10, scale: 2 }),
+    breakdownJson: json('breakdown_json'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxTenantCep: index('idx_freight_sim_tenant_cep').on(table.tenantId, table.cepPrefix),
+    idxTenantCreated: index('idx_freight_sim_tenant_created').on(table.tenantId, table.createdAt),
+}));
+
+export type FreightSimulationRecord = typeof freightSimulations.$inferSelect;
+
+// --- Freight Confirmations ---
+
+export const freightConfirmations = mysqlTable('freight_confirmations', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    simulationId: varchar('simulation_id', { length: 36 }),
+    orderId: varchar('order_id', { length: 36 }),
+    cep: varchar('cep', { length: 10 }).notNull(),
+    cepPrefix: varchar('cep_prefix', { length: 5 }).notNull(),
+    zoneCode: varchar('zone_code', { length: 30 }),
+    carrierName: varchar('carrier_name', { length: 60 }).notNull(),
+    productHash: varchar('product_hash', { length: 64 }),
+    productFamily: json('product_family').$type<string[]>(),
+    totalWeight: decimal('total_weight', { precision: 10, scale: 2 }).notNull(),
+    chargedWeight: decimal('charged_weight', { precision: 10, scale: 2 }).notNull(),
+    totalVolumes: int('total_volumes').notNull().default(1),
+    quotedFreight: decimal('quoted_freight', { precision: 10, scale: 2 }),
+    confirmedFreight: decimal('confirmed_freight', { precision: 10, scale: 2 }),
+    deltaValue: decimal('delta_value', { precision: 10, scale: 2 }),
+    confirmationSource: varchar('confirmation_source', { length: 30 }),
+    status: varchar('status', { length: 20 }).notNull().default('SIMULATED'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxTenantStatus: index('idx_freight_conf_tenant_status').on(table.tenantId, table.status),
+    idxSimulation: index('idx_freight_conf_simulation').on(table.simulationId),
+}));
+
+export type FreightConfirmationRecord = typeof freightConfirmations.$inferSelect;
+
+// --- Freight Memory (Aggregated) ---
+
+export const freightMemory = mysqlTable('freight_memory', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    cepPrefix: varchar('cep_prefix', { length: 5 }).notNull(),
+    zoneCode: varchar('zone_code', { length: 30 }),
+    carrierName: varchar('carrier_name', { length: 60 }).notNull(),
+    productFamily: varchar('product_family', { length: 60 }),
+    weightBand: varchar('weight_band', { length: 30 }),
+    volumeBand: varchar('volume_band', { length: 30 }),
+    avgConfirmedFreight: decimal('avg_confirmed_freight', { precision: 10, scale: 2 }),
+    avgDelta: decimal('avg_delta', { precision: 10, scale: 2 }),
+    confirmationsCount: int('confirmations_count').notNull().default(0),
+    confidenceScore: varchar('confidence_score', { length: 10 }).notNull().default('low'),
+    lastUpdated: timestamp('last_updated').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxTenantCarrierZone: index('idx_freight_mem_tenant_carrier_zone').on(table.tenantId, table.carrierName, table.zoneCode),
+    idxTenantCep: index('idx_freight_mem_tenant_cep').on(table.tenantId, table.cepPrefix),
+}));
+
+export type FreightMemoryRecord = typeof freightMemory.$inferSelect;

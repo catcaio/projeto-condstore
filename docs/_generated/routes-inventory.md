@@ -59,7 +59,9 @@
 | `/api/internal/frank/gate` | API |
 | `/api/internal/frank/metrics` | API |
 | `/api/internal/frank/scheduler/run` | API |
+| `/api/internal/freight/audit` | API |
 | `/api/internal/freight/carrier-tables` | API |
+| `/api/internal/freight/memory` | API |
 | `/api/internal/freight/operational-settings` | API |
 | `/api/internal/freight/packing-profiles` | API |
 | `/api/internal/freight/packing-profiles/[id]` | API |
@@ -174,6 +176,8 @@
 | `/cockpit/domine/health` | Page |
 | `/cockpit/equipe` | Page |
 | `/cockpit/finops/alerts` | Page |
+| `/cockpit/freight-audit` | Page |
+| `/cockpit/freight-memory` | Page |
 | `/cockpit/freight-simulator` | Page |
 | `/cockpit/funcionalidades` | Page |
 | `/cockpit/knowledge` | Page |
