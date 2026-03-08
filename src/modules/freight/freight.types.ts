@@ -54,6 +54,8 @@ export interface FreightResult {
   error?: string;
   /** Source of dimensions: manual_override, packing_profile, request_override, or default */
   dimensionSource?: 'manual_override' | 'packing_profile' | 'request_override' | 'default';
+  /** Detailed per-volume breakdown when using operational packing */
+  volumeDetails?: { length: number; width: number; height: number; weight: number; stackedUnits: number; sourceProducts: string[] }[];
 }
 
 /**

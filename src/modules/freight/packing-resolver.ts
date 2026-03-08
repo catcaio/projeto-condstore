@@ -8,6 +8,14 @@ import { getDb } from '../../infra/db';
 import { packingProfiles } from '../../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '../../infra/logger';
+import {
+    consolidateIdenticalProducts,
+    consolidateMixedOrder,
+    type PackedVolume,
+    type ProductInput,
+    MAX_UNITS_PER_VOLUME,
+    STACKING_INCREMENT_CM,
+} from '../../core/freight/packing-consolidation';
 
 export interface ResolvedDimensions {
     width: number;   // cm
@@ -19,6 +27,8 @@ export interface ResolvedDimensions {
     source: 'manual_override' | 'packing_profile' | 'request_override' | 'default';
     profileId?: string;
     packingMode?: string;
+    /** Detailed per-volume breakdown (operational packing) */
+    volumeDetails?: PackedVolume[];
 }
 
 interface ResolveInput {
@@ -164,49 +174,36 @@ function computePackedDimensions(profile: ProfileRow, quantity: number): Resolve
     const baseW = parseFloat(String(profile.baseWidth)) || 0;
     const baseL = parseFloat(String(profile.baseLength)) || 0;
     const baseWeight = parseFloat(String(profile.baseWeight)) || 0;
-    const maxPerVolume = profile.maxUnitsPerVolume || 1;
-    const hInc = parseFloat(String(profile.heightIncrementPerExtraUnit)) || 0;
-    const wInc = parseFloat(String(profile.widthIncrementPerExtraUnit)) || 0;
-    const lInc = parseFloat(String(profile.lengthIncrementPerExtraUnit)) || 0;
     const mode = profile.packingMode || 'SINGLE_FIXED';
 
-    const volumes = Math.ceil(quantity / maxPerVolume);
-    const unitsInVolume = Math.min(quantity, maxPerVolume);
+    // ─── Use operational consolidation rules ─────────────────────────────
+    const product: ProductInput = {
+        productRef: profile.productRef || 'unknown',
+        length: baseL,
+        width: baseW,
+        height: baseH,
+        weight: baseWeight,
+        quantity,
+    };
 
-    let packedH = baseH;
-    let packedW = baseW;
-    let packedL = baseL;
+    const packedVolumes = consolidateIdenticalProducts(product);
+    const totalWeight = packedVolumes.reduce((s, v) => s + v.weight, 0);
 
-    switch (mode) {
-        case 'STACK_VERTICAL':
-            packedH = baseH + (unitsInVolume - 1) * hInc;
-            break;
-        case 'STACK_HORIZONTAL':
-            packedW = baseW + (unitsInVolume - 1) * wInc;
-            break;
-        case 'NESTED':
-            packedH = baseH + (unitsInVolume - 1) * hInc;
-            break;
-        case 'CUSTOM_RULE':
-            packedH = baseH + (unitsInVolume - 1) * hInc;
-            packedW = baseW + (unitsInVolume - 1) * wInc;
-            packedL = baseL + (unitsInVolume - 1) * lInc;
-            break;
-        case 'SINGLE_FIXED':
-        default:
-            // Each unit is identical — dimensions don't grow with quantity
-            break;
-    }
+    // Representative dims = largest volume
+    const largest = packedVolumes.reduce((best, v) => {
+        return (v.length * v.width * v.height) > (best.length * best.width * best.height) ? v : best;
+    }, packedVolumes[0]);
 
     return {
-        width: packedW,
-        height: packedH,
-        length: packedL,
+        width: largest.width,
+        height: largest.height,
+        length: largest.length,
         unitWeight: baseWeight,
-        totalWeight: baseWeight * quantity,
-        volumes,
+        totalWeight,
+        volumes: packedVolumes.length,
         source: 'packing_profile',
         profileId: profile.id,
         packingMode: mode,
+        volumeDetails: packedVolumes,
     };
 }
