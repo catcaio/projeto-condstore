@@ -69,6 +69,7 @@
 | `/api/internal/freight/packing-profiles/[id]` | API |
 | `/api/internal/freight/packing-profiles/[id]/review-status` | API |
 | `/api/internal/freight/packing-profiles/[id]/toggle` | API |
+| `/api/internal/freight/shipments` | API |
 | `/api/internal/freight/simulate` | API |
 | `/api/internal/health/ai` | API |
 | `/api/internal/health/db` | API |
@@ -159,6 +160,7 @@
 | `/api/webhook` | API |
 | `/api/webhook/fallback` | API |
 | `/api/webhook/stripe` | API |
+| `/api/webhooks/melhor-envio` | API |
 | `/attribution` | Page |
 | `/avaliacao` | Page |
 | `/billing` | Page |
@@ -198,6 +200,7 @@
 | `/cockpit/security` | Page |
 | `/cockpit/settings/knowledge` | Page |
 | `/cockpit/settings/security` | Page |
+| `/cockpit/shipments` | Page |
 | `/cockpit/status` | Page |
 | `/cockpit/status/audit` | Page |
 | `/cockpit/supreme` | Page |

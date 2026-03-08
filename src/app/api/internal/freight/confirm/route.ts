@@ -5,7 +5,7 @@ import { freightSimulations, freightConfirmations } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
-import { randomUUID } from 'crypto';
+import { confirmFreight } from '@/modules/freight/freight-audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,52 +38,29 @@ export async function POST(request: NextRequest) {
         return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'confirmedFreight cannot be negative');
     }
 
-    const db = await getDb();
-
-    // Look up original simulation
-    const simRows = await db.select().from(freightSimulations).where(
-        and(eq(freightSimulations.id, simulationId), eq(freightSimulations.tenantId, tenantId)),
-    ).limit(1);
-
-    if (simRows.length === 0) {
-        return errorResponse(ErrorCode.VALIDATION_ERROR, 404, requestId, 'Simulation not found');
-    }
-
-    const sim = simRows[0];
-    const quotedFreight = sim.quotedFreight ? parseFloat(String(sim.quotedFreight)) : 0;
-    const delta = confirmedFreight - quotedFreight;
-
-    const id = randomUUID();
-    await db.insert(freightConfirmations).values({
-        id,
-        tenantId,
-        simulationId,
-        orderId: orderId ?? null,
-        cep: sim.cep,
-        cepPrefix: sim.cepPrefix,
-        zoneCode: sim.zoneCode ?? null,
-        carrierName,
-        productHash: sim.productHash ?? null,
-        productFamily: sim.productFamily ?? null,
-        totalWeight: sim.totalWeight,
-        chargedWeight: sim.chargedWeight,
-        totalVolumes: sim.totalVolumes,
-        quotedFreight: String(quotedFreight),
-        confirmedFreight: String(confirmedFreight),
-        deltaValue: String(Math.round(delta * 100) / 100),
-        confirmationSource: confirmationSource ?? 'cockpit',
-        status: 'CONFIRMED',
-    });
-
-    return NextResponse.json({
-        ok: true,
-        data: {
-            confirmationId: id,
+    try {
+        const { confirmationId } = await confirmFreight({
+            tenantId,
             simulationId,
-            quotedFreight,
+            orderId,
             confirmedFreight,
-            delta: Math.round(delta * 100) / 100,
-            status: 'CONFIRMED',
-        },
-    });
+            carrierName,
+            confirmationSource
+        });
+
+        return NextResponse.json({
+            ok: true,
+            data: {
+                confirmationId,
+                simulationId,
+                confirmedFreight,
+                status: 'CONFIRMED',
+            },
+        });
+    } catch (err: any) {
+        if (err.message === 'Simulation not found') {
+            return errorResponse(ErrorCode.VALIDATION_ERROR, 404, requestId, 'Simulation not found');
+        }
+        return errorResponse(ErrorCode.UNKNOWN, 500, requestId, err.message);
+    }
 }

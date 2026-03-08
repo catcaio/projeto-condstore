@@ -140,3 +140,59 @@ export async function lookupFreightMemory(
         return noMatch;
     }
 }
+
+// ─── Direct Confirmation ────────────────────────────────────────────────────
+
+export interface ConfirmInput {
+    tenantId: string;
+    simulationId: string;
+    orderId?: string;
+    confirmedFreight: number;
+    carrierName: string;
+    confirmationSource?: string;
+}
+
+export async function confirmFreight(input: ConfirmInput): Promise<{ confirmationId: string }> {
+    const { tenantId, simulationId, orderId, confirmedFreight, carrierName, confirmationSource } = input;
+
+    if (confirmedFreight < 0) {
+        throw new Error('confirmedFreight cannot be negative');
+    }
+
+    const db = await getDb();
+    const simRows = await db.select().from(freightSimulations).where(
+        and(eq(freightSimulations.id, simulationId), eq(freightSimulations.tenantId, tenantId)),
+    ).limit(1);
+
+    if (simRows.length === 0) {
+        throw new Error('Simulation not found');
+    }
+
+    const sim = simRows[0];
+    const quotedFreight = sim.quotedFreight ? parseFloat(String(sim.quotedFreight)) : 0;
+    const delta = confirmedFreight - quotedFreight;
+
+    const id = randomUUID();
+    await db.insert(freightConfirmations).values({
+        id,
+        tenantId,
+        simulationId,
+        orderId: orderId ?? null,
+        cep: sim.cep,
+        cepPrefix: sim.cepPrefix,
+        zoneCode: sim.zoneCode ?? null,
+        carrierName,
+        productHash: sim.productHash ?? null,
+        productFamily: sim.productFamily ?? null,
+        totalWeight: sim.totalWeight,
+        chargedWeight: sim.chargedWeight,
+        totalVolumes: sim.totalVolumes,
+        quotedFreight: String(quotedFreight),
+        confirmedFreight: String(confirmedFreight),
+        deltaValue: String(Math.round(delta * 100) / 100),
+        confirmationSource: confirmationSource ?? 'cockpit',
+        status: 'CONFIRMED',
+    });
+
+    return { confirmationId: id };
+}

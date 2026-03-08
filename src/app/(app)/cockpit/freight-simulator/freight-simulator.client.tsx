@@ -26,6 +26,8 @@ interface SimResult {
         breakdown: {
             carrierName: string;
             zoneCode: string;
+            source?: string;
+            serviceId?: number;
             realWeightKg: number;
             cubedWeightKg: number;
             chargedWeightKg: number;
@@ -45,6 +47,7 @@ interface SimResult {
             deliveryDays: number;
         } | null;
     }[];
+    simulationId?: string;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 8);
@@ -62,6 +65,8 @@ export function FreightSimulatorClient() {
     const [result, setResult] = useState<SimResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [creatingLabel, setCreatingLabel] = useState<string | null>(null);
+    const [labelSuccess, setLabelSuccess] = useState<Record<string, string>>({});
 
     const addRow = () => setVolumes(v => [...v, { id: uid(), length: 0, width: 0, height: 0, qty: 1 }]);
     const removeRow = (id: string) => setVolumes(v => v.filter(r => r.id !== id));
@@ -103,6 +108,55 @@ export function FreightSimulatorClient() {
             setError(e.message || 'Network error');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCreateShipment = async (carrierName: string, serviceId?: number, quotePrice?: number) => {
+        if (!result?.simulationId || !serviceId) return;
+        setCreatingLabel(carrierName);
+        setError('');
+
+        try {
+            const res = await safeFetch('/api/internal/freight/shipments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    simulationId: result.simulationId,
+                    carrierName,
+                    serviceId,
+                    quotePrice,
+                    dimensions: {
+                        weight: parseFloat(totalWeight),
+                        length: volumes[0]?.length || 16,
+                        width: volumes[0]?.width || 11,
+                        height: volumes[0]?.height || 2,
+                    },
+                    originCep: '88131640', // Base CondStore Origin
+                    recipient: {
+                        name: 'Cliente Final',
+                        phone: '48999999999',
+                        email: 'cliente@example.com',
+                        document: '00000000000',
+                        address: 'Rua Destino',
+                        number: '123',
+                        district: 'Centro',
+                        city: result.state ? city : 'São Paulo',
+                        stateAbbr: result.state || 'SP',
+                        countryId: 'BR',
+                        postalCode: cep.replace(/\D/g, ''),
+                    }
+                })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                setLabelSuccess(prev => ({ ...prev, [carrierName]: data.data.trackingCode }));
+            } else {
+                setError(data.error || 'Failed to create shipment');
+            }
+        } catch (e: any) {
+            setError(e.message || 'Network error during shipment creation');
+        } finally {
+            setCreatingLabel(null);
         }
     };
 
@@ -304,8 +358,26 @@ export function FreightSimulatorClient() {
                                             {r.breakdown.fpkCharge > 0 && <Row label="FPK" value={fmt(r.breakdown.fpkCharge)} />}
                                             {r.breakdown.fvCharge > 0 && <Row label="FV" value={fmt(r.breakdown.fvCharge)} />}
                                             <div className="border-t border-[hsl(var(--ui-border))] pt-2 mt-2">
-                                                <Row label="Total Frete" value={fmt(r.breakdown.totalFreight)} highlight />
-                                                <Row label="Prazo" value={`${r.breakdown.deliveryDays} dias`} />
+                                                <div className="border-t border-[hsl(var(--ui-border))] pt-2 mt-2 space-y-2">
+                                                    <Row label="Total Frete" value={fmt(r.breakdown.totalFreight)} highlight />
+                                                    <Row label="Prazo" value={`${r.breakdown.deliveryDays} dias`} />
+
+                                                    {r.breakdown.source === 'melhor_envio' && !labelSuccess[r.carrierName] && (
+                                                        <button
+                                                            onClick={() => handleCreateShipment(r.carrierName, r.breakdown!.serviceId, r.breakdown!.totalFreight)}
+                                                            disabled={creatingLabel === r.carrierName}
+                                                            className="w-full mt-2 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                                                        >
+                                                            {creatingLabel === r.carrierName ? 'Gerando Etiqueta...' : 'Gerar Etiqueta de Envio'}
+                                                        </button>
+                                                    )}
+                                                    {labelSuccess[r.carrierName] && (
+                                                        <div className="mt-2 py-1.5 px-3 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/30 flex items-center justify-between">
+                                                            <span>Etiqueta Gerada ✅</span>
+                                                            <span className="font-mono">{labelSuccess[r.carrierName]}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (

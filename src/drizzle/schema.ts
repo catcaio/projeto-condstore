@@ -1595,3 +1595,23 @@ export const freightMemory = mysqlTable('freight_memory', {
 }));
 
 export type FreightMemoryRecord = typeof freightMemory.$inferSelect;
+
+// --- Freight Shipments ---
+
+export const freightShipments = mysqlTable('freight_shipments', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    simulationId: varchar('simulation_id', { length: 36 }),
+    carrier: varchar('carrier', { length: 60 }).notNull(),
+    service: varchar('service', { length: 60 }).notNull(),
+    trackingCode: varchar('tracking_code', { length: 60 }),
+    shipmentPrice: decimal('shipment_price', { precision: 10, scale: 2 }),
+    status: varchar('status', { length: 30 }).notNull().default('pending'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxTenantSimulation: index('idx_freight_shipments_tenant_sim').on(table.tenantId, table.simulationId),
+    idxTracking: index('idx_freight_shipments_tracking').on(table.trackingCode),
+}));
+
+export type FreightShipmentRecord = typeof freightShipments.$inferSelect;

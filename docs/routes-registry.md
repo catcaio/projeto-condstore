@@ -159,11 +159,14 @@
 | /api/webhook/fallback | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/webhook/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/webhooks/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/internal/freight/shipments | GET,POST | internal | requireAdmin | frete | live | Internal API for tracking and manual generation of shipping labels |
+| /api/webhooks/melhor-envio | POST | public | none | PUBLIC | live | Webhook intake for shipment tracking and freight auto-confirmation |
 | /attribution | TBA | public | none | PUBLIC | live | Auto-detected |
 | /billing | TBA | public | none | PUBLIC | live | Auto-detected |
 | /billing/manage | TBA | public | none | PUBLIC | live | Auto-detected |
 | /billing/success | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit | TBA | public | none | PUBLIC | live | Auto-detected |
+| /cockpit/shipments | GET | internal | requireAdmin | frete | live | Shipment monitoring panel and label generation log |
 | /cockpit/acquisition | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/acquisition/activation | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/acquisition/drilldown | TBA | public | none | PUBLIC | live | Auto-detected |
