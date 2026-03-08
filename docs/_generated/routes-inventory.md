@@ -47,6 +47,7 @@
 | `/api/freight/create-shipment` | API |
 | `/api/freight/insights` | API |
 | `/api/freight/shipments` | API |
+| `/api/freight/simulate` | API |
 | `/api/health` | API |
 | `/api/history` | API |
 | `/api/internal/auth/reset-admin` | API |

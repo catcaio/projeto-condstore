@@ -161,7 +161,8 @@
 | /api/webhooks/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/freight/shipments | GET,POST | internal | requireAdmin | frete | live | Internal API for tracking and manual generation of shipping labels |
 | /api/webhooks/melhor-envio | POST | public | none | PUBLIC | live | Webhook intake for shipment tracking and freight auto-confirmation |
-| /api/freight/shipments | GET | internal | requireAdmin | frete | live | Logistica shipments panel — enriched shipments with confirmed/delta values |
+| /api/freight/simulate | POST | internal | requireAdmin | frete | live | Manual freight simulator — session-protected proxy to internal simulate handler |
+| /api/freight/shipments | GET,POST | internal | requireAdmin | frete | live | Logistica shipments panel — enriched shipments with confirmed/delta values + label creation |
 | /api/freight/insights | GET | internal | requireAdmin | frete | live | Freight intelligence insights — top CEPs, carriers, avg delta, top routes |
 | /api/sales/quote | POST | internal | requireAdmin | vendas | live | Sales quote — resolves packing, runs multi-carrier quote, returns prices |
 | /api/freight/create-shipment | POST | internal | requireAdmin | frete | live | Create shipment from quote — inserts freight_shipments + freight_confirmations |
