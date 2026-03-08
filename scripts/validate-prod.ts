@@ -21,7 +21,7 @@ const tenantId = 'LOJACOND';
 
 async function dispatchLiveWebhook(trackingCode: string, status: string) {
     console.log(`\n> Dispatching LIVE Webhook to VERCEL: ${status} for tracking ${trackingCode}`);
-    const res = await fetch('https://projeto-condstore-fx2h1b8b6-rafael-s-projects-f32fc2d1.vercel.app/api/webhooks/melhor-envio', {
+    const res = await fetch('https://projeto-condstore-28oh62ww3-rafael-s-projects-f32fc2d1.vercel.app/api/webhooks/melhor-envio', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

@@ -44,6 +44,9 @@
 | `/api/debug/tenants` | API |
 | `/api/domine/intake` | API |
 | `/api/events` | API |
+| `/api/freight/create-shipment` | API |
+| `/api/freight/insights` | API |
+| `/api/freight/shipments` | API |
 | `/api/health` | API |
 | `/api/history` | API |
 | `/api/internal/auth/reset-admin` | API |
@@ -130,6 +133,7 @@
 | `/api/public/events` | API |
 | `/api/reports/ingest` | API |
 | `/api/reports/seed` | API |
+| `/api/sales/quote` | API |
 | `/api/simulate` | API |
 | `/api/supreme/ecosystem` | API |
 | `/api/tenants/[tenantId]/ai-provider` | API |
@@ -161,6 +165,7 @@
 | `/api/webhook/fallback` | API |
 | `/api/webhook/stripe` | API |
 | `/api/webhooks/melhor-envio` | API |
+| `/api/whatsapp/incoming` | API |
 | `/attribution` | Page |
 | `/avaliacao` | Page |
 | `/billing` | Page |
@@ -208,10 +213,13 @@
 | `/concept-layer-preview` | Page |
 | `/cotacao` | Page |
 | `/cotacao/result` | Page |
+| `/dashboard` | Page |
 | `/docs` | Page |
 | `/evolution` | Page |
 | `/evolution/[id]` | Page |
 | `/evolution/roadmap` | Page |
+| `/financeiro/frete` | Page |
+| `/financeiro/margem` | Page |
 | `/freight/simulations` | Page |
 | `/freight/simulations/[id]` | Page |
 | `/gargalos-logisticos` | Page |
@@ -220,6 +228,12 @@
 | `/inbox/conversations/[id]` | Page |
 | `/integracoes` | Page |
 | `/login` | Page |
+| `/logistica/envios` | Page |
+| `/logistica/insights` | Page |
+| `/logistica/rastreamento` | Page |
+| `/logistica/simulador` | Page |
+| `/operacao/fila` | Page |
+| `/operacao/inbox` | Page |
 | `/painel-logistico` | Page |
 | `/planos/crm` | Page |
 | `/planos/domine` | Page |
@@ -231,6 +245,13 @@
 | `/produtos/envios` | Page |
 | `/settings` | Page |
 | `/signup` | Page |
+| `/sistema/dlq` | Page |
+| `/sistema/health` | Page |
+| `/sistema/logs` | Page |
+| `/sistema/security` | Page |
 | `/supreme` | Page |
 | `/t/[token]` | Page |
 | `/tecnologias` | Page |
+| `/vendas/clientes` | Page |
+| `/vendas/cotacao` | Page |
+| `/vendas/pedidos` | Page |

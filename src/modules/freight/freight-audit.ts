@@ -197,3 +197,89 @@ export async function confirmFreight(input: ConfirmInput): Promise<{ confirmatio
 
     return { confirmationId: id };
 }
+
+// ─── Freight Memory Upsert ────────────────────────────────────────────────────
+
+export interface MemoryUpsertInput {
+    tenantId: string;
+    cepPrefix: string;
+    zoneCode?: string | null;
+    carrierName: string;
+    productFamily?: string | null;
+    weightBand?: string | null;
+    volumeBand?: string | null;
+    confirmedFreight: number;
+    deltaValue: number;
+}
+
+/**
+ * Upsert an aggregated memory record for a confirmed freight.
+ * Uses randomUUID for new records and updates averages + confidence score
+ * based on confirmations count:
+ *   < 3  → low
+ *   3–9  → medium
+ *   ≥ 10 → high
+ */
+export async function upsertFreightMemory(input: MemoryUpsertInput): Promise<void> {
+    const {
+        tenantId, cepPrefix, zoneCode, carrierName,
+        productFamily, weightBand, volumeBand,
+        confirmedFreight, deltaValue,
+    } = input;
+
+    try {
+        const db = await getDb();
+
+        const conditions = [
+            eq(freightMemory.tenantId, tenantId),
+            eq(freightMemory.cepPrefix, cepPrefix),
+            eq(freightMemory.carrierName, carrierName),
+        ];
+        if (zoneCode) conditions.push(eq(freightMemory.zoneCode, zoneCode));
+
+        const existing = await db.select().from(freightMemory).where(and(...conditions)).limit(1);
+
+        if (existing.length === 0) {
+            // First confirmation — insert new memory record
+            await db.insert(freightMemory).values({
+                id: randomUUID(),
+                tenantId,
+                cepPrefix,
+                zoneCode: zoneCode ?? null,
+                carrierName,
+                productFamily: productFamily ?? null,
+                weightBand: weightBand ?? null,
+                volumeBand: volumeBand ?? null,
+                avgConfirmedFreight: String(confirmedFreight),
+                avgDelta: String(deltaValue),
+                confirmationsCount: 1,
+                confidenceScore: 'low',
+            });
+        } else {
+            const row = existing[0];
+            const prevCount = row.confirmationsCount;
+            const newCount = prevCount + 1;
+
+            const prevAvgFreight = parseFloat(String(row.avgConfirmedFreight ?? 0));
+            const prevAvgDelta = parseFloat(String(row.avgDelta ?? 0));
+
+            const newAvgFreight = (prevAvgFreight * prevCount + confirmedFreight) / newCount;
+            const newAvgDelta = (prevAvgDelta * prevCount + deltaValue) / newCount;
+
+            const confidenceScore: 'low' | 'medium' | 'high' =
+                newCount >= 10 ? 'high' : newCount >= 3 ? 'medium' : 'low';
+
+            await db
+                .update(freightMemory)
+                .set({
+                    avgConfirmedFreight: String(Math.round(newAvgFreight * 100) / 100),
+                    avgDelta: String(Math.round(newAvgDelta * 100) / 100),
+                    confirmationsCount: newCount,
+                    confidenceScore,
+                })
+                .where(eq(freightMemory.id, row.id));
+        }
+    } catch (err) {
+        console.error('upsertFreightMemory failed (non-blocking):', err);
+    }
+}

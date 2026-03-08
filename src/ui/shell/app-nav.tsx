@@ -1,84 +1,163 @@
-import { SettingsSection, SettingsRow } from '@/ui/settings';
-import { Badge } from '@/ui/components';
-import { Home, Settings, ShieldAlert, Inbox, Target, Activity, Package } from 'lucide-react';
-import { type Role, isSuperAdmin } from '@/ui/auth/entitlements-logic';
+'use client';
 
-interface AppNavProps {
-    role: Role | string;
-    tenantId: string | null;
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import {
+    LayoutDashboard,
+    ShoppingCart,
+    FileText,
+    Users,
+    Truck,
+    Package,
+    Navigation,
+    BarChart3,
+    Inbox,
+    ListChecks,
+    DollarSign,
+    TrendingUp,
+    Heart,
+    Server,
+    AlertTriangle,
+    ScrollText,
+    ShieldAlert,
+    Menu,
+    X,
+    ChevronRight,
+} from 'lucide-react';
+
+interface NavItem {
+    label: string;
+    href: string;
+    icon: React.ElementType;
 }
 
-export function AppNav({ role, tenantId }: AppNavProps) {
-    const isSuper = isSuperAdmin(role);
-    const cockpitHref = isSuper && tenantId ? { pathname: '/cockpit', query: { tenantId } } : "/cockpit";
-    const inboxHref = isSuper && tenantId ? { pathname: '/inbox', query: { tenantId } } : "/inbox";
-    const attrHref = isSuper && tenantId ? { pathname: '/attribution', query: { tenantId } } : "/attribution";
+interface NavGroup {
+    title: string;
+    items: NavItem[];
+}
 
-    const homeHref = isSuper && tenantId ? { pathname: '/home', query: { tenantId } } : "/home";
+const NAV_GROUPS: NavGroup[] = [
+    {
+        title: '',
+        items: [
+            { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        ],
+    },
+    {
+        title: 'VENDAS',
+        items: [
+            { label: 'Nova Cotação', href: '/vendas/cotacao', icon: ShoppingCart },
+            { label: 'Pedidos', href: '/vendas/pedidos', icon: FileText },
+            { label: 'Clientes', href: '/vendas/clientes', icon: Users },
+        ],
+    },
+    {
+        title: 'LOGÍSTICA',
+        items: [
+            { label: 'Simulador', href: '/logistica/simulador', icon: Truck },
+            { label: 'Envios', href: '/logistica/envios', icon: Package },
+            { label: 'Rastreamento', href: '/logistica/rastreamento', icon: Navigation },
+            { label: 'Insights', href: '/logistica/insights', icon: BarChart3 },
+        ],
+    },
+    {
+        title: 'OPERAÇÃO',
+        items: [
+            { label: 'Inbox', href: '/operacao/inbox', icon: Inbox },
+            { label: 'Fila', href: '/operacao/fila', icon: ListChecks },
+        ],
+    },
+    {
+        title: 'FINANCEIRO',
+        items: [
+            { label: 'Custos de Frete', href: '/financeiro/frete', icon: DollarSign },
+            { label: 'Margem', href: '/financeiro/margem', icon: TrendingUp },
+        ],
+    },
+    {
+        title: 'SISTEMA',
+        items: [
+            { label: 'Health', href: '/sistema/health', icon: Heart },
+            { label: 'DLQ', href: '/sistema/dlq', icon: AlertTriangle },
+            { label: 'Logs', href: '/sistema/logs', icon: ScrollText },
+            { label: 'Security', href: '/sistema/security', icon: ShieldAlert },
+        ],
+    },
+];
+
+function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+    const Icon = item.icon;
+    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
 
     return (
-        <div className="space-y-6">
-            <SettingsSection title="OPERATIONS">
-                <SettingsRow
-                    icon={<Activity className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Status"
-                    href={isSuper && tenantId ? { pathname: '/cockpit/status', query: { tenantId } } : "/cockpit/status"}
-                />
-                <SettingsRow
-                    icon={<Target className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Audit Logs"
-                    href={isSuper && tenantId ? { pathname: '/cockpit/status/audit', query: { tenantId } } : "/cockpit/status/audit"}
-                />
-                <SettingsRow
-                    icon={<Inbox className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Strategic Facts"
-                    href={isSuper && tenantId ? { pathname: '/cockpit/strategic-facts', query: { tenantId } } : "/cockpit/strategic-facts"}
-                />
-            </SettingsSection>
-
-            <SettingsSection title="DOMINE">
-                <SettingsRow
-                    icon={<Package className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Overview"
-                    href={isSuper && tenantId ? { pathname: '/cockpit/domine', query: { tenantId } } : "/cockpit/domine"}
-                />
-                <SettingsRow
-                    icon={<ShieldAlert className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="DLQ (Dead Letter Queue)"
-                    href={isSuper && tenantId ? { pathname: '/cockpit/domine/dlq', query: { tenantId } } : "/cockpit/domine/dlq"}
-                />
-                <SettingsRow
-                    icon={<Activity className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Health"
-                    href={isSuper && tenantId ? { pathname: '/cockpit/domine/health', query: { tenantId } } : "/cockpit/domine/health"}
-                />
-            </SettingsSection>
-
-            <SettingsSection title="SETTINGS">
-                <SettingsRow
-                    icon={<ShieldAlert className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Security"
-                    href={isSuper && tenantId ? { pathname: '/cockpit/settings/security', query: { tenantId } } : "/cockpit/settings/security"}
-                />
-                <SettingsRow
-                    icon={<Settings className="h-5 w-5 text-[hsl(var(--ui-text-muted))]" />}
-                    label="Knowledge Base"
-                    href={isSuper && tenantId ? { pathname: '/cockpit/settings/knowledge', query: { tenantId } } : "/cockpit/settings/knowledge"}
-                />
-            </SettingsSection>
-
-            {isSuper && (
-                <SettingsSection title="GLOBAL ADMIN">
-                    <SettingsRow
-                        icon={<ShieldAlert className="h-5 w-5 text-[hsl(var(--ui-danger))]" />}
-                        label={
-                            <span className="text-[hsl(var(--ui-danger))]">Supreme Cockpit</span>
-                        }
-                        href="/supreme"
-                        value={<Badge variant="danger">SUPREME</Badge>}
-                    />
-                </SettingsSection>
+        <Link
+            href={item.href}
+            className={`
+                group flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium
+                transition-all duration-150 relative
+                ${isActive
+                    ? 'bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue))]'
+                    : 'text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] hover:bg-[hsl(var(--ui-bg)/0.6)]'
+                }
+            `}
+        >
+            {/* Active indicator bar */}
+            {isActive && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[hsl(var(--ui-accent-blue))]" />
             )}
-        </div>
+            <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[hsl(var(--ui-accent-blue))]' : 'text-[hsl(var(--ui-text-muted))] group-hover:text-[hsl(var(--ui-text))]'}`} />
+            <span className="truncate">{item.label}</span>
+            {isActive && <ChevronRight className="w-3 h-3 ml-auto opacity-50" />}
+        </Link>
+    );
+}
+
+export function AppNav({ role, tenantId }: { role: string; tenantId: string | null }) {
+    const pathname = usePathname();
+    const [mobileOpen, setMobileOpen] = useState(false);
+
+    const navContent = (
+        <nav className="flex flex-col gap-5">
+            {NAV_GROUPS.map((group, gi) => (
+                <div key={gi}>
+                    {group.title && (
+                        <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[hsl(var(--ui-text-muted)/0.6)]">
+                            {group.title}
+                        </p>
+                    )}
+                    <div className="flex flex-col gap-0.5">
+                        {group.items.map((item) => (
+                            <NavLink key={item.href} item={item} pathname={pathname} />
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </nav>
+    );
+
+    return (
+        <>
+            {/* Desktop nav */}
+            <div className="hidden md:block">
+                {navContent}
+            </div>
+
+            {/* Mobile toggle + overlay */}
+            <div className="md:hidden">
+                <button
+                    onClick={() => setMobileOpen(!mobileOpen)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors"
+                >
+                    {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    Menu
+                </button>
+                {mobileOpen && (
+                    <div className="mt-2" onClick={() => setMobileOpen(false)}>
+                        {navContent}
+                    </div>
+                )}
+            </div>
+        </>
     );
 }

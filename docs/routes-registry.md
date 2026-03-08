@@ -161,6 +161,11 @@
 | /api/webhooks/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/freight/shipments | GET,POST | internal | requireAdmin | frete | live | Internal API for tracking and manual generation of shipping labels |
 | /api/webhooks/melhor-envio | POST | public | none | PUBLIC | live | Webhook intake for shipment tracking and freight auto-confirmation |
+| /api/freight/shipments | GET | internal | requireAdmin | frete | live | Logistica shipments panel — enriched shipments with confirmed/delta values |
+| /api/freight/insights | GET | internal | requireAdmin | frete | live | Freight intelligence insights — top CEPs, carriers, avg delta, top routes |
+| /api/sales/quote | POST | internal | requireAdmin | vendas | live | Sales quote — resolves packing, runs multi-carrier quote, returns prices |
+| /api/freight/create-shipment | POST | internal | requireAdmin | frete | live | Create shipment from quote — inserts freight_shipments + freight_confirmations |
+| /api/whatsapp/incoming | POST | public | none | PUBLIC | live | WhatsApp incoming webhook — Frank auto-quote with Twilio signature verification |
 | /attribution | TBA | public | none | PUBLIC | live | Auto-detected |
 | /billing | TBA | public | none | PUBLIC | live | Auto-detected |
 | /billing/manage | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -205,7 +210,24 @@
 | /cockpit/freight-audit | GET | internal | requireAdmin | frete | live | Freight audit log — simulation and confirmation history |
 | /cockpit/freight-memory | GET | internal | requireAdmin | frete | live | Freight memory — aggregated recurring patterns |
 | /cockpit/freight-insights | GET | internal | requireAdmin | frete | live | Freight operational intelligence and performance analytics |
+| /logistica/envios | GET | internal | requireAdmin | frete | live | Painel de Envios — tabela enriched com tracking, status, delta financeiro |
+| /logistica/rastreamento | GET | internal | requireAdmin | frete | live | Rastreamento — timeline de status por envio (posted → delivered) |
+| /logistica/insights | GET | internal | requireAdmin | frete | live | Insights de Frete — CEPs, transportadoras, delta médio, top rotas |
+| /dashboard | GET | internal | required | console | live | Dashboard operacional com quick links |
+| /vendas/cotacao | GET | internal | required | console | live | Nova Cotação (stub — em breve) |
+| /vendas/pedidos | GET | internal | required | console | live | Pedidos de Venda (stub — em breve) |
+| /vendas/clientes | GET | internal | required | console | live | Gestão de Clientes (stub — em breve) |
+| /logistica/simulador | GET | internal | requireAdmin | frete | live | Simulador de Frete (migrado de /cockpit/freight-simulator) |
+| /operacao/inbox | GET | internal | required | console | live | Inbox operacional (migrado de /inbox) |
+| /operacao/fila | GET | internal | required | console | live | Fila de Eventos DOMINE (stub — em breve) |
+| /financeiro/frete | GET | internal | required | console | live | Custos de Frete (stub — em breve) |
+| /financeiro/margem | GET | internal | required | console | live | Margem operacional (stub — em breve) |
+| /sistema/health | GET | internal | requireAdmin | console | live | Health & Resiliência (migrado de /cockpit/status) |
+| /sistema/dlq | GET | internal | requireAdmin | console | live | Dead Letter Queue (migrado de /cockpit/domine/dlq) |
+| /sistema/logs | GET | internal | required | console | live | Logs & Auditoria (stub — em breve) |
+| /sistema/security | GET | internal | requireAdmin | console | live | Security Cockpit (migrado de /cockpit/security) |
 | /concept-layer-preview | TBA | public | none | PUBLIC | live | Auto-detected |
+
 | /cotacao | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cotacao/result | TBA | public | none | PUBLIC | live | Auto-detected |
 | /docs | TBA | public | none | PUBLIC | live | Auto-detected |
