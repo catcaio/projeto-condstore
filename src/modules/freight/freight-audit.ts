@@ -52,6 +52,7 @@ export interface SimulationLogInput {
     packingRuleVersion?: number;
     quotedFreight?: number;
     breakdownJson?: any;
+    strategyUsed?: string;
 }
 
 export async function logFreightSimulation(input: SimulationLogInput): Promise<string> {
@@ -81,6 +82,7 @@ export async function logFreightSimulation(input: SimulationLogInput): Promise<s
             packingRuleVersion: input.packingRuleVersion ?? null,
             quotedFreight: input.quotedFreight != null ? String(input.quotedFreight) : null,
             breakdownJson: input.breakdownJson ?? null,
+            strategyUsed: input.strategyUsed ?? null,
         });
     } catch {
         // Non-blocking — don't crash freight calculation if logging fails

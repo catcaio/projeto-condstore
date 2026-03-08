@@ -10,6 +10,7 @@ import { resolveCarrierZone, extractStateFromCep } from '@/core/freight/zone-res
 import { loadOperationalSettings } from '@/core/freight/operational-settings';
 import { logFreightSimulation, computeWeightBand, computeVolumeBand } from '@/modules/freight/freight-audit';
 import { resolveFreightMemory, generateRecommendation } from '@/modules/freight/memory/memory-resolver';
+import { selectCarrierStrategy } from '@/modules/freight/carrier-router';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +76,19 @@ export async function POST(request: NextRequest) {
         const totalCubedWeight = volumeDetails.reduce((s, v) => s + v.cubedWeight, 0);
         const chargedWeight = Math.max(totalWeight, totalCubedWeight);
 
+        // Carrier routing decision
+        const longestDim = Math.max(...volumes.map(v => Math.max(v.length, v.width, v.height)));
+        const routerResult = selectCarrierStrategy({
+            tenantId,
+            originCep: originCep,
+            destinationCep: cep.replace(/\D/g, ''),
+            totalWeight,
+            cubedWeight: totalCubedWeight,
+            chargedWeight,
+            volumes: totalVolumes,
+            longestDimensionCm: longestDim,
+        });
+
         // Simulate for each carrier
         const results: any[] = [];
         for (const cn of carrierNames) {
@@ -127,6 +141,7 @@ export async function POST(request: NextRequest) {
             packingRuleVersion: opSettings.ruleVersion,
             quotedFreight: bestResult?.breakdown?.totalFreight,
             breakdownJson: results,
+            strategyUsed: routerResult.strategy,
         });
 
         // Memory diagnostic (read-only comparison) using resolver + recommendation
@@ -159,6 +174,11 @@ export async function POST(request: NextRequest) {
                 results,
                 memoryDiagnostic: memoryResults,
                 recommendation,
+                routing: {
+                    strategyUsed: routerResult.strategy,
+                    carriersConsidered: routerResult.eligibleCarriers,
+                    routerReason: routerResult.reason,
+                },
             },
         });
     } catch (err) {

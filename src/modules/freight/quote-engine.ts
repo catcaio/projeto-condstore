@@ -63,9 +63,14 @@ export class TabelaAdapter implements CarrierAdapter {
     }
 }
 
+import { selectCarrierStrategy, type RoutingResult, type RoutingStrategy } from './carrier-router';
+
 export class UnifiedQuoteEngine {
     private melhorEnvio = new MelhorEnvioAdapter();
     private tabelaLegacy = new TabelaAdapter();
+
+    /** Last routing result — accessible after getQuotes() */
+    public lastRoutingResult: RoutingResult | null = null;
 
     private decideStrategy(totalWeight: number): FreightStrategy {
         if (totalWeight <= 10) return FreightStrategy.MELHORENVIO_ONLY;
@@ -76,17 +81,40 @@ export class UnifiedQuoteEngine {
     async getQuotes(request: FreightRequest): Promise<FreightOption[]> {
         const unitWeight = request.unitWeight || appConfig.freight.defaultUnitWeight;
         const totalWeight = unitWeight * request.quantity;
+
+        // ─── Carrier Router ─────────────────────────────────────────
+        const longestDim = Math.max(
+            request.dimensions?.width ?? 0,
+            request.dimensions?.height ?? 0,
+            request.dimensions?.length ?? 0,
+        );
+
+        const routingResult = selectCarrierStrategy({
+            tenantId: request.tenantId || 'LOJACOND',
+            originCep: '88131640', // default, overridden by operational settings upstream
+            destinationCep: request.destinationCep || request.cepDestino || '',
+            totalWeight,
+            cubedWeight: totalWeight, // simplified — real cubed weight calculated downstream
+            chargedWeight: totalWeight,
+            volumes: 1,
+            longestDimensionCm: longestDim,
+            zoneCode: request.zoneCode,
+        });
+
+        this.lastRoutingResult = routingResult;
+
+        // Use legacy strategy as fallback mapping
         const strategy = this.decideStrategy(totalWeight);
 
         const adapters: CarrierAdapter[] = [];
 
-        // MelhorEnvio for light packages
-        if (strategy === FreightStrategy.MELHORENVIO_ONLY || strategy === FreightStrategy.BOTH) {
+        // Route based on carrier router strategy
+        if (routingResult.strategy === 'melhor_envio' || strategy === FreightStrategy.MELHORENVIO_ONLY || strategy === FreightStrategy.BOTH) {
             adapters.push(this.melhorEnvio);
         }
 
         // Table-driven carriers: try DB-backed adapters first
-        if (strategy === FreightStrategy.TABELA_ONLY || strategy === FreightStrategy.BOTH) {
+        if (routingResult.strategy === 'table_carriers' || strategy === FreightStrategy.TABELA_ONLY || strategy === FreightStrategy.BOTH) {
             const tenantId = request.tenantId || 'LOJACOND';
             try {
                 const tableAdapters = await getTableAdaptersForDestination(tenantId, request.destinationCep);
@@ -95,6 +123,7 @@ export class UnifiedQuoteEngine {
                     logger.info('quote_engine: using table-driven adapters', {
                         carriers: tableAdapters.map(a => a.name),
                         destination: request.destinationCep,
+                        routerStrategy: routingResult.strategy,
                     });
                 } else {
                     // Fallback to legacy CSV adapter
@@ -108,6 +137,24 @@ export class UnifiedQuoteEngine {
                     error: (err as Error).message,
                 });
             }
+        }
+
+        // Braspress API strategy — for now uses table carriers as placeholder
+        if (routingResult.strategy === 'braspress_api' && adapters.length === 0) {
+            const tenantId = request.tenantId || 'LOJACOND';
+            try {
+                const tableAdapters = await getTableAdaptersForDestination(tenantId, request.destinationCep);
+                if (tableAdapters.length > 0) {
+                    adapters.push(...tableAdapters);
+                } else {
+                    adapters.push(this.tabelaLegacy);
+                }
+            } catch {
+                adapters.push(this.tabelaLegacy);
+            }
+            logger.info('quote_engine: braspress_api strategy — using available adapters as bridge', {
+                destination: request.destinationCep,
+            });
         }
 
         const quoteInput: QuoteInput = {

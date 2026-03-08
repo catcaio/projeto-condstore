@@ -1534,6 +1534,7 @@ export const freightSimulations = mysqlTable('freight_simulations', {
     packingRuleVersion: int('packing_rule_version'),
     quotedFreight: decimal('quoted_freight', { precision: 10, scale: 2 }),
     breakdownJson: json('breakdown_json'),
+    strategyUsed: varchar('strategy_used', { length: 30 }),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
     idxTenantCep: index('idx_freight_sim_tenant_cep').on(table.tenantId, table.cepPrefix),
