@@ -6,6 +6,7 @@ import '../styles/tokens.dark.css';
 import '../styles/tokens.semantic.css';
 import { SentryClientBootstrap } from './_sentry-client-bootstrap';
 import { ThemeProvider, ThemeScript } from '@/ui/theme';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
     title: {
@@ -50,6 +51,7 @@ export default function RootLayout({
                         {children}
                     </div>
                 </ThemeProvider>
+                <SpeedInsights />
             </body>
         </html>
     );
