@@ -26,9 +26,12 @@ vi.mock('../pii-redactor', () => ({
   piiRedactor: { sanitizeInput: (t: string) => mockSanitizeInput(t) }
 }));
 
-const mockDetectInjection = vi.hoisted(() => vi.fn().mockReturnValue(false));
+const mockAnalyze = vi.hoisted(() => vi.fn().mockReturnValue({ isInjection: false, riskLevel: 'none', flagType: null }));
+const mockEnforceInjectionPolicy = vi.hoisted(() => vi.fn().mockReturnValue({ action: 'allow', riskLevel: 'none' }));
+
 vi.mock('../injection-guard', () => ({
-  injectionGuard: { detectInjection: (t: string) => mockDetectInjection(t) }
+  injectionGuard: { analyze: (t: string) => mockAnalyze(t) },
+  enforceInjectionPolicy: (...args: any[]) => mockEnforceInjectionPolicy(...args),
 }));
 
 vi.mock('../providers/openai-compatible.provider', () => {
@@ -58,6 +61,12 @@ vi.mock('../../../infra/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn()
 
 vi.mock('../../../infra/rate-limit/redis-rate-limiter', () => ({
   checkRedisRateLimit: (...args: any[]) => mockCheckRateLimit(...args),
+}));
+
+vi.mock('../../../lib/resilience/circuit-breaker', () => ({
+  CircuitBreaker: class {
+    execute(fn: any) { return fn(); }
+  }
 }));
 
 vi.mock('../retrieval/retrieve-context', () => ({
@@ -154,7 +163,14 @@ describe('llm-gateway', () => {
       maxTokens: 150
     });
     mockSanitizeInput.mockReturnValueOnce('sanitized-user-input');
-    mockDetectInjection.mockReturnValueOnce(true);
+
+    // Simulate a low-risk injection that gets degraded (sanitized)
+    mockAnalyze.mockReturnValueOnce({ isInjection: true, riskLevel: 'low', flagType: 'ignore_instructions' });
+    mockEnforceInjectionPolicy.mockReturnValueOnce({
+      action: 'degrade',
+      riskLevel: 'low',
+      sanitizedInput: 'clean-user-input'
+    });
 
     const { getAIProvider } = await import('../llm-gateway');
     const provider = await getAIProvider('tenant-1');
@@ -164,8 +180,13 @@ describe('llm-gateway', () => {
     await provider.chat({ tenantId: 'tenant-1', user: 'raw-user-input', route: 'sales' });
 
     expect(mockGetActivePrompt).toHaveBeenCalledWith('cockpit:sales');
-    expect(mockDetectInjection).toHaveBeenCalledWith('raw-user-input');
-    expect(mockSanitizeInput).toHaveBeenCalledWith('raw-user-input');
+    expect(mockAnalyze).toHaveBeenCalledWith('raw-user-input');
+    expect(mockEnforceInjectionPolicy).toHaveBeenCalledWith(
+      'raw-user-input',
+      { isInjection: true, riskLevel: 'low', flagType: 'ignore_instructions' },
+      { tenantId: 'tenant-1', route: 'sales' }
+    );
+    expect(mockSanitizeInput).toHaveBeenCalledWith('clean-user-input');
 
     // The inner provider should receive the modified payload
     expect(mockOpenAIProviderInstance.chat).toHaveBeenCalledWith(
