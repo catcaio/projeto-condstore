@@ -1,0 +1,236 @@
+[dotenv@17.3.1] injecting env (51) from .env.vercel.production -- tip: ÔÜÖ´©Å  override existing env vars with { override: true }
+
+--- Cenario A ---
+{"destinationCep":"13214525","quantity":1,"unitWeight":4.9,"dimensions":{"width":30,"height":30,"length":30}}
+{"timestamp":"2026-03-10T15:26:40.001Z","level":"INFO","message":"Calculating freight","context":{"destinationCep":"13214525","quantity":1,"totalWeight":4.9,"dimensionSource":"request_override","profileId":null}}
+{"timestamp":"2026-03-10T15:26:40.009Z","level":"INFO","message":"carrier_router: melhor_envio selected","context":{"reason":"Charged weight 4.9kg Ôëñ 15kg AND longest dimension 30cm Ôëñ 200cm","chargedWeight":4.9,"longestDim":30,"destination":"SP"}}
+{"timestamp":"2026-03-10T15:26:40.011Z","level":"INFO","message":"DB pool init: host=gateway01.us-east-1.prod.aws.tidbcloud.com, database=lojacond"}
+{"timestamp":"2026-03-10T15:26:41.310Z","level":"INFO","message":"quote_engine: using table-driven adapters","context":{"carriers":["BRASPRESS","MOVVI","MENGUE"],"destination":"13214525","routerStrategy":"melhor_envio"}}
+{"timestamp":"2026-03-10T15:26:41.730Z","level":"INFO","message":"HTTP POST melhorenvio/me/shipment/calculate 403 417ms"}
+{"timestamp":"2026-03-10T15:26:41.732Z","level":"ERROR","message":"Melhor Envio API call failed after retries","context":{"endpoint":"/me/shipment/calculate"},"error":{"name":"ProviderError","message":"Melhor Envio API error: 403","stack":"ProviderError: Melhor Envio API error: 403\n    at MelhorEnvioProvider.makeRequest (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:176:17)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async MelhorEnvioProvider.calculateShipping (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:64:24)\n    at async MelhorEnvioAdapter.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:20:26)\n    at async execQueue (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:50:36)\n    at async Promise.all (index 0)\n    at async Function.run (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:61:9)\n    at async UnifiedQuoteEngine.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:155:24)\n    at async FreightService.calculateFreight (C:\\repos\\projeto-condstore\\src\\modules\\freight\\freight.service.ts:90:21)\n    at async runTests (C:\\repos\\projeto-condstore\\test-app-service.ts:53:28)","code":"MELHORENVIO_API_ERROR"}}
+{"timestamp":"2026-03-10T15:26:41.737Z","level":"ERROR","message":"Failed to calculate shipping via Melhor Envio","context":{"destinationCep":"13214525","totalWeight":4.9},"error":{"name":"ProviderError","message":"Melhor Envio API error: 403","stack":"ProviderError: Melhor Envio API error: 403\n    at MelhorEnvioProvider.makeRequest (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:176:17)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async MelhorEnvioProvider.calculateShipping (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:64:24)\n    at async MelhorEnvioAdapter.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:20:26)\n    at async execQueue (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:50:36)\n    at async Promise.all (index 0)\n    at async Function.run (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:61:9)\n    at async UnifiedQuoteEngine.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:155:24)\n    at async FreightService.calculateFreight (C:\\repos\\projeto-condstore\\src\\modules\\freight\\freight.service.ts:90:21)\n    at async runTests (C:\\repos\\projeto-condstore\\test-app-service.ts:53:28)","code":"MELHORENVIO_API_ERROR"}}
+{"timestamp":"2026-03-10T15:26:41.747Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"BRASPRESS","zone":"SE_SP","realWeight":4.9,"cubedWeight":8.1,"chargedWeight":8.1,"band":20,"base":81.25,"total":189.74,"days":6}}
+{"timestamp":"2026-03-10T15:26:42.372Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"MOVVI","zone":"SP_INT","realWeight":4.9,"cubedWeight":8.1,"chargedWeight":8.1,"band":10,"base":51.3,"total":94.3,"days":6}}
+{"timestamp":"2026-03-10T15:26:42.905Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"MENGUE","zone":"SP_INT","realWeight":4.9,"cubedWeight":8.1,"chargedWeight":8.1,"band":10,"base":58.8,"total":133.8,"days":6}}
+{"timestamp":"2026-03-10T15:26:42.907Z","level":"INFO","message":"Freight calculation completed","context":{"optionsCount":3,"totalWeight":4.9}}
+Result (2908ms): {
+  "success": true,
+  "totalWeight": 4.9,
+  "options": [
+    {
+      "id": "tabela_movvi-movvi_standard",
+      "carrier": "tabela_movvi",
+      "service": "MOVVI ÔÇö Standard",
+      "price": 94.3,
+      "deliveryTime": 6,
+      "source": "tabela_movvi"
+    },
+    {
+      "id": "tabela_mengue-mengue_standard",
+      "carrier": "tabela_mengue",
+      "service": "MENGUE ÔÇö Standard",
+      "price": 133.8,
+      "deliveryTime": 6,
+      "source": "tabela_mengue"
+    },
+    {
+      "id": "tabela_braspress-braspress_standard",
+      "carrier": "tabela_braspress",
+      "service": "BRASPRESS ÔÇö Standard",
+      "price": 189.74,
+      "deliveryTime": 6,
+      "source": "tabela_braspress"
+    }
+  ]
+}
+
+--- Cenario B ---
+{"destinationCep":"01001000","quantity":1,"unitWeight":5,"dimensions":{"width":30,"height":30,"length":30}}
+{"timestamp":"2026-03-10T15:26:42.909Z","level":"INFO","message":"Calculating freight","context":{"destinationCep":"01001000","quantity":1,"totalWeight":5,"dimensionSource":"request_override","profileId":null}}
+{"timestamp":"2026-03-10T15:26:42.909Z","level":"INFO","message":"carrier_router: melhor_envio selected","context":{"reason":"Charged weight 5kg Ôëñ 15kg AND longest dimension 30cm Ôëñ 200cm","chargedWeight":5,"longestDim":30,"destination":"SP"}}
+{"timestamp":"2026-03-10T15:26:43.434Z","level":"INFO","message":"quote_engine: using table-driven adapters","context":{"carriers":["BRASPRESS","MOVVI","MENGUE"],"destination":"01001000","routerStrategy":"melhor_envio"}}
+{"timestamp":"2026-03-10T15:26:43.567Z","level":"INFO","message":"HTTP POST melhorenvio/me/shipment/calculate 403 132ms"}
+{"timestamp":"2026-03-10T15:26:43.568Z","level":"ERROR","message":"Melhor Envio API call failed after retries","context":{"endpoint":"/me/shipment/calculate"},"error":{"name":"ProviderError","message":"Melhor Envio API error: 403","stack":"ProviderError: Melhor Envio API error: 403\n    at MelhorEnvioProvider.makeRequest (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:176:17)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async MelhorEnvioProvider.calculateShipping (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:64:24)\n    at async MelhorEnvioAdapter.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:20:26)\n    at async execQueue (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:50:36)\n    at async Promise.all (index 0)\n    at async Function.run (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:61:9)\n    at async UnifiedQuoteEngine.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:155:24)\n    at async FreightService.calculateFreight (C:\\repos\\projeto-condstore\\src\\modules\\freight\\freight.service.ts:90:21)\n    at async runTests (C:\\repos\\projeto-condstore\\test-app-service.ts:53:28)","code":"MELHORENVIO_API_ERROR"}}
+{"timestamp":"2026-03-10T15:26:43.569Z","level":"ERROR","message":"Failed to calculate shipping via Melhor Envio","context":{"destinationCep":"01001000","totalWeight":5},"error":{"name":"ProviderError","message":"Melhor Envio API error: 403","stack":"ProviderError: Melhor Envio API error: 403\n    at MelhorEnvioProvider.makeRequest (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:176:17)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async MelhorEnvioProvider.calculateShipping (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:64:24)\n    at async MelhorEnvioAdapter.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:20:26)\n    at async execQueue (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:50:36)\n    at async Promise.all (index 0)\n    at async Function.run (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:61:9)\n    at async UnifiedQuoteEngine.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:155:24)\n    at async FreightService.calculateFreight (C:\\repos\\projeto-condstore\\src\\modules\\freight\\freight.service.ts:90:21)\n    at async runTests (C:\\repos\\projeto-condstore\\test-app-service.ts:53:28)","code":"MELHORENVIO_API_ERROR"}}
+{"timestamp":"2026-03-10T15:26:43.839Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"BRASPRESS","zone":"SE_SP","realWeight":5,"cubedWeight":8.1,"chargedWeight":8.1,"band":20,"base":81.25,"total":189.74,"days":6}}
+{"timestamp":"2026-03-10T15:26:43.841Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"MOVVI","zone":"SP_CAP","realWeight":5,"cubedWeight":8.1,"chargedWeight":8.1,"band":10,"base":47.5,"total":90.5,"days":5}}
+{"timestamp":"2026-03-10T15:26:43.972Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"MENGUE","zone":"SP_CAP","realWeight":5,"cubedWeight":8.1,"chargedWeight":8.1,"band":10,"base":54.6,"total":129.6,"days":5}}
+{"timestamp":"2026-03-10T15:26:43.973Z","level":"INFO","message":"Freight calculation completed","context":{"optionsCount":3,"totalWeight":5}}
+Result (1065ms): {
+  "success": true,
+  "totalWeight": 5,
+  "options": [
+    {
+      "id": "tabela_movvi-movvi_standard",
+      "carrier": "tabela_movvi",
+      "service": "MOVVI ÔÇö Standard",
+      "price": 90.5,
+      "deliveryTime": 5,
+      "source": "tabela_movvi"
+    },
+    {
+      "id": "tabela_mengue-mengue_standard",
+      "carrier": "tabela_mengue",
+      "service": "MENGUE ÔÇö Standard",
+      "price": 129.6,
+      "deliveryTime": 5,
+      "source": "tabela_mengue"
+    },
+    {
+      "id": "tabela_braspress-braspress_standard",
+      "carrier": "tabela_braspress",
+      "service": "BRASPRESS ÔÇö Standard",
+      "price": 189.74,
+      "deliveryTime": 6,
+      "source": "tabela_braspress"
+    }
+  ]
+}
+
+--- Cenario C ---
+{"destinationCep":"89207407","quantity":1,"unitWeight":12,"dimensions":{"width":60,"height":1,"length":55}}
+{"timestamp":"2026-03-10T15:26:43.974Z","level":"INFO","message":"Calculating freight","context":{"destinationCep":"89207407","quantity":1,"totalWeight":12,"dimensionSource":"request_override","profileId":null}}
+{"timestamp":"2026-03-10T15:26:43.974Z","level":"INFO","message":"carrier_router: melhor_envio selected","context":{"reason":"Charged weight 12kg Ôëñ 15kg AND longest dimension 60cm Ôëñ 200cm","chargedWeight":12,"longestDim":60,"destination":"SC"}}
+{"timestamp":"2026-03-10T15:26:44.525Z","level":"INFO","message":"quote_engine: using table-driven adapters","context":{"carriers":["BRASPRESS","MOVVI","MENGUE"],"destination":"89207407","routerStrategy":"melhor_envio"}}
+{"timestamp":"2026-03-10T15:26:44.655Z","level":"INFO","message":"HTTP POST melhorenvio/me/shipment/calculate 403 130ms"}
+{"timestamp":"2026-03-10T15:26:44.656Z","level":"ERROR","message":"Melhor Envio API call failed after retries","context":{"endpoint":"/me/shipment/calculate"},"error":{"name":"ProviderError","message":"Melhor Envio API error: 403","stack":"ProviderError: Melhor Envio API error: 403\n    at MelhorEnvioProvider.makeRequest (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:176:17)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async MelhorEnvioProvider.calculateShipping (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:64:24)\n    at async MelhorEnvioAdapter.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:20:26)\n    at async execQueue (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:50:36)\n    at async Promise.all (index 0)\n    at async Function.run (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:61:9)\n    at async UnifiedQuoteEngine.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:155:24)\n    at async FreightService.calculateFreight (C:\\repos\\projeto-condstore\\src\\modules\\freight\\freight.service.ts:90:21)\n    at async runTests (C:\\repos\\projeto-condstore\\test-app-service.ts:53:28)","code":"MELHORENVIO_API_ERROR"}}
+{"timestamp":"2026-03-10T15:26:44.657Z","level":"ERROR","message":"Failed to calculate shipping via Melhor Envio","context":{"destinationCep":"89207407","totalWeight":12},"error":{"name":"ProviderError","message":"Melhor Envio API error: 403","stack":"ProviderError: Melhor Envio API error: 403\n    at MelhorEnvioProvider.makeRequest (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:176:17)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async MelhorEnvioProvider.calculateShipping (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:64:24)\n    at async MelhorEnvioAdapter.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:20:26)\n    at async execQueue (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:50:36)\n    at async Promise.all (index 0)\n    at async Function.run (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:61:9)\n    at async UnifiedQuoteEngine.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:155:24)\n    at async FreightService.calculateFreight (C:\\repos\\projeto-condstore\\src\\modules\\freight\\freight.service.ts:90:21)\n    at async runTests (C:\\repos\\projeto-condstore\\test-app-service.ts:53:28)","code":"MELHORENVIO_API_ERROR"}}
+{"timestamp":"2026-03-10T15:26:44.924Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"MOVVI","zone":"SC","realWeight":12,"cubedWeight":0.99,"chargedWeight":12,"band":20,"base":54.6,"total":97.6,"days":4}}
+{"timestamp":"2026-03-10T15:26:44.925Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"BRASPRESS","zone":"SUL_SC","realWeight":12,"cubedWeight":0.99,"chargedWeight":12,"band":20,"base":68.25,"total":176.66,"days":5}}
+{"timestamp":"2026-03-10T15:26:45.066Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"MENGUE","zone":"SC","realWeight":12,"cubedWeight":0.99,"chargedWeight":12,"band":20,"base":60.48,"total":135.48,"days":4}}
+{"timestamp":"2026-03-10T15:26:45.067Z","level":"INFO","message":"Freight calculation completed","context":{"optionsCount":3,"totalWeight":12}}
+Result (1094ms): {
+  "success": true,
+  "totalWeight": 12,
+  "options": [
+    {
+      "id": "tabela_movvi-movvi_standard",
+      "carrier": "tabela_movvi",
+      "service": "MOVVI ÔÇö Standard",
+      "price": 97.6,
+      "deliveryTime": 4,
+      "source": "tabela_movvi"
+    },
+    {
+      "id": "tabela_mengue-mengue_standard",
+      "carrier": "tabela_mengue",
+      "service": "MENGUE ÔÇö Standard",
+      "price": 135.48,
+      "deliveryTime": 4,
+      "source": "tabela_mengue"
+    },
+    {
+      "id": "tabela_braspress-braspress_standard",
+      "carrier": "tabela_braspress",
+      "service": "BRASPRESS ÔÇö Standard",
+      "price": 176.66,
+      "deliveryTime": 5,
+      "source": "tabela_braspress"
+    }
+  ]
+}
+
+--- Cenario D ---
+{"destinationCep":"68030991","quantity":1,"unitWeight":50,"dimensions":{"width":80,"height":60,"length":40}}
+{"timestamp":"2026-03-10T15:26:45.067Z","level":"INFO","message":"Calculating freight","context":{"destinationCep":"68030991","quantity":1,"totalWeight":50,"dimensionSource":"request_override","profileId":null}}
+{"timestamp":"2026-03-10T15:26:45.068Z","level":"INFO","message":"carrier_router: braspress_api selected","context":{"reason":"Heavy package (50kg) to PA ÔÇö Braspress API required","chargedWeight":50,"destination":"PA"}}
+{"timestamp":"2026-03-10T15:26:45.592Z","level":"INFO","message":"quote_engine: using table-driven adapters","context":{"carriers":["BRASPRESS"],"destination":"68030991","routerStrategy":"braspress_api"}}
+{"timestamp":"2026-03-10T15:26:45.986Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"BRASPRESS","zone":"N_PA","realWeight":50,"cubedWeight":57.6,"chargedWeight":57.599999999999994,"band":100,"base":441,"total":551.65,"days":14}}
+{"timestamp":"2026-03-10T15:26:45.986Z","level":"INFO","message":"Freight calculation completed","context":{"optionsCount":1,"totalWeight":50}}
+Result (920ms): {
+  "success": true,
+  "totalWeight": 50,
+  "options": [
+    {
+      "id": "tabela_braspress-braspress_standard",
+      "carrier": "tabela_braspress",
+      "service": "BRASPRESS ÔÇö Standard",
+      "price": 551.65,
+      "deliveryTime": 14,
+      "source": "tabela_braspress"
+    }
+  ]
+}
+
+--- Cenario Extra 1 (Peso baixo) ---
+{"destinationCep":"01001000","quantity":1,"unitWeight":0.1,"dimensions":{"width":15,"height":5,"length":20}}
+{"timestamp":"2026-03-10T15:26:45.987Z","level":"INFO","message":"Calculating freight","context":{"destinationCep":"01001000","quantity":1,"totalWeight":0.1,"dimensionSource":"request_override","profileId":null}}
+{"timestamp":"2026-03-10T15:26:45.987Z","level":"INFO","message":"carrier_router: melhor_envio selected","context":{"reason":"Charged weight 0.1kg Ôëñ 15kg AND longest dimension 20cm Ôëñ 200cm","chargedWeight":0.1,"longestDim":20,"destination":"SP"}}
+{"timestamp":"2026-03-10T15:26:46.515Z","level":"INFO","message":"quote_engine: using table-driven adapters","context":{"carriers":["BRASPRESS","MOVVI","MENGUE"],"destination":"01001000","routerStrategy":"melhor_envio"}}
+{"timestamp":"2026-03-10T15:26:46.644Z","level":"INFO","message":"HTTP POST melhorenvio/me/shipment/calculate 403 129ms"}
+{"timestamp":"2026-03-10T15:26:46.645Z","level":"ERROR","message":"Melhor Envio API call failed after retries","context":{"endpoint":"/me/shipment/calculate"},"error":{"name":"ProviderError","message":"Melhor Envio API error: 403","stack":"ProviderError: Melhor Envio API error: 403\n    at MelhorEnvioProvider.makeRequest (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:176:17)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async MelhorEnvioProvider.calculateShipping (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:64:24)\n    at async MelhorEnvioAdapter.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:20:26)\n    at async execQueue (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:50:36)\n    at async Promise.all (index 0)\n    at async Function.run (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:61:9)\n    at async UnifiedQuoteEngine.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:155:24)\n    at async FreightService.calculateFreight (C:\\repos\\projeto-condstore\\src\\modules\\freight\\freight.service.ts:90:21)\n    at async runTests (C:\\repos\\projeto-condstore\\test-app-service.ts:53:28)","code":"MELHORENVIO_API_ERROR"}}
+{"timestamp":"2026-03-10T15:26:46.646Z","level":"ERROR","message":"Failed to calculate shipping via Melhor Envio","context":{"destinationCep":"01001000","totalWeight":0.1},"error":{"name":"ProviderError","message":"Melhor Envio API error: 403","stack":"ProviderError: Melhor Envio API error: 403\n    at MelhorEnvioProvider.makeRequest (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:176:17)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async MelhorEnvioProvider.calculateShipping (C:\\repos\\projeto-condstore\\src\\providers\\melhorenvio.provider.ts:64:24)\n    at async MelhorEnvioAdapter.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:20:26)\n    at async execQueue (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:50:36)\n    at async Promise.all (index 0)\n    at async Function.run (C:\\repos\\projeto-condstore\\src\\modules\\shipping\\quote-engine\\ConcurrentQuoteEngine.ts:61:9)\n    at async UnifiedQuoteEngine.getQuotes (C:\\repos\\projeto-condstore\\src\\modules\\freight\\quote-engine.ts:155:24)\n    at async FreightService.calculateFreight (C:\\repos\\projeto-condstore\\src\\modules\\freight\\freight.service.ts:90:21)\n    at async runTests (C:\\repos\\projeto-condstore\\test-app-service.ts:53:28)","code":"MELHORENVIO_API_ERROR"}}
+{"timestamp":"2026-03-10T15:26:46.920Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"BRASPRESS","zone":"SE_SP","realWeight":0.1,"cubedWeight":0.45,"chargedWeight":0.44999999999999996,"band":20,"base":81.25,"total":189.74,"days":6}}
+{"timestamp":"2026-03-10T15:26:46.922Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"MOVVI","zone":"SP_CAP","realWeight":0.1,"cubedWeight":0.45,"chargedWeight":0.44999999999999996,"band":10,"base":47.5,"total":90.5,"days":5}}
+{"timestamp":"2026-03-10T15:26:47.054Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"MENGUE","zone":"SP_CAP","realWeight":0.1,"cubedWeight":0.45,"chargedWeight":0.44999999999999996,"band":10,"base":54.6,"total":129.6,"days":5}}
+{"timestamp":"2026-03-10T15:26:47.055Z","level":"INFO","message":"Freight calculation completed","context":{"optionsCount":3,"totalWeight":0.1}}
+Result (1068ms): {
+  "success": true,
+  "totalWeight": 0.1,
+  "options": [
+    {
+      "id": "tabela_movvi-movvi_standard",
+      "carrier": "tabela_movvi",
+      "service": "MOVVI ÔÇö Standard",
+      "price": 90.5,
+      "deliveryTime": 5,
+      "source": "tabela_movvi"
+    },
+    {
+      "id": "tabela_mengue-mengue_standard",
+      "carrier": "tabela_mengue",
+      "service": "MENGUE ÔÇö Standard",
+      "price": 129.6,
+      "deliveryTime": 5,
+      "source": "tabela_mengue"
+    },
+    {
+      "id": "tabela_braspress-braspress_standard",
+      "carrier": "tabela_braspress",
+      "service": "BRASPRESS ÔÇö Standard",
+      "price": 189.74,
+      "deliveryTime": 6,
+      "source": "tabela_braspress"
+    }
+  ]
+}
+
+--- Cenario Extra 2 (Peso alto) ---
+{"destinationCep":"01001000","quantity":1,"unitWeight":100,"dimensions":{"width":100,"height":100,"length":100}}
+{"timestamp":"2026-03-10T15:26:47.056Z","level":"INFO","message":"Calculating freight","context":{"destinationCep":"01001000","quantity":1,"totalWeight":100,"dimensionSource":"request_override","profileId":null}}
+{"timestamp":"2026-03-10T15:26:47.056Z","level":"INFO","message":"carrier_router: table_carriers selected","context":{"reason":"Heavy package (100kg) to SP ÔÇö table carriers preferred","chargedWeight":100,"destination":"SP"}}
+{"timestamp":"2026-03-10T15:26:47.580Z","level":"INFO","message":"quote_engine: using table-driven adapters","context":{"carriers":["BRASPRESS","MOVVI","MENGUE"],"destination":"01001000","routerStrategy":"table_carriers"}}
+{"timestamp":"2026-03-10T15:26:47.988Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"BRASPRESS","zone":"SE_SP","realWeight":100,"cubedWeight":300,"chargedWeight":300,"band":300,"base":675,"total":797.05,"days":6}}
+{"timestamp":"2026-03-10T15:26:47.989Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"MENGUE","zone":"SP_CAP","realWeight":100,"cubedWeight":300,"chargedWeight":300,"band":300,"base":546,"total":629,"days":5}}
+{"timestamp":"2026-03-10T15:26:47.991Z","level":"INFO","message":"table_driven: freight calculated","context":{"carrier":"MOVVI","zone":"SP_CAP","realWeight":100,"cubedWeight":300,"chargedWeight":300,"band":300,"base":512.5,"total":562.5,"days":5}}
+{"timestamp":"2026-03-10T15:26:47.991Z","level":"INFO","message":"Freight calculation completed","context":{"optionsCount":3,"totalWeight":100}}
+Result (936ms): {
+  "success": true,
+  "totalWeight": 100,
+  "options": [
+    {
+      "id": "tabela_movvi-movvi_standard",
+      "carrier": "tabela_movvi",
+      "service": "MOVVI ÔÇö Standard",
+      "price": 562.5,
+      "deliveryTime": 5,
+      "source": "tabela_movvi"
+    },
+    {
+      "id": "tabela_mengue-mengue_standard",
+      "carrier": "tabela_mengue",
+      "service": "MENGUE ÔÇö Standard",
+      "price": 629,
+      "deliveryTime": 5,
+      "source": "tabela_mengue"
+    },
+    {
+      "id": "tabela_braspress-braspress_standard",
+      "carrier": "tabela_braspress",
+      "service": "BRASPRESS ÔÇö Standard",
+      "price": 797.05,
+      "deliveryTime": 6,
+      "source": "tabela_braspress"
+    }
+  ]
+}

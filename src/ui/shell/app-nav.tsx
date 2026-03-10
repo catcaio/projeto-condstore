@@ -57,6 +57,7 @@ const NAV_GROUPS: NavGroup[] = [
         items: [
             { label: 'Simulador', href: '/logistica/simulador', icon: Truck },
             { label: 'Envios', href: '/logistica/envios', icon: Package },
+            { label: 'Tabelas de Frete', href: '/logistica/tabelas-frete', icon: FileText },
             { label: 'Rastreamento', href: '/logistica/rastreamento', icon: Navigation },
             { label: 'Insights', href: '/logistica/insights', icon: BarChart3 },
         ],

@@ -1,0 +1,517 @@
+[dotenv@17.3.1] injecting env (51) from .env.vercel.production -- tip: ÔÜÖ´©Å  enable debug logging with { debug: true }
+
+--- Cenario A ---
+{"originCep":"88131640","destinationCep":"13214-525","weight":4.9,"width":30,"height":30,"length":30,"insuranceValue":150}
+{"timestamp":"2026-03-10T15:23:52.363Z","level":"INFO","message":"melhor_envio_adapter: quotes received","context":{"count":13,"destination":"13214-525","weight":4.9}}
+Result (578ms): [
+  {
+    "carrier": "Loggi",
+    "service": "Loggi Ponto",
+    "price": 28.34,
+    "deliveryTime": 6,
+    "source": "melhor_envio",
+    "serviceId": 34
+  },
+  {
+    "carrier": "Azul Cargo Express",
+    "service": "e-commerce",
+    "price": 29.61,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 16
+  },
+  {
+    "carrier": "JeT",
+    "service": "Standard",
+    "price": 31.55,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 33
+  },
+  {
+    "carrier": "Buslog",
+    "service": "Rodovi├írio",
+    "price": 32.21,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 22
+  },
+  {
+    "carrier": "Loggi",
+    "service": "Express",
+    "price": 34.74,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 31
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Com",
+    "price": 38.93,
+    "deliveryTime": 5,
+    "source": "melhor_envio",
+    "serviceId": 4
+  },
+  {
+    "carrier": "Correios",
+    "service": "PAC",
+    "price": 41.91,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 1
+  },
+  {
+    "carrier": "LATAM Cargo",
+    "service": "├®F├ícil",
+    "price": 43.54,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 12
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Package",
+    "price": 47.67,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 3
+  },
+  {
+    "carrier": "Azul Cargo Express",
+    "service": "Expresso",
+    "price": 51.66,
+    "deliveryTime": 3,
+    "source": "melhor_envio",
+    "serviceId": 15
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Package Centralizado",
+    "price": 51.97,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 27
+  },
+  {
+    "carrier": "Correios",
+    "service": "SEDEX",
+    "price": 69.96,
+    "deliveryTime": 3,
+    "source": "melhor_envio",
+    "serviceId": 2
+  },
+  {
+    "carrier": "Loggi",
+    "service": "Coleta",
+    "price": 100.6,
+    "deliveryTime": 6,
+    "source": "melhor_envio",
+    "serviceId": 32
+  }
+]
+
+--- Cenario B ---
+{"originCep":"88131640","destinationCep":"01001-000","weight":5,"width":30,"height":30,"length":30,"insuranceValue":150}
+{"timestamp":"2026-03-10T15:23:52.576Z","level":"INFO","message":"melhor_envio_adapter: quotes received","context":{"count":13,"destination":"01001-000","weight":5}}
+Result (211ms): [
+  {
+    "carrier": "JeT",
+    "service": "Standard",
+    "price": 24.33,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 33
+  },
+  {
+    "carrier": "Loggi",
+    "service": "Loggi Ponto",
+    "price": 27.47,
+    "deliveryTime": 6,
+    "source": "melhor_envio",
+    "serviceId": 34
+  },
+  {
+    "carrier": "Azul Cargo Express",
+    "service": "e-commerce",
+    "price": 29.62,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 16
+  },
+  {
+    "carrier": "Buslog",
+    "service": "Rodovi├írio",
+    "price": 31.06,
+    "deliveryTime": 3,
+    "source": "melhor_envio",
+    "serviceId": 22
+  },
+  {
+    "carrier": "Loggi",
+    "service": "Express",
+    "price": 35.65,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 31
+  },
+  {
+    "carrier": "LATAM Cargo",
+    "service": "├®F├ícil",
+    "price": 37.29,
+    "deliveryTime": 3,
+    "source": "melhor_envio",
+    "serviceId": 12
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Com",
+    "price": 38.13,
+    "deliveryTime": 5,
+    "source": "melhor_envio",
+    "serviceId": 4
+  },
+  {
+    "carrier": "Correios",
+    "service": "PAC",
+    "price": 41.91,
+    "deliveryTime": 6,
+    "source": "melhor_envio",
+    "serviceId": 1
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Package",
+    "price": 46.3,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 3
+  },
+  {
+    "carrier": "Azul Cargo Express",
+    "service": "Expresso",
+    "price": 51.67,
+    "deliveryTime": 3,
+    "source": "melhor_envio",
+    "serviceId": 15
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Package Centralizado",
+    "price": 51.76,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 27
+  },
+  {
+    "carrier": "Correios",
+    "service": "SEDEX",
+    "price": 69.96,
+    "deliveryTime": 2,
+    "source": "melhor_envio",
+    "serviceId": 2
+  },
+  {
+    "carrier": "Loggi",
+    "service": "Coleta",
+    "price": 99.67,
+    "deliveryTime": 6,
+    "source": "melhor_envio",
+    "serviceId": 32
+  }
+]
+
+--- Cenario C ---
+{"originCep":"88131640","destinationCep":"89207-407","weight":12,"width":60,"height":1,"length":55,"insuranceValue":0}
+{"timestamp":"2026-03-10T15:23:52.853Z","level":"INFO","message":"melhor_envio_adapter: quotes received","context":{"count":13,"destination":"89207-407","weight":12}}
+Result (278ms): [
+  {
+    "carrier": "Jadlog",
+    "service": ".Package",
+    "price": 31.28,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 3
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Com",
+    "price": 31.64,
+    "deliveryTime": 5,
+    "source": "melhor_envio",
+    "serviceId": 4
+  },
+  {
+    "carrier": "Azul Cargo Express",
+    "service": "e-commerce",
+    "price": 45.29,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 16
+  },
+  {
+    "carrier": "Buslog",
+    "service": "Rodovi├írio",
+    "price": 45.54,
+    "deliveryTime": 2,
+    "source": "melhor_envio",
+    "serviceId": 22
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Package Centralizado",
+    "price": 50.16,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 27
+  },
+  {
+    "carrier": "Azul Cargo Express",
+    "service": "Expresso",
+    "price": 50.94,
+    "deliveryTime": 3,
+    "source": "melhor_envio",
+    "serviceId": 15
+  },
+  {
+    "carrier": "Correios",
+    "service": "PAC",
+    "price": 51.92,
+    "deliveryTime": 6,
+    "source": "melhor_envio",
+    "serviceId": 1
+  },
+  {
+    "carrier": "Correios",
+    "service": "SEDEX",
+    "price": 68.38,
+    "deliveryTime": 2,
+    "source": "melhor_envio",
+    "serviceId": 2
+  },
+  {
+    "carrier": "Loggi",
+    "service": "Express",
+    "price": 68.68,
+    "deliveryTime": 3,
+    "source": "melhor_envio",
+    "serviceId": 31
+  },
+  {
+    "carrier": "LATAM Cargo",
+    "service": "├®F├ícil",
+    "price": 71.19,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 12
+  },
+  {
+    "carrier": "Loggi",
+    "service": "Loggi Ponto",
+    "price": 133.7,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 34
+  },
+  {
+    "carrier": "JeT",
+    "service": "Standard",
+    "price": 139.59,
+    "deliveryTime": 5,
+    "source": "melhor_envio",
+    "serviceId": 33
+  },
+  {
+    "carrier": "Loggi",
+    "service": "Coleta",
+    "price": 179.93,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 32
+  }
+]
+
+--- Cenario D ---
+{"originCep":"88131640","destinationCep":"68030-991","weight":50,"width":80,"height":60,"length":40,"insuranceValue":1500}
+{"timestamp":"2026-03-10T15:23:53.063Z","level":"INFO","message":"melhor_envio_adapter: quotes received","context":{"count":5,"destination":"68030-991","weight":50}}
+Result (210ms): [
+  {
+    "carrier": "Jadlog",
+    "service": ".Package Centralizado",
+    "price": 770.37,
+    "deliveryTime": 17,
+    "source": "melhor_envio",
+    "serviceId": 27
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Package",
+    "price": 864.79,
+    "deliveryTime": 17,
+    "source": "melhor_envio",
+    "serviceId": 3
+  },
+  {
+    "carrier": "Azul Cargo Express",
+    "service": "Expresso",
+    "price": 1791.73,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 15
+  },
+  {
+    "carrier": "LATAM Cargo",
+    "service": "├®F├ícil",
+    "price": 1842.99,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 12
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Com",
+    "price": 1850.32,
+    "deliveryTime": 15,
+    "source": "melhor_envio",
+    "serviceId": 4
+  }
+]
+
+--- Cenario Extra 1 (Peso baixo) ---
+{"originCep":"88131640","destinationCep":"01001-000","weight":0.1,"width":15,"height":5,"length":20,"insuranceValue":50}
+{"timestamp":"2026-03-10T15:23:53.294Z","level":"INFO","message":"melhor_envio_adapter: quotes received","context":{"count":13,"destination":"01001-000","weight":0.1}}
+Result (230ms): [
+  {
+    "carrier": "Loggi",
+    "service": "Loggi Ponto",
+    "price": 14.51,
+    "deliveryTime": 6,
+    "source": "melhor_envio",
+    "serviceId": 34
+  },
+  {
+    "carrier": "JeT",
+    "service": "Standard",
+    "price": 14.88,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 33
+  },
+  {
+    "carrier": "Azul Cargo Express",
+    "service": "e-commerce",
+    "price": 17.69,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 16
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Com",
+    "price": 18.14,
+    "deliveryTime": 5,
+    "source": "melhor_envio",
+    "serviceId": 4
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Package Centralizado",
+    "price": 18.36,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 27
+  },
+  {
+    "carrier": "LATAM Cargo",
+    "service": "├®F├ícil",
+    "price": 21.07,
+    "deliveryTime": 3,
+    "source": "melhor_envio",
+    "serviceId": 12
+  },
+  {
+    "carrier": "Loggi",
+    "service": "Express",
+    "price": 21.62,
+    "deliveryTime": 4,
+    "source": "melhor_envio",
+    "serviceId": 31
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Package",
+    "price": 22.33,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 3
+  },
+  {
+    "carrier": "Buslog",
+    "service": "Rodovi├írio",
+    "price": 23.21,
+    "deliveryTime": 3,
+    "source": "melhor_envio",
+    "serviceId": 22
+  },
+  {
+    "carrier": "Correios",
+    "service": "PAC",
+    "price": 25.4,
+    "deliveryTime": 6,
+    "source": "melhor_envio",
+    "serviceId": 1
+  },
+  {
+    "carrier": "Azul Cargo Express",
+    "service": "Expresso",
+    "price": 29.22,
+    "deliveryTime": 3,
+    "source": "melhor_envio",
+    "serviceId": 15
+  },
+  {
+    "carrier": "Correios",
+    "service": "SEDEX",
+    "price": 35.73,
+    "deliveryTime": 2,
+    "source": "melhor_envio",
+    "serviceId": 2
+  },
+  {
+    "carrier": "Loggi",
+    "service": "Coleta",
+    "price": 45.51,
+    "deliveryTime": 6,
+    "source": "melhor_envio",
+    "serviceId": 32
+  }
+]
+
+--- Cenario Extra 2 (Peso alto) ---
+{"originCep":"88131640","destinationCep":"01001-000","weight":100,"width":100,"height":100,"length":100,"insuranceValue":3000}
+{"timestamp":"2026-03-10T15:23:53.500Z","level":"INFO","message":"melhor_envio_adapter: quotes received","context":{"count":3,"destination":"01001-000","weight":100}}
+Result (206ms): [
+  {
+    "carrier": "Jadlog",
+    "service": ".Com",
+    "price": 1067.58,
+    "deliveryTime": 5,
+    "source": "melhor_envio",
+    "serviceId": 4
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Package Centralizado",
+    "price": 1232.37,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 27
+  },
+  {
+    "carrier": "Jadlog",
+    "service": ".Package",
+    "price": 1467.56,
+    "deliveryTime": 7,
+    "source": "melhor_envio",
+    "serviceId": 3
+  }
+]
