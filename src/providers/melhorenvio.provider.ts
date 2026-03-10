@@ -162,6 +162,7 @@ class MelhorEnvioProvider {
             Authorization: `Bearer ${melhorEnvioConfig.token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
+            'User-Agent': 'CondStore/1.0',
           },
           body: body ? JSON.stringify(body) : undefined,
           signal: AbortSignal.timeout(melhorEnvioConfig.timeout),
