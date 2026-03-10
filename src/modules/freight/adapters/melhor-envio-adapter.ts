@@ -31,7 +31,9 @@ export interface MelhorEnvioQuote {
 
 // ─── API call ───────────────────────────────────────────────────────────────
 
-const ME_API_URL = process.env.MELHOR_ENVIO_API_URL || 'https://melhorenvio.com.br/api/v2/me/shipment/calculate';
+const ME_API_URL = process.env.MELHOR_ENVIO_API_URL
+    ? `${process.env.MELHOR_ENVIO_API_URL}/me/shipment/calculate`
+    : 'https://melhorenvio.com.br/api/v2/me/shipment/calculate';
 
 export async function getQuotesFromMelhorEnvio(request: MelhorEnvioQuoteRequest): Promise<MelhorEnvioQuote[]> {
     const token = process.env.MELHOR_ENVIO_TOKEN;
