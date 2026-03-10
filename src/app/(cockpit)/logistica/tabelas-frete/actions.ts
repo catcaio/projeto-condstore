@@ -34,7 +34,7 @@ export async function updateCarrierPolicy(carrierName: string, data: z.infer<typ
         ));
 
     revalidatePath('/logistica/tabelas-frete');
-    revalidatePath(`/logistica/tabelas-frete/${carrierName.toLowerCase()}`);
+    revalidatePath(`/logistica/tabelas-frete/${carrierName.toLowerCase().replace(/\s+/g, '-')}`);
     return { success: true };
 }
 
@@ -69,7 +69,7 @@ export async function updateCarrierZone(carrierName: string, data: z.infer<typeo
             eq(carrierZones.carrierName, carrierName)
         ));
 
-    revalidatePath(`/logistica/tabelas-frete/${carrierName.toLowerCase()}`);
+    revalidatePath(`/logistica/tabelas-frete/${carrierName.toLowerCase().replace(/\s+/g, '-')}`);
     return { success: true };
 }
 
@@ -106,6 +106,6 @@ export async function updateCarrierRate(carrierName: string, data: z.infer<typeo
             eq(carrierRateRows.carrierName, carrierName)
         ));
 
-    revalidatePath(`/logistica/tabelas-frete/${carrierName.toLowerCase()}`);
+    revalidatePath(`/logistica/tabelas-frete/${carrierName.toLowerCase().replace(/\s+/g, '-')}`);
     return { success: true };
 }

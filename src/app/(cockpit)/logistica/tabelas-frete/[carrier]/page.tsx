@@ -8,26 +8,40 @@ import { PolicyEditor, ZonesEditor, RatesEditor } from '../editors';
 import Link from 'next/link';
 import { Button } from '@/ui/components/button';
 
-export async function generateMetadata({ params }: { params: { carrier: string } }) {
-    return { title: `Refinar ${params.carrier.toUpperCase()} — Logística` };
+/** Convert a URL slug back to find the matching carrier name.
+ *  e.g. "melhor-envio" matches "Melhor Envio", "MENGUE" matches "mengue" */
+function slugMatchesCarrier(slug: string, carrierName: string): boolean {
+    return carrierName.toLowerCase().replace(/\s+/g, '-') === slug.toLowerCase();
 }
 
-export default async function CarrierDetailsPage({ params }: { params: { carrier: string } }) {
+/** Convert carrier name to URL slug */
+function toSlug(carrierName: string): string {
+    return carrierName.toLowerCase().replace(/\s+/g, '-');
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ carrier: string }> }) {
+    const { carrier } = await params;
+    return { title: `Refinar ${carrier.toUpperCase()} — Logística` };
+}
+
+export default async function CarrierDetailsPage({ params }: { params: Promise<{ carrier: string }> }) {
+    const { carrier: slug } = await params;
     const session = await getServerSessionUser();
     if (!session) redirect('/login');
 
     const db = await getDb();
 
-    const carrierKey = params.carrier.toUpperCase();
+    // Fetch all policies for this tenant and match by slug (case-insensitive, space→dash)
+    const allPolicies = await db.select().from(carrierPolicies)
+        .where(eq(carrierPolicies.tenantId, session.tenantId));
 
-    const [policy] = await db.select().from(carrierPolicies).where(and(
-        eq(carrierPolicies.tenantId, session.tenantId),
-        eq(carrierPolicies.carrierName, carrierKey)
-    )).limit(1);
+    const policy = allPolicies.find(p => slugMatchesCarrier(slug, p.carrierName));
 
     if (!policy) {
         notFound();
     }
+
+    const carrierKey = policy.carrierName;
 
     const zones = await db.select().from(carrierZones).where(and(
         eq(carrierZones.tenantId, session.tenantId),

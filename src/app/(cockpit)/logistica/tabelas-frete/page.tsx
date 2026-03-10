@@ -56,7 +56,7 @@ export default async function TabelasFretePage() {
                                     <p>Fator Cubagem: {Number(policy.cubageFactor)}</p>
                                 </div>
 
-                                <Link href={`/logistica/tabelas-frete/${policy.carrierName.toLowerCase()}`} passHref>
+                                <Link href={`/logistica/tabelas-frete/${policy.carrierName.toLowerCase().replace(/\s+/g, '-')}`} passHref>
                                     <Button variant="secondary" className="w-full flex justify-center items-center gap-2">
                                         <Settings2 className="w-4 h-4" />
                                         Configurar Tabelas
