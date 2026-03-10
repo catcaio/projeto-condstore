@@ -16,7 +16,7 @@ The platform is explicitly decoupled into four distinct network and authorizatio
    - **Authentication:** `None` (or anonymous session drops).
 
 2. **Cockpit Layer**
-   - **Scope:** The unified administrative interface for internal operations and tenant administration (`/cockpit/**`).
+   - **Scope:** The unified administrative interface for internal operations and tenant administration (`/dashboard` as canonical internal shell; legacy `/cockpit/**` remains as module namespace and `/cockpit` redirects to `/dashboard`).
    - **Characteristics:** Consolidates analytics, telemetry, routing audits, and knowledge management into a single, cohesive dashboard pattern.
    - **Authentication:** Strict `Cookie` enforcement tied to validated Next.js sessions.
 

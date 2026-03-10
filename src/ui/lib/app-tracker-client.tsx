@@ -12,7 +12,7 @@ export function ApplicationTracker() {
         trackAppEvent({ type: 'signup_created' });
 
         // Track cockpit_viewed if on /cockpit or /home
-        if (pathname === '/cockpit' || pathname === '/home') {
+        if (pathname === '/dashboard' || pathname === '/home') {
             trackAppEvent({ type: 'cockpit_viewed' });
         }
     }, [pathname]);

@@ -79,7 +79,7 @@ export function RouteGuard({ children, moduleId }: { children: React.ReactNode, 
 
                         <div className="flex justify-center">
                             <Link
-                                href="/cockpit"
+                                href="/dashboard"
                                 className="inline-flex h-9 items-center justify-center rounded-[var(--radius-button)] border border-[hsl(var(--ui-border))] bg-transparent px-4 text-sm font-medium text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-muted))] focus-visible:outline-none"
                             >
                                 Voltar ao Início
@@ -127,7 +127,7 @@ export function RouteGuard({ children, moduleId }: { children: React.ReactNode, 
                             </Link>
                         ) : (
                             <Link
-                                href="/cockpit"
+                                href="/dashboard"
                                 className="inline-flex h-9 items-center justify-center rounded-[var(--radius-button)] border border-[hsl(var(--ui-border))] bg-transparent px-4 text-sm font-medium text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-muted))] focus-visible:outline-none"
                             >
                                 Voltar ao Início
