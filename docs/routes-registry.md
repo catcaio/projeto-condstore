@@ -214,6 +214,8 @@
 | /logistica/envios | GET | internal | requireAdmin | frete | live | Painel de Envios — tabela enriched com tracking, status, delta financeiro |
 | /logistica/rastreamento | GET | internal | requireAdmin | frete | live | Rastreamento — timeline de status por envio (posted → delivered) |
 | /logistica/insights | GET | internal | requireAdmin | frete | live | Insights de Frete — CEPs, transportadoras, delta médio, top rotas |
+| /logistica/tabelas-frete | Tabelas de Frete | internal | requireAdmin | logistica | live | Cockpit para gerenciamento das tabelas de frete |
+| /logistica/tabelas-frete/[carrier] | Tabela de Frete por Transportadora | internal | requireAdmin | logistica | live | Edição de regras, zonas e tarifas da transportadora |
 | /dashboard | GET | internal | required | console | live | Dashboard operacional com quick links |
 | /vendas/cotacao | GET | internal | required | console | live | Nova Cotação (stub — em breve) |
 | /vendas/pedidos | GET | internal | required | console | live | Pedidos de Venda (stub — em breve) |
