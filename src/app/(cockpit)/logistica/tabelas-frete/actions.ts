@@ -3,7 +3,7 @@
 import { getDb } from '@/infra/db';
 import { carrierPolicies, carrierZones, carrierRateRows } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { requireTenantSession } from '@/infra/auth/session-helpers';
+import { getServerSessionUser } from '@/infra/auth/session';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -16,7 +16,9 @@ const policySchema = z.object({
 });
 
 export async function updateCarrierPolicy(carrierName: string, data: z.infer<typeof policySchema>) {
-    const session = await requireTenantSession();
+    const session = await getServerSessionUser();
+    if (!session) throw new Error("Unauthorized");
+
     const db = await getDb();
 
     const validated = policySchema.parse(data);
@@ -46,7 +48,9 @@ const zoneSchema = z.object({
 });
 
 export async function updateCarrierZone(carrierName: string, data: z.infer<typeof zoneSchema>) {
-    const session = await requireTenantSession();
+    const session = await getServerSessionUser();
+    if (!session) throw new Error("Unauthorized");
+
     const db = await getDb();
 
     const validated = zoneSchema.parse(data);
@@ -80,7 +84,9 @@ const rateSchema = z.object({
 });
 
 export async function updateCarrierRate(carrierName: string, data: z.infer<typeof rateSchema>) {
-    const session = await requireTenantSession();
+    const session = await getServerSessionUser();
+    if (!session) throw new Error("Unauthorized");
+
     const db = await getDb();
 
     const validated = rateSchema.parse(data);
@@ -92,8 +98,7 @@ export async function updateCarrierRate(carrierName: string, data: z.infer<typeo
             basePrice: validated.basePrice,
             deliveryTimeDays: validated.deliveryTimeDays,
             excessKgPrice: validated.excessKgPrice,
-            advPercent: validated.advPercent,
-            updatedAt: new Date()
+            advPercent: validated.advPercent
         })
         .where(and(
             eq(carrierRateRows.id, validated.id),

@@ -1,18 +1,21 @@
 import { getDb } from '@/infra/db';
 import { carrierPolicies, carrierZones, carrierRateRows } from '@/drizzle/schema';
 import { eq, and, asc } from 'drizzle-orm';
-import { requireTenantSession } from '@/infra/auth/session-helpers';
+import { getServerSessionUser } from '@/infra/auth/session';
 import { PageHeader } from '@/ui/components/PageHeader';
-import { Truck } from 'lucide-react';
-import { notFound } from 'next/navigation';
-import { PolicyEditor, ZonesEditor, RatesEditor } from './editors';
+import { notFound, redirect } from 'next/navigation';
+import { PolicyEditor, ZonesEditor, RatesEditor } from '../editors';
+import Link from 'next/link';
+import { Button } from '@/ui/components/button';
 
 export async function generateMetadata({ params }: { params: { carrier: string } }) {
     return { title: `Refinar ${params.carrier.toUpperCase()} — Logística` };
 }
 
 export default async function CarrierDetailsPage({ params }: { params: { carrier: string } }) {
-    const session = await requireTenantSession();
+    const session = await getServerSessionUser();
+    if (!session) redirect('/login');
+
     const db = await getDb();
 
     const carrierKey = params.carrier.toUpperCase();
@@ -40,9 +43,12 @@ export default async function CarrierDetailsPage({ params }: { params: { carrier
         <div className="flex flex-col gap-6 max-w-7xl mx-auto w-full">
             <PageHeader
                 title={`Parametrização: ${carrierKey}`}
-                description="Ajuste as regras de cálculo, faixas de CEP e tarifas aplicadas no Checkout para esta transportadora."
-                icon={Truck}
-                backHref="/logistica/tabelas-frete"
+                subtitle="Ajuste as regras de cálculo, faixas de CEP e tarifas aplicadas no Checkout para esta transportadora."
+                actions={
+                    <Link href="/logistica/tabelas-frete" passHref>
+                        <Button variant="secondary">Voltar</Button>
+                    </Link>
+                }
             />
 
             <div className="grid grid-cols-1 gap-6">

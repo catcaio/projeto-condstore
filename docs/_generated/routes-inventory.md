@@ -233,6 +233,8 @@
 | `/logistica/insights` | Page |
 | `/logistica/rastreamento` | Page |
 | `/logistica/simulador` | Page |
+| `/logistica/tabelas-frete` | Page |
+| `/logistica/tabelas-frete/[carrier]` | Page |
 | `/operacao/fila` | Page |
 | `/operacao/inbox` | Page |
 | `/painel-logistico` | Page |

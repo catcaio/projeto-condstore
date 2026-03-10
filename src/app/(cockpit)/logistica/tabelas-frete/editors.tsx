@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/ui/components/card';
+import { Card, CardContent, CardHeader } from '@/ui/components/card';
 import { Button } from '@/ui/components/button';
 import { TextField } from '@/ui/components/text-field';
 import { Save, CheckCircle2 } from 'lucide-react';
@@ -33,10 +33,10 @@ export function PolicyEditor({ carrierName, initialPolicy }: { carrierName: stri
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Regras Gerais e Origem</CardTitle>
-                <CardDescription>Defina as informações estáticas da tabela.</CardDescription>
-            </CardHeader>
+            <CardHeader
+                heading="Regras Gerais e Origem"
+                subheading="Defina as informações estáticas da tabela."
+            />
             <CardContent className="flex flex-col gap-4">
                 <div className="flex items-center gap-3 bg-[hsl(var(--ui-bg))] p-3 rounded-lg border border-[hsl(var(--ui-border))]">
                     <input
@@ -71,7 +71,7 @@ export function PolicyEditor({ carrierName, initialPolicy }: { carrierName: stri
                     <TextField
                         label="Prazo Base (Dias)"
                         type="number"
-                        value={formData.deliveryTimeDaysBase}
+                        value={formData.deliveryTimeDaysBase.toString()}
                         onChange={e => setFormData({ ...formData, deliveryTimeDaysBase: parseInt(e.target.value) || 0 })}
                     />
                 </div>
@@ -117,10 +117,10 @@ export function ZonesEditor({ carrierName, zones }: { carrierName: string, zones
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Zonas de Cobertura</CardTitle>
-                <CardDescription>Mapeamento de Regiões, UFs e faixas de CEP atendidas.</CardDescription>
-            </CardHeader>
+            <CardHeader
+                heading="Zonas de Cobertura"
+                subheading="Mapeamento de Regiões, UFs e faixas de CEP atendidas."
+            />
             <CardContent>
                 <div className="border border-[hsl(var(--ui-border))] rounded-lg overflow-hidden">
                     <table className="w-full text-sm text-left">
@@ -204,10 +204,10 @@ export function RatesEditor({ carrierName, rates }: { carrierName: string, rates
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Tarifas por Zona e Peso</CardTitle>
-                <CardDescription>Custo base, frações excedentes, prazos fixos por faixa e impostos atrelados.</CardDescription>
-            </CardHeader>
+            <CardHeader
+                heading="Tarifas por Zona e Peso"
+                subheading="Custo base, frações excedentes, prazos fixos por faixa e impostos atrelados."
+            />
             <CardContent>
                 <div className="border border-[hsl(var(--ui-border))] rounded-lg overflow-x-auto">
                     <table className="w-full text-sm text-left whitespace-nowrap">
