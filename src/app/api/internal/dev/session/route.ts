@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
             sessionVersion: user.sessionVersion,
         });
 
-        logger.info('Dev session token generated', { email: user.email, role: user.role });
+        logger.info('Dev session token generated', { role: user.role });
 
         const response = NextResponse.json({
             success: true,

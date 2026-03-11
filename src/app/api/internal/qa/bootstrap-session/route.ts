@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
             sessionVersion: user.sessionVersion,
         });
 
-        logger.info('QA session token generated', { email: user.email, role: user.role });
+        logger.info('QA session token generated', { role: user.role });
 
         const response = NextResponse.json({
             success: true,
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Session cookie could not be set', code: 'bootstrap_cookie_missing' }, { status: 500 });
         }
 
-        logger.info('QA session bootstrapped OK', { email: user.email, role: user.role, tenantId: user.tenantId });
+        logger.info('QA session bootstrapped OK', { role: user.role, tenantId: user.tenantId });
 
         return response;
 

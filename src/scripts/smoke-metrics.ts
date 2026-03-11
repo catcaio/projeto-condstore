@@ -38,7 +38,7 @@ async function run() {
     const events = await db.select().from(freightFunnelEvents).orderBy(desc(freightFunnelEvents.createdAt)).limit(10);
 
     const testEvents = events.filter(e => e.phoneNumber === phoneNumber);
-    console.log(`Found ${testEvents.length} events for phone: ${phoneNumber}`);
+    console.log(`Found ${testEvents.length} events for test phone`);
     testEvents.forEach(e => console.log(`- [${e.stage}] SessionId: ${e.sessionId}`));
 
     console.log('Done.');
