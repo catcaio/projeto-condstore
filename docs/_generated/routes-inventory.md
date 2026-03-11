@@ -127,6 +127,7 @@
 | `/api/metrics/overview` | API |
 | `/api/metrics/rate-limit` | API |
 | `/api/metrics/rate-limit-alerts` | API |
+| `/api/orders/create-from-quote` | API |
 | `/api/painel-logistico` | API |
 | `/api/public/cotacao/intent` | API |
 | `/api/public/cotacao/quotes` | API |

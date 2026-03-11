@@ -166,6 +166,7 @@
 | /api/freight/insights | GET | internal | requireAdmin | frete | live | Freight intelligence insights — top CEPs, carriers, avg delta, top routes |
 | /api/sales/quote | POST | internal | requireAdmin | vendas | live | Sales quote — resolves packing, runs multi-carrier quote, returns prices |
 | /api/freight/create-shipment | POST | internal | requireAdmin | frete | live | Create shipment from quote — inserts freight_shipments + freight_confirmations |
+| /api/orders/create-from-quote | POST | internal | required | pedidos | live | Create order from freight simulation |
 | /api/whatsapp/incoming | POST | public | none | PUBLIC | live | WhatsApp incoming webhook — Frank auto-quote with Twilio signature verification |
 | /attribution | TBA | public | none | PUBLIC | live | Auto-detected |
 | /billing | TBA | public | none | PUBLIC | live | Auto-detected |
