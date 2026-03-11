@@ -9,6 +9,7 @@ const productLinks = [
 
 const platformLinks = [
     { label: 'Plataforma', href: '/plataforma' },
+    { label: 'App do ecossistema', href: '/app' },
     { label: 'Segurança', href: '/seguranca' },
     { label: 'Implantação', href: '/implantacao' },
     { label: 'Valores', href: '/valores' },

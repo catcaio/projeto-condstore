@@ -167,6 +167,7 @@
 | `/api/webhook/stripe` | API |
 | `/api/webhooks/melhor-envio` | API |
 | `/api/whatsapp/incoming` | API |
+| `/app` | Page |
 | `/attribution` | Page |
 | `/avaliacao` | Page |
 | `/billing` | Page |

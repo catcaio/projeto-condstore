@@ -8,14 +8,15 @@ import { ThemeToggle } from './theme-toggle';
 import { ChevronDown } from 'lucide-react';
 
 const primaryLinks = [
-    { label: 'Como funciona', href: '/como-funciona' },
     { label: 'Soluções', href: '/solucoes' },
     { label: 'Plataforma', href: '/plataforma' },
-    { label: 'Valores', href: '/valores' },
+    { label: 'App', href: '/app' },
+    { label: 'Como funciona', href: '/como-funciona' },
 ] as const;
 
 const moreLinks = [
     { label: 'Implantação', href: '/implantacao' },
+    { label: 'Valores', href: '/valores' },
     { label: 'Segurança', href: '/seguranca' },
     { label: 'Casos', href: '/casos' },
 ] as const;

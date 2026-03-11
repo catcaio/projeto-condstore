@@ -2,7 +2,7 @@ import {
     Truck, BarChart3, Bot, MessageSquare, Shield, Zap,
     Package, Users, Clock, TrendingUp, Workflow, LayoutDashboard,
     ArrowRight, Target, Inbox, ScanSearch, FileCheck, MapPin,
-    Gauge,
+    Gauge, Smartphone,
 } from 'lucide-react';
 import {
     PageContainer, PageSection, SectionIntro, HeroSection,
@@ -249,6 +249,13 @@ export default function HomePage() {
                                 tagline: 'Segurança nativa',
                                 description: 'Multi-tenant, RBAC, audit trail e detecção de anomalias.',
                                 accentClass: 'text-[hsl(var(--ui-danger))]',
+                            },
+                            {
+                                icon: Smartphone,
+                                name: 'App do Ecossistema',
+                                tagline: 'Acesso distribuído',
+                                description: 'Cada perfil acessa o que precisa: gestor, operador, cliente, entregador.',
+                                accentClass: 'text-[hsl(var(--ui-success))]',
                             },
                         ]}
                     />
