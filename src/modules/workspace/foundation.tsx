@@ -28,6 +28,8 @@ import { ConversationsView } from '@/modules/conversas/conversations-view';
 import { LogisticsView } from '@/modules/logistica/logistics-view';
 import { OrdersView } from '@/modules/pedidos/orders-view';
 import { SystemStatusPanel } from '@/modules/cockpit/components/system-status';
+import { loadMockClientsHydrated } from '@/modules/clientes/customer.loader';
+import { loadMockOrdersHydrated } from '@/modules/pedidos/order.loader';
 
 export type WorkspaceFoundationModuleId =
     | 'cockpit'
@@ -52,10 +54,12 @@ export async function WorkspaceFoundationPage({ moduleId }: { moduleId: Workspac
         return <ConversationsView />;
     }
     if (moduleId === 'clientes') {
-        return <ClientsView />;
+        const clients = await loadMockClientsHydrated('550e8400-e29b-41d4-a716-446655440000'); // the default seed tenant
+        return <ClientsView clients={clients} />;
     }
     if (moduleId === 'pedidos') {
-        return <OrdersView />;
+        const orders = await loadMockOrdersHydrated('550e8400-e29b-41d4-a716-446655440000'); // the default seed tenant
+        return <OrdersView orders={orders} />;
     }
     if (moduleId === 'logistica') {
         return <LogisticsView />;

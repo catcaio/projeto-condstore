@@ -1139,6 +1139,85 @@ export const invoices = mysqlTable('invoices', {
     orgIdx: index('idx_invoices_organization_id').on(table.organizationId),
 }));
 
+// --- New Canonical CRM ---
+
+export const customers = mysqlTable('customers', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    organizationId: varchar('organization_id', { length: 36 }).notNull(),
+    segment: varchar('segment', { length: 50 }),
+    status: varchar('status', { length: 50 }).notNull().default('ativo'),
+    ownerId: varchar('owner_id', { length: 36 }),
+    activityBucket: varchar('activity_bucket', { length: 50 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    tenantOrgUnique: uniqueIndex('uq_customers_tenant_org').on(table.tenantId, table.organizationId),
+}));
+
+export const customerContacts = mysqlTable('customer_contacts', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    customerId: varchar('customer_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    email: varchar('email', { length: 255 }),
+    phone: varchar('phone', { length: 30 }),
+    role: varchar('role', { length: 100 }),
+    isPrimary: boolean('is_primary').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    tenantCustomerIdx: index('idx_customer_contacts_tenant_customer').on(table.tenantId, table.customerId),
+}));
+
+// --- New Canonical Orders ---
+
+export const orders = mysqlTable('orders', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    customerId: varchar('customer_id', { length: 36 }).notNull(),
+    status: varchar('status', { length: 50 }).notNull().default('recebido'),
+    priority: varchar('priority', { length: 50 }).notNull().default('media'),
+    channel: varchar('channel', { length: 50 }),
+    totalAmount: decimal('total_amount', { precision: 12, scale: 2 }),
+    ownerId: varchar('owner_id', { length: 36 }),
+    freightSimulationId: varchar('freight_simulation_id', { length: 36 }),
+    freightConfirmationId: varchar('freight_confirmation_id', { length: 36 }),
+    logisticsStatus: varchar('logistics_status', { length: 50 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    tenantCustomerIdx: index('idx_orders_tenant_customer').on(table.tenantId, table.customerId),
+    tenantStatusIdx: index('idx_orders_tenant_status').on(table.tenantId, table.status),
+}));
+
+export const orderItems = mysqlTable('order_items', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    orderId: varchar('order_id', { length: 36 }).notNull(),
+    sku: varchar('sku', { length: 100 }),
+    name: varchar('name', { length: 255 }).notNull(),
+    quantity: int('quantity').notNull().default(1),
+    unitPrice: decimal('unit_price', { precision: 12, scale: 2 }),
+    subtotal: decimal('subtotal', { precision: 12, scale: 2 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantOrderIdx: index('idx_order_items_tenant_order').on(table.tenantId, table.orderId),
+}));
+
+export const orderStatusHistory = mysqlTable('order_status_history', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    orderId: varchar('order_id', { length: 36 }).notNull(),
+    previousStatus: varchar('previous_status', { length: 50 }),
+    newStatus: varchar('new_status', { length: 50 }).notNull(),
+    reason: varchar('reason', { length: 255 }),
+    changedBy: varchar('changed_by', { length: 36 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantOrderIdx: index('idx_order_status_history_tenant_order').on(table.tenantId, table.orderId),
+}));
+
 export type OrganizationRecord = typeof organizations.$inferSelect;
 export type NewOrganizationRecord = typeof organizations.$inferInsert;
 export type SiteRecord = typeof sites.$inferSelect;
@@ -1151,6 +1230,16 @@ export type DeliveryProofRecord = typeof deliveryProofs.$inferSelect;
 export type NewDeliveryProofRecord = typeof deliveryProofs.$inferInsert;
 export type InvoiceRecord = typeof invoices.$inferSelect;
 export type NewInvoiceRecord = typeof invoices.$inferInsert;
+export type CustomerRecord = typeof customers.$inferSelect;
+export type NewCustomerRecord = typeof customers.$inferInsert;
+export type CustomerContactRecord = typeof customerContacts.$inferSelect;
+export type NewCustomerContactRecord = typeof customerContacts.$inferInsert;
+export type OrderCrmRecord = typeof orders.$inferSelect;
+export type NewOrderCrmRecord = typeof orders.$inferInsert;
+export type OrderItemRecord = typeof orderItems.$inferSelect;
+export type NewOrderItemRecord = typeof orderItems.$inferInsert;
+export type OrderStatusHistoryRecord = typeof orderStatusHistory.$inferSelect;
+export type NewOrderStatusHistoryRecord = typeof orderStatusHistory.$inferInsert;
 
 // --- Delivery Tracking (Entregador GPS) ---
 
@@ -1602,6 +1691,7 @@ export const freightShipments = mysqlTable('freight_shipments', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
     simulationId: varchar('simulation_id', { length: 36 }),
+    orderId: varchar('order_id', { length: 36 }),
     carrier: varchar('carrier', { length: 60 }).notNull(),
     service: varchar('service', { length: 60 }).notNull(),
     trackingCode: varchar('tracking_code', { length: 60 }),
@@ -1611,6 +1701,7 @@ export const freightShipments = mysqlTable('freight_shipments', {
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 }, (table) => ({
     idxTenantSimulation: index('idx_freight_shipments_tenant_sim').on(table.tenantId, table.simulationId),
+    idxTenantOrder: index('idx_freight_shipments_tenant_order').on(table.tenantId, table.orderId),
     idxTracking: index('idx_freight_shipments_tracking').on(table.trackingCode),
 }));
 

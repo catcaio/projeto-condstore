@@ -12,20 +12,24 @@ import { OrderCustomerContext } from './components/order-customer-context';
 import { OrderDetail } from './components/order-detail';
 import { OrderLogisticsContext } from './components/order-logistics-context';
 import { OrdersList } from './components/orders-list';
-import { mockOrders, type OrderChannel, type OrderPeriodBucket, type OrderPriority, type OrderStatus } from './mock-data';
+import type { OrderRecord, OrderChannel, OrderPeriodBucket, OrderPriority, OrderStatus } from './types';
 
 type StatusFilter = OrderStatus | 'todos';
 type PriorityFilter = OrderPriority | 'todas';
 type ChannelFilter = OrderChannel | 'todos';
 type PeriodFilter = OrderPeriodBucket | 'todos';
 
-const ownerOptions = Array.from(new Set(mockOrders.map((order) => order.owner)));
 
-export function OrdersView() {
+interface OrdersViewProps {
+    orders: OrderRecord[];
+}
+
+export function OrdersView({ orders }: OrdersViewProps) {
+    const ownerOptions = Array.from(new Set(orders.map((order) => order.owner)));
     const searchParams = useSearchParams();
     const querySignature = searchParams.toString();
     const routeContext = useMemo(() => parseOrdersQueryState(searchParams), [querySignature, searchParams]);
-    const [selectedOrderId, setSelectedOrderId] = useState(mockOrders[0]?.id ?? '');
+    const [selectedOrderId, setSelectedOrderId] = useState(orders[0]?.id ?? '');
     const [searchValue, setSearchValue] = useState('');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
     const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('todas');
@@ -44,7 +48,7 @@ export function OrdersView() {
         setOwnerFilter('todos');
     }, [querySignature, routeContext.channel, routeContext.priority, routeContext.status]);
 
-    const filteredOrders = mockOrders.filter((order) => {
+    const filteredOrders = orders.filter((order) => {
         const searchMatches =
             deferredSearch.trim().length === 0 ||
             [
@@ -97,16 +101,16 @@ export function OrdersView() {
     const selectedOrder =
         resolvePreferredItem({
             items: filteredOrders,
-            allItems: mockOrders,
+            allItems: orders,
             explicitId: selectedOrderId,
             getId: (order) => order.id,
-        }) ?? mockOrders[0];
+        }) ?? orders[0];
 
     const routeOrder = routeContext.orderId
-        ? mockOrders.find((order) => order.id === routeContext.orderId)
+        ? orders.find((order) => order.id === routeContext.orderId)
         : undefined;
     const routeClient = routeContext.clientId
-        ? mockOrders.find((order) => order.customer.id === routeContext.clientId)?.customer
+        ? orders.find((order) => order.customer.id === routeContext.clientId)?.customer
         : undefined;
 
     function handleSelectOrder(orderId: string) {
@@ -123,7 +127,7 @@ export function OrdersView() {
                 description="Triagem, detalhe e contexto operacional do pedido em uma unica mesa de execucao entre comercial, atendimento e logistica."
                 meta={
                     <>
-                        <StatusChip label="30 pedidos mock" tone="info" />
+                        <StatusChip label={`${orders.length} pedidos`} tone="info" />
                         <StatusChip label="triagem operacional" tone="success" />
                         <StatusChip label="ponte com logistica" tone="warning" />
                         {routeOrder ? <StatusChip label={`pedido #${routeOrder.id}`} tone="warning" /> : null}
@@ -154,8 +158,8 @@ export function OrdersView() {
             <div className="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)_22rem]">
                 <OrdersList
                     orders={filteredOrders}
-                    totalCount={mockOrders.length}
-                    selectedOrderId={selectedOrder.id}
+                    totalCount={orders.length}
+                    selectedOrderId={selectedOrder?.id}
                     searchValue={searchValue}
                     statusFilter={statusFilter}
                     priorityFilter={priorityFilter}
@@ -172,12 +176,12 @@ export function OrdersView() {
                     onSelectOrder={handleSelectOrder}
                 />
 
-                <OrderDetail order={selectedOrder} />
+                {selectedOrder && <OrderDetail order={selectedOrder} />}
 
                 <ShellContainer>
-                    <OrderCustomerContext order={selectedOrder} />
-                    <OrderLogisticsContext logistics={selectedOrder.logistics} orderId={selectedOrder.id} />
-                    <OrderActions order={selectedOrder} />
+                    {selectedOrder && <OrderCustomerContext order={selectedOrder} />}
+                    {selectedOrder && <OrderLogisticsContext logistics={selectedOrder.logistics} orderId={selectedOrder.id} />}
+                    {selectedOrder && <OrderActions order={selectedOrder} />}
                 </ShellContainer>
             </div>
         </ShellContainer>

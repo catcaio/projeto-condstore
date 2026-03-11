@@ -13,22 +13,26 @@ import { ClientOrders } from './components/client-orders';
 import { ClientProfile } from './components/client-profile';
 import { ClientSimulations } from './components/client-simulations';
 import { ClientsList } from './components/clients-list';
-import { mockClients, type ClientActivityBucket, type ClientStatus } from './mock-data';
+import type { ClientRecord, ClientActivityBucket, ClientStatus } from './types';
 
 type StatusFilter = ClientStatus | 'todos';
 type ActivityFilter = ClientActivityBucket | 'todas';
 type TagFilter = string | 'todas';
 
-const availableTags = Array.from(new Set(mockClients.flatMap((client) => client.tags)));
+const availableTags = ['premium', 'recompra', 'atraso', 'urgente', 'frete', 'sla'];
 
-export function ClientsView() {
+interface ClientsViewProps {
+    clients: ClientRecord[];
+}
+
+export function ClientsView({ clients }: ClientsViewProps) {
     const searchParams = useSearchParams();
     const querySignature = searchParams.toString();
     const routeContext = useMemo(
         () => parseClientsQueryState(searchParams, { availableTags }),
         [querySignature, searchParams]
     );
-    const [selectedClientId, setSelectedClientId] = useState(mockClients[0]?.id ?? '');
+    const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id ?? '');
     const [searchValue, setSearchValue] = useState('');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
     const [activityFilter, setActivityFilter] = useState<ActivityFilter>('todas');
@@ -43,7 +47,7 @@ export function ClientsView() {
         setTagFilter(routeContext.tag ?? 'todas');
     }, [querySignature, routeContext.activity, routeContext.status, routeContext.tag]);
 
-    const filteredClients = mockClients.filter((client) => {
+    const filteredClients = clients.filter((client) => {
         const searchMatches =
             deferredSearch.trim().length === 0 ||
             [
@@ -72,7 +76,7 @@ export function ClientsView() {
 
         const nextSelected = resolvePreferredItem({
             items: filteredClients,
-            allItems: mockClients,
+            allItems: clients,
             explicitId: routeContext.clientId,
             getId: (client) => client.id,
             preferredPredicates: routeContext.clientId ? [(client) => client.id === routeContext.clientId] : [],
@@ -93,13 +97,13 @@ export function ClientsView() {
     const selectedClient =
         resolvePreferredItem({
             items: filteredClients,
-            allItems: mockClients,
+            allItems: clients,
             explicitId: selectedClientId,
             getId: (client) => client.id,
-        }) ?? mockClients[0];
+        }) ?? clients[0];
 
     const routeClient = routeContext.clientId
-        ? mockClients.find((client) => client.id === routeContext.clientId)
+        ? clients.find((client) => client.id === routeContext.clientId)
         : undefined;
 
     function handleSelectClient(clientId: string) {
@@ -116,7 +120,7 @@ export function ClientsView() {
                 description="Visao unificada para relacionar atendimento, pedidos, simulacoes e historico recente sem cair em um CRM generico."
                 meta={
                     <>
-                        <StatusChip label="25 clientes mock" tone="info" />
+                        <StatusChip label={`${clients.length} clientes`} tone="info" />
                         <StatusChip label="visao unificada" tone="success" />
                         <StatusChip label="acoes operacionais" tone="warning" />
                         {routeClient ? <StatusChip label={`cliente ${routeClient.company}`} tone="warning" /> : null}
@@ -147,8 +151,8 @@ export function ClientsView() {
             <div className="grid gap-6 xl:grid-cols-[23rem_minmax(0,1fr)_22rem]">
                 <ClientsList
                     clients={filteredClients}
-                    totalCount={mockClients.length}
-                    selectedClientId={selectedClient.id}
+                    totalCount={clients.length}
+                    selectedClientId={selectedClient?.id}
                     searchValue={searchValue}
                     statusFilter={statusFilter}
                     activityFilter={activityFilter}
@@ -162,27 +166,27 @@ export function ClientsView() {
 
                 <ShellContainer>
                     <ClientConversations
-                        clientId={selectedClient.id}
-                        items={selectedClient.conversations}
+                        clientId={selectedClient?.id || ''}
+                        items={selectedClient?.conversations || []}
                         title="Conversas"
                         description="Ultimas threads e ownership atual."
                         compact
                     />
                     <ClientOrders
-                        clientId={selectedClient.id}
-                        items={selectedClient.orders}
+                        clientId={selectedClient?.id || ''}
+                        items={selectedClient?.orders || []}
                         title="Pedidos"
                         description="Pedidos recentes com status operacional."
                         compact
                     />
                     <ClientSimulations
-                        clientId={selectedClient.id}
-                        items={selectedClient.simulations}
+                        clientId={selectedClient?.id || ''}
+                        items={selectedClient?.simulations || []}
                         title="Simulacoes"
                         description="Cotacoes recentes ligadas ao cliente."
                         compact
                     />
-                    <ClientActions client={selectedClient} />
+                    {selectedClient && <ClientActions client={selectedClient} />}
                 </ShellContainer>
             </div>
         </ShellContainer>

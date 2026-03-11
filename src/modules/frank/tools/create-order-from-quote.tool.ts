@@ -1,4 +1,4 @@
-import { createOrderFromSimulation } from '@/modules/pedidos/order.service';
+import { createOrderFromSimulation } from '../../pedidos/order.service';
 import { logger } from '@/infra/logger';
 
 export interface CreateOrderFromQuoteParams {

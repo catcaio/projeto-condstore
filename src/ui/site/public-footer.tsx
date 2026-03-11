@@ -89,7 +89,7 @@ export function PublicFooter() {
                 {/* Bottom bar */}
                 <div className="mt-14 pt-6 border-t border-[hsl(var(--ui-border)/0.3)] flex flex-col md:flex-row justify-between items-center gap-4">
                     <span className="text-xs text-[hsl(var(--ui-text-subtle))]">
-                        &copy; {new Date().getFullYear()} LojaCond. Todos os direitos reservados.
+                        &copy; {new Date().getFullYear()} CONDSTORE OS. Todos os direitos reservados. CNPJ: 29.578.008/0001-11
                     </span>
                     <div className="flex gap-6 text-xs text-[hsl(var(--ui-text-subtle))]">
                         <Link href="#" className="hover:text-[hsl(var(--ui-text-muted))] transition-colors">Privacidade</Link>
