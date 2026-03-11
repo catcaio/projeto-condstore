@@ -1,8 +1,8 @@
 import {
-    Truck, Users, Workflow, LayoutDashboard, Bot, Shield,
+    Truck, Users, Workflow, LayoutDashboard, Bot, Shield, Smartphone,
 } from 'lucide-react';
 import {
-    PageContainer, PageSection, SectionIntro, ModuleGrid, CTASection,
+    PageContainer, PageSection, SectionIntro, ModuleGrid, CTASection, TrustBand,
 } from '@/ui/site';
 
 export const metadata = {
@@ -69,10 +69,19 @@ export default function SolucoesPage() {
                                 description: 'Multi-tenant, RBAC, audit trail, rate limiting, webhook hardening e detecção de anomalias. Segurança como infraestrutura.',
                                 accentClass: 'text-[hsl(var(--ui-danger))]',
                             },
+                            {
+                                icon: Smartphone,
+                                name: 'App do Ecossistema',
+                                tagline: 'Acesso distribuído',
+                                description: 'Cada perfil acessa o que precisa: gestor, operador, cliente, entregador. Extensão real da operação.',
+                                accentClass: 'text-[hsl(var(--ui-success))]',
+                            },
                         ]}
                     />
                 </PageContainer>
             </PageSection>
+
+            <TrustBand />
 
             <CTASection
                 title="Qual módulo resolve o seu problema?"

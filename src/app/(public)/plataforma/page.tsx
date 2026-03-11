@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import {
     PageContainer, PageSection, SectionIntro, HeroSection,
-    FeatureGrid, CTASection,
+    FeatureGrid, CTASection, TrustBand, OperationProof,
 } from '@/ui/site';
 import type { Metadata } from 'next';
 
@@ -36,6 +36,9 @@ export default function PlataformaPage() {
                     { label: 'Explorar soluções', href: '/solucoes', variant: 'secondary' },
                 ]}
             />
+
+            {/* ─── OPERATION PROOF ─── */}
+            <OperationProof />
 
             {/* ─── 2. O QUE É A PLATAFORMA ─── */}
             <PageSection spacing="lg" borderTop>
@@ -198,6 +201,9 @@ export default function PlataformaPage() {
                     </div>
                 </PageContainer>
             </PageSection>
+
+            {/* ─── TRUST BAND ─── */}
+            <TrustBand />
 
             {/* ─── 5. CAMADAS TRANSVERSAIS ─── */}
             <PageSection spacing="lg" borderTop>

@@ -7,7 +7,7 @@ import {
 import {
     PageContainer, PageSection, SectionIntro, HeroSection,
     FeatureGrid, CTASection, ModuleGrid, ComparisonBand, OperationFlow,
-    FlowSection,
+    FlowSection, TrustBand,
 } from '@/ui/site';
 import Link from 'next/link';
 
@@ -38,6 +38,9 @@ export default function HomePage() {
                     { label: 'Como funciona', href: '/como-funciona', variant: 'secondary' },
                 ]}
             />
+
+            {/* ━━━ TRUST BAND ━━━ */}
+            <TrustBand />
 
             {/* ━━━ 2. QUEBRA DE CATEGORIA ━━━ */}
             <PageSection spacing="md" borderTop>
