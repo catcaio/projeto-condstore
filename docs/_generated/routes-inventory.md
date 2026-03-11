@@ -256,6 +256,7 @@
 | `/produtos/crm` | Page |
 | `/produtos/domine` | Page |
 | `/produtos/envios` | Page |
+| `/seguranca` | Page |
 | `/settings` | Page |
 | `/signup` | Page |
 | `/sistema/dlq` | Page |
