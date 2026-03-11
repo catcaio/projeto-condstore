@@ -9,3 +9,4 @@ export { ModuleGrid, type ModuleItem } from './module-grid';
 export { ComparisonBand } from './comparison-band';
 export { PublicHeader } from './public-header';
 export { PublicFooter } from './public-footer';
+export { OperationFlow, type OpStep } from './operation-flow';
