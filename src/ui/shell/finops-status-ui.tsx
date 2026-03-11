@@ -44,7 +44,7 @@ export function FinOpsStatusUI({ status }: { status: FinOpsStatus }) {
                     <Lock className="h-4 w-4" />
                     <span>Conta limitada por atingir o limite de uso (Hard Limit).</span>
                 </div>
-                <Link href="/cockpit">
+                <Link href="/dashboard">
                     <span className="font-bold underline cursor-pointer hover:text-[#991b1b]">
                         Regularizar agora
                     </span>

@@ -9,7 +9,7 @@
 ## Visão Geral
 
 Aplicação Next.js (App Router) multi-tenant para operações de frete/analytics e automação via WhatsApp/Twilio, com:
-- UI web (`/login`, `/cockpit`, telas operacionais)
+- UI web (`/login`, `/dashboard`, telas operacionais; `/cockpit` redireciona para compatibilidade)
 - APIs de produto e cockpit (`/api/*`, `/api/cockpit/*`)
 - Webhooks (Twilio / eventos)
 - Jobs internos e cron (retenção/cleanup, backfills)
@@ -21,7 +21,7 @@ Aplicação Next.js (App Router) multi-tenant para operações de frete/analytic
 ## Diagrama (texto)
 
 ```text
-Browser/UI (/login, /cockpit)
+Browser/UI (/login, /dashboard; /cockpit -> /dashboard)
   -> Next App Router pages/layouts (React Server + Client Components)
   -> /api/auth/* (login, me, logout)
   -> /api/cockpit/* (RBAC admin via guards)
