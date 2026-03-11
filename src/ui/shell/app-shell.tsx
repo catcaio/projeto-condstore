@@ -16,40 +16,27 @@ export function AppShell({
     tenantId: string | null
 }) {
     return (
-        <div className="os-root min-h-screen bg-[hsl(var(--ui-bg))] text-[hsl(var(--ui-text))]">
-            <div className="flex min-h-screen flex-col md:flex-row">
+        <div className="os-root min-h-screen bg-[hsl(var(--ui-bg))] text-[hsl(var(--ui-text))] max-w-full overflow-x-hidden">
+            <div className="flex min-h-screen flex-col md:flex-row max-w-full overflow-x-hidden">
                 <aside className="w-full shrink-0 border-b border-[hsl(var(--ui-border))] bg-[linear-gradient(180deg,hsl(var(--ui-surface))_0%,hsl(var(--ui-page))_100%)] md:sticky md:top-0 md:h-screen md:w-[22rem] md:border-b-0 md:border-r">
                     <div className="flex h-full flex-col">
                         <div className="border-b border-[hsl(var(--ui-border))] px-5 py-5">
                             <div className="flex items-center gap-3">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] shadow-sm">
-                                    <CondstoreLogo size="sm" />
+                                    <CondstoreLogo size="sm" hideText />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[hsl(var(--ui-text-subtle))]">
-                                        CONDSTORE OS
+                                    <p className="text-[13px] font-bold uppercase tracking-[0.16em] text-[hsl(var(--ui-text))]">
+                                        CONDSTORE <span className="text-[hsl(var(--ui-accent-blue))]">OS</span>
                                     </p>
-                                    <p className="truncate text-sm font-semibold text-[hsl(var(--ui-text))]">
-                                        Infraestrutura operacional premium
+                                    <p className="truncate text-[14px] font-semibold text-[hsl(var(--ui-text-muted))] mt-0.5">
+                                        Infraestrutura premium
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="mt-4 rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface)/0.7)] p-3">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))]">
-                                    Workspace ativo
-                                </p>
-                                <div className="mt-2 flex items-center justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <p className="truncate text-sm font-semibold text-[hsl(var(--ui-text))]">
-                                            {tenantId ?? 'Tenant nao identificado'}
-                                        </p>
-                                        <p className="text-xs text-[hsl(var(--ui-text-muted))]">
-                                            Shell unificado para operacao, inteligencia e governanca
-                                        </p>
-                                    </div>
-                                    <ThemeToggle />
-                                </div>
+                            <div className="mt-4 flex items-center justify-end px-2">
+                                <ThemeToggle />
                             </div>
                         </div>
 
