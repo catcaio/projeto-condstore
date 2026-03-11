@@ -171,7 +171,8 @@
 | /billing | TBA | public | none | PUBLIC | live | Auto-detected |
 | /billing/manage | TBA | public | none | PUBLIC | live | Auto-detected |
 | /billing/success | TBA | public | none | PUBLIC | live | Auto-detected |
-| /cockpit | TBA | public | none | PUBLIC | live | Auto-detected |
+| /clientes | GET | internal | required | clientes | live | Cliente 360 canônico com lista, perfil e contexto operacional |
+| /cockpit | GET | internal | required | cockpit | live | Cockpit operacional canônico com KPIs, alertas, feed, filas e status do sistema |
 | /cockpit/shipments | GET | internal | requireAdmin | frete | live | Shipment monitoring panel and label generation log |
 | /cockpit/acquisition | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/acquisition/activation | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -211,18 +212,25 @@
 | /cockpit/freight-audit | GET | internal | requireAdmin | frete | live | Freight audit log — simulation and confirmation history |
 | /cockpit/freight-memory | GET | internal | requireAdmin | frete | live | Freight memory — aggregated recurring patterns |
 | /cockpit/freight-insights | GET | internal | requireAdmin | frete | live | Freight operational intelligence and performance analytics |
+| /configuracoes | GET | internal | required | configuracoes | live | Governança canônica de usuários, permissões, integrações, AI provider e auditoria |
+| /conversas | GET | internal | required | conversas | live | Inbox operacional canônica com lista, thread e contexto do cliente |
 | /logistica/envios | GET | internal | requireAdmin | frete | live | Painel de Envios — tabela enriched com tracking, status, delta financeiro |
 | /logistica/rastreamento | GET | internal | requireAdmin | frete | live | Rastreamento — timeline de status por envio (posted → delivered) |
 | /logistica/insights | GET | internal | requireAdmin | frete | live | Insights de Frete — CEPs, transportadoras, delta médio, top rotas |
 | /logistica/tabelas-frete | Tabelas de Frete | internal | requireAdmin | logistica | live | Cockpit para gerenciamento das tabelas de frete |
 | /logistica/tabelas-frete/[carrier] | Tabela de Frete por Transportadora | internal | requireAdmin | logistica | live | Edição de regras, zonas e tarifas da transportadora |
-| /dashboard | GET | internal | required | console | live | Dashboard operacional com quick links |
+| /dashboard | GET | internal | required | cockpit | live | Alias legado redirecionado para o cockpit canônico |
 | /vendas/cotacao | GET | internal | required | console | live | Nova Cotação (stub — em breve) |
-| /vendas/pedidos | GET | internal | required | console | live | Pedidos de Venda (stub — em breve) |
-| /vendas/clientes | GET | internal | required | console | live | Gestão de Clientes (stub — em breve) |
+| /vendas/pedidos | GET | internal | required | pedidos | live | Alias legado redirecionado para /pedidos |
+| /vendas/clientes | GET | internal | required | clientes | live | Alias legado redirecionado para /clientes |
 | /logistica/simulador | GET | internal | requireAdmin | frete | live | Simulador de Frete (migrado de /cockpit/freight-simulator) |
+| /frank | GET | internal | required | frank | live | Módulo canônico do agente com visão geral, intenções, desempenho e logs estruturados |
+| /logistica | GET | internal | required | logistica | live | Central logística canônica com fila, detalhe operacional e contexto integrado |
+| /metricas | GET | internal | required | metricas | live | Módulo canônico de métricas executivas, funil, atendimento e logística |
+| /operacao | GET | internal | required | operacao | live | Hub operacional canônico para visão transversal da operação |
 | /operacao/inbox | GET | internal | required | console | live | Inbox operacional (migrado de /inbox) |
 | /operacao/fila | GET | internal | required | console | live | Fila de Eventos DOMINE (stub — em breve) |
+| /pedidos | GET | internal | required | pedidos | live | Fluxo operacional canônico de pedidos com triagem, detalhe e contexto logístico |
 | /financeiro/frete | GET | internal | required | console | live | Custos de Frete (stub — em breve) |
 | /financeiro/margem | GET | internal | required | console | live | Margem operacional (stub — em breve) |
 | /sistema/health | GET | internal | requireAdmin | console | live | Health & Resiliência (migrado de /cockpit/status) |
@@ -239,7 +247,7 @@
 | /evolution/roadmap | TBA | public | none | PUBLIC | live | Auto-detected |
 | /freight/simulations | TBA | public | none | PUBLIC | live | Auto-detected |
 | /freight/simulations/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
-| /home | TBA | public | none | PUBLIC | live | Auto-detected |
+| /home | GET | internal | required | cockpit | live | Alias legado redirecionado para o cockpit canônico |
 | /inbox | TBA | public | none | PUBLIC | live | Auto-detected |
 | /inbox/conversations/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
 | /login | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -253,6 +261,7 @@
 | /gargalos-logisticos | TBA | public | none | PUBLIC | live | Auto-detected |
 | /integracoes | TBA | public | none | PUBLIC | live | Auto-detected |
 | /tecnologias | TBA | public | none | PUBLIC | live | Auto-detected |
+| /tenant | GET | internal | required | tenant | live | Módulo canônico de visão do tenant, branding, canais e status operacional |
 | /plataforma | TBA | public | none | PUBLIC | live | Auto-detected |
 | /plataforma/cockpit | TBA | public | none | PUBLIC | live | Auto-detected |
 | /avaliacao | TBA | public | none | PUBLIC | live | Auto-detected |

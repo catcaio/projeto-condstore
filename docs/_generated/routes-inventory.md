@@ -172,6 +172,7 @@
 | `/billing` | Page |
 | `/billing/manage` | Page |
 | `/billing/success` | Page |
+| `/clientes` | Page |
 | `/cockpit` | Page |
 | `/cockpit/acquisition` | Page |
 | `/cockpit/acquisition/activation` | Page |
@@ -212,6 +213,8 @@
 | `/cockpit/supreme` | Page |
 | `/cockpit/supreme/benchmarks` | Page |
 | `/concept-layer-preview` | Page |
+| `/configuracoes` | Page |
+| `/conversas` | Page |
 | `/cotacao` | Page |
 | `/cotacao/result` | Page |
 | `/dashboard` | Page |
@@ -221,6 +224,7 @@
 | `/evolution/roadmap` | Page |
 | `/financeiro/frete` | Page |
 | `/financeiro/margem` | Page |
+| `/frank` | Page |
 | `/freight/simulations` | Page |
 | `/freight/simulations/[id]` | Page |
 | `/gargalos-logisticos` | Page |
@@ -229,15 +233,19 @@
 | `/inbox/conversations/[id]` | Page |
 | `/integracoes` | Page |
 | `/login` | Page |
+| `/logistica` | Page |
 | `/logistica/envios` | Page |
 | `/logistica/insights` | Page |
 | `/logistica/rastreamento` | Page |
 | `/logistica/simulador` | Page |
 | `/logistica/tabelas-frete` | Page |
 | `/logistica/tabelas-frete/[carrier]` | Page |
+| `/metricas` | Page |
+| `/operacao` | Page |
 | `/operacao/fila` | Page |
 | `/operacao/inbox` | Page |
 | `/painel-logistico` | Page |
+| `/pedidos` | Page |
 | `/planos/crm` | Page |
 | `/planos/domine` | Page |
 | `/planos/envios` | Page |
@@ -255,6 +263,7 @@
 | `/supreme` | Page |
 | `/t/[token]` | Page |
 | `/tecnologias` | Page |
+| `/tenant` | Page |
 | `/vendas/clientes` | Page |
 | `/vendas/cotacao` | Page |
 | `/vendas/pedidos` | Page |
