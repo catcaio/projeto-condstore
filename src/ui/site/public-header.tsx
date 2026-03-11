@@ -4,11 +4,14 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { CondstoreLogo } from '@/ui/components/Logo';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from './theme-toggle';
 
 const navLinks = [
     { label: 'Soluções', href: '/solucoes' },
     { label: 'Como funciona', href: '/como-funciona' },
     { label: 'Plataforma', href: '/plataforma' },
+    { label: 'Implantação', href: '/implantacao' },
+    { label: 'Valores', href: '/valores' },
 ] as const;
 
 export function PublicHeader() {
@@ -36,8 +39,9 @@ export function PublicHeader() {
                     </nav>
                 </div>
 
-                {/* Right: CTAs */}
+                {/* Right: CTAs + Theme Toggle */}
                 <div className="hidden md:flex items-center gap-3">
+                    <ThemeToggle />
                     <Link
                         href="/login"
                         className="text-[13px] font-semibold text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors px-3 py-2"
@@ -79,6 +83,10 @@ export function PublicHeader() {
                             </Link>
                         ))}
                         <div className="flex flex-col gap-3 pt-4 border-t border-[hsl(var(--ui-border)/0.3)] mt-2">
+                            <div className="flex items-center gap-3 py-2">
+                                <ThemeToggle />
+                                <span className="text-xs text-[hsl(var(--ui-text-muted))]">Alternar tema</span>
+                            </div>
                             <Link href="/login" className="text-sm font-semibold text-[hsl(var(--ui-text-muted))] py-2">
                                 Entrar
                             </Link>

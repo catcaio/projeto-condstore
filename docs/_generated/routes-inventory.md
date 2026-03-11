@@ -267,6 +267,7 @@
 | `/t/[token]` | Page |
 | `/tecnologias` | Page |
 | `/tenant` | Page |
+| `/valores` | Page |
 | `/vendas/clientes` | Page |
 | `/vendas/cotacao` | Page |
 | `/vendas/pedidos` | Page |

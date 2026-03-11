@@ -10,3 +10,5 @@ export { ComparisonBand } from './comparison-band';
 export { PublicHeader } from './public-header';
 export { PublicFooter } from './public-footer';
 export { OperationFlow, type OpStep } from './operation-flow';
+export { SiteThemeProvider } from './theme-provider';
+export { ThemeToggle } from './theme-toggle';

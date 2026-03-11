@@ -254,6 +254,37 @@
     --foreground: var(--ui-text);
     --border: var(--ui-border);
   }
+
+  /* Public site light theme — scoped to .site-light div */
+  .site-light {
+    color-scheme: light;
+
+    --ui-page: 220 18% 96%;
+    --ui-surface: 0 0% 100%;
+    --ui-surface-elevated: 210 18% 98%;
+    --ui-muted: 220 20% 94%;
+    --ui-border: 220 16% 86%;
+    --ui-border-strong: 220 14% 78%;
+    --ui-text: 222 20% 12%;
+    --ui-text-muted: 220 12% 38%;
+    --ui-text-subtle: 220 10% 52%;
+    --ui-shadow: 222 28% 18%;
+
+    --ui-accent-blue: 211 100% 50%;
+    --ui-accent-blue-strong: 211 100% 43%;
+    --ui-accent-blue-ink: 211 100% 37%;
+
+    --ui-danger: 4 90% 58%;
+    --ui-danger-strong: 4 84% 52%;
+    --ui-danger-ink: 4 72% 43%;
+
+    --ui-success: 145 66% 42%;
+    --ui-success-ink: 145 72% 28%;
+
+    --background: var(--ui-page);
+    --foreground: var(--ui-text);
+    --border: var(--ui-border);
+  }
 }
 
 @layer base {
