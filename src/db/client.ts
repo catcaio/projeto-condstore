@@ -1,28 +1,40 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 
+// Prevent multiple pools in development due to HMR
 const globalForDb = globalThis as unknown as {
   pool?: mysql.Pool;
 };
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required to initialize the database client.");
+/**
+ * Lazy database client — only initializes when first called at runtime.
+ * This prevents Next.js build from crashing in CI where DATABASE_URL is not set.
+ */
+export function getDb() {
+  if (!globalForDb.pool) {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error(
+        "DATABASE_URL is required at runtime to initialize the database client."
+      );
+    }
+    globalForDb.pool = mysql.createPool({
+      uri: databaseUrl,
+      connectionLimit: 10,
+      multipleStatements: false,
+      timezone: "Z",
+      ssl: { rejectUnauthorized: true },
+    });
+  }
+  return drizzle(globalForDb.pool, { mode: "default" });
 }
 
-const pool =
-  globalForDb.pool ??
-  mysql.createPool({
-    uri: databaseUrl,
-    connectionLimit: 10,
-    multipleStatements: false,
-    timezone: "Z",
-    ssl: { rejectUnauthorized: true },
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.pool = pool;
-}
-
-export const db = drizzle(pool, { mode: "default" });
+/**
+ * @deprecated Use getDb() instead — this eager export crashes CI builds.
+ * Kept temporarily for backward compatibility with modules not yet migrated.
+ */
+export const db = new Proxy({} as ReturnType<typeof drizzle>, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getDb(), prop, receiver);
+  },
+});
