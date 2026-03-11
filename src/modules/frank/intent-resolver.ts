@@ -5,7 +5,7 @@
  * using keyword matching with confidence scoring.
  */
 
-export type Intent = 'FRETE' | 'PRODUTO' | 'PEDIDO' | 'SAUDACAO' | 'OUTRO';
+export type Intent = 'FRETE' | 'PRODUTO' | 'PEDIDO' | 'CONFIRM_QUOTE' | 'SAUDACAO' | 'OUTRO';
 
 export interface IntentResult {
     intent: Intent;
@@ -26,6 +26,12 @@ const PRODUTO_KEYWORDS = [
 const PEDIDO_KEYWORDS = [
     'pedido', 'rastreio', 'rastreamento', 'meu pedido', 'status',
     'encomenda', 'onde está', 'chegou', 'código de rastreio',
+];
+
+const CONFIRM_QUOTE_KEYWORDS = [
+    'pode fechar', 'confirmar pedido', 'pode enviar', 
+    'quero esse frete', 'pode prosseguir', 'fechar pedido',
+    'esse mesmo', 'pode despachar'
 ];
 
 const SAUDACAO_KEYWORDS = [
@@ -61,6 +67,7 @@ export function resolveIntent(message: string): IntentResult {
         { intent: 'FRETE', matches: countMatches(message, FRETE_KEYWORDS), total: FRETE_KEYWORDS.length },
         { intent: 'PRODUTO', matches: countMatches(message, PRODUTO_KEYWORDS), total: PRODUTO_KEYWORDS.length },
         { intent: 'PEDIDO', matches: countMatches(message, PEDIDO_KEYWORDS), total: PEDIDO_KEYWORDS.length },
+        { intent: 'CONFIRM_QUOTE', matches: countMatches(message, CONFIRM_QUOTE_KEYWORDS), total: CONFIRM_QUOTE_KEYWORDS.length },
         { intent: 'SAUDACAO', matches: countMatches(message, SAUDACAO_KEYWORDS), total: SAUDACAO_KEYWORDS.length },
     ];
 

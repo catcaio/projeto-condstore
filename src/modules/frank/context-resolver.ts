@@ -31,6 +31,7 @@ export interface MessageSummary {
 export interface QuoteSummary {
     simulationId: string;
     cep: string;
+    productRef: string | null;
     carrierSelected: string | null;
     quotedFreight: string | null;
     chargedWeight: string;
@@ -94,6 +95,7 @@ export async function resolveConversationContext(
         const rows = await db.select({
             id: freightSimulations.id,
             cep: freightSimulations.cep,
+            productRefs: freightSimulations.productRefs,
             carrierSelected: freightSimulations.carrierSelected,
             quotedFreight: freightSimulations.quotedFreight,
             chargedWeight: freightSimulations.chargedWeight,
@@ -107,8 +109,9 @@ export async function resolveConversationContext(
         lastQuotes = rows.map(r => ({
             simulationId: r.id,
             cep: r.cep,
+            productRef: (r.productRefs && r.productRefs.length > 0) ? r.productRefs[0] : null,
             carrierSelected: r.carrierSelected,
-            quotedFreight: r.quotedFreight,
+            quotedFreight: r.quotedFreight ? parseFloat(r.quotedFreight).toFixed(2) : null,
             chargedWeight: r.chargedWeight,
             createdAt: r.createdAt,
         }));
