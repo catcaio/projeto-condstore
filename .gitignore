@@ -121,6 +121,9 @@ tmp/
 temp/
 .tmp-smoke/
 .npm-cache-2/
+tmp-*
+diag-*
+seed-*-sandbox.*
 
 # Database
 *.db
