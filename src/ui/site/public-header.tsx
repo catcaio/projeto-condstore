@@ -1,21 +1,42 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { CondstoreLogo } from '@/ui/components/Logo';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './theme-toggle';
+import { ChevronDown } from 'lucide-react';
 
-const navLinks = [
-    { label: 'Soluções', href: '/solucoes' },
+const primaryLinks = [
     { label: 'Como funciona', href: '/como-funciona' },
+    { label: 'Soluções', href: '/solucoes' },
     { label: 'Plataforma', href: '/plataforma' },
-    { label: 'Implantação', href: '/implantacao' },
     { label: 'Valores', href: '/valores' },
 ] as const;
 
+const moreLinks = [
+    { label: 'Implantação', href: '/implantacao' },
+    { label: 'Segurança', href: '/seguranca' },
+    { label: 'Casos', href: '/casos' },
+] as const;
+
+const allLinks = [...primaryLinks, ...moreLinks];
+
 export function PublicHeader() {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [moreOpen, setMoreOpen] = useState(false);
+    const moreRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        function handleClick(e: MouseEvent) {
+            if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+                setMoreOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-[hsl(var(--ui-border)/0.3)] bg-[hsl(var(--ui-page)/0.85)] backdrop-blur-xl">
@@ -26,8 +47,8 @@ export function PublicHeader() {
                         <CondstoreLogo size="sm" hideSubtitle />
                     </Link>
 
-                    <nav className="hidden md:flex items-center gap-7">
-                        {navLinks.map((link) => (
+                    <nav className="hidden md:flex items-center gap-6">
+                        {primaryLinks.map((link) => (
                             <Link
                                 key={link.href}
                                 href={link.href}
@@ -36,6 +57,31 @@ export function PublicHeader() {
                                 {link.label}
                             </Link>
                         ))}
+
+                        {/* More dropdown */}
+                        <div ref={moreRef} className="relative">
+                            <button
+                                onClick={() => setMoreOpen(!moreOpen)}
+                                className="flex items-center gap-1 text-[13px] font-semibold text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors"
+                            >
+                                Mais
+                                <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', moreOpen && 'rotate-180')} />
+                            </button>
+                            {moreOpen && (
+                                <div className="absolute top-full left-0 mt-2 w-44 rounded-xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-page))] shadow-lg shadow-[hsl(var(--ui-shadow)/0.1)] py-1.5 backdrop-blur-xl">
+                                    {moreLinks.map((link) => (
+                                        <Link
+                                            key={link.href}
+                                            href={link.href}
+                                            onClick={() => setMoreOpen(false)}
+                                            className="block px-4 py-2.5 text-[13px] font-semibold text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] hover:bg-[hsl(var(--ui-surface-elevated)/0.5)] transition-colors"
+                                        >
+                                            {link.label}
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </nav>
                 </div>
 
@@ -72,7 +118,7 @@ export function PublicHeader() {
             {mobileOpen && (
                 <div className="md:hidden border-t border-[hsl(var(--ui-border)/0.3)] bg-[hsl(var(--ui-page))]">
                     <nav className="flex flex-col px-6 py-4 gap-1">
-                        {navLinks.map((link) => (
+                        {allLinks.map((link) => (
                             <Link
                                 key={link.href}
                                 href={link.href}

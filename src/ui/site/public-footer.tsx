@@ -5,19 +5,19 @@ const productLinks = [
     { label: 'Condstore Envios', href: '/produtos/envios' },
     { label: 'Condstore CRM', href: '/produtos/crm' },
     { label: 'Condstore DOMINE', href: '/produtos/domine' },
-    { label: 'Cockpit OS', href: '/plataforma/cockpit' },
 ];
 
-const companyLinks = [
-    { label: 'Sobre', href: '/about' },
-    { label: 'Tecnologia', href: '/tecnologias' },
+const platformLinks = [
     { label: 'Plataforma', href: '/plataforma' },
+    { label: 'Segurança', href: '/seguranca' },
+    { label: 'Implantação', href: '/implantacao' },
+    { label: 'Valores', href: '/valores' },
 ];
 
 const resourceLinks = [
     { label: 'Como funciona', href: '/como-funciona' },
     { label: 'Soluções', href: '/solucoes' },
-    { label: 'Cotação rápida', href: '/cotacao' },
+    { label: 'Casos', href: '/casos' },
     { label: 'Documentação', href: '/docs' },
 ];
 
@@ -52,13 +52,13 @@ export function PublicFooter() {
                         </ul>
                     </div>
 
-                    {/* Company */}
+                    {/* Platform */}
                     <div>
                         <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[hsl(var(--ui-text-subtle))] mb-4">
-                            Empresa
+                            Plataforma
                         </h4>
                         <ul className="space-y-2.5">
-                            {companyLinks.map((link) => (
+                            {platformLinks.map((link) => (
                                 <li key={link.href}>
                                     <Link href={link.href} className="text-sm text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors">
                                         {link.label}
