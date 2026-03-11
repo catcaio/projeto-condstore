@@ -32,6 +32,7 @@ export const config = {
         '/api/cockpit/:path*',
         '/api/tenants/:path*',
         '/api/admin/:path*',
+        '/api/orders/:path*',
         '/api/public/:path*'
     ],
 };
@@ -193,7 +194,7 @@ export async function proxy(req: NextRequest) {
     // ==========================================
     const cookieToken = req.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!cookieToken) {
-        if (pathname.startsWith('/api/cockpit/') || pathname.startsWith('/api/admin/') || pathname.startsWith('/api/tenants/')) {
+        if (pathname.startsWith('/api/cockpit/') || pathname.startsWith('/api/admin/') || pathname.startsWith('/api/tenants/') || pathname.startsWith('/api/orders/')) {
             await logEdgeSecurityEvent({
                 requestId,
                 route: pathname,

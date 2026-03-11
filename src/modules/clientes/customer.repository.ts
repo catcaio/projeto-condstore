@@ -1,6 +1,22 @@
 import { db } from '@/db/client';
 import { eq, and, desc } from 'drizzle-orm';
 import { customers, customerContacts, organizations, orders, freightSimulations } from '@/drizzle/schema';
+import { createHash } from 'node:crypto';
+
+/**
+ * Hash phone number using SHA-256 for privacy-safe storage.
+ */
+export function hashPhone(phone: string): string {
+    return createHash('sha256').update(phone.trim()).digest('hex');
+}
+
+/**
+ * Extract last 4 digits of a phone number for display purposes.
+ */
+export function phoneLast4(phone: string): string {
+    const digits = phone.replace(/\D/g, '');
+    return digits.slice(-4);
+}
 
 /**
  * Fetches the canonical customer entity along with its parent organization

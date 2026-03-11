@@ -54,6 +54,20 @@ function validateInput(input: PublishOperationalEventInput): void {
     }
 }
 
+// ── PII Sanitizer ─────────────────────────────────────────────────────────────
+
+const PII_FIELDS = ['phone', 'email', 'address', 'cpf', 'rawPhone', 'rawEmail'] as const;
+
+function sanitizePayload(payload: Record<string, unknown>): Record<string, unknown> {
+    const sanitized = { ...payload };
+    for (const field of PII_FIELDS) {
+        if (field in sanitized) {
+            sanitized[field] = '[REDACTED]';
+        }
+    }
+    return sanitized;
+}
+
 // ── Publisher ─────────────────────────────────────────────────────────────────
 
 /**
@@ -62,6 +76,9 @@ function validateInput(input: PublishOperationalEventInput): void {
  * Any error is caught and logged but never re-thrown so callers are never
  * blocked. Validation errors (unknown domain / missing required field) are
  * only logged — they never throw in production.
+ *
+ * PII fields (phone, email, address, cpf) are automatically stripped
+ * from the payload before persistence.
  */
 export async function publishOperationalEvent(
     input: PublishOperationalEventInput,
@@ -72,6 +89,9 @@ export async function publishOperationalEvent(
         const db = await getDb();
         const id = crypto.randomUUID();
 
+        // Sanitize payload — strip PII fields before persistence
+        const safePayload = input.payload ? sanitizePayload(input.payload) : {};
+
         await db.insert(operationalEvents).values({
             id,
             tenantId: input.tenantId,
@@ -81,7 +101,7 @@ export async function publishOperationalEvent(
             customerId: input.customerId ?? null,
             sessionId: input.sessionId ?? null,
             attributionId: input.attributionId ?? null,
-            payload: input.payload ?? {},
+            payload: safePayload,
             createdAt: new Date(),
         });
 
