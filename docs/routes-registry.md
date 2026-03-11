@@ -274,3 +274,4 @@
 | /implantacao | TBA | public | none | PUBLIC | live | Implantação page |
 | /valores | TBA | public | none | PUBLIC | live | Valores/pricing page |
 | /seguranca | TBA | public | none | PUBLIC | live | Security and governance page |
+| /casos | TBA | public | none | PUBLIC | live | Use cases page |

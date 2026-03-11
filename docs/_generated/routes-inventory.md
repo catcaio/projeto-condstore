@@ -172,6 +172,7 @@
 | `/billing` | Page |
 | `/billing/manage` | Page |
 | `/billing/success` | Page |
+| `/casos` | Page |
 | `/clientes` | Page |
 | `/cockpit` | Page |
 | `/cockpit/acquisition` | Page |
