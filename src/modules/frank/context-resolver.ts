@@ -12,6 +12,7 @@ import { messages, freightSimulations } from '@/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { normalizeAndHash } from '@/lib/phone';
 import { logger } from '@/infra/logger';
+import { getSessionState, createSessionState, type SessionState } from './session.repository';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ export interface ConversationContext {
     customer: CustomerContext;
     lastMessages: MessageSummary[];
     lastQuotes: QuoteSummary[];
+    sessionState: SessionState | null;
 }
 
 // ─── Resolver ───────────────────────────────────────────────────────────────
@@ -126,6 +128,17 @@ export async function resolveConversationContext(
         quoteCount: lastQuotes.length,
     });
 
+    // 3. Load or create session state (key = tenantId + phoneHash)
+    let sessionState: SessionState | null = null;
+    try {
+        sessionState = await getSessionState(tenantId, phoneHash);
+        if (!sessionState) {
+            sessionState = await createSessionState(tenantId, phoneHash);
+        }
+    } catch (err) {
+        logger.warn('context_resolver_session_error', { tenantId, error: (err as Error).message });
+    }
+
     return {
         customer: {
             phone: normalized,
@@ -134,5 +147,6 @@ export async function resolveConversationContext(
         },
         lastMessages,
         lastQuotes,
+        sessionState,
     };
 }

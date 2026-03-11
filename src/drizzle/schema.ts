@@ -1706,3 +1706,25 @@ export const freightShipments = mysqlTable('freight_shipments', {
 }));
 
 export type FreightShipmentRecord = typeof freightShipments.$inferSelect;
+
+// --- Frank Session State ---
+
+export const frankSessionState = mysqlTable('frank_session_state', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    sessionId: varchar('session_id', { length: 128 }).notNull(),
+    customerId: varchar('customer_id', { length: 36 }),
+    organizationId: varchar('organization_id', { length: 36 }),
+    currentIntent: varchar('current_intent', { length: 50 }),
+    currentStep: varchar('current_step', { length: 50 }),
+    lastSimulationId: varchar('last_simulation_id', { length: 36 }),
+    lastOrderId: varchar('last_order_id', { length: 36 }),
+    contextJson: json('context_json').$type<Record<string, unknown>>(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    uqTenantSession: uniqueIndex('uq_frank_session_tenant_session').on(table.tenantId, table.sessionId),
+    idxUpdatedAt: index('idx_frank_session_updated').on(table.updatedAt),
+}));
+
+export type FrankSessionStateRecord = typeof frankSessionState.$inferSelect;

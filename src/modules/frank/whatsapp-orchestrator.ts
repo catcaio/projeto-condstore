@@ -17,6 +17,7 @@ import { TableDrivenAdapter } from '@/modules/freight/table-driven-adapter';
 import { loadOperationalSettings } from '@/core/freight/operational-settings';
 import { logFreightSimulation } from '@/modules/freight/freight-audit';
 import { createOrderFromQuoteTool } from './tools/create-order-from-quote.tool';
+import { updateSessionState } from './session.repository';
 import { getDb } from '@/infra/db';
 import { carrierPolicies, customers, customerTimelineEvents } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
@@ -165,6 +166,15 @@ export async function handleIncomingMessage(
                 };
             }
 
+            // Persist session state: save quote context
+            if (context?.sessionState) {
+                await updateSessionState(tenantId, context.customer.phoneHash, {
+                    currentIntent: 'quote_freight',
+                    currentStep: 'quoted',
+                    lastSimulationId: result.simulationId,
+                }).catch(() => {});
+            }
+
             return {
                 reply: formatQuoteReply(cep!, result.quotes),
                 intent: intentResult.intent,
@@ -177,6 +187,15 @@ export async function handleIncomingMessage(
             };
         } catch (err) {
             logger.error('frank_orchestrator_quote_error', err as Error, { tenantId, cep, productRef });
+
+            // Update session: mark freight step even on error
+            if (context?.sessionState) {
+                await updateSessionState(tenantId, context.customer.phoneHash, {
+                    currentIntent: 'quote_freight',
+                    currentStep: 'error',
+                }).catch(() => {});
+            }
+
             return {
                 reply: `Desculpe, tive um problema ao calcular o frete. Tente novamente em instantes. 😕`,
                 intent: intentResult.intent,
@@ -245,6 +264,15 @@ export async function handleIncomingMessage(
                     channel: 'whatsapp'
                 }
             });
+
+            // Persist session state: mark order creation
+            if (context?.sessionState) {
+                await updateSessionState(tenantId, context.customer.phoneHash, {
+                    currentIntent: 'order_created',
+                    currentStep: 'completed',
+                    lastOrderId: orderResult.orderId,
+                }).catch(() => {});
+            }
 
             return {
                 reply: `Pedido criado com sucesso! ✅\n\nNúmero do pedido: ${orderResult.orderId}\nSeu envio será preparado e você receberá atualizações em breve.`,
