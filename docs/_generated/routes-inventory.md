@@ -230,6 +230,7 @@
 | `/freight/simulations/[id]` | Page |
 | `/gargalos-logisticos` | Page |
 | `/home` | Page |
+| `/implantacao` | Page |
 | `/inbox` | Page |
 | `/inbox/conversations/[id]` | Page |
 | `/integracoes` | Page |
