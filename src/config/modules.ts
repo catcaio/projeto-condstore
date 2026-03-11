@@ -1,4 +1,19 @@
-import { LayoutDashboard, BarChart3, Boxes, Package, Settings2, FileText, Activity, Users, Map, Calendar, DollarSign, BrainCircuit, MessageSquare, Truck } from 'lucide-react';
+import {
+    Activity,
+    BarChart3,
+    Boxes,
+    BrainCircuit,
+    Calendar,
+    DollarSign,
+    FileText,
+    LayoutDashboard,
+    Map,
+    MessageSquare,
+    Package,
+    Settings2,
+    Truck,
+    Users,
+} from 'lucide-react';
 import type { Module, Role } from '@/ui/auth/entitlements-logic';
 
 export type RouteDefinition = {
@@ -6,7 +21,7 @@ export type RouteDefinition = {
     title: string;
     guard?: {
         roles?: Role[];
-        plan?: "free" | "pro" | "domine" | null;
+        plan?: 'free' | 'pro' | 'domine' | null;
     };
 };
 
@@ -15,338 +30,505 @@ export type ModuleConfig = {
     label: string;
     group: string;
     icon: any;
-    route: string; // The primary route (link in navbar)
+    route: string;
     authModule: Module;
-    requiredRoles?: Role[]; // If undefined, any role can access (but might be blocked by canAccess logic)
-    requiredPlan?: "free" | "pro" | "domine" | null; // Just for UI hint or stricter checks
+    requiredRoles?: Role[];
+    requiredPlan?: 'free' | 'pro' | 'domine' | null;
     navVisible: boolean;
     isPlaceholder?: boolean;
-    routes: RouteDefinition[]; // Array of routes within this module
+    navGroup?: 'Core' | 'Operacao' | 'Inteligencia' | 'Governanca';
+    navOrder?: number;
+    summary?: string;
+    routes: RouteDefinition[];
 };
 
-export const MODULES: ModuleConfig[] = [
-    // ── Nova Arquitetura Cockpit ────────────────────────
+const FOUNDATION_MODULES: ModuleConfig[] = [
     {
-        id: "nova-arquitetura",
-        label: "Cockpit Geral",
-        group: "Geral",
+        id: 'cockpit',
+        label: 'Cockpit',
+        group: 'Workspace',
         icon: LayoutDashboard,
-        route: "/dashboard",
-        authModule: "cockpit",
-        navVisible: false,
+        route: '/cockpit',
+        authModule: 'cockpit',
+        navVisible: true,
+        navGroup: 'Core',
+        navOrder: 10,
+        summary: 'Visao executiva, alertas e pulso operacional do tenant.',
         routes: [
-            { pattern: "/dashboard", title: "Dashboard" },
-            { pattern: "/vendas/cotacao", title: "Nova Cotação" },
-            { pattern: "/vendas/pedidos", title: "Pedidos" },
-            { pattern: "/vendas/clientes", title: "Clientes" },
-            { pattern: "/logistica/simulador", title: "Simulador de Frete" },
-            { pattern: "/logistica/envios", title: "Envios" },
-            { pattern: "/logistica/rastreamento", title: "Rastreamento" },
-            { pattern: "/logistica/insights", title: "Insights Logísticos" },
-            { pattern: "/operacao/inbox", title: "Inbox" },
-            { pattern: "/operacao/fila", title: "Fila Operacional" }
-        ]
-    },
-
-    // ── Operação ────────────────────────────────────────
-    {
-        id: "home",
-        label: "Home",
-        group: "Operação",
-        icon: LayoutDashboard,
-        route: "/home",
-        authModule: "cockpit",
-        navVisible: false,
-        routes: [
-            { pattern: "/home", title: "HOME" }
+            { pattern: '/cockpit', title: 'Cockpit' },
+            { pattern: '/dashboard', title: 'Cockpit' },
+            { pattern: '/home', title: 'Cockpit' },
         ],
     },
     {
-        id: "cockpit",
-        label: "Dashboard",
-        group: "Operação",
-        icon: LayoutDashboard,
-        route: "/cockpit",
-        authModule: "cockpit",
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit", title: "DASHBOARD" }
-        ],
-    },
-    {
-        id: "analytics",
-        label: "Analytics",
-        group: "Operação",
-        icon: BarChart3,
-        route: "/cockpit/analytics",
-        authModule: "cockpit",
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit/analytics", title: "ANALYTICS" }
-        ],
-    },
-    {
-        id: "audit",
-        label: "Audit Logs",
-        group: "Operação",
-        icon: FileText,
-        route: "/cockpit/audit",
-        authModule: "audit",
-        requiredRoles: ["admin", "manager", "operator"],
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit/audit", title: "AUDITORIA" }
-        ]
-    },
-    {
-        id: "acquisition",
-        label: "Acquisition",
-        group: "Operação",
+        id: 'operacao',
+        label: 'Operacao',
+        group: 'Workspace',
         icon: Activity,
-        route: "/cockpit/acquisition",
-        authModule: "acquisition",
+        route: '/operacao',
+        authModule: 'operation',
+        requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
+        navGroup: 'Core',
+        navOrder: 20,
+        summary: 'Fila, capacidade, riscos e pontos de intervencao manual.',
         routes: [
-            { pattern: "/cockpit/acquisition", title: "ACQUISITION" },
-            { pattern: "/cockpit/acquisition/drilldown", title: "DETALHES DE AQUISIÇÃO" }
-        ]
-    },
-    {
-        id: "freight-hub",
-        label: "Freight Hub",
-        group: "Operação",
-        icon: Truck,
-        route: "/painel-logistico",
-        authModule: "frete",
-        requiredRoles: ["admin", "manager"],
-        navVisible: true,
-        routes: [
-            { pattern: "/painel-logistico", title: "PAINEL LOGÍSTICO" }
-        ]
-    },
-    {
-        id: "packing-profiles",
-        label: "Perfis de Embalagem",
-        group: "Operação",
-        icon: Package,
-        route: "/cockpit/packing-profiles",
-        authModule: "frete",
-        requiredRoles: ["admin", "manager"],
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit/packing-profiles", title: "PERFIS DE EMBALAGEM" }
-        ]
-    },
-    {
-        id: "carrier-tables",
-        label: "Tabelas de Frete",
-        group: "Operação",
-        icon: Truck,
-        route: "/cockpit/carrier-tables",
-        authModule: "frete",
-        requiredRoles: ["admin", "manager"],
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit/carrier-tables", title: "TABELAS DE TRANSPORTADORAS" }
-        ]
-    },
-    {
-        id: "deliveries",
-        label: "Entregas",
-        group: "Operação",
-        icon: Truck,
-        route: "/cockpit/deliveries",
-        authModule: "dispatch",
-        requiredRoles: ["admin", "manager"],
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit/deliveries", title: "ENTREGAS" }
-        ]
-    },
-
-    // ── Domínio ─────────────────────────────────────────
-    {
-        id: "domine",
-        label: "Overview",
-        group: "Domínio",
-        icon: Activity,
-        route: "/cockpit/domine",
-        authModule: "cockpit",
-        requiredRoles: ["admin"],
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit/domine", title: "DOMINE CONSOLE" },
-            { pattern: "/cockpit/domine/dlq", title: "DLQ MANAGER" },
-            { pattern: "/cockpit/domine/health", title: "DOMINE HEALTH" }
+            { pattern: '/operacao', title: 'Operacao' },
+            { pattern: '/operacao/fila', title: 'Fila Operacional' },
         ],
     },
-
-    // ── Inteligência ────────────────────────────────────
     {
-        id: "knowledge",
-        label: "Knowledge & AI",
-        group: "Inteligência",
-        icon: BrainCircuit,
-        route: "/cockpit/knowledge",
-        authModule: "cockpit",
-        navVisible: true,
-        routes: [
-            { pattern: "/cockpit/knowledge", title: "KNOWLEDGE BASE" },
-            { pattern: "/cockpit/knowledge/collections", title: "COLEÇÕES" },
-            { pattern: "/cockpit/knowledge/ask", title: "FRANK ASK" },
-            { pattern: "/cockpit/knowledge/documents/:docId/versions/:versionId/chunks/:chunkId", title: "CHUNK VIEWER" },
-        ],
-    },
-
-    // ── Atendimento ─────────────────────────────────────
-    {
-        id: "inbox",
-        label: "Inbox",
-        group: "Atendimento",
+        id: 'conversas',
+        label: 'Conversas',
+        group: 'Operacao Comercial',
         icon: MessageSquare,
-        route: "/inbox/conversations",
-        authModule: "operation",
-        requiredRoles: ["admin", "manager", "operator"],
+        route: '/conversas',
+        authModule: 'operation',
+        requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
+        navGroup: 'Operacao',
+        navOrder: 30,
+        summary: 'Inbox operacional com fila densa, thread ativa e contexto lateral do cliente.',
         routes: [
-            { pattern: "/inbox", title: "INBOX" },
-            { pattern: "/inbox/conversations", title: "CONVERSAS" },
-            { pattern: "/inbox/conversations/:id", title: "CONVERSA DETALHE" }
-        ]
+            { pattern: '/conversas', title: 'Conversas' },
+            { pattern: '/inbox', title: 'Conversas' },
+            { pattern: '/inbox/conversations', title: 'Fila de Conversas' },
+            { pattern: '/inbox/conversations/:id', title: 'Conversa' },
+            { pattern: '/operacao/inbox', title: 'Conversas' },
+        ],
     },
-
-    // ── Configurações ───────────────────────────────────
     {
-        id: "equipe",
-        label: "Equipe",
-        group: "Configurações",
+        id: 'clientes',
+        label: 'Clientes',
+        group: 'Operacao Comercial',
         icon: Users,
-        route: "/cockpit/equipe",
-        authModule: "admin",
-        requiredRoles: ["admin", "manager"],
+        route: '/clientes',
+        authModule: 'operation',
+        requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
+        navGroup: 'Operacao',
+        navOrder: 40,
+        summary: 'Cliente 360 com relacionamento, pedidos, simulacoes e acoes operacionais.',
         routes: [
-            { pattern: "/cockpit/equipe", title: "EQUIPE" }
-        ]
+            { pattern: '/clientes', title: 'Clientes' },
+            { pattern: '/vendas/clientes', title: 'Clientes' },
+        ],
     },
     {
-        id: "rate-limit",
-        label: "Rate Limit",
-        group: "Configurações",
-        icon: Activity,
-        route: "/cockpit/rate-limit",
-        authModule: "admin",
-        requiredRoles: ["admin"],
+        id: 'pedidos',
+        label: 'Pedidos',
+        group: 'Operacao Comercial',
+        icon: FileText,
+        route: '/pedidos',
+        authModule: 'operation',
+        requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
+        navGroup: 'Operacao',
+        navOrder: 50,
+        summary: 'Fluxo operacional canonico do pedido com triagem, detalhe, cliente e logistica.',
         routes: [
-            { pattern: "/cockpit/rate-limit", title: "RATE LIMITS" }
-        ]
+            { pattern: '/pedidos', title: 'Pedidos' },
+            { pattern: '/vendas/pedidos', title: 'Pedidos' },
+        ],
     },
     {
-        id: "settings",
-        label: "Configurações",
-        group: "Configurações",
-        icon: Settings2,
-        route: "/settings",
-        authModule: "settings",
-        requiredRoles: ["admin"],
+        id: 'logistica',
+        label: 'Logistica',
+        group: 'Operacao Comercial',
+        icon: Truck,
+        route: '/logistica',
+        authModule: 'frete',
+        requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
+        navGroup: 'Operacao',
+        navOrder: 60,
+        summary: 'Central logistica com fila de acompanhamento, simulacoes, SLA, excecoes e acoes operacionais.',
         routes: [
-            { pattern: "/settings", title: "CONFIGURAÇÕES TÉCNICAS" }
-        ]
-    },
-
-    // ── Admin ───────────────────────────────────────────
-    {
-        id: "finance",
-        label: "Financeiro",
-        group: "Admin",
-        icon: DollarSign,
-        route: "/cockpit/finance",
-        authModule: "admin",
-        requiredRoles: ["admin"],
-        navVisible: true,
-        isPlaceholder: true,
-        routes: [
-            { pattern: "/cockpit/finance", title: "FINANCEIRO OBJETIVO" }
-        ]
+            { pattern: '/logistica', title: 'Logistica' },
+            { pattern: '/logistica/simulador', title: 'Simulador de Frete' },
+            { pattern: '/logistica/envios', title: 'Envios' },
+            { pattern: '/logistica/rastreamento', title: 'Rastreamento' },
+            { pattern: '/logistica/insights', title: 'Insights Logisticos' },
+            { pattern: '/freight/simulations', title: 'Simulacoes de Frete' },
+            { pattern: '/freight/simulations/:id', title: 'Simulacao de Frete' },
+        ],
     },
     {
-        id: "tenants",
-        label: "Tenants",
-        group: "Admin",
+        id: 'frank',
+        label: 'Frank',
+        group: 'Inteligencia',
+        icon: BrainCircuit,
+        route: '/frank',
+        authModule: 'cockpit',
+        requiredRoles: ['admin', 'manager'],
+        navVisible: true,
+        navGroup: 'Inteligencia',
+        navOrder: 70,
+        summary: 'Agente operacional com intencoes, desempenho e trilha de acoes.',
+        routes: [{ pattern: '/frank', title: 'Frank' }],
+    },
+    {
+        id: 'metricas',
+        label: 'Metricas',
+        group: 'Inteligencia',
+        icon: BarChart3,
+        route: '/metricas',
+        authModule: 'cockpit',
+        navVisible: true,
+        navGroup: 'Inteligencia',
+        navOrder: 80,
+        summary: 'Leitura executiva de funil, atendimento, logistica e atribuicao.',
+        routes: [
+            { pattern: '/metricas', title: 'Metricas' },
+            { pattern: '/attribution', title: 'Atribuicao' },
+        ],
+    },
+    {
+        id: 'tenant',
+        label: 'Tenant',
+        group: 'Governanca',
         icon: Boxes,
-        route: "/cockpit/tenants",
-        authModule: "admin",
-        requiredRoles: ["admin"],
+        route: '/tenant',
+        authModule: 'admin',
+        requiredRoles: ['admin', 'manager'],
         navVisible: true,
-        isPlaceholder: true,
-        routes: [
-            { pattern: "/cockpit/tenants", title: "GERENCIAMENTO DE TENANTS" }
-        ]
-    },
-
-    // ── Operação (Placeholder) ──────────────────────────
-    {
-        id: "dispatch",
-        label: "Dispatch",
-        group: "Operação",
-        icon: Package,
-        route: "/modules/dispatch",
-        authModule: "dispatch",
-        requiredRoles: ["admin", "manager", "operator"],
-        requiredPlan: "pro",
-        navVisible: false,
-        isPlaceholder: true,
-        routes: [
-            { pattern: "/modules/dispatch", title: "DISPATCH" }
-        ]
+        navGroup: 'Governanca',
+        navOrder: 90,
+        summary: 'Identidade do tenant, canais, branding e status operacional.',
+        routes: [{ pattern: '/tenant', title: 'Tenant' }],
     },
     {
-        id: "technicians",
-        label: "Técnicos",
-        group: "Operação",
-        icon: Users,
-        route: "/modules/technicians",
-        authModule: "operation",
-        requiredRoles: ["admin", "manager", "operator"],
-        requiredPlan: "pro",
-        navVisible: false,
-        isPlaceholder: true,
-        routes: [
-            { pattern: "/modules/technicians", title: "TÉCNICOS" },
-            { pattern: "/modules/technicians/:id", title: "PERFIL DO TÉCNICO" }
-        ]
-    },
-    {
-        id: "routes",
-        label: "Rotas",
-        group: "Operação",
-        icon: Map,
-        route: "/modules/routes",
-        authModule: "operation",
-        requiredRoles: ["admin", "manager", "operator"],
-        requiredPlan: "pro",
-        navVisible: false,
-        isPlaceholder: true,
-        routes: [
-            { pattern: "/modules/routes", title: "ROTAS DE ENTREGA" },
-            { pattern: "/modules/routes/:id", title: "DETALHES DA ROTA" }
-        ]
-    },
-    {
-        id: "events",
-        label: "Eventos Logísticos",
-        group: "Operação",
-        icon: Calendar,
-        route: "/modules/events",
-        authModule: "operation",
-        requiredRoles: ["admin", "manager", "operator", "viewer"],
-        requiredPlan: "pro",
-        navVisible: false,
-        isPlaceholder: true,
-        routes: [
-            { pattern: "/modules/events", title: "MURAL DE EVENTOS" }
-        ]
+        id: 'configuracoes',
+        label: 'Configuracoes',
+        group: 'Governanca',
+        icon: Settings2,
+        route: '/configuracoes',
+        authModule: 'settings',
+        requiredRoles: ['admin', 'manager'],
+        navVisible: true,
+        navGroup: 'Governanca',
+        navOrder: 100,
+        summary: 'Usuarios, permissoes, integracoes, AI provider e auditoria.',
+        routes: [{ pattern: '/configuracoes', title: 'Configuracoes' }],
     },
 ];
+
+const LEGACY_MODULES: ModuleConfig[] = [
+    {
+        id: 'analytics',
+        label: 'Analytics',
+        group: 'Legacy',
+        icon: BarChart3,
+        route: '/cockpit/analytics',
+        authModule: 'cockpit',
+        navVisible: false,
+        routes: [{ pattern: '/cockpit/analytics', title: 'Analytics' }],
+    },
+    {
+        id: 'audit',
+        label: 'Audit Logs',
+        group: 'Legacy',
+        icon: FileText,
+        route: '/cockpit/audit',
+        authModule: 'audit',
+        requiredRoles: ['admin', 'manager', 'operator'],
+        navVisible: false,
+        routes: [{ pattern: '/cockpit/audit', title: 'Auditoria' }],
+    },
+    {
+        id: 'acquisition',
+        label: 'Acquisition',
+        group: 'Legacy',
+        icon: Activity,
+        route: '/cockpit/acquisition',
+        authModule: 'acquisition',
+        navVisible: false,
+        routes: [
+            { pattern: '/cockpit/acquisition', title: 'Acquisition' },
+            { pattern: '/cockpit/acquisition/activation', title: 'Activation' },
+            { pattern: '/cockpit/acquisition/drilldown', title: 'Drilldown de Acquisition' },
+        ],
+    },
+    {
+        id: 'freight-hub',
+        label: 'Freight Hub',
+        group: 'Legacy',
+        icon: Truck,
+        route: '/painel-logistico',
+        authModule: 'frete',
+        requiredRoles: ['admin', 'manager'],
+        navVisible: false,
+        routes: [{ pattern: '/painel-logistico', title: 'Painel Logistico' }],
+    },
+    {
+        id: 'packing-profiles',
+        label: 'Perfis de Embalagem',
+        group: 'Legacy',
+        icon: Package,
+        route: '/cockpit/packing-profiles',
+        authModule: 'frete',
+        requiredRoles: ['admin', 'manager'],
+        navVisible: false,
+        routes: [{ pattern: '/cockpit/packing-profiles', title: 'Perfis de Embalagem' }],
+    },
+    {
+        id: 'carrier-tables',
+        label: 'Tabelas de Frete',
+        group: 'Legacy',
+        icon: Truck,
+        route: '/cockpit/carrier-tables',
+        authModule: 'frete',
+        requiredRoles: ['admin', 'manager'],
+        navVisible: false,
+        routes: [
+            { pattern: '/cockpit/carrier-tables', title: 'Tabelas de Frete' },
+            { pattern: '/logistica/tabelas-frete', title: 'Tabelas de Frete' },
+            { pattern: '/logistica/tabelas-frete/:carrier', title: 'Tabela da Transportadora' },
+        ],
+    },
+    {
+        id: 'deliveries',
+        label: 'Entregas',
+        group: 'Legacy',
+        icon: Truck,
+        route: '/cockpit/deliveries',
+        authModule: 'dispatch',
+        requiredRoles: ['admin', 'manager'],
+        navVisible: false,
+        routes: [{ pattern: '/cockpit/deliveries', title: 'Entregas' }],
+    },
+    {
+        id: 'domine',
+        label: 'Domine',
+        group: 'Legacy',
+        icon: Activity,
+        route: '/cockpit/domine',
+        authModule: 'cockpit',
+        requiredRoles: ['admin'],
+        navVisible: false,
+        routes: [
+            { pattern: '/cockpit/domine', title: 'Domine' },
+            { pattern: '/cockpit/domine/dlq', title: 'DLQ Domine' },
+            { pattern: '/cockpit/domine/health', title: 'Health Domine' },
+        ],
+    },
+    {
+        id: 'knowledge',
+        label: 'Knowledge',
+        group: 'Legacy',
+        icon: BrainCircuit,
+        route: '/cockpit/knowledge',
+        authModule: 'cockpit',
+        navVisible: false,
+        routes: [
+            { pattern: '/cockpit/knowledge', title: 'KNOWLEDGE BASE' },
+            { pattern: '/cockpit/knowledge/collections', title: 'Colecoes' },
+            { pattern: '/cockpit/knowledge/ask', title: 'Frank Ask' },
+            { pattern: '/cockpit/knowledge/documents/:docId/versions/:versionId/chunks/:chunkId', title: 'Chunk Viewer' },
+        ],
+    },
+    {
+        id: 'equipe',
+        label: 'Equipe',
+        group: 'Legacy',
+        icon: Users,
+        route: '/cockpit/equipe',
+        authModule: 'admin',
+        requiredRoles: ['admin', 'manager'],
+        navVisible: false,
+        routes: [{ pattern: '/cockpit/equipe', title: 'Equipe' }],
+    },
+    {
+        id: 'rate-limit',
+        label: 'Rate Limit',
+        group: 'Legacy',
+        icon: Activity,
+        route: '/cockpit/rate-limit',
+        authModule: 'admin',
+        requiredRoles: ['admin'],
+        navVisible: false,
+        routes: [{ pattern: '/cockpit/rate-limit', title: 'Rate Limit' }],
+    },
+    {
+        id: 'settings',
+        label: 'Configuracoes Tecnicas',
+        group: 'Legacy',
+        icon: Settings2,
+        route: '/settings',
+        authModule: 'settings',
+        requiredRoles: ['admin'],
+        navVisible: false,
+        routes: [{ pattern: '/settings', title: 'Configuracoes Tecnicas' }],
+    },
+    {
+        id: 'finance',
+        label: 'Financeiro',
+        group: 'Legacy',
+        icon: DollarSign,
+        route: '/cockpit/finance',
+        authModule: 'admin',
+        requiredRoles: ['admin'],
+        navVisible: false,
+        isPlaceholder: true,
+        routes: [{ pattern: '/cockpit/finance', title: 'Financeiro' }],
+    },
+    {
+        id: 'tenants',
+        label: 'Tenants',
+        group: 'Legacy',
+        icon: Boxes,
+        route: '/cockpit/tenants',
+        authModule: 'admin',
+        requiredRoles: ['admin'],
+        navVisible: false,
+        isPlaceholder: true,
+        routes: [{ pattern: '/cockpit/tenants', title: 'Tenants' }],
+    },
+    {
+        id: 'dispatch',
+        label: 'Dispatch',
+        group: 'Legacy',
+        icon: Package,
+        route: '/modules/dispatch',
+        authModule: 'dispatch',
+        requiredRoles: ['admin', 'manager', 'operator'],
+        requiredPlan: 'pro',
+        navVisible: false,
+        isPlaceholder: true,
+        routes: [{ pattern: '/modules/dispatch', title: 'Dispatch' }],
+    },
+    {
+        id: 'technicians',
+        label: 'Tecnicos',
+        group: 'Legacy',
+        icon: Users,
+        route: '/modules/technicians',
+        authModule: 'operation',
+        requiredRoles: ['admin', 'manager', 'operator'],
+        requiredPlan: 'pro',
+        navVisible: false,
+        isPlaceholder: true,
+        routes: [
+            { pattern: '/modules/technicians', title: 'Tecnicos' },
+            { pattern: '/modules/technicians/:id', title: 'Perfil do Tecnico' },
+        ],
+    },
+    {
+        id: 'routes',
+        label: 'Rotas',
+        group: 'Legacy',
+        icon: Map,
+        route: '/modules/routes',
+        authModule: 'operation',
+        requiredRoles: ['admin', 'manager', 'operator'],
+        requiredPlan: 'pro',
+        navVisible: false,
+        isPlaceholder: true,
+        routes: [
+            { pattern: '/modules/routes', title: 'Rotas' },
+            { pattern: '/modules/routes/:id', title: 'Detalhes da Rota' },
+        ],
+    },
+    {
+        id: 'events',
+        label: 'Eventos Logisticos',
+        group: 'Legacy',
+        icon: Calendar,
+        route: '/modules/events',
+        authModule: 'operation',
+        requiredRoles: ['admin', 'manager', 'operator', 'viewer'],
+        requiredPlan: 'pro',
+        navVisible: false,
+        isPlaceholder: true,
+        routes: [{ pattern: '/modules/events', title: 'Eventos Logisticos' }],
+    },
+    {
+        id: 'sales-legacy',
+        label: 'Vendas',
+        group: 'Legacy',
+        icon: FileText,
+        route: '/vendas/cotacao',
+        authModule: 'operation',
+        requiredRoles: ['admin', 'manager', 'operator'],
+        navVisible: false,
+        routes: [{ pattern: '/vendas/cotacao', title: 'Cotacao' }],
+    },
+    {
+        id: 'financeiro-legacy',
+        label: 'Financeiro',
+        group: 'Legacy',
+        icon: DollarSign,
+        route: '/financeiro/frete',
+        authModule: 'cockpit',
+        navVisible: false,
+        routes: [
+            { pattern: '/financeiro/frete', title: 'Custos de Frete' },
+            { pattern: '/financeiro/margem', title: 'Margem' },
+        ],
+    },
+    {
+        id: 'sistema-legacy',
+        label: 'Sistema',
+        group: 'Legacy',
+        icon: Activity,
+        route: '/sistema/health',
+        authModule: 'admin',
+        requiredRoles: ['admin'],
+        navVisible: false,
+        routes: [
+            { pattern: '/sistema/health', title: 'Health' },
+            { pattern: '/sistema/dlq', title: 'DLQ' },
+            { pattern: '/sistema/logs', title: 'Logs' },
+            { pattern: '/sistema/security', title: 'Security' },
+        ],
+    },
+    {
+        id: 'supreme-legacy',
+        label: 'Supreme',
+        group: 'Legacy',
+        icon: BrainCircuit,
+        route: '/supreme',
+        authModule: 'admin',
+        requiredRoles: ['admin'],
+        navVisible: false,
+        routes: [{ pattern: '/supreme', title: 'Supreme' }],
+    },
+    {
+        id: 'cockpit-legacy',
+        label: 'Cockpit Legacy',
+        group: 'Legacy',
+        icon: LayoutDashboard,
+        route: '/cockpit',
+        authModule: 'cockpit',
+        navVisible: false,
+        routes: [
+            { pattern: '/cockpit/:area', title: 'Cockpit' },
+            { pattern: '/cockpit/:area/:subarea', title: 'Cockpit' },
+            { pattern: '/cockpit/:area/:subarea/:item', title: 'Cockpit' },
+            { pattern: '/cockpit/:area/:subarea/:item/:detail', title: 'Cockpit' },
+        ],
+    },
+];
+
+export const MODULES: ModuleConfig[] = [...FOUNDATION_MODULES, ...LEGACY_MODULES];
+
+const PRIMARY_NAV_GROUP_ORDER: Array<NonNullable<ModuleConfig['navGroup']>> = ['Core', 'Operacao', 'Inteligencia', 'Governanca'];
+
+export function getPrimaryNavigationModules() {
+    return [...FOUNDATION_MODULES].sort((left, right) => (left.navOrder ?? 0) - (right.navOrder ?? 0));
+}
+
+export function getPrimaryNavigationGroups() {
+    return PRIMARY_NAV_GROUP_ORDER.map((groupKey) => ({
+        key: groupKey,
+        title:
+            groupKey === 'Core'
+                ? 'Core'
+                : groupKey === 'Operacao'
+                  ? 'Operacao'
+                  : groupKey === 'Inteligencia'
+                    ? 'Inteligencia'
+                    : 'Governanca',
+        items: getPrimaryNavigationModules().filter((moduleItem) => moduleItem.navGroup === groupKey),
+    })).filter((group) => group.items.length > 0);
+}

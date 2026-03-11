@@ -1,6 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { parseFreightSimulatorQueryState } from '@/modules/navigation/query-state';
+import { mockOrders } from '@/modules/pedidos/mock-data';
 import { safeFetch } from '@/ui/lib/safe-fetch';
 import { Truck, Package, Plus, Trash2, Calculator, MapPin, Weight, Box } from 'lucide-react';
 
@@ -52,7 +56,29 @@ interface SimResult {
 
 const uid = () => Math.random().toString(36).slice(2, 8);
 
+function parseCityState(cityLabel: string) {
+    const [city, stateAbbr] = cityLabel.split(',').map((value) => value.trim());
+    return {
+        city: city ?? '',
+        stateAbbr: stateAbbr ?? '',
+    };
+}
+
+function parseMoneyInput(value: string) {
+    return value.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
+}
+
 export function FreightSimulatorClient() {
+    const searchParams = useSearchParams();
+    const querySignature = searchParams.toString();
+    const routeContext = useMemo(
+        () => parseFreightSimulatorQueryState(searchParams),
+        [querySignature, searchParams]
+    );
+    const contextualOrder = useMemo(
+        () => (routeContext.orderId ? mockOrders.find((order) => order.id === routeContext.orderId) : undefined),
+        [routeContext.orderId]
+    );
     const [cep, setCep] = useState('');
     const [city, setCity] = useState('');
     const [uf, setUf] = useState('');
@@ -67,6 +93,19 @@ export function FreightSimulatorClient() {
     const [error, setError] = useState('');
     const [creatingLabel, setCreatingLabel] = useState<string | null>(null);
     const [labelSuccess, setLabelSuccess] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        if (!contextualOrder) {
+            return;
+        }
+
+        const destination = parseCityState(contextualOrder.customer.city);
+        setCity(destination.city);
+        setUf(destination.stateAbbr);
+        setInsuranceValue(parseMoneyInput(contextualOrder.total));
+        setResult(null);
+        setError('');
+    }, [contextualOrder]);
 
     const addRow = () => setVolumes(v => [...v, { id: uid(), length: 0, width: 0, height: 0, qty: 1 }]);
     const removeRow = (id: string) => setVolumes(v => v.filter(r => r.id !== id));
@@ -174,6 +213,38 @@ export function FreightSimulatorClient() {
                     Cotação operacional com entrada manual de volumes e dimensões
                 </p>
             </div>
+
+            {contextualOrder ? (
+                <section className="rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] p-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-[hsl(var(--ui-text-muted))]">
+                                Contexto do pedido
+                            </p>
+                            <h2 className="mt-2 text-lg font-semibold text-[hsl(var(--ui-text))]">
+                                Pedido #{contextualOrder.id} • {contextualOrder.customer.company}
+                            </h2>
+                            <p className="mt-1 text-sm text-[hsl(var(--ui-text-muted))]">
+                                Destino {contextualOrder.customer.city} • canal {contextualOrder.channel} • owner {contextualOrder.owner}
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Link
+                                href={`/pedidos?pedido=${contextualOrder.id}`}
+                                className="rounded-lg border border-[hsl(var(--ui-border))] px-3 py-2 text-sm font-medium text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-page))]"
+                            >
+                                Abrir pedido
+                            </Link>
+                            <Link
+                                href={`/logistica?pedido=${contextualOrder.id}`}
+                                className="rounded-lg border border-[hsl(var(--ui-border))] px-3 py-2 text-sm font-medium text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-page))]"
+                            >
+                                Ir para logística
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+            ) : null}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left column: form */}

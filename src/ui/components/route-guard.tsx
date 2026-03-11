@@ -3,49 +3,18 @@
 import * as React from 'react';
 import { useSession } from '../context/SessionContext';
 import { MODULES, type ModuleConfig } from '../../config/modules';
+import { findModuleForPath as resolveModuleForPath, isModuleAuthorized as resolveModuleAuthorization } from '../../config/rbac';
 import { usePathname } from 'next/navigation';
 import { Card, CardHeader, CardContent } from './card';
 import { ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 
 export function findModuleForPath(pathname: string): ModuleConfig | undefined {
-    let matched: ModuleConfig | undefined;
-
-    for (const mod of MODULES) {
-        for (const r of mod.routes) {
-            const regexStr = r.pattern.replace(/:[^\s/]+/g, '([^/]+)');
-            const regex = new RegExp(`^${regexStr}$`);
-            if (regex.test(pathname)) {
-                return mod;
-            }
-        }
-    }
-
-    // Fallback prefix matcher
-    const sorted = [...MODULES].sort((a, b) => b.route.length - a.route.length);
-    for (const mod of sorted) {
-        if (pathname === mod.route || pathname.startsWith(`${mod.route}/`)) {
-            return mod;
-        }
-    }
-
-    return undefined;
+    return resolveModuleForPath(pathname);
 }
 
 export function isModuleAuthorized(mod: ModuleConfig, role: string, hasPlan: boolean): { authorized: boolean, reason: 'role' | 'plan' | 'ok' } {
-    if (role === 'super_admin' || role === 'admin') {
-        return { authorized: true, reason: 'ok' };
-    }
-
-    if (mod.requiredRoles && !mod.requiredRoles.includes(role as any)) {
-        return { authorized: false, reason: 'role' };
-    }
-
-    if (mod.requiredPlan && !hasPlan) {
-        return { authorized: false, reason: 'plan' };
-    }
-
-    return { authorized: true, reason: 'ok' };
+    return resolveModuleAuthorization(mod, role, hasPlan);
 }
 
 export function RouteGuard({ children, moduleId }: { children: React.ReactNode, moduleId?: string }) {

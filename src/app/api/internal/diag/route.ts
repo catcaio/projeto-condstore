@@ -2,16 +2,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from 'drizzle-orm';
-import packageJson from '../../../../../package.json';
-import { getDb } from '../../../../infra/db';
-import { redisClient } from '../../../../infra/redis.client';
-import { getRateLimiterFallbackMetrics } from '../../../../infra/security/rate-limiter';
 import { requireInternalToken } from '../../../../infra/auth/tenant-route-guard';
 import { makeRequestId, attachRequestIdHeader } from '../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse } from '../../../../infra/http/error-response';
 import { structuredLogger } from '../../../../infra/log/logger';
-import { circuitBreaker } from '../../../../infra/security/circuit-breaker';
+import { collectInternalDiagSnapshot } from '../../../../infra/diagnostics/internal-diag';
 
 interface DiagStatus {
   env: string;
@@ -22,14 +17,6 @@ interface DiagStatus {
   version: string;
   rateLimiterFallbackActive: { count: number; lastSeenAt: number | null };
   circuitBreakers: any[];
-}
-
-function detectGitSha(): string | null {
-  const fromEnv =
-    process.env.GIT_SHA?.trim() ||
-    process.env.VERCEL_GIT_COMMIT_SHA?.trim() ||
-    process.env.COMMIT_SHA?.trim();
-  return fromEnv || null;
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -47,45 +34,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const authResult = requireInternalToken(request, { purpose: ['diag', 'export'] });
     if (!authResult.ok) return authResult.response;
 
-    let dbStatus: DiagStatus['db'] = 'fail';
-    let redisStatus: DiagStatus['redis'] = 'fail';
-
-    try {
-      const db = await getDb();
-      await db.execute(sql`SELECT 1`);
-      dbStatus = 'ok';
-    } catch (error) {
-      structuredLogger.warn('internal_diag_db_fail', {
-        requestId,
-        route,
-        eventType: 'internal_diag_db_check',
-        errorCode: ErrorCode.DB_ERROR,
-        error,
-      });
-    }
-
-    try {
-      const alive = await redisClient.ping();
-      redisStatus = alive ? 'ok' : 'fail';
-    } catch (error) {
-      structuredLogger.warn('internal_diag_redis_fail', {
-        requestId,
-        route,
-        eventType: 'internal_diag_redis_check',
-        errorCode: ErrorCode.UNKNOWN,
-        error,
-      });
-    }
+    const snapshot = await collectInternalDiagSnapshot();
 
     const payload: DiagStatus = {
-      env: process.env.NODE_ENV ?? 'development',
-      git_sha: detectGitSha(),
-      db: dbStatus,
-      redis: redisStatus,
-      uptimeSeconds: Math.floor(process.uptime()),
-      version: packageJson.version,
-      rateLimiterFallbackActive: getRateLimiterFallbackMetrics(),
-      circuitBreakers: circuitBreaker.getStatus(),
+      env: snapshot.env,
+      git_sha: snapshot.gitSha,
+      db: snapshot.db,
+      redis: snapshot.redis,
+      uptimeSeconds: snapshot.uptimeSeconds,
+      version: snapshot.version,
+      rateLimiterFallbackActive: snapshot.rateLimiterFallbackActive,
+      circuitBreakers: snapshot.circuitBreakers as any[],
     };
 
     const response = NextResponse.json(payload, { status: 200 });
