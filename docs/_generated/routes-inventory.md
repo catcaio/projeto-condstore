@@ -212,6 +212,7 @@
 | `/cockpit/status/audit` | Page |
 | `/cockpit/supreme` | Page |
 | `/cockpit/supreme/benchmarks` | Page |
+| `/como-funciona` | Page |
 | `/concept-layer-preview` | Page |
 | `/configuracoes` | Page |
 | `/conversas` | Page |
@@ -260,6 +261,7 @@
 | `/sistema/health` | Page |
 | `/sistema/logs` | Page |
 | `/sistema/security` | Page |
+| `/solucoes` | Page |
 | `/supreme` | Page |
 | `/t/[token]` | Page |
 | `/tecnologias` | Page |

@@ -269,3 +269,5 @@
 | /signup | GET | public | none | auth | live | User registration page with role selection |
 | /supreme | TBA | public | none | PUBLIC | live | Auto-detected |
 | /t/[token] | TBA | public | none | PUBLIC | live | Auto-detected |
+| /como-funciona | TBA | public | none | PUBLIC | live | Added manually to fix CI |
+| /solucoes | TBA | public | none | PUBLIC | live | Added manually to fix CI |
