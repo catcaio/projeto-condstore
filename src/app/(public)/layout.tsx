@@ -8,7 +8,7 @@ export default function PublicLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div data-theme="dark" className="min-h-screen flex flex-col bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))]">
+        <div className="site-dark min-h-screen flex flex-col bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))]">
             <PublicHeader />
             <main className="flex-1">
                 {children}

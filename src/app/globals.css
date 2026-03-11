@@ -223,6 +223,37 @@
     --cockpit-accent-fg: 224 20% 8%;
     --cockpit-danger: var(--ui-danger);
   }
+
+  /* Public site dark theme — scoped to .site-dark div */
+  .site-dark {
+    color-scheme: dark;
+
+    --ui-page: 224 20% 8%;
+    --ui-surface: 224 17% 11%;
+    --ui-surface-elevated: 224 15% 14%;
+    --ui-muted: 224 14% 17%;
+    --ui-border: 223 12% 23%;
+    --ui-border-strong: 223 10% 31%;
+    --ui-text: 210 18% 96%;
+    --ui-text-muted: 220 10% 68%;
+    --ui-text-subtle: 220 8% 56%;
+    --ui-shadow: 220 45% 3%;
+
+    --ui-accent-blue: 211 100% 60%;
+    --ui-accent-blue-strong: 211 100% 64%;
+    --ui-accent-blue-ink: 211 100% 82%;
+
+    --ui-danger: 4 82% 60%;
+    --ui-danger-strong: 4 84% 65%;
+    --ui-danger-ink: 4 100% 82%;
+
+    --ui-success: 145 60% 45%;
+    --ui-success-ink: 145 82% 80%;
+
+    --background: var(--ui-page);
+    --foreground: var(--ui-text);
+    --border: var(--ui-border);
+  }
 }
 
 @layer base {

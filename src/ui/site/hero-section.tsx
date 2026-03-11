@@ -33,7 +33,7 @@ export function HeroSection({ eyebrow, title, subtitle, ctas = [], className }: 
                     </div>
                 )}
 
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[hsl(var(--ui-text))] leading-[1.08] tracking-tight max-w-5xl">
+                <h1 data-testid="public-hero-title" className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[hsl(var(--ui-text))] leading-[1.08] tracking-tight max-w-5xl">
                     {title}
                 </h1>
 
@@ -43,10 +43,11 @@ export function HeroSection({ eyebrow, title, subtitle, ctas = [], className }: 
 
                 {ctas.length > 0 && (
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10 md:mt-12 w-full sm:w-auto">
-                        {ctas.map((cta) => (
+                        {ctas.map((cta, i) => (
                             <Link
                                 key={cta.href}
                                 href={cta.href}
+                                {...(i === 0 && cta.variant !== 'secondary' ? { 'data-testid': 'public-primary-cta' } : {})}
                                 className={cn(
                                     'inline-flex items-center justify-center rounded-full text-sm font-bold transition-all h-12 px-8 w-full sm:w-auto',
                                     cta.variant === 'secondary'
