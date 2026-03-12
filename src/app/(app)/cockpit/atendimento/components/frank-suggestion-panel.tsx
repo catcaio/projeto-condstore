@@ -48,7 +48,7 @@ export function FrankSuggestionPanel({
 
         fetchSuggestions();
 
-        const interval = setInterval(fetchSuggestions, 8000);
+        const interval = setInterval(fetchSuggestions, 30000);
         return () => {
             isMounted = false;
             clearInterval(interval);

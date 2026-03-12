@@ -70,13 +70,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     try {
         const url = request.nextUrl;
-        const requestedTenantId = url.searchParams.get('tenantId')?.trim();
-        if (requestedTenantId && requestedTenantId !== tenantId) {
-            return finalize(
-                errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Tenant mismatch'),
-                ErrorCode.FORBIDDEN,
-            );
-        }
 
         const period = normalizePeriod(url.searchParams.get('period'));
         const outcome = normalizeOutcome(url.searchParams.get('outcome'));

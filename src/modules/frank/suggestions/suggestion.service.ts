@@ -42,7 +42,7 @@ export class SuggestionService {
         const existing = await suggestionRepository.findById(tenantId, id);
         if (!existing) return false;
 
-        const isEdited = dto.finalResponse && dto.finalResponse !== existing.suggestedResponse;
+        const isEdited = !!(dto.finalResponse && dto.finalResponse !== existing.suggestedResponse);
         const status = isEdited ? 'edited' : 'approved';
 
         const ok = await suggestionRepository.updateStatus(

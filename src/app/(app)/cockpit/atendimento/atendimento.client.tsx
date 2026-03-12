@@ -75,20 +75,63 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
     };
 
     useEffect(() => {
-        fetchConversations();
-        const t = setInterval(fetchConversations, 15000); // poll list every 15s
-        return () => clearInterval(t);
+        const controller = new AbortController();
+
+        const loadConversations = async () => {
+            try {
+                const res = await fetch('/api/cockpit/conversations', { signal: controller.signal });
+                if (res.ok) {
+                    const json = await res.json();
+                    setConversations(json.data || []);
+                }
+            } catch (e) {
+                if (e instanceof Error && e.name === 'AbortError') return;
+                console.error(e);
+            } finally {
+                setLoadingList(false);
+            }
+        };
+
+        loadConversations();
+        const t = setInterval(loadConversations, 30000); // poll list every 30s
+        return () => {
+            controller.abort();
+            clearInterval(t);
+        };
     }, []);
 
     useEffect(() => {
-        if (activeConvId) {
-            fetchMessages(activeConvId);
-            const t = setInterval(() => fetchMessages(activeConvId, true), 8000); // poll messages every 8s
-            return () => clearInterval(t);
-        } else {
+        if (!activeConvId) {
             setMessages([]);
             setActiveConvDetails(null);
+            return;
         }
+
+        const controller = new AbortController();
+
+        const loadMessages = async (silent = false) => {
+            if (!silent) setLoadingMsgs(true);
+            try {
+                const res = await fetch(`/api/cockpit/conversations/${activeConvId}`, { signal: controller.signal });
+                if (res.ok) {
+                    const json = await res.json();
+                    setMessages(json.data.messages || []);
+                    setActiveConvDetails(json.data.conversation);
+                }
+            } catch (e) {
+                if (e instanceof Error && e.name === 'AbortError') return;
+                console.error(e);
+            } finally {
+                if (!silent) setLoadingMsgs(false);
+            }
+        };
+
+        loadMessages();
+        const t = setInterval(() => loadMessages(true), 30000); // poll messages every 30s
+        return () => {
+            controller.abort();
+            clearInterval(t);
+        };
     }, [activeConvId]);
 
     useEffect(() => {
