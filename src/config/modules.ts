@@ -165,7 +165,11 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         navGroup: 'Inteligencia',
         navOrder: 70,
         summary: 'Agente operacional com intencoes, desempenho e trilha de acoes.',
-        routes: [{ pattern: '/frank', title: 'Frank' }],
+        routes: [
+            { pattern: '/frank', title: 'Frank' },
+            { pattern: '/cockpit/frank/knowledge', title: 'Knowledge Base' },
+            { pattern: '/cockpit/frank/suggestions', title: 'Sugestoes' },
+        ],
     },
     {
         id: 'metricas',

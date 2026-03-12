@@ -1,6 +1,6 @@
 import { db } from '@/db/client';
 import { freightShipments } from '@/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 
 /**
  * Explicitly links an existing shipment to an Order.
@@ -29,5 +29,21 @@ export async function getShipmentsForOrder(tenantId: string, orderId: string) {
                 eq(freightShipments.tenantId, tenantId),
                 eq(freightShipments.orderId, orderId)
             )
-        );
+        )
+        .orderBy(desc(freightShipments.updatedAt), desc(freightShipments.createdAt));
+}
+
+export async function getShipmentById(tenantId: string, shipmentId: string) {
+    const shipments = await db
+        .select()
+        .from(freightShipments)
+        .where(
+            and(
+                eq(freightShipments.tenantId, tenantId),
+                eq(freightShipments.id, shipmentId),
+            ),
+        )
+        .limit(1);
+
+    return shipments[0] ?? null;
 }

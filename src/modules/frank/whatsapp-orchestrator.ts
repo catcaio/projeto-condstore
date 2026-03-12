@@ -8,20 +8,36 @@
  * 4. Format and return response text
  */
 
-import { resolveIntent, type Intent, type IntentResult } from './intent-resolver';
+import { resolveIntent, resolveContextualIntent, type Intent, type IntentResult, type SessionAnchors } from './intent-resolver';
+import { resolveEntities, detectedEntityTypes, missingEntityTypes, type ExtractedEntities, type EntityResolutionResult } from './entity-resolver';
+import { resolveConversationMode, type ConversationMode, type ConversationGateResult } from './conversation-control';
 import { extractCep, extractCepRaw } from './cep-extractor';
 import { resolveConversationContext, type ConversationContext } from './context-resolver';
+import { resolvePlaybook, type ResolvedPlaybook } from './playbooks/playbook.service';
+import { resolveKnowledge } from './knowledge/knowledge.service';
+import { recordInboundMessage, recordOutboundMessage, loadConversationContext } from './memory/memory.service';
+import { generateSuggestion } from './suggestions/suggestion.service';
+import { isFrankRuntimeEnabled } from '@/config/app.config';
 import { resolveProductFromUrl } from './product-resolver';
 import { resolvePackingDimensions } from '@/modules/freight/packing-resolver';
 import { TableDrivenAdapter } from '@/modules/freight/table-driven-adapter';
 import { loadOperationalSettings } from '@/core/freight/operational-settings';
 import { logFreightSimulation } from '@/modules/freight/freight-audit';
 import { createOrderFromQuoteTool } from './tools/create-order-from-quote.tool';
+import { isFrankAssistantMode } from './tools/tool-guard';
+import { getCustomerContextTool } from './tools/read-only/getCustomerContext.tool';
+import { getRecentOrdersTool, type RecentOrderSummary } from './tools/read-only/getRecentOrders.tool';
+import { getOrderStatusTool, type OrderStatusResult } from './tools/read-only/getOrderStatus.tool';
+import { getShipmentStatusTool, type ShipmentStatusResult } from './tools/read-only/getShipmentStatus.tool';
+import { getRecentQuotesTool, type RecentQuoteSummary } from './tools/read-only/getRecentQuotes.tool';
+import { resolveFrankCustomerReference, type ShipmentSummary } from './tools/read-only/shared';
 import { updateSessionState } from './session.repository';
 import { getDb } from '@/infra/db';
 import { carrierPolicies, customers, customerTimelineEvents } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
+import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
+import { twilioProvider } from '@/providers/twilio.provider';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -34,6 +50,7 @@ export interface OrchestratorResult {
     simulationId: string | null;
     carrierSuggested: string | null;
     context: ConversationContext | null;
+    conversationMode?: ConversationMode;
 }
 
 // ─── Response templates ─────────────────────────────────────────────────────
@@ -52,6 +69,23 @@ const SAUDACAO_REPLY_RETURNING = `Olá de novo! 👋 Que bom te ver por aqui.
 Como posso te ajudar hoje?
 🚚 Frete — envie o CEP + link do produto
 📦 Pedidos — pergunte sobre seu pedido`;
+
+const SAUDACAO_ASSISTANT_REPLY_NEW = `Olá! Sou o Frank em modo assistente.
+
+Neste momento eu só faço consultas seguras:
+📦 status do pedido
+🚚 rastreio e envio
+🧾 últimas cotações
+👤 contexto do cliente
+
+Me diga o que você precisa consultar.`;
+
+const SAUDACAO_ASSISTANT_REPLY_RETURNING = `Olá de novo! Estou em modo assistente e sigo apenas com leitura.
+
+Posso consultar:
+📦 seu pedido mais recente
+🚚 rastreio e status de envio
+🧾 sua última cotação`;
 
 const FRETE_MISSING_CEP = `🚚 Entendi que você quer calcular o frete!
 
@@ -73,6 +107,28 @@ Posso te ajudar com:
 
 O que precisa?`;
 
+const ASSISTANT_HUMAN_GUIDANCE = 'fale com um atendente humano ou envie o número exato do pedido ou do envio.';
+const ASSISTANT_QUOTE_GUIDANCE = 'fale com um atendente humano ou envie o identificador exato da cotação.';
+const ASSISTANT_REPHRASE_GUIDANCE = 'reformule o pedido com o número do pedido/envio ou fale com um atendente humano.';
+
+const DATE_TIME_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+});
+const LOW_CONFIDENCE_THRESHOLD = 0.25;
+
+type AssistantOutcome = 'success' | 'fallback';
+type AssistantFallbackReason =
+    | 'low_confidence'
+    | 'unsupported_intent'
+    | 'customer_context_missing'
+    | 'customer_context_not_found'
+    | 'order_not_found'
+    | 'recent_orders_missing'
+    | 'recent_quotes_missing'
+    | 'shipment_not_found'
+    | 'shipment_incomplete';
+
 function formatQuoteReply(cep: string, quotes: { carrier: string; price: number; deadline: number }[]): string {
     const best = quotes[0];
     const lines = [`🚚 Frete para CEP ${cep}\n`];
@@ -88,6 +144,850 @@ function formatQuoteReply(cep: string, quotes: { carrier: string; price: number;
     return lines.join('\n');
 }
 
+function formatDateTime(value: Date | null | undefined): string {
+    if (!value) {
+        return 'data indisponível';
+    }
+
+    return DATE_TIME_FORMATTER.format(value);
+}
+
+function humanizeStatus(status: string | null | undefined): string {
+    if (!status) {
+        return 'indisponível';
+    }
+
+    return status.replace(/[_-]/g, ' ');
+}
+
+function buildFollowUpMenu(options: {
+    showTracking?: boolean;
+    showOrder?: boolean;
+    showQuote?: boolean;
+    customPrompt?: string;
+}): string | null {
+    const optionsList: string[] = [];
+    if (options.showTracking) optionsList.push('• mostrar o rastreio');
+    if (options.showOrder) optionsList.push('• consultar seu último pedido');
+    if (options.showQuote) optionsList.push('• verificar uma nova cotação');
+
+    if (optionsList.length === 0) return null;
+
+    const prompt = options.customPrompt ?? 'Posso também:';
+    return `${prompt}\n${optionsList.join('\n')}`;
+}
+
+function formatSupportResponse(params: {
+    answer: string;
+    facts?: Array<string | null | undefined>;
+    nextStep?: string | null;
+}): string {
+    const facts = (params.facts ?? []).filter((fact): fact is string => {
+        return typeof fact === 'string' && fact.trim().length > 0;
+    });
+
+    const lines = [params.answer.trim()];
+    
+    if (facts.length > 0) {
+        lines.push('');
+        lines.push(...facts);
+    }
+
+    if (params.nextStep?.trim()) {
+        lines.push('');
+        lines.push(params.nextStep.trim());
+    }
+
+    return lines.join('\n');
+}
+
+function isLowConfidenceAssistantIntent(intentResult: IntentResult): boolean {
+    return intentResult.intent === 'OUTRO' || intentResult.confidence < LOW_CONFIDENCE_THRESHOLD;
+}
+
+function extractUuidLikeId(message: string): string | null {
+    const match = message.match(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i);
+    return match?.[0] ?? null;
+}
+
+function formatShipmentSnippet(shipment: ShipmentSummary | null): string {
+    if (!shipment) {
+        return 'Envio: não vinculado.';
+    }
+
+    return shipment.trackingCode
+        ? `Envio: ${shipment.shipmentId} • ${shipment.carrier} ${shipment.service} • ${humanizeStatus(shipment.status)} • rastreio ${shipment.trackingCode}.`
+        : `Envio: ${shipment.shipmentId} • ${shipment.carrier} ${shipment.service} • ${humanizeStatus(shipment.status)} • sem rastreio.`;
+}
+
+function buildAssistantResult(params: {
+    reply: string;
+    intentResult: IntentResult;
+    context: ConversationContext | null;
+    cep: string | null;
+    productRef: string | null;
+    simulationId?: string | null;
+    carrierSuggested?: string | null;
+}): OrchestratorResult {
+    return {
+        reply: params.reply,
+        intent: params.intentResult.intent,
+        intentConfidence: params.intentResult.confidence,
+        cep: params.cep,
+        productRef: params.productRef,
+        simulationId: params.simulationId ?? null,
+        carrierSuggested: params.carrierSuggested ?? null,
+        context: params.context,
+    };
+}
+
+async function finalizeAssistantResponse(params: {
+    tenantId: string;
+    reply: string;
+    intentResult: IntentResult;
+    context: ConversationContext | null;
+    cep: string | null;
+    productRef: string | null;
+    startedAt: number;
+    outcome: AssistantOutcome;
+    toolUsed?: string;
+    fallbackReason?: AssistantFallbackReason;
+    customerId?: string | null;
+    orderId?: string | null;
+    shipmentId?: string | null;
+    simulationId?: string | null;
+    carrierSuggested?: string | null;
+}): Promise<OrchestratorResult> {
+    const latencyMs = Date.now() - params.startedAt;
+    const toolUsed = params.toolUsed ?? 'none';
+    const sessionId = params.context?.customer.phoneHash ?? null;
+    const entityId =
+        params.orderId ??
+        params.shipmentId ??
+        params.simulationId ??
+        null;
+
+    const responsePayload = {
+        intent: params.intentResult.intent,
+        confidence: params.intentResult.confidence,
+        toolUsed,
+        outcome: params.outcome,
+        latencyMs,
+        fallbackReason: params.outcome === 'fallback'
+            ? params.fallbackReason ?? 'unsupported_intent'
+            : undefined,
+    };
+
+    logger.info('frank_assist_response', {
+        tenantId: params.tenantId,
+        ...responsePayload,
+        missingContextReason: params.outcome === 'fallback' ? params.fallbackReason : undefined,
+        customerId: params.customerId ?? undefined,
+        orderId: params.orderId ?? undefined,
+        shipmentId: params.shipmentId ?? undefined,
+        simulationId: params.simulationId ?? undefined,
+    });
+
+    await publishOperationalEvent({
+        tenantId: params.tenantId,
+        eventType: 'frank_assist_response',
+        eventDomain: 'OPERATIONS',
+        entityId,
+        customerId: params.customerId ?? null,
+        sessionId,
+        payload: responsePayload,
+    });
+
+    if (params.outcome === 'fallback') {
+        const handoffReason = params.fallbackReason ?? 'unsupported_intent';
+
+        logger.warn('frank_assist_handoff', {
+            tenantId: params.tenantId,
+            intent: params.intentResult.intent,
+            reason: handoffReason,
+            toolUsed,
+            customerId: params.customerId ?? undefined,
+            orderId: params.orderId ?? undefined,
+            shipmentId: params.shipmentId ?? undefined,
+            simulationId: params.simulationId ?? undefined,
+        });
+
+        await publishOperationalEvent({
+            tenantId: params.tenantId,
+            eventType: 'frank_assist_handoff',
+            eventDomain: 'OPERATIONS',
+            entityId,
+            customerId: params.customerId ?? null,
+            sessionId,
+            payload: {
+                intent: params.intentResult.intent,
+                toolUsed,
+                reason: handoffReason,
+            },
+        });
+    }
+
+    const shipmentReferencedId = params.shipmentId ?? null;
+    const quoteReferencedId = params.simulationId ?? null;
+    const customerReferencedId = params.customerId ?? null;
+    const orderReferencedId = params.orderId ?? null;
+
+    // Persist session anchors for conversational continuity
+    if (sessionId && (params.outcome === 'success' || orderReferencedId || shipmentReferencedId || quoteReferencedId)) {
+        updateSessionState(params.tenantId, sessionId, {
+            currentIntent: params.intentResult.intent,
+            lastOrderId: orderReferencedId ?? undefined,
+            lastReferencedShipmentId: shipmentReferencedId ?? undefined,
+            lastReferencedQuoteId: quoteReferencedId ?? undefined,
+            lastReferencedCustomerId: customerReferencedId ?? undefined,
+            lastToolUsed: params.toolUsed ?? undefined,
+        }).catch(() => {});
+    }
+
+    return buildAssistantResult({
+        reply: params.reply,
+        intentResult: params.intentResult,
+        context: params.context,
+        cep: params.cep,
+        productRef: params.productRef,
+        simulationId: params.simulationId ?? null,
+        carrierSuggested: params.carrierSuggested ?? null,
+    });
+}
+
+async function resolveConversationCustomerId(
+    tenantId: string,
+    context: ConversationContext | null,
+    phone?: string,
+): Promise<string | null> {
+    const customerReference = await resolveFrankCustomerReference({
+        tenantId,
+        sessionCustomerId: context?.sessionState?.customerId ?? null,
+        phone: phone ?? null,
+    });
+
+    return customerReference?.customerId ?? null;
+}
+
+function formatOrderStatusReply(
+    orderStatus: OrderStatusResult,
+    options?: { assumedMostRecent?: boolean; nextStep?: string | null },
+): string {
+    const latestHistory = orderStatus.statusHistory[0];
+
+    const menu = buildFollowUpMenu({
+        showTracking: !!orderStatus.linkedShipment,
+        showQuote: true,
+    });
+
+    return formatSupportResponse({
+        answer: `Seu pedido ${orderStatus.order.id} está com status: ${humanizeStatus(orderStatus.currentStatus)}.`,
+        facts: [
+            options?.assumedMostRecent ? '(Baseado no pedido mais recente encontrado para este cliente)' : null,
+            `Criado em: ${formatDateTime(orderStatus.order.createdAt)}`,
+            latestHistory
+                ? `Última atualização: ${humanizeStatus(latestHistory.status)} em ${formatDateTime(latestHistory.createdAt)}`
+                : null,
+            formatShipmentSnippet(orderStatus.linkedShipment),
+        ],
+        nextStep: [options?.nextStep, menu].filter(Boolean).join('\n\n'),
+    });
+}
+
+function formatShipmentStatusReply(
+    shipmentStatus: ShipmentStatusResult,
+    options?: { assumedMostRecent?: boolean; nextStep?: string | null },
+): string {
+    const menu = buildFollowUpMenu({
+        showOrder: true,
+        showQuote: true,
+    });
+
+    return formatSupportResponse({
+        answer: `Seu envio ${shipmentStatus.shipment.id} está com status: ${humanizeStatus(shipmentStatus.deliveryStatus)}.`,
+        facts: [
+            options?.assumedMostRecent ? '(Baseado no envio mais recente vinculado ao seu último pedido)' : null,
+            `Transportadora: ${shipmentStatus.carrier.name}`,
+            `Serviço: ${shipmentStatus.carrier.service}`,
+            shipmentStatus.trackingToken
+                ? `Rastreio: ${shipmentStatus.trackingToken}`
+                : 'Código de rastreio indisponível no momento.',
+            shipmentStatus.lastLocationEvent
+                ? `Última atualização: ${formatDateTime(shipmentStatus.lastLocationEvent.recordedAt)}`
+                : null,
+        ],
+        nextStep: [options?.nextStep, menu].filter(Boolean).join('\n\n'),
+    });
+}
+
+function formatRecentOrdersReply(recentOrders: RecentOrderSummary[]): string {
+    const menu = buildFollowUpMenu({
+        showTracking: true,
+        showQuote: true,
+    });
+
+    return formatSupportResponse({
+        answer: `Encontrei ${recentOrders.length} pedido(s) recente(s).`,
+        facts: recentOrders.slice(0, 3).map((order) => {
+            const tracking = order.linkedShipment?.trackingCode
+                ? ` • rastreio ${order.linkedShipment.trackingCode}`
+                : '';
+            return `${order.orderId} • ${humanizeStatus(order.currentStatus)} • ${formatDateTime(order.createdAt)}${tracking}`;
+        }),
+        nextStep: menu,
+    });
+}
+
+function formatRecentQuotesReply(recentQuotes: RecentQuoteSummary[]): string {
+    const menu = buildFollowUpMenu({
+        showOrder: true,
+    });
+
+    return formatSupportResponse({
+        answer: `Encontrei ${recentQuotes.length} cotação(ões) recente(s).`,
+        facts: recentQuotes.slice(0, 3).map((quote) => {
+            return `${quote.simulationId} • ${quote.routeSummary} • ${quote.carrierSummary ?? 'sem transportadora'} • ${formatDateTime(quote.quotedAt)} • ${humanizeStatus(quote.currentQuoteState)}`;
+        }),
+        nextStep: menu,
+    });
+}
+
+async function handleAssistantIntent(params: {
+    tenantId: string;
+    message: string;
+    phone?: string;
+    intentResult: IntentResult;
+    context: ConversationContext | null;
+    cep: string | null;
+    productRef: string | null;
+    extractedEntities?: ExtractedEntities;
+}): Promise<OrchestratorResult> {
+    const { tenantId, message, phone, intentResult, context, cep, productRef, extractedEntities } = params;
+    const startedAt = Date.now();
+    const explicitId = extractUuidLikeId(message) ?? extractedEntities?.orderId ?? null;
+
+    if (isLowConfidenceAssistantIntent(intentResult)) {
+        return finalizeAssistantResponse({
+            tenantId,
+            reply: formatSupportResponse({
+                answer: 'Não consegui classificar essa solicitação com segurança.',
+                nextStep: ASSISTANT_REPHRASE_GUIDANCE,
+            }),
+            intentResult,
+            context,
+            cep,
+            productRef,
+            startedAt,
+            outcome: 'fallback',
+            toolUsed: 'none',
+            fallbackReason: 'low_confidence',
+        });
+    }
+
+    switch (intentResult.intent) {
+        case 'FRETE':
+        case 'CONFIRM_QUOTE':
+        case 'PRODUTO':
+            return finalizeAssistantResponse({
+                tenantId,
+                reply: formatSupportResponse({
+                    answer: 'Estou em modo assistente com leitura estrita.',
+                    facts: ['Neste momento eu só consulto dados de pedido, envio, cotação e contexto do cliente.'],
+                    nextStep: ASSISTANT_HUMAN_GUIDANCE,
+                }),
+                intentResult,
+                context,
+                cep,
+                productRef,
+                startedAt,
+                outcome: 'fallback',
+                toolUsed: 'none',
+                fallbackReason: 'unsupported_intent',
+            });
+
+        case 'ORDER_STATUS':
+        case 'PEDIDO': {
+            let orderStatus: OrderStatusResult | null = null;
+            let assumedMostRecent = false;
+            let toolUsed = 'get_order_status';
+            let customerId: string | null = null;
+
+            if (explicitId) {
+                orderStatus = await getOrderStatusTool({ tenantId, orderId: explicitId });
+            }
+
+            if (!orderStatus && context?.sessionState?.lastOrderId) {
+                orderStatus = await getOrderStatusTool({
+                    tenantId,
+                    orderId: context.sessionState.lastOrderId,
+                });
+            }
+
+            if (!orderStatus) {
+                if (phone) {
+                    twilioProvider.sendMessage(tenantId, {
+                        to: phone,
+                        body: 'Estou verificando seu pedido para te responder com precisão.'
+                    }).catch(err => logger.error('frank_assist_wait_msg_failed', err as Error));
+                }
+
+                customerId = await resolveConversationCustomerId(tenantId, context, phone);
+
+                if (!customerId) {
+                    return finalizeAssistantResponse({
+                        tenantId,
+                        reply: formatSupportResponse({
+                            answer: 'Não consegui localizar o cliente desta conversa com segurança.',
+                            nextStep: ASSISTANT_HUMAN_GUIDANCE,
+                        }),
+                        intentResult,
+                        context,
+                        cep,
+                        productRef,
+                        startedAt,
+                        outcome: 'fallback',
+                        toolUsed,
+                        fallbackReason: 'customer_context_missing',
+                    });
+                }
+
+                const recentOrders = await getRecentOrdersTool({
+                    tenantId,
+                    customerId,
+                    limit: 1,
+                });
+                toolUsed = 'get_recent_orders>get_order_status';
+
+                if (recentOrders.length === 0) {
+                    return finalizeAssistantResponse({
+                        tenantId,
+                        reply: formatSupportResponse({
+                            answer: 'Não encontrei pedido para este cliente.',
+                            nextStep: ASSISTANT_HUMAN_GUIDANCE,
+                        }),
+                        intentResult,
+                        context,
+                        cep,
+                        productRef,
+                        startedAt,
+                        outcome: 'fallback',
+                        toolUsed,
+                        fallbackReason: 'order_not_found',
+                        customerId,
+                    });
+                }
+
+                assumedMostRecent = true;
+                orderStatus = await getOrderStatusTool({
+                    tenantId,
+                    orderId: recentOrders[0].orderId,
+                });
+            }
+
+            if (!orderStatus) {
+                return finalizeAssistantResponse({
+                    tenantId,
+                    reply: formatSupportResponse({
+                        answer: 'Não encontrei esse pedido com segurança.',
+                        nextStep: ASSISTANT_HUMAN_GUIDANCE,
+                    }),
+                    intentResult,
+                    context,
+                    cep,
+                    productRef,
+                    startedAt,
+                    outcome: 'fallback',
+                    toolUsed,
+                    fallbackReason: 'order_not_found',
+                    customerId,
+                    orderId: explicitId ?? context?.sessionState?.lastOrderId ?? null,
+                });
+            }
+
+            return finalizeAssistantResponse({
+                tenantId,
+                reply: formatOrderStatusReply(orderStatus, {
+                    assumedMostRecent,
+                    nextStep: orderStatus.linkedShipment
+                        ? null
+                        : 'se precisar confirmar expedição, um atendente humano pode revisar o pedido.',
+                }),
+                intentResult,
+                context,
+                cep,
+                productRef,
+                startedAt,
+                outcome: 'success',
+                toolUsed,
+                customerId: orderStatus.order.customerId,
+                orderId: orderStatus.order.id,
+                carrierSuggested: orderStatus.linkedShipment?.carrier ?? null,
+            });
+        }
+
+        case 'SHIPMENT_STATUS': {
+            let shipmentStatus: ShipmentStatusResult | null = null;
+            let assumedMostRecent = false;
+            let toolUsed = 'get_shipment_status';
+            let customerId: string | null = null;
+            let partialOrderStatus: OrderStatusResult | null = null;
+
+            if (explicitId) {
+                shipmentStatus = await getShipmentStatusTool({
+                    tenantId,
+                    shipmentId: explicitId,
+                });
+            }
+
+            if (!shipmentStatus) {
+                let candidateOrderId = context?.sessionState?.lastOrderId ?? null;
+
+                if (!candidateOrderId) {
+                    if (phone) {
+                        twilioProvider.sendMessage(tenantId, {
+                            to: phone,
+                            body: 'Estou verificando seu pedido e envio para te responder com precisão.'
+                        }).catch(err => logger.error('frank_assist_wait_msg_failed', err as Error));
+                    }
+
+                    customerId = await resolveConversationCustomerId(tenantId, context, phone);
+
+                    if (!customerId) {
+                        return finalizeAssistantResponse({
+                            tenantId,
+                            reply: formatSupportResponse({
+                                answer: 'Não consegui localizar o cliente desta conversa com segurança.',
+                                nextStep: ASSISTANT_HUMAN_GUIDANCE,
+                            }),
+                            intentResult,
+                            context,
+                            cep,
+                            productRef,
+                            startedAt,
+                            outcome: 'fallback',
+                            toolUsed,
+                            fallbackReason: 'customer_context_missing',
+                        });
+                    }
+
+                    const recentOrders = await getRecentOrdersTool({
+                        tenantId,
+                        customerId,
+                        limit: 1,
+                    });
+
+                    if (recentOrders.length === 0) {
+                        return finalizeAssistantResponse({
+                            tenantId,
+                            reply: formatSupportResponse({
+                                answer: 'Não encontrei envio para este cliente.',
+                                nextStep: ASSISTANT_HUMAN_GUIDANCE,
+                            }),
+                            intentResult,
+                            context,
+                            cep,
+                            productRef,
+                            startedAt,
+                            outcome: 'fallback',
+                            toolUsed: 'get_recent_orders',
+                            fallbackReason: 'shipment_not_found',
+                            customerId,
+                        });
+                    }
+
+                    candidateOrderId = recentOrders[0].orderId;
+                    assumedMostRecent = true;
+                }
+
+                partialOrderStatus = candidateOrderId
+                    ? await getOrderStatusTool({ tenantId, orderId: candidateOrderId })
+                    : null;
+
+                toolUsed = 'get_order_status>get_shipment_status';
+
+                if (!partialOrderStatus?.linkedShipment) {
+                    return finalizeAssistantResponse({
+                        tenantId,
+                        reply: formatSupportResponse({
+                            answer: partialOrderStatus
+                                ? `Encontrei o pedido ${partialOrderStatus.order.id}, mas o envio ainda não está disponível para consulta.`
+                                : 'Não encontrei dados de envio suficientes para essa consulta.',
+                            facts: partialOrderStatus
+                                ? [`Status do pedido: ${humanizeStatus(partialOrderStatus.currentStatus)}.`]
+                                : [],
+                            nextStep: 'um atendente humano pode confirmar manualmente a expedição ou o rastreio.',
+                        }),
+                        intentResult,
+                        context,
+                        cep,
+                        productRef,
+                        startedAt,
+                        outcome: 'fallback',
+                        toolUsed,
+                        fallbackReason: 'shipment_incomplete',
+                        customerId: customerId ?? partialOrderStatus?.order.customerId ?? null,
+                        orderId: partialOrderStatus?.order.id ?? candidateOrderId,
+                    });
+                }
+
+                shipmentStatus = await getShipmentStatusTool({
+                    tenantId,
+                    shipmentId: partialOrderStatus.linkedShipment.shipmentId,
+                });
+            }
+
+            if (!shipmentStatus) {
+                return finalizeAssistantResponse({
+                    tenantId,
+                    reply: formatSupportResponse({
+                        answer: 'Não encontrei esse envio com segurança.',
+                        nextStep: ASSISTANT_HUMAN_GUIDANCE,
+                    }),
+                    intentResult,
+                    context,
+                    cep,
+                    productRef,
+                    startedAt,
+                    outcome: 'fallback',
+                    toolUsed,
+                    fallbackReason: 'shipment_not_found',
+                    customerId,
+                    orderId: partialOrderStatus?.order.id ?? context?.sessionState?.lastOrderId ?? null,
+                    shipmentId: explicitId,
+                });
+            }
+
+            const shipmentReply = formatShipmentStatusReply(shipmentStatus, {
+                assumedMostRecent,
+                nextStep: shipmentStatus.trackingToken
+                    ? null
+                    : 'um atendente humano pode acompanhar manualmente até o rastreio ser disponibilizado.',
+            });
+
+            return finalizeAssistantResponse({
+                tenantId,
+                reply: shipmentReply,
+                intentResult,
+                context,
+                cep,
+                productRef,
+                startedAt,
+                outcome: shipmentStatus.trackingToken ? 'success' : 'fallback',
+                toolUsed,
+                fallbackReason: shipmentStatus.trackingToken ? undefined : 'shipment_incomplete',
+                customerId: customerId ?? partialOrderStatus?.order.customerId ?? null,
+                orderId: partialOrderStatus?.order.id ?? null,
+                shipmentId: shipmentStatus.shipment.id,
+                carrierSuggested: shipmentStatus.carrier.name,
+            });
+        }
+
+        case 'RECENT_ORDERS': {
+            const customerId = await resolveConversationCustomerId(tenantId, context, phone);
+
+            if (!customerId) {
+                return finalizeAssistantResponse({
+                    tenantId,
+                    reply: formatSupportResponse({
+                        answer: 'Não consegui localizar o cliente desta conversa com segurança.',
+                        nextStep: ASSISTANT_HUMAN_GUIDANCE,
+                    }),
+                    intentResult,
+                    context,
+                    cep,
+                    productRef,
+                    startedAt,
+                    outcome: 'fallback',
+                    toolUsed: 'get_recent_orders',
+                    fallbackReason: 'customer_context_missing',
+                });
+            }
+
+            const recentOrders = await getRecentOrdersTool({
+                tenantId,
+                customerId,
+            });
+
+            if (recentOrders.length === 0) {
+                return finalizeAssistantResponse({
+                    tenantId,
+                    reply: formatSupportResponse({
+                        answer: 'Não encontrei pedidos recentes para este cliente.',
+                        nextStep: ASSISTANT_HUMAN_GUIDANCE,
+                    }),
+                    intentResult,
+                    context,
+                    cep,
+                    productRef,
+                    startedAt,
+                    outcome: 'fallback',
+                    toolUsed: 'get_recent_orders',
+                    fallbackReason: 'recent_orders_missing',
+                    customerId,
+                });
+            }
+
+            return finalizeAssistantResponse({
+                tenantId,
+                reply: formatRecentOrdersReply(recentOrders),
+                intentResult,
+                context,
+                cep,
+                productRef,
+                startedAt,
+                outcome: 'success',
+                toolUsed: 'get_recent_orders',
+                customerId,
+                orderId: recentOrders[0].orderId,
+                carrierSuggested: recentOrders[0].linkedShipment?.carrier ?? null,
+            });
+        }
+
+        case 'RECENT_QUOTES': {
+            const customerId = await resolveConversationCustomerId(tenantId, context, phone);
+
+            if (!customerId) {
+                return finalizeAssistantResponse({
+                    tenantId,
+                    reply: formatSupportResponse({
+                        answer: 'Não consegui localizar o cliente desta conversa com segurança.',
+                        nextStep: ASSISTANT_QUOTE_GUIDANCE,
+                    }),
+                    intentResult,
+                    context,
+                    cep,
+                    productRef,
+                    startedAt,
+                    outcome: 'fallback',
+                    toolUsed: 'get_recent_quotes',
+                    fallbackReason: 'customer_context_missing',
+                });
+            }
+
+            const recentQuotes = await getRecentQuotesTool({
+                tenantId,
+                customerId,
+            });
+
+            if (recentQuotes.length === 0) {
+                return finalizeAssistantResponse({
+                    tenantId,
+                    reply: formatSupportResponse({
+                        answer: 'Não encontrei cotações recentes para este cliente.',
+                        nextStep: ASSISTANT_QUOTE_GUIDANCE,
+                    }),
+                    intentResult,
+                    context,
+                    cep,
+                    productRef,
+                    startedAt,
+                    outcome: 'fallback',
+                    toolUsed: 'get_recent_quotes',
+                    fallbackReason: 'recent_quotes_missing',
+                    customerId,
+                });
+            }
+
+            return finalizeAssistantResponse({
+                tenantId,
+                reply: formatRecentQuotesReply(recentQuotes),
+                intentResult,
+                context,
+                cep,
+                productRef,
+                startedAt,
+                outcome: 'success',
+                toolUsed: 'get_recent_quotes',
+                customerId,
+                simulationId: recentQuotes[0].simulationId,
+                carrierSuggested: recentQuotes[0].carrierSummary,
+            });
+        }
+
+        case 'CUSTOMER_CONTEXT': {
+            const customerContext = await getCustomerContextTool({
+                tenantId,
+                sessionCustomerId: context?.sessionState?.customerId ?? null,
+                phone: phone ?? null,
+            });
+
+            if (!customerContext) {
+                return finalizeAssistantResponse({
+                    tenantId,
+                    reply: formatSupportResponse({
+                        answer: 'Não encontrei contexto suficiente para esse cliente.',
+                        nextStep: ASSISTANT_HUMAN_GUIDANCE,
+                    }),
+                    intentResult,
+                    context,
+                    cep,
+                    productRef,
+                    startedAt,
+                    outcome: 'fallback',
+                    toolUsed: 'get_customer_context',
+                    fallbackReason: 'customer_context_not_found',
+                });
+            }
+
+            const organizationName =
+                customerContext.organization.tradeName ??
+                customerContext.organization.legalName;
+
+            const menu = buildFollowUpMenu({
+                showOrder: !!customerContext.recentOrders[0],
+                showQuote: !!customerContext.recentQuotes[0],
+                customPrompt: 'O que deseja consultar?'
+            });
+
+            return finalizeAssistantResponse({
+                tenantId,
+                reply: formatSupportResponse({
+                    answer: `Encontrei o cadastro vinculado à organização ${organizationName}.`,
+                    facts: [
+                        `${customerContext.contacts.length} contato(s) registrado(s).`,
+                        customerContext.recentOrders[0]
+                            ? `Último pedido: ${customerContext.recentOrders[0].orderId} em ${formatDateTime(customerContext.recentOrders[0].createdAt)}.`
+                            : 'Sem pedido recente vinculado.',
+                        customerContext.recentQuotes[0]
+                            ? `Última cotação: ${customerContext.recentQuotes[0].simulationId} em ${formatDateTime(customerContext.recentQuotes[0].quotedAt)}.`
+                            : 'Sem cotação recente vinculada.',
+                    ],
+                    nextStep: menu,
+                }),
+                intentResult,
+                context,
+                cep,
+                productRef,
+                startedAt,
+                outcome: 'success',
+                toolUsed: 'get_customer_context',
+                customerId: customerContext.customer.id,
+                orderId: customerContext.recentOrders[0]?.orderId ?? null,
+                simulationId: customerContext.recentQuotes[0]?.simulationId ?? null,
+                carrierSuggested: customerContext.recentQuotes[0]?.carrierSummary ?? null,
+            });
+        }
+
+        case 'OUTRO':
+        default:
+            return finalizeAssistantResponse({
+                tenantId,
+                reply: formatSupportResponse({
+                    answer: 'Não consegui resolver essa consulta com segurança.',
+                    nextStep: ASSISTANT_REPHRASE_GUIDANCE,
+                }),
+                intentResult,
+                context,
+                cep,
+                productRef,
+                startedAt,
+                outcome: 'fallback',
+                toolUsed: 'none',
+                fallbackReason: 'low_confidence',
+            });
+    }
+}
+
 // ─── Main orchestrator ──────────────────────────────────────────────────────
 
 export async function handleIncomingMessage(
@@ -95,7 +995,7 @@ export async function handleIncomingMessage(
     message: string,
     phone?: string,
 ): Promise<OrchestratorResult> {
-    const intentResult: IntentResult = resolveIntent(message);
+    const assistantMode = isFrankAssistantMode();
     const cep = extractCep(message);
     const cepRaw = extractCepRaw(message);
     const productRef = resolveProductFromUrl(message);
@@ -110,25 +1010,272 @@ export async function handleIncomingMessage(
         }
     }
 
+    // Build session anchors for contextual resolution
+    const sessionAnchors: SessionAnchors | null = context?.sessionState
+        ? {
+            lastReferencedOrderId: context.sessionState.lastOrderId ?? null,
+            lastReferencedShipmentId: context.sessionState.lastReferencedShipmentId ?? null,
+            lastReferencedQuoteId: context.sessionState.lastReferencedQuoteId ?? null,
+            lastReferencedCustomerId: context.sessionState.lastReferencedCustomerId ?? null,
+            previousIntent: (context.sessionState.currentIntent as Intent) ?? null,
+            lastToolUsed: context.sessionState.lastToolUsed ?? null,
+        }
+        : null;
+
+    const intentResult: IntentResult = assistantMode
+        ? resolveContextualIntent(message, sessionAnchors)
+        : resolveIntent(message);
+
+    // ─── Entity Resolution ──────────────────────────────────────────────
+    const entityResult: EntityResolutionResult = resolveEntities(message);
+    const entityTypes = detectedEntityTypes(entityResult.entities);
+
+    if (entityTypes.length > 0) {
+        logger.info('frank_entity_detected', {
+            tenantId,
+            intent: intentResult.intent,
+            entityTypes,
+            confidence: entityResult.confidence,
+        });
+        publishOperationalEvent({
+            tenantId,
+            eventType: 'frank_entity_detected',
+            eventDomain: 'OPERATIONS',
+            entityId: null,
+            customerId: null,
+            sessionId: context?.customer.phoneHash ?? null,
+            payload: { intent: intentResult.intent, entityTypes, confidence: entityResult.confidence },
+        }).catch(() => {});
+    } else {
+        const missing = missingEntityTypes(entityResult.entities, ['product', 'orderId']);
+        if (missing.length > 0) {
+            logger.info('frank_entity_missing', {
+                tenantId,
+                intent: intentResult.intent,
+                missingEntities: missing,
+            });
+            publishOperationalEvent({
+                tenantId,
+                eventType: 'frank_entity_missing',
+                eventDomain: 'OPERATIONS',
+                entityId: null,
+                customerId: null,
+                sessionId: context?.customer.phoneHash ?? null,
+                payload: { intent: intentResult.intent, missingEntities: missing },
+            }).catch(() => {});
+        }
+    }
+
+    const prevContext = (context?.sessionState?.contextJson as Record<string, unknown>) ?? {};
+    const autoResponsesCount = typeof prevContext.autoResponsesCount === 'number' ? prevContext.autoResponsesCount : 0;
+
+    let entitiesComplete = true;
+    const hasProduct = !!entityResult.entities.product || !!prevContext.activeProduct || !!productRef;
+    const hasOrder = !!entityResult.entities.orderId || !!context?.sessionState?.lastOrderId;
+    
+    if (['FRETE', 'PRODUTO'].includes(intentResult.intent)) {
+        entitiesComplete = hasProduct;
+    } else if (['ORDER_STATUS', 'SHIPMENT_STATUS', 'PEDIDO'].includes(intentResult.intent)) {
+        entitiesComplete = hasOrder;
+    }
+
+    // ─── Conversation Control Gate ───────────────────────────────────────
+    const gateResult: ConversationGateResult = resolveConversationMode({
+        intent: intentResult.intent,
+        entities: entityResult.entities,
+        confidence: intentResult.confidence,
+        timestamp: new Date(),
+        operatorOnline: false, // TODO: connect with real presense module
+        entitiesComplete,
+        autoResponsesCount,
+        messageBody: message,
+    });
+
+    const newAutoResponsesCount = gateResult.mode === 'SUPERVISED' ? 0 : autoResponsesCount + 1;
+
+    // Persist entities and mode limits in session contextJson
+    if (context?.customer.phoneHash) {
+        updateSessionState(tenantId, context.customer.phoneHash, {
+            contextJson: {
+                ...prevContext,
+                autoResponsesCount: newAutoResponsesCount,
+                ...(entityTypes.length > 0 ? { lastEntities: entityResult.entities } : {}),
+                ...(entityResult.entities.product ? { activeProduct: entityResult.entities.product } : {}),
+                ...(entityResult.entities.orderId ? { activeOrderId: entityResult.entities.orderId } : {}),
+            },
+        }).catch(() => {});
+    }
+
+    logger.info(`frank_mode_${gateResult.mode.toLowerCase()}`, {
+        tenantId,
+        intent: intentResult.intent,
+        mode: gateResult.mode,
+        reason: gateResult.reason,
+    });
+    publishOperationalEvent({
+        tenantId,
+        eventType: `frank_mode_${gateResult.mode.toLowerCase()}`,
+        eventDomain: 'OPERATIONS',
+        entityId: null,
+        customerId: null,
+        sessionId: context?.customer.phoneHash ?? null,
+        payload: { intent: intentResult.intent, mode: gateResult.mode, reason: gateResult.reason },
+    }).catch(() => {});
+
     logger.info('frank_orchestrator_intent', {
         tenantId,
         intent: intentResult.intent,
         confidence: intentResult.confidence,
+        mode: assistantMode ? 'assistant' : 'default',
+        conversationMode: gateResult.mode,
         hasCep: !!cep,
         hasProduct: !!productRef,
         isReturning: context?.customer.isReturning ?? false,
+        entityTypes,
     });
+
+    // ─── Frank Runtime Gate ───────────────────────────────────────────────
+    const frankEnabled = isFrankRuntimeEnabled();
+
+    // ─── Conversation Memory: Load Context ────────────────────────────────
+    const sessionId = context?.customer.phoneHash ?? null;
+    if (frankEnabled && sessionId) {
+        const memoryContext = await loadConversationContext(tenantId, sessionId);
+        if (memoryContext.messages.length > 0) {
+            publishOperationalEvent({
+                tenantId,
+                eventType: 'frank_memory_context_loaded',
+                eventDomain: 'OPERATIONS',
+                entityId: null,
+                customerId: null,
+                sessionId,
+                payload: { messageCount: memoryContext.messages.length },
+            }).catch(() => {});
+        }
+    }
+
+    // ─── Conversation Memory: Persist Inbound ─────────────────────────────
+    if (frankEnabled && sessionId) {
+        recordInboundMessage(
+            tenantId,
+            sessionId,
+            message,
+            intentResult.intent,
+            entityResult.entities as unknown as Record<string, unknown>,
+        ).catch(() => {});
+    }
+
+    // ─── Frank Playbooks Integration ─────────────────────────────────────
+    const playbook: ResolvedPlaybook | null = frankEnabled
+        ? await resolvePlaybook({
+            tenantId,
+            intent: intentResult.intent,
+            entities: entityResult.entities,
+        })
+        : null;
+
+    if (playbook) {
+        publishOperationalEvent({
+            tenantId,
+            eventType: 'frank_playbook_used',
+            eventDomain: 'OPERATIONS',
+            entityId: null,
+            customerId: null,
+            sessionId: context?.customer.phoneHash ?? null,
+            payload: { intent: intentResult.intent, playbookId: playbook.playbookId, originalMode: gateResult.mode },
+        }).catch(() => {});
+
+        if (playbook.requiresHumanHandoff && gateResult.mode !== 'SUPERVISED') {
+            gateResult.mode = 'SUPERVISED';
+            gateResult.reason = 'playbook_requires_handoff';
+            publishOperationalEvent({
+                tenantId,
+                eventType: 'frank_playbook_handoff',
+                eventDomain: 'OPERATIONS',
+                entityId: null,
+                customerId: null,
+                sessionId: context?.customer.phoneHash ?? null,
+                payload: { intent: intentResult.intent, playbookId: playbook.playbookId },
+            }).catch(() => {});
+        }
+    } else {
+        publishOperationalEvent({
+            tenantId,
+            eventType: 'frank_playbook_missing',
+            eventDomain: 'OPERATIONS',
+            entityId: null,
+            customerId: null,
+            sessionId: context?.customer.phoneHash ?? null,
+            payload: { intent: intentResult.intent },
+        }).catch(() => {});
+    }
+
+    // ─── Frank Knowledge Base Search ──────────────────────────────────────
+    const knowledgeEntry = frankEnabled && !playbook
+        ? await resolveKnowledge(tenantId, message, sessionId)
+        : null;
 
     // ─── SAUDACAO ───────────────────────────────────────────────────────
     if (intentResult.intent === 'SAUDACAO') {
-        const reply = context?.customer.isReturning ? SAUDACAO_REPLY_RETURNING : SAUDACAO_REPLY_NEW;
+        const reply = assistantMode
+            ? (context?.customer.isReturning ? SAUDACAO_ASSISTANT_REPLY_RETURNING : SAUDACAO_ASSISTANT_REPLY_NEW)
+            : (context?.customer.isReturning ? SAUDACAO_REPLY_RETURNING : SAUDACAO_REPLY_NEW);
+        
+        const finalReply = playbook 
+            ? `${playbook.responseBase}\n\n${playbook.nextStepSuggestion ?? ''}`.trim()
+            : reply;
+
         return {
-            reply,
+            reply: gateResult.mode === 'SUPERVISED' ? `[SUGESTÃO FRANK] ${finalReply}` : finalReply,
             intent: intentResult.intent,
             intentConfidence: intentResult.confidence,
             cep, productRef, simulationId: null,
             carrierSuggested: null, context,
+            conversationMode: gateResult.mode,
         };
+    }
+
+    if (assistantMode) {
+        // Playbook interception for Assistant fallback queries
+        if (playbook && !['FRETE', 'ORDER_STATUS', 'SHIPMENT_STATUS'].includes(intentResult.intent)) {
+            const finalReply = `${playbook.responseBase}\n\n${playbook.nextStepSuggestion ?? ''}`.trim();
+            const assistantResult = await finalizeAssistantResponse({
+                tenantId,
+                reply: finalReply,
+                intentResult,
+                context,
+                cep,
+                productRef,
+                startedAt: Date.now(),
+                outcome: playbook.requiresHumanHandoff ? 'fallback' : 'success',
+                toolUsed: 'playbook',
+            });
+
+            if (gateResult.mode === 'SUPERVISED') {
+                assistantResult.reply = `[SUGESTÃO FRANK] ${assistantResult.reply}`;
+            }
+            assistantResult.conversationMode = gateResult.mode;
+            return assistantResult;
+        }
+
+        const assistantResult = await handleAssistantIntent({
+            tenantId,
+            message,
+            phone,
+            intentResult,
+            context,
+            cep,
+            productRef,
+            extractedEntities: entityResult.entities,
+        });
+
+        // Tag SUPERVISED replies for operator review
+        if (gateResult.mode === 'SUPERVISED') {
+            assistantResult.reply = `[SUGESTÃO FRANK] ${assistantResult.reply}`;
+        }
+        assistantResult.conversationMode = gateResult.mode;
+
+        return assistantResult;
     }
 
     // ─── FRETE (auto-quote flow) ────────────────────────────────────────
@@ -297,14 +1444,65 @@ export async function handleIncomingMessage(
         }
     }
 
+    // ─── Knowledge Base Fallback ─────────────────────────────────────────
+    if (knowledgeEntry) {
+        const knowledgeReply = knowledgeEntry.content;
+        const finalKnowledgeReply = gateResult.mode === 'SUPERVISED'
+            ? `[SUGESTÃO FRANK] ${knowledgeReply}`
+            : knowledgeReply;
+
+        // Persist outbound memory
+        if (frankEnabled && sessionId) {
+            recordOutboundMessage(tenantId, sessionId, finalKnowledgeReply, intentResult.intent).catch(() => {});
+        }
+
+        // Generate suggestion for operator if SUPERVISED
+        if (frankEnabled && gateResult.mode === 'SUPERVISED' && sessionId) {
+            generateSuggestion({
+                tenantId,
+                sessionId,
+                suggestedResponse: knowledgeReply,
+                confidence: intentResult.confidence,
+                source: 'knowledge',
+            }).catch(() => {});
+        }
+
+        return {
+            reply: finalKnowledgeReply,
+            intent: intentResult.intent,
+            intentConfidence: intentResult.confidence,
+            cep, productRef, simulationId: null,
+            carrierSuggested: null, context,
+            conversationMode: gateResult.mode,
+        };
+    }
+
     // ─── PRODUTO / PEDIDO / OUTRO ───────────────────────────────────────
-    return {
+    const genericResult: OrchestratorResult = {
         reply: GENERIC_REPLY,
         intent: intentResult.intent,
         intentConfidence: intentResult.confidence,
         cep, productRef, simulationId: null,
         carrierSuggested: null, context,
     };
+
+    // Persist outbound memory
+    if (frankEnabled && sessionId) {
+        recordOutboundMessage(tenantId, sessionId, genericResult.reply, intentResult.intent).catch(() => {});
+    }
+
+    // Generate suggestion for operator if SUPERVISED
+    if (frankEnabled && gateResult.mode === 'SUPERVISED' && sessionId) {
+        generateSuggestion({
+            tenantId,
+            sessionId,
+            suggestedResponse: genericResult.reply,
+            confidence: intentResult.confidence,
+            source: 'tool',
+        }).catch(() => {});
+    }
+
+    return genericResult;
 }
 
 // ─── Auto-quote engine (reuses existing freight pipeline) ────────────────────

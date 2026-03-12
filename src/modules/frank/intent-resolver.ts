@@ -3,9 +3,29 @@
  *
  * Resolves the user's intent from a WhatsApp message
  * using keyword matching with confidence scoring.
+ *
+ * Also provides contextual resolution for follow-up messages
+ * using session anchors from previous conversation turns.
  */
 
-export type Intent = 'FRETE' | 'PRODUTO' | 'PEDIDO' | 'CONFIRM_QUOTE' | 'SAUDACAO' | 'OUTRO';
+export type Intent =
+    | 'FRETE'
+    | 'PRODUTO'
+    | 'PEDIDO'
+    | 'ORDER_STATUS'
+    | 'SHIPMENT_STATUS'
+    | 'RECENT_ORDERS'
+    | 'RECENT_QUOTES'
+    | 'CUSTOMER_CONTEXT'
+    | 'CONFIRM_QUOTE'
+    | 'CONFIRM_ORDER'
+    | 'PAYMENT'
+    | 'REQUEST_INVOICE'
+    | 'REQUEST_BOLETO'
+    | 'COMPLAINT'
+    | 'PRICE_NEGOTIATION'
+    | 'SAUDACAO'
+    | 'OUTRO';
 
 export interface IntentResult {
     intent: Intent;
@@ -23,15 +43,44 @@ const PRODUTO_KEYWORDS = [
     'tamanho', 'cor', 'modelo', 'qual o preço',
 ];
 
+const ORDER_STATUS_KEYWORDS = [
+    'qual o status do meu pedido', 'status do meu pedido', 'status do pedido',
+    'meu pedido saiu', 'pedido saiu', 'andamento do pedido',
+    'onde está meu pedido', 'onde esta meu pedido', 'pedido foi enviado',
+];
+
+const SHIPMENT_STATUS_KEYWORDS = [
+    'tem rastreio', 'qual o rastreio', 'código de rastreio',
+    'codigo de rastreio', 'rastreamento', 'rastreio', 'tracking',
+    'saiu para entrega', 'pedido saiu para entrega',
+];
+
+const RECENT_ORDERS_KEYWORDS = [
+    'qual meu último pedido', 'qual meu ultimo pedido', 'meu último pedido',
+    'meu ultimo pedido', 'último pedido', 'ultimo pedido',
+    'últimos pedidos', 'ultimos pedidos', 'pedidos recentes',
+];
+
+const RECENT_QUOTES_KEYWORDS = [
+    'qual foi minha última cotação', 'qual foi minha ultima cotacao',
+    'última cotação', 'ultima cotacao', 'últimas cotações',
+    'ultimas cotacoes', 'cotações recentes', 'cotacoes recentes',
+    'última simulação', 'ultima simulacao',
+];
+
+const CUSTOMER_CONTEXT_KEYWORDS = [
+    'meu cadastro', 'dados do cliente', 'dados da minha conta',
+    'contexto do cliente', 'meus contatos', 'minha empresa',
+];
+
 const PEDIDO_KEYWORDS = [
-    'pedido', 'rastreio', 'rastreamento', 'meu pedido', 'status',
-    'encomenda', 'onde está', 'chegou', 'código de rastreio',
+    'pedido', 'meu pedido', 'encomenda', 'compra',
 ];
 
 const CONFIRM_QUOTE_KEYWORDS = [
-    'pode fechar', 'confirmar pedido', 'pode enviar', 
+    'pode fechar', 'confirmar pedido', 'pode enviar',
     'quero esse frete', 'pode prosseguir', 'fechar pedido',
-    'esse mesmo', 'pode despachar'
+    'esse mesmo', 'pode despachar',
 ];
 
 const SAUDACAO_KEYWORDS = [
@@ -63,16 +112,26 @@ export function resolveIntent(message: string): IntentResult {
         return { intent: 'OUTRO', confidence: 0 };
     }
 
-    const scores: { intent: Intent; matches: number; total: number }[] = [
-        { intent: 'FRETE', matches: countMatches(message, FRETE_KEYWORDS), total: FRETE_KEYWORDS.length },
-        { intent: 'PRODUTO', matches: countMatches(message, PRODUTO_KEYWORDS), total: PRODUTO_KEYWORDS.length },
-        { intent: 'PEDIDO', matches: countMatches(message, PEDIDO_KEYWORDS), total: PEDIDO_KEYWORDS.length },
-        { intent: 'CONFIRM_QUOTE', matches: countMatches(message, CONFIRM_QUOTE_KEYWORDS), total: CONFIRM_QUOTE_KEYWORDS.length },
-        { intent: 'SAUDACAO', matches: countMatches(message, SAUDACAO_KEYWORDS), total: SAUDACAO_KEYWORDS.length },
+    const scores: { intent: Intent; matches: number; total: number; priority: number }[] = [
+        { intent: 'ORDER_STATUS', matches: countMatches(message, ORDER_STATUS_KEYWORDS), total: ORDER_STATUS_KEYWORDS.length, priority: 0 },
+        { intent: 'SHIPMENT_STATUS', matches: countMatches(message, SHIPMENT_STATUS_KEYWORDS), total: SHIPMENT_STATUS_KEYWORDS.length, priority: 1 },
+        { intent: 'RECENT_ORDERS', matches: countMatches(message, RECENT_ORDERS_KEYWORDS), total: RECENT_ORDERS_KEYWORDS.length, priority: 2 },
+        { intent: 'RECENT_QUOTES', matches: countMatches(message, RECENT_QUOTES_KEYWORDS), total: RECENT_QUOTES_KEYWORDS.length, priority: 3 },
+        { intent: 'CUSTOMER_CONTEXT', matches: countMatches(message, CUSTOMER_CONTEXT_KEYWORDS), total: CUSTOMER_CONTEXT_KEYWORDS.length, priority: 4 },
+        { intent: 'FRETE', matches: countMatches(message, FRETE_KEYWORDS), total: FRETE_KEYWORDS.length, priority: 5 },
+        { intent: 'PRODUTO', matches: countMatches(message, PRODUTO_KEYWORDS), total: PRODUTO_KEYWORDS.length, priority: 6 },
+        { intent: 'PEDIDO', matches: countMatches(message, PEDIDO_KEYWORDS), total: PEDIDO_KEYWORDS.length, priority: 7 },
+        { intent: 'CONFIRM_QUOTE', matches: countMatches(message, CONFIRM_QUOTE_KEYWORDS), total: CONFIRM_QUOTE_KEYWORDS.length, priority: 8 },
+        { intent: 'SAUDACAO', matches: countMatches(message, SAUDACAO_KEYWORDS), total: SAUDACAO_KEYWORDS.length, priority: 9 },
     ];
 
-    // Sort by match count descending
-    scores.sort((a, b) => b.matches - a.matches);
+    scores.sort((a, b) => {
+        if (b.matches !== a.matches) {
+            return b.matches - a.matches;
+        }
+
+        return a.priority - b.priority;
+    });
 
     const best = scores[0];
     if (best.matches === 0) {
@@ -83,4 +142,124 @@ export function resolveIntent(message: string): IntentResult {
     const confidence = Math.min(best.matches / Math.min(best.total, 4), 0.95);
 
     return { intent: best.intent, confidence: Math.round(confidence * 100) / 100 };
+}
+
+// ─── Contextual Intent Resolution ───────────────────────────────────────────
+
+/**
+ * Session anchors extracted from frank_session_state for contextual resolution.
+ */
+export interface SessionAnchors {
+    lastReferencedOrderId: string | null;
+    lastReferencedShipmentId: string | null;
+    lastReferencedQuoteId: string | null;
+    lastReferencedCustomerId: string | null;
+    previousIntent: Intent | null;
+    lastToolUsed: string | null;
+}
+
+/**
+ * Short follow-up phrases that are too ambiguous on their own
+ * but become meaningful in context of a previous entity anchor.
+ */
+const FOLLOWUP_PHRASES = [
+    'e agora', 'e o frete', 'tem previsao', 'tem previsão',
+    'ja saiu', 'já saiu', 'tem rastreio', 'quando chega',
+    'e o prazo', 'e o envio', 'e a entrega', 'quanto tempo',
+    'chegou', 'saiu', 'e o status', 'como ta', 'como tá',
+    'como esta', 'como está', 'e ai', 'e aí',
+];
+
+/**
+ * Detect if a normalized message matches a follow-up phrase pattern.
+ */
+function isFollowUpPhrase(normalizedMessage: string): boolean {
+    return FOLLOWUP_PHRASES.some((phrase) => normalizedMessage.includes(normalize(phrase)));
+}
+
+/**
+ * Contextual follow-up mapping rules.
+ * Maps (previousIntent, available anchor) → reclassified intent.
+ */
+function resolveFollowUpIntent(anchors: SessionAnchors): Intent | null {
+    const prevIntent = anchors.previousIntent;
+
+    // After ORDER_STATUS → follow-up likely wants SHIPMENT_STATUS
+    if (prevIntent === 'ORDER_STATUS' && anchors.lastReferencedOrderId) {
+        return 'SHIPMENT_STATUS';
+    }
+
+    // After PEDIDO → follow-up likely wants SHIPMENT_STATUS
+    if (prevIntent === 'PEDIDO' && anchors.lastReferencedOrderId) {
+        return 'SHIPMENT_STATUS';
+    }
+
+    // After SHIPMENT_STATUS → reiterate (check again)
+    if (prevIntent === 'SHIPMENT_STATUS' && (anchors.lastReferencedShipmentId || anchors.lastReferencedOrderId)) {
+        return 'SHIPMENT_STATUS';
+    }
+
+    // After RECENT_ORDERS → follow-up about latest order
+    if (prevIntent === 'RECENT_ORDERS' && anchors.lastReferencedOrderId) {
+        return 'ORDER_STATUS';
+    }
+
+    // After RECENT_QUOTES → follow-up about latest quote
+    if (prevIntent === 'RECENT_QUOTES' && anchors.lastReferencedQuoteId) {
+        return 'RECENT_QUOTES';
+    }
+
+    // After CUSTOMER_CONTEXT → follow-up about orders
+    if (prevIntent === 'CUSTOMER_CONTEXT' && anchors.lastReferencedCustomerId) {
+        return 'RECENT_ORDERS';
+    }
+
+    return null;
+}
+
+/** Confidence assigned to contextually-inferred intents. */
+const CONTEXTUAL_CONFIDENCE = 0.70;
+
+/**
+ * Resolve intent considering conversational context.
+ *
+ * 1. Run standard keyword-based resolveIntent().
+ * 2. If keyword confidence is adequate, return as-is.
+ * 3. If low confidence AND message matches a follow-up phrase AND anchors exist:
+ *    → reclassify using contextual rules.
+ * 4. Otherwise, return the standard (low-confidence) result for safe fallback.
+ */
+export function resolveContextualIntent(
+    message: string,
+    anchors: SessionAnchors | null,
+): IntentResult {
+    const standardResult = resolveIntent(message);
+
+    // High-confidence keyword match — trust it directly
+    if (standardResult.intent !== 'OUTRO' && standardResult.confidence >= 0.25) {
+        return standardResult;
+    }
+
+    // No anchors — cannot infer context, return standard result for fallback
+    if (!anchors) {
+        return standardResult;
+    }
+
+    // Check if this looks like a follow-up phrase
+    const normalizedMsg = normalize(message);
+    if (!isFollowUpPhrase(normalizedMsg)) {
+        return standardResult;
+    }
+
+    // Attempt contextual reclassification
+    const contextualIntent = resolveFollowUpIntent(anchors);
+    if (contextualIntent) {
+        return {
+            intent: contextualIntent,
+            confidence: CONTEXTUAL_CONFIDENCE,
+        };
+    }
+
+    // No applicable rule — return standard result for safe fallback
+    return standardResult;
 }

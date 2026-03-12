@@ -32,6 +32,8 @@ export const OPERATIONS_EVENTS = {
     MESSAGE_REPLIED: 'message_replied',
     DELIVERY_CREATED: 'delivery_created',
     DELIVERY_COMPLETED: 'delivery_completed',
+    FRANK_ASSIST_RESPONSE: 'frank_assist_response',
+    FRANK_ASSIST_HANDOFF: 'frank_assist_handoff',
 } as const;
 
 export const REVENUE_EVENTS = {
@@ -69,6 +71,8 @@ export const EVENT_TYPE_TO_DOMAIN: Record<string, EventDomain> = {
     message_replied: 'OPERATIONS',
     delivery_created: 'OPERATIONS',
     delivery_completed: 'OPERATIONS',
+    frank_assist_response: 'OPERATIONS',
+    frank_assist_handoff: 'OPERATIONS',
     // REVENUE
     payment_confirmed: 'REVENUE',
     margin_estimated: 'REVENUE',

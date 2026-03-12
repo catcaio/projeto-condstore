@@ -279,3 +279,10 @@
 | /app | TBA | public | none | PUBLIC | live | App do Ecossistema page |
 | /privacidade | TBA | public | none | PUBLIC | live | Política de Privacidade |
 | /termos | TBA | public | none | PUBLIC | live | Termos de Uso |
+| /api/cockpit/frank/knowledge | GET,POST | internal | required | cockpit | live | Frank Knowledge Base CRUD |
+| /api/cockpit/frank/knowledge/[id] | GET,PUT,DELETE | internal | required | cockpit | live | Frank Knowledge Base item CRUD |
+| /api/cockpit/frank/suggestions | GET | internal | required | cockpit | live | Frank Suggestions list |
+| /api/cockpit/frank/suggestions/[id]/approve | POST | internal | required | cockpit | live | Frank Suggestions approval |
+| /api/cockpit/metrics/frank | GET | internal | required | cockpit | live | Frank metrics for dashboard |
+| /cockpit/frank | GET | internal | required | cockpit | live | Frank cockpit main page |
+| /cockpit/frank/playbooks | GET | internal | required | cockpit | live | Frank playbooks management page |

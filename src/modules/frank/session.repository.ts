@@ -24,6 +24,10 @@ export interface SessionState {
     currentStep: string | null;
     lastSimulationId: string | null;
     lastOrderId: string | null;
+    lastReferencedShipmentId: string | null;
+    lastReferencedQuoteId: string | null;
+    lastReferencedCustomerId: string | null;
+    lastToolUsed: string | null;
     contextJson: Record<string, unknown> | null;
     createdAt: Date;
     updatedAt: Date;
@@ -36,6 +40,10 @@ export interface UpdateSessionParams {
     currentStep?: string | null;
     lastSimulationId?: string | null;
     lastOrderId?: string | null;
+    lastReferencedShipmentId?: string | null;
+    lastReferencedQuoteId?: string | null;
+    lastReferencedCustomerId?: string | null;
+    lastToolUsed?: string | null;
     contextJson?: Record<string, unknown> | null;
 }
 
@@ -84,6 +92,10 @@ export async function createSessionState(
         currentStep: params?.currentStep ?? null,
         lastSimulationId: params?.lastSimulationId ?? null,
         lastOrderId: params?.lastOrderId ?? null,
+        lastReferencedShipmentId: params?.lastReferencedShipmentId ?? null,
+        lastReferencedQuoteId: params?.lastReferencedQuoteId ?? null,
+        lastReferencedCustomerId: params?.lastReferencedCustomerId ?? null,
+        lastToolUsed: params?.lastToolUsed ?? null,
         contextJson: params?.contextJson ?? null,
     });
 
@@ -116,6 +128,10 @@ export async function updateSessionState(
     if (params.currentStep !== undefined) updateData.currentStep = params.currentStep;
     if (params.lastSimulationId !== undefined) updateData.lastSimulationId = params.lastSimulationId;
     if (params.lastOrderId !== undefined) updateData.lastOrderId = params.lastOrderId;
+    if (params.lastReferencedShipmentId !== undefined) updateData.lastReferencedShipmentId = params.lastReferencedShipmentId;
+    if (params.lastReferencedQuoteId !== undefined) updateData.lastReferencedQuoteId = params.lastReferencedQuoteId;
+    if (params.lastReferencedCustomerId !== undefined) updateData.lastReferencedCustomerId = params.lastReferencedCustomerId;
+    if (params.lastToolUsed !== undefined) updateData.lastToolUsed = params.lastToolUsed;
     if (params.contextJson !== undefined) updateData.contextJson = params.contextJson;
 
     if (Object.keys(updateData).length === 0) return;

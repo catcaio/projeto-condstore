@@ -17,6 +17,9 @@ interface AppConfig {
     defaultUnitWeight: number; // kg
     maxOptionsToReturn: number;
   };
+  frank: {
+    runtimeEnabled: boolean;
+  };
 }
 
 function getEnv(key: string, defaultValue?: string): string {
@@ -47,7 +50,20 @@ export const appConfig: AppConfig = {
     defaultUnitWeight: getEnvNumber('DEFAULT_UNIT_WEIGHT_KG', 0.3),
     maxOptionsToReturn: getEnvNumber('MAX_FREIGHT_OPTIONS', 3),
   },
+
+  frank: {
+    runtimeEnabled: process.env.FRANK_RUNTIME_ENABLED === 'true',
+  },
 };
+
+/**
+ * Check if Frank's operational runtime is enabled.
+ * When false, Frank's cockpit/editorial features remain active but
+ * the orchestrator, worker, and auto-responses are frozen.
+ */
+export function isFrankRuntimeEnabled(): boolean {
+  return appConfig.frank.runtimeEnabled;
+}
 
 /**
  * Validate configuration on startup.
