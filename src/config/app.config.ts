@@ -19,6 +19,7 @@ interface AppConfig {
   };
   frank: {
     runtimeEnabled: boolean;
+    runtimeMode: 'AUTONOMOUS' | 'SUPERVISED_ONLY';
   };
 }
 
@@ -53,6 +54,7 @@ export const appConfig: AppConfig = {
 
   frank: {
     runtimeEnabled: process.env.FRANK_RUNTIME_ENABLED === 'true',
+    runtimeMode: (process.env.FRANK_RUNTIME_MODE as 'AUTONOMOUS' | 'SUPERVISED_ONLY') || 'AUTONOMOUS',
   },
 };
 
@@ -63,6 +65,14 @@ export const appConfig: AppConfig = {
  */
 export function isFrankRuntimeEnabled(): boolean {
   return appConfig.frank.runtimeEnabled;
+}
+
+/**
+ * Check if Frank is operating strictly as a supervised assistant.
+ * In this mode, it generates suggestions for humans but blocks autonomous responses.
+ */
+export function isFrankSupervisedOnly(): boolean {
+  return appConfig.frank.runtimeMode === 'SUPERVISED_ONLY';
 }
 
 /**

@@ -168,6 +168,8 @@ describe('buildFrankAssistMetrics', () => {
             knowledgeUsed: 0,
             suggestionsGenerated: 0,
             suggestionsApproved: 0,
+            suggestionsEdited: 0,
+            suggestionsRejected: 0,
             memoryContextHits: 0,
         });
         expect(result.intents).toEqual([]);

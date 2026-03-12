@@ -303,3 +303,24 @@
 | /api/cockpit/metrics/frank | GET | internal | required | cockpit | live | Frank metrics for dashboard |
 | /cockpit/frank | GET | internal | required | cockpit | live | Frank cockpit main page |
 | /cockpit/frank/playbooks | GET | internal | required | cockpit | live | Frank playbooks management page |
+
+| /api/cockpit/config | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/config/[key] | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/custom-fields | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/custom-fields/[id] | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/custom-fields/values | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/suggestions/[id]/reject | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/playbooks | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/playbooks/[id] | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/timeline | GET/POST | internal | required | cockpit | live | Added |
+| /cockpit/configuracoes/[category] | GET/POST | internal | required | cockpit | live | Added |
+| /cockpit/configuracoes/campos | GET/POST | internal | required | cockpit | live | Added |
+| /cockpit/rooms/[room] | GET/POST | internal | required | cockpit | live | Added |
+| /cockpit/timeline | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/intents | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/intents/[id]/ignore | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/intents/[id]/validate | GET/POST | internal | required | cockpit | live | Added |
+| /cockpit/frank/intents | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/intents/[id]/create-playbook | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/intents/[id]/link-playbook | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/playbooks | GET/POST | internal | required | cockpit | live | Added |

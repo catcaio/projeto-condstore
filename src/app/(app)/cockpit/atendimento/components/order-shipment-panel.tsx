@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Package, Truck, ExternalLink, RefreshCw } from 'lucide-react';
+import { DynamicFieldsRenderer } from '@/ui/cockpit/custom-fields/dynamic-fields-renderer';
 
 interface ShipmentDetail {
     id: string;
@@ -123,6 +124,12 @@ export default function OrderShipmentPanel({ conversationId }: { conversationId:
                         </div>
                     )}
                 </div>
+
+                {shipment && shipment.id && (
+                    <div className="mt-4 pt-4 border-t border-[hsl(var(--ui-border))]">
+                        <DynamicFieldsRenderer entity="shipment" entityId={shipment.id} />
+                    </div>
+                )}
 
                 <a href={`/cockpit/orders/${order.id}`} className="mt-2 text-center text-xs text-[hsl(var(--ui-accent-blue))] hover:underline font-medium">
                     Ver Order Detail
