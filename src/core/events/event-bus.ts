@@ -62,7 +62,8 @@ export async function consumeEvents(
     stream: string,
     group: string,
     consumer: string,
-    handler: (payload: EventPayload, rawId: string) => Promise<void>
+    handler: (payload: EventPayload, rawId: string) => Promise<void>,
+    signal?: AbortSignal
 ): Promise<void> {
     const redis = redisClient.getRawClient();
     if (!redis) return;
@@ -79,7 +80,7 @@ export async function consumeEvents(
 
     logger.info('consumer_started', { stream, group, consumer });
 
-    while (true) {
+    while (!signal?.aborted) {
         try {
             const results = await redis.xreadgroup('GROUP', group, consumer, 'COUNT', 1, 'BLOCK', 2000, 'STREAMS', stream, '>');
             if (results && results.length > 0) {
@@ -96,10 +97,13 @@ export async function consumeEvents(
                 }
             }
         } catch (err) {
+            if (signal?.aborted) break;
             logger.error('consume_error', err as Error, { stream, group, consumer });
             await new Promise(res => setTimeout(res, 3000));
         }
     }
+
+    logger.info('consumer_stopped', { stream, group, consumer });
 }
 
 export async function ackEvent(stream: string, group: string, id: string): Promise<void> {
