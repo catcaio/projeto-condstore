@@ -1903,6 +1903,8 @@ export const frankIntentTraining = mysqlTable('frank_intent_training', {
     entities: json('entities'),
     confidence: decimal('confidence', { precision: 5, scale: 4 }),
     status: varchar('status', { length: 50 }).notNull().default('captured'), // captured, validated, ignored
+    playbookId: varchar('playbook_id', { length: 36 }),
+    linkStatus: varchar('link_status', { length: 50 }).notNull().default('unlinked'), // unlinked, linked, converted_to_playbook
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
     idxTenantStatus: index('idx_frank_intents_tenant_status').on(table.tenantId, table.status),

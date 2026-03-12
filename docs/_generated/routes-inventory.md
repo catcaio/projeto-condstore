@@ -43,10 +43,13 @@
 | `/api/cockpit/finops/alerts` | API |
 | `/api/cockpit/finops/unlock` | API |
 | `/api/cockpit/frank/intents` | API |
+| `/api/cockpit/frank/intents/[id]/create-playbook` | API |
 | `/api/cockpit/frank/intents/[id]/ignore` | API |
+| `/api/cockpit/frank/intents/[id]/link-playbook` | API |
 | `/api/cockpit/frank/intents/[id]/validate` | API |
 | `/api/cockpit/frank/knowledge` | API |
 | `/api/cockpit/frank/knowledge/[id]` | API |
+| `/api/cockpit/frank/playbooks` | API |
 | `/api/cockpit/frank/suggestions` | API |
 | `/api/cockpit/frank/suggestions/[id]/approve` | API |
 | `/api/cockpit/frank/suggestions/[id]/reject` | API |

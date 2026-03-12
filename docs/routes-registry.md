@@ -321,3 +321,6 @@
 | /api/cockpit/frank/intents/[id]/ignore | GET/POST | internal | required | cockpit | live | Added |
 | /api/cockpit/frank/intents/[id]/validate | GET/POST | internal | required | cockpit | live | Added |
 | /cockpit/frank/intents | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/intents/[id]/create-playbook | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/intents/[id]/link-playbook | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/playbooks | GET/POST | internal | required | cockpit | live | Added |

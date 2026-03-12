@@ -14,29 +14,39 @@ export interface CapturedIntent {
     messageText: string;
     detectedIntent: string | null;
     confidence: string | null;
+    entities: Record<string, any> | null;
     createdAt: string;
 }
 
 export function IntentLearningClient() {
     const [intents, setIntents] = useState<CapturedIntent[]>([]);
+    const [playbooks, setPlaybooks] = useState<{ id: string; title: string; intent: string }[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const loadIntents = async () => {
+    const loadData = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/cockpit/frank/intents');
-            if (res.ok) {
-                const { data } = await res.json();
+            const [resIntents, resPlaybooks] = await Promise.all([
+                fetch('/api/cockpit/frank/intents'),
+                fetch('/api/cockpit/frank/playbooks')
+            ]);
+            
+            if (resIntents.ok) {
+                const { data } = await resIntents.json();
                 setIntents(data || []);
             }
+            if (resPlaybooks.ok) {
+                const { data } = await resPlaybooks.json();
+                setPlaybooks(data || []);
+            }
         } catch (e) {
-            console.error('Failed to load intents', e);
+            console.error('Failed to load data', e);
         }
         setLoading(false);
     };
 
     useEffect(() => {
-        loadIntents();
+        loadData();
     }, []);
 
     const handleProcessed = (id: string) => {
@@ -62,7 +72,7 @@ export function IntentLearningClient() {
                         <p className="text-sm text-[hsl(var(--ui-text-muted))]">Classifique as perguntas recebidas nas conversas reais.</p>
                     </div>
                 </div>
-                <Button variant="secondary" onClick={loadIntents} disabled={loading} className="gap-2">
+                <Button variant="secondary" onClick={loadData} disabled={loading} className="gap-2">
                     <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     Atualizar
                 </Button>
@@ -86,6 +96,7 @@ export function IntentLearningClient() {
                         <IntentReviewPanel 
                             key={intent.id} 
                             intent={intent} 
+                            playbooks={playbooks}
                             onProcessed={() => handleProcessed(intent.id)} 
                         />
                     ))}
