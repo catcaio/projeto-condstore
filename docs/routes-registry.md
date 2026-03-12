@@ -277,3 +277,5 @@
 | /seguranca | TBA | public | none | PUBLIC | live | Security and governance page |
 | /casos | TBA | public | none | PUBLIC | live | Use cases page |
 | /app | TBA | public | none | PUBLIC | live | App do Ecossistema page |
+| /privacidade | TBA | public | none | PUBLIC | live | Política de Privacidade |
+| /termos | TBA | public | none | PUBLIC | live | Termos de Uso |

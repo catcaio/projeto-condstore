@@ -14,3 +14,6 @@ export { SiteThemeProvider } from './theme-provider';
 export { ThemeToggle } from './theme-toggle';
 export { TrustBand } from './trust-band';
 export { OperationProof } from './operation-proof';
+export { FaqSection } from './faq-section';
+export { ScrollReveal } from './scroll-reveal';
+

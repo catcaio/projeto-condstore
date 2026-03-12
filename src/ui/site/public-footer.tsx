@@ -92,9 +92,9 @@ export function PublicFooter() {
                         &copy; {new Date().getFullYear()} CONDSTORE OS. Todos os direitos reservados. CNPJ: 29.578.008/0001-11
                     </span>
                     <div className="flex gap-6 text-xs text-[hsl(var(--ui-text-subtle))]">
-                        <Link href="#" className="hover:text-[hsl(var(--ui-text-muted))] transition-colors">Privacidade</Link>
-                        <Link href="#" className="hover:text-[hsl(var(--ui-text-muted))] transition-colors">Termos</Link>
-                        <Link href="#" className="hover:text-[hsl(var(--ui-text-muted))] transition-colors">Status</Link>
+                        <Link href="/privacidade" className="hover:text-[hsl(var(--ui-text-muted))] transition-colors">Privacidade</Link>
+                        <Link href="/termos" className="hover:text-[hsl(var(--ui-text-muted))] transition-colors">Termos</Link>
+                        <Link href="/seguranca" className="hover:text-[hsl(var(--ui-text-muted))] transition-colors">Segurança</Link>
                     </div>
                 </div>
             </div>
