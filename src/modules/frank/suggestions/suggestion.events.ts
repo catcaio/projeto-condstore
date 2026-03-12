@@ -1,6 +1,34 @@
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 
-export function emitSuggestionGenerated(tenantId: string, payload: any) {
+export interface SuggestionGeneratedEventPayload {
+    suggestionId: string;
+    sessionId: string;
+    conversationId?: string | null;
+    intent?: string | null;
+    confidence?: number | null;
+}
+
+export interface SuggestionApprovedEventPayload {
+    suggestionId: string;
+    sessionId: string;
+    approvedBy: string;
+    edited: boolean;
+}
+
+export interface SuggestionEditedEventPayload {
+    suggestionId: string;
+    sessionId: string;
+    approvedBy: string;
+    edited: boolean;
+}
+
+export interface SuggestionRejectedEventPayload {
+    suggestionId: string;
+    sessionId: string;
+    rejectedBy: string;
+}
+
+export function emitSuggestionGenerated(tenantId: string, payload: SuggestionGeneratedEventPayload) {
     publishOperationalEvent({
         tenantId,
         eventDomain: 'OPERATIONS',
@@ -8,11 +36,11 @@ export function emitSuggestionGenerated(tenantId: string, payload: any) {
         entityId: payload.suggestionId,
         customerId: null,
         sessionId: payload.sessionId,
-        payload
+        payload: payload as unknown as Record<string, unknown>
     }).catch(() => {});
 }
 
-export function emitSuggestionApproved(tenantId: string, payload: any) {
+export function emitSuggestionApproved(tenantId: string, payload: SuggestionApprovedEventPayload) {
     publishOperationalEvent({
         tenantId,
         eventDomain: 'OPERATIONS',
@@ -20,11 +48,11 @@ export function emitSuggestionApproved(tenantId: string, payload: any) {
         entityId: payload.suggestionId,
         customerId: null,
         sessionId: payload.sessionId,
-        payload
+        payload: payload as unknown as Record<string, unknown>
     }).catch(() => {});
 }
 
-export function emitSuggestionEdited(tenantId: string, payload: any) {
+export function emitSuggestionEdited(tenantId: string, payload: SuggestionEditedEventPayload) {
     publishOperationalEvent({
         tenantId,
         eventDomain: 'OPERATIONS',
@@ -32,11 +60,11 @@ export function emitSuggestionEdited(tenantId: string, payload: any) {
         entityId: payload.suggestionId,
         customerId: null,
         sessionId: payload.sessionId,
-        payload
+        payload: payload as unknown as Record<string, unknown>
     }).catch(() => {});
 }
 
-export function emitSuggestionRejected(tenantId: string, payload: any) {
+export function emitSuggestionRejected(tenantId: string, payload: SuggestionRejectedEventPayload) {
     publishOperationalEvent({
         tenantId,
         eventDomain: 'OPERATIONS',
@@ -44,6 +72,6 @@ export function emitSuggestionRejected(tenantId: string, payload: any) {
         entityId: payload.suggestionId,
         customerId: null,
         sessionId: payload.sessionId,
-        payload
+        payload: payload as unknown as Record<string, unknown>
     }).catch(() => {});
 }

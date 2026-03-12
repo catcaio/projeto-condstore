@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
         const limitParam = searchParams.get('limit');
 
         const cursor = cursorParam ? new Date(cursorParam) : undefined;
-        const limit = limitParam ? parseInt(limitParam, 10) : 50;
+        const limit = Math.min(limitParam ? parseInt(limitParam, 10) : 50, 100);
 
         const tenantId = auth.session.tenantId;
 

@@ -44,47 +44,72 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
     const [draftText, setDraftText] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const abortControllers = useRef<{
+        list: AbortController | null;
+        msgs: AbortController | null;
+    }>({ list: null, msgs: null });
+
     const fetchConversations = async () => {
+        if (abortControllers.current.list) abortControllers.current.list.abort();
+        const controller = new AbortController();
+        abortControllers.current.list = controller;
+
         try {
-            const res = await fetch('/api/cockpit/conversations');
+            const res = await fetch('/api/cockpit/conversations', { signal: controller.signal });
             if (res.ok) {
                 const json = await res.json();
                 setConversations(json.data || []);
             }
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            if (e.name !== 'AbortError') console.error(e);
         } finally {
             setLoadingList(false);
         }
     };
 
     const fetchMessages = async (id: string, silent = false) => {
+        if (abortControllers.current.msgs) abortControllers.current.msgs.abort();
+        const controller = new AbortController();
+        abortControllers.current.msgs = controller;
+
         if (!silent) setLoadingMsgs(true);
         try {
-            const res = await fetch(`/api/cockpit/conversations/${id}`);
+            const res = await fetch(`/api/cockpit/conversations/${id}`, { signal: controller.signal });
             if (res.ok) {
                 const json = await res.json();
                 setMessages(json.data.messages || []);
                 setActiveConvDetails(json.data.conversation);
             }
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            if (e.name !== 'AbortError') console.error(e);
         } finally {
-            if (!silent) setLoadingMsgs(false);
+            if (abortControllers.current.msgs === controller) {
+                if (!silent) setLoadingMsgs(false);
+            }
         }
     };
 
     useEffect(() => {
         fetchConversations();
         const t = setInterval(fetchConversations, 15000); // poll list every 15s
-        return () => clearInterval(t);
+        return () => {
+            clearInterval(t);
+            if (abortControllers.current.list) {
+                abortControllers.current.list.abort();
+            }
+        };
     }, []);
 
     useEffect(() => {
         if (activeConvId) {
             fetchMessages(activeConvId);
             const t = setInterval(() => fetchMessages(activeConvId, true), 8000); // poll messages every 8s
-            return () => clearInterval(t);
+            return () => {
+                clearInterval(t);
+                if (abortControllers.current.msgs) {
+                    abortControllers.current.msgs.abort();
+                }
+            };
         } else {
             setMessages([]);
             setActiveConvDetails(null);
