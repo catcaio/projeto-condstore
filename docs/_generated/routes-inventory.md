@@ -25,6 +25,9 @@
 | `/api/cockpit/audit` | API |
 | `/api/cockpit/billing/checkout` | API |
 | `/api/cockpit/billing/upgrade` | API |
+| `/api/cockpit/conversations` | API |
+| `/api/cockpit/conversations/[id]` | API |
+| `/api/cockpit/conversations/[id]/message` | API |
 | `/api/cockpit/domine/connectors` | API |
 | `/api/cockpit/domine/summary` | API |
 | `/api/cockpit/finops` | API |
@@ -187,6 +190,7 @@
 | `/cockpit/acquisition/drilldown` | Page |
 | `/cockpit/actions` | Page |
 | `/cockpit/analytics` | Page |
+| `/cockpit/atendimento` | Page |
 | `/cockpit/audit` | Page |
 | `/cockpit/carrier-tables` | Page |
 | `/cockpit/deliveries` | Page |

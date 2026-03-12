@@ -158,6 +158,10 @@
 | /api/webhook | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/webhook/fallback | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/webhook/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/cockpit/conversations | GET | internal | requireAdmin | cockpit | live | List conversations |
+| /api/cockpit/conversations/[id] | GET | internal | requireAdmin | cockpit | live | Get conversation details |
+| /api/cockpit/conversations/[id]/message | POST | internal | requireAdmin | cockpit | live | Send operator response via Twilio |
+| /cockpit/atendimento | GET | frontend | requireAdmin | cockpit | live | Cockpit Human Atendimento UI |
 | /api/webhooks/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/freight/shipments | GET,POST | internal | requireAdmin | frete | live | Internal API for tracking and manual generation of shipping labels |
 | /api/webhooks/melhor-envio | POST | public | none | PUBLIC | live | Webhook intake for shipment tracking and freight auto-confirmation |

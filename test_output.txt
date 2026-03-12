@@ -1,0 +1,185 @@
+
+> lojacond-frete-automacao@1.0.0 test:ci
+> npm run lint:env && npm run lint:pii && cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=threads vitest run --configLoader runner --config vitest.config.mjs src/modules/frank/whatsapp-orchestrator.test.ts
+
+
+> lojacond-frete-automacao@1.0.0 lint:env
+> node ./scripts/check-env-leak.mjs
+
+­ƒöì Checking git tree for sensitive environment leaks...
+Ô£à No tracked sensitive .env paths or secret filename signatures found inside git bounds.
+
+> lojacond-frete-automacao@1.0.0 lint:pii
+> node scripts/verify-no-plaintext-pii.mjs
+
+­ƒøí´©Å [Gate] Iniciando varredura Anti-PII (Zero-Trust)...
+Ô£à [Gate] Nenhum vazamento l├│gico de PII (CNPJ/CPF plaintext) encontrado no dom├¡nio transacional.
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mC:/repos/projeto-condstore[39m
+
+ [31mÔØ»[39m src/modules/frank/whatsapp-orchestrator.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 35[2mms[22m[39m
+[31m     [31m├ù[31m returns order status in standardized assistant format[39m[32m 16[2mms[22m[39m
+[31m     [31m├ù[31m returns shipment status in standardized assistant format[39m[32m 3[2mms[22m[39m
+[31m     [31m├ù[31m returns recent quotes in standardized assistant format[39m[32m 5[2mms[22m[39m
+[31m     [31m├ù[31m falls back safely when customer context is missing[39m[32m 2[2mms[22m[39m
+[31m     [31m├ù[31m falls back safely on low confidence without calling tools[39m[32m 1[2mms[22m[39m
+     [32mÔ£ô[39m persists session anchors after successful order status resolution[32m 5[2mms[22m[39m
+[31m     [31m├ù[31m uses contextual intent resolution for follow-up messages in assistant mode[39m[32m 1[2mms[22m[39m
+     [32mÔ£ô[39m falls back safely when follow-up phrase has no anchor context[32m 1[2mms[22m[39m
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ» Failed Tests 6 ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»
+
+ FAIL  src/modules/frank/whatsapp-orchestrator.test.ts > handleIncomingMessage assistant mode > returns order status in standardized assistant format
+AssertionError: expected 'Seu pedido 11111111-1111-1111-1111-11ÔÇª' to contain 'Pedido 11111111-1111-1111-1111-111111ÔÇª'
+
+- Expected
++ Received
+
+- Pedido 11111111-1111-1111-1111-111111111111 est├í com status separacao.
++ Seu pedido 11111111-1111-1111-1111-111111111111 est├í com status: separacao.
++
++ Criado em: 01/03/2026, 07:00
++ ├Ültima atualiza├º├úo: separacao em 02/03/2026, 09:00
++ Envio: ship-1 ÔÇó Braspress Rodoviario ÔÇó em transito ÔÇó rastreio TRACK123.
++
++ Posso tamb├®m:
++ ÔÇó mostrar o rastreio
++ ÔÇó verificar uma nova cota├º├úo
+
+ ÔØ» src/modules/frank/whatsapp-orchestrator.test.ts:190:30
+    188|         );
+    189| 
+    190|         expect(result.reply).toContain(`Pedido ${orderId} est├í com staÔÇª
+       |                              ^
+    191|         expect(result.reply).toContain('Criado em');
+    192|         expect(result.reply).toContain('Envio: ship-1');
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1/6]ÔÄ»
+
+ FAIL  src/modules/frank/whatsapp-orchestrator.test.ts > handleIncomingMessage assistant mode > returns shipment status in standardized assistant format
+AssertionError: expected 'Seu envio 22222222-2222-2222-2222-222ÔÇª' to contain 'Envio 22222222-2222-2222-2222-2222222ÔÇª'
+
+- Expected
++ Received
+
+- Envio 22222222-2222-2222-2222-222222222222 est├í com status em transito.
++ Seu envio 22222222-2222-2222-2222-222222222222 est├í com status: em transito.
++
++ Transportadora: Jadlog
++ Servi├ºo: Expresso
++ Rastreio: TRK-001
++ ├Ültima atualiza├º├úo: 03/03/2026, 05:00
++
++ Posso tamb├®m:
++ ÔÇó consultar seu ├║ltimo pedido
++ ÔÇó verificar uma nova cota├º├úo
+
+ ÔØ» src/modules/frank/whatsapp-orchestrator.test.ts:228:30
+    226|         );
+    227| 
+    228|         expect(result.reply).toContain(`Envio ${shipmentId} est├í com sÔÇª
+       |                              ^
+    229|         expect(result.reply).toContain('C├│digo de rastreio: TRK-001.');
+    230|         expect(result.reply).not.toContain('Pr├│ximo passo:');
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[2/6]ÔÄ»
+
+ FAIL  src/modules/frank/whatsapp-orchestrator.test.ts > handleIncomingMessage assistant mode > returns recent quotes in standardized assistant format
+AssertionError: expected 'Encontrei 1 cota├º├úo(├Áes) recente(s).\ÔÇª' to contain 'Pr├│ximo passo: Se quiser revisar outrÔÇª'
+
+- Expected
++ Received
+
+- Pr├│ximo passo: Se quiser revisar outra cota├º├úo, envie o identificador dela.
++ Encontrei 1 cota├º├úo(├Áes) recente(s).
++
++ sim-1 ÔÇó Destino 01310-100 ÔÇó Azul Cargo ÔÇó 04/03/2026, 06:00 ÔÇó SIMULATED
++
++ Posso tamb├®m:
++ ÔÇó consultar seu ├║ltimo pedido
+
+ ÔØ» src/modules/frank/whatsapp-orchestrator.test.ts:266:30
+    264|         expect(result.reply).toContain('Encontrei 1 cota├º├úo(├Áes) recenÔÇª
+    265|         expect(result.reply).toContain('sim-1 ÔÇó Destino 01310-100 ÔÇó AzÔÇª
+    266|         expect(result.reply).toContain('Pr├│ximo passo: Se quiser revisÔÇª
+       |                              ^
+    267|         expect(mockLoggerInfo).toHaveBeenCalledWith(
+    268|             'frank_assist_response',
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[3/6]ÔÄ»
+
+ FAIL  src/modules/frank/whatsapp-orchestrator.test.ts > handleIncomingMessage assistant mode > falls back safely when customer context is missing
+AssertionError: expected 'N├úo consegui localizar o cliente destÔÇª' to contain 'Pr├│ximo passo:'
+
+- Expected
++ Received
+
+- Pr├│ximo passo:
++ N├úo consegui localizar o cliente desta conversa com seguran├ºa.
++
++ fale com um atendente humano ou envie o n├║mero exato do pedido ou do envio.
+
+ ÔØ» src/modules/frank/whatsapp-orchestrator.test.ts:289:30
+    287| 
+    288|         expect(result.reply).toContain('N├úo consegui localizar o clienÔÇª
+    289|         expect(result.reply).toContain('Pr├│ximo passo:');
+       |                              ^
+    290|         expect(mockLoggerWarn).toHaveBeenCalledWith(
+    291|             'frank_assist_handoff',
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[4/6]ÔÄ»
+
+ FAIL  src/modules/frank/whatsapp-orchestrator.test.ts > handleIncomingMessage assistant mode > falls back safely on low confidence without calling tools
+AssertionError: expected '[SUGEST├âO FRANK] N├úo consegui classifÔÇª' to contain 'Pr├│ximo passo:'
+
+- Expected
++ Received
+
+- Pr├│ximo passo:
++ [SUGEST├âO FRANK] N├úo consegui classificar essa solicita├º├úo com seguran├ºa.
++
++ reformule o pedido com o n├║mero do pedido/envio ou fale com um atendente humano.
+
+ ÔØ» src/modules/frank/whatsapp-orchestrator.test.ts:317:30
+    315| 
+    316|         expect(result.reply).toContain('N├úo consegui classificar essa ÔÇª
+    317|         expect(result.reply).toContain('Pr├│ximo passo:');
+       |                              ^
+    318|         expect(mockGetOrderStatusTool).not.toHaveBeenCalled();
+    319|         expect(mockLoggerWarn).toHaveBeenCalledWith(
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[5/6]ÔÄ»
+
+ FAIL  src/modules/frank/whatsapp-orchestrator.test.ts > handleIncomingMessage assistant mode > uses contextual intent resolution for follow-up messages in assistant mode
+AssertionError: expected 'Seu envio ship-1 est├í com status: em ÔÇª' to contain 'Envio ship-1'
+
+- Expected
++ Received
+
+- Envio ship-1
++ Seu envio ship-1 est├í com status: em transito.
++
++ Transportadora: Jadlog
++ Servi├ºo: Expresso
++ Rastreio: TRK-999
++
++ Posso tamb├®m:
++ ÔÇó consultar seu ├║ltimo pedido
++ ÔÇó verificar uma nova cota├º├úo
+
+ ÔØ» src/modules/frank/whatsapp-orchestrator.test.ts:432:30
+    430| 
+    431|         expect(result.intent).toBe('SHIPMENT_STATUS');
+    432|         expect(result.reply).toContain('Envio ship-1');
+       |                              ^
+    433|         expect(mockResolveContextualIntent).toHaveBeenCalled();
+    434|     });
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[6/6]ÔÄ»
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m6 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 01:57:16
+[2m   Duration [22m 956ms[2m (transform 519ms, setup 0ms, import 764ms, tests 35ms, environment 0ms)[22m
+

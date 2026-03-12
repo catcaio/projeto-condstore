@@ -1834,3 +1834,54 @@ export const frankSessionState = mysqlTable('frank_session_state', {
 }));
 
 export type FrankSessionStateRecord = typeof frankSessionState.$inferSelect;
+
+// --- Atendimento Humano (Conversations) ---
+
+export const conversations = mysqlTable('conversations', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    customerId: varchar('customer_id', { length: 36 }),
+    organizationId: varchar('organization_id', { length: 36 }),
+    phoneHash: varchar('phone_hash', { length: 64 }).notNull(),
+    phoneEncrypted: varchar('phone_encrypted', { length: 255 }).notNull(),
+    channel: varchar('channel', { length: 20 }).notNull().default('WHATSAPP'),
+    status: varchar('status', { length: 30 }).notNull().default('OPEN'), // OPEN, WAITING_CUSTOMER, WAITING_INTERNAL, RESOLVED
+    assignedTo: varchar('assigned_to', { length: 36 }),
+    lastMessageAt: timestamp('last_message_at').default(sql`CURRENT_TIMESTAMP`),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxTenantPhone: index('idx_conversations_tenant_phone').on(table.tenantId, table.phoneHash),
+    idxTenantStatus: index('idx_conversations_tenant_status').on(table.tenantId, table.status),
+}));
+
+export const conversationMessages = mysqlTable('conversation_messages', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    conversationId: varchar('conversation_id', { length: 36 }).notNull(),
+    direction: varchar('direction', { length: 20 }).notNull(), // INBOUND | OUTBOUND
+    source: varchar('source', { length: 30 }).notNull(), // WHATSAPP | OPERATOR | SYSTEM
+    message: text('message').notNull(),
+    metadata: json('metadata'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxConversationCreated: index('idx_conversation_msgs_conv_created').on(table.conversationId, table.createdAt),
+}));
+
+export const conversationAssignments = mysqlTable('conversation_assignments', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    conversationId: varchar('conversation_id', { length: 36 }).notNull(),
+    assignedTo: varchar('assigned_to', { length: 36 }).notNull(),
+    assignedBy: varchar('assigned_by', { length: 36 }),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxConversationAssign: index('idx_conversation_assign_conv').on(table.conversationId),
+}));
+
+export type ConversationRecord = typeof conversations.$inferSelect;
+export type NewConversationRecord = typeof conversations.$inferInsert;
+export type ConversationMessageRecord = typeof conversationMessages.$inferSelect;
+export type NewConversationMessageRecord = typeof conversationMessages.$inferInsert;
+export type ConversationAssignmentRecord = typeof conversationAssignments.$inferSelect;
+export type NewConversationAssignmentRecord = typeof conversationAssignments.$inferInsert;

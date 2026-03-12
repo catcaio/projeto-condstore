@@ -1,0 +1,235 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Send, User, Clock, Check, RefreshCw, AlertCircle } from 'lucide-react';
+import { Badge } from '@/ui/components';
+
+interface Conversation {
+    id: string;
+    phoneHash?: string;
+    phone?: string;
+    status: 'OPEN' | 'WAITING_CUSTOMER' | 'WAITING_INTERNAL' | 'RESOLVED';
+    assignedTo?: string;
+    lastMessageAt: string;
+}
+
+interface Message {
+    id: string;
+    direction: 'INBOUND' | 'OUTBOUND';
+    source: string;
+    message: string;
+    createdAt: string;
+}
+
+export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [activeConvId, setActiveConvId] = useState<string | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [activeConvDetails, setActiveConvDetails] = useState<Conversation | null>(null);
+    
+    const [loadingList, setLoadingList] = useState(true);
+    const [loadingMsgs, setLoadingMsgs] = useState(false);
+    const [sending, setSending] = useState(false);
+    
+    const [draftText, setDraftText] = useState('');
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const fetchConversations = async () => {
+        try {
+            const res = await fetch('/api/cockpit/conversations');
+            if (res.ok) {
+                const json = await res.json();
+                setConversations(json.data || []);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingList(false);
+        }
+    };
+
+    const fetchMessages = async (id: string, silent = false) => {
+        if (!silent) setLoadingMsgs(true);
+        try {
+            const res = await fetch(`/api/cockpit/conversations/${id}`);
+            if (res.ok) {
+                const json = await res.json();
+                setMessages(json.data.messages || []);
+                setActiveConvDetails(json.data.conversation);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            if (!silent) setLoadingMsgs(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchConversations();
+        const t = setInterval(fetchConversations, 15000); // poll list every 15s
+        return () => clearInterval(t);
+    }, []);
+
+    useEffect(() => {
+        if (activeConvId) {
+            fetchMessages(activeConvId);
+            const t = setInterval(() => fetchMessages(activeConvId, true), 8000); // poll messages every 8s
+            return () => clearInterval(t);
+        } else {
+            setMessages([]);
+            setActiveConvDetails(null);
+        }
+    }, [activeConvId]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    const handleSend = async () => {
+        if (!draftText.trim() || !activeConvId) return;
+        setSending(true);
+        try {
+            const res = await fetch(`/api/cockpit/conversations/${activeConvId}/message`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: draftText }),
+            });
+            if (res.ok) {
+                setDraftText('');
+                fetchMessages(activeConvId, true);
+                fetchConversations();
+            } else {
+                alert('Erro ao enviar a mensagem.');
+            }
+        } catch (e) {
+            alert('Falha na requisição.');
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const StatusBadge = ({ status }: { status: string }) => {
+        switch (status) {
+            case 'OPEN': return <Badge variant="default">Novo</Badge>;
+            case 'WAITING_INTERNAL': return <Badge variant="danger">Aguardando Operador</Badge>;
+            case 'WAITING_CUSTOMER': return <Badge variant="outline">Aguardando Cliente</Badge>;
+            case 'RESOLVED': return <Badge variant="success">Resolvido</Badge>;
+            default: return <Badge variant="muted">{status}</Badge>;
+        }
+    };
+
+    return (
+        <div className="flex h-full w-full">
+            {/* Left Sidebar - Chat List */}
+            <div className="w-1/3 min-w-[300px] max-w-[400px] border-r border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] flex flex-col">
+                <div className="p-4 border-b border-[hsl(var(--ui-border))] flex justify-between items-center bg-[hsl(var(--ui-bg-subtle))]">
+                    <h2 className="font-semibold text-sm">Caixa de Entrada</h2>
+                    <button onClick={fetchConversations} className="p-1 hover:bg-[hsl(var(--ui-border))] rounded-md transition-colors" title="Atualizar">
+                        <RefreshCw className="w-4 h-4 text-[hsl(var(--ui-text-muted))]" />
+                    </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto">
+                    {loadingList ? (
+                        <div className="p-4 text-center text-sm text-[hsl(var(--ui-text-muted))]">Carregando...</div>
+                    ) : conversations.length === 0 ? (
+                        <div className="p-8 text-center text-sm text-[hsl(var(--ui-text-muted))] flex flex-col items-center">
+                            <Check className="w-8 h-8 mb-2 opacity-20" />
+                            Nenhuma conversa pendente
+                        </div>
+                    ) : (
+                        conversations.map(c => (
+                            <div 
+                                key={c.id} 
+                                onClick={() => setActiveConvId(c.id)}
+                                className={`p-4 border-b border-[hsl(var(--ui-border))] cursor-pointer transition-colors ${activeConvId === c.id ? 'bg-[hsl(var(--ui-bg-hover))] border-l-2 border-l-[hsl(var(--ui-accent-blue))]' : 'hover:bg-[hsl(var(--ui-bg-hover))]'}`}
+                            >
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="font-medium text-sm flex items-center gap-1.5">
+                                        <User className="w-3.5 h-3.5 text-[hsl(var(--ui-text-muted))]" />
+                                        {c.phoneHash?.slice(0,8)}...
+                                    </div>
+                                    <span className="text-xs text-[hsl(var(--ui-text-muted))]">{format(new Date(c.lastMessageAt), 'HH:mm', { locale: ptBR })}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <StatusBadge status={c.status} />
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Right Pane - Active Conversation */}
+            <div className="flex-1 bg-[hsl(var(--ui-bg-subtle))] flex flex-col">
+                {activeConvId && activeConvDetails ? (
+                    <>
+                        <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] flex justify-between items-center">
+                            <div>
+                                <h3 className="font-semibold text-sm">Conversa: {activeConvDetails.phone || `${activeConvDetails.phoneHash?.slice(0,8)}...`}</h3>
+                                <div className="text-xs text-[hsl(var(--ui-text-muted))] mt-0.5">Criada em: {format(new Date(activeConvDetails.lastMessageAt), 'dd/MM/yyyy HH:mm')}</div>
+                            </div>
+                            <StatusBadge status={activeConvDetails.status} />
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {loadingMsgs && messages.length === 0 ? (
+                                <div className="text-center text-sm text-[hsl(var(--ui-text-muted))]">Carregando mensagens...</div>
+                            ) : messages.map(msg => {
+                                const isInbound = msg.direction === 'INBOUND';
+                                return (
+                                    <div key={msg.id} className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}>
+                                        <div className={`max-w-[75%] rounded-lg p-3 ${isInbound ? 'bg-[hsl(var(--ui-bg))] border border-[hsl(var(--ui-border))]' : 'bg-[hsl(var(--ui-accent-blue))] text-white'}`}>
+                                            <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
+                                            <div className={`text-[10px] mt-1.5 flex items-center gap-1 ${isInbound ? 'text-[hsl(var(--ui-text-muted))]' : 'text-blue-100'}`}>
+                                                <Clock className="w-3 h-3" />
+                                                {format(new Date(msg.createdAt), 'HH:mm', { locale: ptBR })}
+                                                {!isInbound && <span className="ml-1 opacity-70">• {msg.source}</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        <div className="p-4 bg-[hsl(var(--ui-bg))] border-t border-[hsl(var(--ui-border))]">
+                            <div className="flex gap-2">
+                                <textarea 
+                                    value={draftText}
+                                    onChange={(e) => setDraftText(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSend();
+                                        }
+                                    }}
+                                    placeholder="Digite sua resposta..."
+                                    className="flex-1 resize-none rounded-md border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] px-3 py-2 text-sm placeholder-[hsl(var(--ui-text-muted))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ui-accent-blue))]"
+                                    rows={2}
+                                />
+                                <button 
+                                    onClick={handleSend}
+                                    disabled={sending || !draftText.trim()}
+                                    className="bg-[hsl(var(--ui-accent-blue))] hover:bg-[hsl(var(--ui-accent-blue-hover))] text-white p-3 rounded-md flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {sending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                                </button>
+                            </div>
+                            <div className="mt-2 text-[10px] text-[hsl(var(--ui-text-muted))] flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" /> Pressione Enter para enviar, Shift+Enter para quebrar linha. A mensagem será enviada via WhatsApp.
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex-1 flex items-center justify-center text-[hsl(var(--ui-text-muted))] flex-col gap-3">
+                        <User className="w-12 h-12 opacity-20" />
+                        <span>Selecione uma conversa ao lado para iniciar o atendimento.</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
