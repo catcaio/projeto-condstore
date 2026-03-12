@@ -172,16 +172,28 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                 <div className="flex-1 flex flex-col border-r border-[hsl(var(--ui-border))] min-w-0">
                     {activeConvId && activeConvDetails ? (
                     <>
-                        <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] flex flex-col gap-3">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-semibold text-sm">Conversa: {activeConvDetails.phone || `${activeConvDetails.phoneHash?.slice(0,8)}...`}</h3>
-                                    <div className="text-xs text-[hsl(var(--ui-text-muted))] mt-0.5">Criada em: {format(new Date(activeConvDetails.lastMessageAt), 'dd/MM/yyyy HH:mm')}</div>
+                        <div className="p-5 border-b border-[hsl(var(--ui-border))] bg-white flex flex-col gap-4 shadow-sm z-10">
+                            <div className="flex justify-between items-start">
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
+                                            <User className="w-4 h-4" />
+                                        </div>
+                                        <h3 className="font-bold text-lg text-gray-900 block">{activeConvDetails.phone || `${activeConvDetails.phoneHash?.slice(0,8)}...`}</h3>
+                                    </div>
+                                    <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5 mt-1 ml-10">
+                                        <Clock className="w-3.5 h-3.5" /> Última interação: {format(new Date(activeConvDetails.lastMessageAt), 'dd/MM/yyyy HH:mm')}
+                                    </div>
                                 </div>
-                                <StatusBadge status={activeConvDetails.status} />
+                                <div className="flex flex-col items-end gap-2">
+                                    <StatusBadge status={activeConvDetails.status} />
+                                </div>
                             </div>
-                            <div className="pt-2 border-t border-[hsl(var(--ui-border-subtle))]">
-                                <span className="text-[10px] text-[hsl(var(--ui-text-muted))] uppercase font-semibold tracking-wider mb-2 block">Estágio do Pipeline</span>
+                            
+                            <div className="bg-gray-50/80 p-3 rounded-md border border-gray-100">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-[11px] text-gray-500 uppercase font-bold tracking-wider">Status Comercial (CRM)</span>
+                                </div>
                                 <PipelineActions 
                                     conversationId={activeConvId} 
                                     currentStage={activeConvDetails.stage || 'NEW'} 
