@@ -3,7 +3,7 @@ import { getDb } from '@/infra/db';
 import { orders, simulations, conversations, type OrderRecord } from '@/drizzle/schema';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from './conversation.service';
-import { shipmentService } from './shipment.service';
+import { shipmentService } from '@/modules/logistics/shipment.service';
 
 export interface OrderListFilter {
     status?: string;
