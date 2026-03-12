@@ -117,7 +117,7 @@ export function PlanDetailDrawer({ planName, onClose }: PlanDetailDrawerProps) {
             {/* Backdrop */}
             <div
                 className={cn(
-                    'fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity duration-300',
+                    'fixed inset-0 z-50 bg-[hsl(var(--ui-shadow)/0.4)] backdrop-blur-sm transition-opacity duration-300',
                     planName ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
                 )}
                 onClick={onClose}
