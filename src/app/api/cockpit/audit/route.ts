@@ -78,18 +78,19 @@ export async function GET(request: NextRequest) {
             if (sort === 'createdAt' || sort === 'timestamp') orderClause = order === 'asc' ? asc(tenantEvents.createdAt) : desc(tenantEvents.createdAt);
             if (sort === 'type' || sort === 'action') orderClause = order === 'asc' ? asc(tenantEvents.type) : desc(tenantEvents.type);
 
-            const [countResult, events] = await Promise.all([
+            const domineConditions = and(eq(domineEvents.tenantId, tenantId), eq(domineEvents.status, 'failed'));
+            const privacyConditions = eq(userConsentsLog.tenantId, tenantId);
+
+            const [countResult, events, domineCountResult, privacyCountResult, domineFails, privacyLogs] = await Promise.all([
                 db.select({ count: sql<number>`count(*)` }).from(tenantEvents).where(and(...conditions)),
-                db.select().from(tenantEvents).where(and(...conditions)).orderBy(orderClause).limit(limit).offset(offset)
+                db.select().from(tenantEvents).where(and(...conditions)).orderBy(orderClause).limit(limit).offset(offset),
+                db.select({ count: sql<number>`count(*)` }).from(domineEvents).where(domineConditions),
+                db.select({ count: sql<number>`count(*)` }).from(userConsentsLog).where(privacyConditions),
+                db.select().from(domineEvents).where(domineConditions).orderBy(desc(domineEvents.createdAt)).limit(limit).offset(offset),
+                db.select().from(userConsentsLog).where(privacyConditions).orderBy(desc(userConsentsLog.timestamp)).limit(limit).offset(offset),
             ]);
 
-            // Also fetch cross-domain events for this timeframe/tenant
-            const [domineFails, privacyLogs] = await Promise.all([
-                db.select().from(domineEvents).where(and(eq(domineEvents.tenantId, tenantId), eq(domineEvents.status, 'failed'))).orderBy(desc(domineEvents.createdAt)).limit(limit),
-                db.select().from(userConsentsLog).where(eq(userConsentsLog.tenantId, tenantId)).orderBy(desc(userConsentsLog.timestamp)).limit(limit)
-            ]);
-
-            total = Number(countResult[0]?.count || 0) + domineFails.length + privacyLogs.length;
+            total = Number(countResult[0]?.count || 0) + Number(domineCountResult[0]?.count || 0) + Number(privacyCountResult[0]?.count || 0);
 
             const baseEvents = events.map(event => ({
                 id: event.id,
