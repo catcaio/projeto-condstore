@@ -61,3 +61,21 @@ export async function getOrderAggregate(tenantId: string, orderId: string) {
         shipment,
     };
 }
+
+export async function getRecentOrdersForCustomer(
+    tenantId: string,
+    customerId: string,
+    limit = 5,
+) {
+    return db
+        .select()
+        .from(orders)
+        .where(
+            and(
+                eq(orders.tenantId, tenantId),
+                eq(orders.customerId, customerId),
+            ),
+        )
+        .orderBy(desc(orders.createdAt))
+        .limit(limit);
+}

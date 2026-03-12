@@ -100,6 +100,16 @@ export const COCKPIT_TILES: CockpitTile[] = [
         required: { roles: ['admin', 'manager'] },
         order: 20,
     },
+    {
+        id: 'frank-assist',
+        label: 'Frank Assistente',
+        description: 'Atendimento assistido, handoffs e uso das tools read-only',
+        href: '/cockpit/frank',
+        iconName: 'Bot',
+        salaId: 'intelligence',
+        required: { roles: ['admin', 'manager'] },
+        order: 30,
+    },
 
     // -- FINANCE --
     {

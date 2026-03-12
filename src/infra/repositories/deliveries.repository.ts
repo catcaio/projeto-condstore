@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { getDb } from '../db';
 import { deliveries, deliveryLocationEvents, NewDeliveryLocationEventRecord } from '@/drizzle/schema';
 import { structuredLogger } from '../log/logger';
@@ -69,6 +69,30 @@ export const deliveriesRepository = {
         const results = await db.select().from(deliveries)
             .where(and(eq(deliveries.id, deliveryId), eq(deliveries.tenantId, tenantId)))
             ;
+        return results[0] || null;
+    },
+
+    async findLatestDeliveryByOrderRef(tenantId: string, orderRef: string) {
+        const db = await getDb();
+        const results = await db
+            .select()
+            .from(deliveries)
+            .where(and(eq(deliveries.tenantId, tenantId), eq(deliveries.orderRef, orderRef)))
+            .orderBy(desc(deliveries.lastUpdateAt), desc(deliveries.createdAt))
+            .limit(1);
+
+        return results[0] || null;
+    },
+
+    async findLatestLocationEvent(deliveryId: string) {
+        const db = await getDb();
+        const results = await db
+            .select()
+            .from(deliveryLocationEvents)
+            .where(eq(deliveryLocationEvents.deliveryId, deliveryId))
+            .orderBy(desc(deliveryLocationEvents.recordedAt))
+            .limit(1);
+
         return results[0] || null;
     },
 

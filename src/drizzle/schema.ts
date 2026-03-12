@@ -179,6 +179,35 @@ export const frankEvents = mysqlTable('frank_events', {
 export type FrankEventRecord = typeof frankEvents.$inferSelect;
 export type NewFrankEventRecord = typeof frankEvents.$inferInsert;
 
+// --- Frank Playbooks (Internal FAQ/Responses) ---
+
+export const frankPlaybooks = mysqlTable('frank_playbooks', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    intent: varchar('intent', { length: 50 }).notNull(),
+    triggerPhrases: json('trigger_phrases').$type<string[]>(),
+    relatedEntities: json('related_entities').$type<string[]>(),
+    responseBase: text('response_base').notNull(),
+    responseShort: text('response_short'),
+    nextStepSuggestion: text('next_step_suggestion'),
+    requiresConfirmation: boolean('requires_confirmation').notNull().default(false),
+    requiresHumanHandoff: boolean('requires_human_handoff').notNull().default(false),
+    handoffConditions: text('handoff_conditions'),
+    tags: json('tags').$type<string[]>(),
+    status: varchar('status', { length: 20 }).notNull().default('draft'), // draft, approved, archived
+    priority: int('priority').notNull().default(0),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => {
+    return {
+        tenantIdIntentStatusIdx: index('idx_frank_playbooks_tenant_intent_status').on(table.tenantId, table.intent, table.status),
+    };
+});
+
+export type FrankPlaybookRecord = typeof frankPlaybooks.$inferSelect;
+export type NewFrankPlaybookRecord = typeof frankPlaybooks.$inferInsert;
+
 // --- Frank Rollout Decisions (scheduler audit) ---
 
 export const frankRolloutDecisions = mysqlTable('frank_rollout_decisions', {
@@ -1707,6 +1736,79 @@ export const freightShipments = mysqlTable('freight_shipments', {
 
 export type FreightShipmentRecord = typeof freightShipments.$inferSelect;
 
+// --- Frank Knowledge Base ---
+
+export const frankKnowledge = mysqlTable('frank_knowledge', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    content: text('content').notNull(),
+    tags: json('tags').$type<string[]>(),
+    source: varchar('source', { length: 50 }).notNull().default('manual'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxTenantCreated: index('idx_frank_knowledge_tenant_created').on(table.tenantId, table.createdAt),
+}));
+
+export type FrankKnowledgeRecord = typeof frankKnowledge.$inferSelect;
+export type NewFrankKnowledgeRecord = typeof frankKnowledge.$inferInsert;
+
+// --- Frank Conversation Memory ---
+
+export const frankConversationMemory = mysqlTable('frank_conversation_memory', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    sessionId: varchar('session_id', { length: 128 }).notNull(),
+    role: varchar('role', { length: 20 }).notNull(),
+    message: text('message').notNull(),
+    intent: varchar('intent', { length: 50 }),
+    entities: json('entities'),
+    timestamp: timestamp('timestamp').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxTenantSession: index('idx_frank_memory_tenant_session').on(table.tenantId, table.sessionId, table.timestamp),
+}));
+
+export type FrankConversationMemoryRecord = typeof frankConversationMemory.$inferSelect;
+export type NewFrankConversationMemoryRecord = typeof frankConversationMemory.$inferInsert;
+
+// --- Frank Suggestions ---
+
+export const frankSuggestions = mysqlTable('frank_suggestions', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    sessionId: varchar('session_id', { length: 128 }).notNull(),
+    suggestedResponse: text('suggested_response').notNull(),
+    confidence: decimal('confidence', { precision: 5, scale: 4 }),
+    source: varchar('source', { length: 30 }).notNull().default('tool'),
+    approved: boolean('approved').notNull().default(false),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxTenantSession: index('idx_frank_suggestions_tenant_session').on(table.tenantId, table.sessionId, table.createdAt),
+}));
+
+export type FrankSuggestionRecord = typeof frankSuggestions.$inferSelect;
+export type NewFrankSuggestionRecord = typeof frankSuggestions.$inferInsert;
+
+// --- Incoming Messages (Async Worker Queue) ---
+
+export const incomingMessages = mysqlTable('incoming_messages', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    sessionId: varchar('session_id', { length: 128 }).notNull(),
+    message: text('message').notNull(),
+    phone: varchar('phone', { length: 30 }),
+    twilioPayload: json('twilio_payload'),
+    timestamp: timestamp('timestamp').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    processed: boolean('processed').notNull().default(false),
+    processedAt: timestamp('processed_at'),
+}, (table) => ({
+    idxUnprocessed: index('idx_incoming_messages_unprocessed').on(table.processed, table.timestamp),
+}));
+
+export type IncomingMessageRecord = typeof incomingMessages.$inferSelect;
+export type NewIncomingMessageRecord = typeof incomingMessages.$inferInsert;
+
 // --- Frank Session State ---
 
 export const frankSessionState = mysqlTable('frank_session_state', {
@@ -1719,6 +1821,10 @@ export const frankSessionState = mysqlTable('frank_session_state', {
     currentStep: varchar('current_step', { length: 50 }),
     lastSimulationId: varchar('last_simulation_id', { length: 36 }),
     lastOrderId: varchar('last_order_id', { length: 36 }),
+    lastReferencedShipmentId: varchar('last_referenced_shipment_id', { length: 36 }),
+    lastReferencedQuoteId: varchar('last_referenced_quote_id', { length: 36 }),
+    lastReferencedCustomerId: varchar('last_referenced_customer_id', { length: 36 }),
+    lastToolUsed: varchar('last_tool_used', { length: 60 }),
     contextJson: json('context_json').$type<Record<string, unknown>>(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
