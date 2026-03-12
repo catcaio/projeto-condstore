@@ -36,6 +36,12 @@ describe('GET /api/cockpit/metrics/frank', () => {
                 handoffRate: 33.3,
                 avgResponseTimeMs: 240,
                 uniqueSessions: 2,
+                knowledgeUsed: 0,
+                suggestionsGenerated: 0,
+                suggestionsApproved: 0,
+                suggestionsEdited: 0,
+                suggestionsRejected: 0,
+                memoryContextHits: 0,
             },
             intents: [],
             tools: [],
@@ -85,10 +91,7 @@ describe('GET /api/cockpit/metrics/frank', () => {
 
         expect(response.status).toBe(403);
         expect(json).toMatchObject({
-            ok: false,
-            error: {
-                code: 'FORBIDDEN',
-            },
+            error: 'Cross-tenant access forbidden'
         });
         expect(getFrankAssistMetrics).not.toHaveBeenCalled();
     });

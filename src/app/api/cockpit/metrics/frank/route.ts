@@ -73,7 +73,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         const requestedTenantId = url.searchParams.get('tenantId')?.trim();
         if (requestedTenantId && requestedTenantId !== tenantId) {
             return finalize(
-                errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Tenant mismatch'),
+                NextResponse.json({ error: 'Cross-tenant access forbidden' }, { status: 403 }),
                 ErrorCode.FORBIDDEN,
             );
         }
