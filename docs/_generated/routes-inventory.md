@@ -30,9 +30,14 @@
 | `/api/cockpit/finops` | API |
 | `/api/cockpit/finops/alerts` | API |
 | `/api/cockpit/finops/unlock` | API |
+| `/api/cockpit/frank/knowledge` | API |
+| `/api/cockpit/frank/knowledge/[id]` | API |
+| `/api/cockpit/frank/suggestions` | API |
+| `/api/cockpit/frank/suggestions/[id]/approve` | API |
 | `/api/cockpit/metrics` | API |
 | `/api/cockpit/metrics/acquisition` | API |
 | `/api/cockpit/metrics/acquisition/drilldown` | API |
+| `/api/cockpit/metrics/frank` | API |
 | `/api/cockpit/metrics/freight` | API |
 | `/api/cockpit/metrics/funnel` | API |
 | `/api/cockpit/ops/run-rollup` | API |
@@ -190,6 +195,8 @@
 | `/cockpit/domine/health` | Page |
 | `/cockpit/equipe` | Page |
 | `/cockpit/finops/alerts` | Page |
+| `/cockpit/frank` | Page |
+| `/cockpit/frank/playbooks` | Page |
 | `/cockpit/freight-audit` | Page |
 | `/cockpit/freight-insights` | Page |
 | `/cockpit/freight-memory` | Page |
