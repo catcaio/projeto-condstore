@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Send, User, Clock, Check, RefreshCw, AlertCircle } from 'lucide-react';
+import { Send, User, Clock, Check, RefreshCw, AlertCircle, Phone, History } from 'lucide-react';
 import { Badge } from '@/ui/components';
+import FreightQuotePanel from './components/freight-quote-panel';
 
 interface Conversation {
     id: string;
@@ -162,9 +163,11 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                 </div>
             </div>
 
-            {/* Right Pane - Active Conversation */}
-            <div className="flex-1 bg-[hsl(var(--ui-bg-subtle))] flex flex-col">
-                {activeConvId && activeConvDetails ? (
+            {/* Right Pane Container */}
+            <div className="flex-1 flex bg-[hsl(var(--ui-bg-subtle))] min-w-0">
+                {/* Active Conversation Chat */}
+                <div className="flex-1 flex flex-col border-r border-[hsl(var(--ui-border))] min-w-0">
+                    {activeConvId && activeConvDetails ? (
                     <>
                         <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] flex justify-between items-center">
                             <div>
@@ -227,6 +230,31 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                     <div className="flex-1 flex items-center justify-center text-[hsl(var(--ui-text-muted))] flex-col gap-3">
                         <User className="w-12 h-12 opacity-20" />
                         <span>Selecione uma conversa ao lado para iniciar o atendimento.</span>
+                    </div>
+                )}
+                </div>
+
+                {/* Third Pane - Context & Tools */}
+                {activeConvId && activeConvDetails && (
+                    <div className="w-80 flex-shrink-0 bg-[hsl(var(--ui-bg))] flex flex-col overflow-y-auto">
+                        <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))]">
+                            <h3 className="font-semibold text-sm mb-3">Informações</h3>
+                            <div className="space-y-2 text-sm">
+                                <div className="flex items-center gap-2 text-[hsl(var(--ui-text-muted))]">
+                                    <Phone className="w-4 h-4" /> 
+                                    <span className="text-[hsl(var(--ui-text))]">{activeConvDetails.phone || activeConvDetails.phoneHash?.slice(0, 16)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[hsl(var(--ui-text-muted))]">
+                                    <History className="w-4 h-4" /> 
+                                    <span className="text-[hsl(var(--ui-text))]">Última att: {format(new Date(activeConvDetails.lastMessageAt), 'dd/MM HH:mm')}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Ferramentas de Frete */}
+                        <div className="flex-1">
+                            <FreightQuotePanel conversationId={activeConvId} />
+                        </div>
                     </div>
                 )}
             </div>

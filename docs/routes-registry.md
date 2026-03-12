@@ -161,6 +161,8 @@
 | /api/cockpit/conversations | GET | internal | requireAdmin | cockpit | live | List conversations |
 | /api/cockpit/conversations/[id] | GET | internal | requireAdmin | cockpit | live | Get conversation details |
 | /api/cockpit/conversations/[id]/message | POST | internal | requireAdmin | cockpit | live | Send operator response via Twilio |
+| /api/cockpit/conversations/[id]/quotes | GET, POST | internal | requireAdmin | cockpit | live | List and create freight quotes in conversation |
+| /api/cockpit/conversations/[id]/quotes/[quoteId]/send | POST | internal | requireAdmin | cockpit | live | Send freight quote to customer via WhatsApp |
 | /cockpit/atendimento | GET | frontend | requireAdmin | cockpit | live | Cockpit Human Atendimento UI |
 | /api/webhooks/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/freight/shipments | GET,POST | internal | requireAdmin | frete | live | Internal API for tracking and manual generation of shipping labels |

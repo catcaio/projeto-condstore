@@ -28,6 +28,8 @@
 | `/api/cockpit/conversations` | API |
 | `/api/cockpit/conversations/[id]` | API |
 | `/api/cockpit/conversations/[id]/message` | API |
+| `/api/cockpit/conversations/[id]/quotes` | API |
+| `/api/cockpit/conversations/[id]/quotes/[quoteId]/send` | API |
 | `/api/cockpit/domine/connectors` | API |
 | `/api/cockpit/domine/summary` | API |
 | `/api/cockpit/finops` | API |

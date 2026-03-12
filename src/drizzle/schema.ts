@@ -61,6 +61,11 @@ export type NewTenantEventRecord = typeof tenantEvents.$inferInsert;
 export const simulations = mysqlTable('simulations', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    customerId: varchar('customer_id', { length: 36 }),
+    organizationId: varchar('organization_id', { length: 36 }),
+    conversationId: varchar('conversation_id', { length: 36 }),
+    createdBy: varchar('created_by', { length: 36 }),
+    source: varchar('source', { length: 30 }).notNull().default('API'), // API | ATENDIMENTO
     cep: varchar('cep', { length: 8 }).notNull(),
     weight: decimal('weight', { precision: 10, scale: 2 }).notNull(),
     quantity: int('quantity').notNull(),
