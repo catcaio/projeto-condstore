@@ -256,6 +256,7 @@
 | `/planos/envios` | Page |
 | `/plataforma` | Page |
 | `/plataforma/cockpit` | Page |
+| `/privacidade` | Page |
 | `/produtos/crm` | Page |
 | `/produtos/domine` | Page |
 | `/produtos/envios` | Page |
@@ -271,6 +272,7 @@
 | `/t/[token]` | Page |
 | `/tecnologias` | Page |
 | `/tenant` | Page |
+| `/termos` | Page |
 | `/valores` | Page |
 | `/vendas/clientes` | Page |
 | `/vendas/cotacao` | Page |
