@@ -1,510 +1,308 @@
-# Arquitetura do Sistema - Condstore OS (Estado Real)
+# CONDSTORE OS — Architecture
 
-**Last updated:** 2026-02-25  
-**Baseline SHA (antes deste PR FRONT-01/docs):** `a5e210a`  
-**Status:** pós-P0 (hardening, RBAC, cron, Sentry, PII) + smoke de staging
+**Last updated:** 2026-03-11 (post v8 audit closure)
 
 ---
 
-## Visão Geral
+## 1. System Overview
 
-Aplicação Next.js (App Router) multi-tenant para operações de frete/analytics e automação via WhatsApp/Twilio, com:
-- UI web (`/login`, `/dashboard`, telas operacionais; `/cockpit` redireciona para compatibilidade)
-- APIs de produto e cockpit (`/api/*`, `/api/cockpit/*`)
-- Webhooks (Twilio / eventos)
-- Jobs internos e cron (retenção/cleanup, backfills)
-- Observabilidade com `requestId`, logs estruturados e Sentry (opcional)
-- Hardening de auth/rate limit/PII para ambiente de produção
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Frontend                                │
+│  Next.js App Router (public pages, cockpit, auth flows)         │
+├─────────────────────────────────────────────────────────────────┤
+│                      Proxy Middleware                            │
+│  Session enforcement, route matching, request tracing           │
+├─────────────────────────────────────────────────────────────────┤
+│                        API Routes                               │
+│  /api/auth/*  /api/cockpit/*  /api/orders/*  /api/webhook/*     │
+│  /api/internal/*  /api/simulate  /api/events  /api/knowledge/*  │
+├─────────────────────────────────────────────────────────────────┤
+│                      Domain Modules                             │
+│  frank · freight · pedidos · clientes · cockpit · domine        │
+│  shipping · logistica · analytics · billing · audit · privacy   │
+├─────────────────────────────────────────────────────────────────┤
+│                      Infrastructure                             │
+│  auth · security · crypto · pii · events · db · redis · logger  │
+│  circuit-breaker · rate-limit · idempotency · observability     │
+├─────────────────────────────────────────────────────────────────┤
+│                        Data Layer                               │
+│  Drizzle ORM → TiDB/MySQL    Redis (cache, rate limit)          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Layers
+
+| Layer | Path | Responsibility |
+|---|---|---|
+| Frontend | `src/app/(public)/*`, `src/app/(cockpit)/*` | Server/client components, layouts, pages |
+| Proxy | `src/proxy.ts` | Session enforcement, route classification |
+| API Routes | `src/app/api/**` | HTTP handlers with guards |
+| Domain Modules | `src/modules/*` | Business logic, services, repositories |
+| Infrastructure | `src/infra/*` | Cross-cutting: auth, crypto, logging, caching |
+| Data | `src/drizzle/schema.ts` | Schema definitions, migrations |
 
 ---
 
-## Diagrama (texto)
+## 2. Multi-Tenant Model
 
-```text
-Browser/UI (/login, /dashboard; /cockpit -> /dashboard)
-  -> Next App Router pages/layouts (React Server + Client Components)
-  -> /api/auth/* (login, me, logout)
-  -> /api/cockpit/* (RBAC admin via guards)
+Every entity is scoped by `tenantId`. Isolation is enforced at multiple layers:
 
-Twilio / clientes externos
-  -> /api/webhook, /api/events
-  -> modules/* (freight, analytics, attribution, audit)
-  -> infra/repositories/* -> Drizzle -> TiDB/MySQL
-  -> Redis (cache, rate limit, session-like support where applicable)
+1. **Session**: JWT carries `sub`, `tenantId`, `role`, `sessionVersion`
+2. **Middleware**: `proxy.ts` validates session before any route handler
+3. **Guards**: Route handlers call `requireSessionTenantMatch(req)` to derive tenant from session
+4. **Queries**: All database queries filter by `tenantId` (application-level RLS)
+5. **API payloads**: `tenantId` is never accepted from request bodies — always derived from session
 
-Vercel Cron / internal ops
-  -> /api/cron/cleanup (x-vercel-cron=1 ou token)
-  -> modules/jobs/cleanupRetention -> retention-cleanup.service
-  -> deletes/anonymization idempotentes por tabela
+### Context Propagation
 
-Observabilidade
-  -> request-trace (x-request-id)
-  -> structuredLogger / logger (redaction)
-  -> Sentry (server/client/edge, opcional via DSN)
+```
+Request → proxy.ts (validate session)
+        → route handler (requireSessionTenantMatch)
+        → { tenantId, userId, role } extracted
+        → passed to services/repositories
+        → all DB queries scoped by tenantId
 ```
 
 ---
 
-## Stack e Organização
+## 3. Domain Modules
 
-### Stack principal
-- `Next.js` App Router (`src/app`)
-- `TypeScript`
-- `Drizzle ORM` (`src/drizzle/schema.ts`)
-- `TiDB/MySQL` via `DATABASE_URL`
-- `Redis` (cache/rate limit)
-- `Vitest` para testes
-- `Vercel` (preview/prod + cron)
+### CRM (`src/modules/clientes/`)
+Customer and organization management. Stores customer profiles with hashed phone (`SHA-256`), encrypted contacts (`AES-256-GCM`), and `phone_last4` for display. Repositories: `customer.repository.ts`.
 
-### Estrutura (alto nível)
-- `src/app/*`: páginas, layouts e route handlers (API)
-- `src/modules/*`: regras de negócio (frete, métricas, jobs, audit, etc.)
-- `src/infra/*`: auth, logging, request tracing, repos, redis, config, observabilidade
-- `src/db/*`: baseline de acesso a banco para Drizzle (`client.ts`, `config.ts`, `schema/*`, `migrations/*`)
-- `src/ui/*`: tokens, tema e componentes UI reutilizáveis (FRONT-01)
-- `scripts/*`: utilitários e smoke tests (`scripts/smoke/staging-smoke.ts`)
-- `drizzle/*`: migrations SQL + metadata
+### Orders (`src/modules/pedidos/`)
+Full order lifecycle. Key files:
+- `order.service.ts` — `createOrderFromSimulation()`, status transitions
+- `order.repository.ts` — CRUD operations scoped by tenant
+- `order.loader.ts` — data loading for views
+- `types.ts` — canonical order/item types
 
----
+### Freight (`src/modules/freight/`)
+Multi-carrier quote engine:
+- `quote-engine.ts` — orchestrates multi-carrier simulation via `Promise.allSettled`
+- `carrier-router.ts` — selects carriers based on zone and priority rules
+- `table-driven-adapter.ts` — custom freight table pricing (Movvi, Mengue, Braspress)
+- `packing-resolver.ts` — cubage and charged weight calculation
+- `freight.service.ts` / `freight.controller.ts` — HTTP-layer orchestration
+- `adapters/` — carrier-specific adapters (Melhor Envio, custom tables)
+- `shipment-linkage.repository.ts` — connects orders to shipments
 
-## Multi-Tenant + RBAC (centralizado)
+### Frank AI (`src/modules/frank/`)
+AI operational agent for WhatsApp automation:
+- `intent-resolver.ts` — detects intents (`confirm_quote`, `track_order`, etc.) with confidence scoring
+- `context-resolver.ts` — loads customer, session, and operational context
+- `session.repository.ts` — persistent conversation state per WhatsApp session
+- `whatsapp-orchestrator.ts` — main orchestration loop (message → intent → context → tool → response)
+- `tools/create-order-from-quote.tool.ts` — converts freight quotes into orders
+- `cep-extractor.ts` — extracts postal codes from messages
+- `product-resolver.ts` — resolves product references
 
-### Modelo
-- Sessão carrega `tenantId` e `role`
-- Roles suportadas: `admin | operator`
-- Tipos/validação centralizados em `src/infra/auth/roles.ts`
-- Guards centralizados em `src/infra/auth/guards.ts`:
-  - `requireSession(req)` -> retorna sessão validada ou `401` padronizado
-  - `requireAdmin(req)` -> exige sessão + role `admin` ou retorna `403` padronizado
+### DOMINE Event Bus (`src/modules/domine/`)
+Asynchronous operational event engine:
+- Webhook intake for external events
+- Processor loop with retry and DLQ
+- Event payload contracts with PII sanitization
+- Read model generation for dashboards
 
-### Rotas cockpit admin-only (atual)
-As rotas abaixo usam `requireAdmin(...)` e não fazem checks ad-hoc de role espalhados:
-- `/api/cockpit/analytics/events`
-- `/api/cockpit/analytics/summary`
-- `/api/cockpit/attribution/tokens` (`GET`/`POST`)
-- `/api/cockpit/audit`
-- `/api/cockpit/metrics`
-- `/api/cockpit/metrics/acquisition`
-- `/api/cockpit/metrics/freight`
-- `/api/cockpit/metrics/funnel`
-- `/api/cockpit/ops/status`
-- `/api/cockpit/ops/run-rollup`
+### Cockpit (`src/modules/cockpit/`)
+Operational dashboard aggregating data from all domains. Analytics, attribution, audit, finops, and system status.
 
-### Middleware (borda de proteção)
-Arquivo: `src/middleware.ts`
-- Protege `/cockpit/*` e `/api/cockpit/*` (além de outros paths sensíveis no matcher)
-- Injeta/propaga `x-request-id`
-- Valida token JWT e exige claims mínimos:
-  - `sub` (string)
-  - `tenantId` (string)
-  - `role` estritamente `admin | operator`
-- Falha com `401` (API) ou redirect para `/login` (UI) quando sem sessão/inválido
+### Shipping (`src/modules/shipping/`)
+Shipment preparation, label generation, and carrier dispatch.
 
----
+### Logística (`src/modules/logistica/`)
+Logistics operations UI: shipments view, freight table management, simulator, tracking.
 
-## Auth e Sessão
+### Other Modules
 
-### Endpoints principais
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `POST /api/auth/logout`
-
-### JWT + session version
-Arquivo: `src/infra/auth/session.ts`
-- Cookie: `condstore_session`
-- Token JWT inclui:
-  - `sub` (user id)
-  - `email`
-  - `tenantId`
-  - `role`
-  - `sv` (`sessionVersion`)
-- `getSessionUser(req)` valida:
-  1. assinatura JWT (`AUTH_SECRET`)
-  2. busca usuário no DB
-  3. compara `user.sessionVersion === payload.sv`
-- Resultado: tokens antigos são rejeitados imediatamente após invalidação
-
-### Logout com invalidação server-side
-Arquivo: `src/app/api/auth/logout/route.ts`
-- Não é só limpar cookie
-- Se houver sessão válida, chama `invalidateSessions(userId)`
-- `invalidateSessions` incrementa `users.session_version`
-- Sempre limpa cookie e retorna `200 { success: true }`
-- Tokens antigos passam a falhar em `/api/auth/me` e rotas autenticadas
-
-### Reset interno de admin (staging/dev only)
-Arquivo: `src/app/api/internal/auth/reset-admin/route.ts`
-- `POST /api/internal/auth/reset-admin`
-- Protegido por `x-internal-token` (mesmo token interno usado pelo diag)
-- Bloqueado em `VERCEL_ENV=production`
-- Faz hash da nova senha com o util de auth e incrementa `session_version`
-- Uso principal: recuperar login de preview/staging de forma confiável
+| Module | Purpose |
+|---|---|
+| `analytics` | Event analytics and aggregation |
+| `audit` | Audit trail and compliance logging |
+| `auth` | Authentication flows (email, Google OAuth) |
+| `billing` | Subscription and checkout (Stripe) |
+| `conversas` | WhatsApp conversation management |
+| `cotacao-publica` | Public freight quotation engine |
+| `finops` | Financial operations and cost tracking |
+| `funnel` | Acquisition funnel tracking |
+| `jobs` | Background jobs (cleanup, backfill) |
+| `knowledge` | Knowledge base for AI/RAG |
+| `metrics` | Operational metrics and retention |
+| `navigation` | UI navigation configuration |
+| `privacy` | LGPD compliance utilities |
+| `system-status` | System health monitoring |
+| `workspace` | Workspace/tenant configuration |
 
 ---
 
-## Segurança e Hardening (P0)
+## 4. Frank AI Architecture
 
-### Rate limit (novo limiter, fail-closed)
-Arquivo: `src/infra/security/rate-limiter.ts`
-- Implementa rate limit com Redis + fallback em memória somente fora de produção
-- Em produção, se Redis indisponível/erro:
-  - **fail-closed** (`allowed=false`)
-- Override explícito (opt-in):
-  - `RATE_LIMIT_FAIL_OPEN=true` -> permite fail-open mesmo em produção
-- Logs usam hash da chave (`hashRateLimitKeyForLog`) e não expõem PII
+```
+WhatsApp Message (via Twilio webhook)
+  │
+  ├─ Intent Resolver
+  │   - Pattern matching against known intents
+  │   - Confidence scoring (threshold ≥ 0.75)
+  │   - Intents: confirm_quote, track_order, new_quote, support, greeting
+  │
+  ├─ Context Resolver
+  │   - Load customer from phone hash
+  │   - Load session state (tenantId + sessionId)
+  │   - Load recent simulations, orders, conversations
+  │   - Return enriched context object
+  │
+  ├─ Session State (persistent)
+  │   - frank_session_state table
+  │   - Tracks: currentIntent, currentStep, lastSimulationId, lastOrderId
+  │   - Key: tenantId + sessionId
+  │   - TTL-based cleanup
+  │
+  ├─ Tool Execution
+  │   - create-order-from-quote.tool.ts
+  │   - Calls createOrderFromSimulation()
+  │   - Returns: orderId, orderStatus, shipmentLink
+  │
+  └─ Response Generation
+      - Context-aware message composition
+      - Session state update
+      - WhatsApp reply via Twilio
+```
 
-### Login usando limiter novo
-Arquivo: `src/app/api/auth/login/route.ts`
-- Login usa `rateLimiter.limit('auth.login', key, { max: 5, windowSec: 60 })`
-- Chave = `ip + email normalizado`
-- Logging de diagnóstico sem PII:
-  - `reason = user_not_found | password_mismatch | schema_error | rate_limited`
-  - `requestId`
-  - `emailHash` / `rateLimitKeyHash`
-- Resposta ao cliente continua genérica em falhas de credencial (`401`)
+### Tool Model
 
-### Middleware fail-hard sem `AUTH_SECRET` em produção
-Arquivo: `src/middleware.ts`
-- Se `NODE_ENV=production` e `AUTH_SECRET` ausente:
-  - `/api/cockpit/*` -> `500 { error: "MISCONFIG_AUTH_SECRET" }`
-  - `/cockpit/*` -> `500` texto simples (sem redirect)
-- Em dev/test pode usar fallback apenas local
-
-### Segredos internos (diag/jobs)
-Arquivo: `src/infra/config/internal-token.ts`
-- Aceita `INTERNAL_DIAG_TOKEN` ou `INTERNAL_EXPORT_TOKEN`
-- Em produção, ausência do token é erro
-- Em dev/test, fallback efêmero é permitido (com warning)
-
----
-
-## Observabilidade (requestId + logs + diag + Sentry)
-
-### Request tracing
-Arquivo: `src/infra/http/request-trace.ts`
-- `makeRequestId()` usa `x-request-id`/`x-vercel-id` se houver, senão UUID
-- `attachRequestIdHeader()` padroniza header nas respostas
-- Wrappers:
-  - `withRequestTrace(...)`
-  - `withWebhookTrace(...)`
-- Logs estruturados de início/fim/erro com `requestId`, `route`, `tenantId` (quando disponível)
-
-### Loggers (redaction)
-Arquivos:
-- `src/infra/log/logger.ts` (`structuredLogger`)
-- `src/infra/logger.ts` (`logger`)
-
-Redaction cobre chaves sensíveis, incluindo:
-- `authorization`, `cookie`, `secret`, `password`, `token`
-- `phone`, `message`, `body`, `payload`
-
-Os loggers também integram com Sentry em erros (sem enviar PII por padrão).
-
-### Diagnóstico interno
-Arquivo: `src/app/api/internal/diag/route.ts`
-- `GET /api/internal/diag`
-- Protegido por `x-internal-token`
-- Retorna status de `db`, `redis`, `env`, `git_sha`, `uptime`, `version`
-- Inclui `x-request-id`
-
-### Sentry (opcional, desabilitado por padrão)
-Arquivos:
-- `instrumentation.ts`
-- `sentry.client.config.ts`
-- `sentry.server.config.ts`
-- `sentry.edge.config.ts`
-- `src/infra/observability/sentry.ts`
-
-Comportamento:
-- Inicializa apenas se `SENTRY_DSN` ou `NEXT_PUBLIC_SENTRY_DSN` existir
-- `release` = `GIT_SHA` -> `VERCEL_GIT_COMMIT_SHA` -> `COMMIT_SHA` -> `dev`
-- `tracesSampleRate` por `SENTRY_TRACES_SAMPLE_RATE` (default `0.05`)
-- `sendDefaultPii=false`
-- `beforeSend`/`beforeBreadcrumb` fazem redaction de headers, payloads e campos sensíveis (`phone`, `message`, `body`, etc.)
-- `requestId` e `tenantId` são enviados como tags/extras quando disponíveis
+Frank uses a tool-based execution model. Each tool is a standalone function that:
+1. Receives structured inputs (tenantId, simulationId, customerId, etc.)
+2. Calls domain services (not databases directly)
+3. Returns a typed result
+4. Is registered in the orchestrator
 
 ---
 
-## Cron e Retenção (cleanup)
+## 5. Operational Event Bus
 
-### Rota de cron
-Arquivo: `src/app/api/cron/cleanup/route.ts`
-- `GET` e `POST` suportados
-- Autenticação:
-  - header `x-vercel-cron: 1`
-  - ou query `?token=<CRON_TOKEN>`
-- Sem auth -> `401 { error: "UNAUTHORIZED_CRON" }`
-- Observabilidade:
-  - `x-request-id`
-  - logs `cron_cleanup_start` / `cron_cleanup_end`
-- Resposta de sucesso:
-  - `200 { ok: true, deleted: {...}, retentionDays }`
+The event bus (`src/infra/events/` + `src/modules/domine/`) provides:
 
-### Serviço/job de cleanup
-Arquivos:
-- `src/modules/jobs/cleanupRetention.ts`
-- `src/modules/metrics/retention-cleanup.service.ts`
-- `src/infra/config/data-retention.ts`
-
-Comportamento:
-- `cleanupRetention()` monta policy a partir de envs (default base `RETENTION_DAYS=90` no job cron)
-- `runRetentionCleanup()` executa por tabela em batches (`LIMIT`), de forma idempotente
-- Operações atuais:
-  - `DELETE` em tabelas de eventos/logs antigos
-  - `ANONYMIZE` em PII de `messages` e `freight_funnel_events`
-- Retorna contagem por tabela + total
-
-Observação operacional:
-- Se houver drift de schema no staging, a recomendação é reconciliar migrations. O cleanup foi desenhado para ser repetível e seguro com `0` registros afetados.
+- **Event Emission**: Domain modules emit sanitized events (e.g., `order_created`, `freight_quoted`)
+- **PII Sanitization**: Automatic redaction of `phone`, `email`, `address`, `cpf`, `rawPhone`, `rawEmail` before persistence
+- **Async Processing**: Events are ingested and processed asynchronously
+- **DLQ**: Failed events go to dead-letter queue for inspection and retry
+- **Audit Trail**: Every event includes timestamp, tenant, actor, and context
 
 ---
 
-## PII Hardening (telefone + conteúdo)
+## 6. Security Model
 
-### Objetivo
-Remover dependência de telefone em claro para lookup/dedup e reduzir persistência de conteúdo sensível.
+### Route Protection
 
-### Estratégia atual (dual-write + backfill)
+All 115+ API routes use one of these guards:
 
-#### Telefone
-Arquivos:
-- `src/infra/pii/phone.ts`
-- `src/infra/pii/crypto.ts`
+| Guard | Purpose |
+|---|---|
+| `requireSessionTenantMatch` | Standard authenticated routes |
+| `requireAdmin` | Admin-only cockpit routes |
+| `requireInternalAuth` / `requireInternalToken` | Internal/service routes |
+| `requireActivePlan` | Plan-gated features |
+| `requireKnowledgePermission` | Knowledge base access |
+| `getSessionUser` | Session-based auth |
+| `assertDevOnly` | Development-only routes |
+| Signature verification | Webhooks (Stripe, Twilio, HMAC) |
 
-Implementado:
-- `normalizeE164(input)` (normalização e validação básica)
-- `deriveTenantPhoneSalt(tenantId)` usando HMAC-SHA256 com `AUTH_SECRET`
-- `phoneHash(e164, tenantSalt)` / `hashPhoneForTenant(...)`
-- `encryptString()` / `decryptString()` com AES-256-GCM
-- `PII_ENCRYPTION_KEY` obrigatório em produção (fail-hard)
+### Proxy Middleware (`src/proxy.ts`)
 
-Persistência (schema Drizzle)
-- `messages`
-  - `phone_hash`
-  - `phone_encrypted`
-  - `body_encrypted`
-  - legado `from_phone`/`body` mantido temporariamente (com placeholders/redaction)
-- `freight_funnel_events`
-  - `phone_hash`
-  - `phone_encrypted`
-  - legado `phone_number` mantido temporariamente (com placeholder)
+- Matches protected route patterns (`/api/cockpit/*`, `/api/orders/*`, etc.)
+- Validates session cookie before handler execution
+- Injects `x-request-id` for tracing
+- Redirects unauthenticated UI requests to `/login`
 
-Lookup/dedup:
-- Preferência por `phone_hash` (ex.: índices por `tenant_id + phone_hash + created_at`)
+### PII Protection
 
-Exibição/contato:
-- Usar `phone_encrypted` (decrypt somente quando necessário)
+| Technique | Implementation |
+|---|---|
+| Phone hashing | SHA-256 with tenant-specific HMAC salt |
+| Phone encryption | AES-256-GCM via `PII_ENCRYPTION_KEY` |
+| Phone display | `phone_last4` only |
+| Log redaction | Structured logger strips sensitive fields |
+| Event sanitization | Event bus auto-redacts PII before persistence |
+| Sentry | `sendDefaultPii=false`, `beforeSend` redaction |
 
-#### Backfill de PII
-Arquivos:
-- `src/modules/jobs/backfillPhonePii.ts`
-- `src/app/api/internal/jobs/backfill-phone/route.ts`
+### Webhook Hardening
 
-Comportamento:
-- Varre batches de registros legados em `messages` e `freight_funnel_events`
-- Preenche `phone_hash` + `phone_encrypted`
-- Move `body` para `body_encrypted` e substitui texto em claro por placeholder (`[encrypted:n]` / `[redacted]`)
-- Rota interna protegida por `x-internal-token`
-
-#### Retenção de PII / conteúdo
-Arquivo: `src/modules/metrics/retention-cleanup.service.ts`
-- `messages`: anonimiza `from_phone`, limpa `phone_encrypted`, substitui `body`, limpa `body_encrypted`
-- `freight_funnel_events`: anonimiza `phone_number`, limpa `phone_encrypted`
-- Prazos controlados por envs (`RETENTION_MESSAGE_PII_DAYS`, `RETENTION_FUNNEL_PII_DAYS`, etc.)
-
-### Garantias anti-vazamento
-- Logs e Sentry redigem `phone`, `message`, `body`, `payload`, `token`, `cookie`, etc.
-- `errorResponse` usado nas rotas críticas evita ecoar payload sensível
-- Diagnósticos de login usam hashes (`emailHash`, `rateLimitKeyHash`)
+- Stripe: `stripe.webhooks.constructEvent` signature verification
+- Twilio: `verifyTwilioSignature` header validation
+- DOMINE intake: HMAC-SHA256 signature verification
+- Deduplication and idempotency on all webhook handlers
 
 ---
 
-## APIs Internas / Jobs Operacionais
+## 7. Data Model Overview
 
-### `/api/internal/diag`
-- Diagnóstico básico de runtime/DB/Redis
-- Protegido por `x-internal-token`
+### Canonical Entities
 
-### `/api/internal/jobs/backfill-phone`
-- Backfill de `phone_hash` / `phone_encrypted` / `body_encrypted`
-- Protegido por `x-internal-token`
-- Audit log interno (`ops.backfill_phone_pii`)
-
-### `/api/internal/auth/reset-admin` (staging/dev only)
-- Reset de senha do admin local (`admin@condstore.local` ou outro email fornecido)
-- Protegido por `x-internal-token`
-- Bloqueado em produção (`VERCEL_ENV=production`)
-
----
-
-## Frontend Foundation (FRONT-01)
-
-### Objetivo
-Base visual consistente no estilo "grouped settings" (iOS Settings-inspired), sem adicionar design system pesado.
-
-### Entregas desta etapa
-- Tokens em `src/ui/tokens/*`
-  - `colors`, `spacing`, `radius`, `typography`, `shadows`, `zIndex`
-- Componentes base em `src/ui/components/*`
-  - `Card`, `ListGroup`, `ListItem`, `Separator`, `Badge`, `Button`, `TextField`, `NavItem`
-- Tema em `src/ui/theme/*`
-  - `ThemeProvider`
-  - `ThemeScript` (bootstrap anti-flicker)
-  - `ThemeToggle`
-- Aplicação inicial em:
-  - `/login`
-  - shell/layout base de `/cockpit`
-
-### Tema (light/dark/system)
-- Preferência persistida em `localStorage` (`condstore.theme`)
-- `ThemeScript` aplica `data-theme` antes da hidratação para reduzir flicker
-- `ThemeProvider` sincroniza com `prefers-color-scheme` quando modo `system`
-- Variáveis CSS semânticas definidas em `src/app/globals.css`
+| Table | Domain | Purpose |
+|---|---|---|
+| `users` | Auth | User accounts with session versioning |
+| `tenants` | Multi-tenant | Organization/workspace isolation |
+| `customers` | CRM | Customer profiles (phone_hash, phone_last4) |
+| `customer_contacts` | CRM | Contact details (encrypted) |
+| `orders` | Orders | Order header with status and tenant scope |
+| `order_items` | Orders | Line items per order |
+| `order_status_history` | Orders | Status transition timeline |
+| `freight_simulations` | Freight | Multi-carrier quote results |
+| `freight_shipments` | Freight | Shipment records linked to orders |
+| `deliveries` | Delivery | Delivery tracking and status |
+| `operational_events` | Events | Sanitized operational event log |
+| `messages` | Conversations | WhatsApp messages (PII encrypted) |
+| `freight_funnel_events` | Analytics | Acquisition funnel tracking |
+| `frank_session_state` | Frank | Conversational session persistence |
+| `security_incidents` | Security | Anomaly detection incidents |
+| `carrier_policies` | Freight | Normalized carrier configuration |
+| `carrier_zones` | Freight | Zone definitions for routing |
+| `carrier_rate_rows` | Freight | Table-driven pricing rows |
+| `webhook_events` | Webhooks | Deduplication and idempotency log |
 
 ---
 
-## Smoke Test de Staging
+## 8. CI / Quality Gates
 
-Arquivo/script:
-- `scripts/smoke/staging-smoke.ts`
-- `npm run staging:smoke -- <preview-url>`
+GitHub Actions pipeline enforces:
 
-Checks principais:
-- `GET /api/internal/diag` com `x-internal-token` -> `200` (`db=ok`, `redis=ok`)
-- Cockpit sem auth -> `401`
-- RBAC cockpit (`operator=403`, `admin=200`) quando tokens/creds disponíveis
-- `POST /api/auth/logout` + `GET /api/auth/me` com token antigo -> invalidação efetiva (`401`)
-- Cron cleanup sem auth -> `401`
-- Cron cleanup com `CRON_TOKEN` -> `200`
-- Validação de `x-request-id` nas rotas críticas
+```
+npm run typecheck        → TypeScript strict compilation (0 errors required)
+npm run lint             → ESLint rules
+npm run test:ci          → Vitest unit/integration tests
+npm run build            → Next.js production build
+routes:verify-security   → All routes registered in docs/routes-registry.md
+schema verification      → Drizzle schema integrity
+```
 
-Entrada por env (sem valores):
-- `INTERNAL_DIAG_TOKEN`
-- `CRON_TOKEN`
-- `TOKEN_ADMIN` / `TOKEN_OPERATOR` (opcional)
-- ou `LOGIN_ADMIN_EMAIL` + `LOGIN_ADMIN_PASSWORD`
-- ou `LOGIN_OPERATOR_EMAIL` + `LOGIN_OPERATOR_PASSWORD`
+### Quality Gate Philosophy
+
+- **Fail-closed**: Missing secrets block boot in production
+- **Route registry**: Unregistered routes block CI
+- **PII enforcement**: Encryption key required at runtime in production
+- **Rate limiting**: Fails closed without Redis in production
 
 ---
 
-## Variáveis de Ambiente (principais) e propósito
+## 9. Observability
 
-### Runtime / Build / Identidade
-- `NODE_ENV`: modo (`development`/`production`/`test`)
-- `VERCEL_ENV`: ambiente Vercel (`preview`/`production`/...)
-- `GIT_SHA`, `VERCEL_GIT_COMMIT_SHA`, `COMMIT_SHA`: release/versionamento (diag + Sentry)
-- `APP_URL`: URL base pública (quando aplicável)
-- `LOG_LEVEL`: nível de log da aplicação
+### Logging
+- Structured JSON logging via `src/infra/logger.ts` and `src/infra/log/logger.ts`
+- Automatic PII redaction (phone, email, token, cookie, password, body)
+- Request ID propagation via `x-request-id` header
 
-### Banco / Cache
-- `DATABASE_URL`: conexão TiDB/MySQL (obrigatória)
-- `REDIS_URL`: conexão Redis (cache/rate limit)
+### Tracing
+- `src/infra/http/request-trace.ts` — request ID generation and propagation
+- Sentry integration (optional, via `SENTRY_DSN`) with PII-safe breadcrumbs
+- `tenantId` and `requestId` attached as tags
 
-### Auth / Sessão / Segurança
-- `AUTH_SECRET`: assinatura de sessão JWT (obrigatória em produção)
-- `JWT_SECRET`: compat legado em alguns fluxos (login fallback de env)
-- `RATE_LIMIT_FAIL_OPEN`: override explícito para fail-open do limiter em produção (default `false`)
-- `RATE_LIMIT_DEFAULT_MAX`, `RATE_LIMIT_DEFAULT_WINDOW_SECONDS`: política default de rate limit (quando usada)
+### Diagnostics
+- `GET /api/internal/diag` — runtime health check (DB, Redis, env, git SHA)
+- Circuit breaker states (`src/infra/circuit-breaker.ts`)
+- System status module (`src/modules/system-status/`)
 
-### Internos / Operação
-- `INTERNAL_DIAG_TOKEN`: token para `/api/internal/diag` e rotas internas protegidas
-- `INTERNAL_EXPORT_TOKEN`: alias/compat para token interno
-- `SEED_TOKEN`: proteção de endpoints de seed (ex.: admin seed)
-- `ADMIN_SEED_PASSWORD`: senha do seed admin (quando seed cria usuário)
-- `CRON_TOKEN`: auth por query no `/api/cron/cleanup`
-
-### PII / Criptografia
-- `PII_ENCRYPTION_KEY`: chave AES-256-GCM para `phone_encrypted`/`body_encrypted` (obrigatória em produção)
-- `PROVIDER_SECRETS_KEY`: proteção de segredos de providers (hard check em produção no boot)
-
-### Observabilidade / Sentry (opcional)
-- `SENTRY_DSN`: DSN Sentry server/edge
-- `NEXT_PUBLIC_SENTRY_DSN`: DSN Sentry client
-- `SENTRY_TRACES_SAMPLE_RATE`: sampling de tracing (default `0.05`)
-
-### Retenção / Cleanup
-- `RETENTION_DAYS`: base default do job de cron cleanup (fallback `90`)
-- `RETENTION_PUBLIC_EVENTS_DAYS`
-- `RETENTION_FUNNEL_DAYS`
-- `RETENTION_FREIGHT_LOGS_DAYS`
-- `RETENTION_ATTR_CLICKS_DAYS`
-- `RETENTION_DEDUP_DAYS`
-- `RETENTION_MESSAGE_PII_DAYS`
-- `RETENTION_FUNNEL_PII_DAYS`
-
-### Twilio / Webhooks / Tracking (principais integrações)
-- `TWILIO_AUTH_TOKEN`
-- `TWILIO_WHATSAPP_NUMBER`
-- `TWILIO_WEBHOOK_BASE_URL`
-- `TWILIO_SIGNATURE_VALIDATION_ENABLED`
-- `TRACKING_REDIRECT_MODE`
-- `TRACKING_REDIRECT_URL`
-
-### Pagamentos / terceiros (quando habilitado)
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `MELHORENVIO_TOKEN`
-- `MELHORENVIO_API_URL`
-
-> Nota: existem outras envs de módulos específicos (AI/RAG/Frank/metrics) no código. A lista acima cobre as variáveis centrais de segurança, auth, observabilidade, cron, PII e operação usadas no estado atual pós-P0.
-
----
-
-## Fluxos-chave (resumo)
-
-### Login -> sessão -> cockpit
-1. `POST /api/auth/login` valida payload
-2. Rate limit `auth.login` (IP + email normalizado)
-3. Busca usuário + verifica senha
-4. Emite JWT com `sv=sessionVersion`
-5. UI acessa `/cockpit/*`
-6. Middleware valida JWT + role e injeta headers auth internos
-7. Route handlers do cockpit aplicam `requireAdmin()` (RBAC central)
-
-### Logout -> invalidação imediata
-1. `POST /api/auth/logout`
-2. `getSessionUser()` resolve usuário atual
-3. `invalidateSessions(userId)` incrementa `session_version`
-4. Cookie é limpo
-5. Token antigo falha em `getSessionUser()` por mismatch de `sv`
-
-### Cron cleanup
-1. Vercel chama `/api/cron/cleanup`
-2. Auth por `x-vercel-cron=1` ou `?token=CRON_TOKEN`
-3. `cleanupRetention()` resolve policy de retenção
-4. `runRetentionCleanup()` executa deletes/anonymize por tabela
-5. Retorna `200` com contagens e `x-request-id`
-
----
-
-## Riscos Operacionais Conhecidos / Checklist de Deploy
-
-- **Schema drift em staging** quebra login/analytics/cleanup: manter migrations alinhadas ao `src/drizzle/schema.ts`
-- **`AUTH_SECRET` ausente em produção** bloqueia cockpit (comportamento intencional fail-hard)
-- **`PII_ENCRYPTION_KEY` ausente em produção** quebra criptografia PII (comportamento intencional fail-hard)
-- **Redis indisponível em produção** bloqueia rate limits (fail-closed), salvo override explícito `RATE_LIMIT_FAIL_OPEN=true`
-- **Sentry sem DSN** não quebra build/runtime (fica desabilitado)
-
-Checklist rápido de preview/staging:
-- `DATABASE_URL`, `AUTH_SECRET`, `PII_ENCRYPTION_KEY`, `CRON_TOKEN`, `INTERNAL_DIAG_TOKEN`
-- `REDIS_URL` (recomendado)
-- `SEED_TOKEN` / `ADMIN_SEED_PASSWORD` (se usar seed/reset de admin)
-- `npm run staging:smoke -- <preview-url>`
-
----
-
-## Referências de Código (arquivos-chave)
-
-- Auth/sessão: `src/infra/auth/session.ts`
-- RBAC/guards: `src/infra/auth/roles.ts`, `src/infra/auth/guards.ts`
-- Middleware: `src/middleware.ts`
-- Login/logout/me: `src/app/api/auth/login/route.ts`, `src/app/api/auth/logout/route.ts`, `src/app/api/auth/me/route.ts`
-- Rate limiting: `src/infra/security/rate-limiter.ts`, `src/infra/rate-limiter.ts`
-- Request trace/logs: `src/infra/http/request-trace.ts`, `src/infra/log/logger.ts`, `src/infra/logger.ts`
-- Diag: `src/app/api/internal/diag/route.ts`
-- Sentry: `src/infra/observability/sentry.ts`, `instrumentation.ts`, `sentry.*.config.ts`
-- Cron cleanup: `src/app/api/cron/cleanup/route.ts`, `src/modules/jobs/cleanupRetention.ts`
-- Retenção/anonimização: `src/modules/metrics/retention-cleanup.service.ts`
-- PII (phone/body): `src/infra/pii/phone.ts`, `src/infra/pii/crypto.ts`, `src/modules/jobs/backfillPhonePii.ts`
-- UI foundation (FRONT-01): `src/ui/tokens/*`, `src/ui/components/*`, `src/ui/theme/*`
-- Smoke: `scripts/smoke/staging-smoke.ts`
+### Metrics
+- Operational metrics aggregated in cockpit dashboards
+- Quote durations, carrier fail rates, SLA tracking
+- Retention cleanup with configurable policies per table

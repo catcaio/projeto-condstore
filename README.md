@@ -1,71 +1,124 @@
 # CONDSTORE OS
 
-## Overview
+Multi-tenant operational system for B2B logistics — freight quoting, order management, CRM, WhatsApp automation, and AI-driven orchestration.
 
-CONDSTORE OS is a multi-tenant logistics and orchestration platform designed for high availability and strict data governance. The system acts as the operational spine for tenants, providing a public multi-carrier quotation engine, an internal operational layer (Domine), a centralized administrative Cockpit, and structural governance mechanisms to enforce Zero-Trust and CI guardrails at scale. 
+## Core Capabilities
 
-The architecture guarantees isolation via RLS (Row-Level Security) by `tenantId`, enforces explicit surface mapping for all endpoints, and ensures predictability across development lifecycles.
+| Capability | Description |
+|---|---|
+| **Freight Engine** | Multi-carrier quoting with table-driven pricing, packing resolution, and carrier routing |
+| **Order Management** | Full lifecycle from quote confirmation to delivery with status tracking |
+| **CRM** | Customer 360° with contacts, organizations, and operational history |
+| **WhatsApp Automation** | AI-powered conversational commerce via Twilio WhatsApp Business API |
+| **Frank AI** | Intent detection, context resolution, session state, and tool-based order orchestration |
+| **Delivery Tracking** | Shipment linkage, carrier tracking, and exception detection |
+| **Cockpit** | Operational dashboards with metrics, SLA monitoring, and real-time alerts |
+| **Event Bus** | Asynchronous operational events with DLQ, retry, and payload sanitization |
+| **Multi-Tenant** | Tenant isolation via RLS, RBAC, and session-scoped context propagation |
+| **Security** | Zero-trust route guards, PII hashing/encryption, webhook signature verification |
 
-## Architecture Layers
+## System Flow
 
-The platform is explicitly decoupled into four distinct network and authorization surfaces:
+```
+WhatsApp message
+  → Frank: intent detection (confirm_quote, track_order, etc.)
+  → Frank: context resolution (customer, session, history)
+  → Freight simulation (multi-carrier, table-driven)
+  → Quote confirmation
+  → Order creation (createOrderFromSimulation)
+  → Shipment preparation (label, pickup, tracking)
+  → Delivery tracking (status updates, exceptions)
+  → Cockpit update (metrics, SLA, dashboards)
+  → Event bus (sanitized operational events)
+```
 
-1. **Public Layer**
-   - **Scope:** Marketing endpoints, authentication boundaries, and the public quotation engine (`/cotacao`).
-   - **Characteristics:** Highly cacheable, rate-limited via Redis, completely asynchronous. The quotation engine is fully concurrent (executing multi-carrier adapters via `Promise.allSettled`) with strict failover timeouts, preventing third-party latency from degrading the user experience.
-   - **Authentication:** `None` (or anonymous session drops).
+## Key Components
 
-2. **Cockpit Layer**
-   - **Scope:** The unified administrative interface for internal operations and tenant administration (`/dashboard` as canonical internal shell; legacy `/cockpit/**` remains as module namespace and `/cockpit` redirects to `/dashboard`).
-   - **Characteristics:** Consolidates analytics, telemetry, routing audits, and knowledge management into a single, cohesive dashboard pattern.
-   - **Authentication:** Strict `Cookie` enforcement tied to validated Next.js sessions.
+### Frank AI (`src/modules/frank/`)
+AI agent orchestrating WhatsApp interactions. Resolves intent from messages, loads customer context and session state, executes tools (e.g., `create-order-from-quote`), and responds with operational context.
 
-3. **Internal API Layer**
-   - **Scope:** Protected diagnostic, backfill, and orchestration endpoints (`/api/internal/**`).
-   - **Characteristics:** Provides deterministic access for infrastructure tasks (e.g., QA bootstrap sessions, diagnostic probes, and synchronous structural verifications). 
-   - **Authentication:** Exclusively requires `Internal-Token` (e.g., `x-internal-token`). These routes bypass standard browser-based cookie evaluation, aggressively blocking non-service invocations.
+### Freight Engine (`src/modules/freight/`)
+Multi-carrier quote engine with table-driven adapters, packing resolution, carrier routing, and shipment linkage. Supports Melhor Envio API and custom freight tables (Movvi, Mengue, Braspress).
 
-4. **Worker / Processing Layer**
-   - **Scope:** Background tasks, DLQ (Dead Letter Queue) processing, FinOps reconciliation, and Webhook ingestion (`/api/webhook/**`).
-   - **Characteristics:** Decoupled from the Edge API. Responsible for non-blocking I/O operations and third-party callback verifications.
-   - **Authentication:** Webhook signatures (e.g., Stripe) or internal tokens.
+### Orders (`src/modules/pedidos/`)
+Order lifecycle management: creation from freight quotes, status tracking, item management, and event timeline.
 
-## Security Model
+### CRM (`src/modules/clientes/`)
+Customer and organization management with contact normalization, phone hashing (SHA-256), and encrypted PII storage.
 
-Security in CONDSTORE OS is anchored on Zero-Trust principles and explicit governance:
-- **Zero-Trust & Surface Classification:** Every route is classified in an official `docs/surface-map.md`. The Next.js `middleware` (via `proxy.ts`) dynamically evaluates the surface layer of an incoming request and enforces the expected authentication mechanism before any rendering lifecycle begins. 
-- **Token Enforcement:** Internal surface routes are hard-gated against browser-accessible cookies and demand explicit backend-to-backend infrastructure tokens.
-- **LGPD Enforcement & PII Protection:** The multi-carrier quote responses and internal event payloads undergo systemic sanitization. Personally Identifiable Information (PII) is structurally excluded from operational telemetry, logs, and public responses.
+### Cockpit (`src/modules/cockpit/`)
+Operational dashboard aggregating metrics, analytics, attribution, and system health across all domains.
 
-## Operational Model
+### DOMINE Event Bus (`src/modules/domine/`)
+Asynchronous event engine with webhook intake, processor loop, DLQ management, and event payload contracts.
 
-- **Events (The Domine Layer):** The platform utilizes a minimal operational layer known as Domine. When edge activities occur (e.g., a multi-carrier quote completes or a carrier times out), sanitized domain events (`quote_completed`, `carrier_failed`) are ingested asynchronously.
-- **DLQ (Dead Letter Queues):** Failed background logic and unprocessable orchestrations fallback into dedicated DLQs managed within the Cockpit API for safe inspection and retry.
-- **SLA Monitoring & Observability:** Quote durations and carrier fail rates are persistently tracked. SLIs (Service Level Indicators) trigger lightweight warnings and Strategic Facts automatically when a threshold is breached, ensuring degradation is visible directly within the Cockpit without requiring external APM sweeps.
+### Supreme Engine (`src/modules/frank/` + cockpit governance)
+AI governance layer controlling permissions, findings, playbooks, and operational boundaries for Frank.
 
-## Development & CI
+## Security
 
-The platform enforces strict safety guardrails directly integrated into the local development workflow and the GitHub Actions CI/CD pipeline:
-- **Route Registry Guard:** All active application routes are cross-verified against a static inventory (`docs/routes-registry.md`). Unregistered routes explicitly block the CI Typecheck phase (`routes:verify`).
-- **Surface Verification:** Anti-footgun gates parse the surface map during pre-commit/CI builds, preventing structural regressions (e.g., exposing a public endpoint without a rate-limit wrapper or omitting a required token guard on an internal API).
-- **Env Leak Detection:** Heuristic scanners prevent the commit tracking of sensitive credentials and payload signatures.
-- **QA Bootstrap Control:** A hermetic and deterministic login mechanism is enabled via isolated `/api/internal/qa/*` routes solely for automated UI regression tests, fully locked down by specialized pipeline secrets.
+- **Route Guards**: All 115+ API routes protected by `requireAdmin`, `requireSessionTenantMatch`, `requireInternalAuth`, `requireActivePlan`, or signature verification
+- **Proxy Middleware** (`src/proxy.ts`): Session enforcement for cockpit and API routes
+- **PII Protection**: Phone hashing (SHA-256), AES-256-GCM encryption, event payload sanitization
+- **Webhook Hardening**: Stripe/Twilio signature verification, deduplication, idempotency
+- **RBAC**: Role-based access (admin, operator, viewer) with tenant-scoped context
+- **Audit Trail**: Complete event logging with timestamp, author, and context
+- **CI Quality Gates**: Typecheck, lint, tests, build, schema verification, route registry guardrails
 
-## Database Infrastructure Baseline
+## Development Setup
 
-- Drizzle ORM + TiDB (MySQL-compatible) base infrastructure lives in `src/db`.
-- `src/db/client.ts` centralizes the `mysql2` pool creation and exports the shared Drizzle client.
-- `src/db/config.ts` contains the Drizzle Kit config (`schema`, `migrations`, `dialect=mysql`) for new schema generation flows.
-- `src/db/schema/index.ts` is the schema barrel file and currently exports placeholder schema modules only.
+```bash
+# Install dependencies
+npm install
+
+# Environment variables (create .env.local)
+DATABASE_URL=mysql://...
+REDIS_URL=redis://...
+AUTH_SECRET=...
+PII_ENCRYPTION_KEY=...
+
+# Run dev server
+npm run dev
+
+# Type checking
+npm run typecheck
+
+# Production build
+npm run build
+
+# Tests
+npm run test:ci
+```
+
+### Required Environment Variables
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | TiDB/MySQL connection (lazy-initialized) |
+| `AUTH_SECRET` | JWT session signing |
+| `PII_ENCRYPTION_KEY` | AES-256-GCM key for PII encryption |
+| `REDIS_URL` | Cache, rate limiting, session support |
+| `INTERNAL_DIAG_TOKEN` | Internal API authentication |
+| `TWILIO_AUTH_TOKEN` | WhatsApp webhook signature verification |
+| `STRIPE_SECRET_KEY` | Payment webhook verification |
+| `MELHORENVIO_TOKEN` | Freight API integration |
 
 ## Deployment
 
-- **Environments:** Vercel (Production & Preview edges), utilizing Turbopack builds and Edge Runtime for the public routing layer. 
-- **Required ENV Variables:** Database connectivity (`DATABASE_URL`), core message broker (`REDIS_URL`), cryptographic verification limits (`AUTH_SECRET`), and operational layer keys (e.g., `INTERNAL_JOB_TOKEN`, `QA_BOOTSTRAP_TOKEN`).
-- **Safe Boot Behavior:** The application gracefully bypasses internal token injection on specific public surfaces if initialization variables reflect an intermediate PR preview phase, avoiding deadlocks in non-critical pipeline reviews.
+- **Platform**: Vercel (Production + Preview) with Turbopack builds
+- **Database**: TiDB (MySQL-compatible) with Drizzle ORM
+- **CI Pipeline**: GitHub Actions running typecheck → lint → tests → build → schema verification → route registry verification
+- **Quality Gate Philosophy**: Fail-closed. Missing secrets block boot in production. Rate limiter fails closed without Redis. Unregistered routes block CI.
 
-## Roadmap
+## Tech Stack
 
-- **Multi-Carrier Expansion:** Standardization of a unified adapter protocol to seamlessly append and simulate regional logistics providers.
-- **Advanced Domine Intelligence:** Transitioning Domine from a lightweight operational read-model towards a proactive orchestration mesh capable of automatically shifting quote load based on predictive timeout matrices.
-- **Tenant-Specific Orchestration:** Deepening the isolation to allow tenant-overridden carrier rules and custom FinOps gating prior to external fulfillment logic execution.
+- **Framework**: Next.js 16 (App Router, Turbopack)
+- **Language**: TypeScript (strict)
+- **ORM**: Drizzle ORM
+- **Database**: TiDB/MySQL
+- **Cache**: Redis
+- **Tests**: Vitest
+- **Hosting**: Vercel
+- **WhatsApp**: Twilio Business API
+- **Payments**: Stripe
+- **Freight**: Melhor Envio API + custom table adapters
