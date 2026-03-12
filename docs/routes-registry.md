@@ -317,3 +317,7 @@
 | /cockpit/configuracoes/campos | GET/POST | internal | required | cockpit | live | Added |
 | /cockpit/rooms/[room] | GET/POST | internal | required | cockpit | live | Added |
 | /cockpit/timeline | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/intents | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/intents/[id]/ignore | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/intents/[id]/validate | GET/POST | internal | required | cockpit | live | Added |
+| /cockpit/frank/intents | GET/POST | internal | required | cockpit | live | Added |

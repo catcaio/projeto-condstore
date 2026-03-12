@@ -1891,6 +1891,27 @@ export const frankSuggestions = mysqlTable('frank_suggestions', {
 export type FrankSuggestionRecord = typeof frankSuggestions.$inferSelect;
 export type NewFrankSuggestionRecord = typeof frankSuggestions.$inferInsert;
 
+// --- Frank Intent Training ---
+
+export const frankIntentTraining = mysqlTable('frank_intent_training', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    conversationId: varchar('conversation_id', { length: 36 }),
+    messageId: varchar('message_id', { length: 36 }),
+    messageText: text('message_text').notNull(),
+    detectedIntent: varchar('detected_intent', { length: 255 }),
+    entities: json('entities'),
+    confidence: decimal('confidence', { precision: 5, scale: 4 }),
+    status: varchar('status', { length: 50 }).notNull().default('captured'), // captured, validated, ignored
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxTenantStatus: index('idx_frank_intents_tenant_status').on(table.tenantId, table.status),
+    idxCreatedAt: index('idx_frank_intents_created_at').on(table.createdAt),
+}));
+
+export type FrankIntentTrainingRecord = typeof frankIntentTraining.$inferSelect;
+export type NewFrankIntentTrainingRecord = typeof frankIntentTraining.$inferInsert;
+
 // --- Incoming Messages (Async Worker Queue) ---
 
 export const incomingMessages = mysqlTable('incoming_messages', {

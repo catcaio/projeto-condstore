@@ -18,6 +18,7 @@ import { resolveKnowledge } from './knowledge/knowledge.service';
 import { recordInboundMessage, recordOutboundMessage, loadConversationContext } from './memory/memory.service';
 import { suggestionService } from './suggestions/suggestion.service';
 import { isFrankRuntimeEnabled, isFrankSupervisedOnly } from '@/config/app.config';
+import { intentTrainingService } from './intents/intent.service';
 import { resolveProductFromUrl } from './product-resolver';
 import { resolvePackingDimensions } from '@/modules/freight/packing-resolver';
 import { TableDrivenAdapter } from '@/modules/freight/table-driven-adapter';
@@ -1029,6 +1030,15 @@ export async function handleIncomingMessage(
     // ─── Entity Resolution ──────────────────────────────────────────────
     const entityResult: EntityResolutionResult = resolveEntities(message);
     const entityTypes = detectedEntityTypes(entityResult.entities);
+
+    if (context?.customer?.phoneHash) {
+        intentTrainingService.captureIntent(tenantId, context.customer.phoneHash, {
+            messageText: message,
+            detectedIntent: intentResult.intent,
+            confidence: intentResult.confidence,
+            entities: Object.keys(entityResult.entities).length > 0 ? entityResult.entities : undefined,
+        }).catch(err => logger.error('failed_to_capture_intent', err as Error));
+    }
 
     if (entityTypes.length > 0) {
         logger.info('frank_entity_detected', {

@@ -30,7 +30,8 @@ export const subrooms: SubRoomDef[] = [
     { id: 'playbooks', roomId: 'frank', label: 'Playbooks', description: 'Construa fluxos e réguas de negociação ativas', route: '/cockpit/frank/playbooks', actionLabel: 'Configurar' },
     { id: 'knowledge', roomId: 'frank', label: 'Knowledge Base', description: 'Injetar pdfs e treinar inteligência primária', route: '/cockpit/frank/knowledge', actionLabel: 'Treinar Base' },
     { id: 'sugestoes', roomId: 'frank', label: 'Sugestões', description: 'Supervisão de respostas em modo guiado', route: '/cockpit/frank/suggestions', actionLabel: 'Revisar Sugestões' },
-    { id: 'frank-metricas', roomId: 'frank', label: 'Métricas Frank', description: 'Insights operacionais do assessor de AI', route: '/cockpit/frank/metrics', actionLabel: 'Ver Métricas' },
+    { id: 'intents', roomId: 'frank', label: 'Treinamento de Intents', description: 'Treine a intenção a partir de conversas', route: '/cockpit/frank/intents', actionLabel: 'Validar Intents' },
+    { id: 'frank-metricas', roomId: 'frank', label: 'Métricas Frank', description: 'Insights operacionais do assessor de AI', route: '/cockpit/frank', actionLabel: 'Ver Métricas' },
 
     // Inteligência
     { id: 'inteligencia-metricas', roomId: 'inteligencia', label: 'Dashboard', description: 'Métricas globais da operação e faturamento', route: '/cockpit/metricas', actionLabel: 'Ver Dashboard' },

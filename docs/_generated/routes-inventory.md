@@ -42,6 +42,9 @@
 | `/api/cockpit/finops` | API |
 | `/api/cockpit/finops/alerts` | API |
 | `/api/cockpit/finops/unlock` | API |
+| `/api/cockpit/frank/intents` | API |
+| `/api/cockpit/frank/intents/[id]/ignore` | API |
+| `/api/cockpit/frank/intents/[id]/validate` | API |
 | `/api/cockpit/frank/knowledge` | API |
 | `/api/cockpit/frank/knowledge/[id]` | API |
 | `/api/cockpit/frank/suggestions` | API |
@@ -221,6 +224,7 @@
 | `/cockpit/equipe` | Page |
 | `/cockpit/finops/alerts` | Page |
 | `/cockpit/frank` | Page |
+| `/cockpit/frank/intents` | Page |
 | `/cockpit/frank/playbooks` | Page |
 | `/cockpit/freight-audit` | Page |
 | `/cockpit/freight-insights` | Page |
