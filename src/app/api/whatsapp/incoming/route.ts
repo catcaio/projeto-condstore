@@ -35,6 +35,7 @@ import { conversationService } from '@/modules/atendimento/conversation.service'
 import { supervisedAssistService } from '@/modules/frank/supervised-assist.service';
 import { encryptString } from '@/infra/pii/crypto';
 
+
 export const dynamic = 'force-dynamic';
 
 // ─── TwiML helpers ────────────────────────────────────────────────────────────
@@ -213,7 +214,6 @@ export async function POST(request: NextRequest) {
                 AccountSid: payload['AccountSid']
             }
         );
-
         // -- Generate passive suggestion --
         if (incomingMessage.body) {
             await supervisedAssistService.generatePassiveSuggestion(
@@ -223,6 +223,7 @@ export async function POST(request: NextRequest) {
                 incomingMessage.body
             ).catch(() => {});
         }
+
 
         // Mark webhook as processed
         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
