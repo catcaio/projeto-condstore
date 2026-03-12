@@ -109,9 +109,7 @@ async function processEvent(event: DomineEvent, payload: any): Promise<void> {
             }
             case 'cache_invalidate': {
                 const data = payload as any;
-                for (const key of data.keys) {
-                    await redisClient.del(key);
-                }
+                await Promise.all((data.keys as string[]).map((key: string) => redisClient.del(key)));
                 break;
             }
             default:

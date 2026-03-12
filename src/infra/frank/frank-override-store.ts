@@ -101,21 +101,59 @@ export async function clearTenantOverride(tenantId: string, reason?: string): Pr
 /**
  * List all tenant overrides from Redis.
  * Returns empty array if Redis is unavailable or listing fails.
+ *
+ * Uses a single MGET round-trip when Redis is available instead of N
+ * individual GET calls, reducing latency proportionally to the number
+ * of active overrides.
  */
 export async function listOverrides(): Promise<OverrideListRecord[]> {
   try {
     const keys = await redisClient.keys(`${OVERRIDE_KEY_PREFIX}*`);
     if (!keys || keys.length === 0) return [];
 
-    const records = await Promise.all(keys.map(async (key) => {
-      const tenantId = key.startsWith(OVERRIDE_KEY_PREFIX) ? key.slice(OVERRIDE_KEY_PREFIX.length) : '';
-      if (!tenantId) return null;
-      const candidateVersionId = await getTenantOverride(tenantId);
-      if (!candidateVersionId) return null;
-      return { tenantId, candidateVersionId } satisfies OverrideListRecord;
-    }));
+    const redis = redisClient.getRawClient();
 
-    return records.filter(Boolean) as OverrideListRecord[];
+    let rawValues: (string | null)[];
+    if (redis) {
+      // Batch all reads in a single MGET round-trip
+      rawValues = await redis.mget(...keys);
+    } else {
+      // In-memory fallback: individual gets (mirrors redisClient.get internal path)
+      rawValues = await Promise.all(
+        keys.map((key) => {
+          const tenantId = key.startsWith(OVERRIDE_KEY_PREFIX)
+            ? key.slice(OVERRIDE_KEY_PREFIX.length)
+            : '';
+          return tenantId
+            ? redisClient.get<string>(getOverrideKey(tenantId))
+            : Promise.resolve(null);
+        }),
+      );
+    }
+
+    const records: OverrideListRecord[] = [];
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const tenantId = key.startsWith(OVERRIDE_KEY_PREFIX)
+        ? key.slice(OVERRIDE_KEY_PREFIX.length)
+        : '';
+      if (!tenantId) continue;
+
+      const raw = rawValues[i];
+      if (raw === null || raw === undefined) continue;
+
+      let candidateVersionId: string;
+      try {
+        candidateVersionId = JSON.parse(raw) as string;
+      } catch {
+        continue;
+      }
+      if (!candidateVersionId) continue;
+
+      records.push({ tenantId, candidateVersionId });
+    }
+
+    return records;
   } catch (error) {
     logger.warn('frank_override_store_list_failed', { error: String(error) });
     return [];

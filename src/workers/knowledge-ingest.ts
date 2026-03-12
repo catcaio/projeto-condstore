@@ -161,6 +161,9 @@ async function runWorker() {
     process.on('SIGTERM', () => { running = false; });
     process.on('SIGINT', () => { running = false; });
 
+    let retryDelayMs = 1000;
+    const MAX_RETRY_DELAY = 30000;
+
     while (running) {
         try {
             const results = await redis.xreadgroup(
@@ -180,9 +183,13 @@ async function runWorker() {
                     await redis.xack(STREAM_NAME, GROUP_NAME, messageId);
                 }
             }
+
+            // Reset backoff after a successful iteration
+            retryDelayMs = 1000;
         } catch (error) {
             logger.error('Worker loop error', error as Error);
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+            retryDelayMs = Math.min(retryDelayMs * 2, MAX_RETRY_DELAY);
         }
     }
 
