@@ -1,14 +1,12 @@
-import { Check, ArrowRight, Sparkles } from 'lucide-react';
+'use client';
+
+import { Check, ArrowRight, Sparkles, Info } from 'lucide-react';
 import {
     PageContainer, PageSection, SectionIntro, HeroSection, CTASection, FlowSection,
 } from '@/ui/site';
+import { PlanDetailDrawer, usePlanDrawer } from '@/ui/site/plan-detail-drawer';
+import { PlanComparisonGrid } from '@/ui/site/plan-comparison-grid';
 import Link from 'next/link';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-    title: 'Valores — Condstore OS',
-    description: 'Conheça os planos do Condstore OS. Valores personalizados com base em volume, integrações e nível de automação.',
-};
 
 const plans = [
     {
@@ -71,6 +69,8 @@ const plans = [
 ];
 
 export default function ValoresPage() {
+    const { activePlan, openDrawer, closeDrawer } = usePlanDrawer();
+
     return (
         <>
             {/* ─── HERO ─── */}
@@ -149,7 +149,7 @@ export default function ValoresPage() {
                                 </p>
 
                                 {/* Features */}
-                                <ul className="flex-1 space-y-2.5 mb-7">
+                                <ul className="flex-1 space-y-2.5 mb-5">
                                     {plan.features.map((f) => (
                                         <li key={f} className="flex items-start gap-2.5 text-sm text-[hsl(var(--ui-text-muted))]">
                                             <Check className="h-4 w-4 text-[hsl(var(--ui-success))] flex-shrink-0 mt-0.5" />
@@ -157,6 +157,15 @@ export default function ValoresPage() {
                                         </li>
                                     ))}
                                 </ul>
+
+                                {/* Ver detalhes button */}
+                                <button
+                                    onClick={() => openDrawer(plan.name)}
+                                    className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[hsl(var(--ui-accent-blue))] hover:text-[hsl(var(--ui-accent-blue-strong))] transition-colors mb-4 py-2"
+                                >
+                                    <Info className="h-3.5 w-3.5" />
+                                    Ver detalhes do plano
+                                </button>
 
                                 {/* CTA */}
                                 <Link
@@ -175,6 +184,9 @@ export default function ValoresPage() {
                     </div>
                 </PageContainer>
             </PageSection>
+
+            {/* ─── COMPARISON GRID ─── */}
+            <PlanComparisonGrid />
 
             {/* ─── COMO A CONTRATAÇÃO ACONTECE ─── */}
             <PageSection spacing="lg" borderTop>
@@ -219,6 +231,9 @@ export default function ValoresPage() {
                     { label: 'Explorar soluções', href: '/solucoes', variant: 'secondary' },
                 ]}
             />
+
+            {/* ─── PLAN DETAIL DRAWER ─── */}
+            <PlanDetailDrawer planName={activePlan} onClose={closeDrawer} />
         </>
     );
 }
