@@ -31,6 +31,8 @@ import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { handleIncomingMessage } from '@/modules/frank/whatsapp-orchestrator';
 import { webhookEventRepository, hashPayload } from '@/infra/repositories/webhook-event.repository';
 import { endUserConsentRepository } from '@/infra/repositories/end-user-consent.repository';
+import { conversationService } from '@/modules/atendimento/conversation.service';
+import { encryptString } from '@/infra/pii/crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -197,61 +199,32 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // ── 10. Frank orchestrator ────────────────────────────────────────────
-        const result = await handleIncomingMessage(tenantId, incomingMessage.body, fromNormalized);
-
-        // ── 10. Persist inbound message ───────────────────────────────────────
-        const sanitizedPayload = {
-            MessageSid: payload['MessageSid'],
-            AccountSid: payload['AccountSid'],
-            intent: result.intent,
-            confidence: result.intentConfidence,
-            cep: result.cep,
-            productRef: result.productRef,
-            simulationId: result.simulationId,
-            carrierSuggested: result.carrierSuggested,
-        };
-
-        await messageRepository.saveInboundMessage({
-            messageSid: incomingMessage.messageSid,
+        // ── 10. Human Inbox routing & Webhook ack ─────────────────────────────
+        
+        await conversationService.processInboundMessage(
             tenantId,
-            fromPhone: fromNormalized,
-            toPhone: payload['To'] || null,
-            body: incomingMessage.body,
-            direction: 'inbound',
-            intent: result.intent,
-            intentConfidence: result.intentConfidence.toFixed(4),
-            rawPayload: JSON.stringify(sanitizedPayload),
-        });
-
-        // ── 11. Persist outbound reply ────────────────────────────────────────
-        const replySid = `frank_reply_${messageSid}`;
-        await messageRepository.saveInboundMessage({
-            messageSid: replySid,
-            tenantId,
-            fromPhone: payload['To'] || tenantId,
-            toPhone: fromNormalized,
-            body: result.reply,
-            direction: 'outbound',
-            intent: result.intent,
-            intentConfidence: result.intentConfidence.toFixed(4),
-            rawPayload: JSON.stringify({ auto: true, simulationId: result.simulationId }),
-        });
+            phoneHash,
+            encryptString(fromNormalized),
+            incomingMessage.body,
+            tenant.id, // currently using tenant.id as customer fallback, or null if unlinked
+            undefined, // organization
+            {
+                MessageSid: payload['MessageSid'],
+                AccountSid: payload['AccountSid']
+            }
+        );
 
         // Mark webhook as processed
         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
 
-        logger.info('whatsapp_incoming_processed', {
+        logger.info('whatsapp_incoming_human_routed', {
             requestId, tenantId, phoneHash,
-            intent: result.intent,
-            confidence: result.intentConfidence,
-            hasCep: !!result.cep,
-            hasProduct: !!result.productRef,
-            hasSimulation: !!result.simulationId,
+            hasBody: !!incomingMessage.body,
             durationMs: Date.now() - startTime,
         });
 
-        return finish(twimlOk(result.reply, requestId));
+        // We return an empty TwiML because an operator will reply manually later.
+        return finish(twimlEmpty(requestId));
     } catch (err) {
         logger.error('whatsapp_incoming_error', err as Error, { requestId });
         return finish(twimlOk('Desculpe, ocorreu um erro. Tente novamente.', requestId));

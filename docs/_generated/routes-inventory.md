@@ -25,6 +25,13 @@
 | `/api/cockpit/audit` | API |
 | `/api/cockpit/billing/checkout` | API |
 | `/api/cockpit/billing/upgrade` | API |
+| `/api/cockpit/conversations` | API |
+| `/api/cockpit/conversations/[id]` | API |
+| `/api/cockpit/conversations/[id]/message` | API |
+| `/api/cockpit/conversations/[id]/quotes` | API |
+| `/api/cockpit/conversations/[id]/quotes/[quoteId]/order` | API |
+| `/api/cockpit/conversations/[id]/quotes/[quoteId]/send` | API |
+| `/api/cockpit/conversations/[id]/stage` | API |
 | `/api/cockpit/domine/connectors` | API |
 | `/api/cockpit/domine/summary` | API |
 | `/api/cockpit/finops` | API |
@@ -42,6 +49,12 @@
 | `/api/cockpit/metrics/funnel` | API |
 | `/api/cockpit/ops/run-rollup` | API |
 | `/api/cockpit/ops/status` | API |
+| `/api/cockpit/orders` | API |
+| `/api/cockpit/orders/[id]` | API |
+| `/api/cockpit/orders/[id]/shipment` | API |
+| `/api/cockpit/orders/[id]/status` | API |
+| `/api/cockpit/pipeline` | API |
+| `/api/cockpit/pipeline/metrics` | API |
 | `/api/cockpit/saved-views` | API |
 | `/api/cockpit/status` | API |
 | `/api/cron/cleanup` | API |
@@ -187,6 +200,7 @@
 | `/cockpit/acquisition/drilldown` | Page |
 | `/cockpit/actions` | Page |
 | `/cockpit/analytics` | Page |
+| `/cockpit/atendimento` | Page |
 | `/cockpit/audit` | Page |
 | `/cockpit/carrier-tables` | Page |
 | `/cockpit/deliveries` | Page |
@@ -208,9 +222,12 @@
 | `/cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId]` | Page |
 | `/cockpit/marciano/[...slug]` | Page |
 | `/cockpit/metrics` | Page |
+| `/cockpit/orders` | Page |
+| `/cockpit/orders/[id]` | Page |
 | `/cockpit/overview` | Page |
 | `/cockpit/packing-profiles` | Page |
 | `/cockpit/packing-rules` | Page |
+| `/cockpit/pipeline` | Page |
 | `/cockpit/playbooks` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |

@@ -1,41 +1,47 @@
 # CONDSTORE OS
 
-Multi-tenant operational system for B2B logistics — freight quoting, order management, CRM, WhatsApp automation, and AI-driven orchestration.
+Multi-tenant B2B operational system focusing on **Assisted Wholesale CRM and Logistics**. It binds human-driven WhatsApp conversations, CRM Pipeline, multi-carrier freight quoting, and order orchestration inside a unified command center (Cockpit).
+
+> **Note**: For a detailed view of live versus frozen capabilities, refer to [Current Product State](docs/current-product-state.md).
 
 ## Core Capabilities
 
 | Capability | Description |
 |---|---|
-| **Freight Engine** | Multi-carrier quoting with table-driven pricing, packing resolution, and carrier routing |
-| **Order Management** | Full lifecycle from quote confirmation to delivery with status tracking |
-| **CRM** | Customer 360° with contacts, organizations, and operational history |
-| **WhatsApp Automation** | AI-powered conversational commerce via Twilio WhatsApp Business API |
+| **Human Atendimento (Inbox)** | Real-time Twilio WhatsApp Business integration with operator interface and multi-tenant isolation |
+| **Pipeline CRM** | Visual Kanban for sales stages (New → Quoted → Won) linked natively to chat sessions |
+| **Freight Engine** | Multi-carrier quoting injected directly on the chat UX (Movvi, Mengue, Braspress tables + Melhor Envio) |
+| **Order Management** | Convert approved quotes into operational Orders seamlessly via the CRM interface |
+| **Delivery Tracking** | Logistical Shipments generated synchronously upon Order confirmation, attaching trackable endpoints |
 | **Frank AI** | Intent detection, context resolution, session state, and tool-based order orchestration |
 | **Delivery Tracking** | Shipment linkage, carrier tracking, and exception detection |
 | **Cockpit** | Operational dashboards with metrics, SLA monitoring, and real-time alerts |
-| **Event Bus** | Asynchronous operational events with DLQ, retry, and payload sanitization |
-| **Multi-Tenant** | Tenant isolation via RLS, RBAC, and session-scoped context propagation |
-| **Security** | Zero-trust route guards, PII hashing/encryption, webhook signature verification |
+| **Event Bus** | Asynchronous operational events (DOMINE Engine) with DLQ, retry, and PII-sanitized telemetry |
+| **Multi-Tenant** | Native isolation via application RLS, session validation, and JWT payload strictly enforced |
+| **AI Infrastructure (Frozen)** | Backend readiness for Playbooks & Knowledge RAG — fully structured, runtime frozen for operational determinism |
 
-## System Flow
+## System Flow (Human-driven CRM + Logistics Lifecycle)
 
 ```
-WhatsApp message
-  → Frank: intent detection (confirm_quote, track_order, etc.)
-  → Frank: context resolution (customer, session, history)
-  → Freight simulation (multi-carrier, table-driven)
-  → Quote confirmation
-  → Order creation (createOrderFromSimulation)
-  → Shipment preparation (label, pickup, tracking)
-  → Delivery tracking (status updates, exceptions)
-  → Cockpit update (metrics, SLA, dashboards)
-  → Event bus (sanitized operational events)
+WhatsApp message from End-Customer
+  → Inbox Chat (Cockpit Human Atendimento)
+  → Sales Rep operates on CRM Pipeline Stage
+  → Freight simulation directly attached to conversation
+  → Operator sends Quote URL directly to chat
+  → Quote approval (Customer)
+  → Click "Criar Pedido" transforms Deal to WON and spawns Logistics Order (CREATED)
+  → Order transitions to CONFIRMED spawning Shipment Engine integrations
+  → Delivery Tracking (Tracking links directly tied back to CRM sidebar view)
+  → Event Bus processes conversion and calculates dashboard metrics
 ```
 
 ## Key Components
 
-### Frank AI (`src/modules/frank/`)
-AI agent orchestrating WhatsApp interactions. Resolves intent from messages, loads customer context and session state, executes tools (e.g., `create-order-from-quote`), and responds with operational context.
+### Human CRM & Cockpit (`src/modules/clientes/` & `src/app/.../cockpit/atendimento/`)
+Customer organization, pipeline generation, unified multi-tenant inbox for answering prospects, escalating opportunities, and injecting operational orders directly inside the sales environment.
+
+### Frank AI (`src/modules/frank/` - Runtime Frozen)
+Advanced intent detection and RAG intelligence architecture built for automation, currently frozen on deterministic commands in favor of operator precision in wholesale logistics.
 
 ### Freight Engine (`src/modules/freight/`)
 Multi-carrier quote engine with table-driven adapters, packing resolution, carrier routing, and shipment linkage. Supports Melhor Envio API and custom freight tables (Movvi, Mengue, Braspress).
