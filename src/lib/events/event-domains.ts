@@ -40,6 +40,12 @@ export const OPERATIONS_EVENTS = {
     CONVERSATION_STAGE_CHANGED: 'conversation_stage_changed',
     DEAL_WON: 'deal_won',
     DEAL_LOST: 'deal_lost',
+    ORDER_CONFIRMED: 'order_confirmed',
+    ORDER_STATUS_UPDATED: 'order_status_updated',
+    ORDER_CANCELLED: 'order_cancelled',
+    SHIPMENT_CREATED: 'shipment_created',
+    SHIPMENT_STATUS_UPDATED: 'shipment_status_updated',
+    SHIPMENT_DELIVERED: 'shipment_delivered',
 } as const;
 
 export const REVENUE_EVENTS = {
@@ -85,6 +91,12 @@ export const EVENT_TYPE_TO_DOMAIN: Record<string, EventDomain> = {
     conversation_stage_changed: 'OPERATIONS',
     deal_won: 'OPERATIONS',
     deal_lost: 'OPERATIONS',
+    order_confirmed: 'OPERATIONS',
+    order_status_updated: 'OPERATIONS',
+    order_cancelled: 'OPERATIONS',
+    shipment_created: 'OPERATIONS',
+    shipment_status_updated: 'OPERATIONS',
+    shipment_delivered: 'OPERATIONS',
     // REVENUE
     payment_confirmed: 'REVENUE',
     margin_estimated: 'REVENUE',

@@ -7,6 +7,7 @@ import { Send, User, Clock, Check, RefreshCw, AlertCircle, Phone, History } from
 import { Badge } from '@/ui/components';
 import FreightQuotePanel from './components/freight-quote-panel';
 import PipelineActions from './components/pipeline-actions';
+import OrderShipmentPanel from './components/order-shipment-panel';
 
 interface Conversation {
     id: string;
@@ -266,8 +267,9 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                             </div>
                         </div>
                         
-                        {/* Ferramentas de Frete */}
+                        {/* Ferramentas de Frete e Orders */}
                         <div className="flex-1">
+                            <OrderShipmentPanel conversationId={activeConvId} />
                             <FreightQuotePanel conversationId={activeConvId} />
                         </div>
                     </div>

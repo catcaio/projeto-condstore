@@ -68,15 +68,17 @@ Request → proxy.ts (validate session)
 
 ## 3. Domain Modules
 
-### CRM (`src/modules/clientes/`)
-Customer and organization management. Stores customer profiles with hashed phone (`SHA-256`), encrypted contacts (`AES-256-GCM`), and `phone_last4` for display. Repositories: `customer.repository.ts`.
+### CRM e Atendimento (`src/modules/clientes/` & `src/modules/atendimento/`)
+Central unificada para organização de clientes e conversas (WhatsApp).
+- `customer.repository.ts` — Contatos com PII encryption (AES-256-GCM) e phone_last4.
+- `conversation.service.ts` — Lifecycle completo: Inbox, atribuição de operador, mensagens Bidirecionais Twilio, e evolução no **Pipeline Kanban**.
+- `pipeline-metric.service.ts` — Win Rate, Oportunidades Ganhas/Perdidas.
 
-### Orders (`src/modules/pedidos/`)
-Full order lifecycle. Key files:
-- `order.service.ts` — `createOrderFromSimulation()`, status transitions
-- `order.repository.ts` — CRUD operations scoped by tenant
-- `order.loader.ts` — data loading for views
-- `types.ts` — canonical order/item types
+### Orders (`src/modules/pedidos/` & `/app/(app)/cockpit/orders/`)
+Full order lifecycle and Kanban fulfillment representation:
+- `order.service.ts` — Transforma *Freight Quotes* em *Orders* e avança a Timeline.
+- Integrado ao Kanban de Ops (CREATED → CONFIRMED → SCHEDULED → DELIVERED).
+- **Shipment Engine**: Acoplado a tabela `shipments` contendo tracking logístico gerado atomicamente ao confirmar pedidos.
 
 ### Freight (`src/modules/freight/`)
 Multi-carrier quote engine:
@@ -136,37 +138,27 @@ Logistics operations UI: shipments view, freight table management, simulator, tr
 
 ---
 
-## 4. Frank AI Architecture
+## 4. Frank AI Architecture (Runtime Congelado)
+
+> **Status: Infraestrutura ativa (Playbooks, Supremo), mas Inferência Autônoma Congelada para focar o controle na mão do Agente Humano via Cockpit.**
 
 ```
 WhatsApp Message (via Twilio webhook)
   │
-  ├─ Intent Resolver
-  │   - Pattern matching against known intents
-  │   - Confidence scoring (threshold ≥ 0.75)
-  │   - Intents: confirm_quote, track_order, new_quote, support, greeting
+  ├─ Intent Resolver (Validation Pass)
+  │   - Detects intent but defers to Human Inbox queue
   │
   ├─ Context Resolver
-  │   - Load customer from phone hash
-  │   - Load session state (tenantId + sessionId)
-  │   - Load recent simulations, orders, conversations
-  │   - Return enriched context object
+  │   - Loads customer from phone hash
+  │   - Matches session state parameters
   │
-  ├─ Session State (persistent)
-  │   - frank_session_state table
-  │   - Tracks: currentIntent, currentStep, lastSimulationId, lastOrderId
-  │   - Key: tenantId + sessionId
-  │   - TTL-based cleanup
+  ├─ Supreme Governance & Playbooks
+  │   - /knowledge index ready for RAG operations
+  │   - Access-control matrix built-in
   │
-  ├─ Tool Execution
-  │   - create-order-from-quote.tool.ts
-  │   - Calls createOrderFromSimulation()
-  │   - Returns: orderId, orderStatus, shipmentLink
-  │
-  └─ Response Generation
-      - Context-aware message composition
-      - Session state update
-      - WhatsApp reply via Twilio
+  └─ Operator Override (Current Workflow)
+      - The Operator reads the structured intent on the Inbox
+      - Operator pushes Quotes, updates CRM Pipeline, generates Logistical Order
 ```
 
 ### Tool Model

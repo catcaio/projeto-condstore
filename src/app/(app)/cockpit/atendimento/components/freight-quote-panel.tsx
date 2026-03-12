@@ -20,6 +20,7 @@ export default function FreightQuotePanel({ conversationId }: { conversationId: 
     const [loading, setLoading] = useState(false);
     const [simulating, setSimulating] = useState(false);
     const [sendingId, setSendingId] = useState<string | null>(null);
+    const [creatingOrderId, setCreatingOrderId] = useState<string | null>(null);
     const [view, setView] = useState<'list' | 'form'>('list');
 
     // Form states
@@ -91,6 +92,27 @@ export default function FreightQuotePanel({ conversationId }: { conversationId: 
             alert('Falha na requisição.');
         } finally {
             setSendingId(null);
+        }
+    };
+
+    const handleCreateOrder = async (quoteId: string) => {
+        if (!confirm('Transformar essa cotação em um Pedido Logístico? A conversa será marcada como Ganho.')) return;
+        setCreatingOrderId(quoteId);
+        try {
+            const res = await fetch(`/api/cockpit/conversations/${conversationId}/quotes/${quoteId}/order`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                alert('Pedido criado com sucesso!');
+                // trigger a full reload to show the stage change
+                window.location.reload();
+            } else {
+                alert('Erro ao converter pedido.');
+            }
+        } catch (err) {
+            alert('Falha na requisição.');
+        } finally {
+            setCreatingOrderId(null);
         }
     };
 
@@ -191,14 +213,24 @@ export default function FreightQuotePanel({ conversationId }: { conversationId: 
                                             <div className="text-[10px] text-[hsl(var(--ui-text-muted))] flex items-center gap-1">
                                                 <Clock className="w-3 h-3" /> {format(new Date(q.createdAt), 'dd/MM HH:mm')}
                                             </div>
-                                            <button 
-                                                onClick={() => handleSendToCustomer(q.id)}
-                                                disabled={sendingId === q.id}
-                                                className="text-xs bg-[hsl(var(--ui-bg-subtle))] hover:bg-[hsl(var(--ui-border))] border border-[hsl(var(--ui-border))] px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50"
-                                            >
-                                                {sendingId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-                                                Enviar
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button 
+                                                    onClick={() => handleCreateOrder(q.id)}
+                                                    disabled={creatingOrderId === q.id || sendingId === q.id}
+                                                    className="text-xs bg-[hsl(var(--ui-accent-blue))] text-white hover:bg-blue-600 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50"
+                                                >
+                                                    {creatingOrderId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Package className="w-3 h-3" />}
+                                                    Criar Pedido
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleSendToCustomer(q.id)}
+                                                    disabled={sendingId === q.id || creatingOrderId === q.id}
+                                                    className="text-xs bg-[hsl(var(--ui-bg-subtle))] hover:bg-[hsl(var(--ui-border))] border border-[hsl(var(--ui-border))] px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50"
+                                                >
+                                                    {sendingId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                                                    Enviar
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

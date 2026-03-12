@@ -29,6 +29,7 @@
 | `/api/cockpit/conversations/[id]` | API |
 | `/api/cockpit/conversations/[id]/message` | API |
 | `/api/cockpit/conversations/[id]/quotes` | API |
+| `/api/cockpit/conversations/[id]/quotes/[quoteId]/order` | API |
 | `/api/cockpit/conversations/[id]/quotes/[quoteId]/send` | API |
 | `/api/cockpit/conversations/[id]/stage` | API |
 | `/api/cockpit/domine/connectors` | API |
@@ -48,6 +49,10 @@
 | `/api/cockpit/metrics/funnel` | API |
 | `/api/cockpit/ops/run-rollup` | API |
 | `/api/cockpit/ops/status` | API |
+| `/api/cockpit/orders` | API |
+| `/api/cockpit/orders/[id]` | API |
+| `/api/cockpit/orders/[id]/shipment` | API |
+| `/api/cockpit/orders/[id]/status` | API |
 | `/api/cockpit/pipeline` | API |
 | `/api/cockpit/pipeline/metrics` | API |
 | `/api/cockpit/saved-views` | API |
@@ -217,6 +222,8 @@
 | `/cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId]` | Page |
 | `/cockpit/marciano/[...slug]` | Page |
 | `/cockpit/metrics` | Page |
+| `/cockpit/orders` | Page |
+| `/cockpit/orders/[id]` | Page |
 | `/cockpit/overview` | Page |
 | `/cockpit/packing-profiles` | Page |
 | `/cockpit/packing-rules` | Page |

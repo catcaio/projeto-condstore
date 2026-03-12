@@ -1209,11 +1209,19 @@ export const customerContacts = mysqlTable('customer_contacts', {
 export const orders = mysqlTable('orders', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    customerId: varchar('customer_id', { length: 36 }).notNull(),
-    status: varchar('status', { length: 50 }).notNull().default('recebido'),
+    customerId: varchar('customer_id', { length: 36 }),
+    organizationId: varchar('organization_id', { length: 36 }),
+    conversationId: varchar('conversation_id', { length: 36 }),
+    quoteId: varchar('quote_id', { length: 36 }),
+    status: varchar('status', { length: 50 }).notNull().default('CREATED'),
     priority: varchar('priority', { length: 50 }).notNull().default('media'),
     channel: varchar('channel', { length: 50 }),
+    carrier: varchar('carrier', { length: 100 }),
+    service: varchar('service', { length: 100 }),
     totalAmount: decimal('total_amount', { precision: 12, scale: 2 }),
+    price: decimal('price', { precision: 10, scale: 2 }),
+    deliveryDeadline: int('delivery_deadline'),
+    createdBy: varchar('created_by', { length: 36 }),
     ownerId: varchar('owner_id', { length: 36 }),
     freightSimulationId: varchar('freight_simulation_id', { length: 36 }),
     freightConfirmationId: varchar('freight_confirmation_id', { length: 36 }),
@@ -1224,6 +1232,9 @@ export const orders = mysqlTable('orders', {
     tenantCustomerIdx: index('idx_orders_tenant_customer').on(table.tenantId, table.customerId),
     tenantStatusIdx: index('idx_orders_tenant_status').on(table.tenantId, table.status),
 }));
+
+export type OrderRecord = typeof orders.$inferSelect;
+export type NewOrderRecord = typeof orders.$inferInsert;
 
 export const orderItems = mysqlTable('order_items', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
@@ -1891,3 +1902,24 @@ export type ConversationMessageRecord = typeof conversationMessages.$inferSelect
 export type NewConversationMessageRecord = typeof conversationMessages.$inferInsert;
 export type ConversationAssignmentRecord = typeof conversationAssignments.$inferSelect;
 export type NewConversationAssignmentRecord = typeof conversationAssignments.$inferInsert;
+
+// --- Rastreio Logístico (Shipments) ---
+
+export const shipments = mysqlTable('shipments', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    orderId: varchar('order_id', { length: 36 }).notNull(),
+    carrier: varchar('carrier', { length: 100 }).notNull(),
+    service: varchar('service', { length: 100 }),
+    trackingCode: varchar('tracking_code', { length: 100 }),
+    trackingUrl: varchar('tracking_url', { length: 255 }),
+    status: varchar('status', { length: 30 }).notNull().default('CREATED'), // CREATED, SCHEDULED, PICKED_UP, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERED, FAILED
+    estimatedDelivery: int('estimated_delivery'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxShipmentsTenantOrder: index('idx_shipments_tenant_order').on(table.tenantId, table.orderId),
+}));
+
+export type ShipmentRecord = typeof shipments.$inferSelect;
+export type NewShipmentRecord = typeof shipments.$inferInsert;
