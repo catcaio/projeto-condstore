@@ -131,8 +131,9 @@ vi.mock('@/lib/events/operational-event-bus', () => ({
 }));
 
 vi.mock('@/config/app.config', () => ({
-    appConfig: { env: 'test', logLevel: 'info', session: { ttlHours: 6, ttlMs: 21600000 }, freight: {}, frank: { runtimeEnabled: false } },
+    appConfig: { env: 'test', logLevel: 'info', session: { ttlHours: 6, ttlMs: 21600000 }, freight: {}, frank: { runtimeMode: 'AUTONOMOUS', runtimeEnabled: false } },
     isFrankRuntimeEnabled: vi.fn().mockReturnValue(false),
+    isFrankSupervisedOnly: vi.fn().mockReturnValue(false),
 }));
 
 vi.mock('@/infra/logger', () => ({

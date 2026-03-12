@@ -1,123 +1,101 @@
-import { getDb } from '@/infra/db';
-import { frankSuggestions, type NewFrankSuggestionRecord, type FrankSuggestionRecord } from '@/drizzle/schema';
-import { eq, and, desc } from 'drizzle-orm';
-import { randomUUID } from 'crypto';
-import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
+import { suggestionRepository } from './suggestion.repository';
+import {
+    emitSuggestionGenerated,
+    emitSuggestionApproved,
+    emitSuggestionEdited,
+    emitSuggestionRejected
+} from './suggestion.events';
+import { CreateSuggestionDTO, ApproveSuggestionDTO, FrankSuggestion } from './suggestion.types';
 import { logger } from '@/infra/logger';
 
-export interface GenerateSuggestionInput {
-    tenantId: string;
-    sessionId: string;
-    suggestedResponse: string;
-    confidence: number;
-    source: 'playbook' | 'knowledge' | 'tool';
-}
+export class SuggestionService {
+    async generateSuggestion(tenantId: string, sessionId: string, dto: CreateSuggestionDTO): Promise<string> {
+        const id = await suggestionRepository.create({
+            tenantId,
+            conversationId: dto.conversationId,
+            sessionId,
+            intent: dto.intent,
+            entities: dto.entities || null,
+            playbookId: dto.playbookId || null,
+            suggestedResponse: dto.suggestedResponse,
+            confidence: String(dto.confidence),
+            status: 'generated',
+            approvedBy: null,
+            approvedAt: null,
+        });
 
-/**
- * Generate and persist a suggestion for operator review.
- * Only called when conversationMode === 'SUPERVISED'.
- */
-export async function generateSuggestion(input: GenerateSuggestionInput): Promise<string> {
-    const db = await getDb();
-    const id = randomUUID();
+        const evtPayload = {
+            suggestionId: id,
+            sessionId,
+            conversationId: dto.conversationId,
+            intent: dto.intent,
+            confidence: dto.confidence
+        };
 
-    const record: NewFrankSuggestionRecord = {
-        id,
-        tenantId: input.tenantId,
-        sessionId: input.sessionId,
-        suggestedResponse: input.suggestedResponse,
-        confidence: String(input.confidence),
-        source: input.source,
-        approved: false,
-    };
+        logger.info('frank_suggestion_generated', evtPayload);
+        emitSuggestionGenerated(tenantId, evtPayload);
 
-    await db.insert(frankSuggestions).values(record);
-
-    logger.info('frank_suggestion_generated', {
-        tenantId: input.tenantId,
-        sessionId: input.sessionId,
-        source: input.source,
-        suggestionId: id,
-    });
-
-    publishOperationalEvent({
-        tenantId: input.tenantId,
-        eventType: 'frank_suggestion_generated',
-        eventDomain: 'OPERATIONS',
-        entityId: id,
-        customerId: null,
-        sessionId: input.sessionId,
-        payload: { source: input.source, confidence: input.confidence },
-    }).catch(() => {});
-
-    return id;
-}
-
-/**
- * Approve a suggestion (operator confirms the suggested response).
- */
-export async function approveSuggestion(tenantId: string, id: string): Promise<boolean> {
-    const db = await getDb();
-
-    const [existing] = await db.select()
-        .from(frankSuggestions)
-        .where(and(
-            eq(frankSuggestions.id, id),
-            eq(frankSuggestions.tenantId, tenantId),
-        ))
-        .limit(1);
-
-    if (!existing) {
-        return false;
+        return id;
     }
 
-    await db.update(frankSuggestions)
-        .set({ approved: true })
-        .where(and(
-            eq(frankSuggestions.id, id),
-            eq(frankSuggestions.tenantId, tenantId),
-        ));
+    async approveSuggestion(tenantId: string, id: string, dto: ApproveSuggestionDTO): Promise<boolean> {
+        const existing = await suggestionRepository.findById(tenantId, id);
+        if (!existing) return false;
 
-    logger.info('frank_suggestion_approved', {
-        tenantId,
-        suggestionId: id,
-        sessionId: existing.sessionId,
-    });
+        const isEdited = dto.finalResponse && dto.finalResponse !== existing.suggestedResponse;
+        const status = isEdited ? 'edited' : 'approved';
 
-    publishOperationalEvent({
-        tenantId,
-        eventType: 'frank_suggestion_approved',
-        eventDomain: 'OPERATIONS',
-        entityId: id,
-        customerId: null,
-        sessionId: existing.sessionId,
-        payload: { source: existing.source, confidence: existing.confidence },
-    }).catch(() => {});
+        const ok = await suggestionRepository.updateStatus(
+            tenantId,
+            id,
+            status,
+            dto.operatorId,
+            dto.finalResponse
+        );
 
-    return true;
-}
+        if (ok) {
+            const payload = {
+                suggestionId: id,
+                sessionId: existing.sessionId,
+                approvedBy: dto.operatorId,
+                edited: isEdited
+            };
 
-/**
- * List pending (unapproved) suggestions for a session.
- */
-export async function listPendingSuggestions(
-    tenantId: string,
-    sessionId?: string,
-): Promise<FrankSuggestionRecord[]> {
-    const db = await getDb();
+            logger.info(`frank_suggestion_${status}`, payload);
+            if (isEdited) emitSuggestionEdited(tenantId, payload);
+            else emitSuggestionApproved(tenantId, payload);
+        }
 
-    const conditions = [
-        eq(frankSuggestions.tenantId, tenantId),
-        eq(frankSuggestions.approved, false),
-    ];
-
-    if (sessionId) {
-        conditions.push(eq(frankSuggestions.sessionId, sessionId));
+        return ok;
     }
 
-    return db.select()
-        .from(frankSuggestions)
-        .where(and(...conditions))
-        .orderBy(desc(frankSuggestions.createdAt))
-        .limit(20);
+    async rejectSuggestion(tenantId: string, id: string, operatorId: string): Promise<boolean> {
+        const existing = await suggestionRepository.findById(tenantId, id);
+        if (!existing) return false;
+
+        const ok = await suggestionRepository.updateStatus(
+            tenantId,
+            id,
+            'rejected',
+            operatorId
+        );
+
+        if (ok) {
+            const payload = {
+                suggestionId: id,
+                sessionId: existing.sessionId,
+                rejectedBy: operatorId
+            };
+            logger.info('frank_suggestion_rejected', payload);
+            emitSuggestionRejected(tenantId, payload);
+        }
+
+        return ok;
+    }
+
+    async listPendingSuggestions(tenantId: string, conversationId?: string) {
+        return suggestionRepository.listPending(tenantId, conversationId);
+    }
 }
+
+export const suggestionService = new SuggestionService();

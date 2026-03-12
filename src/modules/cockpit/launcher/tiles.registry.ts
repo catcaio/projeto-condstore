@@ -202,17 +202,6 @@ export const MARCIANO_TILES: CockpitTile[] = [
         required: { roles: ['admin', 'manager', 'operator', 'viewer'] },
         order: 10,
     },
-    {
-        id: 'marciano-pedidos',
-        label: 'Meus Pedidos',
-        description: 'Gestão de ordens e pedidos faturados',
-        href: '/cockpit/marciano/pedidos',
-        iconName: 'PackageOpen',
-        salaId: 'vendas',
-        required: { roles: ['admin', 'manager', 'operator'] },
-        badge: { type: 'new', label: 'Em breve' },
-        order: 20,
-    },
 
     // ── OPERAÇÃO ────────────────────────────────────────
     {
@@ -225,30 +214,8 @@ export const MARCIANO_TILES: CockpitTile[] = [
         required: { roles: ['admin', 'manager', 'operator', 'viewer'] },
         order: 10,
     },
-    {
-        id: 'marciano-estoque',
-        label: 'Controle de Estoque',
-        description: 'Inventário, SKUs e movimentações',
-        href: '/cockpit/marciano/estoque',
-        iconName: 'Boxes',
-        salaId: 'operacao',
-        required: { roles: ['admin', 'manager', 'operator'] },
-        badge: { type: 'new', label: 'Em breve' },
-        order: 20,
-    },
 
     // ── FINANCEIRO ──────────────────────────────────────
-    {
-        id: 'marciano-faturas',
-        label: 'Faturas',
-        description: 'Boletos, notas fiscais e histórico financeiro',
-        href: '/cockpit/marciano/faturas',
-        iconName: 'Receipt',
-        salaId: 'financeiro',
-        required: { roles: ['admin', 'manager'] },
-        badge: { type: 'new', label: 'Em breve' },
-        order: 10,
-    },
     {
         id: 'marciano-billing',
         label: 'Assinatura',
@@ -270,17 +237,6 @@ export const MARCIANO_TILES: CockpitTile[] = [
         salaId: 'relatorios',
         required: { roles: ['admin'] },
         order: 10,
-    },
-    {
-        id: 'marciano-analytics',
-        label: 'Desempenho',
-        description: 'Métricas gerais da operação e performance',
-        href: '/cockpit/marciano/analytics',
-        iconName: 'LineChart',
-        salaId: 'relatorios',
-        required: { roles: ['admin', 'manager'] },
-        badge: { type: 'new', label: 'Em breve' },
-        order: 20,
     },
 ];
 

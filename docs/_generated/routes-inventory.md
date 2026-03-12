@@ -25,6 +25,8 @@
 | `/api/cockpit/audit` | API |
 | `/api/cockpit/billing/checkout` | API |
 | `/api/cockpit/billing/upgrade` | API |
+| `/api/cockpit/config` | API |
+| `/api/cockpit/config/[key]` | API |
 | `/api/cockpit/conversations` | API |
 | `/api/cockpit/conversations/[id]` | API |
 | `/api/cockpit/conversations/[id]/message` | API |
@@ -32,6 +34,9 @@
 | `/api/cockpit/conversations/[id]/quotes/[quoteId]/order` | API |
 | `/api/cockpit/conversations/[id]/quotes/[quoteId]/send` | API |
 | `/api/cockpit/conversations/[id]/stage` | API |
+| `/api/cockpit/custom-fields` | API |
+| `/api/cockpit/custom-fields/[id]` | API |
+| `/api/cockpit/custom-fields/values` | API |
 | `/api/cockpit/domine/connectors` | API |
 | `/api/cockpit/domine/summary` | API |
 | `/api/cockpit/finops` | API |
@@ -41,6 +46,7 @@
 | `/api/cockpit/frank/knowledge/[id]` | API |
 | `/api/cockpit/frank/suggestions` | API |
 | `/api/cockpit/frank/suggestions/[id]/approve` | API |
+| `/api/cockpit/frank/suggestions/[id]/reject` | API |
 | `/api/cockpit/metrics` | API |
 | `/api/cockpit/metrics/acquisition` | API |
 | `/api/cockpit/metrics/acquisition/drilldown` | API |
@@ -55,8 +61,11 @@
 | `/api/cockpit/orders/[id]/status` | API |
 | `/api/cockpit/pipeline` | API |
 | `/api/cockpit/pipeline/metrics` | API |
+| `/api/cockpit/playbooks` | API |
+| `/api/cockpit/playbooks/[id]` | API |
 | `/api/cockpit/saved-views` | API |
 | `/api/cockpit/status` | API |
+| `/api/cockpit/timeline` | API |
 | `/api/cron/cleanup` | API |
 | `/api/db/migrate` | API |
 | `/api/debug/tenants` | API |
@@ -203,6 +212,8 @@
 | `/cockpit/atendimento` | Page |
 | `/cockpit/audit` | Page |
 | `/cockpit/carrier-tables` | Page |
+| `/cockpit/configuracoes/[category]` | Page |
+| `/cockpit/configuracoes/campos` | Page |
 | `/cockpit/deliveries` | Page |
 | `/cockpit/domine` | Page |
 | `/cockpit/domine/dlq` | Page |
@@ -231,6 +242,7 @@
 | `/cockpit/playbooks` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |
+| `/cockpit/rooms/[room]` | Page |
 | `/cockpit/security` | Page |
 | `/cockpit/settings/knowledge` | Page |
 | `/cockpit/settings/security` | Page |
@@ -239,6 +251,7 @@
 | `/cockpit/status/audit` | Page |
 | `/cockpit/supreme` | Page |
 | `/cockpit/supreme/benchmarks` | Page |
+| `/cockpit/timeline` | Page |
 | `/como-funciona` | Page |
 | `/concept-layer-preview` | Page |
 | `/configuracoes` | Page |

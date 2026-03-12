@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Bot, RefreshCcw, TrendingUp, Wrench, ArrowRightLeft, TimerReset } from 'lucide-react';
+import { ArrowLeft, Bot, RefreshCcw, TrendingUp, Wrench, ArrowRightLeft, TimerReset, Sparkles, Check, Pencil, X } from 'lucide-react';
 import { SettingsPage, SettingsSection } from '@/ui/settings';
 import { Card } from '@/ui/components/card';
 import { Badge } from '@/ui/components/badge';
@@ -58,6 +58,10 @@ interface FrankAssistMetricsData {
         handoffRate: number;
         avgResponseTimeMs: number;
         uniqueSessions: number;
+        suggestionsGenerated: number;
+        suggestionsApproved: number;
+        suggestionsEdited: number;
+        suggestionsRejected: number;
     };
     intents: RankedMetricRow[];
     tools: ToolMetricRow[];
@@ -408,6 +412,38 @@ export function FrankAssistCockpitClient() {
                                 value={`${data.kpis.avgResponseTimeMs} ms`}
                                 helper={`${data.kpis.uniqueSessions} sessoes unicas no periodo.`}
                                 icon={<TimerReset className="h-5 w-5" />}
+                            />
+                        </div>
+                    </SettingsSection>
+
+                    <SettingsSection
+                        title="Sugestões ao Humano"
+                        description="Monitoramento da engine supervisionada (Assisted Mode)."
+                    >
+                        <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">
+                            <MetricCard
+                                title="Sugestões Geradas"
+                                value={String(data.kpis.suggestionsGenerated)}
+                                helper="Total de sugestões ofertadas."
+                                icon={<Sparkles className="h-5 w-5" />}
+                            />
+                            <MetricCard
+                                title="Taxa de Aprovação"
+                                value={formatPercent(data.kpis.suggestionsGenerated > 0 ? (data.kpis.suggestionsApproved / data.kpis.suggestionsGenerated) * 100 : 0)}
+                                helper="Aprovadas sem edição."
+                                icon={<Check className="h-5 w-5" />}
+                            />
+                            <MetricCard
+                                title="Taxa de Edição"
+                                value={formatPercent(data.kpis.suggestionsGenerated > 0 ? (data.kpis.suggestionsEdited / data.kpis.suggestionsGenerated) * 100 : 0)}
+                                helper="Aprovadas com modificação."
+                                icon={<Pencil className="h-5 w-5" />}
+                            />
+                            <MetricCard
+                                title="Taxa de Rejeição"
+                                value={formatPercent(data.kpis.suggestionsGenerated > 0 ? (data.kpis.suggestionsRejected / data.kpis.suggestionsGenerated) * 100 : 0)}
+                                helper="Sugestões ignoradas / apagadas."
+                                icon={<X className="h-5 w-5" />}
                             />
                         </div>
                     </SettingsSection>

@@ -8,6 +8,10 @@ import { Badge } from '@/ui/components';
 import FreightQuotePanel from './components/freight-quote-panel';
 import PipelineActions from './components/pipeline-actions';
 import OrderShipmentPanel from './components/order-shipment-panel';
+import { FrankSuggestionPanel } from './components/frank-suggestion-panel';
+import { DynamicFieldsRenderer } from '@/ui/cockpit/custom-fields/dynamic-fields-renderer';
+import { TimelineFeed } from '@/ui/timeline/timeline-feed';
+import { PlaybookQuickActions } from '@/ui/playbooks/playbook-quick-actions';
 
 interface Conversation {
     id: string;
@@ -112,6 +116,32 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
         } finally {
             setSending(false);
         }
+    };
+
+    const handleApproveAndSend = async (text: string, suggestionId: string) => {
+        if (!activeConvId) return false;
+        try {
+            const approveRes = await fetch(`/api/cockpit/frank/suggestions/${suggestionId}/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ finalSentResponse: text }),
+            });
+            if (!approveRes.ok) return false;
+
+            const sendRes = await fetch(`/api/cockpit/conversations/${activeConvId}/message`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text }),
+            });
+            if (sendRes.ok) {
+                fetchMessages(activeConvId, true);
+                fetchConversations();
+                return true;
+            }
+        } catch (e) {
+            console.error('Failed to approve suggestion', e);
+        }
+        return false;
     };
 
     const StatusBadge = ({ status }: { status: string }) => {
@@ -226,7 +256,14 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        <div className="p-4 bg-[hsl(var(--ui-bg))] border-t border-[hsl(var(--ui-border))]">
+                        <div className="px-4">
+                            <FrankSuggestionPanel 
+                                conversationId={activeConvId} 
+                                onApproveAndSend={handleApproveAndSend} 
+                            />
+                        </div>
+
+                        <div className="p-4 bg-[hsl(var(--ui-bg))] border-t border-[hsl(var(--ui-border))] mt-2">
                             <div className="flex gap-2">
                                 <textarea 
                                     value={draftText}
@@ -279,10 +316,20 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                             </div>
                         </div>
                         
+                        {/* Playbooks */}
+                        <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))]">
+                            <PlaybookQuickActions entity="conversation" entityId={activeConvId} />
+                        </div>
+
                         {/* Ferramentas de Frete e Orders */}
                         <div className="flex-1">
+                            <DynamicFieldsRenderer entity="conversation" entityId={activeConvId} />
                             <OrderShipmentPanel conversationId={activeConvId} />
                             <FreightQuotePanel conversationId={activeConvId} />
+                            
+                            <div className="mt-4 border-t border-[hsl(var(--ui-border))] pt-4">
+                                <TimelineFeed entityId={activeConvId} title="Timeline" />
+                            </div>
                         </div>
                     </div>
                 )}

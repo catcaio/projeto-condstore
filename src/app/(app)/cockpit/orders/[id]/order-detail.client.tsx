@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Truck, Package, Clock, MapPin, User, Calendar } from 'lucide-react';
+import { DynamicFieldsRenderer } from '@/ui/cockpit/custom-fields/dynamic-fields-renderer';
+import { TimelineFeed } from '@/ui/timeline/timeline-feed';
 
 interface OrderDetail {
     id: string;
@@ -218,6 +220,16 @@ export default function OrderDetailClient({ orderId }: { orderId: string }) {
                     <h3 className="text-xs text-[hsl(var(--ui-text-muted))] mb-1 font-medium">ID Cotação de Origem</h3>
                     <p className="text-sm font-mono text-gray-700">{order.quoteId || 'N/A'}</p>
                 </div>
+            </div>
+
+            {/* Campos Customizados (Dynamic Fields) */}
+            <div className="mt-8">
+                <DynamicFieldsRenderer entity="order" entityId={order.id} />
+            </div>
+
+            {/* Timeline */}
+            <div className="mt-8">
+                <TimelineFeed entityId={order.id} title="Timeline do Pedido" />
             </div>
 
         </div>

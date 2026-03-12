@@ -82,6 +82,8 @@ export interface FrankAssistMetricsData {
         knowledgeUsed: number;
         suggestionsGenerated: number;
         suggestionsApproved: number;
+        suggestionsEdited: number;
+        suggestionsRejected: number;
         memoryContextHits: number;
     };
     intents: RankedMetricRow[];
@@ -427,6 +429,8 @@ export function buildFrankAssistMetrics(
             knowledgeUsed: rows.filter(r => r.eventType === 'frank_knowledge_used').length,
             suggestionsGenerated: rows.filter(r => r.eventType === 'frank_suggestion_generated').length,
             suggestionsApproved: rows.filter(r => r.eventType === 'frank_suggestion_approved').length,
+            suggestionsEdited: rows.filter(r => r.eventType === 'frank_suggestion_edited').length,
+            suggestionsRejected: rows.filter(r => r.eventType === 'frank_suggestion_rejected').length,
             memoryContextHits: rows.filter(r => r.eventType === 'frank_memory_context_loaded').length,
         },
         intents: buildRankedRows(intentCounts.entries(), totalInteractions),
@@ -465,6 +469,8 @@ export async function getFrankAssistMetrics(
         'frank_knowledge_used',
         'frank_suggestion_generated',
         'frank_suggestion_approved',
+        'frank_suggestion_edited',
+        'frank_suggestion_rejected',
         'frank_memory_context_loaded',
     ];
 

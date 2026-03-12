@@ -57,6 +57,85 @@ export const tenantEvents = mysqlTable('tenant_events', {
 export type TenantEventRecord = typeof tenantEvents.$inferSelect;
 export type NewTenantEventRecord = typeof tenantEvents.$inferInsert;
 
+export const tenantConfigurations = mysqlTable('tenant_configurations', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    key: varchar('key', { length: 100 }).notNull(),
+    value: json('value').notNull(),
+    category: varchar('category', { length: 50 }).notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+    createdBy: varchar('created_by', { length: 255 }),
+}, (table) => {
+    return {
+        tenantKeyIndex: uniqueIndex('idx_tenant_config_key').on(table.tenantId, table.key),
+        tenantCategoryIndex: index('idx_tenant_config_category').on(table.tenantId, table.category),
+    };
+});
+
+export type TenantConfigurationRecord = typeof tenantConfigurations.$inferSelect;
+export type NewTenantConfigurationRecord = typeof tenantConfigurations.$inferInsert;
+
+export const tenantCustomFields = mysqlTable('tenant_custom_fields', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    entity: varchar('entity', { length: 50 }).notNull(), // customer, conversation, order, shipment, pipeline
+    fieldKey: varchar('field_key', { length: 100 }).notNull(),
+    label: varchar('label', { length: 255 }).notNull(),
+    type: varchar('type', { length: 30 }).notNull(), // text, number, select, boolean, date, textarea
+    required: boolean('required').default(false).notNull(),
+    options: json('options'), // For selects
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => {
+    return {
+        tenantEntityIndex: index('idx_tenant_custom_fields_entity').on(table.tenantId, table.entity),
+        tenantKeyUniqueIndex: uniqueIndex('idx_tenant_custom_fields_key_unique').on(table.tenantId, table.entity, table.fieldKey),
+    };
+});
+
+export type TenantCustomFieldRecord = typeof tenantCustomFields.$inferSelect;
+export type NewTenantCustomFieldRecord = typeof tenantCustomFields.$inferInsert;
+
+export const entityCustomValues = mysqlTable('entity_custom_values', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    entity: varchar('entity', { length: 50 }).notNull(),
+    entityId: varchar('entity_id', { length: 64 }).notNull(),
+    fieldKey: varchar('field_key', { length: 100 }).notNull(),
+    value: text('value'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => {
+    return {
+        tenantEntityIdIndex: index('idx_entity_custom_values_id').on(table.tenantId, table.entityId),
+        tenantEntityKeyUniqueIndex: uniqueIndex('idx_entity_custom_values_unique').on(table.tenantId, table.entityId, table.fieldKey),
+    };
+});
+
+export type EntityCustomValueRecord = typeof entityCustomValues.$inferSelect;
+export type NewEntityCustomValueRecord = typeof entityCustomValues.$inferInsert;
+
+export const tenantPlaybooks = mysqlTable('tenant_playbooks', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    entity: varchar('entity', { length: 50 }).notNull(), // conversation, customer, order, shipment, pipeline
+    version: int('version').notNull().default(1),
+    isActive: boolean('is_active').notNull().default(true),
+    steps: json('steps').notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+    createdBy: varchar('created_by', { length: 36 }),
+}, (table) => {
+    return {
+        tenantEntityIndex: index('idx_tenant_playbooks_entity').on(table.tenantId, table.entity),
+    };
+});
+
+export type TenantPlaybookRecord = typeof tenantPlaybooks.$inferSelect;
+export type NewTenantPlaybookRecord = typeof tenantPlaybooks.$inferInsert;
 
 export const simulations = mysqlTable('simulations', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
@@ -1793,14 +1872,20 @@ export type NewFrankConversationMemoryRecord = typeof frankConversationMemory.$i
 export const frankSuggestions = mysqlTable('frank_suggestions', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    conversationId: varchar('conversation_id', { length: 36 }).notNull(),
     sessionId: varchar('session_id', { length: 128 }).notNull(),
+    intent: varchar('intent', { length: 255 }),
+    entities: json('entities'),
+    playbookId: varchar('playbook_id', { length: 36 }),
     suggestedResponse: text('suggested_response').notNull(),
     confidence: decimal('confidence', { precision: 5, scale: 4 }),
-    source: varchar('source', { length: 30 }).notNull().default('tool'),
-    approved: boolean('approved').notNull().default(false),
+    status: varchar('status', { length: 50 }).notNull().default('generated'), // generated, approved, edited, rejected
+    approvedBy: varchar('approved_by', { length: 128 }),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    approvedAt: timestamp('approved_at'),
 }, (table) => ({
     idxTenantSession: index('idx_frank_suggestions_tenant_session').on(table.tenantId, table.sessionId, table.createdAt),
+    idxTenantConversation: index('idx_frank_suggestions_tenant_conversation').on(table.tenantId, table.conversationId),
 }));
 
 export type FrankSuggestionRecord = typeof frankSuggestions.$inferSelect;

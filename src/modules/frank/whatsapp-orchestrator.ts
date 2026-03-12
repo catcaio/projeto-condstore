@@ -16,8 +16,8 @@ import { resolveConversationContext, type ConversationContext } from './context-
 import { resolvePlaybook, type ResolvedPlaybook } from './playbooks/playbook.service';
 import { resolveKnowledge } from './knowledge/knowledge.service';
 import { recordInboundMessage, recordOutboundMessage, loadConversationContext } from './memory/memory.service';
-import { generateSuggestion } from './suggestions/suggestion.service';
-import { isFrankRuntimeEnabled } from '@/config/app.config';
+import { suggestionService } from './suggestions/suggestion.service';
+import { isFrankRuntimeEnabled, isFrankSupervisedOnly } from '@/config/app.config';
 import { resolveProductFromUrl } from './product-resolver';
 import { resolvePackingDimensions } from '@/modules/freight/packing-resolver';
 import { TableDrivenAdapter } from '@/modules/freight/table-driven-adapter';
@@ -1093,6 +1093,12 @@ export async function handleIncomingMessage(
 
     const newAutoResponsesCount = gateResult.mode === 'SUPERVISED' ? 0 : autoResponsesCount + 1;
 
+    // Force SUPERVISED mode if the system globally enforces supervised only.
+    if (isFrankSupervisedOnly()) {
+        gateResult.mode = 'SUPERVISED';
+        gateResult.reason = 'supervised_only_mode_enforced';
+    }
+
     // Persist entities and mode limits in session contextJson
     if (context?.customer.phoneHash) {
         updateSessionState(tenantId, context.customer.phoneHash, {
@@ -1367,6 +1373,16 @@ export async function handleIncomingMessage(
             };
         }
 
+        if (isFrankSupervisedOnly()) {
+            return {
+                reply: `Entendido. Posso gerar o pedido ${lastQuote.simulationId} para este cliente. Por favor, aprove e finalize usando o painel logístico do atendente.`,
+                intent: intentResult.intent,
+                intentConfidence: intentResult.confidence,
+                cep, productRef, simulationId: null,
+                carrierSuggested: null, context,
+            };
+        }
+
         try {
             // Retrieve customer reference from the DB matching this tenant & phone if possible
             const db = await getDb();
@@ -1458,12 +1474,12 @@ export async function handleIncomingMessage(
 
         // Generate suggestion for operator if SUPERVISED
         if (frankEnabled && gateResult.mode === 'SUPERVISED' && sessionId) {
-            generateSuggestion({
-                tenantId,
-                sessionId,
+            suggestionService.generateSuggestion(tenantId, sessionId, {
+                conversationId: '', // orchestrator doesn't have it 
+                intent: intentResult.intent,
+                entities: Object.keys(entityResult.entities).length > 0 ? entityResult.entities : undefined,
                 suggestedResponse: knowledgeReply,
                 confidence: intentResult.confidence,
-                source: 'knowledge',
             }).catch(() => {});
         }
 
@@ -1493,12 +1509,12 @@ export async function handleIncomingMessage(
 
     // Generate suggestion for operator if SUPERVISED
     if (frankEnabled && gateResult.mode === 'SUPERVISED' && sessionId) {
-        generateSuggestion({
-            tenantId,
-            sessionId,
+        suggestionService.generateSuggestion(tenantId, sessionId, {
+            conversationId: '',
+            intent: intentResult.intent,
+            entities: Object.keys(entityResult.entities).length > 0 ? entityResult.entities : undefined,
             suggestedResponse: genericResult.reply,
             confidence: intentResult.confidence,
-            source: 'tool',
         }).catch(() => {});
     }
 
