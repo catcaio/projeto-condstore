@@ -6,12 +6,14 @@ import { ptBR } from 'date-fns/locale';
 import { Send, User, Clock, Check, RefreshCw, AlertCircle, Phone, History } from 'lucide-react';
 import { Badge } from '@/ui/components';
 import FreightQuotePanel from './components/freight-quote-panel';
+import PipelineActions from './components/pipeline-actions';
 
 interface Conversation {
     id: string;
     phoneHash?: string;
     phone?: string;
     status: 'OPEN' | 'WAITING_CUSTOMER' | 'WAITING_INTERNAL' | 'RESOLVED';
+    stage?: 'NEW' | 'QUALIFYING' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST';
     assignedTo?: string;
     lastMessageAt: string;
 }
@@ -169,12 +171,25 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                 <div className="flex-1 flex flex-col border-r border-[hsl(var(--ui-border))] min-w-0">
                     {activeConvId && activeConvDetails ? (
                     <>
-                        <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] flex justify-between items-center">
-                            <div>
-                                <h3 className="font-semibold text-sm">Conversa: {activeConvDetails.phone || `${activeConvDetails.phoneHash?.slice(0,8)}...`}</h3>
-                                <div className="text-xs text-[hsl(var(--ui-text-muted))] mt-0.5">Criada em: {format(new Date(activeConvDetails.lastMessageAt), 'dd/MM/yyyy HH:mm')}</div>
+                        <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] flex flex-col gap-3">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h3 className="font-semibold text-sm">Conversa: {activeConvDetails.phone || `${activeConvDetails.phoneHash?.slice(0,8)}...`}</h3>
+                                    <div className="text-xs text-[hsl(var(--ui-text-muted))] mt-0.5">Criada em: {format(new Date(activeConvDetails.lastMessageAt), 'dd/MM/yyyy HH:mm')}</div>
+                                </div>
+                                <StatusBadge status={activeConvDetails.status} />
                             </div>
-                            <StatusBadge status={activeConvDetails.status} />
+                            <div className="pt-2 border-t border-[hsl(var(--ui-border-subtle))]">
+                                <span className="text-[10px] text-[hsl(var(--ui-text-muted))] uppercase font-semibold tracking-wider mb-2 block">Estágio do Pipeline</span>
+                                <PipelineActions 
+                                    conversationId={activeConvId} 
+                                    currentStage={activeConvDetails.stage || 'NEW'} 
+                                    onStageChanged={() => {
+                                        fetchMessages(activeConvId, true);
+                                        fetchConversations();
+                                    }} 
+                                />
+                            </div>
                         </div>
                         
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">

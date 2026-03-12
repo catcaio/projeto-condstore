@@ -134,5 +134,31 @@ export const conversationService = {
                 }
             });
         }
+    },
+
+    async changeConversationStage(
+        tenantId: string, 
+        conversationId: string, 
+        stage: 'NEW' | 'QUALIFYING' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST',
+        customerId?: string
+    ): Promise<void> {
+        await conversationRepository.updateConversationStage(tenantId, conversationId, stage);
+
+        if (customerId) {
+            let eventType: 'conversation_stage_changed' | 'deal_won' | 'deal_lost' = 'conversation_stage_changed';
+            if (stage === 'WON') eventType = 'deal_won';
+            if (stage === 'LOST') eventType = 'deal_lost';
+
+            await publishOperationalEvent({
+                tenantId,
+                eventType,
+                eventDomain: 'OPERATIONS',
+                customerId,
+                payload: {
+                    conversationId,
+                    stage
+                }
+            });
+        }
     }
 };

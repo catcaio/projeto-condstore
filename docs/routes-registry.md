@@ -163,7 +163,11 @@
 | /api/cockpit/conversations/[id]/message | POST | internal | requireAdmin | cockpit | live | Send operator response via Twilio |
 | /api/cockpit/conversations/[id]/quotes | GET, POST | internal | requireAdmin | cockpit | live | List and create freight quotes in conversation |
 | /api/cockpit/conversations/[id]/quotes/[quoteId]/send | POST | internal | requireAdmin | cockpit | live | Send freight quote to customer via WhatsApp |
+| /api/cockpit/conversations/[id]/stage | PATCH | internal | requireAdmin | cockpit | live | Update conversation stage for CRM |
+| /api/cockpit/pipeline | GET | internal | requireAdmin | cockpit | live | Fetch pipeline metrics and pipeline list |
+| /api/cockpit/pipeline/metrics | GET | internal | requireAdmin | cockpit | live | Fetch pipeline numeric metrics for dasboard |
 | /cockpit/atendimento | GET | frontend | requireAdmin | cockpit | live | Cockpit Human Atendimento UI |
+| /cockpit/pipeline | GET | frontend | requireAdmin | cockpit | live | Cockpit CRM Pipeline Kanban UI |
 | /api/webhooks/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/internal/freight/shipments | GET,POST | internal | requireAdmin | frete | live | Internal API for tracking and manual generation of shipping labels |
 | /api/webhooks/melhor-envio | POST | public | none | PUBLIC | live | Webhook intake for shipment tracking and freight auto-confirmation |

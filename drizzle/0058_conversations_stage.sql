@@ -1,0 +1,1 @@
+ALTER TABLE `conversations` ADD `stage` enum('NEW','QUALIFYING','QUOTED','NEGOTIATING','WON','LOST') NOT NULL DEFAULT 'NEW';

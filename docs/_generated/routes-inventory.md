@@ -30,6 +30,7 @@
 | `/api/cockpit/conversations/[id]/message` | API |
 | `/api/cockpit/conversations/[id]/quotes` | API |
 | `/api/cockpit/conversations/[id]/quotes/[quoteId]/send` | API |
+| `/api/cockpit/conversations/[id]/stage` | API |
 | `/api/cockpit/domine/connectors` | API |
 | `/api/cockpit/domine/summary` | API |
 | `/api/cockpit/finops` | API |
@@ -47,6 +48,8 @@
 | `/api/cockpit/metrics/funnel` | API |
 | `/api/cockpit/ops/run-rollup` | API |
 | `/api/cockpit/ops/status` | API |
+| `/api/cockpit/pipeline` | API |
+| `/api/cockpit/pipeline/metrics` | API |
 | `/api/cockpit/saved-views` | API |
 | `/api/cockpit/status` | API |
 | `/api/cron/cleanup` | API |
@@ -217,6 +220,7 @@
 | `/cockpit/overview` | Page |
 | `/cockpit/packing-profiles` | Page |
 | `/cockpit/packing-rules` | Page |
+| `/cockpit/pipeline` | Page |
 | `/cockpit/playbooks` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |

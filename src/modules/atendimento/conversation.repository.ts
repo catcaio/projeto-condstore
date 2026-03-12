@@ -210,6 +210,17 @@ export const conversationRepository = {
             .set({ status })
             .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
     },
+
+    async updateConversationStage(
+        tenantId: string,
+        conversationId: string,
+        stage: 'NEW' | 'QUALIFYING' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST'
+    ): Promise<void> {
+        const db = await getDb();
+        await db.update(conversations)
+            .set({ stage })
+            .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
+    },
     
     async getConversationMessages(tenantId: string, conversationId: string): Promise<ConversationMessageRecord[]> {
         const db = await getDb();

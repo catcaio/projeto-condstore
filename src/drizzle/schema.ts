@@ -1851,6 +1851,7 @@ export const conversations = mysqlTable('conversations', {
     phoneEncrypted: varchar('phone_encrypted', { length: 255 }).notNull(),
     channel: varchar('channel', { length: 20 }).notNull().default('WHATSAPP'),
     status: varchar('status', { length: 30 }).notNull().default('OPEN'), // OPEN, WAITING_CUSTOMER, WAITING_INTERNAL, RESOLVED
+    stage: mysqlEnum('stage', ['NEW', 'QUALIFYING', 'QUOTED', 'NEGOTIATING', 'WON', 'LOST']).notNull().default('NEW'),
     assignedTo: varchar('assigned_to', { length: 36 }),
     lastMessageAt: timestamp('last_message_at').default(sql`CURRENT_TIMESTAMP`),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
