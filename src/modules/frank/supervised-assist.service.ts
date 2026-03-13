@@ -5,6 +5,14 @@ import { resolveKnowledge } from './knowledge/knowledge.service';
 import { suggestionService } from './suggestions/suggestion.service';
 import { isFrankSupervisedOnly } from '@/config/app.config';
 import { logger } from '@/infra/logger';
+import { catalogService } from '@/modules/catalog/catalog.service';
+import { freightService } from '@/modules/freight/freight.service';
+import {
+    formatFreightQuoteResponse,
+    formatProductInquiryResponse,
+    formatProductSuggestions,
+} from '@/lib/formatters/whatsapp-response';
+import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 
 export interface SupervisedSuggestionOutput {
     intent: Intent;
@@ -15,11 +23,12 @@ export interface SupervisedSuggestionOutput {
     outcome: 'success' | 'fallback' | 'skipped';
 }
 
+function extractCep(message: string): string | null {
+    const match = message.match(/\b(\d{5})[-\s]?(\d{3})\b/);
+    return match ? `${match[1]}${match[2]}` : null;
+}
+
 export const supervisedAssistService = {
-    /**
-     * Engine de Sugestão
-     * Flow: message -> intent -> entity -> playbook -> knowledge -> response -> suggestion
-     */
     async generatePassiveSuggestion(
         tenantId: string,
         conversationId: string,
@@ -37,13 +46,10 @@ export const supervisedAssistService = {
             };
         }
 
-        // 1. Intent Resolver
         const intentResult = resolveIntent(message);
-
-        // 2. Entity Resolver
         const entityResult = resolveEntities(message);
+        const cep = extractCep(message);
 
-        // 3. Playbook Resolver
         const playbook = await resolvePlaybook({
             tenantId,
             intent: intentResult.intent,
@@ -52,23 +58,76 @@ export const supervisedAssistService = {
 
         let suggestedResponse = 'Não consegui formular uma sugestão clara para esta mensagem.';
         let outcome: 'success' | 'fallback' = 'fallback';
-        let source: 'playbook' | 'knowledge' | 'llm' | 'fallback' = 'fallback';
 
-        if (playbook) {
+        const productQuery = entityResult.entities.product;
+        const quantity = entityResult.entities.quantity ?? 1;
+
+        if (productQuery) {
+            const products = await catalogService.searchProductsByName(tenantId, productQuery);
+            if (products.length > 0) {
+                await publishOperationalEvent({
+                    tenantId,
+                    eventDomain: 'OPERATIONS',
+                    eventType: 'product_detected',
+                    sessionId,
+                    payload: { conversationId, productId: products[0].productId, productQuery },
+                });
+
+                if (products.length === 1) {
+                    suggestedResponse = formatProductInquiryResponse(products[0]);
+
+                    if (cep && quantity > 0) {
+                        const quote = await freightService.calculateFreight({
+                            tenantId,
+                            destinationCep: cep,
+                            quantity,
+                            productRef: products[0].productId,
+                            unitWeight: products[0].weight,
+                        });
+
+                        const best = quote.options[0];
+                        if (best) {
+                            suggestedResponse = `${suggestedResponse}\n\n${formatFreightQuoteResponse({
+                                cep,
+                                freightPrice: best.price,
+                                estimatedDays: best.deliveryTime,
+                                carrier: best.carrier,
+                            })}`;
+
+                            await publishOperationalEvent({
+                                tenantId,
+                                eventDomain: 'OPERATIONS',
+                                eventType: 'freight_quoted',
+                                sessionId,
+                                payload: {
+                                    conversationId,
+                                    productId: products[0].productId,
+                                    quantity,
+                                    destinationZip: cep,
+                                    carrier: best.carrier,
+                                },
+                            });
+                        }
+                    }
+                } else {
+                    suggestedResponse = formatProductSuggestions(products);
+                }
+
+                outcome = 'success';
+            }
+        }
+
+        if (outcome !== 'success' && playbook) {
             suggestedResponse = `${playbook.responseBase}\n\n${playbook.nextStepSuggestion ?? ''}`.trim();
             outcome = 'success';
-            source = 'playbook';
-        } else {
-            // 4. Knowledge Lookup
+        } else if (outcome !== 'success') {
             const knowledgeEntry = await resolveKnowledge(tenantId, message, sessionId);
             if (knowledgeEntry) {
                 suggestedResponse = knowledgeEntry.content;
                 outcome = 'success';
-                source = 'knowledge';
             }
         }
 
-        // 5. Response Engine (saving)
         if (outcome === 'success') {
             await suggestionService.generateSuggestion(tenantId, sessionId, {
                 conversationId,
@@ -79,6 +138,14 @@ export const supervisedAssistService = {
                 confidence: intentResult.confidence,
             }).catch(e => {
                 logger.error('frank_suggestion_failed_to_save', e as Error, { tenantId });
+            });
+
+            await publishOperationalEvent({
+                tenantId,
+                eventType: 'suggestion_created',
+                eventDomain: 'OPERATIONS',
+                sessionId,
+                payload: { conversationId, intent: intentResult.intent },
             });
         }
 

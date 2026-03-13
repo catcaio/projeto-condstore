@@ -27,6 +27,7 @@ import { verifyTwilioSignature } from '@/lib/security/webhook-verifier';
 import { registerWebhookEvent } from '@/lib/security/webhook-dedupe';
 import { inboundMessageDedupRepository } from '@/infra/repositories/inbound-message-dedup.repository';
 import { normalizeAndHash, isValidPhone } from '@/lib/phone';
+import { normalizeWhatsAppPhone } from '@/lib/phone/normalize-phone';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { handleIncomingMessage } from '@/modules/frank/whatsapp-orchestrator';
 import { webhookEventRepository, hashPayload } from '@/infra/repositories/webhook-event.repository';
@@ -34,6 +35,7 @@ import { endUserConsentRepository } from '@/infra/repositories/end-user-consent.
 import { conversationService } from '@/modules/atendimento/conversation.service';
 import { supervisedAssistService } from '@/modules/frank/supervised-assist.service';
 import { encryptString } from '@/infra/pii/crypto';
+import { identityResolverService } from '@/modules/customers/identity-resolver/identity-resolver.service';
 
 
 export const dynamic = 'force-dynamic';
@@ -146,8 +148,8 @@ export async function POST(request: NextRequest) {
         const incomingMessage = twilioProvider.parseIncomingMessage(payload as any);
         incomingMessage.body = sanitizeMessage(incomingMessage.body);
 
-        const fromNormalized = normalizeAndHash(incomingMessage.from).normalized;
-        const phoneHash = normalizeAndHash(incomingMessage.from).hash;
+        const fromNormalized = normalizeWhatsAppPhone(incomingMessage.from);
+        const phoneHash = normalizeAndHash(fromNormalized).hash;
 
         if (!isValidPhone(fromNormalized)) {
             return finish(twimlOk('Número inválido.', requestId));
@@ -202,16 +204,21 @@ export async function POST(request: NextRequest) {
         }
 
         // ── 10. Human Inbox routing & Webhook ack ─────────────────────────────
+        const identity = await identityResolverService.resolveByPhone(tenantId, fromNormalized);
+
         const { conversation } = await conversationService.processInboundMessage(
             tenantId,
             phoneHash,
             encryptString(fromNormalized),
             incomingMessage.body,
-            tenant.id, // currently using tenant.id as customer fallback, or null if unlinked
-            undefined, // organization
+            identity.customerId ?? undefined,
+            identity.organizationId ?? undefined,
             {
                 MessageSid: payload['MessageSid'],
-                AccountSid: payload['AccountSid']
+                AccountSid: payload['AccountSid'],
+                contactId: identity.contactId,
+                organizationId: identity.organizationId,
+                unidentified: !identity.customerId,
             }
         );
         // -- Generate passive suggestion --
