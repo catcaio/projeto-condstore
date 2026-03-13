@@ -111,9 +111,34 @@ function countMatches(text: string, keywords: string[]): number {
     return count;
 }
 
+/**
+ * Patterns that represent ambiguous informational queries.
+ * These should be classified as GENERIC_QUESTION by resolveIntent()
+ * because they lack the specificity to route directly to a tool.
+ * resolveContextualIntent() can promote them when session anchors exist.
+ */
+const GENERIC_INFORMATIONAL_PATTERNS = [
+    'status do meu pedido',
+    'qual o status',
+    'tem rastreio',
+    'ver meu cadastro',
+    'meu cadastro',
+    'quero ver meu',
+    'dados da minha conta',
+];
+
 export function resolveIntent(message: string): IntentResult {
     if (!message || message.trim().length === 0) {
         return { intent: 'OUTRO', confidence: 0 };
+    }
+
+    const normalizedMessage = normalize(message);
+
+    // Early rule: detect generic informational questions before specific classifiers.
+    // These phrases are too ambiguous on their own to safely route to a tool
+    // without session context backing them.
+    if (GENERIC_INFORMATIONAL_PATTERNS.some(p => normalizedMessage.includes(normalize(p)))) {
+        return { intent: 'GENERIC_QUESTION', confidence: 0.6 };
     }
 
     const scores: { intent: Intent; matches: number; total: number; priority: number }[] = [
@@ -154,6 +179,7 @@ export function resolveIntent(message: string): IntentResult {
 
     return { intent: best.intent, confidence, intentCandidates: candidates };
 }
+
 
 // ─── Contextual Intent Resolution ───────────────────────────────────────────
 
@@ -235,10 +261,11 @@ const CONTEXTUAL_CONFIDENCE = 0.70;
  * Resolve intent considering conversational context.
  *
  * 1. Run standard keyword-based resolveIntent().
- * 2. If keyword confidence is adequate, return as-is.
- * 3. If low confidence AND message matches a follow-up phrase AND anchors exist:
- *    → reclassify using contextual rules.
- * 4. Otherwise, return the standard (low-confidence) result for safe fallback.
+ * 2. If keyword returns a specific (non-GENERIC_QUESTION, non-OUTRO) intent
+ *    with adequate confidence, return as-is.
+ * 3. If the result is GENERIC_QUESTION or low confidence, check session anchors:
+ *    - If anchors exist and message matches a follow-up phrase → reclassify.
+ *    - Otherwise return the standard result for safe fallback.
  */
 export function resolveContextualIntent(
     message: string,
@@ -246,8 +273,8 @@ export function resolveContextualIntent(
 ): IntentResult {
     const standardResult = resolveIntent(message);
 
-    // High-confidence keyword match — trust it directly
-    if (standardResult.intent !== 'OUTRO' && standardResult.confidence >= 0.25) {
+    // High-confidence specific intent (not GENERIC_QUESTION / OUTRO) — trust it directly
+    if (standardResult.intent !== 'OUTRO' && standardResult.intent !== 'GENERIC_QUESTION' && standardResult.confidence >= 0.25) {
         return standardResult;
     }
 
@@ -274,3 +301,4 @@ export function resolveContextualIntent(
     // No applicable rule — return standard result for safe fallback
     return standardResult;
 }
+

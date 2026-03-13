@@ -1,9 +1,9 @@
 import { db } from '@/db/client';
-import { eq, and, desc, like, or, isNotNull } from 'drizzle-orm';
+import { eq, and, desc, like, isNotNull, or } from 'drizzle-orm';
 import { customers, customerContacts, organizations, orders, freightSimulations } from '@/drizzle/schema';
 import { createHash } from 'node:crypto';
 import { normalizePhone } from '@/lib/phone';
-import { encryptString, decryptString } from '@/infra/pii/crypto';
+import { decryptString } from '@/infra/pii/crypto';
 
 /**
  * Hash phone number using SHA-256 for privacy-safe storage.
@@ -21,9 +21,19 @@ export function phoneLast4(phone: string): string {
 }
 
 /**
- * Fetches the canonical customer entity along with its parent organization
- * and all associated contacts.
+ * Safely decrypt a PII string, returning null if decryption fails
+ * (e.g. null input, invalid ciphertext, or key rotation).
  */
+function safeDecrypt(encrypted: string | null | undefined): string | null {
+    if (!encrypted) return null;
+    try {
+        return decryptString(encrypted);
+    } catch {
+        return null;
+    }
+}
+
+
 export async function getCustomerWithContext(tenantId: string, customerId: string) {
     const customerRecords = await db
         .select({
@@ -58,8 +68,8 @@ export async function getCustomerWithContext(tenantId: string, customerId: strin
 
     const contacts = rawContacts.map(c => ({
         ...c,
-        phone: c.phoneEncrypted ? decryptString(c.phoneEncrypted) : null,
-        email: c.emailEncrypted ? decryptString(c.emailEncrypted) : null,
+        phone: safeDecrypt(c.phoneEncrypted),
+        email: safeDecrypt(c.emailEncrypted),
     }));
 
     const recentOrders = await db
@@ -162,8 +172,8 @@ export async function findCustomerReferenceByPhone(tenantId: string, phone: stri
             return false;
         }
 
-        const phone = decryptString(candidate.phoneEncrypted);
-        return phonesMatch(normalizedPhone, phone);
+        const phone = safeDecrypt(candidate.phoneEncrypted);
+        return phone !== null && phonesMatch(normalizedPhone, phone);
     });
 
     const uniqueMatches = new Map(
