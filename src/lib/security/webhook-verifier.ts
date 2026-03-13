@@ -33,6 +33,6 @@ export async function verifyStripeSignature(req: NextRequest, rawBody: string): 
     }
 }
 
-export function verifyTwilioSignature(req: NextRequest, rawBody: string = "", formParams: Record<string, string> = {}): boolean {
-    return verifyTwilioRequest(req, rawBody, formParams);
+export function verifyTwilioSignature(req: NextRequest, rawBody: string = "", formParams: Record<string, string> = {}, expectedUrl?: string): boolean {
+    return verifyTwilioRequest(req, rawBody, formParams, expectedUrl);
 }

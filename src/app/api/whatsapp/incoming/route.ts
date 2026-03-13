@@ -159,7 +159,11 @@ export async function POST(request: NextRequest) {
         payload[key] = value;
     });
 
-    const signatureValid = verifyTwilioSignature(request, rawBody, payload);
+    const expectedUrl = process.env.TWILIO_WEBHOOK_BASE_URL 
+        ? `${process.env.TWILIO_WEBHOOK_BASE_URL.replace(/\/$/, '')}/api/whatsapp/incoming`
+        : undefined;
+
+    const signatureValid = verifyTwilioSignature(request, rawBody, payload, expectedUrl);
     if (!signatureValid) {
         logger.warn('whatsapp_incoming_invalid_signature', { requestId });
         return finish(errorResponse(ErrorCode.FORBIDDEN, 401, requestId, 'Invalid signature'));
