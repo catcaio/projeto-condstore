@@ -6,41 +6,44 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { decryptString } from '@/infra/pii/crypto';
 
-export const revalidate = 0; // dynamic API
+export const revalidate = 0;
 
 export async function GET(
     request: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
     const requestId = makeRequestId(request);
-    
+
     const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
     const tenantId = auth.session.tenantId;
 
     try {
         const { id: conversationId } = await context.params;
+        const contextData = await conversationService.loadConversationContext(tenantId, conversationId);
 
-        const conversation = await conversationService.getConversationById(tenantId, conversationId);
-        if (!conversation) {
+        if (!contextData) {
             return errorResponse('NOT_FOUND' as any, 404, requestId, 'Conversation not found');
         }
 
         const messages = await conversationService.getConversationMessages(tenantId, conversationId);
-
-        // Securely decrypt the phone for Cockpit UI, but in a sanitized payload
-        const plaintextPhone = decryptString(conversation.phoneEncrypted);
-        const { phoneEncrypted, ...safeConversation } = conversation;
+        const plaintextPhone = decryptString(contextData.conversation.phoneEncrypted);
+        const { phoneEncrypted, ...safeConversation } = contextData.conversation;
 
         return NextResponse.json({
             ok: true,
             data: {
                 conversation: {
                     ...safeConversation,
-                    phone: plaintextPhone
+                    phone: plaintextPhone,
                 },
-                messages
-            }
+                contact: contextData.contact,
+                organization: contextData.organization,
+                lastQuote: contextData.lastQuote,
+                lastOrder: contextData.lastOrder,
+                shipment: contextData.shipment,
+                messages,
+            },
         });
     } catch (err: any) {
         logger.error('Failed to get conversation details', err as Error, { requestId });
