@@ -135,10 +135,15 @@ export async function POST(request: Request) {
         return response;
     };
 
+    let currentStep = 'received';
+    let payloadFrom = '';
+    let messageSidStr = '';
+
     try {
         const rawBody = await request.text();
         console.log("WHATSAPP WEBHOOK RECEIVED");
-        console.log("STEP 1: webhook received");
+        currentStep = 'STEP 1: webhook received';
+        console.log(currentStep);
 
         const contentType = request.headers.get('content-type') ?? '';
         if (contentType.includes('application/json')) {
@@ -162,7 +167,11 @@ export async function POST(request: Request) {
         params.forEach((value, key) => {
             payload[key] = value;
         });
-        console.log("STEP 2: payload parsed");
+        payloadFrom = payload.From || '';
+        messageSidStr = payload.MessageSid || '';
+
+        currentStep = 'STEP 2: payload parsed';
+        console.log(currentStep);
 
         const expectedUrl = process.env.TWILIO_WEBHOOK_BASE_URL 
             ? `${process.env.TWILIO_WEBHOOK_BASE_URL.replace(/\/$/, '')}/api/whatsapp/incoming`
@@ -283,7 +292,8 @@ export async function POST(request: Request) {
                 confidence: intentResult.confidence,
             }),
         });
-        console.log("STEP 3: message persisted");
+        currentStep = 'STEP 3: message persisted';
+        console.log(currentStep);
 
         const identity = await resolveCustomerByPhone(tenantId, fromE164);
 
@@ -334,7 +344,8 @@ export async function POST(request: Request) {
                 unidentified: !identity,
             },
         );
-        console.log("STEP 4: conversation updated");
+        currentStep = 'STEP 4: conversation upsert';
+        console.log(currentStep);
 
         await publishOperationalEvent({
             tenantId,
@@ -479,15 +490,29 @@ export async function POST(request: Request) {
         }
 
         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
+        
+        currentStep = 'STEP 5: webhook completed';
+        console.log(currentStep);
+        
         return finish(new Response("ok", { status: 200 }));
     } catch (err) {
-        console.error("WHATSAPP WEBHOOK ERROR", err);
+        console.error("WHATSAPP_WEBHOOK_ERROR", {
+            error: err,
+            requestId,
+            step: currentStep,
+            payloadFrom,
+            messageSid: messageSidStr
+        });
+        
         structuredLogger.error('whatsapp_incoming_error', {
             errorType: err instanceof Error ? err.name : 'UnknownError',
             errorMessage: err instanceof Error ? err.message : String(err),
             route,
             requestId,
+            step: currentStep,
+            messageSid: messageSidStr
         });
-        return finish(new Response("error", { status: 200 }));
+        
+        return finish(new Response("ok", { status: 200 }));
     }
 }
