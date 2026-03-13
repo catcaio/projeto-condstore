@@ -269,13 +269,13 @@ class FreightService {
    */
   async simulateFreight(params: {
     tenantId: string;
-    productId: string;
+    productQuery: string;
     quantity: number;
     destinationZip: string;
   }): Promise<{ carrier: string; price: number; deliveryDays: number }> {
     // Requires catalog module (dynamic import to avoid circular dep if they arise, or just normal import)
     const { catalogService } = await import('../catalog/catalog.service');
-    const [product] = await catalogService.searchProductsByName(params.tenantId, params.productId);
+    const [product] = await catalogService.searchProductsByName(params.tenantId, params.productQuery);
 
     if (!product) {
        throw new BusinessError(
@@ -285,17 +285,26 @@ class FreightService {
        );
     }
 
+    const { width, height, length } = product.dimensions ?? {};
+    if (!product.weight || product.weight <= 0 || !width || width <= 0 || !height || height <= 0 || !length || length <= 0) {
+      throw new BusinessError(
+        ErrorCode.FREIGHT_CALCULATION_ERROR,
+        'Product is missing required dimensions or weight for freight simulation',
+        { productQuery: params.productQuery }
+      );
+    }
+
     const { options } = await this.calculateFreight({
       tenantId: params.tenantId,
       destinationCep: params.destinationZip,
       quantity: params.quantity,
       unitWeight: product.weight,
       dimensions: {
-        width: product.dimensions.width || 0,
-        height: product.dimensions.height || 0,
-        length: product.dimensions.length || 0,
+        width,
+        height,
+        length,
       },
-      productRef: params.productId
+      productRef: params.productQuery
     });
 
     if (options.length === 0) {

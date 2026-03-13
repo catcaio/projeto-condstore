@@ -93,7 +93,7 @@ export async function POST(
             // 4. Update Conversation
             await tx.update(conversations)
                 .set({ customerId })
-                .where(eq(conversations.id, conversationId));
+                .where(and(eq(conversations.id, conversationId), eq(conversations.tenantId, tenantId)));
         });
 
         // Publish events outside transaction

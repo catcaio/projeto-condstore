@@ -148,7 +148,11 @@ export function resolveIntent(message: string): IntentResult {
 
     const candidates = scores.filter(s => s.matches > 0).map(s => s.intent);
 
-    if (confidence < 0.65) {
+    // Allow any single keyword match (confidence >= 0.25) to produce a valid intent.
+    // The previous 0.65 threshold was too strict: with `matches / min(total, 4)`, even
+    // a single strong hit like "qual o status do meu pedido" yields 0.25 and was
+    // incorrectly downgraded to GENERIC_QUESTION, breaking ORDER_STATUS routing.
+    if (confidence < 0.25) {
         return { intent: 'GENERIC_QUESTION', confidence: 0, intentCandidates: candidates };
     }
 

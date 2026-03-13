@@ -6,7 +6,7 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { decryptString } from '@/infra/pii/crypto';
 import { getDb } from '@/infra/db';
-import { customers, customerContacts, organizations, orders, freightSimulations, frankSessionState } from '@/drizzle/schema';
+import { customers, customerContacts, organizations, orders, frankSessionState } from '@/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 export const revalidate = 0; // dynamic API
 
@@ -34,7 +34,6 @@ export async function GET(
         let contact = null;
         let organization = null;
         let recentOrders: any[] = [];
-        let recentQuotes: any[] = [];
 
         const db = await getDb();
 
@@ -66,11 +65,6 @@ export async function GET(
                 .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, customer.id)))
                 .orderBy(desc(orders.createdAt))
                 .limit(3);
-                
-            recentQuotes = await db.select().from(freightSimulations)
-                .where(eq(freightSimulations.tenantId, tenantId)) // Global quotes since simulations currently lack customerId
-                .orderBy(desc(freightSimulations.createdAt))
-                .limit(3);
         }
 
         let frankSession = null;
@@ -97,7 +91,6 @@ export async function GET(
                     contact,
                     organization,
                     recentOrders,
-                    recentQuotes,
                     frankSession
                 },
                 messages

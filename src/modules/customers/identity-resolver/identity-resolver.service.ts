@@ -1,7 +1,7 @@
 import { getDb } from '@/infra/db';
 import { eq, and } from 'drizzle-orm';
 import { customerContacts, organizations, customers } from '@/drizzle/schema';
-import { normalizePhone, hashPhone } from '@/lib/phone/normalize-phone';
+import { normalizePhone, phoneHash } from '@/lib/phone';
 import { structuredLogger } from '@/infra/log/logger';
 import type { IdentityResolutionResult } from './identity-resolver.types';
 
@@ -14,7 +14,7 @@ export async function resolveCustomerByPhone(
         return null;
     }
 
-    const hashed = hashPhone(normalized);
+    const hashed = phoneHash(normalized);
 
     try {
         const db = await getDb();

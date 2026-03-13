@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
             });
             
             // Publish Operational Rule
-            await publishOperationalEvent({
+            void publishOperationalEvent({
                 tenantId,
                 eventType: 'customer_matched_to_conversation',
                 eventDomain: 'OPERATIONS',
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
                     customerId: identity.customerId,
                     confidenceScore: identity.confidenceScore
                 }
-            });
+            }).catch(() => {});
         } else {
             structuredLogger.info('customer_not_found', {
                 tenantId,
@@ -273,7 +273,8 @@ export async function POST(request: NextRequest) {
             conversationId: conversation.id,
             phoneHash,
             tenantId,
-            messagePreview: incomingMessage.body ? incomingMessage.body.slice(0, 50) : '[no_body]',
+            hasBody: !!incomingMessage.body,
+            bodyLength: incomingMessage.body?.length ?? 0,
         });
 
         logger.info('whatsapp_incoming_human_routed', {
