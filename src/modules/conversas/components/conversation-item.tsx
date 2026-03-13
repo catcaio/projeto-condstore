@@ -1,5 +1,5 @@
 import { StatusChip } from '@/ui/foundation';
-import type { ConversationChannel, ConversationPriority, ConversationRecord, ConversationStatus } from '../mock-data';
+import type { ConversationChannel, ConversationPriority, ConversationRecord, ConversationStatus } from '../types';
 
 function getStatusTone(status: ConversationStatus) {
     if (status === 'escalada') {

@@ -1,5 +1,5 @@
 import { StatusChip } from '@/ui/foundation';
-import type { ConversationMessage } from '../mock-data';
+import type { ConversationMessage } from '../types';
 
 function getBubbleClasses(actor: ConversationMessage['actor']) {
     if (actor === 'humano') {
