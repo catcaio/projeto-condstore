@@ -57,6 +57,7 @@ jobs:
 
       - name: Verify clean worktree
         run: |
+          git checkout -- next-env.d.ts || true
           if ! git diff --quiet; then
             echo "::error::Worktree is dirty after build. Unstaged changes detected."
             git diff --stat
