@@ -1,6 +1,6 @@
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 
-export interface IntentCapturedEventPayload {
+export interface IntentCapturedPayload extends Record<string, unknown> {
     intentId: string;
     sessionId: string;
     conversationId?: string | null;
@@ -9,17 +9,17 @@ export interface IntentCapturedEventPayload {
     confidence?: number | null;
 }
 
-export interface IntentValidatedEventPayload {
+export interface IntentValidatedPayload extends Record<string, unknown> {
     intentId: string;
     validatedBy: string;
 }
 
-export interface IntentIgnoredEventPayload {
+export interface IntentIgnoredPayload extends Record<string, unknown> {
     intentId: string;
     ignoredBy: string;
 }
 
-export function emitIntentCaptured(tenantId: string, payload: IntentCapturedEventPayload) {
+export function emitIntentCaptured(tenantId: string, payload: IntentCapturedPayload) {
     publishOperationalEvent({
         tenantId,
         eventDomain: 'OPERATIONS',
@@ -27,30 +27,30 @@ export function emitIntentCaptured(tenantId: string, payload: IntentCapturedEven
         entityId: payload.intentId,
         customerId: null,
         sessionId: payload.sessionId,
-        payload: payload as unknown as Record<string, unknown>
+        payload
     }).catch(() => {});
 }
 
-export function emitIntentValidated(tenantId: string, payload: IntentValidatedEventPayload) {
+export function emitIntentValidated(tenantId: string, payload: IntentValidatedPayload) {
     publishOperationalEvent({
         tenantId,
         eventDomain: 'OPERATIONS',
         eventType: 'intent_validated',
         entityId: payload.intentId,
         customerId: null,
-        sessionId: undefined,
-        payload: payload as unknown as Record<string, unknown>
+        sessionId: null,
+        payload
     }).catch(() => {});
 }
 
-export function emitIntentIgnored(tenantId: string, payload: IntentIgnoredEventPayload) {
+export function emitIntentIgnored(tenantId: string, payload: IntentIgnoredPayload) {
     publishOperationalEvent({
         tenantId,
         eventDomain: 'OPERATIONS',
         eventType: 'intent_ignored',
         entityId: payload.intentId,
         customerId: null,
-        sessionId: undefined,
-        payload: payload as unknown as Record<string, unknown>
+        sessionId: null,
+        payload
     }).catch(() => {});
 }

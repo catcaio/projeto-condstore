@@ -4,7 +4,6 @@ import { errorResponse, ErrorCode } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { timelineService } from '@/modules/timeline/timeline.service';
 import { TimelineEntity } from '@/modules/timeline/timeline.types';
-import { structuredLogger } from '@/infra/log/logger';
 
 export async function GET(req: NextRequest) {
     let requestId = 'unknown';
@@ -20,7 +19,7 @@ export async function GET(req: NextRequest) {
         const limitParam = searchParams.get('limit');
 
         const cursor = cursorParam ? new Date(cursorParam) : undefined;
-        const limit = Math.min(limitParam ? parseInt(limitParam, 10) : 50, 100);
+        const limit = limitParam ? parseInt(limitParam, 10) : 50;
 
         const tenantId = auth.session.tenantId;
 
@@ -34,12 +33,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({ ok: true, data: { events, nextCursor } });
     } catch (e) {
-        structuredLogger.error('api_cockpit_timeline_error', {
-            errorType: e instanceof Error ? e.name : String(e),
-            errorMessage: e instanceof Error ? e.message : String(e),
-            route: '/api/cockpit/timeline',
-            requestId
-        });
+        console.error('[GET /api/cockpit/timeline]', e);
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Internal Server Error', {
             systemEventId: 'timeline_fetch_failed'
         });

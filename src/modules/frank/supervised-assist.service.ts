@@ -1,11 +1,10 @@
 import { resolveIntent, type Intent } from './intent-resolver';
-import { resolveEntities, type ExtractedEntities, detectedEntityTypes } from './entity-resolver';
+import { resolveEntities, type ExtractedEntities } from './entity-resolver';
 import { resolvePlaybook } from './playbooks/playbook.service';
 import { resolveKnowledge } from './knowledge/knowledge.service';
 import { suggestionService } from './suggestions/suggestion.service';
 import { isFrankSupervisedOnly } from '@/config/app.config';
 import { logger } from '@/infra/logger';
-import { structuredLogger } from '@/infra/log/logger';
 
 export interface SupervisedSuggestionOutput {
     intent: Intent;
@@ -44,18 +43,6 @@ export const supervisedAssistService = {
         // 2. Entity Resolver
         const entityResult = resolveEntities(message);
 
-        structuredLogger.info('frank_intent_detected', {
-            eventType: 'FRANK_INTENT_DETECTED',
-            tenantId,
-            conversationId,
-            intentDetected: intentResult.intent,
-            confidence: intentResult.confidence,
-            intentCandidates: intentResult.intentCandidates ?? [],
-            entitiesDetected: detectedEntityTypes(entityResult.entities),
-            entitiesResolved: entityResult.entities,
-            source: 'whatsapp',
-        });
-
         // 3. Playbook Resolver
         const playbook = await resolvePlaybook({
             tenantId,
@@ -63,7 +50,7 @@ export const supervisedAssistService = {
             entities: entityResult.entities,
         });
 
-        let suggestedResponse = 'Posso ajudar com preço, frete ou disponibilidade. Pode me informar mais detalhes?';
+        let suggestedResponse = 'Não consegui formular uma sugestão clara para esta mensagem.';
         let outcome: 'success' | 'fallback' = 'fallback';
         let source: 'playbook' | 'knowledge' | 'llm' | 'fallback' = 'fallback';
 
@@ -92,14 +79,6 @@ export const supervisedAssistService = {
                 confidence: intentResult.confidence,
             }).catch(e => {
                 logger.error('frank_suggestion_failed_to_save', e as Error, { tenantId });
-            });
-
-            structuredLogger.info('frank_suggestion_generated', {
-                eventType: 'FRANK_SUGGESTION_GENERATED',
-                tenantId,
-                conversationId,
-                intent: intentResult.intent,
-                source,
             });
         }
 
