@@ -269,60 +269,66 @@ class FreightService {
    */
   async simulateFreight(params: {
     tenantId: string;
-    productQuery: string;
+    productId: string;
     quantity: number;
     destinationZip: string;
   }): Promise<{ carrier: string; price: number; deliveryDays: number }> {
-    // Requires catalog module (dynamic import to avoid circular dep if they arise, or just normal import)
     const { catalogService } = await import('../catalog/catalog.service');
-    const [product] = await catalogService.searchProductsByName(params.tenantId, params.productQuery);
+    const [product] = await catalogService.searchProductsByName(params.tenantId, params.productId);
 
     if (!product) {
-       throw new BusinessError(
-         ErrorCode.FREIGHT_CALCULATION_ERROR,
-         'Product not found for simulation',
-         params
-       );
-    }
-
-    const { width, height, length } = product.dimensions ?? {};
-    if (!product.weight || product.weight <= 0 || !width || width <= 0 || !height || height <= 0 || !length || length <= 0) {
       throw new BusinessError(
         ErrorCode.FREIGHT_CALCULATION_ERROR,
-        'Product is missing required dimensions or weight for freight simulation',
-        { productQuery: params.productQuery }
-      );
-    }
-
-    const { options } = await this.calculateFreight({
-      tenantId: params.tenantId,
-      destinationCep: params.destinationZip,
-      quantity: params.quantity,
-      unitWeight: product.weight,
-      dimensions: {
-        width,
-        height,
-        length,
-      },
-      productRef: params.productQuery
-    });
-
-    if (options.length === 0) {
-      throw new BusinessError(
-        ErrorCode.FREIGHT_CALCULATION_ERROR,
-        'No carriers cover this zip code',
+        'Product not found for simulation',
         params
       );
     }
 
-    const bestOption = options[0];
+    const quote = await this.simulateFreightQuote({
+      tenantId: params.tenantId,
+      productId: product.productId,
+      quantity: params.quantity,
+      destinationZip: params.destinationZip,
+      unitWeight: product.weight,
+    });
+
     return {
-      carrier: bestOption.carrier || bestOption.id,
-      price: bestOption.price,
-      deliveryDays: bestOption.deliveryTime
+      carrier: quote.carrier,
+      price: quote.freightPrice,
+      deliveryDays: quote.estimatedDays
     };
   }
 
+  async simulateFreightQuote(input: {
+    productId: string;
+    quantity: number;
+    destinationZip: string;
+    tenantId?: string;
+    unitWeight?: number;
+  }): Promise<{ freightPrice: number; estimatedDays: number; carrier: string }> {
+    if (!input.productId || !input.quantity || !input.destinationZip) {
+      throw new BusinessError(
+        ErrorCode.VALIDATION_ERROR,
+        'Missing required parameters for freight simulation',
+        { input },
+      );
+    }
+
+    const result = await this.calculateFreight({
+      tenantId: input.tenantId,
+      productRef: input.productId,
+      quantity: input.quantity,
+      destinationCep: input.destinationZip.replace(/\D/g, ''),
+      unitWeight: input.unitWeight,
+    });
+
+    const best = result.options[0];
+    return {
+      freightPrice: best?.price ?? 0,
+      estimatedDays: best?.deliveryTime ?? 0,
+      carrier: best?.carrier ?? 'indisponivel',
+    };
+  }
 }
 
 // Export singleton instance

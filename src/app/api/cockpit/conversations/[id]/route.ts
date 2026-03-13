@@ -1,21 +1,49 @@
+import { and, desc, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { conversationService } from '@/modules/atendimento/conversation.service';
 import { requireAdmin } from '@/infra/auth/guards';
+import { getDb } from '@/infra/db';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { decryptString } from '@/infra/pii/crypto';
-import { getDb } from '@/infra/db';
-import { customers, customerContacts, organizations, orders, frankSessionState } from '@/drizzle/schema';
-import { eq, and, desc } from 'drizzle-orm';
-export const revalidate = 0; // dynamic API
+import {
+    customerContacts,
+    freightSimulations,
+    frankSessionState,
+    orders,
+    organizations,
+    shipments,
+} from '@/drizzle/schema';
+import { conversationService } from '@/modules/atendimento/conversation.service';
 
-export async function GET(
-    request: NextRequest,
-    context: { params: Promise<{ id: string }> }
-) {
+export const revalidate = 0;
+
+function presentOrganization<T extends { tradeName: string | null; legalName: string }>(organization: T | null) {
+    if (!organization) return null;
+    return {
+        ...organization,
+        name: organization.tradeName ?? organization.legalName,
+    };
+}
+
+function presentCustomer(params: {
+    customerId: string | null;
+    contact: { name: string; customerId: string } | null;
+    organization: { tradeName: string | null; legalName: string } | null;
+}) {
+    if (!params.customerId && !params.contact && !params.organization) {
+        return null;
+    }
+
+    return {
+        id: params.customerId ?? params.contact?.customerId ?? null,
+        name: params.contact?.name ?? params.organization?.tradeName ?? params.organization?.legalName ?? 'Cliente',
+    };
+}
+
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     const requestId = makeRequestId(request);
-    
+
     const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
     const tenantId = auth.session.tenantId;
@@ -29,55 +57,123 @@ export async function GET(
         }
 
         const messages = await conversationService.getConversationMessages(tenantId, conversationId);
-
-        let customer = null;
-        let contact = null;
-        let organization = null;
-        let recentOrders: any[] = [];
-
         const db = await getDb();
 
-        if (conversation.customerId) {
-            const [cust] = await db.select().from(customers)
-                .where(and(eq(customers.tenantId, tenantId), eq(customers.id, conversation.customerId)))
-                .limit(1);
-            if (cust) {
-                customer = cust;
-            }
-        }
+        const [frankSession] = conversation.phoneHash
+            ? await db
+                .select()
+                .from(frankSessionState)
+                .where(
+                    and(
+                        eq(frankSessionState.tenantId, tenantId),
+                        eq(frankSessionState.sessionId, conversation.phoneHash),
+                    ),
+                )
+                .limit(1)
+            : [];
 
-        const [contactRecord] = await db.select().from(customerContacts)
-            .where(and(eq(customerContacts.tenantId, tenantId), eq(customerContacts.phoneHash, conversation.phoneHash)))
-            .limit(1);
+        const [contact] = conversation.phoneHash
+            ? await db
+                .select()
+                .from(customerContacts)
+                .where(and(eq(customerContacts.tenantId, tenantId), eq(customerContacts.phoneHash, conversation.phoneHash)))
+                .limit(1)
+            : conversation.customerId
+                ? await db
+                    .select()
+                    .from(customerContacts)
+                    .where(
+                        and(
+                            eq(customerContacts.tenantId, tenantId),
+                            eq(customerContacts.customerId, conversation.customerId),
+                        ),
+                    )
+                    .limit(1)
+                : [];
 
-        if (contactRecord) {
-            contact = contactRecord;
-            if (contactRecord.organizationId) {
-                const [orgRecord] = await db.select().from(organizations)
-                    .where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, contactRecord.organizationId)))
+        const resolvedCustomerId = conversation.customerId ?? contact?.customerId ?? frankSession?.customerId ?? null;
+        const resolvedOrganizationId =
+            conversation.organizationId ?? contact?.organizationId ?? frankSession?.organizationId ?? null;
+
+        const [organizationRecord] = resolvedOrganizationId
+            ? await db
+                .select()
+                .from(organizations)
+                .where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, resolvedOrganizationId)))
+                .limit(1)
+            : [];
+
+        const [lastOrder] = frankSession?.lastOrderId
+            ? await db
+                .select()
+                .from(orders)
+                .where(and(eq(orders.tenantId, tenantId), eq(orders.id, frankSession.lastOrderId)))
+                .limit(1)
+            : resolvedCustomerId
+                ? await db
+                    .select()
+                    .from(orders)
+                    .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, resolvedCustomerId)))
+                    .orderBy(desc(orders.createdAt))
+                    .limit(1)
+                : await db
+                    .select()
+                    .from(orders)
+                    .where(and(eq(orders.tenantId, tenantId), eq(orders.conversationId, conversationId)))
+                    .orderBy(desc(orders.createdAt))
                     .limit(1);
-                organization = orgRecord || null;
-            }
-        }
 
-        if (customer) {
-            recentOrders = await db.select().from(orders)
-                .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, customer.id)))
-                .orderBy(desc(orders.createdAt))
-                .limit(3);
-        }
+        const [lastQuote] = frankSession?.lastReferencedQuoteId
+            ? await db
+                .select()
+                .from(freightSimulations)
+                .where(
+                    and(
+                        eq(freightSimulations.tenantId, tenantId),
+                        eq(freightSimulations.id, frankSession.lastReferencedQuoteId),
+                    ),
+                )
+                .limit(1)
+            : lastOrder?.freightSimulationId
+                ? await db
+                    .select()
+                    .from(freightSimulations)
+                    .where(
+                        and(
+                            eq(freightSimulations.tenantId, tenantId),
+                            eq(freightSimulations.id, lastOrder.freightSimulationId),
+                        ),
+                    )
+                    .limit(1)
+                : [];
 
-        let frankSession = null;
-        if (conversation.phoneHash) {
-            const [sessionRec] = await db.select().from(frankSessionState)
-                .where(and(eq(frankSessionState.tenantId, tenantId), eq(frankSessionState.sessionId, conversation.phoneHash)))
-                .limit(1);
-            if (sessionRec) {
-                frankSession = sessionRec;
-            }
-        }
+        const [shipment] = frankSession?.lastReferencedShipmentId
+            ? await db
+                .select()
+                .from(shipments)
+                .where(
+                    and(
+                        eq(shipments.tenantId, tenantId),
+                        eq(shipments.id, frankSession.lastReferencedShipmentId),
+                    ),
+                )
+                .limit(1)
+            : lastOrder
+                ? await db
+                    .select()
+                    .from(shipments)
+                    .where(and(eq(shipments.tenantId, tenantId), eq(shipments.orderId, lastOrder.id)))
+                    .orderBy(desc(shipments.updatedAt))
+                    .limit(1)
+                : [];
 
-        // Securely decrypt the phone for Cockpit UI, but in a sanitized payload
+        const organization = presentOrganization(organizationRecord ?? null);
+        const customer = presentCustomer({
+            customerId: resolvedCustomerId,
+            contact: contact ?? null,
+            organization: organizationRecord ?? null,
+        });
+
         const plaintextPhone = decryptString(conversation.phoneEncrypted);
         const { phoneEncrypted, ...safeConversation } = conversation;
 
@@ -90,11 +186,19 @@ export async function GET(
                     customer,
                     contact,
                     organization,
-                    recentOrders,
-                    frankSession
+                    recentOrders: lastOrder ? [lastOrder] : [],
+                    recentQuotes: lastQuote ? [lastQuote] : [],
+                    frankSession: frankSession ?? null,
                 },
-                messages
-            }
+                customer,
+                contact: contact ?? null,
+                organization: organization ?? null,
+                messages,
+                lastQuote: lastQuote ?? null,
+                lastOrder: lastOrder ?? null,
+                shipment: shipment ?? null,
+                frankSession: frankSession ?? null,
+            },
         });
     } catch (err: any) {
         logger.error('Failed to get conversation details', err as Error, { requestId });

@@ -156,6 +156,7 @@ export function resolveIntent(message: string): IntentResult {
         return { intent: 'GENERIC_QUESTION', confidence: 0, intentCandidates: candidates };
     }
 
+
     return { intent: best.intent, confidence, intentCandidates: candidates };
 }
 

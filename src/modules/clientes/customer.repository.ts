@@ -1,9 +1,9 @@
 import { db } from '@/db/client';
-import { eq, and, desc, like, isNotNull } from 'drizzle-orm';
+import { eq, and, desc, like, isNotNull, or } from 'drizzle-orm';
 import { customers, customerContacts, organizations, orders, freightSimulations } from '@/drizzle/schema';
 import { createHash } from 'node:crypto';
 import { normalizePhone } from '@/lib/phone';
-import { encryptString, decryptString } from '@/infra/pii/crypto';
+import { decryptString } from '@/infra/pii/crypto';
 
 /**
  * Hash phone number using SHA-256 for privacy-safe storage.
@@ -157,7 +157,12 @@ export async function findCustomerReferenceByPhone(tenantId: string, phone: stri
             and(
                 eq(customerContacts.tenantId, tenantId),
                 isNotNull(customerContacts.phoneHash),
-                eq(customerContacts.phoneHash, hashPhone(normalizedPhone)),
+                or(
+                    eq(customerContacts.phoneHash, hashPhone(normalizedPhone)),
+                    eq(customerContacts.phoneHash, hashPhone('55' + normalizedPhone)),
+                    eq(customerContacts.phoneHash, hashPhone('+' + normalizedPhone)),
+                    eq(customerContacts.phoneHash, hashPhone('+55' + normalizedPhone))
+                ),
             ),
         )
         .limit(25);

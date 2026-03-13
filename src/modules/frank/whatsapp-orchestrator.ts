@@ -1255,7 +1255,7 @@ export async function handleIncomingMessage(
     }
 
     // ─── PRODUCT_QUERY ──────────────────────────────────────────────
-    if (intentResult.intent === 'PRODUTO' || intentResult.intent === 'PRODUCT_QUERY') {
+    if (intentResult.intent === 'PRODUTO' || (intentResult.intent as any) === 'PRODUCT_QUERY') {
         const queryTerm = (entityResult.entities.product as string) || productRef || message.replace(/(qual o pre[çc]o|quero saber o pre[çc]o|produto|quero|comprar)/gi, '').trim();
         
         publishOperationalEvent({
@@ -1291,7 +1291,7 @@ export async function handleIncomingMessage(
     }
 
     // ─── FREIGHT (simulate flow) ────────────────────────────────────────
-    if (intentResult.intent === 'FRETE' || intentResult.intent === 'FREIGHT') {
+    if (intentResult.intent === 'FRETE' || (intentResult.intent as any) === 'FREIGHT') {
         if (!cepRaw) {
             return {
                 reply: FRETE_MISSING_CEP,
@@ -1331,7 +1331,7 @@ export async function handleIncomingMessage(
         try {
             const result = await freightService.simulateFreight({
                 tenantId,
-                productQuery: productIdentifier,
+                productId: productIdentifier,
                 quantity,
                 destinationZip: cepRaw,
             });
@@ -1360,7 +1360,7 @@ export async function handleIncomingMessage(
         } catch (err: any) {
             logger.error('frank_orchestrator_quote_error', err as Error, { tenantId, cepRaw, productIdentifier });
             return {
-                reply: 'Desculpe, tive um problema ao calcular o frete. Por favor, tente novamente.',
+                reply: `Desculpe, tive um problema ao calcular o frete: ${err?.message || 'Erro interno'}. Tente novamente.`,
                 intent: intentResult.intent,
                 intentConfidence: intentResult.confidence,
                 cep, productRef, simulationId: null,

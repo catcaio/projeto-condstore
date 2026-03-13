@@ -90,7 +90,7 @@ export async function POST(
                 createdAt: now,
             });
 
-            // 4. Update Conversation
+            // 4. Update Conversation — include tenantId filter for cross-tenant safety
             await tx.update(conversations)
                 .set({ customerId })
                 .where(and(eq(conversations.id, conversationId), eq(conversations.tenantId, tenantId)));
