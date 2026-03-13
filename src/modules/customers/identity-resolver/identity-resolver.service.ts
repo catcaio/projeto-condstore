@@ -1,4 +1,4 @@
-import { db } from '@/db/client';
+import { getDb } from '@/infra/db';
 import { eq, and } from 'drizzle-orm';
 import { customerContacts, organizations, customers } from '@/drizzle/schema';
 import { normalizePhone, hashPhone } from '@/lib/phone/normalize-phone';
@@ -17,6 +17,7 @@ export async function resolveCustomerByPhone(
     const hashed = hashPhone(normalized);
 
     try {
+        const db = await getDb();
         const contactRecords = await db
             .select({
                 contactId: customerContacts.id,

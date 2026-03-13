@@ -39,7 +39,7 @@ describe('Intent Events Typing', () => {
             tenantId: 't1',
             eventType: 'intent_validated',
             entityId: 'i1',
-            sessionId: undefined
+            sessionId: null
         }));
     });
 });

@@ -91,7 +91,9 @@ describe('GET /api/cockpit/metrics/frank', () => {
 
         expect(response.status).toBe(403);
         expect(json).toMatchObject({
-            error: 'Cross-tenant access forbidden'
+            error: {
+                message: 'Cross-tenant access forbidden'
+            }
         });
         expect(getFrankAssistMetrics).not.toHaveBeenCalled();
     });

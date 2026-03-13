@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolveCustomerByPhone } from './identity-resolver.service';
-import { db } from '@/db/client';
+import { getDb } from '@/infra/db';
 import { normalizePhone, hashPhone } from '@/lib/phone/normalize-phone';
 
-vi.mock('@/db/client', () => {
+vi.mock('@/infra/db', () => {
     const mockSelect = vi.fn();
     return {
-        db: {
+        getDb: vi.fn().mockResolvedValue({
             select: mockSelect,
-        }
+        })
     };
 });
 
@@ -23,7 +23,7 @@ describe('Identity Resolver Service', () => {
     it('returns null if normalizer fails', async () => {
         const result = await resolveCustomerByPhone(tenantId, 'invalid');
         expect(result).toBeNull();
-        expect(db.select).not.toHaveBeenCalled();
+        expect(getDb).not.toHaveBeenCalled();
     });
 
     it('resolves customer ids by exact hash match', async () => {
@@ -35,7 +35,8 @@ describe('Identity Resolver Service', () => {
             }])
         });
         const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
-        (db.select as any).mockReturnValue({ from: mockFrom });
+        const dbInstance = await getDb();
+        (dbInstance.select as any).mockReturnValue({ from: mockFrom });
 
         const result = await resolveCustomerByPhone(tenantId, rawPhone);
 
@@ -47,7 +48,7 @@ describe('Identity Resolver Service', () => {
         });
 
         // Ensure db client is correctly accessed
-        expect(db.select).toHaveBeenCalled();
+        expect(getDb).toHaveBeenCalled();
     });
 
     it('returns null if no record matched', async () => {
@@ -55,7 +56,8 @@ describe('Identity Resolver Service', () => {
             limit: vi.fn().mockResolvedValue([])
         });
         const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
-        (db.select as any).mockReturnValue({ from: mockFrom });
+        const dbInstance = await getDb();
+        (dbInstance.select as any).mockReturnValue({ from: mockFrom });
 
         const result = await resolveCustomerByPhone(tenantId, rawPhone);
 
@@ -67,7 +69,8 @@ describe('Identity Resolver Service', () => {
             limit: vi.fn().mockRejectedValue(new Error('DB connection failed'))
         });
         const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
-        (db.select as any).mockReturnValue({ from: mockFrom });
+        const dbInstance = await getDb();
+        (dbInstance.select as any).mockReturnValue({ from: mockFrom });
 
         const result = await resolveCustomerByPhone(tenantId, rawPhone);
         expect(result).toBeNull();

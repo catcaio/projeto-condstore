@@ -6,8 +6,8 @@ export const LinkPlaybookDTOSchema = z.object({
 export type LinkPlaybookDTO = z.infer<typeof LinkPlaybookDTOSchema>;
 
 export const CreatePlaybookFromIntentDTOSchema = z.object({
-    name: z.string().min(1),
-    description: z.string().optional(),
+    name: z.string().min(1).max(100),
+    description: z.string().max(500).optional(),
     intent: z.string().min(1),
     triggerPhrases: z.array(z.string()).default([]),
     relatedEntities: z.array(z.string()).default([]),
@@ -17,7 +17,7 @@ export const CreatePlaybookFromIntentDTOSchema = z.object({
     requiresConfirmation: z.boolean().default(false),
     requiresHumanHandoff: z.boolean().default(false),
     handoffConditions: z.string().optional(),
-    tags: z.array(z.string()).default([]),
+    tags: z.array(z.string()).max(20).default([]),
     priority: z.number().default(0),
     status: z.enum(['draft', 'approved', 'archived']).default('draft'),
 });
