@@ -3,7 +3,7 @@ import { Button } from '@/ui/components';
 import { ConversationActions } from './conversation-actions';
 import { ConversationHeader } from './conversation-header';
 import { MessageBubble } from './message-bubble';
-import type { ConversationRecord } from '../mock-data';
+import type { ConversationRecord } from '../types';
 
 export function ConversationThread({
     conversation,

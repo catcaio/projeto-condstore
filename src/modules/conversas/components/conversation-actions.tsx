@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Bot, Flag, UserPlus } from 'lucide-react';
 import { Button } from '@/ui/components';
-import type { ConversationRecord } from '../mock-data';
+import type { ConversationRecord } from '../types';
 
 export function ConversationActions({ conversation }: { conversation: ConversationRecord }) {
     return (

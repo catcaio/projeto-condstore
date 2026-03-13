@@ -5,12 +5,18 @@ import * as dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
 
+function unwrapMysqlRows<T>(result: unknown): T[] {
+    if (!Array.isArray(result)) return [];
+    if (Array.isArray(result[0])) return result[0] as T[];
+    return result as T[];
+}
+
 async function checkPersistence() {
     console.log('[*] Testing message save...');
     try {
         const db = await getDb();
         const tenantRes = await db.execute(sql`SELECT id FROM tenants LIMIT 1`);
-        const row: any = (tenantRes.rows || tenantRes[0] || [])[0];
+        const row: any = unwrapMysqlRows<any>(tenantRes)[0];
         
         if (!row) throw new Error('No tenant found to test.');
 
@@ -33,7 +39,7 @@ async function checkPersistence() {
         console.log('[+] saveInboundMessage completed without throwing.');
 
         const verify = await db.execute(sql`SELECT message_sid FROM messages WHERE message_sid = ${msgSid}`);
-        const saved: any = (verify.rows || verify[0] || [])[0];
+        const saved: any = unwrapMysqlRows<any>(verify)[0];
         if (saved) {
             console.log('[SUCCESS] Message successfully saved to DB!');
         } else {

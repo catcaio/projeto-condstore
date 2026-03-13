@@ -1,4 +1,3 @@
-import { mockConversations } from '@/modules/conversas/mock-data';
 import { mockLogistics } from '@/modules/logistica/mock-data';
 import { mockOrders } from '@/modules/pedidos/mock-data';
 import type {
@@ -10,16 +9,17 @@ import type {
     SystemStatusItem,
 } from './data/shared';
 
-const primaryConversation =
-    mockConversations.find((conversation) => conversation.priority === 'critica') ??
-    mockConversations[0];
-const backlogConversation =
-    mockConversations.find((conversation) => conversation.status === 'nova') ??
-    primaryConversation;
-const waitingConversation =
-    mockConversations.find((conversation) => conversation.status === 'aguardando-cliente') ??
-    mockConversations[1] ??
-    primaryConversation;
+// Static fallback IDs for cockpit dashboard links (conversations are now live from API)
+const primaryConversationId = 'inbox';
+const primaryClientId = '';
+const primaryStatus = 'nova';
+const backlogConversationId = 'inbox';
+const backlogClientId = '';
+const backlogStatus = 'nova';
+const waitingConversationId = 'inbox';
+const waitingClientId = '';
+const waitingCustomerName = '—';
+
 const approvalOrder =
     mockOrders.find((order) => order.status === 'em-analise') ??
     mockOrders[0];
@@ -42,7 +42,7 @@ export const cockpitMetrics: CockpitMetric[] = [
         value: '126',
         helper: 'Fila viva entre WhatsApp, reaberturas e atendimento assistido.',
         tone: 'warning',
-        href: `/conversas?conversa=${primaryConversation.id}&cliente=${primaryConversation.relatedClientId}&status=${primaryConversation.status}`,
+        href: `/conversas?conversa=${primaryConversationId}&cliente=${primaryClientId}&status=${primaryStatus}`,
     },
     {
         id: 'orders-processing',
@@ -101,7 +101,7 @@ export const cockpitAlerts: CockpitAlert[] = [
         description: 'Clientes premium reabriram tickets em menos de 15 minutos apos o primeiro contato.',
         priority: 'info',
         action: 'Abrir conversas',
-        href: `/conversas?conversa=${backlogConversation.id}&cliente=${backlogConversation.relatedClientId}&status=${backlogConversation.status}`,
+        href: `/conversas?conversa=${backlogConversationId}&cliente=${backlogClientId}&status=${backlogStatus}`,
     },
 ];
 
@@ -120,11 +120,11 @@ export const cockpitEvents: CockpitEvent[] = [
         id: 'evt-2',
         timestamp: '2 min',
         type: 'mensagem',
-        entity: primaryConversation.customerName,
+        entity: 'Conversa prioritaria',
         title: 'Mensagem recebida',
         description: 'Cliente pediu atualizacao de coleta e aumentou a prioridade da conversa.',
         tone: 'warning',
-        href: `/conversas?conversa=${primaryConversation.id}&cliente=${primaryConversation.relatedClientId}`,
+        href: `/conversas?conversa=${primaryConversationId}&cliente=${primaryClientId}`,
     },
     {
         id: 'evt-3',
@@ -154,7 +154,7 @@ export const cockpitEvents: CockpitEvent[] = [
         title: 'Nova sessao iniciada',
         description: 'Operador entrou no turno e assumiu fila de reabertura de clientes premium.',
         tone: 'info',
-        href: `/conversas?conversa=${waitingConversation.id}&cliente=${waitingConversation.relatedClientId}`,
+        href: `/conversas?conversa=${waitingConversationId}&cliente=${waitingClientId}`,
     },
 ];
 
@@ -167,7 +167,7 @@ export const cockpitActionQueue: CockpitActionQueueItem[] = [
         age: '14 min',
         owner: 'CX Ops',
         priority: 'critical',
-        href: `/conversas?conversa=${primaryConversation.id}&cliente=${primaryConversation.relatedClientId}`,
+        href: `/conversas?conversa=${primaryConversationId}&cliente=${primaryClientId}`,
     },
     {
         id: 'queue-2',
@@ -192,12 +192,12 @@ export const cockpitActionQueue: CockpitActionQueueItem[] = [
     {
         id: 'queue-4',
         queue: 'Conversas sem resposta',
-        entity: waitingConversation.customerName,
+        entity: waitingCustomerName,
         waitingFor: 'Contexto de pedido',
         age: '27 min',
         owner: 'CX Ops',
         priority: 'warning',
-        href: `/conversas?conversa=${waitingConversation.id}&cliente=${waitingConversation.relatedClientId}`,
+        href: `/conversas?conversa=${waitingConversationId}&cliente=${waitingClientId}`,
     },
 ];
 
@@ -239,7 +239,7 @@ export const cockpitShortcuts: CockpitShortcut[] = [
         id: 'open-conversations',
         label: 'Abrir conversas',
         description: 'Ir direto para a fila omnichannel e reduzir backlog.',
-        href: `/conversas?conversa=${backlogConversation.id}&cliente=${backlogConversation.relatedClientId}&status=${backlogConversation.status}`,
+        href: `/conversas?conversa=${backlogConversationId}&cliente=${backlogClientId}&status=${backlogStatus}`,
     },
     {
         id: 'create-order',
