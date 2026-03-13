@@ -102,11 +102,11 @@ describe('Frank Assistant Response Engine', () => {
         vi.spyOn(getShipmentStatusTool, 'getShipmentStatusTool').mockResolvedValue(null);
     });
 
-    it('should reply strictly within Assistant constraints for generic requests', async () => {
+    it('should natively handle FRETE intent instead of falling back', async () => {
         const result = await handleIncomingMessage('t1', 'calcular frete entrega prazo cep', '+5511999999999');
         
         expect(result.intent).toBe('FRETE');
-        expect(result.reply).toContain('Neste momento eu só consulto dados');
+        expect(result.reply).toContain('Entendi que você quer calcular o frete');
         expect(twilioProvider.sendMessage).not.toHaveBeenCalled();
     });
 

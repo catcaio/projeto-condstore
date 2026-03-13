@@ -6,8 +6,8 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { decryptString } from '@/infra/pii/crypto';
 import { getDb } from '@/infra/db';
-import { customers } from '@/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { customers, customerContacts, organizations, orders, freightSimulations, frankSessionState } from '@/drizzle/schema';
+import { eq, and, desc } from 'drizzle-orm';
 export const revalidate = 0; // dynamic API
 
 export async function GET(
@@ -31,13 +31,55 @@ export async function GET(
         const messages = await conversationService.getConversationMessages(tenantId, conversationId);
 
         let customer = null;
+        let contact = null;
+        let organization = null;
+        let recentOrders: any[] = [];
+        let recentQuotes: any[] = [];
+
+        const db = await getDb();
+
         if (conversation.customerId) {
-            const db = await getDb();
             const [cust] = await db.select().from(customers)
                 .where(and(eq(customers.tenantId, tenantId), eq(customers.id, conversation.customerId)))
                 .limit(1);
             if (cust) {
                 customer = cust;
+            }
+        }
+
+        const [contactRecord] = await db.select().from(customerContacts)
+            .where(and(eq(customerContacts.tenantId, tenantId), eq(customerContacts.phoneHash, conversation.phoneHash)))
+            .limit(1);
+
+        if (contactRecord) {
+            contact = contactRecord;
+            if (contactRecord.organizationId) {
+                const [orgRecord] = await db.select().from(organizations)
+                    .where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, contactRecord.organizationId)))
+                    .limit(1);
+                organization = orgRecord || null;
+            }
+        }
+
+        if (customer) {
+            recentOrders = await db.select().from(orders)
+                .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, customer.id)))
+                .orderBy(desc(orders.createdAt))
+                .limit(3);
+                
+            recentQuotes = await db.select().from(freightSimulations)
+                .where(eq(freightSimulations.tenantId, tenantId)) // Global quotes since simulations currently lack customerId
+                .orderBy(desc(freightSimulations.createdAt))
+                .limit(3);
+        }
+
+        let frankSession = null;
+        if (conversation.phoneHash) {
+            const [sessionRec] = await db.select().from(frankSessionState)
+                .where(and(eq(frankSessionState.tenantId, tenantId), eq(frankSessionState.sessionId, conversation.phoneHash)))
+                .limit(1);
+            if (sessionRec) {
+                frankSession = sessionRec;
             }
         }
 
@@ -51,7 +93,12 @@ export async function GET(
                 conversation: {
                     ...safeConversation,
                     phone: plaintextPhone,
-                    customer
+                    customer,
+                    contact,
+                    organization,
+                    recentOrders,
+                    recentQuotes,
+                    frankSession
                 },
                 messages
             }

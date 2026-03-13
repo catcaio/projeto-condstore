@@ -1272,6 +1272,7 @@ export const customerContacts = mysqlTable('customer_contacts', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
     customerId: varchar('customer_id', { length: 36 }).notNull(),
+    organizationId: varchar('organization_id', { length: 36 }),
     name: varchar('name', { length: 255 }).notNull(),
     emailHash: varchar('email_hash', { length: 64 }),
     emailEncrypted: varchar('email_encrypted', { length: 255 }),
@@ -1283,6 +1284,8 @@ export const customerContacts = mysqlTable('customer_contacts', {
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
     tenantCustomerIdx: index('idx_customer_contacts_tenant_customer').on(table.tenantId, table.customerId),
+    phoneHashIdx: index('idx_customer_contacts_phone_hash').on(table.phoneHash),
+    tenantPhoneIdx: index('idx_customer_contacts_tenant_phone').on(table.tenantId, table.phoneHash),
 }));
 
 // --- New Canonical Orders ---
@@ -1366,6 +1369,27 @@ export type OrderItemRecord = typeof orderItems.$inferSelect;
 export type NewOrderItemRecord = typeof orderItems.$inferInsert;
 export type OrderStatusHistoryRecord = typeof orderStatusHistory.$inferSelect;
 export type NewOrderStatusHistoryRecord = typeof orderStatusHistory.$inferInsert;
+
+// --- Canonical Products (Catalog) ---
+
+export const products = mysqlTable('products', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    sku: varchar('sku', { length: 100 }),
+    price: decimal('price', { precision: 10, scale: 2 }).notNull(),
+    weight: decimal('weight', { precision: 10, scale: 3 }).notNull(), // in kg
+    width: decimal('width', { precision: 10, scale: 2 }), // in cm
+    height: decimal('height', { precision: 10, scale: 2 }), // in cm
+    length: decimal('length', { precision: 10, scale: 2 }), // in cm
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    tenantIdx: index('idx_products_tenant').on(table.tenantId),
+}));
+
+export type ProductRecord = typeof products.$inferSelect;
+export type NewProductRecord = typeof products.$inferInsert;
 
 // --- Delivery Tracking (Entregador GPS) ---
 

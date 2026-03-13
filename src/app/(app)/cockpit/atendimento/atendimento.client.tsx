@@ -25,6 +25,15 @@ interface Conversation {
         name: string;
         document?: string;
     };
+    contact?: any;
+    organization?: any;
+    recentOrders?: any[];
+    recentQuotes?: any[];
+    frankSession?: {
+        currentIntent?: string;
+        currentStep?: string;
+        contextJson?: any;
+    };
 }
 
 
@@ -45,6 +54,7 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
     const [loadingList, setLoadingList] = useState(true);
     const [loadingMsgs, setLoadingMsgs] = useState(false);
     const [sending, setSending] = useState(false);
+    const [creatingCustomer, setCreatingCustomer] = useState(false);
     
     const [draftText, setDraftText] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -145,6 +155,32 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
             alert('Falha na requisição.');
         } finally {
             setSending(false);
+        }
+    };
+
+    const handleCreateCustomer = async () => {
+        if (!activeConvId) return;
+        const name = prompt('Nome do contato/empresa:');
+        if (!name) return;
+        
+        setCreatingCustomer(true);
+        try {
+            const res = await fetch(`/api/cockpit/conversations/${activeConvId}/customer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name }),
+            });
+            if (res.ok) {
+                fetchMessages(activeConvId, true);
+                fetchConversations();
+            } else {
+                alert('Erro ao criar cliente.');
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Falha na requisição.');
+        } finally {
+            setCreatingCustomer(false);
         }
     };
 
@@ -352,7 +388,50 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Identidade do Cliente */}
+                        <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-white">
+                            <h3 className="font-semibold text-sm mb-3">Identidade do Cliente</h3>
+                            {activeConvDetails.customer ? (
+                                <div className="text-sm">
+                                    <p className="font-medium text-[hsl(var(--ui-text))]">{activeConvDetails.customer.name}</p>
+                                    {activeConvDetails.organization && <p className="text-[hsl(var(--ui-text-muted))] text-xs mt-1">{activeConvDetails.organization.name}</p>}
+                                </div>
+                            ) : (
+                                <div className="text-sm">
+                                    <p className="text-[hsl(var(--ui-text-muted))] mb-3">Cliente não identificado no banco de dados.</p>
+                                    <button 
+                                        onClick={handleCreateCustomer}
+                                        disabled={creatingCustomer}
+                                        className="w-full bg-[hsl(var(--ui-accent-blue))] hover:bg-[hsl(var(--ui-accent-blue-hover))] text-white p-2 rounded-md transition-colors text-xs font-medium flex items-center justify-center disabled:opacity-50"
+                                    >
+                                        {creatingCustomer ? 'Criando...' : 'Criar Cliente a partir da conversa'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                         
+                        {/* Frank Context (Intent & Product) */}
+                        {activeConvDetails.frankSession && (
+                            <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))] space-y-3">
+                                <h3 className="font-semibold text-sm">Contexto do Assistente</h3>
+                                <div className="text-sm space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[hsl(var(--ui-text-muted))]">Intenção:</span>
+                                        <Badge>{activeConvDetails.frankSession.currentIntent || 'Desconhecida'}</Badge>
+                                    </div>
+                                    {(activeConvDetails.frankSession.contextJson as any)?.activeProduct && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[hsl(var(--ui-text-muted))]">Produto:</span>
+                                            <span className="font-medium truncate max-w-[150px]" title={(activeConvDetails.frankSession.contextJson as any).activeProduct}>
+                                                {(activeConvDetails.frankSession.contextJson as any).activeProduct}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Playbooks */}
                         <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))]">
                             <PlaybookQuickActions entity="conversation" entityId={activeConvId} />

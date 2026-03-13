@@ -264,6 +264,56 @@ class FreightService {
     await redisClient.set(key, result, 600); // 10 minutes TTL
   }
 
+  /**
+   * Simulate freight specifically for orchestrator.
+   */
+  async simulateFreight(params: {
+    tenantId: string;
+    productId: string;
+    quantity: number;
+    destinationZip: string;
+  }): Promise<{ carrier: string; price: number; deliveryDays: number }> {
+    // Requires catalog module (dynamic import to avoid circular dep if they arise, or just normal import)
+    const { catalogService } = await import('../catalog/catalog.service');
+    const [product] = await catalogService.searchProductsByName(params.tenantId, params.productId);
+
+    if (!product) {
+       throw new BusinessError(
+         ErrorCode.FREIGHT_CALCULATION_ERROR,
+         'Product not found for simulation',
+         params
+       );
+    }
+
+    const { options } = await this.calculateFreight({
+      tenantId: params.tenantId,
+      destinationCep: params.destinationZip,
+      quantity: params.quantity,
+      unitWeight: product.weight,
+      dimensions: {
+        width: product.dimensions.width || 0,
+        height: product.dimensions.height || 0,
+        length: product.dimensions.length || 0,
+      },
+      productRef: params.productId
+    });
+
+    if (options.length === 0) {
+      throw new BusinessError(
+        ErrorCode.FREIGHT_CALCULATION_ERROR,
+        'No carriers cover this zip code',
+        params
+      );
+    }
+
+    const bestOption = options[0];
+    return {
+      carrier: bestOption.carrier || bestOption.id,
+      price: bestOption.price,
+      deliveryDays: bestOption.deliveryTime
+    };
+  }
+
 }
 
 // Export singleton instance

@@ -34,6 +34,8 @@ import { endUserConsentRepository } from '@/infra/repositories/end-user-consent.
 import { conversationService } from '@/modules/atendimento/conversation.service';
 import { supervisedAssistService } from '@/modules/frank/supervised-assist.service';
 import { encryptString } from '@/infra/pii/crypto';
+import { resolveCustomerByPhone } from '@/modules/customers/identity-resolver/identity-resolver.service';
+import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 
 
 export const dynamic = 'force-dynamic';
@@ -206,14 +208,47 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // ── 10. Human Inbox routing & Webhook ack ─────────────────────────────
+        // ── 10. Identity Resolution (Customer Matching) ────────────────────────
+        const identity = await resolveCustomerByPhone(tenantId, incomingMessage.from);
+        
+        if (identity) {
+            structuredLogger.info('customer_matched_to_conversation', {
+                tenantId,
+                phoneHash,
+                contactId: identity.contactId,
+                organizationId: identity.organizationId,
+                customerId: identity.customerId,
+                eventType: 'customer_matched_to_conversation'
+            });
+            
+            // Publish Operational Rule
+            await publishOperationalEvent({
+                tenantId,
+                eventType: 'customer_matched_to_conversation',
+                eventDomain: 'OPERATIONS',
+                payload: {
+                    contactId: identity.contactId,
+                    organizationId: identity.organizationId,
+                    customerId: identity.customerId,
+                    confidenceScore: identity.confidenceScore
+                }
+            });
+        } else {
+            structuredLogger.info('customer_not_found', {
+                tenantId,
+                phoneHash,
+                eventType: 'customer_not_found'
+            });
+        }
+
+        // ── 11. Human Inbox routing & Webhook ack ─────────────────────────────
         const { conversation } = await conversationService.processInboundMessage(
             tenantId,
             phoneHash,
             encryptString(fromNormalized),
             incomingMessage.body,
-            tenant.id, // currently using tenant.id as customer fallback, or null if unlinked
-            undefined, // organization
+            identity?.customerId ?? tenant.id, // currently using tenant.id as customer fallback, or null if unlinked
+            identity?.organizationId ?? undefined, // organization
             {
                 MessageSid: payload['MessageSid'],
                 AccountSid: payload['AccountSid']

@@ -161,6 +161,7 @@
 | /api/cockpit/conversations | GET | internal | requireAdmin | cockpit | live | List conversations |
 | /api/cockpit/conversations/[id] | GET | internal | requireAdmin | cockpit | live | Get conversation details |
 | /api/cockpit/conversations/[id]/message | POST | internal | requireAdmin | cockpit | live | Send operator response via Twilio |
+| /api/cockpit/conversations/[id]/customer | POST | internal | requireAdmin | cockpit | live | Create CRM customer from active conversation |
 | /api/cockpit/conversations/[id]/quotes | GET, POST | internal | requireAdmin | cockpit | live | List and create freight quotes in conversation |
 | /api/cockpit/conversations/[id]/quotes/[quoteId]/order | POST | internal | requireAdmin | cockpit | live | Convert quote into physical logistics Order |
 | /api/cockpit/conversations/[id]/quotes/[quoteId]/send | POST | internal | requireAdmin | cockpit | live | Send freight quote to customer via WhatsApp |

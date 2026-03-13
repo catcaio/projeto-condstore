@@ -39,6 +39,9 @@ import { eq, and } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { twilioProvider } from '@/providers/twilio.provider';
+import { catalogService } from '@/modules/catalog/catalog.service';
+import { freightService } from '@/modules/freight/freight.service';
+import { formatProductQueryResponse, formatFreightSimulationResponse } from '@/lib/formatters/whatsapp-response';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -1251,51 +1254,44 @@ export async function handleIncomingMessage(
         };
     }
 
-    if (assistantMode) {
-        // Playbook interception for Assistant fallback queries
-        if (playbook && !['FRETE', 'ORDER_STATUS', 'SHIPMENT_STATUS'].includes(intentResult.intent)) {
-            const finalReply = `${playbook.responseBase}\n\n${playbook.nextStepSuggestion ?? ''}`.trim();
-            const assistantResult = await finalizeAssistantResponse({
-                tenantId,
-                reply: finalReply,
-                intentResult,
-                context,
-                cep,
-                productRef,
-                startedAt: Date.now(),
-                outcome: playbook.requiresHumanHandoff ? 'fallback' : 'success',
-                toolUsed: 'playbook',
-            });
-
-            if (gateResult.mode === 'SUPERVISED') {
-                assistantResult.reply = `[SUGESTÃO FRANK] ${assistantResult.reply}`;
-            }
-            assistantResult.conversationMode = gateResult.mode;
-            return assistantResult;
-        }
-
-        const assistantResult = await handleAssistantIntent({
+    // ─── PRODUCT_QUERY ──────────────────────────────────────────────
+    if (intentResult.intent === 'PRODUTO' || (intentResult.intent as any) === 'PRODUCT_QUERY') {
+        const queryTerm = (entityResult.entities.product as string) || productRef || message.replace(/(qual o pre[çc]o|quero saber o pre[çc]o|produto|quero|comprar)/gi, '').trim();
+        
+        publishOperationalEvent({
             tenantId,
-            message,
-            phone,
-            intentResult,
-            context,
-            cep,
-            productRef,
-            extractedEntities: entityResult.entities,
-        });
+            eventType: 'product_query_requested',
+            eventDomain: 'OPERATIONS',
+            entityId: null,
+            customerId: null,
+            sessionId: context?.customer.phoneHash ?? null,
+            payload: { query: queryTerm },
+        }).catch(() => {});
 
-        // Tag SUPERVISED replies for operator review
-        if (gateResult.mode === 'SUPERVISED') {
-            assistantResult.reply = `[SUGESTÃO FRANK] ${assistantResult.reply}`;
-        }
-        assistantResult.conversationMode = gateResult.mode;
+        const products = await catalogService.searchProductsByName(tenantId, queryTerm);
+        
+        publishOperationalEvent({
+            tenantId,
+            eventType: 'product_query_result',
+            eventDomain: 'OPERATIONS',
+            entityId: null,
+            customerId: null,
+            sessionId: context?.customer.phoneHash ?? null,
+            payload: { query: queryTerm, resultsCount: products.length },
+        }).catch(() => {});
 
-        return assistantResult;
+        return {
+            reply: formatProductQueryResponse(products),
+            intent: intentResult.intent,
+            intentConfidence: intentResult.confidence,
+            cep, productRef, simulationId: null,
+            carrierSuggested: null, context,
+            conversationMode: gateResult.mode,
+        };
     }
 
-    // ─── FRETE (auto-quote flow) ────────────────────────────────────────
-    if (intentResult.intent === 'FRETE') {
+    // ─── FREIGHT (simulate flow) ────────────────────────────────────────
+    if (intentResult.intent === 'FRETE' || (intentResult.intent as any) === 'FREIGHT') {
         if (!cepRaw) {
             return {
                 reply: FRETE_MISSING_CEP,
@@ -1303,68 +1299,73 @@ export async function handleIncomingMessage(
                 intentConfidence: intentResult.confidence,
                 cep, productRef, simulationId: null,
                 carrierSuggested: null, context,
+                conversationMode: gateResult.mode,
             };
         }
 
-        if (!productRef) {
+        const productIdentifier = productRef || (entityResult.entities.product as string) || (context?.sessionState?.contextJson as any)?.activeProduct;
+
+        if (!productIdentifier) {
             return {
                 reply: FRETE_MISSING_PRODUCT,
                 intent: intentResult.intent,
                 intentConfidence: intentResult.confidence,
                 cep, productRef, simulationId: null,
                 carrierSuggested: null, context,
+                conversationMode: gateResult.mode,
             };
         }
 
-        // ─── Execute auto-quote ────────────────────────────────────────
-        try {
-            const result = await executeAutoQuote(tenantId, cepRaw, productRef);
-            if (!result || result.quotes.length === 0) {
-                return {
-                    reply: NO_CARRIERS,
-                    intent: intentResult.intent,
-                    intentConfidence: intentResult.confidence,
-                    cep, productRef, simulationId: null,
-                    carrierSuggested: null, context,
-                };
-            }
+        const quantity = entityResult.entities.quantity || 1;
 
-            // Persist session state: save quote context
-            if (context?.sessionState) {
-                await updateSessionState(tenantId, context.customer.phoneHash, {
-                    currentIntent: 'quote_freight',
-                    currentStep: 'quoted',
-                    lastSimulationId: result.simulationId,
-                }).catch(() => {});
-            }
+        publishOperationalEvent({
+            tenantId,
+            eventType: 'freight_simulation_requested',
+            eventDomain: 'OPERATIONS',
+            entityId: null,
+            customerId: null,
+            sessionId: context?.customer.phoneHash ?? null,
+            payload: { cep: cepRaw, productId: productIdentifier, quantity },
+        }).catch(() => {});
+
+        try {
+            const result = await freightService.simulateFreight({
+                tenantId,
+                productId: productIdentifier,
+                quantity,
+                destinationZip: cepRaw,
+            });
+
+            publishOperationalEvent({
+                tenantId,
+                eventType: 'freight_simulation_result',
+                eventDomain: 'OPERATIONS',
+                entityId: null,
+                customerId: null,
+                sessionId: context?.customer.phoneHash ?? null,
+                payload: { carrier: result.carrier, price: result.price, deliveryDays: result.deliveryDays },
+            }).catch(() => {});
 
             return {
-                reply: formatQuoteReply(cep!, result.quotes),
+                reply: formatFreightSimulationResponse(cepRaw, result.carrier, result.deliveryDays, result.price),
                 intent: intentResult.intent,
                 intentConfidence: intentResult.confidence,
                 cep,
-                productRef,
-                simulationId: result.simulationId,
-                carrierSuggested: result.quotes[0]?.carrier ?? null,
+                productRef: productIdentifier,
+                simulationId: null,
+                carrierSuggested: result.carrier,
                 context,
+                conversationMode: gateResult.mode,
             };
-        } catch (err) {
-            logger.error('frank_orchestrator_quote_error', err as Error, { tenantId, cep, productRef });
-
-            // Update session: mark freight step even on error
-            if (context?.sessionState) {
-                await updateSessionState(tenantId, context.customer.phoneHash, {
-                    currentIntent: 'quote_freight',
-                    currentStep: 'error',
-                }).catch(() => {});
-            }
-
+        } catch (err: any) {
+            logger.error('frank_orchestrator_quote_error', err as Error, { tenantId, cepRaw, productIdentifier });
             return {
-                reply: `Desculpe, tive um problema ao calcular o frete. Tente novamente em instantes. 😕`,
+                reply: `Desculpe, tive um problema ao calcular o frete: ${err?.message || 'Erro interno'}. Tente novamente.`,
                 intent: intentResult.intent,
                 intentConfidence: intentResult.confidence,
                 cep, productRef, simulationId: null,
                 carrierSuggested: null, context,
+                conversationMode: gateResult.mode,
             };
         }
     }
@@ -1468,6 +1469,49 @@ export async function handleIncomingMessage(
                 carrierSuggested: null, context,
             };
         }
+    }
+
+    if (assistantMode) {
+        // Playbook interception for Assistant fallback queries
+        if (playbook && !['PRODUTO', 'FRETE', 'ORDER_STATUS', 'SHIPMENT_STATUS'].includes(intentResult.intent)) {
+            const finalReply = `${playbook.responseBase}\n\n${playbook.nextStepSuggestion ?? ''}`.trim();
+            const assistantResult = await finalizeAssistantResponse({
+                tenantId,
+                reply: finalReply,
+                intentResult,
+                context,
+                cep,
+                productRef,
+                startedAt: Date.now(),
+                outcome: playbook.requiresHumanHandoff ? 'fallback' : 'success',
+                toolUsed: 'playbook',
+            });
+
+            if (gateResult.mode === 'SUPERVISED') {
+                assistantResult.reply = `[SUGESTÃO FRANK] ${assistantResult.reply}`;
+            }
+            assistantResult.conversationMode = gateResult.mode;
+            return assistantResult;
+        }
+
+        const assistantResult = await handleAssistantIntent({
+            tenantId,
+            message,
+            phone,
+            intentResult,
+            context,
+            cep,
+            productRef,
+            extractedEntities: entityResult.entities,
+        });
+
+        // Tag SUPERVISED replies for operator review
+        if (gateResult.mode === 'SUPERVISED') {
+            assistantResult.reply = `[SUGESTÃO FRANK] ${assistantResult.reply}`;
+        }
+        assistantResult.conversationMode = gateResult.mode;
+
+        return assistantResult;
     }
 
     // ─── Knowledge Base Fallback ─────────────────────────────────────────

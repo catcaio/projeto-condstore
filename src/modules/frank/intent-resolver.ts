@@ -10,6 +10,8 @@
 
 export type Intent =
     | 'GENERIC_QUESTION'
+    | 'PRODUCT_QUERY'
+    | 'FREIGHT'
     | 'FRETE'
     | 'PRODUTO'
     | 'PEDIDO'
