@@ -3,11 +3,19 @@ import { getDb } from '@/infra/db';
 import { carrierRateRows, packingProfiles } from '@/drizzle/schema';
 
 export interface CatalogProductMatch {
+    /**
+     * Internal identifier for the packing profile.
+     */
     productId: string;
-    name: string;
-    weight: number;
-    volume: number;
-    basePrice: number;
+   /**
+    * External product reference used for freight packing lookup.
+    * May be null/undefined if no product reference is configured.
+    */
+   productRef?: string | null;
+   name: string;
+   weight: number;
+   volume: number;
+   basePrice: number;
 }
 
 export const catalogService = {
@@ -47,7 +55,10 @@ export const catalogService = {
             const volume = Number(((height * width * length) / 1000000).toFixed(4));
 
             return {
-                productId: row.productRef || row.id,
+                // Use the packing profile's internal id as the stable productId
+                productId: row.id,
+                // Expose the external product reference separately for freight lookup
+                productRef: row.productRef ?? null,
                 name: row.profileName,
                 weight: Number(row.baseWeight),
                 volume,
