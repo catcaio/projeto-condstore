@@ -10,12 +10,11 @@ import { ModuleNav, PageHeader, ShellContainer, StatusChip } from '@/ui/foundati
 import { ConversationContext } from './components/conversation-context';
 import { ConversationList } from './components/conversation-list';
 import { ConversationThread } from './components/conversation-thread';
-import { mockConversations, type ConversationPriority, type ConversationStatus } from './mock-data';
+import { useConversations } from './use-conversations';
+import type { ConversationPriority, ConversationStatus } from './types';
 
 type StatusFilter = ConversationStatus | 'todas';
 type PriorityFilter = ConversationPriority | 'todas';
-
-const ownerOptions = Array.from(new Set(mockConversations.map((conversation) => conversation.owner)));
 
 export function ConversationsView() {
     const searchParams = useSearchParams();
@@ -24,7 +23,15 @@ export function ConversationsView() {
         () => parseConversationsQueryState(searchParams),
         [querySignature, searchParams]
     );
-    const [selectedConversationId, setSelectedConversationId] = useState(mockConversations[0]?.id ?? '');
+
+    const { conversations: allConversations, loading } = useConversations();
+
+    const ownerOptions = useMemo(
+        () => Array.from(new Set(allConversations.map((c) => c.owner))),
+        [allConversations]
+    );
+
+    const [selectedConversationId, setSelectedConversationId] = useState('');
     const [searchValue, setSearchValue] = useState('');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('todas');
     const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('todas');
@@ -32,6 +39,13 @@ export function ConversationsView() {
     const [draft, setDraft] = useState('');
 
     const deferredSearch = useDeferredValue(searchValue);
+
+    // Select first conversation once data loads
+    useEffect(() => {
+        if (allConversations.length > 0 && !selectedConversationId) {
+            setSelectedConversationId(allConversations[0].id);
+        }
+    }, [allConversations, selectedConversationId]);
 
     useEffect(() => {
         setSearchValue('');
@@ -41,7 +55,7 @@ export function ConversationsView() {
         setDraft('');
     }, [querySignature, routeContext.priority, routeContext.status]);
 
-    const filteredConversations = mockConversations.filter((conversation) => {
+    const filteredConversations = allConversations.filter((conversation) => {
         const searchMatches =
             deferredSearch.trim().length === 0 ||
             [
@@ -74,7 +88,7 @@ export function ConversationsView() {
             return;
         }
 
-        const preferredPredicates: Array<(conversation: (typeof mockConversations)[number]) => boolean> = [];
+        const preferredPredicates: Array<(conversation: (typeof allConversations)[number]) => boolean> = [];
         if (routeContext.clientId && routeContext.logisticsId) {
             preferredPredicates.push(
                 (conversation) =>
@@ -102,6 +116,7 @@ export function ConversationsView() {
             setSelectedConversationId(nextSelected.id);
         }
     }, [
+        allConversations,
         filteredConversations,
         querySignature,
         routeContext.clientId,
@@ -114,16 +129,16 @@ export function ConversationsView() {
     const selectedConversation =
         resolvePreferredItem({
             items: filteredConversations,
-            allItems: mockConversations,
+            allItems: allConversations,
             explicitId: selectedConversationId,
             getId: (conversation) => conversation.id,
-        }) ?? mockConversations[0];
+        }) ?? allConversations[0];
 
     const routeConversation = routeContext.conversationId
-        ? mockConversations.find((conversation) => conversation.id === routeContext.conversationId)
+        ? allConversations.find((conversation) => conversation.id === routeContext.conversationId)
         : undefined;
     const routeClientConversation = routeContext.clientId
-        ? mockConversations.find((conversation) => conversation.relatedClientId === routeContext.clientId)
+        ? allConversations.find((conversation) => conversation.relatedClientId === routeContext.clientId)
         : undefined;
 
     function handleSelectConversation(conversationId: string) {
@@ -137,14 +152,13 @@ export function ConversationsView() {
         <ShellContainer>
             <PageHeader
                 eyebrow="Conversas"
-                title="Inbox operacional canonica"
-                description="Fila tripla para atendimento real: lista densa, thread ativa e contexto operacional do cliente no mesmo campo de visao."
+                title="Inbox operacional"
+                description="Fila para atendimento real: lista densa, thread ativa e contexto operacional do cliente no mesmo campo de visao."
                 meta={
                     <>
-                        <StatusChip label="20 conversas mock" tone="info" />
+                        <StatusChip label={loading ? 'carregando...' : `${allConversations.length} conversas`} tone="info" />
                         <StatusChip label="alta densidade" tone="success" />
-                        <StatusChip label="legado preservado" tone="neutral" />
-                        {routeConversation ? <StatusChip label={`conversa ${routeConversation.id}`} tone="warning" /> : null}
+                        {routeConversation ? <StatusChip label={`conversa ${routeConversation.id.slice(0, 8)}`} tone="warning" /> : null}
                         {routeClientConversation ? <StatusChip label={`cliente ${routeClientConversation.customerName}`} tone="neutral" /> : null}
                         {routeContext.logisticsId ? <StatusChip label={`logistica ${routeContext.logisticsId}`} tone="neutral" /> : null}
                     </>
@@ -166,15 +180,14 @@ export function ConversationsView() {
                     { label: 'Fila', current: true, detail: 'Busca, filtros e ownership' },
                     { label: 'Thread', detail: 'Historico, IA e resposta' },
                     { label: 'Contexto', detail: 'Cliente, pedidos e simulacoes' },
-                    { label: 'Compatibilidade', detail: 'Legado preservado ate migracao' },
                 ]}
             />
 
             <div className="grid gap-6 xl:grid-cols-[23rem_minmax(0,1fr)_22rem]">
                 <ConversationList
                     conversations={filteredConversations}
-                    totalCount={mockConversations.length}
-                    selectedConversationId={selectedConversation.id}
+                    totalCount={allConversations.length}
+                    selectedConversationId={selectedConversation?.id ?? ''}
                     searchValue={searchValue}
                     statusFilter={statusFilter}
                     priorityFilter={priorityFilter}
@@ -186,8 +199,12 @@ export function ConversationsView() {
                     onOwnerFilterChange={setOwnerFilter}
                     onSelectConversation={handleSelectConversation}
                 />
-                <ConversationThread conversation={selectedConversation} draft={draft} onDraftChange={setDraft} />
-                <ConversationContext conversation={selectedConversation} />
+                {selectedConversation ? (
+                    <>
+                        <ConversationThread conversation={selectedConversation} draft={draft} onDraftChange={setDraft} />
+                        <ConversationContext conversation={selectedConversation} />
+                    </>
+                ) : null}
             </div>
         </ShellContainer>
     );

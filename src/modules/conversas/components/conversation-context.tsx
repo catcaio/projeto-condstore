@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/ui/components';
 import { SectionHeader, StatusChip, SurfacePanel } from '@/ui/foundation';
-import type { ConversationOrder, ConversationRecord, ConversationSimulation } from '../mock-data';
+import type { ConversationOrder, ConversationRecord, ConversationSimulation } from '../types';
 
 function getSimulationTone(status: ConversationSimulation['status']) {
     if (status === 'contingencia') {

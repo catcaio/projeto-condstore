@@ -1,0 +1,17 @@
+--- TEST START ---
+{"timestamp":"2026-03-13T21:24:15.879Z","level":"INFO","message":"DB pool init: host=gateway01.us-east-1.prod.aws.tidbcloud.com, database=lojacond"}
+[1] Injecting LGPD Consent text...
+[2] Wait 2 seconds...
+[3] Simulating webhook POST to https://app.condstoreos.com/api/whatsapp/incoming...
+[4] Wait 3 seconds...
+
+--- RELATÓRIO TÉCNICO ---
+Relatório técnico curto com:
+
+Webhook OK
+Conversation criada FAIL
+Suggestion criada FAIL
+Eventos operacionais FAIL
+Possível causa raiz: Message Repository
+Correção recomendada: A mensagem não foi gravada no banco.
+

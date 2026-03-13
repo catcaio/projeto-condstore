@@ -1,6 +1,6 @@
 import { EmptyState, FilterBar, SearchInput, SectionHeader, SurfacePanel, StatusChip } from '@/ui/foundation';
 import { ConversationItem } from './conversation-item';
-import type { ConversationPriority, ConversationRecord, ConversationStatus } from '../mock-data';
+import type { ConversationPriority, ConversationRecord, ConversationStatus } from '../types';
 
 type StatusFilter = ConversationStatus | 'todas';
 type PriorityFilter = ConversationPriority | 'todas';
