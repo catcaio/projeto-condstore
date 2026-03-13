@@ -226,7 +226,7 @@ export const conversationRepository = {
         const db = await getDb();
         return db.select()
             .from(conversationMessages)
-            .where(and(eq(conversationMessages.tenantId, tenantId), eq(conversationMessages.id, conversationId)))
+            .where(and(eq(conversationMessages.tenantId, tenantId), eq(conversationMessages.conversationId, conversationId)))
             .orderBy(asc(conversationMessages.createdAt));
     }
 };

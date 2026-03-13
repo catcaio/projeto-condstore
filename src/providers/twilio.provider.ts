@@ -1,4 +1,4 @@
-import { resolveTwilioConfig, extractPhoneNumber as extractPhone } from '../config/twilio.config';
+import { resolveTwilioConfig, extractPhoneNumber as extractPhone, formatPhoneNumber } from '../config/twilio.config';
 import { ErrorCode, ProviderError } from '../infra/errors';
 import { logger } from '../infra/logger';
 import { tenantRepository } from '../infra/repositories/tenant.repository';
@@ -118,7 +118,7 @@ class TwilioProvider {
             },
             body: new URLSearchParams({
               From: config.phoneNumber,
-              To: `whatsapp:+${message.to}`,
+              To: formatPhoneNumber(message.to),
               Body: message.body,
             }),
             signal: AbortSignal.timeout(config.webhookTimeout),

@@ -190,16 +190,9 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
             const approveRes = await fetch(`/api/cockpit/frank/suggestions/${suggestionId}/approve`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ finalSentResponse: text }),
+                body: JSON.stringify({ finalResponse: text }),
             });
-            if (!approveRes.ok) return false;
-
-            const sendRes = await fetch(`/api/cockpit/conversations/${activeConvId}/message`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text }),
-            });
-            if (sendRes.ok) {
+            if (approveRes.ok) {
                 fetchMessages(activeConvId, true);
                 fetchConversations();
                 return true;
