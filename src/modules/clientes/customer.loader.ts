@@ -4,6 +4,8 @@ import { db } from '@/db/client';
 import { customers, organizations, customerContacts, orders, freightSimulations } from '@/drizzle/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 
+import { decryptString } from '@/infra/pii/crypto';
+
 export async function loadMockClientsHydrated(tenantId: string): Promise<ClientRecord[]> {
     const dbClients = await db
         .select({
@@ -47,8 +49,8 @@ export async function loadMockClientsHydrated(tenantId: string): Promise<ClientR
             name: mainContact?.name || organization.legalName || 'Sem nome',
             company: organization.legalName || 'Sem Empresa',
             contact: mainContact ? `${mainContact.name} • ${mainContact.role || 'Contato'}` : 'Sem contato',
-            email: mainContact?.email || '',
-            phone: mainContact?.phone || '',
+            email: mainContact?.emailEncrypted ? decryptString(mainContact.emailEncrypted) : '',
+            phone: mainContact?.phoneEncrypted ? decryptString(mainContact.phoneEncrypted) : '',
             city: 'Definir (DB)', 
             segment: customer.segment || 'Geral',
             status: (customer.status as ClientStatus) || 'ativo',

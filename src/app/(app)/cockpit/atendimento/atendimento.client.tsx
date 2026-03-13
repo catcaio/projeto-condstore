@@ -21,7 +21,21 @@ interface Conversation {
     stage?: 'NEW' | 'QUALIFYING' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST';
     assignedTo?: string;
     lastMessageAt: string;
+    customer?: {
+        name: string;
+        document?: string;
+    };
+    contact?: any;
+    organization?: any;
+    recentOrders?: any[];
+    recentQuotes?: any[];
+    frankSession?: {
+        currentIntent?: string;
+        currentStep?: string;
+        contextJson?: any;
+    };
 }
+
 
 interface Message {
     id: string;
@@ -40,98 +54,81 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
     const [loadingList, setLoadingList] = useState(true);
     const [loadingMsgs, setLoadingMsgs] = useState(false);
     const [sending, setSending] = useState(false);
+    const [creatingCustomer, setCreatingCustomer] = useState(false);
     
     const [draftText, setDraftText] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const abortControllers = useRef<{
+        list: AbortController | null;
+        msgs: AbortController | null;
+    }>({ list: null, msgs: null });
+
     const fetchConversations = async () => {
+        if (abortControllers.current.list) abortControllers.current.list.abort();
+        const controller = new AbortController();
+        abortControllers.current.list = controller;
+
         try {
-            const res = await fetch('/api/cockpit/conversations');
+            const res = await fetch('/api/cockpit/conversations', { signal: controller.signal });
             if (res.ok) {
                 const json = await res.json();
                 setConversations(json.data || []);
             }
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            if (e.name !== 'AbortError') console.error(e);
         } finally {
             setLoadingList(false);
         }
     };
 
     const fetchMessages = async (id: string, silent = false) => {
+        if (abortControllers.current.msgs) abortControllers.current.msgs.abort();
+        const controller = new AbortController();
+        abortControllers.current.msgs = controller;
+
         if (!silent) setLoadingMsgs(true);
         try {
-            const res = await fetch(`/api/cockpit/conversations/${id}`);
+            const res = await fetch(`/api/cockpit/conversations/${id}`, { signal: controller.signal });
             if (res.ok) {
                 const json = await res.json();
                 setMessages(json.data.messages || []);
                 setActiveConvDetails(json.data.conversation);
             }
-        } catch (e) {
-            console.error(e);
+        } catch (e: any) {
+            if (e.name !== 'AbortError') console.error(e);
         } finally {
-            if (!silent) setLoadingMsgs(false);
+            if (abortControllers.current.msgs === controller) {
+                if (!silent) setLoadingMsgs(false);
+            }
         }
     };
 
     useEffect(() => {
-        const controller = new AbortController();
-
-        const loadConversations = async () => {
-            try {
-                const res = await fetch('/api/cockpit/conversations', { signal: controller.signal });
-                if (res.ok) {
-                    const json = await res.json();
-                    setConversations(json.data || []);
-                }
-            } catch (e) {
-                if (e instanceof Error && e.name === 'AbortError') return;
-                console.error(e);
-            } finally {
-                setLoadingList(false);
-            }
-        };
-
-        loadConversations();
-        const t = setInterval(loadConversations, 30000); // poll list every 30s
+        fetchConversations();
+        const t = setInterval(fetchConversations, 15000); // poll list every 15s
         return () => {
-            controller.abort();
             clearInterval(t);
+            if (abortControllers.current.list) {
+                abortControllers.current.list.abort();
+            }
         };
     }, []);
 
     useEffect(() => {
-        if (!activeConvId) {
+        if (activeConvId) {
+            fetchMessages(activeConvId);
+            const t = setInterval(() => fetchMessages(activeConvId, true), 8000); // poll messages every 8s
+            return () => {
+                clearInterval(t);
+                if (abortControllers.current.msgs) {
+                    abortControllers.current.msgs.abort();
+                }
+            };
+        } else {
             setMessages([]);
             setActiveConvDetails(null);
-            return;
         }
-
-        const controller = new AbortController();
-
-        const loadMessages = async (silent = false) => {
-            if (!silent) setLoadingMsgs(true);
-            try {
-                const res = await fetch(`/api/cockpit/conversations/${activeConvId}`, { signal: controller.signal });
-                if (res.ok) {
-                    const json = await res.json();
-                    setMessages(json.data.messages || []);
-                    setActiveConvDetails(json.data.conversation);
-                }
-            } catch (e) {
-                if (e instanceof Error && e.name === 'AbortError') return;
-                console.error(e);
-            } finally {
-                if (!silent) setLoadingMsgs(false);
-            }
-        };
-
-        loadMessages();
-        const t = setInterval(() => loadMessages(true), 30000); // poll messages every 30s
-        return () => {
-            controller.abort();
-            clearInterval(t);
-        };
     }, [activeConvId]);
 
     useEffect(() => {
@@ -161,22 +158,41 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
         }
     };
 
+    const handleCreateCustomer = async () => {
+        if (!activeConvId) return;
+        const name = prompt('Nome do contato/empresa:');
+        if (!name) return;
+        
+        setCreatingCustomer(true);
+        try {
+            const res = await fetch(`/api/cockpit/conversations/${activeConvId}/customer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name }),
+            });
+            if (res.ok) {
+                fetchMessages(activeConvId, true);
+                fetchConversations();
+            } else {
+                alert('Erro ao criar cliente.');
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Falha na requisição.');
+        } finally {
+            setCreatingCustomer(false);
+        }
+    };
+
     const handleApproveAndSend = async (text: string, suggestionId: string) => {
         if (!activeConvId) return false;
         try {
             const approveRes = await fetch(`/api/cockpit/frank/suggestions/${suggestionId}/approve`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ finalSentResponse: text }),
+                body: JSON.stringify({ finalResponse: text }),
             });
-            if (!approveRes.ok) return false;
-
-            const sendRes = await fetch(`/api/cockpit/conversations/${activeConvId}/message`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text }),
-            });
-            if (sendRes.ok) {
+            if (approveRes.ok) {
                 fetchMessages(activeConvId, true);
                 fetchConversations();
                 return true;
@@ -249,10 +265,17 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                             <div className="flex justify-between items-start">
                                 <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-                                            <User className="w-4 h-4" />
+                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold overflow-hidden">
+                                            {activeConvDetails.customer?.name ? activeConvDetails.customer.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
                                         </div>
-                                        <h3 className="font-bold text-lg text-gray-900 block">{activeConvDetails.phone || `${activeConvDetails.phoneHash?.slice(0,8)}...`}</h3>
+                                        <div className="flex flex-col">
+                                            <h3 className="font-bold text-lg text-gray-900 block">
+                                                {activeConvDetails.customer?.name || activeConvDetails.phone || `${activeConvDetails.phoneHash?.slice(0,8)}...`}
+                                            </h3>
+                                            {activeConvDetails.customer?.name && (
+                                                <span className="text-xs text-[hsl(var(--ui-text-muted))]">{activeConvDetails.phone}</span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5 mt-1 ml-10">
                                         <Clock className="w-3.5 h-3.5" /> Última interação: {format(new Date(activeConvDetails.lastMessageAt), 'dd/MM/yyyy HH:mm')}
@@ -358,7 +381,50 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Identidade do Cliente */}
+                        <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-white">
+                            <h3 className="font-semibold text-sm mb-3">Identidade do Cliente</h3>
+                            {activeConvDetails.customer ? (
+                                <div className="text-sm">
+                                    <p className="font-medium text-[hsl(var(--ui-text))]">{activeConvDetails.customer.name}</p>
+                                    {activeConvDetails.organization && <p className="text-[hsl(var(--ui-text-muted))] text-xs mt-1">{activeConvDetails.organization.name}</p>}
+                                </div>
+                            ) : (
+                                <div className="text-sm">
+                                    <p className="text-[hsl(var(--ui-text-muted))] mb-3">Cliente não identificado no banco de dados.</p>
+                                    <button 
+                                        onClick={handleCreateCustomer}
+                                        disabled={creatingCustomer}
+                                        className="w-full bg-[hsl(var(--ui-accent-blue))] hover:bg-[hsl(var(--ui-accent-blue-hover))] text-white p-2 rounded-md transition-colors text-xs font-medium flex items-center justify-center disabled:opacity-50"
+                                    >
+                                        {creatingCustomer ? 'Criando...' : 'Criar Cliente a partir da conversa'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                         
+                        {/* Frank Context (Intent & Product) */}
+                        {activeConvDetails.frankSession && (
+                            <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))] space-y-3">
+                                <h3 className="font-semibold text-sm">Contexto do Assistente</h3>
+                                <div className="text-sm space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[hsl(var(--ui-text-muted))]">Intenção:</span>
+                                        <Badge>{activeConvDetails.frankSession.currentIntent || 'Desconhecida'}</Badge>
+                                    </div>
+                                    {(activeConvDetails.frankSession.contextJson as any)?.activeProduct && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[hsl(var(--ui-text-muted))]">Produto:</span>
+                                            <span className="font-medium truncate max-w-[150px]" title={(activeConvDetails.frankSession.contextJson as any).activeProduct}>
+                                                {(activeConvDetails.frankSession.contextJson as any).activeProduct}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Playbooks */}
                         <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))]">
                             <PlaybookQuickActions entity="conversation" entityId={activeConvId} />

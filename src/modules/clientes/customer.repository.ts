@@ -3,6 +3,7 @@ import { eq, and, desc, like, or, isNotNull } from 'drizzle-orm';
 import { customers, customerContacts, organizations, orders, freightSimulations } from '@/drizzle/schema';
 import { createHash } from 'node:crypto';
 import { normalizePhone } from '@/lib/phone';
+import { encryptString, decryptString } from '@/infra/pii/crypto';
 
 /**
  * Hash phone number using SHA-256 for privacy-safe storage.
@@ -45,7 +46,7 @@ export async function getCustomerWithContext(tenantId: string, customerId: strin
 
     const rec = customerRecords[0];
 
-    const contacts = await db
+    const rawContacts = await db
         .select()
         .from(customerContacts)
         .where(
@@ -54,6 +55,12 @@ export async function getCustomerWithContext(tenantId: string, customerId: strin
                 eq(customerContacts.customerId, customerId)
             )
         );
+
+    const contacts = rawContacts.map(c => ({
+        ...c,
+        phone: c.phoneEncrypted ? decryptString(c.phoneEncrypted) : null,
+        email: c.emailEncrypted ? decryptString(c.emailEncrypted) : null,
+    }));
 
     const recentOrders = await db
         .select()
@@ -126,7 +133,7 @@ export async function findCustomerReferenceByPhone(tenantId: string, phone: stri
         .select({
             customerId: customerContacts.customerId,
             organizationId: customers.organizationId,
-            phone: customerContacts.phone,
+            phoneEncrypted: customerContacts.phoneEncrypted,
         })
         .from(customerContacts)
         .innerJoin(
@@ -139,21 +146,24 @@ export async function findCustomerReferenceByPhone(tenantId: string, phone: stri
         .where(
             and(
                 eq(customerContacts.tenantId, tenantId),
-                isNotNull(customerContacts.phone),
+                isNotNull(customerContacts.phoneHash),
                 or(
-                    like(customerContacts.phone, `%${phoneDigits}%`),
-                    like(customerContacts.phone, `%${phoneSuffix}%`),
+                    eq(customerContacts.phoneHash, hashPhone(normalizedPhone)),
+                    eq(customerContacts.phoneHash, hashPhone('55' + normalizedPhone)),
+                    eq(customerContacts.phoneHash, hashPhone('+' + normalizedPhone)),
+                    eq(customerContacts.phoneHash, hashPhone('+55' + normalizedPhone))
                 ),
             ),
         )
         .limit(25);
 
     const matches = candidates.filter((candidate) => {
-        if (!candidate.phone) {
+        if (!candidate.phoneEncrypted) {
             return false;
         }
 
-        return phonesMatch(normalizedPhone, candidate.phone);
+        const phone = decryptString(candidate.phoneEncrypted);
+        return phonesMatch(normalizedPhone, phone);
     });
 
     const uniqueMatches = new Map(

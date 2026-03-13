@@ -70,10 +70,10 @@ export async function POST(
             }
         );
 
-        // 3. Emit QUOTE_SELECTED
+        // 3. Emit QUOTE_SENT
         void domineIntakeService.publish({
             tenantId,
-            type: 'QUOTE_SELECTED',
+            type: 'QUOTE_SENT',
             source: 'cockpit',
             payload: {
                 quoteId: quote.id,
@@ -81,7 +81,7 @@ export async function POST(
                 operatorId,
                 customerId: conversation.customerId
             }
-        }).catch(e => logger.warn('Failed to emit QUOTE_SELECTED', { error: e.message }));
+        }).catch(e => logger.warn('Failed to emit QUOTE_SENT', { error: e.message }));
 
         return NextResponse.json({ ok: true, data: conversationMessage });
     } catch (err: any) {

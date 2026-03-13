@@ -264,6 +264,71 @@ class FreightService {
     await redisClient.set(key, result, 600); // 10 minutes TTL
   }
 
+  /**
+   * Simulate freight specifically for orchestrator.
+   */
+  async simulateFreight(params: {
+    tenantId: string;
+    productId: string;
+    quantity: number;
+    destinationZip: string;
+  }): Promise<{ carrier: string; price: number; deliveryDays: number }> {
+    const { catalogService } = await import('../catalog/catalog.service');
+    const [product] = await catalogService.searchProductsByName(params.tenantId, params.productId);
+
+    if (!product) {
+      throw new BusinessError(
+        ErrorCode.FREIGHT_CALCULATION_ERROR,
+        'Product not found for simulation',
+        params
+      );
+    }
+
+    const quote = await this.simulateFreightQuote({
+      tenantId: params.tenantId,
+      productId: product.productId,
+      quantity: params.quantity,
+      destinationZip: params.destinationZip,
+      unitWeight: product.weight,
+    });
+
+    return {
+      carrier: quote.carrier,
+      price: quote.freightPrice,
+      deliveryDays: quote.estimatedDays
+    };
+  }
+
+  async simulateFreightQuote(input: {
+    productId: string;
+    quantity: number;
+    destinationZip: string;
+    tenantId?: string;
+    unitWeight?: number;
+  }): Promise<{ freightPrice: number; estimatedDays: number; carrier: string }> {
+    if (!input.productId || !input.quantity || !input.destinationZip) {
+      throw new BusinessError(
+        ErrorCode.VALIDATION_ERROR,
+        'Missing required parameters for freight simulation',
+        { input },
+      );
+    }
+
+    const result = await this.calculateFreight({
+      tenantId: input.tenantId,
+      productRef: input.productId,
+      quantity: input.quantity,
+      destinationCep: input.destinationZip.replace(/\D/g, ''),
+      unitWeight: input.unitWeight,
+    });
+
+    const best = result.options[0];
+    return {
+      freightPrice: best?.price ?? 0,
+      estimatedDays: best?.deliveryTime ?? 0,
+      carrier: best?.carrier ?? 'indisponivel',
+    };
+  }
 }
 
 // Export singleton instance

@@ -5,6 +5,10 @@ const mockFindById = vi.hoisted(() => vi.fn());
 const mockUpdateStatus = vi.hoisted(() => vi.fn());
 const mockListCaptured = vi.hoisted(() => vi.fn());
 
+vi.mock('@/lib/events/operational-event-bus', () => ({
+    publishOperationalEvent: vi.fn().mockResolvedValue(undefined)
+}));
+
 vi.mock('../intent.repository', () => ({
     intentRepository: {
         create: mockCreate,

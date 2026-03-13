@@ -29,6 +29,7 @@
 | `/api/cockpit/config/[key]` | API |
 | `/api/cockpit/conversations` | API |
 | `/api/cockpit/conversations/[id]` | API |
+| `/api/cockpit/conversations/[id]/customer` | API |
 | `/api/cockpit/conversations/[id]/message` | API |
 | `/api/cockpit/conversations/[id]/quotes` | API |
 | `/api/cockpit/conversations/[id]/quotes/[quoteId]/order` | API |
