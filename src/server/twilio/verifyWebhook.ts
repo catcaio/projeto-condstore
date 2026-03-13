@@ -25,9 +25,16 @@ import { logger } from "../../infra/logger";
  * The search part (query string) is preserved because Twilio appends
  * ?bodySHA256=<hash> to the URL for JSON webhooks before signing.
  */
-export function getPublicUrl(req: NextRequest): string {
+export function getPublicUrl(req: NextRequest, expectedUrl?: string): string {
+  if (expectedUrl) {
+    return expectedUrl;
+  }
+
   const base = process.env.TWILIO_WEBHOOK_BASE_URL?.replace(/\/$/, "");
-  const pathWithQuery = req.nextUrl.pathname + req.nextUrl.search;
+  
+  // Many proxies (or Vercel internal routing) mangle request.url / nextUrl.
+  // Fallback to headers if base is strictly not defined
+  let pathWithQuery = (req.headers.get("x-invoke-path") || req.nextUrl.pathname) + req.nextUrl.search;
 
   if (base) {
     return base + pathWithQuery;
@@ -44,31 +51,12 @@ export function getPublicUrl(req: NextRequest): string {
 
 /**
  * Verify the X-Twilio-Signature header on an incoming webhook request.
- *
- * @param req        - The incoming Next.js request object.
- * @param rawBody    - Raw request body string (already read with req.text()).
- *                     For form-urlencoded: the encoded query string.
- *                     For JSON: the raw JSON string.
- *                     Defaults to "" when not provided.
- * @param formParams - Parsed form parameters as flat key→value map.
- *                     Required for form-urlencoded validation; ignored for JSON.
- *                     Defaults to {} when not provided.
- *
- * Dispatches to the correct Twilio library function:
- *   • application/json  → validateRequestWithBody(authToken, sig, url, rawBody)
- *     Twilio appends ?bodySHA256=<hash> to the URL; the full URL with search is used.
- *   • form-urlencoded   → validateRequest(authToken, sig, url, formParams)
- *
- * Returns false (never throws) on any failure:
- *   • missing TWILIO_AUTH_TOKEN (logs a warning — never logs the token value)
- *   • missing X-Twilio-Signature header
- *   • HMAC mismatch or body-hash mismatch
- *   • unexpected internal error (logs only proto/host/path for diagnosis)
  */
 export function verifyTwilioRequest(
   req: NextRequest,
   rawBody: string = "",
-  formParams: Record<string, string> = {}
+  formParams: Record<string, string> = {},
+  expectedUrl?: string
 ): boolean {
   const authToken = process.env.TWILIO_AUTH_TOKEN;
 
@@ -82,31 +70,33 @@ export function verifyTwilioRequest(
 
   const signature = req.headers.get("x-twilio-signature");
 
+  const url = getPublicUrl(req, expectedUrl);
+  const contentType = req.headers.get("content-type") ?? "";
+
+  // 6) Adicionar logs temporários para diagnóstico
+  logger.info("twilio_signature_diagnostic", {
+    pathname: req.nextUrl.pathname,
+    hostHeader: req.headers.get("host"),
+    xForwardedHost: req.headers.get("x-forwarded-host"),
+    xForwardedProto: req.headers.get("x-forwarded-proto"),
+    validationUrl: url,
+    hasTwilioSignature: !!signature,
+    contentType,
+  });
+
   if (!signature) {
     return false;
   }
 
-  const url = getPublicUrl(req);
-  const contentType = req.headers.get("content-type") ?? "";
-
   try {
     if (contentType.includes("application/json")) {
-      // JSON webhook: Twilio appends ?bodySHA256=<hash> to the URL before signing.
-      // validateRequestWithBody validates both the HMAC-SHA1 and the body SHA256.
       return validateRequestWithBody(authToken, signature, url, rawBody);
     }
-
-    // Default: application/x-www-form-urlencoded (all Twilio WhatsApp webhooks)
     return validateRequest(authToken, signature, url, formParams);
   } catch (err) {
-    // Log diagnostic context without leaking the auth token or raw body.
     logger.warn("Twilio signature validation threw unexpectedly", {
       event: "TWILIO_VERIFY_ERROR",
-      proto: req.headers.get("x-forwarded-proto"),
-      host:
-        req.headers.get("x-forwarded-host") ?? req.headers.get("host"),
-      path: req.nextUrl.pathname,
-      contentType,
+      validationUrl: url,
       errorMessage: (err as Error).message,
     });
     return false;

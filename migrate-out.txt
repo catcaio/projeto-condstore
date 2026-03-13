@@ -1,0 +1,10 @@
+No config path provided, using default 'drizzle.config.ts'
+Reading config file 'C:\repos\projeto-condstore\drizzle.config.ts'
+Error: No file ./drizzle/0000_snapshot.sql found in ./drizzle folder
+    at readMigrationFiles (C:\repos\projeto-condstore\node_modules\src\migrator.ts:55:10)
+    at migrate (C:\repos\projeto-condstore\node_modules\src\mysql2\migrator.ts:9:21)
+    at migrateFn (C:\repos\projeto-condstore\node_modules\drizzle-kit\bin.cjs:81031:18)
+    at Object.handler (C:\repos\projeto-condstore\node_modules\drizzle-kit\bin.cjs:93775:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async run (C:\repos\projeto-condstore\node_modules\drizzle-kit\bin.cjs:93189:7)
+[ÔúÀ] applying migrations...

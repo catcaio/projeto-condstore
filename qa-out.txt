@@ -1,0 +1,21 @@
+{"timestamp":"2026-03-13T21:10:43.778Z","level":"INFO","message":"DB pool init: host=gateway01.us-east-1.prod.aws.tidbcloud.com, database=lojacond"}
+[1/4] Finding a valid tenant...
+[2/4] Simulating webhook POST to https://app.condstoreos.com/api/whatsapp/incoming...
+      Tenant: Loja de Teste User (whatsapp:PENDING-186753a5)
+   -> Webhook Status: 200
+   -> Webhook Response: <?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Message>Servi├ºo indispon├¡vel.</Message>
+</Response>
+   OK: HTTP 200 e TwiML v├ílido.
+[3/4] Wait 2 seconds just in case of async handlers...
+[4/4] Verifying the database...
+   FAIL: Mensagem (messages) n├úo encontrada no banco.
+
+--- RELAT├ôRIO T├ëCNICO ---
+Webhook OK / FAIL: OK
+Conversation criada / FAIL: FAIL
+Suggestion criada / FAIL: FAIL
+Eventos operacionais OK / FAIL: FAIL
+Poss├¡vel causa raiz: Falha em ConversationService (Message ou Conv issue) | EventBus (operational_events)
+Corre├º├úo recomendada: Verificar CatalogService.searchProductsByName ou SuggestionService | Verificar publishOperationalEvent() no route.ts
