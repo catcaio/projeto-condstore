@@ -7,11 +7,17 @@ import { sql } from 'drizzle-orm';
 
 dotenv.config({ path: '.env.local' });
 
+function unwrapMysqlRows<T>(result: unknown): T[] {
+    if (!Array.isArray(result)) return [];
+    if (Array.isArray(result[0])) return result[0] as T[];
+    return result as T[];
+}
+
 async function debugInsert() {
     try {
         const db = await getDb();
         const tenantRes = await db.execute(sql`SELECT id FROM tenants LIMIT 1`);
-        const row: any = (tenantRes.rows || tenantRes[0] || [])[0];
+        const row: any = unwrapMysqlRows<any>(tenantRes)[0];
         const tenantId = row.id;
         
         const record = {

@@ -6,6 +6,12 @@ import * as fs from 'fs';
 const url = 'https://app.condstoreos.com/api/whatsapp/incoming';
 const authToken = '482eb23a3f3e93ac41d7754c59626316';
 
+function unwrapMysqlRows<T>(result: unknown): T[] {
+    if (!Array.isArray(result)) return [];
+    if (Array.isArray(result[0])) return result[0] as T[];
+    return result as T[];
+}
+
 async function sendWebhook(toPhone: string, fromPhone: string, body: string, messageSid: string) {
     const params = {
         MessageSid: messageSid,
@@ -46,7 +52,7 @@ async function runTest() {
         
         // Ensure the tenant has the Sandbox number
         const tenantsResult = await db.execute(sql`SELECT id, name, twilio_number FROM tenants LIMIT 1`);
-        const dbTenants = tenantsResult.rows || tenantsResult[0] || tenantsResult;
+        const dbTenants = unwrapMysqlRows<any>(tenantsResult);
         const tenant: any = dbTenants[0];
         
         if (!tenant) throw new Error('No tenant found in DB!');
@@ -98,18 +104,18 @@ async function runTest() {
         }
 
         const msgsResult = await db.execute(sql`SELECT * FROM messages WHERE message_sid = ${messageSid}`);
-        const qaMessage: any = (msgsResult.rows || msgsResult[0] || [])[0];
+        const qaMessage: any = unwrapMysqlRows<any>(msgsResult)[0];
         
         if (qaMessage) {
             let currentConversationId = qaMessage.conversation_id || qaMessage.conversationId;
             
             if (currentConversationId) {
                 const convsResult = await db.execute(sql`SELECT * FROM conversations WHERE id = ${currentConversationId}`);
-                let convs = convsResult.rows || convsResult[0] || [];
+                let convs = unwrapMysqlRows<any>(convsResult);
                 if (convs.length > 0) conversationOk = true;
             } else {
                 const convsResult = await db.execute(sql`SELECT * FROM conversations WHERE tenant_id = ${tenantId} ORDER BY created_at DESC LIMIT 1`);
-                const convs = convsResult.rows || convsResult[0] || [];
+                const convs = unwrapMysqlRows<any>(convsResult);
                 if (convs[0]) {
                     currentConversationId = convs[0].id;
                     conversationOk = true;
@@ -120,10 +126,10 @@ async function runTest() {
                 let sug: any;
                 try {
                     const sugResult = await db.execute(sql`SELECT * FROM frank_suggestions WHERE conversation_id = ${currentConversationId} ORDER BY created_at DESC LIMIT 1`);
-                    sug = (sugResult.rows || sugResult[0] || [])[0];
+                    sug = unwrapMysqlRows<any>(sugResult)[0];
                 } catch (e:any) {
                     const sugResult = await db.execute(sql`SELECT * FROM suggestions WHERE conversation_id = ${currentConversationId} ORDER BY created_at DESC LIMIT 1`);
-                    sug = (sugResult.rows || sugResult[0] || [])[0];
+                    sug = unwrapMysqlRows<any>(sugResult)[0];
                 }
                 if (sug) {
                     suggestionOk = true;
@@ -133,7 +139,7 @@ async function runTest() {
                 }
 
                 const eventsResult = await db.execute(sql`SELECT * FROM operational_events WHERE entity_id = ${currentConversationId}`);
-                const events = eventsResult.rows || eventsResult[0] || [];
+                const events = unwrapMysqlRows<any>(eventsResult);
                 
                 const eventTypes = events.map((e: any) => e.event_type || e.eventType);
                 
