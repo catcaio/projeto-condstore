@@ -1,7 +1,3 @@
-import { sql } from 'drizzle-orm';
-import { getDb } from '../../infra/db';
-import { securityEdgeEvents } from '../../drizzle/schema';
-
 export interface EdgeSecurityEventInput {
     requestId: string;
     route: string;
@@ -27,29 +23,26 @@ export async function hashIp(ip: string | null | undefined): Promise<string | nu
 
 /**
  * Logs a security event at the edge layer.
- * This function guarantees non-blocking execution by catching potential database errors internally.
+ * This function guarantees non-blocking execution.
  * Does NOT leak raw IPs, tokens, or PII.
+ * 
+ * Node-specific imports (e.g. mysql2's stream dependency) crash the Edge Runtime.
+ * Here we safely log to standard output for the log drains to pick up.
  */
 export async function logEdgeSecurityEvent(input: EdgeSecurityEventInput): Promise<void> {
-    try {
-        const ipHash = await hashIp(input.ip);
-
-        // Edge runtime compatibility restricts db calls in some providers, but Drizzle over HTTP (e.g. planetscale) 
-        // works. If using standard mysql2 driver, it might fail in Next middleware on Vercel Edge.
-        // We will execute a best-effort async insert. If it crashes (e.g. edge incompatibility), we log to console safely.
-        const db = await getDb();
-        await db.insert(securityEdgeEvents).values({
-            id: crypto.randomUUID(),
-            requestId: input.requestId,
-            route: input.route.substring(0, 255), // Truncate safely
+    const ipHash = await hashIp(input.ip).catch(() => null);
+    
+    console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'edge_security_telemetry',
+        context: {
             reason: input.reason,
-            ipHash: ipHash,
+            route: input.route.substring(0, 255),
+            requestId: input.requestId,
+            ipHash,
             tenantClaim: input.tenantClaim || null,
             userClaim: input.userClaim || null,
-        }).execute();
-
-    } catch (err) {
-        // Fire-and-forget fallback to standard output if DB insert fails at edge
-        console.warn(`[Edge Security Telemetry Failed] ${input.reason} on ${input.route} | Req: ${input.requestId}`);
-    }
+            timestamp: new Date().toISOString()
+        }
+    }));
 }
