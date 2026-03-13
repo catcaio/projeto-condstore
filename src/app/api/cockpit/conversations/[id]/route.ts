@@ -5,7 +5,9 @@ import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { decryptString } from '@/infra/pii/crypto';
-
+import { getDb } from '@/infra/db';
+import { customers } from '@/drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 export const revalidate = 0; // dynamic API
 
 export async function GET(
@@ -28,6 +30,17 @@ export async function GET(
 
         const messages = await conversationService.getConversationMessages(tenantId, conversationId);
 
+        let customer = null;
+        if (conversation.customerId) {
+            const db = await getDb();
+            const [cust] = await db.select().from(customers)
+                .where(and(eq(customers.tenantId, tenantId), eq(customers.id, conversation.customerId)))
+                .limit(1);
+            if (cust) {
+                customer = cust;
+            }
+        }
+
         // Securely decrypt the phone for Cockpit UI, but in a sanitized payload
         const plaintextPhone = decryptString(conversation.phoneEncrypted);
         const { phoneEncrypted, ...safeConversation } = conversation;
@@ -37,7 +50,8 @@ export async function GET(
             data: {
                 conversation: {
                     ...safeConversation,
-                    phone: plaintextPhone
+                    phone: plaintextPhone,
+                    customer
                 },
                 messages
             }

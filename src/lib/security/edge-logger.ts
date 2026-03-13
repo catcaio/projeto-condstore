@@ -1,7 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { getDb } from '../../infra/db';
 import { securityEdgeEvents } from '../../drizzle/schema';
-import crypto from 'node:crypto';
 
 export interface EdgeSecurityEventInput {
     requestId: string;
@@ -12,12 +11,18 @@ export interface EdgeSecurityEventInput {
     userClaim?: string | null;
 }
 
-export function hashIp(ip: string | null | undefined): string | null {
+export async function hashIp(ip: string | null | undefined): Promise<string | null> {
     if (!ip) return null;
     // We add a pepper to the hash specifically for IP addresses to make rainbow tables harder
     // For local edge hashing, if AUTH_SECRET is missing, we use a fallback pepper
     const pepper = process.env.PII_ENCRYPTION_KEY || process.env.AUTH_SECRET || 'fallback-ip-pepper-condstore';
-    return crypto.createHash('sha256').update(`${ip}:${pepper}`).digest('hex');
+    
+    // Use Edge-compatible Web Crypto API instead of node:crypto
+    const encoder = new TextEncoder();
+    const data = encoder.encode(`${ip}:${pepper}`);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -27,7 +32,7 @@ export function hashIp(ip: string | null | undefined): string | null {
  */
 export async function logEdgeSecurityEvent(input: EdgeSecurityEventInput): Promise<void> {
     try {
-        const ipHash = hashIp(input.ip);
+        const ipHash = await hashIp(input.ip);
 
         // Edge runtime compatibility restricts db calls in some providers, but Drizzle over HTTP (e.g. planetscale) 
         // works. If using standard mysql2 driver, it might fail in Next middleware on Vercel Edge.

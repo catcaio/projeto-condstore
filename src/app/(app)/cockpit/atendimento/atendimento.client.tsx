@@ -21,7 +21,12 @@ interface Conversation {
     stage?: 'NEW' | 'QUALIFYING' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST';
     assignedTo?: string;
     lastMessageAt: string;
+    customer?: {
+        name: string;
+        document?: string;
+    };
 }
+
 
 interface Message {
     id: string;
@@ -231,10 +236,17 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                             <div className="flex justify-between items-start">
                                 <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-                                            <User className="w-4 h-4" />
+                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold overflow-hidden">
+                                            {activeConvDetails.customer?.name ? activeConvDetails.customer.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
                                         </div>
-                                        <h3 className="font-bold text-lg text-gray-900 block">{activeConvDetails.phone || `${activeConvDetails.phoneHash?.slice(0,8)}...`}</h3>
+                                        <div className="flex flex-col">
+                                            <h3 className="font-bold text-lg text-gray-900 block">
+                                                {activeConvDetails.customer?.name || activeConvDetails.phone || `${activeConvDetails.phoneHash?.slice(0,8)}...`}
+                                            </h3>
+                                            {activeConvDetails.customer?.name && (
+                                                <span className="text-xs text-[hsl(var(--ui-text-muted))]">{activeConvDetails.phone}</span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5 mt-1 ml-10">
                                         <Clock className="w-3.5 h-3.5" /> Última interação: {format(new Date(activeConvDetails.lastMessageAt), 'dd/MM/yyyy HH:mm')}

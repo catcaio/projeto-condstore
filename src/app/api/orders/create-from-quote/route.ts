@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createOrderFromSimulation } from '@/modules/pedidos/order.service';
 import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 import { NextRequest } from 'next/server';
+import { structuredLogger } from '@/infra/log/logger';
 
 const createOrderSchema = z.object({
     simulationId: z.string().uuid(),
@@ -58,7 +59,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(result, { status: 201 });
 
     } catch (error: any) {
-        console.error('[API_ORDERS_CREATE_FROM_QUOTE] Error:', error);
+        structuredLogger.error('api_orders_create_from_quote_error', {
+            errorType: error?.name,
+            errorMessage: error?.message,
+            route: '/api/orders/create-from-quote',
+        });
         return NextResponse.json(
             { error: error?.message || 'Failed to create order from simulation' },
             { status: 500 },

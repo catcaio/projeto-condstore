@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { proxy } from '../../../proxy';
+import { middleware } from '../../../middleware';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-describe('Production Smoke Test - Proxy', () => {
+describe('Production Smoke Test - Middleware', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
@@ -19,7 +19,7 @@ describe('Production Smoke Test - Proxy', () => {
         process.env.INTERNAL_DIAG_TOKEN = 'secret123';
 
         const req = new NextRequest('http://localhost:3000/api/internal/diag');
-        const res = await proxy(req) as NextResponse;
+        const res = await middleware(req) as NextResponse;
 
         expect(res).toBeDefined();
         expect(res.status).toBe(401);
@@ -33,7 +33,7 @@ describe('Production Smoke Test - Proxy', () => {
             headers: new Headers({ 'x-internal-token': 'secret123' })
         });
 
-        const res = await proxy(req) as NextResponse;
+        const res = await middleware(req) as NextResponse;
         expect(res.status).not.toBe(401);
     });
 
@@ -42,7 +42,7 @@ describe('Production Smoke Test - Proxy', () => {
         process.env.INTERNAL_DIAG_TOKEN = 'secret123';
 
         const req = new NextRequest('http://localhost:3000/api/webhooks/twilio');
-        const res = await proxy(req) as NextResponse;
+        const res = await middleware(req) as NextResponse;
 
         expect(res.status).not.toBe(401);
     });
@@ -51,7 +51,7 @@ describe('Production Smoke Test - Proxy', () => {
         vi.stubEnv('NODE_ENV', 'development');
 
         const req = new NextRequest('http://localhost:3000/api/internal/diag');
-        const res = await proxy(req) as NextResponse;
+        const res = await middleware(req) as NextResponse;
 
         expect(res.status).not.toBe(401);
     });

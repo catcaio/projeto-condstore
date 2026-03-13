@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { proxy } from "../proxy";
+import { middleware } from "../middleware";
 import * as jose from "jose";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { safeCompare } from "../lib/security/safe-compare";
@@ -12,7 +12,7 @@ vi.mock("../lib/security/safe-compare", () => ({
     safeCompare: vi.fn((a, b) => a === b && a !== undefined && a !== null)
 }));
 
-describe("Global Edge Proxy Enforcement", () => {
+describe("Global Edge Middleware Enforcement", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.unstubAllEnvs();
@@ -53,7 +53,7 @@ describe("Global Edge Proxy Enforcement", () => {
                 return new NextResponse();
             });
 
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect(nextSpy).toHaveBeenCalled();
             nextSpy.mockRestore();
         });
@@ -62,7 +62,7 @@ describe("Global Edge Proxy Enforcement", () => {
     describe("RULE 1: /api/internal/*", () => {
         it("should block if no internal token is provided", async () => {
             const req = makeRequest("/api/internal/jobs", {});
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect(res.status).toBe(401);
             expect(await res.json()).toEqual({ error: "Unauthorized internal access" });
         });
@@ -71,14 +71,14 @@ describe("Global Edge Proxy Enforcement", () => {
             process.env.INTERNAL_JOB_TOKEN = "job-token-123";
             const req = makeRequest("/api/internal/jobs", { "x-internal-token": "job-token-123" });
 
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect(res.headers.get('content-type')).not.toBe('application/json');
         });
 
         it("should parse token from query string and allow if valid", async () => {
             process.env.INTERNAL_TOKEN = "query-token";
             const req = makeRequest("/api/internal/tasks?token=query-token", {});
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect((res as any).status).toBe(200);
         });
 
@@ -89,7 +89,7 @@ describe("Global Edge Proxy Enforcement", () => {
                 "x-qa-token": "qa-only",
                 "x-github-actions": "true"
             });
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect((res as any).status).toBe(200);
         });
     });
@@ -97,7 +97,7 @@ describe("Global Edge Proxy Enforcement", () => {
     describe("RULE 2 & 3: Session Check & Tenant Authorization", () => {
         it("should block /api/cockpit/* if session is missing", async () => {
             const req = makeRequest("/api/cockpit/dashboard", {});
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect(res.status).toBe(401);
             expect(await res.json()).toEqual({ error: "Missing authentication token" });
         });
@@ -105,7 +105,7 @@ describe("Global Edge Proxy Enforcement", () => {
         it("should block /api/cockpit/* if session JWT is invalid", async () => {
             (jose.jwtVerify as any).mockRejectedValue(new Error("Invalid token"));
             const req = makeRequest("/api/cockpit/dashboard", {}, { condstore_session: "bad-token" });
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect(res.status).toBe(401);
         });
 
@@ -123,7 +123,7 @@ describe("Global Edge Proxy Enforcement", () => {
                 return new NextResponse();
             });
 
-            await proxy(req);
+            await middleware(req);
             expect(nextSpy).toHaveBeenCalled();
             nextSpy.mockRestore();
         });
@@ -133,7 +133,7 @@ describe("Global Edge Proxy Enforcement", () => {
                 payload: { sub: "usr_1", tenantId: "tnt_2", role: "admin" }
             });
             const req = makeRequest("/api/tenants/tnt_999/settings", {}, { condstore_session: "good-token" });
-            const res = await proxy(req);
+            const res = await middleware(req);
 
             expect(res.status).toBe(403);
             expect(await res.json()).toEqual({ error: "Tenant mismatch: Forbidden cross-tenant access" });
@@ -146,7 +146,7 @@ describe("Global Edge Proxy Enforcement", () => {
             const req = makeRequest("/api/tenants/tnt_2/settings", {}, { condstore_session: "good-token" });
 
             const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation(() => new NextResponse());
-            await proxy(req);
+            await middleware(req);
             expect(nextSpy).toHaveBeenCalled();
             nextSpy.mockRestore();
         });

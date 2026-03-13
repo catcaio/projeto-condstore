@@ -103,7 +103,7 @@ describe('Frank Assistant Response Engine', () => {
     });
 
     it('should reply strictly within Assistant constraints for generic requests', async () => {
-        const result = await handleIncomingMessage('t1', 'calcular o frete', '+5511999999999');
+        const result = await handleIncomingMessage('t1', 'calcular frete entrega prazo cep', '+5511999999999');
         
         expect(result.intent).toBe('FRETE');
         expect(result.reply).toContain('Neste momento eu só consulto dados');
@@ -175,7 +175,7 @@ describe('Frank Assistant Response Engine', () => {
             statusHistory: []
         } as any);
 
-        const result = await handleIncomingMessage('t1', 'status do meu pedido', '+5511999999999');
+        const result = await handleIncomingMessage('t1', 'meu pedido da encomenda de compra', '+5511999999999');
 
         expect(result.intent).toBe('PEDIDO');
         // Validate two-step dispatching

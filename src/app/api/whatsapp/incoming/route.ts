@@ -129,7 +129,12 @@ export async function POST(request: NextRequest) {
         try {
             tenant = await tenantRepository.resolveTenantByTwilioNumber(twilioNumberRaw);
         } catch (err) {
-            logger.error('whatsapp_incoming_tenant_error', err as Error, { requestId });
+            structuredLogger.error('whatsapp_incoming_tenant_error', {
+                errorType: err instanceof Error ? err.name : 'UnknownError',
+                errorMessage: err instanceof Error ? err.message : String(err),
+                route: '/api/whatsapp/incoming',
+                requestId
+            });
             return finish(twimlOk('Serviço indisponível.', requestId));
         }
 
@@ -228,6 +233,14 @@ export async function POST(request: NextRequest) {
         // Mark webhook as processed
         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
 
+        structuredLogger.info('whatsapp_message_received', {
+            eventType: 'WHATSAPP_MESSAGE_RECEIVED',
+            conversationId: conversation.id,
+            phoneHash,
+            tenantId,
+            messagePreview: incomingMessage.body ? incomingMessage.body.slice(0, 50) : '[no_body]',
+        });
+
         logger.info('whatsapp_incoming_human_routed', {
             requestId, tenantId, phoneHash,
             hasBody: !!incomingMessage.body,
@@ -237,7 +250,12 @@ export async function POST(request: NextRequest) {
         // We return an empty TwiML because an operator will reply manually later.
         return finish(twimlEmpty(requestId));
     } catch (err) {
-        logger.error('whatsapp_incoming_error', err as Error, { requestId });
+        structuredLogger.error('whatsapp_incoming_error', {
+            errorType: err instanceof Error ? err.name : 'UnknownError',
+            errorMessage: err instanceof Error ? err.message : String(err),
+            route: '/api/whatsapp/incoming',
+            requestId
+        });
         return finish(twimlOk('Desculpe, ocorreu um erro. Tente novamente.', requestId));
     }
 }

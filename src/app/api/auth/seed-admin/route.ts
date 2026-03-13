@@ -26,7 +26,7 @@ export const GET = withAuditLog(
                     return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
                 }
 
-                const token = request.headers.get('x-internal-token') || request.nextUrl.searchParams.get('internal_token');
+                const token = request.headers.get('x-internal-token');
                 let expectedInternalToken;
                 try {
                     expectedInternalToken = getInternalExportTokenOrThrow();
@@ -39,8 +39,8 @@ export const GET = withAuditLog(
                     return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
                 }
             } else {
-                // In Development: Use SEED_TOKEN checking (header or query)
-                const token = request.headers.get('x-seed-token') || request.nextUrl.searchParams.get('seed_token');
+                // In Development: Use SEED_TOKEN checking (header only)
+                const token = request.headers.get('x-seed-token');
                 if (!safeCompare(token, process.env.SEED_TOKEN)) {
                     logger.warn('seed_admin.blocked', { reason: 'Invalid or missing dev seed token' });
                     return NextResponse.json({ success: false, error: 'Unauthorized: missing or invalid seed token' }, { status: 401 });

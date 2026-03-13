@@ -9,6 +9,7 @@
  */
 
 export type Intent =
+    | 'GENERIC_QUESTION'
     | 'FRETE'
     | 'PRODUTO'
     | 'PEDIDO'
@@ -30,6 +31,7 @@ export type Intent =
 export interface IntentResult {
     intent: Intent;
     confidence: number; // 0..1
+    intentCandidates?: string[];
 }
 
 const FRETE_KEYWORDS = [
@@ -139,9 +141,16 @@ export function resolveIntent(message: string): IntentResult {
     }
 
     // Confidence = matches / max possible, capped at 0.95
-    const confidence = Math.min(best.matches / Math.min(best.total, 4), 0.95);
+    let confidence = Math.min(best.matches / Math.min(best.total, 4), 0.95);
+    confidence = Math.round(confidence * 100) / 100;
 
-    return { intent: best.intent, confidence: Math.round(confidence * 100) / 100 };
+    const candidates = scores.filter(s => s.matches > 0).map(s => s.intent);
+
+    if (confidence < 0.65) {
+        return { intent: 'GENERIC_QUESTION', confidence: 0, intentCandidates: candidates };
+    }
+
+    return { intent: best.intent, confidence, intentCandidates: candidates };
 }
 
 // ─── Contextual Intent Resolution ───────────────────────────────────────────

@@ -309,6 +309,13 @@
       "when": 1772816209764,
       "tag": "0055_supreme_benchmarks",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "5",
+      "when": 1773362692439,
+      "tag": "0056_furry_mole_man",
+      "breakpoints": true
     }
   ]
 }

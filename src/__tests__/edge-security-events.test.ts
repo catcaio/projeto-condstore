@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { proxy } from "../proxy";
+import { middleware } from "../middleware";
 import * as jose from "jose";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
@@ -44,7 +44,7 @@ describe("Edge Middleware Telemetry & Security Events", () => {
                 "x-forwarded-for": "192.168.1.1",
                 "x-request-id": "req-123"
             });
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect(res.status).toBe(200); // the request itself is valid internally
 
             expect(logEdgeSecurityEventSpy).toHaveBeenCalledWith({
@@ -62,7 +62,7 @@ describe("Edge Middleware Telemetry & Security Events", () => {
                 "x-internal-token": "invalid",
                 "x-forwarded-for": "10.0.0.1"
             });
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect(res.status).toBe(401);
 
             expect(logEdgeSecurityEventSpy).toHaveBeenCalledWith({
@@ -80,7 +80,7 @@ describe("Edge Middleware Telemetry & Security Events", () => {
             const req = makeRequest("/api/cockpit/settings", {
                 "x-forwarded-for": "8.8.8.8"
             }, { condstore_session: "bad.jwt" });
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect(res.status).toBe(401);
 
             expect(logEdgeSecurityEventSpy).toHaveBeenCalledWith({
@@ -101,7 +101,7 @@ describe("Edge Middleware Telemetry & Security Events", () => {
                 "x-forwarded-for": "1.1.1.1"
             }, { condstore_session: "good.jwt" });
 
-            const res = await proxy(req);
+            const res = await middleware(req);
             expect(res.status).toBe(403);
 
             expect(logEdgeSecurityEventSpy).toHaveBeenCalledWith({
