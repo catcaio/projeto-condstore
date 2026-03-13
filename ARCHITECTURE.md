@@ -298,3 +298,9 @@ schema verification      → Drizzle schema integrity
 - Operational metrics aggregated in cockpit dashboards
 - Quote durations, carrier fail rates, SLA tracking
 - Retention cleanup with configurable policies per table
+
+## WhatsApp supervised pipeline alignment
+
+- `app/api/whatsapp/incoming` performs Twilio signature verification, phone normalization, tenant-scoped identity resolution, and conversation ingestion.
+- Domain services (`modules/catalog`, `modules/freight`, `modules/frank/supervised-assist`) produce supervised suggestion drafts only.
+- Outbound WhatsApp continues operator-gated through suggestion approval APIs, while operational milestones are persisted through `operational-event-bus` into `operational_events`.

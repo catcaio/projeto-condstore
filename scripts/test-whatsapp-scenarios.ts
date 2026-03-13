@@ -4,7 +4,11 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import { operationalEvents, frankSuggestions } from '@/drizzle/schema';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
-import { formatFreightQuoteResponse, formatProductInquiryResponse, formatProductSuggestionsResponse } from '@/lib/formatters/whatsapp-response';
+import {
+    formatFreightQuoteResponse,
+    formatProductInquiryResponse,
+    formatProductSuggestionsResponse,
+} from '@/lib/formatters/whatsapp-response';
 import { catalogService } from '@/modules/catalog/catalog.service';
 import { freightService } from '@/modules/freight/freight.service';
 import { resolveEntities } from '@/modules/frank/entity-resolver';
@@ -63,7 +67,9 @@ function extractProductQuery(message: string, entities: ReturnType<typeof resolv
     }
 
     const normalized = normalizeText(message);
-    const nounMatch = normalized.match(/\b(carrinho(?:s)?|lixeira(?:s)?|container(?:es)?|contentor(?:es)?|caixa(?:s)?|pallet(?:s)?)\b/);
+    const nounMatch = normalized.match(
+        /\b(carrinho(?:s)?|lixeira(?:s)?|container(?:es)?|contentor(?:es)?|caixa(?:s)?|pallet(?:s)?)\b/,
+    );
     if (!nounMatch?.[1]) {
         return '';
     }
@@ -77,7 +83,9 @@ function resolveQuantity(message: string, fallback: number | null): number {
         return fallback;
     }
 
-    const explicitMatch = normalizeText(message).match(/\b(\d+)\s+(?:unidade|unidades|peca|pecas|item|itens|carrinho|carrinhos|lixeira|lixeiras|container|containers)\b/);
+    const explicitMatch = normalizeText(message).match(
+        /\b(\d+)\s+(?:unidade|unidades|peca|pecas|item|itens|carrinho|carrinhos|lixeira|lixeiras|container|containers)\b/,
+    );
     if (!explicitMatch) {
         return 1;
     }
@@ -101,7 +109,8 @@ async function run() {
         const entityResult = resolveEntities(scenario.message);
         const destinationZip = extractCep(scenario.message);
         const quantity = resolveQuantity(scenario.message, entityResult.entities.quantity);
-        const productQuery: string = extractProductQuery(scenario.message, entityResult.entities) || lastResolvedProductQuery || '';
+        const productQuery: string =
+            extractProductQuery(scenario.message, entityResult.entities) || lastResolvedProductQuery || '';
         const products = productQuery ? await catalogService.searchProductsByName(tenantId, productQuery) : [];
         const primaryProduct = products[0] ?? null;
 
@@ -141,9 +150,10 @@ async function run() {
             });
         }
 
-        let suggestedResponse = products.length === 1
-            ? formatProductInquiryResponse(products[0])
-            : formatProductSuggestionsResponse(products);
+        let suggestedResponse =
+            products.length === 1
+                ? formatProductInquiryResponse(products[0])
+                : formatProductSuggestionsResponse(products);
 
         if (!productQuery && lastResolvedProductId) {
             suggestedResponse = 'Recuperei o último produto consultado para continuar a simulação supervisionada.';
@@ -212,7 +222,9 @@ async function run() {
             entities: entityResult.entities,
             productQuery,
             productMatches: products.length,
-            freightSimulated: Boolean(scenario.expectFreight && destinationZip && (primaryProduct || lastResolvedProductId)),
+            freightSimulated: Boolean(
+                scenario.expectFreight && destinationZip && (primaryProduct || lastResolvedProductId),
+            ),
         });
     }
 

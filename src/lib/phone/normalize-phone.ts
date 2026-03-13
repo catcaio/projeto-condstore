@@ -60,3 +60,6 @@ export function normalizePhoneNumber(raw: string | null | undefined): string {
     return toWhatsAppPhone(raw) ?? '';
 }
 
+export function normalizeWhatsAppPhone(rawPhone: string | null | undefined): string {
+    return normalizePhoneNumber(rawPhone);
+}

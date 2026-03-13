@@ -1,13 +1,24 @@
-import type { CatalogProductLookup } from '@/modules/catalog/catalog.service';
+import type { CatalogProductLookup, CatalogProductMatch } from '@/modules/catalog/catalog.service';
 
-type ProductLike = Pick<CatalogProductLookup, 'name' | 'sku' | 'basePrice' | 'price'>;
+type ProductLike = Partial<Pick<CatalogProductLookup, 'sku' | 'price'>> &
+    Pick<CatalogProductLookup, 'name' | 'basePrice'>;
+
+type FreightQuoteInput = {
+    destinationZip?: string;
+    cep?: string;
+    freightPrice: number;
+    estimatedDays: number;
+    carrier: string;
+};
 
 function formatCurrency(value: number): string {
     return `R$ ${value.toFixed(2).replace('.', ',')}`;
 }
 
 function resolvePrice(product: ProductLike): number {
-    return product.basePrice > 0 ? product.basePrice : product.price;
+    const basePrice = Number(product.basePrice ?? 0);
+    const price = Number(product.price ?? 0);
+    return basePrice > 0 ? basePrice : price;
 }
 
 function formatProductLabel(product: ProductLike): string {
@@ -25,7 +36,11 @@ function formatProductLabel(product: ProductLike): string {
     return parts.join(' | ');
 }
 
-export function formatProductInquiryResponse(product: CatalogProductLookup): string {
+function resolveDestinationZip(input: FreightQuoteInput): string {
+    return input.destinationZip ?? input.cep ?? 'informado';
+}
+
+export function formatProductInquiryResponse(product: CatalogProductLookup | CatalogProductMatch): string {
     const price = resolvePrice(product);
     const priceLine = price > 0 ? ` Valor base: ${formatCurrency(price)}.` : '';
     const skuLine = product.sku ? ` SKU: ${product.sku}.` : '';
@@ -33,7 +48,9 @@ export function formatProductInquiryResponse(product: CatalogProductLookup): str
     return `Temos ${product.name} disponível.${skuLine}${priceLine}`.replace(/\s+/g, ' ').trim();
 }
 
-export function formatProductSuggestionsResponse(products: CatalogProductLookup[]): string {
+export function formatProductSuggestionsResponse(
+    products: Array<CatalogProductLookup | CatalogProductMatch>,
+): string {
     if (products.length === 0) {
         return 'Não encontrei um produto com esse nome no momento. Se quiser, me diga o SKU ou descreva o item com mais detalhe.';
     }
@@ -45,7 +62,11 @@ export function formatProductSuggestionsResponse(products: CatalogProductLookup[
     return `Encontrei estas opções:\n${lines.join('\n')}\n\nMe confirme o modelo desejado e, se quiser o frete, envie também o CEP.`;
 }
 
-export function formatProductQueryResponse(products: CatalogProductLookup[]): string {
+export function formatProductSuggestions(products: Array<CatalogProductLookup | CatalogProductMatch>): string {
+    return formatProductSuggestionsResponse(products);
+}
+
+export function formatProductQueryResponse(products: Array<CatalogProductLookup | CatalogProductMatch>): string {
     if (products.length === 1) {
         return `${formatProductInquiryResponse(products[0])}\n\nSe quiser, eu também calculo o frete com o CEP.`;
     }
@@ -53,13 +74,9 @@ export function formatProductQueryResponse(products: CatalogProductLookup[]): st
     return formatProductSuggestionsResponse(products);
 }
 
-export function formatFreightQuoteResponse(params: {
-    destinationZip: string;
-    freightPrice: number;
-    estimatedDays: number;
-    carrier: string;
-}): string {
-    return `O frete estimado para CEP ${params.destinationZip} fica em ${formatCurrency(params.freightPrice)} com prazo de ${params.estimatedDays} dias pela ${params.carrier}.`;
+export function formatFreightQuoteResponse(input: FreightQuoteInput): string {
+    const destinationZip = resolveDestinationZip(input);
+    return `O frete estimado para CEP ${destinationZip} fica em ${formatCurrency(input.freightPrice)} com prazo de ${input.estimatedDays} dias pela ${input.carrier}.`;
 }
 
 export function formatFreightSimulationResponse(

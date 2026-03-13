@@ -5,6 +5,7 @@ import { packingProfiles, products } from '@/drizzle/schema';
 export interface CatalogProductLookup {
     productId: string;
     id: string;
+    productRef?: string | null;
     name: string;
     sku: string | null;
     weight: number;
@@ -17,6 +18,8 @@ export interface CatalogProductLookup {
         length: number | null;
     };
 }
+
+export type CatalogProductMatch = CatalogProductLookup;
 
 function toNumber(value: unknown, fallback = 0): number {
     const parsed = Number(value);
@@ -36,6 +39,7 @@ function mapProductRow(row: typeof products.$inferSelect): CatalogProductLookup 
     return {
         productId: row.id,
         id: row.id,
+        productRef: row.sku ?? row.id,
         name: row.name,
         sku: row.sku ?? null,
         weight: toNumber(row.weight, 0),
@@ -58,6 +62,7 @@ function mapPackingProfileRow(row: typeof packingProfiles.$inferSelect): Catalog
     return {
         productId: row.id,
         id: row.id,
+        productRef: row.productRef ?? row.id,
         name: row.profileName,
         sku: row.productRef ?? null,
         weight: toNumber(row.baseWeight, 0),

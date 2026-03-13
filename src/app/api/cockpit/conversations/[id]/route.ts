@@ -1,12 +1,11 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { conversationService } from '@/modules/atendimento/conversation.service';
 import { requireAdmin } from '@/infra/auth/guards';
+import { getDb } from '@/infra/db';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { decryptString } from '@/infra/pii/crypto';
-import { getDb } from '@/infra/db';
 import {
     customerContacts,
     freightSimulations,
@@ -15,6 +14,7 @@ import {
     organizations,
     shipments,
 } from '@/drizzle/schema';
+import { conversationService } from '@/modules/atendimento/conversation.service';
 
 export const revalidate = 0;
 
@@ -63,7 +63,12 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
             ? await db
                 .select()
                 .from(frankSessionState)
-                .where(and(eq(frankSessionState.tenantId, tenantId), eq(frankSessionState.sessionId, conversation.phoneHash)))
+                .where(
+                    and(
+                        eq(frankSessionState.tenantId, tenantId),
+                        eq(frankSessionState.sessionId, conversation.phoneHash),
+                    ),
+                )
                 .limit(1)
             : [];
 
@@ -77,12 +82,18 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                 ? await db
                     .select()
                     .from(customerContacts)
-                    .where(and(eq(customerContacts.tenantId, tenantId), eq(customerContacts.customerId, conversation.customerId)))
+                    .where(
+                        and(
+                            eq(customerContacts.tenantId, tenantId),
+                            eq(customerContacts.customerId, conversation.customerId),
+                        ),
+                    )
                     .limit(1)
                 : [];
 
         const resolvedCustomerId = conversation.customerId ?? contact?.customerId ?? frankSession?.customerId ?? null;
-        const resolvedOrganizationId = conversation.organizationId ?? contact?.organizationId ?? frankSession?.organizationId ?? null;
+        const resolvedOrganizationId =
+            conversation.organizationId ?? contact?.organizationId ?? frankSession?.organizationId ?? null;
 
         const [organizationRecord] = resolvedOrganizationId
             ? await db
@@ -116,26 +127,36 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
             ? await db
                 .select()
                 .from(freightSimulations)
-                .where(and(eq(freightSimulations.tenantId, tenantId), eq(freightSimulations.id, frankSession.lastReferencedQuoteId)))
+                .where(
+                    and(
+                        eq(freightSimulations.tenantId, tenantId),
+                        eq(freightSimulations.id, frankSession.lastReferencedQuoteId),
+                    ),
+                )
                 .limit(1)
             : lastOrder?.freightSimulationId
                 ? await db
                     .select()
                     .from(freightSimulations)
-                    .where(and(eq(freightSimulations.tenantId, tenantId), eq(freightSimulations.id, lastOrder.freightSimulationId)))
+                    .where(
+                        and(
+                            eq(freightSimulations.tenantId, tenantId),
+                            eq(freightSimulations.id, lastOrder.freightSimulationId),
+                        ),
+                    )
                     .limit(1)
-                : await db
-                    .select()
-                    .from(freightSimulations)
-                    .where(eq(freightSimulations.tenantId, tenantId))
-                    .orderBy(desc(freightSimulations.createdAt))
-                    .limit(1);
+                : [];
 
         const [shipment] = frankSession?.lastReferencedShipmentId
             ? await db
                 .select()
                 .from(shipments)
-                .where(and(eq(shipments.tenantId, tenantId), eq(shipments.id, frankSession.lastReferencedShipmentId)))
+                .where(
+                    and(
+                        eq(shipments.tenantId, tenantId),
+                        eq(shipments.id, frankSession.lastReferencedShipmentId),
+                    ),
+                )
                 .limit(1)
             : lastOrder
                 ? await db
@@ -170,13 +191,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                     frankSession: frankSession ?? null,
                 },
                 customer,
-                contact: contact || null,
-                organization: organization || null,
+                contact: contact ?? null,
+                organization: organization ?? null,
                 messages,
-                lastQuote: lastQuote || null,
-                lastOrder: lastOrder || null,
-                shipment: shipment || null,
-                frankSession: frankSession || null,
+                lastQuote: lastQuote ?? null,
+                lastOrder: lastOrder ?? null,
+                shipment: shipment ?? null,
+                frankSession: frankSession ?? null,
             },
         });
     } catch (err: any) {

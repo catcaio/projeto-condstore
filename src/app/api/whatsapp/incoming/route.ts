@@ -2,31 +2,41 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { twilioProvider } from '@/providers/twilio.provider';
-import { logger } from '@/infra/logger';
-import { structuredLogger } from '@/infra/log/logger';
+import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
-import { sanitizeMessage, validateWebhookPayload } from '@/lib/validation';
+import { structuredLogger } from '@/infra/log/logger';
+import { logger } from '@/infra/logger';
+import { encryptString } from '@/infra/pii/crypto';
+import { inboundMessageDedupRepository } from '@/infra/repositories/inbound-message-dedup.repository';
 import { messageRepository } from '@/infra/repositories/message.repository';
 import { tenantRepository } from '@/infra/repositories/tenant.repository';
-import { verifyTwilioSignature } from '@/lib/security/webhook-verifier';
-import { registerWebhookEvent } from '@/lib/security/webhook-dedupe';
-import { inboundMessageDedupRepository } from '@/infra/repositories/inbound-message-dedup.repository';
-import { phoneHash } from '@/lib/phone';
-import { normalizePhone, toWhatsAppPhone } from '@/lib/phone/normalize-phone';
-import { ErrorCode, errorResponse } from '@/infra/http/error-response';
-import { webhookEventRepository, hashPayload } from '@/infra/repositories/webhook-event.repository';
+import {
+    hashPayload,
+    webhookEventRepository,
+} from '@/infra/repositories/webhook-event.repository';
 import { endUserConsentRepository } from '@/infra/repositories/end-user-consent.repository';
+import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
+import { phoneHash } from '@/lib/phone';
+import {
+    normalizePhone,
+    toWhatsAppPhone,
+} from '@/lib/phone/normalize-phone';
+import { registerWebhookEvent } from '@/lib/security/webhook-dedupe';
+import { verifyTwilioSignature } from '@/lib/security/webhook-verifier';
+import {
+    formatFreightQuoteResponse,
+    formatProductInquiryResponse,
+    formatProductSuggestionsResponse,
+} from '@/lib/formatters/whatsapp-response';
+import { sanitizeMessage, validateWebhookPayload } from '@/lib/validation';
 import { conversationService } from '@/modules/atendimento/conversation.service';
-import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
+import { catalogService } from '@/modules/catalog/catalog.service';
+import { resolveCustomerByPhone } from '@/modules/customers/identity-resolver/identity-resolver.service';
+import { freightService } from '@/modules/freight/freight.service';
 import { resolveEntities } from '@/modules/frank/entity-resolver';
 import { resolveIntent } from '@/modules/frank/intent-resolver';
-import { encryptString } from '@/infra/pii/crypto';
-import { resolveCustomerByPhone } from '@/modules/customers/identity-resolver/identity-resolver.service';
-import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
-import { catalogService } from '@/modules/catalog/catalog.service';
-import { freightService } from '@/modules/freight/freight.service';
-import { formatFreightQuoteResponse, formatProductInquiryResponse, formatProductSuggestionsResponse } from '@/lib/formatters/whatsapp-response';
+import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
+import { twilioProvider } from '@/providers/twilio.provider';
 
 function twimlOk(message: string, requestId?: string): NextResponse {
     const twiml = twilioProvider.generateTwiMLResponse(message);
@@ -38,7 +48,10 @@ function twimlOk(message: string, requestId?: string): NextResponse {
 function twimlEmpty(requestId?: string): NextResponse {
     const headers: Record<string, string> = { 'Content-Type': 'text/xml' };
     if (requestId) headers['X-Request-Id'] = requestId;
-    return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', { status: 200, headers });
+    return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+        status: 200,
+        headers,
+    });
 }
 
 function extractCep(message: string): string | null {
@@ -63,7 +76,9 @@ function extractProductQuery(
     }
 
     const normalized = normalizeText(message);
-    const nounMatch = normalized.match(/\b(carrinho(?:s)?|lixeira(?:s)?|container(?:es)?|contentor(?:es)?|caixa(?:s)?|pallet(?:s)?)\b/);
+    const nounMatch = normalized.match(
+        /\b(carrinho(?:s)?|lixeira(?:s)?|container(?:es)?|contentor(?:es)?|caixa(?:s)?|pallet(?:s)?)\b/,
+    );
 
     if (!nounMatch?.[1]) {
         return '';
@@ -78,7 +93,9 @@ function resolveQuantity(message: string, fallback: number | null): number {
         return fallback;
     }
 
-    const explicitMatch = normalizeText(message).match(/\b(\d+)\s+(?:unidade|unidades|peca|pecas|item|itens|carrinho|carrinhos|lixeira|lixeiras|container|containers)\b/);
+    const explicitMatch = normalizeText(message).match(
+        /\b(\d+)\s+(?:unidade|unidades|peca|pecas|item|itens|carrinho|carrinhos|lixeira|lixeiras|container|containers)\b/,
+    );
     if (!explicitMatch) {
         return 1;
     }
@@ -120,7 +137,14 @@ export async function POST(request: NextRequest) {
 
     const contentType = request.headers.get('content-type') ?? '';
     if (contentType.includes('application/json')) {
-        return finish(errorResponse(ErrorCode.VALIDATION_ERROR, 415, requestId, 'Use application/x-www-form-urlencoded'));
+        return finish(
+            errorResponse(
+                ErrorCode.VALIDATION_ERROR,
+                415,
+                requestId,
+                'Use application/x-www-form-urlencoded',
+            ),
+        );
     }
 
     if (!process.env.TWILIO_AUTH_TOKEN) {
@@ -141,19 +165,25 @@ export async function POST(request: NextRequest) {
         return finish(errorResponse(ErrorCode.FORBIDDEN, 401, requestId, 'Invalid signature'));
     }
 
-    const messageSid = payload['MessageSid'];
+    const messageSid = payload.MessageSid;
     if (!messageSid) {
         return finish(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Missing MessageSid'));
     }
 
     try {
-        const pHash = hashPayload(rawBody);
-        const dedupeResult = await registerWebhookEvent('twilio_frank', messageSid, 'message', pHash, requestId);
+        const payloadHash = hashPayload(rawBody);
+        const dedupeResult = await registerWebhookEvent(
+            'twilio_frank',
+            messageSid,
+            'message',
+            payloadHash,
+            requestId,
+        );
         if (dedupeResult === 'duplicate_event') {
             return finish(twimlEmpty(requestId));
         }
 
-        const twilioNumberRaw = payload['To'];
+        const twilioNumberRaw = payload.To;
         if (!twilioNumberRaw) {
             return finish(twimlOk('Erro interno: payload incompleto.', requestId));
         }
@@ -165,13 +195,13 @@ export async function POST(request: NextRequest) {
             structuredLogger.error('whatsapp_incoming_tenant_error', {
                 errorType: err instanceof Error ? err.name : 'UnknownError',
                 errorMessage: err instanceof Error ? err.message : String(err),
-                route: '/api/whatsapp/incoming',
-                requestId
+                route,
+                requestId,
             });
             return finish(twimlOk('Serviço indisponível.', requestId));
         }
-        const tenantId = tenant.id.toString();
 
+        const tenantId = tenant.id.toString();
         const dedupAcquired = await inboundMessageDedupRepository.tryAcquire(messageSid, tenantId);
         if (!dedupAcquired) {
             return finish(twimlEmpty(requestId));
@@ -195,7 +225,9 @@ export async function POST(request: NextRequest) {
 
         if (!hasConsent) {
             const messageTextLower = messageText.toLowerCase().trim();
-            const isAccepting = ['sim', 'aceito', 'concordo', 'ok', 'sim, eu aceito', 'yes'].includes(messageTextLower);
+            const isAccepting = ['sim', 'aceito', 'concordo', 'ok', 'sim, eu aceito', 'yes'].includes(
+                messageTextLower,
+            );
 
             if (isAccepting) {
                 await endUserConsentRepository.recordOptIn(tenantId, fromHash, 'whatsapp_frank');
@@ -205,16 +237,25 @@ export async function POST(request: NextRequest) {
                     messageSid: incomingMessage.messageSid,
                     tenantId,
                     fromPhone: fromE164,
-                    toPhone: payload['To'] || null,
+                    toPhone: payload.To || null,
                     body: '[CONTEÚDO BLOQUEADO - AGUARDANDO CONSENTIMENTO LGPD]',
                     direction: 'inbound',
                     intent: 'UNKNOWN',
                     intentConfidence: null,
-                    rawPayload: JSON.stringify({ MessageSid: payload['MessageSid'], blocked: true, reason: 'lgpd' }),
+                    rawPayload: JSON.stringify({
+                        MessageSid: payload.MessageSid,
+                        blocked: true,
+                        reason: 'lgpd',
+                    }),
                 });
 
                 void webhookEventRepository.markProcessed('twilio_frank', messageSid);
-                return finish(twimlOk("Para continuar, confirme que aceita nossa política de privacidade enviando 'Sim' ou 'Aceito'.", requestId));
+                return finish(
+                    twimlOk(
+                        "Para continuar, confirme que aceita nossa política de privacidade enviando 'Sim' ou 'Aceito'.",
+                        requestId,
+                    ),
+                );
             }
         }
 
@@ -223,14 +264,14 @@ export async function POST(request: NextRequest) {
             messageSid: incomingMessage.messageSid,
             tenantId,
             fromPhone: fromE164,
-            toPhone: payload['To'] || null,
+            toPhone: payload.To || null,
             body: messageText,
             direction: 'inbound',
             intent: intentResult.intent,
             intentConfidence: intentResult.confidence > 0 ? intentResult.confidence.toFixed(4) : null,
             rawPayload: JSON.stringify({
-                MessageSid: payload['MessageSid'],
-                AccountSid: payload['AccountSid'],
+                MessageSid: payload.MessageSid,
+                AccountSid: payload.AccountSid,
                 intent: intentResult.intent,
                 confidence: intentResult.confidence,
             }),
@@ -274,11 +315,11 @@ export async function POST(request: NextRequest) {
             fromHash,
             encryptString(fromE164),
             messageText,
-            undefined,
+            identity?.customerId ?? undefined,
             identity?.organizationId ?? undefined,
             {
-                MessageSid: payload['MessageSid'],
-                AccountSid: payload['AccountSid'],
+                MessageSid: payload.MessageSid,
+                AccountSid: payload.AccountSid,
                 contactId: identity?.contactId ?? null,
                 customerId: identity?.customerId ?? null,
                 organizationId: identity?.organizationId ?? null,
@@ -323,7 +364,7 @@ export async function POST(request: NextRequest) {
             requestId,
             tenantId,
             phoneHash: fromHash,
-            hasBody: !!messageText,
+            hasBody: Boolean(messageText),
             durationMs: Date.now() - startTime,
         });
 
@@ -339,13 +380,18 @@ export async function POST(request: NextRequest) {
                     customerId: identity?.customerId ?? null,
                     sessionId: fromHash,
                     entityId: conversation.id,
-                    payload: { productId: primaryProduct.productId, matches: products.length, query: productQuery },
+                    payload: {
+                        productId: primaryProduct.productId,
+                        matches: products.length,
+                        query: productQuery,
+                    },
                 });
             }
 
-            let suggestedResponse = products.length === 1
-                ? formatProductInquiryResponse(products[0])
-                : formatProductSuggestionsResponse(products);
+            let suggestedResponse =
+                products.length === 1
+                    ? formatProductInquiryResponse(products[0])
+                    : formatProductSuggestionsResponse(products);
 
             let freightQuoted = false;
             if (products.length === 1 && destinationZip && quantity > 0 && primaryProduct) {
@@ -429,7 +475,7 @@ export async function POST(request: NextRequest) {
         structuredLogger.error('whatsapp_incoming_error', {
             errorType: err instanceof Error ? err.name : 'UnknownError',
             errorMessage: err instanceof Error ? err.message : String(err),
-            route: '/api/whatsapp/incoming',
+            route,
             requestId,
         });
         return finish(twimlOk('Desculpe, ocorreu um erro. Tente novamente.', requestId));

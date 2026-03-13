@@ -2,8 +2,20 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { customerContacts, customers } from '@/drizzle/schema';
 import { getDb } from '@/infra/db';
 import { structuredLogger } from '@/infra/log/logger';
-import { hashPhone, normalizePhone, toWhatsAppPhone } from '@/lib/phone/normalize-phone';
+import {
+    hashPhone,
+    normalizePhone,
+    normalizeWhatsAppPhone,
+    toWhatsAppPhone,
+} from '@/lib/phone/normalize-phone';
 import type { IdentityResolutionResult } from './identity-resolver.types';
+
+export interface IdentityResolution {
+    contactId: string | null;
+    customerId: string | null;
+    organizationId: string | null;
+    confidenceScore?: number;
+}
 
 type ContactMatch = {
     contactId: string;
@@ -20,12 +32,14 @@ function buildCandidatePhoneHashes(phone: string): string[] {
     const digits = e164.replace(/\D/g, '');
     const localDigits = digits.startsWith('55') ? digits.slice(2) : digits;
     const whatsappAddress = toWhatsAppPhone(e164);
+    const normalizedWhatsAppPhone = normalizeWhatsAppPhone(phone);
 
     const candidates = [
         e164,
         digits,
         localDigits,
         whatsappAddress,
+        normalizedWhatsAppPhone,
         phone.trim(),
     ].filter((value): value is string => Boolean(value && value.trim()));
 
@@ -119,5 +133,16 @@ export async function resolveCustomerByPhone(
 }
 
 export const identityResolverService = {
-    resolveByPhone: resolveCustomerByPhone,
+    async resolveByPhone(tenantId: string, phone: string): Promise<IdentityResolution> {
+        const match = await resolveCustomerByPhone(tenantId, phone);
+        if (!match) {
+            return {
+                contactId: null,
+                customerId: null,
+                organizationId: null,
+            };
+        }
+
+        return match;
+    },
 };
