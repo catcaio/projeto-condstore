@@ -2014,9 +2014,12 @@ export const conversationMessages = mysqlTable('conversation_messages', {
     source: varchar('source', { length: 30 }).notNull(), // WHATSAPP | OPERATOR | SYSTEM
     message: text('message').notNull(),
     metadata: json('metadata'),
+    providerMessageId: varchar('provider_message_id', { length: 100 }), // Twilio MessageSid
+    deliveryStatus: varchar('delivery_status', { length: 30 }), // queued, sent, delivered, read, failed
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
     idxConversationCreated: index('idx_conversation_msgs_conv_created').on(table.conversationId, table.createdAt),
+    idxProviderMsg: index('idx_conversation_msgs_provider').on(table.providerMessageId),
 }));
 
 export const conversationAssignments = mysqlTable('conversation_assignments', {

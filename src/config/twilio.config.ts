@@ -38,7 +38,22 @@ export async function resolveTwilioConfig(tenantId: string): Promise<TwilioConfi
   const phoneNumber = await secretResolver.getValue(tenantId, 'twilio', 'TWILIO_PHONE_NUMBER', 'TWILIO_WHATSAPP_NUMBER');
 
   // Webhook Base URL (read-only)
-  const webhookBaseUrl = await secretResolver.getValue(tenantId, 'twilio', 'TWILIO_WEBHOOK_BASE_URL', 'APP_BASE_URL');
+  let webhookBaseUrl: string;
+  try {
+    webhookBaseUrl = await secretResolver.getValue(
+      tenantId,
+      'twilio',
+      'TWILIO_WEBHOOK_BASE_URL',
+      'TWILIO_WEBHOOK_BASE_URL'
+    );
+  } catch {
+    webhookBaseUrl = await secretResolver.getValue(
+      tenantId,
+      'twilio',
+      'TWILIO_WEBHOOK_BASE_URL',
+      'APP_BASE_URL'
+    );
+  }
 
   return {
     accountSid,

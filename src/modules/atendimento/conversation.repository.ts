@@ -170,11 +170,13 @@ export const conversationRepository = {
         conversationId: string,
         message: string,
         source: 'OPERATOR' | 'SYSTEM' = 'OPERATOR',
-        metadata?: Record<string, any>
+        metadata?: Record<string, any>,
+        options?: { advanceConversation?: boolean }
     ): Promise<ConversationMessageRecord> {
         const db = await getDb();
         const { randomUUID } = await import('crypto');
         const id = randomUUID();
+        const advanceConversation = options?.advanceConversation ?? true;
 
         await db.insert(conversationMessages).values({
             id,
@@ -186,12 +188,14 @@ export const conversationRepository = {
             metadata: metadata || null,
         });
 
-        await db.update(conversations)
-            .set({
-                lastMessageAt: sql`CURRENT_TIMESTAMP`,
-                status: 'WAITING_CUSTOMER'
-            })
-            .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
+        if (advanceConversation) {
+            await db.update(conversations)
+                .set({
+                    lastMessageAt: sql`CURRENT_TIMESTAMP`,
+                    status: 'WAITING_CUSTOMER'
+                })
+                .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
+        }
 
         const [newMsg] = await db.select()
             .from(conversationMessages)
@@ -224,6 +228,17 @@ export const conversationRepository = {
         });
     },
 
+    async unassignConversation(
+        tenantId: string,
+        conversationId: string
+    ): Promise<void> {
+        const db = await getDb();
+
+        await db.update(conversations)
+            .set({ assignedTo: null })
+            .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
+    },
+
     async updateConversationStatus(
         tenantId: string,
         conversationId: string,
@@ -252,6 +267,44 @@ export const conversationRepository = {
             .from(conversationMessages)
             .where(and(eq(conversationMessages.tenantId, tenantId), eq(conversationMessages.conversationId, conversationId)))
             .orderBy(asc(conversationMessages.createdAt));
+    },
+
+    async updateConversationMessageFields(
+        tenantId: string,
+        messageId: string,
+        fields: {
+            metadata?: Record<string, any>;
+            providerMessageId?: string | null;
+            deliveryStatus?: string | null;
+        }
+    ): Promise<ConversationMessageRecord | undefined> {
+        const db = await getDb();
+
+        const updateData: any = {};
+        if (fields.metadata !== undefined) updateData.metadata = fields.metadata;
+        if (fields.providerMessageId !== undefined) updateData.providerMessageId = fields.providerMessageId;
+        if (fields.deliveryStatus !== undefined) updateData.deliveryStatus = fields.deliveryStatus;
+
+        await db.update(conversationMessages)
+            .set(updateData)
+            .where(and(eq(conversationMessages.tenantId, tenantId), eq(conversationMessages.id, messageId)));
+
+        const [updatedMessage] = await db.select()
+            .from(conversationMessages)
+            .where(and(eq(conversationMessages.tenantId, tenantId), eq(conversationMessages.id, messageId)))
+            .limit(1);
+
+        return updatedMessage;
+    },
+
+    async markConversationWaitingCustomer(tenantId: string, conversationId: string): Promise<void> {
+        const db = await getDb();
+        await db.update(conversations)
+            .set({
+                lastMessageAt: sql`CURRENT_TIMESTAMP`,
+                status: 'WAITING_CUSTOMER',
+            })
+            .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
     },
 
     async loadConversationContext(tenantId: string, conversationId: string) {

@@ -325,3 +325,6 @@
 | /api/cockpit/frank/intents/[id]/create-playbook | GET/POST | internal | required | cockpit | live | Added |
 | /api/cockpit/frank/intents/[id]/link-playbook | GET/POST | internal | required | cockpit | live | Added |
 | /api/cockpit/frank/playbooks | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/conversations/[id]/assign | POST | internal | required | cockpit | live | Added |
+| /api/cockpit/conversations/[id]/release | POST | internal | required | cockpit | live | Added |
+| /api/whatsapp/status | POST | public | none | PUBLIC | live | Added |

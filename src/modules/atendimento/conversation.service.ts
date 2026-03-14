@@ -73,14 +73,16 @@ export const conversationService = {
         message: string,
         source: 'OPERATOR' | 'SYSTEM' = 'OPERATOR',
         customerId?: string,
-        metadata?: Record<string, any>
+        metadata?: Record<string, any>,
+        options?: { advanceConversation?: boolean }
     ): Promise<ConversationMessageRecord> {
         const outboundMessage = await conversationRepository.appendOutboundMessage(
             tenantId,
             conversationId,
             message,
             source,
-            metadata
+            metadata,
+            options
         );
 
         await publishOperationalEvent({
@@ -96,6 +98,22 @@ export const conversationService = {
         });
 
         return outboundMessage;
+    },
+
+    async updateMessageFields(
+        tenantId: string,
+        messageId: string,
+        fields: {
+            metadata?: Record<string, any>;
+            providerMessageId?: string | null;
+            deliveryStatus?: string | null;
+        }
+    ): Promise<ConversationMessageRecord | undefined> {
+        return conversationRepository.updateConversationMessageFields(tenantId, messageId, fields);
+    },
+
+    async markConversationWaitingCustomer(tenantId: string, conversationId: string): Promise<void> {
+        await conversationRepository.markConversationWaitingCustomer(tenantId, conversationId);
     },
 
     async assignConversation(
@@ -117,6 +135,26 @@ export const conversationService = {
                     conversationId,
                     assignedTo,
                     assignedBy
+                }
+            });
+        }
+    },
+
+    async unassignConversation(
+        tenantId: string,
+        conversationId: string,
+        customerId?: string
+    ): Promise<void> {
+        await conversationRepository.unassignConversation(tenantId, conversationId);
+
+        if (customerId) {
+            await publishOperationalEvent({
+                tenantId,
+                eventType: 'conversation_unassigned',
+                eventDomain: 'OPERATIONS',
+                customerId,
+                payload: {
+                    conversationId,
                 }
             });
         }

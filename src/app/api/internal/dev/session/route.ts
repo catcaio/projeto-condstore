@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { users } from '@/drizzle/schema';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 
@@ -21,11 +21,15 @@ export async function GET(request: NextRequest) {
         let user;
         try {
             const db = await getDb();
-            const results = await db
+            let results = await db
                 .select()
                 .from(users)
-                .where(eq(users.role, 'admin'))
-                ;
+                .where(and(eq(users.role, 'admin'), eq(users.tenantId, 'LOJACOND')))
+                .limit(1);
+
+            if (results.length === 0) {
+                 results = await db.select().from(users).where(eq(users.role, 'admin')).limit(1);
+            }
             if (results.length > 0) user = results[0];
         } catch (dbError) {
             logger.warn('Failed to query DB for dev session, using mock user', { error: String(dbError) });
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest) {
             user = {
                 id: 'mock-admin',
                 email: 'admin@condstore.com',
-                tenantId: forceTenant || 'condstore',
+                tenantId: forceTenant || 'LOJACOND',
                 role: forceRole || 'admin',
                 sessionVersion: 1
             };

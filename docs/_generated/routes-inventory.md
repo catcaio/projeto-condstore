@@ -29,11 +29,13 @@
 | `/api/cockpit/config/[key]` | API |
 | `/api/cockpit/conversations` | API |
 | `/api/cockpit/conversations/[id]` | API |
+| `/api/cockpit/conversations/[id]/assign` | API |
 | `/api/cockpit/conversations/[id]/customer` | API |
 | `/api/cockpit/conversations/[id]/message` | API |
 | `/api/cockpit/conversations/[id]/quotes` | API |
 | `/api/cockpit/conversations/[id]/quotes/[quoteId]/order` | API |
 | `/api/cockpit/conversations/[id]/quotes/[quoteId]/send` | API |
+| `/api/cockpit/conversations/[id]/release` | API |
 | `/api/cockpit/conversations/[id]/stage` | API |
 | `/api/cockpit/custom-fields` | API |
 | `/api/cockpit/custom-fields/[id]` | API |
@@ -202,6 +204,7 @@
 | `/api/webhook/stripe` | API |
 | `/api/webhooks/melhor-envio` | API |
 | `/api/whatsapp/incoming` | API |
+| `/api/whatsapp/status` | API |
 | `/app` | Page |
 | `/attribution` | Page |
 | `/avaliacao` | Page |
