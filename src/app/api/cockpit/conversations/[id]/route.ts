@@ -41,6 +41,47 @@ function presentCustomer(params: {
     };
 }
 
+async function loadFrankSessionSafely(tenantId: string, phoneHash: string | null, requestId: string) {
+    if (!phoneHash) return null;
+
+    try {
+        const db = await getDb();
+        const [frankSession] = await db
+            .select()
+            .from(frankSessionState)
+            .where(
+                and(
+                    eq(frankSessionState.tenantId, tenantId),
+                    eq(frankSessionState.sessionId, phoneHash),
+                ),
+            )
+            .limit(1);
+
+        return frankSession ?? null;
+    } catch (error) {
+        logger.warn('conversation_details_frank_session_unavailable', {
+            requestId,
+            tenantId,
+            phoneHash,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return null;
+    }
+}
+
+function safeDecryptConversationPhone(phoneEncrypted: string, requestId: string, conversationId: string) {
+    try {
+        return decryptString(phoneEncrypted);
+    } catch (error) {
+        logger.warn('conversation_details_phone_unavailable', {
+            requestId,
+            conversationId,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return null;
+    }
+}
+
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     const requestId = makeRequestId(request);
 
@@ -58,114 +99,125 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 
         const messages = await conversationService.getConversationMessages(tenantId, conversationId);
         const db = await getDb();
+        let frankSession: Awaited<ReturnType<typeof loadFrankSessionSafely>> = null;
+        let contact: typeof customerContacts.$inferSelect | null = null;
+        let organizationRecord: typeof organizations.$inferSelect | null = null;
+        let lastOrder: typeof orders.$inferSelect | null = null;
+        let lastQuote: typeof freightSimulations.$inferSelect | null = null;
+        let shipment: typeof shipments.$inferSelect | null = null;
+        let resolvedCustomerId: string | null = conversation.customerId ?? null;
+        let resolvedOrganizationId: string | null = conversation.organizationId ?? null;
 
-        const [frankSession] = conversation.phoneHash
-            ? await db
-                .select()
-                .from(frankSessionState)
-                .where(
-                    and(
-                        eq(frankSessionState.tenantId, tenantId),
-                        eq(frankSessionState.sessionId, conversation.phoneHash),
-                    ),
-                )
-                .limit(1)
-            : [];
+        try {
+            frankSession = await loadFrankSessionSafely(tenantId, conversation.phoneHash, requestId);
 
-        const [contact] = conversation.phoneHash
-            ? await db
-                .select()
-                .from(customerContacts)
-                .where(and(eq(customerContacts.tenantId, tenantId), eq(customerContacts.phoneHash, conversation.phoneHash)))
-                .limit(1)
-            : conversation.customerId
+            const [contactResult] = conversation.phoneHash
                 ? await db
                     .select()
                     .from(customerContacts)
-                    .where(
-                        and(
-                            eq(customerContacts.tenantId, tenantId),
-                            eq(customerContacts.customerId, conversation.customerId),
-                        ),
-                    )
+                    .where(and(eq(customerContacts.tenantId, tenantId), eq(customerContacts.phoneHash, conversation.phoneHash)))
+                    .limit(1)
+                : conversation.customerId
+                    ? await db
+                        .select()
+                        .from(customerContacts)
+                        .where(
+                            and(
+                                eq(customerContacts.tenantId, tenantId),
+                                eq(customerContacts.customerId, conversation.customerId),
+                            ),
+                        )
+                        .limit(1)
+                    : [];
+            contact = contactResult ?? null;
+
+            resolvedCustomerId = conversation.customerId ?? contact?.customerId ?? frankSession?.customerId ?? null;
+            resolvedOrganizationId =
+                conversation.organizationId ?? contact?.organizationId ?? frankSession?.organizationId ?? null;
+
+            const [organizationResult] = resolvedOrganizationId
+                ? await db
+                    .select()
+                    .from(organizations)
+                    .where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, resolvedOrganizationId)))
                     .limit(1)
                 : [];
+            organizationRecord = organizationResult ?? null;
 
-        const resolvedCustomerId = conversation.customerId ?? contact?.customerId ?? frankSession?.customerId ?? null;
-        const resolvedOrganizationId =
-            conversation.organizationId ?? contact?.organizationId ?? frankSession?.organizationId ?? null;
-
-        const [organizationRecord] = resolvedOrganizationId
-            ? await db
-                .select()
-                .from(organizations)
-                .where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, resolvedOrganizationId)))
-                .limit(1)
-            : [];
-
-        const [lastOrder] = frankSession?.lastOrderId
-            ? await db
-                .select()
-                .from(orders)
-                .where(and(eq(orders.tenantId, tenantId), eq(orders.id, frankSession.lastOrderId)))
-                .limit(1)
-            : resolvedCustomerId
+            const [lastOrderResult] = frankSession?.lastOrderId
                 ? await db
                     .select()
                     .from(orders)
-                    .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, resolvedCustomerId)))
-                    .orderBy(desc(orders.createdAt))
+                    .where(and(eq(orders.tenantId, tenantId), eq(orders.id, frankSession.lastOrderId)))
                     .limit(1)
-                : await db
-                    .select()
-                    .from(orders)
-                    .where(and(eq(orders.tenantId, tenantId), eq(orders.conversationId, conversationId)))
-                    .orderBy(desc(orders.createdAt))
-                    .limit(1);
+                : resolvedCustomerId
+                    ? await db
+                        .select()
+                        .from(orders)
+                        .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, resolvedCustomerId)))
+                        .orderBy(desc(orders.createdAt))
+                        .limit(1)
+                    : await db
+                        .select()
+                        .from(orders)
+                        .where(and(eq(orders.tenantId, tenantId), eq(orders.conversationId, conversationId)))
+                        .orderBy(desc(orders.createdAt))
+                        .limit(1);
+            lastOrder = lastOrderResult ?? null;
 
-        const [lastQuote] = frankSession?.lastReferencedQuoteId
-            ? await db
-                .select()
-                .from(freightSimulations)
-                .where(
-                    and(
-                        eq(freightSimulations.tenantId, tenantId),
-                        eq(freightSimulations.id, frankSession.lastReferencedQuoteId),
-                    ),
-                )
-                .limit(1)
-            : lastOrder?.freightSimulationId
+            const [lastQuoteResult] = frankSession?.lastReferencedQuoteId
                 ? await db
                     .select()
                     .from(freightSimulations)
                     .where(
                         and(
                             eq(freightSimulations.tenantId, tenantId),
-                            eq(freightSimulations.id, lastOrder.freightSimulationId),
+                            eq(freightSimulations.id, frankSession.lastReferencedQuoteId),
                         ),
                     )
                     .limit(1)
-                : [];
+                : lastOrder?.freightSimulationId
+                    ? await db
+                        .select()
+                        .from(freightSimulations)
+                        .where(
+                            and(
+                                eq(freightSimulations.tenantId, tenantId),
+                                eq(freightSimulations.id, lastOrder.freightSimulationId),
+                            ),
+                        )
+                        .limit(1)
+                    : [];
+            lastQuote = lastQuoteResult ?? null;
 
-        const [shipment] = frankSession?.lastReferencedShipmentId
-            ? await db
-                .select()
-                .from(shipments)
-                .where(
-                    and(
-                        eq(shipments.tenantId, tenantId),
-                        eq(shipments.id, frankSession.lastReferencedShipmentId),
-                    ),
-                )
-                .limit(1)
-            : lastOrder
+            const [shipmentResult] = frankSession?.lastReferencedShipmentId
                 ? await db
                     .select()
                     .from(shipments)
-                    .where(and(eq(shipments.tenantId, tenantId), eq(shipments.orderId, lastOrder.id)))
-                    .orderBy(desc(shipments.updatedAt))
+                    .where(
+                        and(
+                            eq(shipments.tenantId, tenantId),
+                            eq(shipments.id, frankSession.lastReferencedShipmentId),
+                        ),
+                    )
                     .limit(1)
-                : [];
+                : lastOrder
+                    ? await db
+                        .select()
+                        .from(shipments)
+                        .where(and(eq(shipments.tenantId, tenantId), eq(shipments.orderId, lastOrder.id)))
+                        .orderBy(desc(shipments.updatedAt))
+                        .limit(1)
+                    : [];
+            shipment = shipmentResult ?? null;
+        } catch (error) {
+            logger.warn('conversation_details_context_unavailable', {
+                requestId,
+                tenantId,
+                conversationId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
 
         const organization = presentOrganization(organizationRecord ?? null);
         const customer = presentCustomer({
@@ -174,7 +226,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
             organization: organizationRecord ?? null,
         });
 
-        const plaintextPhone = decryptString(conversation.phoneEncrypted);
+        const plaintextPhone = safeDecryptConversationPhone(conversation.phoneEncrypted, requestId, conversationId);
         const { phoneEncrypted, ...safeConversation } = conversation;
 
         return NextResponse.json({
