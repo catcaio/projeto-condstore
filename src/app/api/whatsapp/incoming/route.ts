@@ -148,7 +148,7 @@ export async function POST(request: Request) {
         const contentType = request.headers.get('content-type') ?? '';
         if (contentType.includes('application/json')) {
             structuredLogger.warn('whatsapp_incoming_invalid_content_type', { requestId, contentType });
-            return finish(new Response("ok", { status: 200 }));
+            return finish(twimlEmpty(requestId));
         }
 
         const params = new URLSearchParams(rawBody);
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
         const messageSid = payload.MessageSid;
         if (!messageSid) {
             logger.warn('whatsapp_incoming_missing_messagesid', { requestId });
-            return finish(new Response("ok", { status: 200 }));
+            return finish(twimlEmpty(requestId));
         }
         const payloadHash = hashPayload(rawBody);
         const dedupeResult = await registerWebhookEvent(
@@ -370,6 +370,8 @@ export async function POST(request: Request) {
             durationMs: Date.now() - startTime,
         });
 
+        let finalResponseText = 'Recebi sua mensagem e já encaminhei para atendimento. Em instantes seguimos por aqui.';
+
         if (productQuery) {
             const products = await catalogService.searchProductsByName(tenantId, productQuery);
             const primaryProduct = products[0] ?? null;
@@ -469,14 +471,25 @@ export async function POST(request: Request) {
                     productMatches: products.length,
                 },
             });
+
+            finalResponseText = suggestedResponse;
         }
+
+        structuredLogger.info('whatsapp_incoming_completed', {
+            eventType: 'WHATSAPP_INCOMING_COMPLETED',
+            conversationId: conversation.id,
+            intent: intentResult.intent,
+            entities: entityResult.entities,
+            fallbackUsed: !productQuery,
+            finalReply: finalResponseText
+        });
 
         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
         
         currentStep = 'STEP 5: webhook completed';
         console.info(currentStep);
         
-        return finish(new Response("ok", { status: 200 }));
+        return finish(twimlOk(finalResponseText, requestId));
     } catch (err) {
         console.error("WHATSAPP_WEBHOOK_ERROR", {
             error: err,
@@ -495,6 +508,6 @@ export async function POST(request: Request) {
             messageSid: messageSidStr
         });
         
-        return finish(new Response("ok", { status: 200 }));
+        return finish(twimlEmpty(requestId));
     }
 }
