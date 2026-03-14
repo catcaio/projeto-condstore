@@ -8,12 +8,20 @@ import type { ConversationRecord } from '../types';
 export function ConversationThread({
     conversation,
     draft,
+    threadLoading,
+    sendingReply,
     onDraftChange,
+    onReply,
 }: {
     conversation: ConversationRecord;
     draft: string;
+    threadLoading: boolean;
+    sendingReply: boolean;
     onDraftChange: (value: string) => void;
+    onReply: () => Promise<void>;
 }) {
+    const isReplyDisabled = draft.trim().length === 0 || sendingReply;
+
     return (
         <SurfacePanel className="flex h-full min-h-[42rem] flex-col">
             <SectionHeader
@@ -31,9 +39,15 @@ export function ConversationThread({
             </div>
 
             <div className="mt-4 flex-1 space-y-3 overflow-y-auto rounded-[1.25rem] border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] p-4">
-                {conversation.messages.map((message) => (
-                    <MessageBubble key={message.id} message={message} />
-                ))}
+                {threadLoading ? (
+                    <p className="text-sm text-[hsl(var(--ui-text-muted))]">Carregando mensagens...</p>
+                ) : conversation.messages.length === 0 ? (
+                    <p className="text-sm text-[hsl(var(--ui-text-muted))]">Nenhuma mensagem na thread.</p>
+                ) : (
+                    conversation.messages.map((message) => (
+                        <MessageBubble key={message.id} message={message} />
+                    ))
+                )}
             </div>
 
             <div className="mt-4 rounded-[1.25rem] border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] p-4">
@@ -55,7 +69,9 @@ export function ConversationThread({
                     </p>
                     <div className="flex flex-wrap gap-2">
                         <Button variant="secondary" size="sm">Salvar rascunho</Button>
-                        <Button size="sm">Responder</Button>
+                        <Button size="sm" onClick={() => void onReply()} disabled={isReplyDisabled}>
+                            {sendingReply ? 'Enviando...' : 'Responder'}
+                        </Button>
                     </div>
                 </div>
             </div>

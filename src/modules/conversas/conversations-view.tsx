@@ -24,14 +24,21 @@ export function ConversationsView() {
         [querySignature, searchParams]
     );
 
-    const { conversations: allConversations, loading } = useConversations();
+    const {
+        conversations: allConversations,
+        loading,
+        threadLoading,
+        sendingReply,
+        selectedConversationId,
+        loadConversationThread,
+        sendReply,
+    } = useConversations();
 
     const ownerOptions = useMemo(
         () => Array.from(new Set(allConversations.map((c) => c.owner))),
         [allConversations]
     );
 
-    const [selectedConversationId, setSelectedConversationId] = useState('');
     const [searchValue, setSearchValue] = useState('');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('todas');
     const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('todas');
@@ -43,9 +50,9 @@ export function ConversationsView() {
     // Select first conversation once data loads
     useEffect(() => {
         if (allConversations.length > 0 && !selectedConversationId) {
-            setSelectedConversationId(allConversations[0].id);
+            void loadConversationThread(allConversations[0].id);
         }
-    }, [allConversations, selectedConversationId]);
+    }, [allConversations, loadConversationThread, selectedConversationId]);
 
     useEffect(() => {
         setSearchValue('');
@@ -113,7 +120,7 @@ export function ConversationsView() {
         });
 
         if (nextSelected?.id) {
-            setSelectedConversationId(nextSelected.id);
+            void loadConversationThread(nextSelected.id);
         }
     }, [
         allConversations,
@@ -124,6 +131,7 @@ export function ConversationsView() {
         routeContext.logisticsId,
         routeContext.priority,
         routeContext.status,
+        loadConversationThread,
     ]);
 
     const selectedConversation =
@@ -143,7 +151,7 @@ export function ConversationsView() {
 
     function handleSelectConversation(conversationId: string) {
         startTransition(() => {
-            setSelectedConversationId(conversationId);
+            void loadConversationThread(conversationId);
             setDraft('');
         });
     }
@@ -201,7 +209,19 @@ export function ConversationsView() {
                 />
                 {selectedConversation ? (
                     <>
-                        <ConversationThread conversation={selectedConversation} draft={draft} onDraftChange={setDraft} />
+                        <ConversationThread
+                            conversation={selectedConversation}
+                            draft={draft}
+                            threadLoading={threadLoading}
+                            sendingReply={sendingReply}
+                            onDraftChange={setDraft}
+                            onReply={async () => {
+                                const result = await sendReply(draft);
+                                if (result.ok) {
+                                    setDraft('');
+                                }
+                            }}
+                        />
                         <ConversationContext conversation={selectedConversation} />
                     </>
                 ) : null}
