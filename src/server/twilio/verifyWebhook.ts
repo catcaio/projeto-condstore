@@ -25,7 +25,7 @@ import { logger } from "../../infra/logger";
  * The search part (query string) is preserved because Twilio appends
  * ?bodySHA256=<hash> to the URL for JSON webhooks before signing.
  */
-export function getPublicUrl(req: NextRequest, expectedUrl?: string): string {
+export function getPublicUrl(req: NextRequest | Request, expectedUrl?: string): string {
   if (expectedUrl) {
     return expectedUrl;
   }
@@ -34,7 +34,8 @@ export function getPublicUrl(req: NextRequest, expectedUrl?: string): string {
   
   // Many proxies (or Vercel internal routing) mangle request.url / nextUrl.
   // Fallback to headers if base is strictly not defined
-  let pathWithQuery = (req.headers.get("x-invoke-path") || req.nextUrl.pathname) + req.nextUrl.search;
+  const parsedUrl = 'nextUrl' in req ? (req as NextRequest).nextUrl : new URL(req.url);
+  let pathWithQuery = (req.headers.get("x-invoke-path") || parsedUrl.pathname) + parsedUrl.search;
 
   if (base) {
     return base + pathWithQuery;
@@ -53,7 +54,7 @@ export function getPublicUrl(req: NextRequest, expectedUrl?: string): string {
  * Verify the X-Twilio-Signature header on an incoming webhook request.
  */
 export function verifyTwilioRequest(
-  req: NextRequest,
+  req: NextRequest | Request,
   rawBody: string = "",
   formParams: Record<string, string> = {},
   expectedUrl?: string
@@ -73,9 +74,10 @@ export function verifyTwilioRequest(
   const url = getPublicUrl(req, expectedUrl);
   const contentType = req.headers.get("content-type") ?? "";
 
+  const parsedUrl = 'nextUrl' in req ? (req as NextRequest).nextUrl : new URL(req.url);
   // 6) Adicionar logs temporários para diagnóstico
   logger.info("twilio_signature_diagnostic", {
-    pathname: req.nextUrl.pathname,
+    pathname: parsedUrl.pathname,
     hostHeader: req.headers.get("host"),
     xForwardedHost: req.headers.get("x-forwarded-host"),
     xForwardedProto: req.headers.get("x-forwarded-proto"),

@@ -18,7 +18,7 @@ const TRACE_REQUEST_ID = Symbol.for('condstore.requestId');
 /**
  * Generate a unique request ID from header or create new UUID.
  */
-export function makeRequestId(request?: NextRequest): string {
+export function makeRequestId(request?: NextRequest | Request): string {
   if (request) {
     const fromHeader = request.headers.get('x-request-id')?.trim() ||
       request.headers.get('x-vercel-id')?.trim();
@@ -38,7 +38,7 @@ export function getTracedRequestId(request: NextRequest): string | undefined {
   return fromHeader || undefined;
 }
 
-export function attachRequestIdHeader(response: NextResponse, requestId: string): NextResponse {
+export function attachRequestIdHeader<T extends NextResponse | Response>(response: T, requestId: string): T {
   response.headers.set('x-request-id', requestId);
   return response;
 }

@@ -116,14 +116,14 @@ function resolveSuggestionIntent(intent: string, hasSingleProduct: boolean, hasF
     return intent;
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
     const startTime = Date.now();
     const requestId = makeRequestId(request);
     const route = '/api/whatsapp/incoming';
 
     structuredLogger.info('whatsapp_incoming_start', { requestId, route, eventType: 'route_start' });
 
-    const finish = (response: NextResponse) => {
+    const finish = (response: Response) => {
         attachRequestIdHeader(response, requestId);
         structuredLogger.info('whatsapp_incoming_end', {
             requestId,
@@ -135,46 +135,58 @@ export async function POST(request: NextRequest) {
         return response;
     };
 
-    const contentType = request.headers.get('content-type') ?? '';
-    if (contentType.includes('application/json')) {
-        return finish(
-            errorResponse(
-                ErrorCode.VALIDATION_ERROR,
-                415,
-                requestId,
-                'Use application/x-www-form-urlencoded',
-            ),
-        );
-    }
-
-    if (!process.env.TWILIO_AUTH_TOKEN) {
-        logger.error('TWILIO_AUTH_TOKEN not set', new Error('Missing TWILIO_AUTH_TOKEN'), { requestId });
-        return finish(errorResponse(ErrorCode.UPSTREAM_TWILIO_ERROR, 500, requestId, 'Webhook not configured'));
-    }
-
-    const rawBody = await request.text();
-    const params = new URLSearchParams(rawBody);
-    const payload: Record<string, string> = {};
-    params.forEach((value, key) => {
-        payload[key] = value;
-    });
-
-    const expectedUrl = process.env.TWILIO_WEBHOOK_BASE_URL 
-        ? `${process.env.TWILIO_WEBHOOK_BASE_URL.replace(/\/$/, '')}/api/whatsapp/incoming`
-        : undefined;
-
-    const signatureValid = verifyTwilioSignature(request, rawBody, payload, expectedUrl);
-    if (!signatureValid) {
-        logger.warn('whatsapp_incoming_invalid_signature', { requestId });
-        return finish(errorResponse(ErrorCode.FORBIDDEN, 401, requestId, 'Invalid signature'));
-    }
-
-    const messageSid = payload.MessageSid;
-    if (!messageSid) {
-        return finish(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Missing MessageSid'));
-    }
+    let currentStep = 'received';
+    let payloadFrom = '';
+    let messageSidStr = '';
 
     try {
+        const rawBody = await request.text();
+        console.info("WHATSAPP WEBHOOK RECEIVED");
+        currentStep = 'STEP 1: webhook received';
+        console.info(currentStep);
+
+        const contentType = request.headers.get('content-type') ?? '';
+        if (contentType.includes('application/json')) {
+            return finish(
+                errorResponse(
+                    ErrorCode.VALIDATION_ERROR,
+                    415,
+                    requestId,
+                    'Use application/x-www-form-urlencoded',
+                ),
+            );
+        }
+
+        if (!process.env.TWILIO_AUTH_TOKEN) {
+            logger.error('TWILIO_AUTH_TOKEN not set', new Error('Missing TWILIO_AUTH_TOKEN'), { requestId });
+            return finish(errorResponse(ErrorCode.UPSTREAM_TWILIO_ERROR, 500, requestId, 'Webhook not configured'));
+        }
+
+        const params = new URLSearchParams(rawBody);
+        const payload: Record<string, string> = {};
+        params.forEach((value, key) => {
+            payload[key] = value;
+        });
+        payloadFrom = payload.From || '';
+        messageSidStr = payload.MessageSid || '';
+
+        currentStep = 'STEP 2: payload parsed';
+        console.info(currentStep);
+
+        const expectedUrl = process.env.TWILIO_WEBHOOK_BASE_URL 
+            ? `${process.env.TWILIO_WEBHOOK_BASE_URL.replace(/\/$/, '')}/api/whatsapp/incoming`
+            : undefined;
+
+        const signatureValid = verifyTwilioSignature(request as NextRequest, rawBody, payload, expectedUrl);
+        if (!signatureValid) {
+            logger.warn('whatsapp_incoming_invalid_signature', { requestId });
+            return finish(errorResponse(ErrorCode.FORBIDDEN, 401, requestId, 'Invalid signature'));
+        }
+
+        const messageSid = payload.MessageSid;
+        if (!messageSid) {
+            return finish(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Missing MessageSid'));
+        }
         const payloadHash = hashPayload(rawBody);
         const dedupeResult = await registerWebhookEvent(
             'twilio_frank',
@@ -280,6 +292,8 @@ export async function POST(request: NextRequest) {
                 confidence: intentResult.confidence,
             }),
         });
+        currentStep = 'STEP 3: message persisted';
+        console.info(currentStep);
 
         const identity = await resolveCustomerByPhone(tenantId, fromE164);
 
@@ -330,6 +344,8 @@ export async function POST(request: NextRequest) {
                 unidentified: !identity,
             },
         );
+        currentStep = 'STEP 4: conversation upsert';
+        console.info(currentStep);
 
         await publishOperationalEvent({
             tenantId,
@@ -474,14 +490,29 @@ export async function POST(request: NextRequest) {
         }
 
         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
-        return finish(twimlEmpty(requestId));
+        
+        currentStep = 'STEP 5: webhook completed';
+        console.info(currentStep);
+        
+        return finish(new Response("ok", { status: 200 }));
     } catch (err) {
+        console.error("WHATSAPP_WEBHOOK_ERROR", {
+            error: err,
+            requestId,
+            step: currentStep,
+            payloadFrom,
+            messageSid: messageSidStr
+        });
+        
         structuredLogger.error('whatsapp_incoming_error', {
             errorType: err instanceof Error ? err.name : 'UnknownError',
             errorMessage: err instanceof Error ? err.message : String(err),
             route,
             requestId,
+            step: currentStep,
+            messageSid: messageSidStr
         });
-        return finish(twimlOk('Desculpe, ocorreu um erro. Tente novamente.', requestId));
+        
+        return finish(new Response("ok", { status: 200 }));
     }
 }
