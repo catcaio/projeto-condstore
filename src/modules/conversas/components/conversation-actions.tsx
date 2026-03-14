@@ -43,15 +43,6 @@ export function ConversationActions({ conversation, onActionComplete }: { conver
             <Button
                 variant="secondary"
                 size="sm"
-<<<<<<< HEAD
-                onClick={() => {
-                    console.info('[cockpit] assumir agora click', { conversationId: conversation.id });
-                }}
-            >
-                <UserPlus className="h-4 w-4" />
-                Assumir agora
-            </Button>
-=======
                 onClick={handleAssign}
                 disabled={!!loading}
             >
@@ -68,8 +59,6 @@ export function ConversationActions({ conversation, onActionComplete }: { conver
                 {loading === 'release' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserMinus className="h-4 w-4" />}
                 Liberar p/ IA
             </Button>
-
->>>>>>> ff1f966 (feat(whatsapp): implement operational queue, ai routing governance, status webhooks, and UI actions)
             <Button
                 variant="ghost"
                 size="sm"

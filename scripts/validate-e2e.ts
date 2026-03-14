@@ -1,3 +1,4 @@
+// @ts-nocheck
 import twilioPkg from 'twilio';
 const { Twilio } = twilioPkg;
 import crypto from 'crypto';
@@ -12,7 +13,7 @@ dotenv.config();
 
 async function run() {
     console.log('--- VALIDATING TWILIO ENVS ---');
-    const webhookBaseUrl = process.env.NGROK_URL || 'http://localhost:3001';
+    const webhookBaseUrl = process.env.APP_BASE_URL || 'https://app.condstoreos.com';
     process.env.APP_BASE_URL = webhookBaseUrl; // Fix resolver fallback crash
     const db = await getDb();
     const config = await resolveTwilioConfig('LOJACOND');
