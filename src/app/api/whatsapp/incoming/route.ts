@@ -141,9 +141,9 @@ export async function POST(request: Request) {
 
     try {
         const rawBody = await request.text();
-        console.log("WHATSAPP WEBHOOK RECEIVED");
+        console.info("WHATSAPP WEBHOOK RECEIVED");
         currentStep = 'STEP 1: webhook received';
-        console.log(currentStep);
+        console.info(currentStep);
 
         const contentType = request.headers.get('content-type') ?? '';
         if (contentType.includes('application/json')) {
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
         messageSidStr = payload.MessageSid || '';
 
         currentStep = 'STEP 2: payload parsed';
-        console.log(currentStep);
+        console.info(currentStep);
 
         const expectedUrl = process.env.TWILIO_WEBHOOK_BASE_URL 
             ? `${process.env.TWILIO_WEBHOOK_BASE_URL.replace(/\/$/, '')}/api/whatsapp/incoming`
@@ -293,7 +293,7 @@ export async function POST(request: Request) {
             }),
         });
         currentStep = 'STEP 3: message persisted';
-        console.log(currentStep);
+        console.info(currentStep);
 
         const identity = await resolveCustomerByPhone(tenantId, fromE164);
 
@@ -345,7 +345,7 @@ export async function POST(request: Request) {
             },
         );
         currentStep = 'STEP 4: conversation upsert';
-        console.log(currentStep);
+        console.info(currentStep);
 
         await publishOperationalEvent({
             tenantId,
@@ -492,7 +492,7 @@ export async function POST(request: Request) {
         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
         
         currentStep = 'STEP 5: webhook completed';
-        console.log(currentStep);
+        console.info(currentStep);
         
         return finish(new Response("ok", { status: 200 }));
     } catch (err) {
