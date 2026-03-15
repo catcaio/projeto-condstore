@@ -1345,8 +1345,8 @@ CREATE TABLE `tenant_secrets` (
 CREATE TABLE `tenant_signup_policies` (
 	`tenant_id` varchar(36) NOT NULL,
 	`self_signup_enabled` boolean NOT NULL DEFAULT false,
-	`allowed_domains` json DEFAULT ('[]'),
-	`allowed_emails` json DEFAULT ('[]'),
+	`allowed_domains` json,
+	`allowed_emails` json,
 	`updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT `tenant_signup_policies_tenant_id` PRIMARY KEY(`tenant_id`)
 );
@@ -1388,7 +1388,7 @@ CREATE TABLE `tenant_usage_metrics` (
 	`total_tokens_input` int NOT NULL DEFAULT 0,
 	`total_tokens_output` int NOT NULL DEFAULT 0,
 	`estimated_cost_usd` decimal(12,6) NOT NULL DEFAULT '0',
-	`model_distribution_json` json NOT NULL DEFAULT ('{}'),
+	`model_distribution_json` json NOT NULL,
 	`created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `tenant_usage_metrics_id` PRIMARY KEY(`id`),

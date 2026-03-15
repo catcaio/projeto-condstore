@@ -434,8 +434,8 @@ export type NewInviteRecord = typeof invites.$inferInsert;
 export const tenantSignupPolicies = mysqlTable('tenant_signup_policies', {
     tenantId: varchar('tenant_id', { length: 36 }).primaryKey().notNull(),
     selfSignupEnabled: boolean('self_signup_enabled').notNull().default(false),
-    allowedDomains: json('allowed_domains').$type<string[]>().default([]),
-    allowedEmails: json('allowed_emails').$type<string[]>().default([]),
+    allowedDomains: json('allowed_domains').$type<string[]>().$defaultFn(() => []),
+    allowedEmails: json('allowed_emails').$type<string[]>().$defaultFn(() => []),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
@@ -2164,10 +2164,18 @@ export const governanceTasks = mysqlTable('governance_tasks', {
     projectId: varchar('project_id', { length: 36 }).notNull(),
     listId: varchar('list_id', { length: 36 }).notNull(),
     parentTaskId: varchar('parent_task_id', { length: 36 }),
+    taskType: varchar('task_type', { length: 30 }).notNull().default('ops_task'), // incident, ops_task, improvement, product, follow_up
     title: varchar('title', { length: 255 }).notNull(),
     description: text('description'),
     status: varchar('status', { length: 50 }).notNull().default('open'),
     priority: varchar('priority', { length: 30 }).notNull().default('normal'), // low, normal, high, urgent
+    
+    // Incident Specific Fields
+    incidentSeverity: varchar('incident_severity', { length: 30 }), // critical, high, medium, low
+    incidentSource: varchar('incident_source', { length: 255 }),
+    incidentImpact: text('incident_impact'),
+    incidentStatus: varchar('incident_status', { length: 50 }), // detected, triage, investigating, mitigated, resolved, postmortem
+    
     assigneeUserId: varchar('assignee_user_id', { length: 36 }),
     reporterUserId: varchar('reporter_user_id', { length: 36 }).notNull(),
     dueAt: timestamp('due_at'),
@@ -2183,6 +2191,8 @@ export const governanceTasks = mysqlTable('governance_tasks', {
     tenantAssigneeIdx: index('idx_gov_tasks_tenant_assignee').on(table.tenantId, table.assigneeUserId),
     tenantStatusIdx: index('idx_gov_tasks_tenant_status').on(table.tenantId, table.status),
     tenantDueIdx: index('idx_gov_tasks_tenant_due_at').on(table.tenantId, table.dueAt),
+    tenantTypeStatusIdx: index('idx_tenant_type_status').on(table.tenantId, table.taskType, table.status),
+    tenantIncidentIdx: index('idx_tenant_incident').on(table.tenantId, table.incidentStatus, table.incidentSeverity)
 }));
 
 export const governanceTaskComments = mysqlTable('governance_task_comments', {

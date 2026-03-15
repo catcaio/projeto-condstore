@@ -11,7 +11,7 @@ CREATE TABLE `operational_events` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `pk_operational_events` PRIMARY KEY(`id`)
 );
-
-CREATE INDEX `idx_op_events_tenant_domain_time` ON `operational_events` (`tenant_id`, `event_domain`, `created_at`);
-CREATE INDEX `idx_op_events_tenant_type_time` ON `operational_events` (`tenant_id`, `event_type`, `created_at`);
+--> statement-breakpoint
+CREATE INDEX `idx_op_events_tenant_domain_time` ON `operational_events` (`tenant_id`, `event_domain`, `created_at`);--> statement-breakpoint
+CREATE INDEX `idx_op_events_tenant_type_time` ON `operational_events` (`tenant_id`, `event_type`, `created_at`);--> statement-breakpoint
 CREATE INDEX `idx_op_events_tenant_customer_time` ON `operational_events` (`tenant_id`, `customer_id`, `created_at`);

@@ -23,6 +23,8 @@ CREATE TABLE `crm_tasks` (
 	CONSTRAINT `crm_tasks_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
+ALTER TABLE `conversations` MODIFY COLUMN `stage` varchar(50) NOT NULL DEFAULT 'NEW';--> statement-breakpoint
+UPDATE `conversations` SET `stage` = 'NEW_LEAD' WHERE `stage` = 'NEW';--> statement-breakpoint
 ALTER TABLE `conversations` MODIFY COLUMN `stage` enum('NEW_LEAD','IN_ATTENDANCE','QUOTED','WON','LOST') NOT NULL DEFAULT 'NEW_LEAD';--> statement-breakpoint
 ALTER TABLE `orders` MODIFY COLUMN `status` varchar(50) NOT NULL DEFAULT 'DRAFT';--> statement-breakpoint
 ALTER TABLE `conversations` ADD `lost_reason` varchar(255);--> statement-breakpoint
