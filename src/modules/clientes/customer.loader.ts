@@ -2,7 +2,7 @@ import { getCustomerWithContext } from './customer.repository';
 import type { ClientRecord, ClientStatus, ClientActivityBucket } from './types';
 import { db } from '@/db/client';
 import { customers, organizations, customerContacts, orders, freightSimulations } from '@/drizzle/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, ne, and } from 'drizzle-orm';
 
 import { decryptString } from '@/infra/pii/crypto';
 
@@ -14,7 +14,7 @@ export async function loadMockClientsHydrated(tenantId: string): Promise<ClientR
         })
         .from(customers)
         .innerJoin(organizations, eq(customers.organizationId, organizations.id))
-        .where(eq(customers.tenantId, tenantId));
+        .where(and(eq(customers.tenantId, tenantId), ne(organizations.status, 'merged')));
 
     if (dbClients.length === 0) {
         return [];
