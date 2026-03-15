@@ -58,7 +58,7 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
                 finalResponse,
                 'OPERATOR',
                 conversation.customerId || undefined,
-                { source: 'SUGGESTION_APPROVAL', suggestionId: suggestion.id },
+                { source: 'SUGGESTION_APPROVAL', suggestionId: suggestion.id, actorType: 'HUMAN', messageType: 'TEXT' },
             );
 
             await publishOperationalEvent({

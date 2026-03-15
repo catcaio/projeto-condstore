@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql, or, isNull } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
@@ -8,11 +8,15 @@ import { logger } from '@/infra/logger';
 import { decryptString } from '@/infra/pii/crypto';
 import {
     customerContacts,
+    customers,
     freightSimulations,
     frankSessionState,
     orders,
     organizations,
     shipments,
+    simulations,
+    crmNotes,
+    crmTasks
 } from '@/drizzle/schema';
 import { conversationService } from '@/modules/atendimento/conversation.service';
 
@@ -107,6 +111,15 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         let shipment: typeof shipments.$inferSelect | null = null;
         let resolvedCustomerId: string | null = conversation.customerId ?? null;
         let resolvedOrganizationId: string | null = conversation.organizationId ?? null;
+        let dbCustomer: typeof customers.$inferSelect | null = null;
+        let totalOrders = 0;
+        let totalQuotes = 0;
+        let totalRevenue = 0;
+        let lastOrderAt: Date | null = null;
+        let lastQuotedAt: Date | null = null;
+        let purchasedProducts: any[] = [];
+        let recentNotes: typeof crmNotes.$inferSelect[] = [];
+        let upcomingTasks: typeof crmTasks.$inferSelect[] = [];
 
         try {
             frankSession = await loadFrankSessionSafely(tenantId, conversation.phoneHash, requestId);
@@ -143,6 +156,63 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                     .limit(1)
                 : [];
             organizationRecord = organizationResult ?? null;
+
+            const [customerResult] = resolvedCustomerId
+                ? await db
+                    .select()
+                    .from(customers)
+                    .where(and(eq(customers.tenantId, tenantId), eq(customers.id, resolvedCustomerId)))
+                    .limit(1)
+                : [];
+            dbCustomer = customerResult ?? null;
+
+            if (resolvedCustomerId) {
+                const [ordersStats] = await db.select({ 
+                    count: sql<number>`count(*)`,
+                    revenue: sql<number>`sum(${orders.price})`,
+                    lastOrderAt: sql<Date>`max(${orders.createdAt})`
+                }).from(orders)
+                .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, resolvedCustomerId), eq(orders.status, 'CONFIRMED')));
+
+                totalOrders = Number(ordersStats?.count ?? 0);
+                totalRevenue = Number(ordersStats?.revenue ?? 0);
+                lastOrderAt = ordersStats?.lastOrderAt ?? null;
+
+                const [quotesStats] = await db.select({
+                    count: sql<number>`count(*)`,
+                    lastQuotedAt: sql<Date>`max(${simulations.createdAt})`
+                }).from(simulations)
+                .where(and(eq(simulations.tenantId, tenantId), eq(simulations.customerId, resolvedCustomerId)));
+
+                totalQuotes = Number(quotesStats?.count ?? 0);
+                lastQuotedAt = quotesStats?.lastQuotedAt ?? null;
+
+                const recentPurchasedItems = await db.select({
+                    items: simulations.items,
+                }).from(orders)
+                  .innerJoin(simulations, eq(orders.quoteId, simulations.id))
+                  .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, resolvedCustomerId), eq(orders.status, 'CONFIRMED')))
+                  .orderBy(desc(orders.createdAt))
+                  .limit(5);
+
+                purchasedProducts = recentPurchasedItems.map(row => row.items).flat().filter(Boolean);
+
+                recentNotes = await db.select().from(crmNotes)
+                    .where(and(eq(crmNotes.tenantId, tenantId), eq(crmNotes.customerId, resolvedCustomerId)))
+                    .orderBy(desc(crmNotes.createdAt))
+                    .limit(5);
+
+                const currentTimestamp = new Date();
+                upcomingTasks = await db.select().from(crmTasks)
+                    .where(and(
+                        eq(crmTasks.tenantId, tenantId),
+                        eq(crmTasks.customerId, resolvedCustomerId),
+                        or(eq(crmTasks.status, 'OPEN'), isNull(crmTasks.status))
+                    ))
+                    // Ordering by dueAt conceptually. Simple string mapped if nulls first/last allowed, or simple code ordering.
+                    .orderBy(desc(crmTasks.createdAt))
+                    .limit(10);
+            }
 
             const [lastOrderResult] = frankSession?.lastOrderId
                 ? await db
@@ -219,6 +289,23 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
             });
         }
 
+        const [organizationResult] = resolvedOrganizationId
+            ? await db
+                .select()
+                .from(organizations)
+                .where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, resolvedOrganizationId)))
+                .limit(1)
+            : [];
+        organizationRecord = organizationResult ?? null;
+
+        const conversationQuotes = await db.select().from(simulations)
+            .where(and(eq(simulations.tenantId, tenantId), eq(simulations.conversationId, conversationId)))
+            .orderBy(desc(simulations.createdAt));
+            
+        const conversationOrders = await db.select().from(orders)
+            .where(and(eq(orders.tenantId, tenantId), eq(orders.conversationId, conversationId)))
+            .orderBy(desc(orders.createdAt));
+
         const organization = presentOrganization(organizationRecord ?? null);
         const customer = presentCustomer({
             customerId: resolvedCustomerId,
@@ -240,7 +327,85 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                     organization,
                     recentOrders: lastOrder ? [lastOrder] : [],
                     recentQuotes: lastQuote ? [lastQuote] : [],
+                    quoteContext: conversationQuotes.map(q => ({
+                        quoteId: q.id,
+                        status: q.status || 'DRAFT',
+                        total: Number(q.totalAmount || q.bestPrice || 0),
+                        discountAmount: Number(q.discountAmount || 0),
+                        quantity: q.quantity,
+                        itemCount: Array.isArray(q.items) ? q.items.length : 0,
+                        createdAt: q.createdAt,
+                        updatedAt: q.updatedAt,
+                        sentAt: q.sentAt,
+                        expiresAt: q.expiresAt,
+                        isExpired: q.expiresAt ? new Date(q.expiresAt) < new Date() : false
+                    })),
+                    orderContext: conversationOrders.map(o => ({
+                        orderId: o.id,
+                        status: o.status,
+                        total: Number(o.totalAmount || o.price || 0),
+                        quoteId: o.quoteId,
+                        createdAt: o.createdAt,
+                        lastStatusUpdateAt: o.updatedAt
+                    })),
                     frankSession: frankSession ?? null,
+                    customerCrmContext: {
+                        customerId: resolvedCustomerId,
+                        name: contact?.name ?? organizationRecord?.tradeName ?? organizationRecord?.legalName ?? 'Lead WhatsApp',
+                        phone: plaintextPhone,
+                        segment: dbCustomer?.segment,
+                        cidade: undefined, // future
+                        uf: undefined, // future
+                        source: 'N/A', // fallback
+                        ownerId: dbCustomer?.ownerId ?? conversation.assignedTo,
+                        stage: conversation.stage,
+                        createdAt: dbCustomer?.createdAt || conversation.createdAt,
+                        lastInteractionAt: conversation.lastMessageAt || conversation.createdAt,
+                        totalQuotes,
+                        totalOrders,
+                        totalRevenue,
+                        averageTicket: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+                    },
+                    customerCommercialContext: {
+                        totalQuotes,
+                        totalOrders,
+                        totalRevenue,
+                        averageTicket: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+                        lastOrderAt,
+                        lastQuotedAt,
+                        purchasedProducts,
+                    },
+                    recentNotes: recentNotes.map(n => ({
+                        id: n.id,
+                        content: n.content,
+                        authorOperatorId: n.authorOperatorId,
+                        createdAt: n.createdAt
+                    })),
+                    openTasks: upcomingTasks.filter(t => !t.dueAt || new Date(t.dueAt) >= new Date()).map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        assignedOperatorId: t.assignedOperatorId,
+                        dueAt: t.dueAt,
+                        status: t.status
+                    })),
+                    overdueTasks: upcomingTasks.filter(t => t.dueAt && new Date(t.dueAt) < new Date()).map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        assignedOperatorId: t.assignedOperatorId,
+                        dueAt: t.dueAt,
+                        status: t.status
+                    })),
+                    contextBlock: {
+                        customerId: resolvedCustomerId,
+                        name: contact?.name ?? organizationRecord?.tradeName ?? organizationRecord?.legalName ?? 'Lead WhatsApp',
+                        phone: plaintextPhone,
+                        cidade: '<N/A>', // Not tracked initially
+                        uf: '<N/A>', // Not tracked initially
+                        segment: dbCustomer?.segment ?? 'Lead',
+                        totalOrders,
+                        totalQuotes,
+                        lastInteractionAt: conversation.lastMessageAt || conversation.createdAt
+                    }
                 },
                 customer,
                 contact: contact ?? null,

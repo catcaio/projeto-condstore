@@ -157,10 +157,25 @@ export const simulations = mysqlTable('simulations', {
     strategy: varchar('strategy', { length: 50 }),
     idempotencyKey: varchar('idempotency_key', { length: 255 }).unique(),
     event: varchar('event', { length: 50 }).notNull().default('FREIGHT_QUOTED'),
+    
+    // Novas colunas para estrutura comercial da Quote
+    status: varchar('status', { length: 30 }).notNull().default('DRAFT'), // DRAFT, SENT, ACCEPTED, CONVERTED, EXPIRED
+    items: json('items'),
+    subtotal: decimal('subtotal', { precision: 12, scale: 2 }),
+    discountAmount: decimal('discount_amount', { precision: 12, scale: 2 }).default('0'),
+    freightAmount: decimal('freight_amount', { precision: 12, scale: 2 }),
+    totalAmount: decimal('total_amount', { precision: 12, scale: 2 }),
+    expiresAt: timestamp('expires_at'),
+    sentAt: timestamp('sent_at'),
+    convertedAt: timestamp('converted_at'),
+    revisionCount: int('revision_count').notNull().default(0),
+
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 }, (table) => {
     return {
         tenantIdCreatedAtIndex: index('idx_simulations_tenant_created_at').on(table.tenantId, table.createdAt),
+        tenantIdConversationIdIndex: index('idx_simulations_tenant_conversation').on(table.tenantId, table.conversationId),
     };
 });
 
@@ -1297,7 +1312,7 @@ export const orders = mysqlTable('orders', {
     organizationId: varchar('organization_id', { length: 36 }),
     conversationId: varchar('conversation_id', { length: 36 }),
     quoteId: varchar('quote_id', { length: 36 }),
-    status: varchar('status', { length: 50 }).notNull().default('CREATED'),
+    status: varchar('status', { length: 50 }).notNull().default('DRAFT'), // DRAFT, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELED
     priority: varchar('priority', { length: 50 }).notNull().default('media'),
     channel: varchar('channel', { length: 50 }),
     carrier: varchar('carrier', { length: 100 }),
@@ -1996,8 +2011,9 @@ export const conversations = mysqlTable('conversations', {
     phoneEncrypted: varchar('phone_encrypted', { length: 255 }).notNull(),
     channel: varchar('channel', { length: 20 }).notNull().default('WHATSAPP'),
     status: varchar('status', { length: 30 }).notNull().default('OPEN'), // OPEN, WAITING_CUSTOMER, WAITING_INTERNAL, RESOLVED
-    stage: mysqlEnum('stage', ['NEW', 'QUALIFYING', 'QUOTED', 'NEGOTIATING', 'WON', 'LOST']).notNull().default('NEW'),
+    stage: mysqlEnum('stage', ['NEW_LEAD', 'IN_ATTENDANCE', 'QUOTED', 'WON', 'LOST']).notNull().default('NEW_LEAD'),
     assignedTo: varchar('assigned_to', { length: 36 }),
+    lostReason: varchar('lost_reason', { length: 255 }),
     lastMessageAt: timestamp('last_message_at').default(sql`CURRENT_TIMESTAMP`),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
@@ -2060,3 +2076,35 @@ export const shipments = mysqlTable('shipments', {
 
 export type ShipmentRecord = typeof shipments.$inferSelect;
 export type NewShipmentRecord = typeof shipments.$inferInsert;
+
+export const crmNotes = mysqlTable('crm_notes', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    customerId: varchar('customer_id', { length: 36 }).notNull(),
+    conversationId: varchar('conversation_id', { length: 36 }),
+    authorOperatorId: varchar('author_operator_id', { length: 36 }).notNull(),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    idxCrmNotesCustomer: index('idx_crm_notes_customer').on(table.tenantId, table.customerId),
+}));
+
+export const crmTasks = mysqlTable('crm_tasks', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    customerId: varchar('customer_id', { length: 36 }).notNull(),
+    conversationId: varchar('conversation_id', { length: 36 }),
+    assignedOperatorId: varchar('assigned_operator_id', { length: 36 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    dueAt: timestamp('due_at'),
+    status: varchar('status', { length: 30 }).notNull().default('OPEN'), // OPEN, DONE, CANCELED
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    idxCrmTasksCustomer: index('idx_crm_tasks_customer').on(table.tenantId, table.customerId),
+}));
+
+export type CrmNoteRecord = typeof crmNotes.$inferSelect;
+export type NewCrmNoteRecord = typeof crmNotes.$inferInsert;
+export type CrmTaskRecord = typeof crmTasks.$inferSelect;
+export type NewCrmTaskRecord = typeof crmTasks.$inferInsert;

@@ -10,7 +10,7 @@ interface ConversationCard {
     phoneHash?: string;
     phone?: string;
     status: string;
-    stage: 'NEW' | 'QUALIFYING' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST';
+    stage: 'NEW_LEAD' | 'IN_ATTENDANCE' | 'QUOTED' | 'WON' | 'LOST';
     lastMessageAt: string;
 }
 

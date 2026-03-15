@@ -40,7 +40,7 @@ export async function POST(
         const { id: conversationId } = await context.params;
         const body = await request.json().catch(() => ({}));
 
-        const { cep, weight, quantity, dimensions } = body;
+        const { cep, weight, quantity, dimensions, items } = body;
 
         if (!cep || !weight || !quantity) {
              return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'cep, weight, and quantity are required');
@@ -59,7 +59,8 @@ export async function POST(
             cep,
             weight: Number(weight),
             quantity: Number(quantity),
-            dimensions
+            dimensions,
+            items
         });
 
         return NextResponse.json({ ok: true, data: result });

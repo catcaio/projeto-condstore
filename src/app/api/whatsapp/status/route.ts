@@ -15,14 +15,25 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        const formData = await request.formData();
-        const bodyObj: Record<string, string> = {};
-        for (const [key, value] of formData.entries()) {
-            bodyObj[key] = value.toString();
+        const rawBody = await request.text();
+        const params = new URLSearchParams(rawBody);
+        const payload: Record<string, string> = {};
+        params.forEach((value, key) => { payload[key] = value; });
+
+        // Validate Twilio Signature
+        const twilioUrl = process.env.APP_URL ? `${process.env.APP_URL}/api/whatsapp/status` : `https://${request.headers.get('host')}/api/whatsapp/status`;
+        const { verifyTwilioSignature } = await import('@/lib/security/webhook-verifier');
+        
+        if (process.env.NODE_ENV === 'production' && !verifyTwilioSignature(request, rawBody, payload, twilioUrl)) {
+            logger.warn('twilio_status_callback_invalid_signature', { route: '/api/whatsapp/status' });
+            return new NextResponse('<Response></Response>', {
+                status: 401,
+                headers: { 'Content-Type': 'text/xml' },
+            });
         }
 
-        const messageSid = bodyObj.MessageSid;
-        const messageStatus = bodyObj.MessageStatus;
+        const messageSid = payload.MessageSid;
+        const messageStatus = payload.MessageStatus;
 
         if (!messageSid || !messageStatus) {
             return new NextResponse('<Response></Response>', {
