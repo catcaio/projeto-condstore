@@ -42,7 +42,10 @@ vi.mock('@/modules/atendimento/message.service', () => ({
 }));
 
 vi.mock('@/modules/atendimento/conversation.service', () => ({
-    conversationService: { findOrCreateConversationByPhone: vi.fn() }
+    conversationService: { 
+        findOrCreateConversationByPhone: vi.fn(),
+        hasRecentOperatorMessage: vi.fn()
+    }
 }));
 
 vi.mock('@/modules/catalog/catalog.service', () => ({
@@ -87,6 +90,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
         (inboundMessageDedupRepository.tryAcquire as any).mockResolvedValue(true);
         (endUserConsentRepository.getConsent as any).mockResolvedValue({ consentGiven: true });
         (conversationService.findOrCreateConversationByPhone as any).mockResolvedValue({ id: 'c1', status: 'OPEN', stage: 'NEW_LEAD' });
+        (conversationService.hasRecentOperatorMessage as any).mockResolvedValue(false);
         
         const { customerResolutionService } = await import('@/modules/customers/customer-resolution.service');
         (customerResolutionService.resolveOrCreateCustomer as any).mockResolvedValue({
@@ -240,5 +244,52 @@ describe('WhatsApp Inbound Orchestrator', () => {
         const callArgs = (createSessionState as any).mock.calls[0][2];
         expect(callArgs).not.toHaveProperty('lastOrderId');
         expect(callArgs).not.toHaveProperty('lastReferencedShipmentId');
+    });
+
+    it('Should block auto-response when autoResponsesCount limits are reached (Loop Guard)', async () => {
+        const payload = { ...defaultPayload, rawBodyText: 'Mensagem qualquer' };
+        
+        const { getSessionState } = await import('@/modules/frank/session.repository');
+        // Setting autoResponsesCount to 3, which is > MAX_AUTO_RESPONSES (2)
+        (getSessionState as any).mockResolvedValue({
+            autoResponsesCount: 3
+        });
+        
+        const { resolveConversationMode } = await import('@/modules/frank/conversation-control');
+        (resolveConversationMode as any).mockReturnValue({ mode: 'ASSISTED', reason: 'informational_high_confidence' });
+        
+        const policy = await whatsappInboundOrchestrator.process(payload);
+        
+        expect(policy.type).toBe('SUPERVISED_NO_REPLY');
+    });
+
+    it('Should reset autoResponsesCount if operator responded recently', async () => {
+        const payload = { ...defaultPayload, rawBodyText: 'Mensagem qualquer' };
+        
+        const { getSessionState, updateSessionState } = await import('@/modules/frank/session.repository');
+        // Was at limit 3, but operator has replied!
+        (getSessionState as any).mockResolvedValue({
+            autoResponsesCount: 3
+        });
+        
+        // Mock that operator responded recently, resetting loop check
+        (conversationService.hasRecentOperatorMessage as any).mockResolvedValue(true);
+        
+        const { resolveConversationMode } = await import('@/modules/frank/conversation-control');
+        (resolveConversationMode as any).mockReturnValue({ mode: 'ASSISTED', reason: 'informational_high_confidence' });
+        
+        const policy = await whatsappInboundOrchestrator.process(payload);
+        
+        // Because the mode is ASSISTED and the operator responded recently, 
+        // the auto-response loop guard will STILL BLOCK because operator presence (operatorRespondedRecently=true) forces SUPERVISED.
+        // Wait, yes, operator presence forces SUPERVISED globally. Let's assert that!
+        expect(policy.type).toBe('SUPERVISED_NO_REPLY');
+        
+        // But crucially, the autoResponsesCount should have been reset to 0 in the updateSessionState call
+        // Wait, if it was blocked by guard, policy is SUPERVISED_NO_REPLY. 
+        // So updateSessionState should be called with autoResponsesCount: 0 (since it's not incremented).
+        expect(updateSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
+            autoResponsesCount: 0
+        }));
     });
 });

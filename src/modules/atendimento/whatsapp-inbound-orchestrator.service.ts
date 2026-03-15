@@ -14,6 +14,7 @@ import { resolveEntities } from '@/modules/frank/entity-resolver';
 import { resolveIntent, resolveContextualIntent, type SessionAnchors, type Intent } from '@/modules/frank/intent-resolver';
 import { getSessionState, createSessionState, updateSessionState } from '@/modules/frank/session.repository';
 import { resolveConversationMode } from '@/modules/frank/conversation-control';
+import { evaluateAutoResponseGuard } from '@/modules/frank/auto-response-guard';
 import { messageService } from '@/modules/atendimento/message.service';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
 import { findOrderWithShipmentByPrefix } from '@/modules/pedidos/order.repository';
@@ -184,7 +185,10 @@ export const whatsappInboundOrchestrator = {
         const sessionState = await getSessionState(tenantId, fromHash);
         
         let sessionAnchors: SessionAnchors | null = null;
+        let autoResponsesCount = 0;
+        
         if (sessionState) {
+            autoResponsesCount = sessionState.autoResponsesCount;
             sessionAnchors = {
                 lastReferencedOrderId: sessionState.lastOrderId,
                 lastReferencedShipmentId: sessionState.lastReferencedShipmentId,
@@ -305,32 +309,43 @@ export const whatsappInboundOrchestrator = {
         }
 
         // 6.5 Persist Contextual Signals
-        const updateParams = {
-            currentIntent: intentResult.intent,
-            lastToolUsed: createdSuggestion ? 'freight_simulation_tool' : undefined,
-            ...(validOrderId ? { lastOrderId: validOrderId } : {}),
-            ...(validShipmentId ? { lastReferencedShipmentId: validShipmentId } : {})
-        };
-
-        if (sessionState) {
-            await updateSessionState(tenantId, fromHash, updateParams);
-        } else {
-            await createSessionState(tenantId, fromHash, updateParams);
+        // Reset count if the operator has been actively chatting in the previous 15m.
+        // Otherwise, increment if we are sending an AUTO_REPLY.
+        const operatorRespondedRecently = await conversationService.hasRecentOperatorMessage(tenantId, conversation.id, 15);
+        if (operatorRespondedRecently) {
+            autoResponsesCount = 0;
         }
 
-        void webhookEventRepository.markProcessed('twilio_frank', messageSid);
-
-        // 7. Conversation Mode Control (New Gate)
         const gateResult = resolveConversationMode({
             intent: intentResult.intent,
             entities: entityResult.entities, 
             confidence: intentResult.confidence,
             timestamp: new Date(),
-            operatorOnline: false, // Defaults to false
+            operatorOnline: Boolean(conversation.assignedTo) || operatorRespondedRecently,
             entitiesComplete: true, // Default to true as fallback
-            autoResponsesCount: 0, // Default to 0 as fallback
+            autoResponsesCount,
             messageBody: messageText
         });
+
+        const guardResult = evaluateAutoResponseGuard(gateResult.mode, {
+            autoResponsesCount,
+            assignedTo: conversation.assignedTo,
+            status: conversation.status,
+            operatorRespondedRecently
+        });
+
+        if (guardResult.blocked) {
+            gateResult.mode = guardResult.forcedMode!;
+            gateResult.reason = guardResult.reason!;
+            
+            structuredLogger.info('whatsapp_auto_response_blocked', {
+                tenantId,
+                conversationId: conversation.id,
+                reason: guardResult.reason,
+                autoResponsesCount,
+                requestId
+            });
+        }
 
         // 8. Policy Resolution
         const policyResolution = resolveInboundReplyPolicy({
@@ -342,6 +357,26 @@ export const whatsappInboundOrchestrator = {
             hasActiveSuggestion: createdSuggestion,
             intent: intentResult.intent
         });
+
+        // Determine if we are incrementing the counter due to an outbound auto-reply taking place
+        const shouldIncrementCounter = !guardResult.blocked && policyResolution.type === 'AUTO_REPLY_ALLOWED';
+
+        const updateParams = {
+            currentIntent: intentResult.intent,
+            lastToolUsed: createdSuggestion ? 'freight_simulation_tool' : undefined,
+            ...(validOrderId ? { lastOrderId: validOrderId } : {}),
+            ...(validShipmentId ? { lastReferencedShipmentId: validShipmentId } : {}),
+            autoResponsesCount: shouldIncrementCounter ? autoResponsesCount + 1 : autoResponsesCount,
+            ...(shouldIncrementCounter ? { lastAutoResponseAt: new Date() } : {})
+        };
+
+        if (sessionState) {
+            await updateSessionState(tenantId, fromHash, updateParams);
+        } else {
+            await createSessionState(tenantId, fromHash, updateParams);
+        }
+
+        void webhookEventRepository.markProcessed('twilio_frank', messageSid);
 
         // Override policy if gate mode strictly requires SUPERVISED
         // and policy was going to permit auto-reply.

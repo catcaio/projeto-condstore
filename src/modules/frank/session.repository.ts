@@ -28,6 +28,8 @@ export interface SessionState {
     lastReferencedQuoteId: string | null;
     lastReferencedCustomerId: string | null;
     lastToolUsed: string | null;
+    autoResponsesCount: number;
+    lastAutoResponseAt: Date | null;
     contextJson: Record<string, unknown> | null;
     createdAt: Date;
     updatedAt: Date;
@@ -44,6 +46,8 @@ export interface UpdateSessionParams {
     lastReferencedQuoteId?: string | null;
     lastReferencedCustomerId?: string | null;
     lastToolUsed?: string | null;
+    autoResponsesCount?: number;
+    lastAutoResponseAt?: Date | null;
     contextJson?: Record<string, unknown> | null;
 }
 
@@ -96,6 +100,8 @@ export async function createSessionState(
         lastReferencedQuoteId: params?.lastReferencedQuoteId ?? null,
         lastReferencedCustomerId: params?.lastReferencedCustomerId ?? null,
         lastToolUsed: params?.lastToolUsed ?? null,
+        autoResponsesCount: params?.autoResponsesCount ?? 0,
+        lastAutoResponseAt: params?.lastAutoResponseAt ?? null,
         contextJson: params?.contextJson ?? null,
     });
 
@@ -132,6 +138,8 @@ export async function updateSessionState(
     if (params.lastReferencedQuoteId !== undefined) updateData.lastReferencedQuoteId = params.lastReferencedQuoteId;
     if (params.lastReferencedCustomerId !== undefined) updateData.lastReferencedCustomerId = params.lastReferencedCustomerId;
     if (params.lastToolUsed !== undefined) updateData.lastToolUsed = params.lastToolUsed;
+    if (params.autoResponsesCount !== undefined) updateData.autoResponsesCount = params.autoResponsesCount;
+    if (params.lastAutoResponseAt !== undefined) updateData.lastAutoResponseAt = params.lastAutoResponseAt;
     if (params.contextJson !== undefined) updateData.contextJson = params.contextJson;
 
     if (Object.keys(updateData).length === 0) return;

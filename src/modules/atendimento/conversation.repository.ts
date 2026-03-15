@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, inArray, asc } from 'drizzle-orm';
+import { eq, and, desc, sql, inArray, gt, asc } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import {
     conversations,
@@ -127,6 +127,26 @@ export const conversationRepository = {
             .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)))
             .limit(1);
         return conv;
+    },
+
+    /**
+     * Checks if an operator has sent any message in the last N minutes.
+     */
+    async hasRecentOperatorMessage(tenantId: string, conversationId: string, minutes: number = 15): Promise<boolean> {
+        const db = await getDb();
+        const cutoff = new Date(Date.now() - minutes * 60 * 1000);
+
+        const rows = await db.select({ id: conversationMessages.id })
+            .from(conversationMessages)
+            .where(and(
+                eq(conversationMessages.tenantId, tenantId),
+                eq(conversationMessages.conversationId, conversationId),
+                eq(conversationMessages.source, 'OPERATOR'),
+                gt(conversationMessages.createdAt, cutoff)
+            ))
+            .limit(1);
+
+        return rows.length > 0;
     },
 
     async appendInboundMessage(
