@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { requireSession } from '@/infra/auth/guards';
+import { requireAdmin } from '@/infra/auth/guards';
 import { playbookService } from '@/modules/playbooks/playbook.service';
 import { ApplyPlaybookSchema } from '@/modules/playbooks/playbook.schemas';
 
 export async function POST(req: Request, context: any) {
     try {
-        const sessionRes = await requireSession(undefined as any);
-        if (!sessionRes.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const sessionRes = await requireAdmin(req as any);
+        if (!sessionRes.ok) return sessionRes.response;
         const ctx = sessionRes.session as any;
         const body = await req.json();
 

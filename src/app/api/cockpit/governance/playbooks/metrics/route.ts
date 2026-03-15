@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { requireSession } from '@/infra/auth/guards';
+import { requireAdmin } from '@/infra/auth/guards';
 import { db } from '@/db/client';
 import { playbooks, governanceTaskEvents, governanceTasks } from '@/drizzle/schema';
 import { eq, and, sql } from 'drizzle-orm';
 
 export async function GET(req: Request) {
     try {
-        const sessionRes = await requireSession(undefined as any);
-        if (!sessionRes.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const sessionRes = await requireAdmin(req as any);
+        if (!sessionRes.ok) return sessionRes.response;
         const ctx = sessionRes.session as any;
         
         // 1. Playbooks Created

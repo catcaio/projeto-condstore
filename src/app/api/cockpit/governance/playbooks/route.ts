@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { requireSession } from '@/infra/auth/guards';
+import { requireAdmin } from '@/infra/auth/guards';
 import { playbookService } from '@/modules/playbooks/playbook.service';
 import { CreatePlaybookSchema } from '@/modules/playbooks/playbook.schemas';
 
 export async function POST(req: Request) {
     try {
-        const sessionRes = await requireSession(undefined as any);
-        if (!sessionRes.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const sessionRes = await requireAdmin(req as any);
+        if (!sessionRes.ok) return sessionRes.response;
         const ctx = sessionRes.session as any;
         
         // Tenant Supreme Permission verification or Role verification if needed
@@ -41,6 +41,9 @@ export async function POST(req: Request) {
 // PUT / DELETE would go here as well, omitting for MVP unless strict editing is required right now.
 // The PlaybookEditor currently POSTs or PUTs. We will support PUT for updates.
 export async function PUT(req: Request) {
+    const sessionRes = await requireAdmin(req as any);
+    if (!sessionRes.ok) return sessionRes.response;
+
     // For Epic 11 MVP, we will only log or do a rudimentary update if required, 
     // but the task asks for creation and execution mainly. 
     // Let's implement full PUT as well just to ensure Editor doesn't crash on Save.
