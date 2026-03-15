@@ -64,6 +64,9 @@
 | `/api/cockpit/frank/suggestions/[id]/approve-draft` | API |
 | `/api/cockpit/frank/suggestions/[id]/draft` | API |
 | `/api/cockpit/frank/suggestions/[id]/reject` | API |
+| `/api/cockpit/governance/playbooks` | API |
+| `/api/cockpit/governance/playbooks/[playbookId]/apply` | API |
+| `/api/cockpit/governance/playbooks/metrics` | API |
 | `/api/cockpit/metrics` | API |
 | `/api/cockpit/metrics/acquisition` | API |
 | `/api/cockpit/metrics/acquisition/drilldown` | API |
@@ -263,6 +266,8 @@
 | `/cockpit/packing-rules` | Page |
 | `/cockpit/pipeline` | Page |
 | `/cockpit/playbooks` | Page |
+| `/cockpit/playbooks/[id]` | Page |
+| `/cockpit/playbooks/new` | Page |
 | `/cockpit/privacy` | Page |
 | `/cockpit/rate-limit` | Page |
 | `/cockpit/rooms/[room]` | Page |
