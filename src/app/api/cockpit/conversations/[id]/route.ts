@@ -1,4 +1,4 @@
-import { and, desc, eq, sql, or, isNull } from 'drizzle-orm';
+import { and, desc, eq, sql, or, isNull, ne } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                 ? await db
                     .select()
                     .from(organizations)
-                    .where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, resolvedOrganizationId)))
+                    .where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, resolvedOrganizationId), ne(organizations.status, 'merged')))
                     .limit(1)
                 : [];
             organizationRecord = organizationResult ?? null;
@@ -292,7 +292,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
             ? await db
                 .select()
                 .from(organizations)
-                .where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, resolvedOrganizationId)))
+                .where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, resolvedOrganizationId), ne(organizations.status, 'merged')))
                 .limit(1)
             : [];
         organizationRecord = organizationResult ?? null;

@@ -187,7 +187,7 @@ export type NewSimulationRecord = typeof simulations.$inferInsert;
 export const messages = mysqlTable('messages', {
     messageSid: varchar('message_sid', { length: 64 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    fromPhone: varchar('from_phone', { length: 30 }).notNull(),
+    fromPhoneHash: varchar('from_phone_hash', { length: 64 }).notNull(),
     phoneHash: varchar('phone_hash', { length: 64 }),
     phoneEncrypted: text('phone_encrypted'),
     toPhone: varchar('to_phone', { length: 30 }),
@@ -2110,3 +2110,150 @@ export type CrmNoteRecord = typeof crmNotes.$inferSelect;
 export type NewCrmNoteRecord = typeof crmNotes.$inferInsert;
 export type CrmTaskRecord = typeof crmTasks.$inferSelect;
 export type NewCrmTaskRecord = typeof crmTasks.$inferInsert;
+
+// --- Governance Module ---
+
+export const governanceSpaces = mysqlTable('governance_spaces', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    slug: varchar('slug', { length: 255 }).notNull(),
+    color: varchar('color', { length: 50 }),
+    icon: varchar('icon', { length: 50 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    archivedAt: timestamp('archived_at'),
+}, (table) => ({
+    tenantIdx: index('idx_gov_spaces_tenant').on(table.tenantId),
+}));
+
+export const governanceProjects = mysqlTable('governance_projects', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    spaceId: varchar('space_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    slug: varchar('slug', { length: 255 }).notNull(),
+    description: text('description'),
+    visibility: varchar('visibility', { length: 30 }).notNull().default('private'), // private, space, public
+    status: varchar('status', { length: 30 }).notNull().default('active'),
+    sortOrder: int('sort_order').notNull().default(0),
+    createdBy: varchar('created_by', { length: 36 }).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    archivedAt: timestamp('archived_at'),
+}, (table) => ({
+    tenantSpaceIdx: index('idx_gov_proj_tenant_space').on(table.tenantId, table.spaceId),
+}));
+
+export const governanceLists = mysqlTable('governance_lists', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    projectId: varchar('project_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    type: varchar('type', { length: 30 }).notNull().default('todo'),
+    sortOrder: int('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    tenantProjectIdx: index('idx_gov_lists_tenant_proj').on(table.tenantId, table.projectId),
+}));
+
+export const governanceTasks = mysqlTable('governance_tasks', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    projectId: varchar('project_id', { length: 36 }).notNull(),
+    listId: varchar('list_id', { length: 36 }).notNull(),
+    parentTaskId: varchar('parent_task_id', { length: 36 }),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    status: varchar('status', { length: 50 }).notNull().default('open'),
+    priority: varchar('priority', { length: 30 }).notNull().default('normal'), // low, normal, high, urgent
+    assigneeUserId: varchar('assignee_user_id', { length: 36 }),
+    reporterUserId: varchar('reporter_user_id', { length: 36 }).notNull(),
+    dueAt: timestamp('due_at'),
+    startAt: timestamp('start_at'),
+    sortOrder: int('sort_order').notNull().default(0),
+    sourceType: varchar('source_type', { length: 50 }).notNull().default('manual'), // manual, system, frank
+    sourceRef: varchar('source_ref', { length: 255 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    archivedAt: timestamp('archived_at'),
+}, (table) => ({
+    tenantProjectIdx: index('idx_gov_tasks_tenant_proj').on(table.tenantId, table.projectId),
+    tenantAssigneeIdx: index('idx_gov_tasks_tenant_assignee').on(table.tenantId, table.assigneeUserId),
+    tenantStatusIdx: index('idx_gov_tasks_tenant_status').on(table.tenantId, table.status),
+    tenantDueIdx: index('idx_gov_tasks_tenant_due_at').on(table.tenantId, table.dueAt),
+}));
+
+export const governanceTaskComments = mysqlTable('governance_task_comments', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    taskId: varchar('task_id', { length: 36 }).notNull(),
+    authorUserId: varchar('author_user_id', { length: 36 }).notNull(),
+    body: text('body').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
+}, (table) => ({
+    tenantTaskIdx: index('idx_gov_comments_tenant_task').on(table.tenantId, table.taskId),
+}));
+
+export const governanceTaskEvents = mysqlTable('governance_task_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    taskId: varchar('task_id', { length: 36 }).notNull(),
+    actorUserId: varchar('actor_user_id', { length: 36 }),
+    eventType: varchar('event_type', { length: 50 }).notNull(),
+    payloadJson: json('payload_json').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantTaskIdx: index('idx_gov_events_tenant_task').on(table.tenantId, table.taskId),
+}));
+
+export const governanceTaskLinks = mysqlTable('governance_task_links', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    taskId: varchar('task_id', { length: 36 }).notNull(),
+    entityType: varchar('entity_type', { length: 50 }).notNull(), // customer, order, etc.
+    entityId: varchar('entity_id', { length: 64 }).notNull(),
+    label: varchar('label', { length: 100 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    tenantEntityIdx: index('idx_gov_links_tenant_entity').on(table.tenantId, table.entityType, table.entityId),
+    tenantTaskIdx: index('idx_gov_links_tenant_task').on(table.tenantId, table.taskId),
+}));
+
+export const governanceTaskLabels = mysqlTable('governance_task_labels', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 100 }).notNull(),
+    color: varchar('color', { length: 50 }).notNull(),
+}, (table) => ({
+    tenantIdx: index('idx_gov_labels_tenant').on(table.tenantId),
+}));
+
+export const governanceTaskLabelAssignments = mysqlTable('governance_task_label_assignments', {
+    taskId: varchar('task_id', { length: 36 }).notNull(),
+    labelId: varchar('label_id', { length: 36 }).notNull(),
+}, (table) => ({
+    pk: primaryKey({ columns: [table.taskId, table.labelId] }),
+}));
+
+export type GovernanceSpaceRecord = typeof governanceSpaces.$inferSelect;
+export type NewGovernanceSpaceRecord = typeof governanceSpaces.$inferInsert;
+export type GovernanceProjectRecord = typeof governanceProjects.$inferSelect;
+export type NewGovernanceProjectRecord = typeof governanceProjects.$inferInsert;
+export type GovernanceListRecord = typeof governanceLists.$inferSelect;
+export type NewGovernanceListRecord = typeof governanceLists.$inferInsert;
+export type GovernanceTaskRecord = typeof governanceTasks.$inferSelect;
+export type NewGovernanceTaskRecord = typeof governanceTasks.$inferInsert;
+export type GovernanceTaskCommentRecord = typeof governanceTaskComments.$inferSelect;
+export type NewGovernanceTaskCommentRecord = typeof governanceTaskComments.$inferInsert;
+export type GovernanceTaskEventRecord = typeof governanceTaskEvents.$inferSelect;
+export type NewGovernanceTaskEventRecord = typeof governanceTaskEvents.$inferInsert;
+export type GovernanceTaskLinkRecord = typeof governanceTaskLinks.$inferSelect;
+export type NewGovernanceTaskLinkRecord = typeof governanceTaskLinks.$inferInsert;
+export type GovernanceTaskLabelRecord = typeof governanceTaskLabels.$inferSelect;
+export type NewGovernanceTaskLabelRecord = typeof governanceTaskLabels.$inferInsert;
+export type GovernanceTaskLabelAssignmentRecord = typeof governanceTaskLabelAssignments.$inferSelect;
+export type NewGovernanceTaskLabelAssignmentRecord = typeof governanceTaskLabelAssignments.$inferInsert;

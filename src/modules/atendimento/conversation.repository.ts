@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, inArray, gt, asc } from 'drizzle-orm';
+import { eq, and, desc, sql, inArray, gt, asc, ne } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import {
     conversations,
@@ -348,7 +348,7 @@ export const conversationRepository = {
             : [null as any];
 
         const [organization] = conversation.organizationId
-            ? await db.select().from(organizations).where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, conversation.organizationId))).limit(1)
+            ? await db.select().from(organizations).where(and(eq(organizations.tenantId, tenantId), eq(organizations.id, conversation.organizationId), ne(organizations.status, 'merged'))).limit(1)
             : [null as any];
 
         const [lastOrder] = await db.select().from(orders)

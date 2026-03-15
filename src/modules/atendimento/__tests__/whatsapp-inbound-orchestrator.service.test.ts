@@ -67,7 +67,8 @@ vi.mock('@/modules/frank/session.repository', () => ({
 }));
 
 vi.mock('@/modules/frank/conversation-control', () => ({
-    resolveConversationMode: vi.fn()
+    resolveConversationMode: vi.fn(),
+    isEntitiesCompleteForIntent: vi.fn().mockReturnValue(true)
 }));
 
 vi.mock('@/modules/pedidos/order.repository', () => ({
@@ -290,5 +291,21 @@ describe('WhatsApp Inbound Orchestrator', () => {
         expect(updateSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
             autoResponsesCount: 0
         }));
+    });
+    it('Should pass entitiesComplete signal to resolveConversationMode gate', async () => {
+        const payload = { ...defaultPayload, rawBodyText: 'Frete para 12345-678 de uma mesa' };
+        
+        const { isEntitiesCompleteForIntent, resolveConversationMode } = await import('@/modules/frank/conversation-control');
+        (isEntitiesCompleteForIntent as any).mockReturnValueOnce(false);
+        (resolveConversationMode as any).mockReturnValue({ mode: 'SUPERVISED', reason: 'incomplete_entities' });
+        
+        const policy = await whatsappInboundOrchestrator.process(payload);
+        
+        expect(isEntitiesCompleteForIntent).toHaveBeenCalled();
+        expect(resolveConversationMode).toHaveBeenCalledWith(expect.objectContaining({
+            entitiesComplete: false
+        }));
+        
+        expect(policy.type).toBe('SUPERVISED_NO_REPLY');
     });
 });

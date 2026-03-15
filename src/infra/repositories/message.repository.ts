@@ -61,34 +61,13 @@ async function queryLastMessagesByPhoneHash(
         .limit(limit);
 }
 
-async function queryLastMessagesLegacy(
-    tenantId: string,
-    phoneNumber: string,
-    limit: number,
-) {
-    const db = await getDb();
-    return db
-        .select({
-            body: messages.body,
-            bodyEncrypted: messages.bodyEncrypted,
-            direction: messages.direction,
-            intent: messages.intent,
-            intentConfidence: messages.intentConfidence,
-            createdAt: messages.createdAt,
-        })
-        .from(messages)
-        .where(and(eq(messages.tenantId, tenantId), eq(messages.fromPhone, phoneNumber)))
-        .orderBy(desc(messages.createdAt))
-        .limit(limit);
-}
-
 export class MessageRepository {
     /**
      * Save an inbound message with idempotency on messageSid.
      * If the messageSid already exists, the insert is silently skipped (no error).
      * REQUIRES tenant_id - will not work without it.
      */
-    async saveInboundMessage(record: NewMessageRecord): Promise<void> {
+    async saveInboundMessage(record: Omit<NewMessageRecord, 'fromPhoneHash' | 'phoneHash' | 'phoneEncrypted' | 'toPhone'> & { fromPhone: string, toPhone?: string | null }): Promise<void> {
         // Enforce tenant_id requirement
         if (!record.tenantId) {
             throw new InfrastructureError(
@@ -104,13 +83,18 @@ export class MessageRepository {
             const phoneEncrypted = encryptString(e164);
             const bodyEncrypted = encryptString(record.body);
             const recordToPersist: NewMessageRecord = {
-                ...record,
-                fromPhone: REDACTED_PHONE_PLACEHOLDER,
+                messageSid: record.messageSid,
+                tenantId: record.tenantId,
+                fromPhoneHash: hash,
                 phoneHash: hash,
                 phoneEncrypted,
-                toPhone: null,
+                toPhone: record.toPhone ?? null,
                 body: makeEncryptedBodyPlaceholder(record.body),
                 bodyEncrypted,
+                direction: record.direction ?? 'inbound',
+                intent: record.intent,
+                intentConfidence: record.intentConfidence,
+                rawPayload: record.rawPayload,
             };
 
             // Idempotency via unique constraint (messageSid is PK)
@@ -235,14 +219,10 @@ export class MessageRepository {
                 const hashedPhone = hashPhoneForTenant(phoneNumber, tenantId).hash;
                 rows = await queryLastMessagesByPhoneHash(tenantId, hashedPhone, limit);
             } catch (hashError) {
-                logger.warn('getLastMessages phone hash generation failed; using legacy fallback', {
+                logger.warn('getLastMessages phone hash generation failed', {
                     tenantId,
                     error: (hashError as Error).name,
                 });
-            }
-
-            if (rows.length === 0) {
-                rows = await queryLastMessagesLegacy(tenantId, phoneNumber, limit);
             }
 
             // Reverse so the result is oldest-first (natural conversation order)

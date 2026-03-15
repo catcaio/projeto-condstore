@@ -49,7 +49,7 @@ export async function getConversationTimeline(tenantId: string, id: string, limi
                 .where(and(
                     eq(messages.tenantId, tenantId),
                     or(
-                        eq(messages.fromPhone, id),
+                        eq(messages.fromPhoneHash, id),
                         eq(messages.toPhone, id),
                         eq(messages.messageSid, id)
                     )
@@ -66,7 +66,7 @@ export async function getConversationTimeline(tenantId: string, id: string, limi
                     status: m.direction,
                     body: m.body || undefined,
                     createdAt: m.createdAt,
-                    meta: { intent: m.intent, phone: m.fromPhone === id ? m.fromPhone : m.toPhone }
+                    meta: { intent: m.intent, phone: m.toPhone }
                 });
             });
         } catch { }

@@ -198,7 +198,7 @@ describe('MessageRepository.getLastMessages', () => {
         });
 
         const inserted = mockDb.values.mock.calls[0]?.[0];
-        expect(inserted.fromPhone).toBe('[redacted]');
+        expect(inserted.fromPhoneHash).toMatch(/^[a-f0-9]{64}$/);
         expect(inserted.phoneHash).toMatch(/^[a-f0-9]{64}$/);
         expect(inserted.phoneEncrypted).toMatch(/^v1:/);
         expect(inserted.body).toBe('[encrypted:16]');
@@ -222,16 +222,6 @@ describe('MessageRepository.getLastMessages', () => {
 
         expect(result[0]?.body).toBe('oi');
     });
-
-    it('falls back to legacy lookup when hash query has no rows', async () => {
-        mockDb.limit
-            .mockResolvedValueOnce([])
-            .mockResolvedValueOnce([makeRow('legacy-msg', 1000)]);
-
-        const result = await repo.getLastMessages('tenant-1', 'whatsapp:+5511999999999', 1);
-
-        expect(mockDb.select).toHaveBeenCalledTimes(2);
-        expect(result).toHaveLength(1);
-        expect(result[0]?.body).toBe('legacy-msg');
-    });
 });
+
+

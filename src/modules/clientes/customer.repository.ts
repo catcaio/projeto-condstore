@@ -1,5 +1,5 @@
 import { db } from '@/db/client';
-import { eq, and, desc, like, isNotNull, or } from 'drizzle-orm';
+import { eq, and, desc, like, isNotNull, or, ne } from 'drizzle-orm';
 import { customers, customerContacts, organizations, orders, freightSimulations } from '@/drizzle/schema';
 import { createHash } from 'node:crypto';
 import { normalizePhone } from '@/lib/phone';
@@ -45,7 +45,8 @@ export async function getCustomerWithContext(tenantId: string, customerId: strin
         .where(
             and(
                 eq(customers.tenantId, tenantId),
-                eq(customers.id, customerId)
+                eq(customers.id, customerId),
+                ne(organizations.status, 'merged'),
             )
         )
         .limit(1);
