@@ -38,7 +38,7 @@ export const conversationRepository = {
                 and(
                     eq(conversations.tenantId, tenantId),
                     eq(conversations.phoneHash, phoneHash),
-                    inArray(conversations.status, ['OPEN', 'WAITING_CUSTOMER', 'WAITING_INTERNAL'])
+                    inArray(conversations.status, ['OPEN', 'WAITING_CUSTOMER', 'WAITING_INTERNAL', 'HUMAN_ACTIVE'])
                 )
             )
             .orderBy(desc(conversations.lastMessageAt))
@@ -133,7 +133,8 @@ export const conversationRepository = {
         tenantId: string,
         conversationId: string,
         message: string,
-        metadata?: Record<string, any>
+        metadata?: Record<string, any>,
+        providerMessageId?: string
     ): Promise<ConversationMessageRecord> {
         const db = await getDb();
         const { randomUUID } = await import('crypto');
@@ -147,6 +148,8 @@ export const conversationRepository = {
             source: 'WHATSAPP',
             message,
             metadata: metadata || null,
+            providerMessageId: providerMessageId || null,
+            deliveryStatus: 'delivered', // Inbound messages are implicitly delivered
         });
 
         await db.update(conversations)
@@ -186,6 +189,7 @@ export const conversationRepository = {
             source,
             message,
             metadata: metadata || null,
+            deliveryStatus: 'queued' // Wait for TWILIO to change this explicitly
         });
 
         if (advanceConversation) {
@@ -242,7 +246,7 @@ export const conversationRepository = {
     async updateConversationStatus(
         tenantId: string,
         conversationId: string,
-        status: 'OPEN' | 'WAITING_CUSTOMER' | 'WAITING_INTERNAL' | 'RESOLVED'
+        status: 'OPEN' | 'WAITING_CUSTOMER' | 'WAITING_INTERNAL' | 'RESOLVED' | 'HUMAN_ACTIVE'
     ): Promise<void> {
         const db = await getDb();
         await db.update(conversations)
@@ -253,11 +257,12 @@ export const conversationRepository = {
     async updateConversationStage(
         tenantId: string,
         conversationId: string,
-        stage: 'NEW' | 'QUALIFYING' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST'
+        stage: 'NEW_LEAD' | 'IN_ATTENDANCE' | 'QUOTED' | 'WON' | 'LOST',
+        lostReason?: string
     ): Promise<void> {
         const db = await getDb();
         await db.update(conversations)
-            .set({ stage })
+            .set({ stage, ...(lostReason ? { lostReason } : {}) })
             .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
     },
 
@@ -266,7 +271,7 @@ export const conversationRepository = {
         return db.select()
             .from(conversationMessages)
             .where(and(eq(conversationMessages.tenantId, tenantId), eq(conversationMessages.conversationId, conversationId)))
-            .orderBy(asc(conversationMessages.createdAt));
+            .orderBy(asc(conversationMessages.createdAt), asc(conversationMessages.id));
     },
 
     async updateConversationMessageFields(
@@ -306,6 +311,7 @@ export const conversationRepository = {
             })
             .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
     },
+
 
     async loadConversationContext(tenantId: string, conversationId: string) {
         const db = await getDb();

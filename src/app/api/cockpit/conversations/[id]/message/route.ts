@@ -178,6 +178,24 @@ export async function POST(
             await conversationService.markConversationWaitingCustomer(tenantId, conversationId);
         }
 
+        if (conversation.stage === 'NEW_LEAD') {
+            await conversationService.changeConversationStage(tenantId, conversationId, 'IN_ATTENDANCE', conversation.customerId ?? undefined);
+            
+            const { publishOperationalEvent } = await import('@/lib/events/operational-event-bus');
+            await publishOperationalEvent({
+                tenantId,
+                eventType: 'first_reply_sent',
+                eventDomain: 'OPERATIONS',
+                customerId: conversation.customerId ?? null,
+                sessionId: conversation.phoneHash,
+                payload: {
+                    conversationId,
+                    operatorId,
+                    stage: 'IN_ATTENDANCE'
+                }
+            });
+        }
+
         logger.info('TWILIO_OUTBOUND_SUCCESS', {
             requestId,
             tenantId,

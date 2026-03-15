@@ -28,45 +28,6 @@ export const conversationService = {
         return conversationRepository.loadConversationContext(tenantId, conversationId);
     },
 
-    async processInboundMessage(
-        tenantId: string,
-        phoneHash: string,
-        phoneEncrypted: string,
-        message: string,
-        customerId?: string,
-        organizationId?: string,
-        metadata?: Record<string, any>
-    ): Promise<{ conversation: ConversationRecord, message: ConversationMessageRecord }> {
-        const conversation = await conversationRepository.findOrCreateConversationByPhone(
-            tenantId,
-            phoneHash,
-            phoneEncrypted,
-            { customerId: customerId ?? null, organizationId: organizationId ?? null },
-        );
-
-        const inboundMessage = await conversationRepository.appendInboundMessage(
-            tenantId,
-            conversation.id,
-            message,
-            metadata
-        );
-
-        await publishOperationalEvent({
-            tenantId,
-            eventType: 'message_received',
-            eventDomain: 'OPERATIONS',
-            customerId: customerId ?? null,
-            payload: {
-                conversationId: conversation.id,
-                channel: conversation.channel,
-                messageId: inboundMessage.id,
-                unidentified: !customerId,
-            }
-        });
-
-        return { conversation, message: inboundMessage };
-    },
-
     async processOutboundMessage(
         tenantId: string,
         conversationId: string,
@@ -76,28 +37,21 @@ export const conversationService = {
         metadata?: Record<string, any>,
         options?: { advanceConversation?: boolean }
     ): Promise<ConversationMessageRecord> {
-        const outboundMessage = await conversationRepository.appendOutboundMessage(
+        const { messageService } = await import('./message.service');
+        const actorType = metadata?.actorType || (source === 'OPERATOR' ? 'HUMAN' : 'SYSTEM');
+        const messageType = metadata?.messageType || 'TEXT';
+
+        return messageService.processOutbound({
             tenantId,
             conversationId,
             message,
             source,
+            actorType,
+            messageType,
+            customerId,
             metadata,
             options
-        );
-
-        await publishOperationalEvent({
-            tenantId,
-            eventType: 'message_sent',
-            eventDomain: 'OPERATIONS',
-            customerId: customerId ?? null,
-            payload: {
-                conversationId,
-                source,
-                messageId: outboundMessage.id,
-            }
         });
-
-        return outboundMessage;
     },
 
     async updateMessageFields(
@@ -115,6 +69,7 @@ export const conversationService = {
     async markConversationWaitingCustomer(tenantId: string, conversationId: string): Promise<void> {
         await conversationRepository.markConversationWaitingCustomer(tenantId, conversationId);
     },
+
 
     async assignConversation(
         tenantId: string,
@@ -163,7 +118,7 @@ export const conversationService = {
     async updateConversationStatus(
         tenantId: string,
         conversationId: string,
-        status: 'OPEN' | 'WAITING_CUSTOMER' | 'WAITING_INTERNAL' | 'RESOLVED',
+        status: 'OPEN' | 'WAITING_CUSTOMER' | 'WAITING_INTERNAL' | 'RESOLVED' | 'HUMAN_ACTIVE',
         customerId?: string
     ): Promise<void> {
         await conversationRepository.updateConversationStatus(tenantId, conversationId, status);
@@ -185,10 +140,37 @@ export const conversationService = {
     async changeConversationStage(
         tenantId: string,
         conversationId: string,
-        stage: 'NEW' | 'QUALIFYING' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST',
-        customerId?: string
+        stage: 'NEW_LEAD' | 'IN_ATTENDANCE' | 'QUOTED' | 'WON' | 'LOST',
+        customerId?: string,
+        lostReason?: string
     ): Promise<void> {
-        await conversationRepository.updateConversationStage(tenantId, conversationId, stage);
+        const stageRanks: Record<string, number> = {
+            'NEW_LEAD': 1,
+            'IN_ATTENDANCE': 2,
+            'QUOTED': 3,
+            'WON': 4,
+            'LOST': 4
+        };
+
+        const existingConv = await conversationRepository.getConversationById(tenantId, conversationId);
+        if (!existingConv) return; // Silent discard
+
+        const currentRank = existingConv.stage ? stageRanks[existingConv.stage] || 0 : 0;
+        const newRank = stageRanks[stage] || 0;
+
+        if (newRank <= currentRank && existingConv.stage !== 'NEW_LEAD') {
+            // Prevent backwards regression (and self re-assigning same generic stage to skip useless events)
+            // Exception: allowing updates if they somehow have no stage
+            return;
+        }
+
+        if (stage === 'LOST' && !lostReason) {
+            // Business rule: lost needs a reason now
+            // But we don't throw to not break historic syncs, just save it as generic
+            lostReason = 'No reason provided';
+        }
+
+        await conversationRepository.updateConversationStage(tenantId, conversationId, stage, lostReason);
 
         if (customerId) {
             let eventType: 'conversation_stage_changed' | 'deal_won' | 'deal_lost' = 'conversation_stage_changed';
@@ -202,7 +184,8 @@ export const conversationService = {
                 customerId,
                 payload: {
                     conversationId,
-                    stage
+                    stage,
+                    ...(stage === 'LOST' ? { lostReason } : {})
                 }
             });
         }

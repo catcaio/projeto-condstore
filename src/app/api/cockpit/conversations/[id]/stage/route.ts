@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { conversationService } from '@/modules/atendimento/conversation.service';
+import { conversationRepository } from '@/modules/atendimento/conversation.repository';
 import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
@@ -18,13 +19,17 @@ export async function PATCH(
     try {
         const { id: conversationId } = await context.params;
         const body = await request.json().catch(() => ({}));
-        const { stage } = body;
+        const { stage, lostReason } = body;
 
-        if (!stage || !['NEW', 'QUALIFYING', 'QUOTED', 'NEGOTIATING', 'WON', 'LOST'].includes(stage)) {
+        if (!stage || !['NEW_LEAD', 'IN_ATTENDANCE', 'QUOTED', 'WON', 'LOST'].includes(stage)) {
             return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Invalid or missing stage');
         }
 
-        const conversation = await conversationService.getConversationById(tenantId, conversationId);
+        if (stage === 'LOST' && !lostReason) {
+             return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'lostReason is required when stage is LOST');
+        }
+
+        const conversation = await conversationRepository.getConversationById(tenantId, conversationId);
         if (!conversation) {
             return errorResponse('NOT_FOUND' as any, 404, requestId, 'Conversation not found');
         }
@@ -33,7 +38,8 @@ export async function PATCH(
             tenantId,
             conversationId,
             stage as any,
-            conversation.customerId || undefined
+            conversation.customerId || undefined,
+            lostReason
         );
 
         return NextResponse.json({ ok: true });

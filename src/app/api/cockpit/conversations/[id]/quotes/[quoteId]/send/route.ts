@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { freightQuoteService } from '@/modules/atendimento/freight-quote.service';
+import { simulations } from '@/drizzle/schema';
+import { eq, and } from 'drizzle-orm';
+import { getDb } from '@/infra/db';
 import { conversationService } from '@/modules/atendimento/conversation.service';
 import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
@@ -66,9 +69,16 @@ export async function POST(
             conversation.customerId || undefined, 
             {
                 status: 'quote_sent',
-                quoteId: quote.id
+                quoteId: quote.id,
+                actorType: 'HUMAN',
+                messageType: 'TEXT'
             }
         );
+        if (conversation.stage === 'NEW_LEAD' || conversation.stage === 'IN_ATTENDANCE') {
+            await conversationService.changeConversationStage(tenantId, conversationId, 'QUOTED', conversation.customerId ?? undefined);
+        }
+
+        await freightQuoteService.sendQuote(tenantId, quoteId);
 
         // 3. Emit QUOTE_SENT
         void domineIntakeService.publish({

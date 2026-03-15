@@ -8,9 +8,11 @@ import { sanitizeMessage } from '@/lib/validation';
 import { conversationService } from '@/modules/atendimento/conversation.service';
 import { catalogService } from '@/modules/catalog/catalog.service';
 import { resolveCustomerByPhone } from '@/modules/customers/identity-resolver/identity-resolver.service';
+import { customerResolutionService } from '@/modules/customers/customer-resolution.service';
 import { freightService } from '@/modules/freight/freight.service';
 import { resolveEntities } from '@/modules/frank/entity-resolver';
 import { resolveIntent } from '@/modules/frank/intent-resolver';
+import { messageService } from '@/modules/atendimento/message.service';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
 import { structuredLogger } from '@/infra/log/logger';
 import { logger } from '@/infra/logger';
@@ -30,6 +32,7 @@ export interface WebhookOrchestratorPayload {
     toPhone: string;
     rawBodyText: string;
     requestId: string;
+    profileName?: string;
 }
 
 function extractCep(message: string): string | null {
@@ -120,31 +123,53 @@ export const whatsappInboundOrchestrator = {
             }
         }
 
-        // 3. Early Identity Resolution & Conversation Fetch
-        const identity = await resolveCustomerByPhone(tenantId, fromE164);
-        if (identity) {
+        // 3. Central Customer Resolution (Find or Create)
+        const contactName = payload.profileName || 'Novo Lead WhatsApp';
+        const identity = await customerResolutionService.resolveOrCreateCustomer(tenantId, fromE164, contactName);
+        
+        if (identity.isNew) {
+            structuredLogger.info('new_lead_captured', {
+                tenantId, phoneHash: fromHash, customerId: identity.customerId, organizationId: identity.organizationId, eventType: 'new_lead_captured',
+            });
+            await publishOperationalEvent({
+                tenantId, eventType: 'new_lead_captured', eventDomain: 'ACQUISITION',
+                customerId: identity.customerId, sessionId: fromHash,
+                payload: { contactId: identity.contactId, organizationId: identity.organizationId, customerId: identity.customerId, source: 'whatsapp', nameFallback: contactName },
+            });
+        } else {
             structuredLogger.info('customer_matched_to_conversation', {
                 tenantId, phoneHash: fromHash, contactId: identity.contactId, organizationId: identity.organizationId, customerId: identity.customerId, eventType: 'customer_matched_to_conversation',
             });
             await publishOperationalEvent({
                 tenantId, eventType: 'customer_matched_to_conversation', eventDomain: 'OPERATIONS',
                 customerId: identity.customerId, sessionId: fromHash,
-                payload: { contactId: identity.contactId, organizationId: identity.organizationId, customerId: identity.customerId, confidenceScore: identity.confidenceScore },
+                payload: { contactId: identity.contactId, organizationId: identity.organizationId, customerId: identity.customerId },
             });
         }
 
-        const { conversation } = await conversationService.processInboundMessage(
-            tenantId, fromHash, encryptString(fromE164), messageText,
-            identity?.customerId ?? undefined, identity?.organizationId ?? undefined,
-            { MessageSid: messageSid, AccountSid: accountSid, contactId: identity?.contactId ?? null, customerId: identity?.customerId ?? null, organizationId: identity?.organizationId ?? null, unidentified: !identity }
+        const conversation = await conversationService.findOrCreateConversationByPhone(
+            tenantId, fromHash, encryptString(fromE164), 
+            { customerId: identity.customerId, organizationId: identity.organizationId }
         );
 
         if (conversation.status === 'HUMAN_ACTIVE') {
-            await publishOperationalEvent({
-                tenantId, eventType: 'message_received', eventDomain: 'OPERATIONS',
-                customerId: identity?.customerId ?? null, sessionId: fromHash, entityId: conversation.id,
-                payload: { conversationId: conversation.id, channel: 'WHATSAPP', contactId: identity?.contactId ?? null, organizationId: identity?.organizationId ?? null, intent: 'UNKNOWN', unidentified: !identity, skippedAi: true },
+            await messageService.processInbound({
+                tenantId,
+                conversationId: conversation.id,
+                messageSid,
+                fromPhone: fromE164,
+                toPhone,
+                message: messageText,
+                intent: 'UNKNOWN',
+                intentConfidence: null,
+                rawPayload: JSON.stringify({ MessageSid: messageSid, AccountSid: accountSid, intent: 'UNKNOWN' }),
+                metadata: { MessageSid: messageSid, AccountSid: accountSid, contactId: identity?.contactId ?? null, customerId: identity?.customerId ?? null, organizationId: identity?.organizationId ?? null, unidentified: !identity, skippedAi: true },
+                customerId: identity?.customerId ?? undefined,
+                organizationId: identity?.organizationId ?? undefined,
+                contactId: identity?.contactId ?? undefined
             });
+
+
             void webhookEventRepository.markProcessed('twilio_frank', messageSid);
             return resolveInboundReplyPolicy({
                 tenantId, phoneHash: fromHash, conversationState: conversation.status as any,
@@ -154,18 +179,21 @@ export const whatsappInboundOrchestrator = {
 
         // 4. NLP Intent Resolution & Persistence
         const intentResult = resolveIntent(messageText);
-        await messageRepository.saveInboundMessage({
-            messageSid, tenantId, fromPhone: fromE164, toPhone,
-            body: messageText, direction: 'inbound',
+        
+        await messageService.processInbound({
+            tenantId,
+            conversationId: conversation.id,
+            messageSid,
+            fromPhone: fromE164,
+            toPhone,
+            message: messageText,
             intent: intentResult.intent,
-            intentConfidence: intentResult.confidence > 0 ? intentResult.confidence.toFixed(4) : null,
+            intentConfidence: intentResult.confidence > 0 ? intentResult.confidence : null,
             rawPayload: JSON.stringify({ MessageSid: messageSid, AccountSid: accountSid, intent: intentResult.intent, confidence: intentResult.confidence }),
-        });
-
-        await publishOperationalEvent({
-            tenantId, eventType: 'message_received', eventDomain: 'OPERATIONS',
-            customerId: identity?.customerId ?? null, sessionId: fromHash, entityId: conversation.id,
-            payload: { conversationId: conversation.id, channel: 'WHATSAPP', contactId: identity?.contactId ?? null, organizationId: identity?.organizationId ?? null, intent: intentResult.intent, unidentified: !identity },
+            metadata: { MessageSid: messageSid, AccountSid: accountSid, contactId: identity?.contactId ?? null, customerId: identity?.customerId ?? null, organizationId: identity?.organizationId ?? null, unidentified: !identity },
+            customerId: identity?.customerId ?? undefined,
+            organizationId: identity?.organizationId ?? undefined,
+            contactId: identity?.contactId ?? undefined
         });
 
         // 5. Entity Extraction

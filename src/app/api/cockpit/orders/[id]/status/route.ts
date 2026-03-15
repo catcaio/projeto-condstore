@@ -20,8 +20,9 @@ export async function PATCH(
         const body = await request.json().catch(() => ({}));
         const { status } = body;
 
-        if (!status || !['CREATED', 'CONFIRMED', 'SCHEDULED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].includes(status)) {
-            return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Invalid order status');
+        const validStatuses = ['DRAFT', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELED'];
+        if (!status || !validStatuses.includes(status)) {
+            return errorResponse('VALIDATION_ERROR' as any, 400, requestId, `Invalid order status. Must be one of: ${validStatuses.join(', ')}`);
         }
 
         await orderService.updateOrderStatus(tenantId, orderId, status as any);
@@ -29,6 +30,13 @@ export async function PATCH(
         return NextResponse.json({ ok: true });
     } catch (err: any) {
         logger.error('Failed to update order status', err as Error, { requestId });
-        return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);
+        const msg = err.message;
+        const isValidation = msg.includes('Cannot regress') || msg.includes('Cannot change status of') || msg.includes('Order not found');
+        return errorResponse(
+            isValidation ? 'VALIDATION_ERROR' as any : 'INTERNAL_ERROR' as any,
+            isValidation ? 400 : 500,
+            requestId,
+            msg
+        );
     }
 }

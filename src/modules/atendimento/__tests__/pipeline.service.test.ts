@@ -16,6 +16,7 @@ vi.mock('@/lib/events/operational-event-bus', () => ({
 vi.mock('../conversation.repository', () => ({
     conversationRepository: {
         updateConversationStage: vi.fn().mockResolvedValue(undefined),
+        getConversationById: vi.fn().mockResolvedValue({ id: 'conv-123', stage: 'NEW_LEAD' }),
     }
 }));
 
@@ -94,5 +95,18 @@ describe('Conversation Service - Stage Changes', () => {
         expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
             eventType: 'deal_lost'
         }));
+    });
+
+    it('should not allow regression from an advanced stage back to a basic one', async () => {
+        const { conversationRepository } = await import('../conversation.repository');
+        vi.mocked(conversationRepository.getConversationById).mockResolvedValueOnce({
+            id: 'conv-123',
+            stage: 'QUOTED'
+        } as any);
+
+        await conversationService.changeConversationStage('tenant-1', 'conv-123', 'IN_ATTENDANCE', 'cust-456');
+
+        expect(conversationRepository.updateConversationStage).not.toHaveBeenCalled();
+        expect(publishOperationalEvent).not.toHaveBeenCalled();
     });
 });

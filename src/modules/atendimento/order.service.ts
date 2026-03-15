@@ -3,6 +3,7 @@ import { getDb } from '@/infra/db';
 import { orders, simulations, conversations, type OrderRecord } from '@/drizzle/schema';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from './conversation.service';
+import { messageService } from './message.service';
 import { shipmentService } from '@/modules/logistics/shipment.service';
 
 export interface OrderListFilter {
@@ -30,9 +31,28 @@ export const orderService = {
 
         if (!quote) throw new Error('Quote not found');
 
+        // Check commercial validity
+        if (['EXPIRED', 'LOST', 'CANCELED'].includes(quote.status)) {
+            throw new Error(`Cannot convert quote with status: ${quote.status}`);
+        }
+
+        if (quote.expiresAt && new Date(quote.expiresAt) < new Date()) {
+            // Mark it as expired dynamically if past date
+            await db.update(simulations).set({ status: 'EXPIRED' }).where(eq(simulations.id, quoteId));
+            throw new Error('Cannot convert an expired quote');
+        }
+
+        // 1.5 Idempotency Guard
+        const [existingOrder] = await db.select()
+            .from(orders)
+            .where(and(eq(orders.tenantId, tenantId), eq(orders.quoteId, quoteId)))
+            .limit(1);
+        if (existingOrder) return existingOrder;
+
         // 2. Map logical fields
         const id = randomUUID();
         const price = quote.bestPrice ? Number(quote.bestPrice) : quote.sellingPrice ? Number(quote.sellingPrice) : null;
+        const totalAmount = quote.totalAmount ? Number(quote.totalAmount) : price;
         const deliveryDeadline = quote.bestCarrier === 'Melhor Envio' ? 5 : 3; // placeholder estimation
 
         // 3. Create Order
@@ -43,13 +63,20 @@ export const orderService = {
             organizationId: quote.organizationId,
             conversationId,
             quoteId,
-            status: 'CREATED',
+            status: 'DRAFT',
             carrier: quote.bestCarrier || 'Unknown Carrier',
             service: quote.bestService || 'Standard',
             price: price ? String(price) : null,
+            totalAmount: totalAmount ? String(totalAmount) : null,
             deliveryDeadline: deliveryDeadline,
             createdBy: operatorId,
         });
+
+        // 3.5 Update Quote Status to CONVERTED
+        await db.update(simulations).set({ 
+            status: 'CONVERTED', 
+            convertedAt: new Date() 
+        }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
 
         const [newOrder] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
 
@@ -77,31 +104,71 @@ export const orderService = {
     async updateOrderStatus(
         tenantId: string,
         orderId: string,
-        status: 'CREATED' | 'CONFIRMED' | 'SCHEDULED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED'
+        status: 'DRAFT' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELED'
     ): Promise<void> {
         const db = await getDb();
+        const [order] = await db.select().from(orders).where(and(eq(orders.tenantId, tenantId), eq(orders.id, orderId))).limit(1);
+        
+        if (!order) throw new Error('Order not found');
+
+        if (order.status === status) return; // Silent discard
+
+        // Prevent illegal backwards transitions
+        const ranks: Record<string, number> = {
+            'DRAFT': 1,
+            'CONFIRMED': 2,
+            'PROCESSING': 3,
+            'SHIPPED': 4,
+            'DELIVERED': 5
+        };
+
+        if (status !== 'CANCELED' && order.status !== 'CANCELED') {
+            const currentRank = ranks[order.status] || 0;
+            const newRank = ranks[status] || 0;
+            if (newRank <= currentRank) {
+                throw new Error(`Cannot regress order status from ${order.status} to ${status}`);
+            }
+        }
+
+        if (order.status === 'DELIVERED' || order.status === 'CANCELED') {
+            throw new Error(`Cannot change status of a ${order.status} order`);
+        }
         
         await db.update(orders)
             .set({ status })
             .where(and(eq(orders.tenantId, tenantId), eq(orders.id, orderId)));
-
-        const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
 
         // If order just got CONFIRMED, spawn its shipment
         if (status === 'CONFIRMED') {
             await shipmentService.createShipmentFromOrder(tenantId, orderId);
         }
 
+        // Timeline Operational Logging
+        if (['CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELED'].includes(status) && order.conversationId) {
+            const statusLabels: Record<string, string> = {
+                'CONFIRMED': 'confirmado e enviado para separação',
+                'SHIPPED': 'entregue à transportadora',
+                'DELIVERED': 'marcado como entregue ao cliente',
+                'CANCELED': 'cancelado'
+            };
+            await messageService.processSystemEvent(
+                tenantId,
+                order.conversationId,
+                `📍 Pedido #${order.id.split('-')[0]} foi ${statusLabels[status]}.`,
+                { event: `order_${status.toLowerCase()}` }
+            );
+        }
+
         // Emit relevant event based on status
         let eventType: 'order_confirmed' | 'order_cancelled' | 'order_status_updated' = 'order_status_updated';
         if (status === 'CONFIRMED') eventType = 'order_confirmed';
-        if (status === 'CANCELLED') eventType = 'order_cancelled';
+        if (status === 'CANCELED') eventType = 'order_cancelled';
 
         await publishOperationalEvent({
             tenantId,
             eventType,
             eventDomain: 'OPERATIONS',
-            customerId: order?.customerId || undefined,
+            customerId: order.customerId || undefined,
             payload: {
                 orderId,
                 status

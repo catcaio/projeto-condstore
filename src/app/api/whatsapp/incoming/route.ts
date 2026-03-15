@@ -115,7 +115,8 @@ export async function POST(request: Request) {
             fromHash: phoneHash(fromChannelAddress),
             toPhone: payload.To || '',
             rawBodyText: incomingMessage.body || '',
-            requestId
+            requestId,
+            profileName: payload.ProfileName
         });
 
         currentStep = 'Applying Reply Policy';

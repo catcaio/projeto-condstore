@@ -33,8 +33,16 @@ vi.mock('@/modules/customers/identity-resolver/identity-resolver.service', () =>
     resolveCustomerByPhone: vi.fn()
 }));
 
+vi.mock('@/modules/customers/customer-resolution.service', () => ({
+    customerResolutionService: { resolveOrCreateCustomer: vi.fn() }
+}));
+
+vi.mock('@/modules/atendimento/message.service', () => ({
+    messageService: { processInbound: vi.fn() }
+}));
+
 vi.mock('@/modules/atendimento/conversation.service', () => ({
-    conversationService: { processInboundMessage: vi.fn() }
+    conversationService: { findOrCreateConversationByPhone: vi.fn() }
 }));
 
 vi.mock('@/modules/catalog/catalog.service', () => ({
@@ -59,11 +67,19 @@ describe('WhatsApp Inbound Orchestrator', () => {
         rawBodyText: 'Mensagem de teste', requestId: 'Req1'
     };
 
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.clearAllMocks();
         (inboundMessageDedupRepository.tryAcquire as any).mockResolvedValue(true);
         (endUserConsentRepository.getConsent as any).mockResolvedValue({ consentGiven: true });
-        (conversationService.processInboundMessage as any).mockResolvedValue({ conversation: { id: 'c1', status: 'NEW' } });
+        (conversationService.findOrCreateConversationByPhone as any).mockResolvedValue({ id: 'c1', status: 'OPEN', stage: 'NEW_LEAD' });
+        
+        const { customerResolutionService } = await import('@/modules/customers/customer-resolution.service');
+        (customerResolutionService.resolveOrCreateCustomer as any).mockResolvedValue({
+            customerId: 'cust1',
+            organizationId: 'org1',
+            contactId: 'cnt1',
+            isNew: false
+        });
     });
 
     it('Should block duplicate webhooks (Idempotent)', async () => {
@@ -81,19 +97,22 @@ describe('WhatsApp Inbound Orchestrator', () => {
         expect((policy as any).text).toContain('política de privacidade');
         
         // Ensure no identity/AI processing happens
-        expect(conversationService.processInboundMessage).not.toHaveBeenCalled();
+        const { messageService } = await import('@/modules/atendimento/message.service');
+        expect(messageService.processInbound).not.toHaveBeenCalled();
         expect(catalogService.searchProductsByName).not.toHaveBeenCalled();
         expect(intentResolver.resolveIntent).not.toHaveBeenCalled();
     });
 
     it('Should abort AI processing when HUMAN_ACTIVE', async () => {
-        (conversationService.processInboundMessage as any).mockResolvedValue({
-            conversation: { id: 'c1', status: 'HUMAN_ACTIVE' }
+        (conversationService.findOrCreateConversationByPhone as any).mockResolvedValue({
+             id: 'c1', status: 'HUMAN_ACTIVE' 
         });
         
         const policy = await whatsappInboundOrchestrator.process(defaultPayload);
         
         expect(policy.type).toBe('ACK_ONLY');
+        const { messageService } = await import('@/modules/atendimento/message.service');
+        expect(messageService.processInbound).toHaveBeenCalled();
         
         // Ensure NLP and Catalog are skipped to save costs and avoid noise
         expect(intentResolver.resolveIntent).not.toHaveBeenCalled();

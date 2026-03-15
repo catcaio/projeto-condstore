@@ -88,8 +88,7 @@ export class TenantRepository {
         const normalizedNumber = this.normalize(rawTwilioNumber);
 
         logger.info(`[${correlationId}] Starting tenant resolution`, {
-            raw: '***' + rawTwilioNumber.slice(-4), // Simple mask here as logger.maskPhone might not be available or I should use it if I export it. logger is imported.
-            normalized: '***' + normalizedNumber.slice(-4)
+            normalizedEndsWith: normalizedNumber.slice(-4)
         });
 
         // 2. Cache Lookup
@@ -114,11 +113,8 @@ export class TenantRepository {
                 ;
 
             if (results.length === 0) {
-                // Log all tenants for diagnosis if not found
-                const allTenants = await this.getAllTenants();
                 logger.warn(`[${correlationId}] Tenant NOT FOUND`, {
-                    searchedFor: normalizedNumber,
-                    availableTenants: allTenants.map(t => `${t.name} (${t.twilioNumber})`)
+                    searchedForPartial: '***' + normalizedNumber.slice(-4)
                 });
 
                 throw new BusinessError(
