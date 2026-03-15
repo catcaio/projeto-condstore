@@ -13,7 +13,7 @@ import { freightService } from '@/modules/freight/freight.service';
 import { resolveEntities } from '@/modules/frank/entity-resolver';
 import { resolveIntent, resolveContextualIntent, type SessionAnchors, type Intent } from '@/modules/frank/intent-resolver';
 import { getSessionState, createSessionState, updateSessionState } from '@/modules/frank/session.repository';
-import { resolveConversationMode } from '@/modules/frank/conversation-control';
+import { resolveConversationMode, isEntitiesCompleteForIntent } from '@/modules/frank/conversation-control';
 import { evaluateAutoResponseGuard } from '@/modules/frank/auto-response-guard';
 import { messageService } from '@/modules/atendimento/message.service';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
@@ -316,13 +316,30 @@ export const whatsappInboundOrchestrator = {
             autoResponsesCount = 0;
         }
 
+        const entitiesComplete = isEntitiesCompleteForIntent(intentResult.intent, {
+            destinationZip,
+            productQuery,
+            quantity
+        });
+
+        if (!entitiesComplete) {
+            logger.info('whatsapp_incomplete_entities', {
+                tenantId,
+                conversationId: conversation.id,
+                intent: intentResult.intent,
+                destinationZip,
+                productQuery,
+                quantity
+            });
+        }
+
         const gateResult = resolveConversationMode({
             intent: intentResult.intent,
             entities: entityResult.entities, 
             confidence: intentResult.confidence,
             timestamp: new Date(),
             operatorOnline: Boolean(conversation.assignedTo) || operatorRespondedRecently,
-            entitiesComplete: true, // Default to true as fallback
+            entitiesComplete,
             autoResponsesCount,
             messageBody: messageText
         });

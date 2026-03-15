@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     resolveConversationMode,
     isBusinessHours,
+    isEntitiesCompleteForIntent,
     type ConversationGateInput,
 } from '../conversation-control';
 import type { ExtractedEntities } from '../entity-resolver';
@@ -172,6 +173,53 @@ describe('Conversation Control Gate', () => {
             }));
             expect(result.mode).toBe('AUTONOMOUS');
             expect(result.reason).toContain('greeting_off_hours');
+        });
+    });
+
+    describe('isEntitiesCompleteForIntent', () => {
+        it('should return false for FRETE without destinationZip', () => {
+            const result = isEntitiesCompleteForIntent('FRETE', { destinationZip: null, productQuery: 'mesa', quantity: 1 });
+            expect(result).toBe(false);
+        });
+
+        it('should return false for FRETE without productQuery', () => {
+            const result = isEntitiesCompleteForIntent('FRETE', { destinationZip: '12345-678', productQuery: null, quantity: 1 });
+            expect(result).toBe(false);
+        });
+
+        it('should return false for FRETE with 0 quantity', () => {
+            const result = isEntitiesCompleteForIntent('FRETE', { destinationZip: '12345-678', productQuery: 'mesa', quantity: 0 });
+            expect(result).toBe(false);
+        });
+
+        it('should return true for FRETE with all entities present', () => {
+            const result = isEntitiesCompleteForIntent('FRETE', { destinationZip: '12345-678', productQuery: 'mesa', quantity: 2 });
+            expect(result).toBe(true);
+        });
+
+        it('should return true for FREIGHT (alias of FRETE) with all entities present', () => {
+            const result = isEntitiesCompleteForIntent('FREIGHT', { destinationZip: '12345-678', productQuery: 'mesa', quantity: 2 });
+            expect(result).toBe(true);
+        });
+
+        it('should return false for PRODUTO without productQuery', () => {
+            const result = isEntitiesCompleteForIntent('PRODUTO', { destinationZip: null, productQuery: null, quantity: null });
+            expect(result).toBe(false);
+        });
+
+        it('should return true for PRODUTO with productQuery', () => {
+            const result = isEntitiesCompleteForIntent('PRODUTO', { destinationZip: null, productQuery: 'mesa de jantar', quantity: null });
+            expect(result).toBe(true);
+        });
+
+        it('should return true for informational intents regardless of entities', () => {
+            const result = isEntitiesCompleteForIntent('ORDER_STATUS', { destinationZip: null, productQuery: null, quantity: null });
+            expect(result).toBe(true);
+        });
+
+        it('should return true for unknown/generic intents regardless of entities', () => {
+            const result = isEntitiesCompleteForIntent('GENERIC_QUESTION', { destinationZip: null, productQuery: null, quantity: null });
+            expect(result).toBe(true);
         });
     });
 });

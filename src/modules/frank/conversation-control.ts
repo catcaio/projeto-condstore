@@ -122,6 +122,32 @@ function detectFrustration(message: string): boolean {
 // ─── Main Resolver ──────────────────────────────────────────────────────────
 
 /**
+ * Derives whether the minimum required entities for a given intent are present.
+ * Ensures that partial queries (like "qual o frete" with no ZIP) are flagged
+ * so the conversation control can force human supervision.
+ */
+export function isEntitiesCompleteForIntent(
+    intent: Intent,
+    extracted: {
+        destinationZip: string | null;
+        productQuery: string | null;
+        quantity: number | null;
+    }
+): boolean {
+    if (intent === 'FRETE' || intent === 'FREIGHT') {
+        return Boolean(extracted.destinationZip && extracted.productQuery && (extracted.quantity ?? 0) > 0);
+    }
+    
+    if (intent === 'PRODUTO' || intent === 'PRODUCT_QUERY') {
+        return Boolean(extracted.productQuery);
+    }
+
+    // Default: Intents without strict operational entity requirements (or unknown intents)
+    // are considered 'complete' to allow the normal confidence gate to evaluate them.
+    return true;
+}
+
+/**
  * Resolve conversation mode based on intent, confidence, entities, limits and operator presence.
  */
 export function resolveConversationMode(input: ConversationGateInput): ConversationGateResult {
