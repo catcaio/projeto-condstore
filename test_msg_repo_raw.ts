@@ -33,9 +33,10 @@ async function debugInsert() {
         };
 
         const { e164, hash } = hashPhoneForTenant(record.fromPhone, record.tenantId);
+        const { fromPhone, ...restRecord } = record;
         const recordToPersist = {
-            ...record,
-            fromPhone: '[redacted]',
+            ...restRecord,
+            fromPhoneHash: hash,
             phoneHash: hash,
             phoneEncrypted: encryptString(e164),
             toPhone: null as any,
