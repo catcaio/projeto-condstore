@@ -1,4 +1,4 @@
-import { requireSession } from '@/infra/auth/guards';
+import { getServerSessionUser } from '@/infra/auth/session';
 import { playbookService } from '@/modules/playbooks/playbook.service';
 import { GovernanceShell } from '@/modules/governance/components/governance-shell';
 import Link from 'next/link';
@@ -6,10 +6,9 @@ import { Plus, BookOpen, Clock, Play } from 'lucide-react';
 import { Button } from '@/ui/components/button';
 
 export default async function PlaybooksListPage() {
-    const sessionRes = await requireSession(undefined as any);
-    if (!sessionRes.ok) return null;
-    const ctx = sessionRes.session as any;
-    const playbooks = await playbookService.listPlaybooks(ctx.tenantId);
+    const session = await getServerSessionUser();
+    if (!session || !session.tenantId) return null;
+    const playbooks = await playbookService.listPlaybooks(session.tenantId);
 
     return (
         <GovernanceShell title="Knowledge & Playbooks">
@@ -18,11 +17,9 @@ export default async function PlaybooksListPage() {
                     <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">Operational Playbooks</h1>
                     <p className="text-neutral-500 dark:text-neutral-400 mt-1">Automate responses to recurring incidents.</p>
                 </div>
-                <Link href="/cockpit/playbooks/new">
-                    <Button variant="secondary">
+                <Link href="/cockpit/playbooks/new" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2">
                         <Plus className="w-4 h-4 mr-2" />
                         Create Playbook
-                    </Button>
                 </Link>
             </div>
 

@@ -51,7 +51,7 @@ describe('Frank Context Builder', () => {
         
         const mockMessages = Array.from({ length: 20 }).map((_, i) => ({
             id: `msg-${i}`,
-            direction: i % 2 === 0 ? 'INBOUND' : 'OUTBOUND',
+            direction: i % 2 === 0 ? 'inbound' : 'outbound',
             source: i === 1 ? 'SYSTEM' : 'OPERATOR',
             message: `Hello ${i}`,
             createdAt: new Date(`2026-03-01T10:00:${i.toString().padStart(2, '0')}.000Z`)

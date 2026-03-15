@@ -1,5 +1,5 @@
 import { conversationRepository, type ConversationListFilter } from './conversation.repository';
-import { type ConversationRecord, type ConversationMessageRecord } from '@/drizzle/schema';
+import { type ConversationRecord, type ConversationMessageRecord, type ConversationStatusType } from '@/drizzle/schema';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 
 export const conversationService = {
@@ -123,7 +123,7 @@ export const conversationService = {
     async updateConversationStatus(
         tenantId: string,
         conversationId: string,
-        status: 'OPEN' | 'WAITING_CUSTOMER' | 'WAITING_INTERNAL' | 'RESOLVED' | 'HUMAN_ACTIVE',
+        status: ConversationStatusType,
         customerId?: string
     ): Promise<void> {
         await conversationRepository.updateConversationStatus(tenantId, conversationId, status);

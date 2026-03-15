@@ -52,16 +52,50 @@ export async function POST(request: NextRequest) {
 
         // If we found the message tracked explicitly by providerMessageId:
         if (existing) {
-            await db
-                .update(conversationMessages)
-                .set({
-                    deliveryStatus: messageStatus,
-                })
-                .where(eq(conversationMessages.id, existing.id));
+            let mappedStatus: 'queued' | 'sent' | 'delivered' | 'read' | 'failed' = 'sent';
+            switch (messageStatus) {
+                case 'queued':
+                case 'accepted':
+                    mappedStatus = 'queued';
+                    break;
+                case 'sent':
+                    mappedStatus = 'sent';
+                    break;
+                case 'delivered':
+                    mappedStatus = 'delivered';
+                    break;
+                case 'read':
+                    mappedStatus = 'read';
+                    break;
+                case 'failed':
+                case 'undelivered':
+                    mappedStatus = 'failed';
+                    break;
+                default:
+                    mappedStatus = 'sent'; // Fallback
+            }
+
+            await db.transaction(async (tx) => {
+                await tx
+                    .update(conversationMessages)
+                    .set({
+                        deliveryStatus: mappedStatus,
+                    })
+                    .where(eq(conversationMessages.id, existing.id));
+
+                if (mappedStatus === 'failed') {
+                    const { conversations } = await import('@/drizzle/schema');
+                    await tx
+                        .update(conversations)
+                        .set({ status: 'failed_delivery' })
+                        .where(eq(conversations.id, existing.conversationId));
+                }
+            });
 
             logger.info('twilio_status_callback_processed', {
                 messageSid,
                 messageStatus,
+                mappedStatus,
                 messageId: existing.id,
             });
         }

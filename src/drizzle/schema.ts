@@ -1,6 +1,34 @@
 import { mysqlTable, varchar, decimal, double, int, timestamp, text, index, uniqueIndex, json, date, primaryKey, datetime, mysqlEnum, boolean } from 'drizzle-orm/mysql-core';
 import { sql } from 'drizzle-orm';
 
+// --- Operational Enums (WhatsApp Transactional Core) ---
+export const MessageDirectionEnum = ['inbound', 'outbound'] as const;
+export type MessageDirection = typeof MessageDirectionEnum[number];
+
+export const ConversationStatusEnum = [
+    'new', 
+    'triaged', 
+    'awaiting_human', 
+    'draft_ready', 
+    'approved', 
+    'sent', 
+    'delivered', 
+    'closed',
+    'blocked_guardrail',
+    'operator_active',
+    'failed_delivery'
+] as const;
+export type ConversationStatusType = typeof ConversationStatusEnum[number];
+
+export const MessageDeliveryStatusEnum = [
+    'queued',
+    'sent',
+    'delivered',
+    'read',
+    'failed'
+] as const;
+export type MessageDeliveryStatusType = typeof MessageDeliveryStatusEnum[number];
+
 // --- Tenants (Multi-Tenant Support) ---
 
 export const tenants = mysqlTable('tenants', {
@@ -2012,7 +2040,7 @@ export const conversations = mysqlTable('conversations', {
     phoneHash: varchar('phone_hash', { length: 64 }).notNull(),
     phoneEncrypted: varchar('phone_encrypted', { length: 255 }).notNull(),
     channel: varchar('channel', { length: 20 }).notNull().default('WHATSAPP'),
-    status: varchar('status', { length: 30 }).notNull().default('OPEN'), // OPEN, WAITING_CUSTOMER, WAITING_INTERNAL, RESOLVED
+    status: mysqlEnum('status', ConversationStatusEnum).notNull().default('new'),
     stage: mysqlEnum('stage', ['NEW_LEAD', 'IN_ATTENDANCE', 'QUOTED', 'WON', 'LOST']).notNull().default('NEW_LEAD'),
     assignedTo: varchar('assigned_to', { length: 36 }),
     lostReason: varchar('lost_reason', { length: 255 }),
@@ -2028,16 +2056,16 @@ export const conversationMessages = mysqlTable('conversation_messages', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
     conversationId: varchar('conversation_id', { length: 36 }).notNull(),
-    direction: varchar('direction', { length: 20 }).notNull(), // INBOUND | OUTBOUND
+    direction: mysqlEnum('direction', MessageDirectionEnum).notNull(),
     source: varchar('source', { length: 30 }).notNull(), // WHATSAPP | OPERATOR | SYSTEM
     message: text('message').notNull(),
     metadata: json('metadata'),
     providerMessageId: varchar('provider_message_id', { length: 100 }), // Twilio MessageSid
-    deliveryStatus: varchar('delivery_status', { length: 30 }), // queued, sent, delivered, read, failed
+    deliveryStatus: mysqlEnum('delivery_status', MessageDeliveryStatusEnum),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
     idxConversationCreated: index('idx_conversation_msgs_conv_created').on(table.conversationId, table.createdAt),
-    idxProviderMsg: index('idx_conversation_msgs_provider').on(table.providerMessageId),
+    uqProviderMsg: uniqueIndex('uq_conversation_msgs_provider').on(table.providerMessageId),
 }));
 
 export const conversationAssignments = mysqlTable('conversation_assignments', {

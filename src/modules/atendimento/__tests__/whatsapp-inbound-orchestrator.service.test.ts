@@ -7,7 +7,19 @@ import { conversationService } from '@/modules/atendimento/conversation.service'
 import { catalogService } from '@/modules/catalog/catalog.service';
 import { freightService } from '@/modules/freight/freight.service';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
-import * as intentResolver from '@/modules/frank/intent-resolver';
+import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
+
+const mockResolveIntent = vi.fn().mockReturnValue({ intent: 'SUPPORT', confidence: 0.9, entities: [] });
+const mockResolveContextualIntent = vi.fn().mockImplementation((text: string) => {
+    if (text === 'tem rastreio?') return { intent: 'SHIPMENT_STATUS', confidence: 0.9, entities: [] };
+    if (text === 'quero ver os produtos') return { intent: 'CATALOG', confidence: 0.9, entities: [] };
+    return { intent: 'SUPPORT', confidence: 0.9, entities: [] };
+});
+
+vi.mock('@/modules/frank/intent-resolver', () => ({
+    resolveIntent: (...args: any[]) => mockResolveIntent(...args),
+    resolveContextualIntent: (...args: any[]) => mockResolveContextualIntent(...args)
+}));
 
 vi.mock('@/infra/repositories/inbound-message-dedup.repository', () => ({
     inboundMessageDedupRepository: { tryAcquire: vi.fn() }
@@ -76,8 +88,6 @@ vi.mock('@/modules/pedidos/order.repository', () => ({
 }));
 
 // We observe intent usage to verify if it was correctly bypassed
-vi.spyOn(intentResolver, 'resolveIntent');
-vi.spyOn(intentResolver, 'resolveContextualIntent');
 
 describe('WhatsApp Inbound Orchestrator', () => {
     const defaultPayload = {
@@ -122,13 +132,13 @@ describe('WhatsApp Inbound Orchestrator', () => {
         const { messageService } = await import('@/modules/atendimento/message.service');
         expect(messageService.processInbound).not.toHaveBeenCalled();
         expect(catalogService.searchProductsByName).not.toHaveBeenCalled();
-        expect(intentResolver.resolveIntent).not.toHaveBeenCalled();
-        expect(intentResolver.resolveContextualIntent).not.toHaveBeenCalled();
+        expect(mockResolveIntent).not.toHaveBeenCalled();
+        expect(mockResolveContextualIntent).not.toHaveBeenCalled();
     });
 
-    it('Should abort AI processing when HUMAN_ACTIVE', async () => {
+    it('Should abort AI processing when operator_active', async () => {
         (conversationService.findOrCreateConversationByPhone as any).mockResolvedValue({
-             id: 'c1', status: 'HUMAN_ACTIVE' 
+             id: 'c1', status: 'operator_active' 
         });
         
         const policy = await whatsappInboundOrchestrator.process(defaultPayload);
@@ -138,8 +148,8 @@ describe('WhatsApp Inbound Orchestrator', () => {
         expect(messageService.processInbound).toHaveBeenCalled();
         
         // Ensure NLP and Catalog are skipped to save costs and avoid noise
-        expect(intentResolver.resolveIntent).not.toHaveBeenCalled();
-        expect(intentResolver.resolveContextualIntent).not.toHaveBeenCalled();
+        expect(mockResolveIntent).not.toHaveBeenCalled();
+        expect(mockResolveContextualIntent).not.toHaveBeenCalled();
         expect(catalogService.searchProductsByName).not.toHaveBeenCalled();
         expect(suggestionService.generateSuggestion).not.toHaveBeenCalled();
     });
@@ -152,7 +162,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
         const policy = await whatsappInboundOrchestrator.process(payloadWithProduct);
         
         expect(policy.type).toBe('SUPERVISED_NO_REPLY');
-        expect(intentResolver.resolveContextualIntent).toHaveBeenCalled();
+        expect(mockResolveContextualIntent).toHaveBeenCalled();
         expect(catalogService.searchProductsByName).toHaveBeenCalled();
         expect(suggestionService.generateSuggestion).toHaveBeenCalled();
     });
@@ -168,7 +178,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
 
         await whatsappInboundOrchestrator.process(payloadFollowUp);
         
-        expect(intentResolver.resolveContextualIntent).toHaveBeenCalledWith('tem rastreio?', expect.objectContaining({
+        expect(mockResolveContextualIntent).toHaveBeenCalledWith('tem rastreio?', expect.objectContaining({
             lastReferencedOrderId: 'ord_123',
             previousIntent: 'ORDER_STATUS'
         }));
@@ -186,7 +196,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
 
         await whatsappInboundOrchestrator.process(payload);
         
-        expect(intentResolver.resolveContextualIntent).toHaveBeenCalledWith('quero ver os produtos', null);
+        expect(mockResolveContextualIntent).toHaveBeenCalledWith('quero ver os produtos', null);
         
         expect(createSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
             currentIntent: expect.any(String)

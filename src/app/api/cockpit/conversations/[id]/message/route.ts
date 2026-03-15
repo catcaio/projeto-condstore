@@ -31,7 +31,7 @@ async function resolveRecipientPhone(
         });
 
         const messages = await conversationService.getConversationMessages(tenantId, conversationId);
-        const latestInbound = [...messages].reverse().find((message) => message.direction === 'INBOUND');
+        const latestInbound = [...messages].reverse().find((message) => message.direction === 'inbound');
         const messageSid = extractInboundMessageSid((latestInbound?.metadata as Record<string, unknown> | null | undefined));
 
         if (!messageSid) {
@@ -174,7 +174,7 @@ export async function POST(
             }
         );
 
-        if (conversation.status !== 'HUMAN_ACTIVE') {
+        if (conversation.status !== 'operator_active') {
             await conversationService.markConversationWaitingCustomer(tenantId, conversationId);
         }
 

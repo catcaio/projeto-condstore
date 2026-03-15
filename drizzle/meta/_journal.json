@@ -379,6 +379,13 @@
       "when": 1773614036561,
       "tag": "0065_safe_havok",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "5",
+      "when": 1773616129635,
+      "tag": "0066_complete_stephen_strange",
+      "breakpoints": true
     }
   ]
 }

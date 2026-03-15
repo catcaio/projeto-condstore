@@ -1,13 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { playbookService } from '@/modules/playbooks/playbook.service';
 import { ApplyPlaybookSchema } from '@/modules/playbooks/playbook.schemas';
 
-export async function POST(req: Request, context: any) {
+export async function POST(req: NextRequest, context: any) {
     try {
-        const sessionRes = await requireAdmin(req as any);
+        const sessionRes = await requireAdmin(req);
         if (!sessionRes.ok) return sessionRes.response;
-        const ctx = sessionRes.session as any;
         const body = await req.json();
 
         const parsed = ApplyPlaybookSchema.safeParse({
@@ -20,10 +19,10 @@ export async function POST(req: Request, context: any) {
         }
 
         const result = await playbookService.applyPlaybook({
-            tenantId: ctx.tenantId,
+            tenantId: sessionRes.session.tenantId,
             playbookId: parsed.data.playbookId,
             parentTaskId: parsed.data.parentTaskId,
-            actorUserId: ctx.userId
+            actorUserId: sessionRes.session.sub
         });
 
         return NextResponse.json(result, { status: 200 });

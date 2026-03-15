@@ -121,7 +121,7 @@ export const whatsappInboundOrchestrator = {
                 void webhookEventRepository.markProcessed('twilio_frank', messageSid);
                 
                 return resolveInboundReplyPolicy({
-                    tenantId, phoneHash: fromHash, conversationState: 'WAITING_CONSENT',
+                    tenantId, phoneHash: fromHash, conversationState: 'new',
                     hasConsent: false, productDetected: false, hasActiveSuggestion: false, intent: 'UNKNOWN'
                 });
             }
@@ -156,7 +156,7 @@ export const whatsappInboundOrchestrator = {
             { customerId: identity.customerId, organizationId: identity.organizationId }
         );
 
-        if (conversation.status === 'HUMAN_ACTIVE') {
+        if (conversation.status === 'operator_active') {
             await messageService.processInbound({
                 tenantId,
                 conversationId: conversation.id,

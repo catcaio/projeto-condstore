@@ -12,11 +12,13 @@
  * 3. Graceful degradation: A failure to write to the `messages` analytics table should NEVER 
  *    interrupt the customer or the operator (Timeline Operational Priority).
  */
-import { conversationRepository } from './conversation.repository';
-import { messageRepository } from '@/infra/repositories/message.repository';
-import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { logger } from '@/infra/logger';
-import { type ConversationMessageRecord } from '@/drizzle/schema';
+import { getDb } from '@/infra/db';
+import { eq, and, sql } from 'drizzle-orm';
+import { conversationMessages, conversations } from '@/drizzle/schema';
+import { operationalEvents } from '@/drizzle/schema';
+import { randomUUID } from 'crypto';
+import type { ConversationMessageRecord } from '@/drizzle/schema';
 
 export const messageService = {
     async processInbound(
@@ -36,40 +38,82 @@ export const messageService = {
             contactId?: string;
         }
     ): Promise<ConversationMessageRecord> {
-        // Idempotency check: Don't insert duplicate webhook retries.
-        const db = await import('@/infra/db').then(m => m.getDb());
-        const { conversationMessages } = await import('@/drizzle/schema');
-        const { eq, and } = await import('drizzle-orm');
+        const db = await getDb();
         
-        const [existing] = await db.select()
-            .from(conversationMessages)
-            .where(and(eq(conversationMessages.tenantId, params.tenantId), eq(conversationMessages.providerMessageId, params.messageSid)))
-            .limit(1);
+        const inboundMessage = await db.transaction(async (tx) => {
+            // 1. Idempotency Check with pessimistic lock/strict isolation
+            const [existing] = await tx.select()
+                .from(conversationMessages)
+                .where(and(eq(conversationMessages.tenantId, params.tenantId), eq(conversationMessages.providerMessageId, params.messageSid)))
+                .limit(1);
 
-        if (existing) {
-            logger.warn('inbound_message_dual_write_skipped_idempotent', {
+            if (existing) {
+                logger.warn('inbound_message_dual_write_skipped_idempotent', {
+                    tenantId: params.tenantId,
+                    messageSid: params.messageSid,
+                    message: 'Webhook retried an already processed message'
+                });
+                return existing;
+            }
+
+            const metadata = {
+                ...params.metadata,
+                actorType: 'CLIENT',
+                messageType: 'TEXT',
+                intent: params.intent
+            };
+
+            const messageId = randomUUID();
+
+            // 2. Insert Canonical Timeline Message
+            await tx.insert(conversationMessages).values({
+                id: messageId,
                 tenantId: params.tenantId,
-                messageSid: params.messageSid,
-                message: 'Webhook retried an already processed message'
+                conversationId: params.conversationId,
+                direction: 'inbound',
+                source: 'WHATSAPP',
+                message: params.message,
+                metadata,
+                providerMessageId: params.messageSid,
+                deliveryStatus: 'delivered', 
             });
-            return existing;
-        }
 
-        const metadata = {
-            ...params.metadata,
-            actorType: 'CLIENT',
-            messageType: 'TEXT',
-            intent: params.intent
-        };
+            // 3. Update Conversation State explicitly
+            await tx.update(conversations)
+                .set({
+                    lastMessageAt: sql`CURRENT_TIMESTAMP`,
+                    status: 'awaiting_human'
+                })
+                .where(and(eq(conversations.tenantId, params.tenantId), eq(conversations.id, params.conversationId)));
 
-        const inboundMessage = await conversationRepository.appendInboundMessage(
-            params.tenantId,
-            params.conversationId,
-            params.message,
-            metadata,
-            params.messageSid
-        );
+            // 4. Write to Operational Event Bus
+            await tx.insert(operationalEvents).values({
+                id: randomUUID(),
+                tenantId: params.tenantId,
+                eventType: 'message_received',
+                eventDomain: 'OPERATIONS',
+                customerId: params.customerId ?? null,
+                payload: {
+                    conversationId: params.conversationId,
+                    channel: 'WHATSAPP',
+                    messageId,
+                    contactId: params.contactId ?? null,
+                    organizationId: params.organizationId ?? null,
+                    intent: params.intent,
+                    unidentified: !params.customerId,
+                    messageSid: params.messageSid,
+                }
+            });
 
+            const [insertedMessage] = await tx.select()
+                .from(conversationMessages)
+                .where(eq(conversationMessages.id, messageId))
+                .limit(1);
+
+            return insertedMessage;
+        });
+
+        const { messageRepository } = await import('@/infra/repositories/message.repository');
         try {
             await messageRepository.saveInboundMessage({
                 messageSid: params.messageSid,
@@ -79,7 +123,7 @@ export const messageService = {
                 body: params.message,
                 direction: 'inbound',
                 intent: params.intent,
-                intentConfidence: params.intentConfidence !== null ? params.intentConfidence.toString() : null,
+                intentConfidence: params.intentConfidence != null ? params.intentConfidence.toString() : undefined,
                 rawPayload: params.rawPayload
             });
         } catch (error) {
@@ -93,23 +137,6 @@ export const messageService = {
             });
             // NON-BLOCKING: we successfully wrote to conversation_messages.
         }
-
-        await publishOperationalEvent({
-            tenantId: params.tenantId,
-            eventType: 'message_received',
-            eventDomain: 'OPERATIONS',
-            customerId: params.customerId ?? null,
-            payload: {
-                conversationId: params.conversationId,
-                channel: 'WHATSAPP',
-                messageId: inboundMessage.id,
-                contactId: params.contactId ?? null,
-                organizationId: params.organizationId ?? null,
-                intent: params.intent,
-                unidentified: !params.customerId,
-                messageSid: params.messageSid,
-            }
-        });
 
         return inboundMessage;
     },
@@ -133,28 +160,52 @@ export const messageService = {
             messageType: params.messageType || 'TEXT',
         };
 
-        const outboundMessage = await conversationRepository.appendOutboundMessage(
-            params.tenantId,
-            params.conversationId,
-            params.message,
-            params.source,
-            outboundMetadata,
-            params.options
-        );
+        const db = await getDb();
 
-        await publishOperationalEvent({
-            tenantId: params.tenantId,
-            eventType: 'message_sent',
-            eventDomain: 'OPERATIONS',
-            customerId: params.customerId ?? null,
-            payload: {
+        return await db.transaction(async (tx) => {
+            const messageId = randomUUID();
+            const advanceConversation = params.options?.advanceConversation ?? true;
+
+            await tx.insert(conversationMessages).values({
+                id: messageId,
+                tenantId: params.tenantId,
                 conversationId: params.conversationId,
+                direction: 'outbound',
                 source: params.source,
-                messageId: outboundMessage.id,
-            }
-        });
+                message: params.message,
+                metadata: outboundMetadata,
+                deliveryStatus: 'queued'
+            });
 
-        return outboundMessage;
+            if (advanceConversation) {
+                await tx.update(conversations)
+                    .set({
+                        lastMessageAt: sql`CURRENT_TIMESTAMP`,
+                        status: 'sent'
+                    })
+                    .where(and(eq(conversations.tenantId, params.tenantId), eq(conversations.id, params.conversationId)));
+            }
+
+            await tx.insert(operationalEvents).values({
+                id: randomUUID(),
+                tenantId: params.tenantId,
+                eventType: 'message_sent',
+                eventDomain: 'OPERATIONS',
+                customerId: params.customerId ?? null,
+                payload: {
+                    conversationId: params.conversationId,
+                    source: params.source,
+                    messageId: messageId,
+                }
+            });
+
+            const [insertedMessage] = await tx.select()
+                .from(conversationMessages)
+                .where(eq(conversationMessages.id, messageId))
+                .limit(1);
+
+            return insertedMessage;
+        });
     },
 
     async processSystemEvent(

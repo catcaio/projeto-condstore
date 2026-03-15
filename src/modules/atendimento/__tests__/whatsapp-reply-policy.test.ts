@@ -4,16 +4,16 @@ import { resolveInboundReplyPolicy } from '../whatsapp-reply-policy';
 describe('WhatsApp Reply Policy', () => {
     it('Should return AUTO_REPLY with LGPD consent text if no consent', () => {
         const policy = resolveInboundReplyPolicy({
-            tenantId: 't1', phoneHash: '123', conversationState: 'NEW',
+            tenantId: 't1', phoneHash: '123', conversationState: 'new',
             hasConsent: false, productDetected: false, hasActiveSuggestion: false, intent: 'UNKNOWN'
         });
         expect(policy.type).toBe('AUTO_REPLY_ALLOWED');
         expect((policy as any).text).toContain('política de privacidade');
     });
 
-    it('Should ACK_ONLY when conversation is HUMAN_ACTIVE', () => {
+    it('Should ACK_ONLY when conversation is operator_active', () => {
         const policy = resolveInboundReplyPolicy({
-            tenantId: 't1', phoneHash: '123', conversationState: 'HUMAN_ACTIVE',
+            tenantId: 't1', phoneHash: '123', conversationState: 'operator_active',
             hasConsent: true, productDetected: true, hasActiveSuggestion: false, intent: 'PRODUTO'
         });
         expect(policy.type).toBe('ACK_ONLY');
@@ -37,7 +37,7 @@ describe('WhatsApp Reply Policy', () => {
 
     it('Should AUTO_REPLY with default text for fallback intents', () => {
         const policy = resolveInboundReplyPolicy({
-            tenantId: 't1', phoneHash: '123', conversationState: 'NEW',
+            tenantId: 't1', phoneHash: '123', conversationState: 'new',
             hasConsent: true, productDetected: false, hasActiveSuggestion: false, intent: 'UNKNOWN'
         });
         expect(policy.type).toBe('AUTO_REPLY_ALLOWED');
@@ -46,7 +46,7 @@ describe('WhatsApp Reply Policy', () => {
     
     it('Should AUTO_REPLY with system message if provided', () => {
         const policy = resolveInboundReplyPolicy({
-            tenantId: 't1', phoneHash: '123', conversationState: 'NEW',
+            tenantId: 't1', phoneHash: '123', conversationState: 'new',
             hasConsent: true, productDetected: false, hasActiveSuggestion: false, intent: 'UNKNOWN',
             systemMessage: 'Erro de sistema local'
         });

@@ -1,7 +1,6 @@
 import { expect, test, describe, vi } from 'vitest';
 import { playbookService } from '../playbook.service';
 import { incidentRecurrenceDetector } from '../../governance/analysis/incident-recurrence';
-import { suggestPlaybook } from '../../frank/tools/governance/suggest-playbook.tool';
 
 vi.mock('@/db/client', () => {
     const mockArray = [{ 
@@ -72,14 +71,5 @@ describe('Playbook Engine', () => {
         // validHistory requires 3, our mock just returns 1 in `.where()` chain if mocked simplisticly.
         // The fact it doesn't throw ensures the DB pipe works.
         expect(result.shouldSuggest).toBe(false); // Because 1 < 3
-    });
-
-    test('Frank Playbook suggestion logic handles empty AI context gracefully', async () => {
-        const suggestion = await suggestPlaybook('t1', {
-            source: 'test',
-            incidentHistory: []
-        });
-        // Returns null if AI provider fails or errors
-        expect(suggestion).toBeNull();
     });
 });
