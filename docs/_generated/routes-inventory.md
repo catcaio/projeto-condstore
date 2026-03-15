@@ -77,6 +77,7 @@
 | `/api/cockpit/orders/[id]` | API |
 | `/api/cockpit/orders/[id]/shipment` | API |
 | `/api/cockpit/orders/[id]/status` | API |
+| `/api/cockpit/organizations/[id]` | API |
 | `/api/cockpit/pipeline` | API |
 | `/api/cockpit/pipeline/metrics` | API |
 | `/api/cockpit/playbooks` | API |
@@ -135,6 +136,7 @@
 | `/api/internal/jobs/rollup-backfill` | API |
 | `/api/internal/jobs/rollup-daily` | API |
 | `/api/internal/jobs/security-anomaly-scan` | API |
+| `/api/internal/jobs/seed-catalog` | API |
 | `/api/internal/jobs/supreme-benchmark-refresh` | API |
 | `/api/internal/ops` | API |
 | `/api/internal/playbooks` | API |
