@@ -90,11 +90,11 @@ export async function getInboxConversations(
         rowsFetchedTotal += msgs.length;
 
         for (const m of msgs) {
-            const rawPhone = m.direction === 'inbound' ? m.fromPhone : m.toPhone;
-            if (!rawPhone) continue;
+            const rawHash = m.direction === 'inbound' ? m.fromPhoneHash : m.toPhone;
+            if (!rawHash) continue;
 
-            const groupKey = buildConversationKey({ tenantId, phoneRaw: rawPhone });
-            const convo = getOrInit(groupKey, rawPhone, rawPhone);
+            const groupKey = buildConversationKey({ tenantId, phoneRaw: rawHash });
+            const convo = getOrInit(groupKey, rawHash, rawHash);
             convo.lastKind = 'message';
 
             if (m.createdAt > convo.lastActivityAt) convo.lastActivityAt = m.createdAt;

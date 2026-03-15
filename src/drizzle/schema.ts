@@ -187,7 +187,7 @@ export type NewSimulationRecord = typeof simulations.$inferInsert;
 export const messages = mysqlTable('messages', {
     messageSid: varchar('message_sid', { length: 64 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    fromPhone: varchar('from_phone', { length: 30 }).notNull(),
+    fromPhoneHash: varchar('from_phone_hash', { length: 64 }).notNull(),
     phoneHash: varchar('phone_hash', { length: 64 }),
     phoneEncrypted: text('phone_encrypted'),
     toPhone: varchar('to_phone', { length: 30 }),

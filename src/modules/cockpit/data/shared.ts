@@ -598,7 +598,7 @@ export async function loadCockpitRawData(
                 .select({
                     messageSid: messages.messageSid,
                     phoneHash: messages.phoneHash,
-                    fromPhone: messages.fromPhone,
+                    fromPhoneHash: messages.fromPhoneHash,
                     direction: messages.direction,
                     intent: messages.intent,
                     rawPayload: messages.rawPayload,
@@ -611,11 +611,11 @@ export async function loadCockpitRawData(
 
             return rows.map((row) => ({
                 messageSid: row.messageSid,
-                phoneKey: row.phoneHash ?? row.fromPhone ?? row.messageSid,
+                phoneKey: row.phoneHash ?? row.fromPhoneHash ?? row.messageSid,
                 actorLabel: resolveMessageActorLabel(
                     row.rawPayload,
                     row.phoneHash ?? null,
-                    row.fromPhone ?? null
+                    null
                 ),
                 direction: row.direction === 'outbound' ? 'outbound' : 'inbound',
                 intent: row.intent,
@@ -781,7 +781,7 @@ export async function loadCockpitRawData(
         safeLoad('active_conversations_count', 0, async () => {
             const [row] = await db
                 .select({
-                    count: sql<number>`COUNT(DISTINCT COALESCE(${messages.phoneHash}, ${messages.fromPhone}))`,
+                    count: sql<number>`COUNT(DISTINCT COALESCE(${messages.phoneHash}, ${messages.fromPhoneHash}))`,
                 })
                 .from(messages)
                 .where(and(eq(messages.tenantId, context.tenantId), gte(messages.createdAt, sixHoursAgo)));
