@@ -1,0 +1,44 @@
+src/app/(admin)/cockpit/playbooks/[id]/page.tsx(3,33): error TS2307: Cannot find module '@/modules/governance/components/governance-shell' or its corresponding type declarations.
+src/app/(admin)/cockpit/playbooks/[id]/page.tsx(8,23): error TS2554: Expected 1-2 arguments, but got 0.
+src/app/(admin)/cockpit/playbooks/[id]/page.tsx(11,64): error TS2339: Property 'tenantId' does not exist on type 'GuardResult<GuardedSession>'.
+  Property 'tenantId' does not exist on type 'GuardFailure'.
+src/app/(admin)/cockpit/playbooks/new/page.tsx(1,33): error TS2307: Cannot find module '@/modules/governance/components/governance-shell' or its corresponding type declarations.
+src/app/(admin)/cockpit/playbooks/page.tsx(3,33): error TS2307: Cannot find module '@/modules/governance/components/governance-shell' or its corresponding type declarations.
+src/app/(admin)/cockpit/playbooks/page.tsx(9,23): error TS2554: Expected 1-2 arguments, but got 0.
+src/app/(admin)/cockpit/playbooks/page.tsx(10,63): error TS2339: Property 'tenantId' does not exist on type 'GuardResult<GuardedSession>'.
+  Property 'tenantId' does not exist on type 'GuardFailure'.
+src/app/(admin)/cockpit/playbooks/page.tsx(19,25): error TS2322: Type '{ children: Element; asChild: true; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+  Property 'asChild' does not exist on type 'IntrinsicAttributes & ButtonProps & RefAttributes<HTMLButtonElement>'.
+src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts(8,27): error TS2554: Expected 1-2 arguments, but got 0.
+src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts(21,27): error TS2339: Property 'tenantId' does not exist on type 'GuardResult<GuardedSession>'.
+  Property 'tenantId' does not exist on type 'GuardFailure'.
+src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts(24,30): error TS2339: Property 'userId' does not exist on type 'GuardResult<GuardedSession>'.
+  Property 'userId' does not exist on type 'GuardFailure'.
+src/app/api/cockpit/governance/playbooks/metrics/route.ts(9,27): error TS2554: Expected 1-2 arguments, but got 0.
+src/app/api/cockpit/governance/playbooks/metrics/route.ts(14,47): error TS2339: Property 'tenantId' does not exist on type 'GuardResult<GuardedSession>'.
+  Property 'tenantId' does not exist on type 'GuardFailure'.
+src/app/api/cockpit/governance/playbooks/metrics/route.ts(22,54): error TS2339: Property 'tenantId' does not exist on type 'GuardResult<GuardedSession>'.
+  Property 'tenantId' does not exist on type 'GuardFailure'.
+src/app/api/cockpit/governance/playbooks/route.ts(8,27): error TS2554: Expected 1-2 arguments, but got 0.
+src/app/api/cockpit/governance/playbooks/route.ts(11,17): error TS2339: Property 'role' does not exist on type 'GuardResult<GuardedSession>'.
+  Property 'role' does not exist on type 'GuardFailure'.
+src/app/api/cockpit/governance/playbooks/route.ts(11,41): error TS2339: Property 'role' does not exist on type 'GuardResult<GuardedSession>'.
+  Property 'role' does not exist on type 'GuardFailure'.
+src/app/api/cockpit/governance/playbooks/route.ts(23,27): error TS2339: Property 'tenantId' does not exist on type 'GuardResult<GuardedSession>'.
+  Property 'tenantId' does not exist on type 'GuardFailure'.
+src/app/api/cockpit/governance/playbooks/route.ts(28,28): error TS2339: Property 'userId' does not exist on type 'GuardResult<GuardedSession>'.
+  Property 'userId' does not exist on type 'GuardFailure'.
+src/modules/frank/tools/governance/suggest-playbook.tool.ts(1,32): error TS2307: Cannot find module 'ai' or its corresponding type declarations.
+src/modules/frank/tools/governance/suggest-playbook.tool.ts(2,31): error TS2307: Cannot find module '@/infra/ai/provider' or its corresponding type declarations.
+src/modules/playbooks/components/playbook-editor.tsx(148,29): error TS2322: Type '"outline"' is not assignable to type 'ButtonVariant | undefined'.
+src/modules/playbooks/playbook.repository.ts(60,58): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: MySqlColumn<{ name: "archived_at"; tableName: "playbooks"; dataType: "date"; columnType: "MySqlTimestamp"; data: Date; driverParam: string | number; notNull: false; hasDefault: false; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}, {}>, right: Date | SQLWrapper): SQL<...>', gave the following error.
+    Argument of type 'null' is not assignable to parameter of type 'Date | SQLWrapper'.
+  Overload 2 of 3, '(left: Aliased<null>, right: SQLWrapper | null): SQL<unknown>', gave the following error.
+    Argument of type 'MySqlColumn<{ name: "archived_at"; tableName: "playbooks"; dataType: "date"; columnType: "MySqlTimestamp"; data: Date; driverParam: string | number; notNull: false; hasDefault: false; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}, {}>' is not assignable to parameter of type 'Aliased<null>'.
+      Type 'MySqlColumn<{ name: "archived_at"; tableName: "playbooks"; dataType: "date"; columnType: "MySqlTimestamp"; data: Date; driverParam: string | number; notNull: false; hasDefault: false; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}, {}>' is missing the following properties from type 'Aliased<null>': sql, fieldAlias
+  Overload 3 of 3, '(left: never, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'MySqlColumn<{ name: "archived_at"; tableName: "playbooks"; dataType: "date"; columnType: "MySqlTimestamp"; data: Date; driverParam: string | number; notNull: false; hasDefault: false; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}, {}>' is not assignable to parameter of type 'never'.
+src/modules/playbooks/playbook.service.ts(3,35): error TS2307: Cannot find module '../governance/governance.service' or its corresponding type declarations.
+src/modules/playbooks/playbook.service.ts(58,40): error TS2339: Property 'autoAssignTo' does not exist on type '{}'.
+src/modules/playbooks/playbook.service.ts(60,59): error TS2339: Property 'autoAssignTo' does not exist on type '{}'.

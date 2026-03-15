@@ -1,0 +1,28 @@
+
+> lojacond-frete-automacao@1.0.0 build
+> next build
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env.production, .env
+
+ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 66s
+  Running TypeScript ...
+Failed to compile.
+
+./scripts/seed-governance.ts:23:39
+Type error: No overload matches this call.
+  Overload 1 of 2, '(value: { tenantId: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; id: string | SQL<unknown> | Placeholder<string, any>; ... 5 more ...; archivedAt?: Date | ... 3 more ... | undefined; }): MySqlInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'createdBy' does not exist in type '{ tenantId: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; id: string | SQL<unknown> | Placeholder<string, any>; ... 5 more ...; archivedAt?: Date | ... 3 more ... | undefined; }'.
+  Overload 2 of 2, '(values: { tenantId: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; id: string | SQL<unknown> | Placeholder<string, any>; ... 5 more ...; archivedAt?: Date | ... 3 more ... | undefined; }[]): MySqlInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'id' does not exist in type '{ tenantId: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; id: string | SQL<unknown> | Placeholder<string, any>; ... 5 more ...; archivedAt?: Date | ... 3 more ... | undefined; }[]'.
+
+  21 |     // 1. Create Space
+  22 |     const spaceId = randomUUID();
+> 23 |     await db.insert(governanceSpaces).values({
+     |                                       ^
+  24 |         id: spaceId,
+  25 |         tenantId: TENANT_ID,
+  26 |         name: 'Command Center',
+Next.js build worker exited with code: 1 and signal: null

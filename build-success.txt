@@ -1,0 +1,31 @@
+
+> lojacond-frete-automacao@1.0.0 build
+> next build
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env.production, .env
+
+ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 44s
+  Running TypeScript ...
+  Collecting page data using 3 workers ...
+{"timestamp":"2026-03-15T22:09:36.264Z","level":"INFO","message":"TenantRepository initialized","context":{"cacheTtlMinutes":10}}
+{"timestamp":"2026-03-15T22:09:36.456Z","level":"INFO","message":"TenantRepository initialized","context":{"cacheTtlMinutes":10}}
+{"timestamp":"2026-03-15T22:09:36.508Z","level":"INFO","message":"TenantRepository initialized","context":{"cacheTtlMinutes":10}}
+{"timestamp":"2026-03-15T22:09:37.958Z","level":"INFO","message":"TenantRepository initialized","context":{"cacheTtlMinutes":10}}
+{"timestamp":"2026-03-15T22:09:38.005Z","level":"INFO","message":"TenantRepository initialized","context":{"cacheTtlMinutes":10}}
+{"timestamp":"2026-03-15T22:09:38.131Z","level":"INFO","message":"TenantRepository initialized","context":{"cacheTtlMinutes":10}}
+  Generating static pages using 3 workers (0/189) ...
+{"timestamp":"2026-03-15T22:09:38.678Z","level":"INFO","message":"DB pool init: host=gateway01.us-east-1.prod.aws.tidbcloud.com, database=lojacond"}
+  Generating static pages using 3 workers (47/189) 
+Error occurred prerendering page "/cockpit/playbooks". Read more: https://nextjs.org/docs/messages/prerender-error
+TypeError: Cannot read properties of undefined (reading 'cookies')
+    at Y (C:\repos\projeto-condstore\.next\server\chunks\ssr\_bb0315b5._.js:6:680)
+    at f (C:\repos\projeto-condstore\.next\server\chunks\ssr\[root-of-the-server]__9cb3d5ba._.js:1:4274)
+    at k (C:\repos\projeto-condstore\.next\server\chunks\ssr\[root-of-the-server]__9cb3d5ba._.js:2:362)
+    at stringify (<anonymous>) {
+  digest: '2786196540'
+}
+Export encountered an error on /(admin)/cockpit/playbooks/page: /cockpit/playbooks, exiting the build.
+Ô¿» Next.js build worker exited with code: 1 and signal: null

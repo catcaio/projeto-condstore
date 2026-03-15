@@ -2177,6 +2177,9 @@ export const governanceTasks = mysqlTable('governance_tasks', {
     sortOrder: int('sort_order').notNull().default(0),
     sourceType: varchar('source_type', { length: 50 }).notNull().default('manual'), // manual, system, frank
     sourceRef: varchar('source_ref', { length: 255 }),
+    taskType: varchar('task_type', { length: 50 }).notNull().default('task'),
+    incidentSource: varchar('incident_source', { length: 100 }),
+    incidentSeverity: varchar('incident_severity', { length: 50 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
     archivedAt: timestamp('archived_at'),
@@ -2260,3 +2263,38 @@ export type GovernanceTaskLabelRecord = typeof governanceTaskLabels.$inferSelect
 export type NewGovernanceTaskLabelRecord = typeof governanceTaskLabels.$inferInsert;
 export type GovernanceTaskLabelAssignmentRecord = typeof governanceTaskLabelAssignments.$inferSelect;
 export type NewGovernanceTaskLabelAssignmentRecord = typeof governanceTaskLabelAssignments.$inferInsert;
+
+// --- Governance: Knowledge & Playbook Engine ---
+
+export const playbooks = mysqlTable('playbooks', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    triggerType: varchar('trigger_type', { length: 50 }),
+    sourceTaskType: varchar('source_task_type', { length: 50 }),
+    createdBy: varchar('created_by', { length: 36 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    archivedAt: timestamp('archived_at'),
+}, (table) => ({
+    idxPlaybooksTenant: index('idx_playbooks_tenant').on(table.tenantId),
+}));
+
+export const playbookSteps = mysqlTable('playbook_steps', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    playbookId: varchar('playbook_id', { length: 36 }).notNull(),
+    stepOrder: int('step_order').notNull().default(0),
+    title: varchar('title', { length: 255 }).notNull(),
+    description: text('description'),
+    actionType: varchar('action_type', { length: 50 }).notNull().default('manual_task'),
+    actionConfig: json('action_config'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    idxPlaybookStepsPlaybook: index('idx_playbook_steps_playbook').on(table.playbookId),
+}));
+
+export type PlaybookRecord = typeof playbooks.$inferSelect;
+export type NewPlaybookRecord = typeof playbooks.$inferInsert;
+export type PlaybookStepRecord = typeof playbookSteps.$inferSelect;
+export type NewPlaybookStepRecord = typeof playbookSteps.$inferInsert;

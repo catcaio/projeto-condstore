@@ -1,0 +1,20 @@
+de5e6c6 chore(pr120): sync generated routes inventory
+ec168f2 fix(tests): update raw message repository test to include fromPhoneHash after PII migration
+b9347f3 chore(pr120): register missing routes in docs/routes-registry.md
+de49446 chore(pr120): complete removal of governance code and update routes registry
+1725f8b merge(main): resolve conflicts for PR #120 preserving core hardening and real catalog seed
+74e9c39 feat(catalog): add real Lojacond product seed with 46 SKUs and internal trigger endpoint
+8ae7e1f fix(cockpit): hide merged organizations from all operational queries
+706496c feat(cockpit): add PATCH /api/cockpit/organizations/[id] for CNPJ update with safe merge
+cd277db chore(drizzle): remove 5 orphaned duplicate migrations superseded by catchup 0056_furry_mole_man
+aead26b fix(frank): derive entitiesComplete from real entities instead of hardcoded true
+9183b4f fix(pii): drop plaintext fromPhone from messages table and replace with fromPhoneHash
+7e14bf7 feat(whatsapp): behavioral guardrails + contextual intent pipeline (#119)
+0c92ec2 merge(main): resolve conflicts for PR #119 preserving whatsapp guardrails + contextual intent pipeline
+850e292 feat(whatsapp): add auto-response guard and operator presence protection
+7c22789 feat(frank): blindagem contra webhook storm e extracao resiliente de ordens (P10/P11)
+85a9c09 Fix/whatsapp cockpit operational (#118)
+395adb4 chore: sync route inventory
+8951bf0 chore: commit pending db migrations to fix schema drift
+2fe87ac chore: register missing cockpit routes for guardrail
+cacd172 fix(pr): resolve main conflicts and preserve operational cockpit core
