@@ -1990,6 +1990,8 @@ export const frankSessionState = mysqlTable('frank_session_state', {
     lastReferencedQuoteId: varchar('last_referenced_quote_id', { length: 36 }),
     lastReferencedCustomerId: varchar('last_referenced_customer_id', { length: 36 }),
     lastToolUsed: varchar('last_tool_used', { length: 60 }),
+    autoResponsesCount: int('auto_responses_count').notNull().default(0),
+    lastAutoResponseAt: timestamp('last_auto_response_at'),
     contextJson: json('context_json').$type<Record<string, unknown>>(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),

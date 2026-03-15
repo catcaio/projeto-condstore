@@ -11,6 +11,7 @@ import { tenantRepository } from '@/infra/repositories/tenant.repository';
 import { whatsappInboundOrchestrator } from '@/modules/atendimento/whatsapp-inbound-orchestrator.service';
 import { normalizePhone, toWhatsAppPhone } from '@/lib/phone/normalize-phone';
 import { phoneHash } from '@/lib/phone';
+import { rateLimiter, hashRateLimitKeyForLog } from '@/infra/security/rate-limiter';
 
 function twimlOk(message: string, requestId?: string): NextResponse {
     const twiml = twilioProvider.generateTwiMLResponse(message);
@@ -104,6 +105,33 @@ export async function POST(request: Request) {
             return finish(twimlOk('Número inválido.', requestId));
         }
 
+        const hashedPhone = phoneHash(fromChannelAddress);
+
+        // --- 1.5 Rate Limiting ---
+        // Motivo Técnico: Aplicamos o Rate Limit AQUI (após o tenant database resolution
+        // e o parse de phone number) porque a chave de rate limit precisa combinar 
+        // o TenantID e o PhoneHash exato do WhatsApp. Sendo antes do Orchestrator,
+        // protegemos recursos pesados de webhook storm, NLP e DB inserts, sem
+        // interferir o dedupon de retries na camada seguinte.
+        // Tolerância: Max 20 requisições por janela de 10s (permite retries da Twilio
+        // de mensagens atoladas/media transfers mas freia floods de bot).
+        const rlKey = `tenant:${tenant.id.toString()}:from:${hashedPhone}`;
+        const rlDecision = await rateLimiter.limit('whatsapp_incoming', rlKey, { windowSec: 10, max: 20 });
+        
+        if (!rlDecision.allowed) {
+            structuredLogger.warn('whatsapp_incoming_rate_limited', {
+                tenantId: tenant.id.toString(),
+                route,
+                requestId,
+                reason: 'rate_limited',
+                messageSid: messageSidStr,
+                fromHash: hashedPhone,
+                keyHash: hashRateLimitKeyForLog(rlKey)
+            });
+            // ACK_ONLY silencioso pra não agravar stress da Twilio
+            return finish(twimlEmpty(requestId));
+        }
+
         currentStep = 'Calling Orchestrator';
 
         // --- 2. Call Orchestrator ---
@@ -112,7 +140,7 @@ export async function POST(request: Request) {
             messageSid: messageSidStr,
             accountSid: payload.AccountSid || '',
             fromE164,
-            fromHash: phoneHash(fromChannelAddress),
+            fromHash: hashedPhone,
             toPhone: payload.To || '',
             rawBodyText: incomingMessage.body || '',
             requestId,

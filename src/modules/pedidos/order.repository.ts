@@ -1,5 +1,5 @@
 import { db } from '@/db/client';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, like } from 'drizzle-orm';
 import { orders, orderItems, orderStatusHistory, customers, organizations, freightShipments } from '@/drizzle/schema';
 
 /**
@@ -78,4 +78,39 @@ export async function getRecentOrdersForCustomer(
         )
         .orderBy(desc(orders.createdAt))
         .limit(limit);
+}
+
+/**
+ * Finds an order and its associated shipment by matching the order ID prefix.
+ * Useful for resolving conversational references like "pedido 25860".
+ */
+export async function findOrderWithShipmentByPrefix(
+    tenantId: string,
+    orderIdPrefix: string,
+    customerId?: string
+) {
+    const conditions = [
+        eq(orders.tenantId, tenantId),
+        like(orders.id, `${orderIdPrefix}%`)
+    ];
+
+    if (customerId) {
+        conditions.push(eq(orders.customerId, customerId));
+    }
+
+    const records = await db
+        .select({
+            orderId: orders.id,
+            shipmentId: freightShipments.id,
+        })
+        .from(orders)
+        .leftJoin(freightShipments, eq(freightShipments.orderId, orders.id))
+        .where(and(...conditions))
+        .limit(1);
+
+    if (records.length === 0) {
+        return null;
+    }
+
+    return records[0];
 }

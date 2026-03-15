@@ -24,9 +24,14 @@ export const conversationService = {
         return conversationRepository.getConversationMessages(tenantId, conversationId);
     },
 
+    async hasRecentOperatorMessage(tenantId: string, conversationId: string, minutes: number = 15): Promise<boolean> {
+        return conversationRepository.hasRecentOperatorMessage(tenantId, conversationId, minutes);
+    },
+
     async loadConversationContext(tenantId: string, conversationId: string) {
         return conversationRepository.loadConversationContext(tenantId, conversationId);
     },
+
 
     async processOutboundMessage(
         tenantId: string,
