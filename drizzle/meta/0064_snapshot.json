@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "c6145398-d6a7-474e-bcd1-1e9fc6d8a2f2",
-  "prevId": "b0f49271-53c9-4550-b84d-712afa17f51b",
+  "id": "5837668b-d7c6-4964-b765-ac5c06b77302",
+  "prevId": "c6145398-d6a7-474e-bcd1-1e9fc6d8a2f2",
   "tables": {
     "admin_audit_log": {
       "name": "admin_audit_log",
@@ -6171,14 +6171,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "task_type": {
-          "name": "task_type",
-          "type": "varchar(30)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'ops_task'"
-        },
         "title": {
           "name": "title",
           "type": "varchar(255)",
@@ -6208,34 +6200,6 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'normal'"
-        },
-        "incident_severity": {
-          "name": "incident_severity",
-          "type": "varchar(30)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "incident_source": {
-          "name": "incident_source",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "incident_impact": {
-          "name": "incident_impact",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "incident_status": {
-          "name": "incident_status",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         },
         "assignee_user_id": {
           "name": "assignee_user_id",
@@ -6343,24 +6307,6 @@
           "columns": [
             "tenant_id",
             "due_at"
-          ],
-          "isUnique": false
-        },
-        "idx_tenant_type_status": {
-          "name": "idx_tenant_type_status",
-          "columns": [
-            "tenant_id",
-            "task_type",
-            "status"
-          ],
-          "isUnique": false
-        },
-        "idx_tenant_incident": {
-          "name": "idx_tenant_incident",
-          "columns": [
-            "tenant_id",
-            "incident_status",
-            "incident_severity"
           ],
           "isUnique": false
         }

@@ -14,6 +14,6 @@ CREATE TABLE `supreme_actions` (
   `executed_at` timestamp NULL,
   CONSTRAINT `pk_supreme_actions` PRIMARY KEY(`id`)
 );
-
-CREATE INDEX `idx_sa_tenant_status_time` ON `supreme_actions` (`tenant_id`, `status`, `created_at`);
+--> statement-breakpoint
+CREATE INDEX `idx_sa_tenant_status_time` ON `supreme_actions` (`tenant_id`, `status`, `created_at`);--> statement-breakpoint
 CREATE INDEX `idx_sa_tenant_type_time` ON `supreme_actions` (`tenant_id`, `action_type`, `created_at`);

@@ -358,6 +358,20 @@
       "when": 1773595594502,
       "tag": "0062_harsh_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "5",
+      "when": 1773606284342,
+      "tag": "0063_smart_ricochet",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "5",
+      "when": 1773609312749,
+      "tag": "0064_hot_hairball",
+      "breakpoints": true
     }
   ]
 }
