@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "4d9d5cbc-3f1c-47f5-b3c1-7f7cb558c198",
-  "prevId": "5837668b-d7c6-4964-b765-ac5c06b77302",
+  "id": "c906bf67-bbca-43d8-ad01-4ed9d1f92b06",
+  "prevId": "4d9d5cbc-3f1c-47f5-b3c1-7f7cb558c198",
   "tables": {
     "admin_audit_log": {
       "name": "admin_audit_log",
@@ -6248,6 +6248,28 @@
         "source_ref": {
           "name": "source_ref",
           "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "task_type": {
+          "name": "task_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'task'"
+        },
+        "incident_source": {
+          "name": "incident_source",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "incident_severity": {
+          "name": "incident_severity",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
