@@ -328,3 +328,13 @@
 | /api/cockpit/conversations/[id]/assign | POST | internal | required | cockpit | live | Added |
 | /api/cockpit/conversations/[id]/release | POST | internal | required | cockpit | live | Added |
 | /api/whatsapp/status | POST | public | none | PUBLIC | live | Added |
+| /api/cockpit/conversations/[id]/notes | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/conversations/[id]/owner | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/conversations/[id]/quotes/[quoteId] | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/conversations/[id]/quotes/[quoteId]/accept | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/conversations/[id]/tasks | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/conversations/[id]/tasks/[taskId]/status | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/suggestions/[id]/approve-draft | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/suggestions/[id]/draft | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/metrics/summary | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/products/search | GET/POST | internal | required | cockpit | live | Added |
