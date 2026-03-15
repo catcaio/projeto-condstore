@@ -292,7 +292,6 @@ describe('WhatsApp Inbound Orchestrator', () => {
             autoResponsesCount: 0
         }));
     });
-
     it('Should pass entitiesComplete signal to resolveConversationMode gate', async () => {
         const payload = { ...defaultPayload, rawBodyText: 'Frete para 12345-678 de uma mesa' };
         

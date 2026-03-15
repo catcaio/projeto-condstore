@@ -332,7 +332,6 @@ export const whatsappInboundOrchestrator = {
                 quantity
             });
         }
-
         const gateResult = resolveConversationMode({
             intent: intentResult.intent,
             entities: entityResult.entities, 
