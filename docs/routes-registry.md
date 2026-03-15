@@ -340,3 +340,8 @@
 | /api/cockpit/products/search | GET/POST | internal | required | cockpit | live | Added |
 | /api/cockpit/organizations/[id] | PATCH | internal | required | cockpit | live | Added |
 | /api/internal/jobs/seed-catalog | POST | internal | required | ops | live | Added |
+| /cockpit/playbooks/[id] | GET/POST | internal | required | cockpit | live | Added |
+| /cockpit/playbooks/new | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/governance/playbooks | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/governance/playbooks/[playbookId]/apply | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/governance/playbooks/metrics | GET/POST | internal | required | cockpit | live | Added |

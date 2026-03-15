@@ -59,6 +59,7 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 }
 
 export async function getSessionUser(request: NextRequest): Promise<SessionPayload | null> {
+    if (!request) return getServerSessionUser();
     const token = request.cookies.get(COOKIE_NAME)?.value;
     if (!token) return null;
 

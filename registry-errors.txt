@@ -1,0 +1,25 @@
+[dotenv@17.3.1] injecting env (8) from .env -- tip: ­ƒøí´©Å auth for agents: https://vestauth.com
+--- VALIDATING TWILIO ENVS ---
+{"timestamp":"2026-03-15T19:08:36.346Z","level":"INFO","message":"DB pool init: host=gateway01.us-east-1.prod.aws.tidbcloud.com, database=lojacond"}
+TWILIO_ACCOUNT_SID: SET
+TWILIO_AUTH_TOKEN: SET
+TWILIO_PHONE/WHATSAPP_NUMBER: SET
+WEBHOOK BASE URL: https://app.condstoreos.com
+
+--- VALIDATING TWILIO AUTH ---
+Ô£à Twilio Auth Success. Account Status: active, Type: Trial
+
+--- SIMULATING INBOUND WEBHOOK ---
+Sending POST to https://app.condstoreos.com/api/whatsapp/incoming...
+Inbound API Response: 200
+Ô£à Inbound Success (200 OK). TwiML returned: <?xml version="1.0" encoding="UTF-8"?><Response></Response>...
+
+Waiting 3 seconds for async DOMINE/Orchestrator processing...
+
+--- VALIDATING COCKPIT GET API ---
+Ô£à Conversation found in DB: ID 4338a79c-3a16-4ac1-8730-4cfd6b4f404b, Status: OPEN
+
+--- VALIDATING OUTBOUND REAL ---
+Testing Twilio outbound directly via twilio.provider...
+ÔØî Inbound message not persisted!
+Ô£à Outbound Twilio Success! SID: SM36bc620025a913656effac4b1c64ebb2, Status: queued
