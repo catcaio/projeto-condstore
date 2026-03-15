@@ -99,7 +99,6 @@ describe('WhatsApp Inbound Orchestrator', () => {
             contactId: 'cnt1',
             isNew: false
         });
-
         const { resolveConversationMode } = await import('@/modules/frank/conversation-control');
         (resolveConversationMode as any).mockReturnValue({ mode: 'ASSISTED', reason: 'test_default' });
     });
