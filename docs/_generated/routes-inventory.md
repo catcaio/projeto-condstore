@@ -32,11 +32,17 @@
 | `/api/cockpit/conversations/[id]/assign` | API |
 | `/api/cockpit/conversations/[id]/customer` | API |
 | `/api/cockpit/conversations/[id]/message` | API |
+| `/api/cockpit/conversations/[id]/notes` | API |
+| `/api/cockpit/conversations/[id]/owner` | API |
 | `/api/cockpit/conversations/[id]/quotes` | API |
+| `/api/cockpit/conversations/[id]/quotes/[quoteId]` | API |
+| `/api/cockpit/conversations/[id]/quotes/[quoteId]/accept` | API |
 | `/api/cockpit/conversations/[id]/quotes/[quoteId]/order` | API |
 | `/api/cockpit/conversations/[id]/quotes/[quoteId]/send` | API |
 | `/api/cockpit/conversations/[id]/release` | API |
 | `/api/cockpit/conversations/[id]/stage` | API |
+| `/api/cockpit/conversations/[id]/tasks` | API |
+| `/api/cockpit/conversations/[id]/tasks/[taskId]/status` | API |
 | `/api/cockpit/custom-fields` | API |
 | `/api/cockpit/custom-fields/[id]` | API |
 | `/api/cockpit/custom-fields/values` | API |
@@ -55,6 +61,8 @@
 | `/api/cockpit/frank/playbooks` | API |
 | `/api/cockpit/frank/suggestions` | API |
 | `/api/cockpit/frank/suggestions/[id]/approve` | API |
+| `/api/cockpit/frank/suggestions/[id]/approve-draft` | API |
+| `/api/cockpit/frank/suggestions/[id]/draft` | API |
 | `/api/cockpit/frank/suggestions/[id]/reject` | API |
 | `/api/cockpit/metrics` | API |
 | `/api/cockpit/metrics/acquisition` | API |
@@ -62,6 +70,7 @@
 | `/api/cockpit/metrics/frank` | API |
 | `/api/cockpit/metrics/freight` | API |
 | `/api/cockpit/metrics/funnel` | API |
+| `/api/cockpit/metrics/summary` | API |
 | `/api/cockpit/ops/run-rollup` | API |
 | `/api/cockpit/ops/status` | API |
 | `/api/cockpit/orders` | API |
@@ -72,6 +81,7 @@
 | `/api/cockpit/pipeline/metrics` | API |
 | `/api/cockpit/playbooks` | API |
 | `/api/cockpit/playbooks/[id]` | API |
+| `/api/cockpit/products/search` | API |
 | `/api/cockpit/saved-views` | API |
 | `/api/cockpit/status` | API |
 | `/api/cockpit/timeline` | API |
