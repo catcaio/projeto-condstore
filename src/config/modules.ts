@@ -215,6 +215,25 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         summary: 'Usuarios, permissoes, integracoes, AI provider e auditoria.',
         routes: [{ pattern: '/configuracoes', title: 'Configuracoes' }],
     },
+    {
+        id: 'governance',
+        label: 'Governança',
+        group: 'Governanca',
+        icon: Boxes, // Or another suitable icon like ClipboardList. Let's reuse Boxes or LayoutDashboard
+        route: '/cockpit/governance',
+        authModule: 'cockpit', // Reusing cockpit admin access
+        requiredRoles: ['admin', 'manager'],
+        navVisible: true,
+        navGroup: 'Governanca',
+        navOrder: 95,
+        summary: 'Gestão de tarefas, projetos operacionais e board de equipe.',
+        routes: [
+            { pattern: '/cockpit/governance', title: 'Governança' },
+            { pattern: '/cockpit/governance/:space', title: 'Space' },
+            { pattern: '/cockpit/governance/:space/:project', title: 'Project' },
+            { pattern: '/cockpit/governance/task/:id', title: 'Task' }
+        ],
+    },
 ];
 
 const LEGACY_MODULES: ModuleConfig[] = [

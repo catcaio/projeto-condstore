@@ -12,10 +12,22 @@ export function ProjectSidebar({ spaceSlug, activeProjectSlug }: { spaceSlug: st
             </div>
             <nav className="space-y-1">
                 <Link 
-                    href={`/cockpit/governance/${spaceSlug}/demo-project`}
-                    className={`flex items-center px-2 py-1.5 text-sm rounded-md transition-colors ${activeProjectSlug === 'demo-project' ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-medium' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-subtle'}`}
+                    href={`/cockpit/governance/${spaceSlug}/core-platform`}
+                    className={`flex items-center px-2 py-1.5 text-sm rounded-md transition-colors ${activeProjectSlug === 'core-platform' ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-neutral-dark dark:text-neutral-light hover:bg-neutral-subtle'}`}
                 >
-                    <span className="truncate">Demo Project</span>
+                    <span className="truncate">Core Platform</span>
+                </Link>
+                <Link 
+                    href={`/cockpit/governance/${spaceSlug}/crm-operacao`}
+                    className={`flex items-center px-2 py-1.5 text-sm rounded-md transition-colors ${activeProjectSlug === 'crm-operacao' ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-neutral-dark dark:text-neutral-light hover:bg-neutral-subtle'}`}
+                >
+                    <span className="truncate">CRM & Operação</span>
+                </Link>
+                <Link 
+                    href={`/cockpit/governance/${spaceSlug}/logistica-frete`}
+                    className={`flex items-center px-2 py-1.5 text-sm rounded-md transition-colors ${activeProjectSlug === 'logistica-frete' ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-neutral-dark dark:text-neutral-light hover:bg-neutral-subtle'}`}
+                >
+                    <span className="truncate">Logística & Frete</span>
                 </Link>
             </nav>
         </div>

@@ -19,8 +19,28 @@ export function TaskBoard({ projectSlug }: { projectSlug: string }) {
                     </div>
                     
                     <div className="flex-1 overflow-y-auto space-y-3 pb-4 scrollbar-hide">
-                        <TaskCard title={`Task in ${status} 1`} id={`TSK-${Math.floor(Math.random() * 1000)}`} />
-                        <TaskCard title={`Task in ${status} 2`} id={`TSK-${Math.floor(Math.random() * 1000)}`} />
+                        {status === 'To Do' && (
+                            <>
+                                <TaskCard title="Investigar latência na rota de metrics" id={`TSK-${Math.floor(Math.random() * 1000)}`} priority="high" label="Ops" />
+                                <TaskCard title="Revisar playbook de atendimento WhatsApp" id={`TSK-${Math.floor(Math.random() * 1000)}`} priority="normal" />
+                            </>
+                        )}
+                        {status === 'In Progress' && (
+                            <>
+                                <TaskCard title="Onboarding do tenant enterprise" id={`TSK-${Math.floor(Math.random() * 1000)}`} priority="urgent" label="Onboarding" />
+                            </>
+                        )}
+                        {status === 'Blocked' && (
+                            <>
+                                <TaskCard title="Ajuste de caching por tenant" id={`TSK-${Math.floor(Math.random() * 1000)}`} priority="high" />
+                                <TaskCard title="Vincular simulação de frete ao pedido" id={`TSK-${Math.floor(Math.random() * 1000)}`} priority="urgent" label="Bug" />
+                            </>
+                        )}
+                        {status === 'Done' && (
+                            <>
+                                <TaskCard title="Corrigir inconsistência dashboards antigos/novos" id={`TSK-${Math.floor(Math.random() * 1000)}`} priority="normal" />
+                            </>
+                        )}
                     </div>
                 </div>
             ))}
