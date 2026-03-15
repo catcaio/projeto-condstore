@@ -90,6 +90,7 @@ export async function POST(
             'OPERATOR',
             conversation.customerId || undefined,
             outboundMetadata,
+            { advanceConversation: false }
         );
         persistedMessageId = conversationMessage.id;
         const plaintextPhone = await resolveRecipientPhone(

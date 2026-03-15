@@ -70,6 +70,7 @@ export const conversationService = {
         await conversationRepository.markConversationWaitingCustomer(tenantId, conversationId);
     },
 
+
     async assignConversation(
         tenantId: string,
         conversationId: string,

@@ -312,6 +312,7 @@ export const conversationRepository = {
             .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
     },
 
+
     async loadConversationContext(tenantId: string, conversationId: string) {
         const db = await getDb();
         const [conversation] = await db
