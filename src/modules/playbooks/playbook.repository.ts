@@ -1,6 +1,6 @@
 import { db } from '@/db/client';
 import { playbooks, playbookSteps } from '@/drizzle/schema';
-import { eq, and, inArray, desc, isNull } from 'drizzle-orm';
+import { eq, and, inArray, desc, isNull, sql } from 'drizzle-orm';
 import { CreatePlaybookDTO, PlaybookWithSteps } from './playbook.types';
 import { randomUUID } from 'node:crypto';
 
@@ -57,7 +57,7 @@ export class PlaybookRepository {
     async listByTenant(tenantId: string, tx: any = db): Promise<PlaybookWithSteps[]> {
         const pbs = await tx.select()
             .from(playbooks)
-            .where(and(eq(playbooks.tenantId, tenantId), isNull(playbooks.archivedAt)))
+            .where(and(eq(playbooks.tenantId, tenantId), sql`archived_at IS NULL`))
             .orderBy(desc(playbooks.createdAt));
 
         if (!pbs.length) return [];

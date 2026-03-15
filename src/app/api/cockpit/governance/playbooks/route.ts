@@ -1,16 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { playbookService } from '@/modules/playbooks/playbook.service';
 import { CreatePlaybookSchema } from '@/modules/playbooks/playbook.schemas';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
-        const sessionRes = await requireAdmin(req as any);
+        const sessionRes = await requireAdmin(req);
         if (!sessionRes.ok) return sessionRes.response;
-        const ctx = sessionRes.session as any;
         
         // Tenant Supreme Permission verification or Role verification if needed
-        if (ctx.role !== 'admin' && ctx.role !== 'manager') {
+        if (sessionRes.session.role !== 'admin' && sessionRes.session.role !== 'manager') {
             return NextResponse.json({ error: 'Unauthorized to create playbooks' }, { status: 403 });
         }
 
@@ -22,12 +21,12 @@ export async function POST(req: Request) {
         }
 
         const playbook = await playbookService.createPlaybook({
-            tenantId: ctx.tenantId,
+            tenantId: sessionRes.session.tenantId,
             title: parsed.data.title,
             description: parsed.data.description,
             triggerType: parsed.data.triggerType,
             sourceTaskType: parsed.data.sourceTaskType,
-            createdBy: ctx.userId,
+            createdBy: sessionRes.session.sub,
             steps: parsed.data.steps
         });
 
@@ -40,8 +39,8 @@ export async function POST(req: Request) {
 
 // PUT / DELETE would go here as well, omitting for MVP unless strict editing is required right now.
 // The PlaybookEditor currently POSTs or PUTs. We will support PUT for updates.
-export async function PUT(req: Request) {
-    const sessionRes = await requireAdmin(req as any);
+export async function PUT(req: NextRequest) {
+    const sessionRes = await requireAdmin(req);
     if (!sessionRes.ok) return sessionRes.response;
 
     // For Epic 11 MVP, we will only log or do a rudimentary update if required, 

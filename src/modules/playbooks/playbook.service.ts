@@ -1,6 +1,6 @@
 import { db } from '@/db/client';
 import { playbookRepository } from './playbook.repository';
-import { governanceService } from '../governance/governance.service';
+import { governanceService } from '@/modules/governance/governance.service';
 import { CreatePlaybookDTO, ApplyPlaybookDTO } from './playbook.types';
 
 export class PlaybookService {

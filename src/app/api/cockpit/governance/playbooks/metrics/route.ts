@@ -1,19 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { db } from '@/db/client';
 import { playbooks, governanceTaskEvents, governanceTasks } from '@/drizzle/schema';
 import { eq, and, sql } from 'drizzle-orm';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     try {
-        const sessionRes = await requireAdmin(req as any);
+        const sessionRes = await requireAdmin(req);
         if (!sessionRes.ok) return sessionRes.response;
-        const ctx = sessionRes.session as any;
         
         // 1. Playbooks Created
         const [createdRes] = await db.select({ count: sql<number>`count(*)` })
             .from(playbooks)
-            .where(eq(playbooks.tenantId, ctx.tenantId));
+            .where(eq(playbooks.tenantId, sessionRes.session.tenantId));
 
         // 2. Playbooks Applied (Count custom events in governance_task_comments or events if we emit them)
         // MVP: Measure by counting subtasks where sourceRef contains 'playbook_'
@@ -21,7 +20,7 @@ export async function GET(req: Request) {
             .from(governanceTasks)
             .where(
                 and(
-                    eq(governanceTasks.tenantId, ctx.tenantId),
+                    eq(governanceTasks.tenantId, sessionRes.session.tenantId),
                     sql`${governanceTasks.sourceRef} LIKE 'playbook_%'`
                 )
             );

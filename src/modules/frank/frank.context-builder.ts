@@ -73,7 +73,7 @@ export const frankContextBuilder = {
         const formattedMessages = recentMessages.map((msg) => {
             let role: 'user' | 'assistant' | 'system' = 'user';
             
-            if (msg.direction === 'OUTBOUND') {
+            if (msg.direction === 'outbound') {
                 if (msg.source === 'SYSTEM') role = 'system';
                 else role = 'assistant';
             } else {

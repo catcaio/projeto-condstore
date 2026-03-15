@@ -114,7 +114,7 @@ async function run() {
 
     const messages = await db.select().from(conversationMessages).where(eq(conversationMessages.conversationId, targetConv.id)).orderBy(desc(conversationMessages.createdAt));
 
-    const inboundMsg = messages.find((m: any) => m.direction === 'inbound');
+    const inboundMsg = messages.find((m: any) => m.direction === 'inbound' || m.direction === 'INBOUND');
     if (inboundMsg) {
         console.log(`✅ Inbound Message Persisted: Body: "${(inboundMsg as any).message}", Intent: ${(inboundMsg as any).metadata?.intent || 'UNKNOWN'}`);
     } else {

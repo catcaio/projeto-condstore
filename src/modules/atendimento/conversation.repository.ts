@@ -12,6 +12,7 @@ import {
     freightSimulations,
     type ConversationRecord,
     type ConversationMessageRecord,
+    type ConversationStatusType,
 } from '@/drizzle/schema';
 
 export interface ConversationListFilter {
@@ -38,7 +39,7 @@ export const conversationRepository = {
                 and(
                     eq(conversations.tenantId, tenantId),
                     eq(conversations.phoneHash, phoneHash),
-                    inArray(conversations.status, ['OPEN', 'WAITING_CUSTOMER', 'WAITING_INTERNAL', 'HUMAN_ACTIVE'])
+                    inArray(conversations.status, ['new', 'triaged', 'awaiting_human', 'operator_active', 'draft_ready', 'approved'])
                 )
             )
             .orderBy(desc(conversations.lastMessageAt))
@@ -73,7 +74,7 @@ export const conversationRepository = {
             phoneEncrypted,
             customerId: identity?.customerId ?? null,
             organizationId: identity?.organizationId ?? null,
-            status: 'OPEN',
+            status: 'new',
             channel: 'WHATSAPP',
             assignedTo: null,
         });
@@ -93,9 +94,9 @@ export const conversationRepository = {
 
         if (filter.status) {
             if (Array.isArray(filter.status)) {
-                conditions.push(inArray(conversations.status, filter.status));
+                conditions.push(inArray(conversations.status, filter.status as any));
             } else {
-                conditions.push(eq(conversations.status, filter.status));
+                conditions.push(eq(conversations.status, filter.status as any));
             }
         }
         if (filter.assignedTo !== undefined) {
@@ -164,7 +165,7 @@ export const conversationRepository = {
             id,
             tenantId,
             conversationId,
-            direction: 'INBOUND',
+            direction: 'inbound',
             source: 'WHATSAPP',
             message,
             metadata: metadata || null,
@@ -175,7 +176,7 @@ export const conversationRepository = {
         await db.update(conversations)
             .set({
                 lastMessageAt: sql`CURRENT_TIMESTAMP`,
-                status: 'WAITING_INTERNAL'
+                status: 'awaiting_human'
             })
             .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
 
@@ -205,7 +206,7 @@ export const conversationRepository = {
             id,
             tenantId,
             conversationId,
-            direction: 'OUTBOUND',
+            direction: 'outbound',
             source,
             message,
             metadata: metadata || null,
@@ -216,7 +217,7 @@ export const conversationRepository = {
             await db.update(conversations)
                 .set({
                     lastMessageAt: sql`CURRENT_TIMESTAMP`,
-                    status: 'WAITING_CUSTOMER'
+                    status: 'sent'
                 })
                 .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
         }
@@ -266,7 +267,7 @@ export const conversationRepository = {
     async updateConversationStatus(
         tenantId: string,
         conversationId: string,
-        status: 'OPEN' | 'WAITING_CUSTOMER' | 'WAITING_INTERNAL' | 'RESOLVED' | 'HUMAN_ACTIVE'
+        status: ConversationStatusType
     ): Promise<void> {
         const db = await getDb();
         await db.update(conversations)
@@ -327,7 +328,7 @@ export const conversationRepository = {
         await db.update(conversations)
             .set({
                 lastMessageAt: sql`CURRENT_TIMESTAMP`,
-                status: 'WAITING_CUSTOMER',
+                status: 'sent',
             })
             .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
     },

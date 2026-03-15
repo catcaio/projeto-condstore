@@ -3,10 +3,12 @@ export type InboundReplyPolicy =
     | { type: 'SUPERVISED_NO_REPLY' }
     | { type: 'AUTO_REPLY_ALLOWED'; text: string };
 
+import type { ConversationStatusType } from '@/drizzle/schema';
+
 export interface PolicyContext {
     tenantId: string;
     phoneHash: string;
-    conversationState: 'NEW' | 'WAITING_CONSENT' | 'HUMAN_ACTIVE' | 'AI_SUPERVISED' | 'READY_FOR_APPROVAL' | 'CLOSED';
+    conversationState: ConversationStatusType;
     hasConsent: boolean;
     productDetected: boolean;
     hasActiveSuggestion: boolean;
@@ -32,7 +34,7 @@ export function resolveInboundReplyPolicy(context: PolicyContext): InboundReplyP
     }
 
     // 3. Human Active Routing - DO NOT AUTO REPLY
-    if (context.conversationState === 'HUMAN_ACTIVE') {
+    if (context.conversationState === 'operator_active') {
         return { type: 'ACK_ONLY' };
     }
 

@@ -26,7 +26,7 @@ export async function PUT(
 
         // Assign to the operator and force HUMAN_ACTIVE
         await conversationService.assignConversation(tenantId, conversationId, operatorId, operatorId, conversation.customerId ?? undefined);
-        await conversationService.updateConversationStatus(tenantId, conversationId, 'HUMAN_ACTIVE', conversation.customerId ?? undefined);
+        await conversationService.updateConversationStatus(tenantId, conversationId, 'operator_active', conversation.customerId ?? undefined);
 
         logger.info('cockpit_conversation_assigned', {
             requestId,
