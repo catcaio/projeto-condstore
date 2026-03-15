@@ -11,9 +11,12 @@ import { resolveCustomerByPhone } from '@/modules/customers/identity-resolver/id
 import { customerResolutionService } from '@/modules/customers/customer-resolution.service';
 import { freightService } from '@/modules/freight/freight.service';
 import { resolveEntities } from '@/modules/frank/entity-resolver';
-import { resolveIntent } from '@/modules/frank/intent-resolver';
+import { resolveIntent, resolveContextualIntent, type SessionAnchors, type Intent } from '@/modules/frank/intent-resolver';
+import { getSessionState, createSessionState, updateSessionState } from '@/modules/frank/session.repository';
+import { resolveConversationMode } from '@/modules/frank/conversation-control';
 import { messageService } from '@/modules/atendimento/message.service';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
+import { findOrderWithShipmentByPrefix } from '@/modules/pedidos/order.repository';
 import { structuredLogger } from '@/infra/log/logger';
 import { logger } from '@/infra/logger';
 import { resolveInboundReplyPolicy, InboundReplyPolicy } from './whatsapp-reply-policy';
@@ -177,8 +180,22 @@ export const whatsappInboundOrchestrator = {
             });
         }
 
-        // 4. NLP Intent Resolution & Persistence
-        const intentResult = resolveIntent(messageText);
+        // 4. NLP Intent Context & Resolution
+        const sessionState = await getSessionState(tenantId, fromHash);
+        
+        let sessionAnchors: SessionAnchors | null = null;
+        if (sessionState) {
+            sessionAnchors = {
+                lastReferencedOrderId: sessionState.lastOrderId,
+                lastReferencedShipmentId: sessionState.lastReferencedShipmentId,
+                lastReferencedQuoteId: sessionState.lastReferencedQuoteId,
+                lastReferencedCustomerId: sessionState.lastReferencedCustomerId,
+                previousIntent: (sessionState.currentIntent as Intent) || null,
+                lastToolUsed: sessionState.lastToolUsed,
+            };
+        }
+
+        const intentResult = resolveContextualIntent(messageText, sessionAnchors);
         
         await messageService.processInbound({
             tenantId,
@@ -201,6 +218,33 @@ export const whatsappInboundOrchestrator = {
         const destinationZip = extractCep(messageText);
         const productQuery = extractProductQuery(messageText, entityResult.entities);
         const quantity = resolveQuantity(messageText, entityResult.entities.quantity);
+
+        // 5.5 Resolve Actual Order and Shipment Anchors
+        let validOrderId: string | undefined = undefined;
+        let validShipmentId: string | undefined = undefined;
+
+        if (entityResult.entities.orderId) {
+            try {
+                const orderData = await findOrderWithShipmentByPrefix(
+                    tenantId, 
+                    entityResult.entities.orderId,
+                    identity?.customerId || undefined
+                );
+                
+                if (orderData) {
+                    validOrderId = orderData.orderId;
+                    if (orderData.shipmentId) {
+                        validShipmentId = orderData.shipmentId;
+                    }
+                }
+            } catch (error) {
+                logger.warn('whatsapp_orchestrator_order_resolution_failed', { 
+                    tenantId, 
+                    orderId: entityResult.entities.orderId, 
+                    error: error instanceof Error ? error.message : String(error) 
+                });
+            }
+        }
 
         let createdSuggestion = false;
 
@@ -260,9 +304,35 @@ export const whatsappInboundOrchestrator = {
             createdSuggestion = true;
         }
 
+        // 6.5 Persist Contextual Signals
+        const updateParams = {
+            currentIntent: intentResult.intent,
+            lastToolUsed: createdSuggestion ? 'freight_simulation_tool' : undefined,
+            ...(validOrderId ? { lastOrderId: validOrderId } : {}),
+            ...(validShipmentId ? { lastReferencedShipmentId: validShipmentId } : {})
+        };
+
+        if (sessionState) {
+            await updateSessionState(tenantId, fromHash, updateParams);
+        } else {
+            await createSessionState(tenantId, fromHash, updateParams);
+        }
+
         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
 
-        // 7. Policy Resolution
+        // 7. Conversation Mode Control (New Gate)
+        const gateResult = resolveConversationMode({
+            intent: intentResult.intent,
+            entities: entityResult.entities, 
+            confidence: intentResult.confidence,
+            timestamp: new Date(),
+            operatorOnline: false, // Defaults to false
+            entitiesComplete: true, // Default to true as fallback
+            autoResponsesCount: 0, // Default to 0 as fallback
+            messageBody: messageText
+        });
+
+        // 8. Policy Resolution
         const policyResolution = resolveInboundReplyPolicy({
             tenantId,
             phoneHash: fromHash,
@@ -273,6 +343,25 @@ export const whatsappInboundOrchestrator = {
             intent: intentResult.intent
         });
 
+        // Override policy if gate mode strictly requires SUPERVISED
+        // and policy was going to permit auto-reply.
+        if (gateResult.mode === 'SUPERVISED' && policyResolution.type === 'AUTO_REPLY_ALLOWED') {
+            const supervisedPolicy: InboundReplyPolicy = { type: 'SUPERVISED_NO_REPLY' };
+            
+            structuredLogger.info('whatsapp_orchestrator_latency', {
+                tenantId,
+                messageSid,
+                requestId,
+                durationMs: Date.now() - processingStartTime,
+                intent: intentResult.intent,
+                policy: supervisedPolicy.type,
+                gateMode: gateResult.mode,
+                hasSuggestion: createdSuggestion
+            });
+
+            return supervisedPolicy;
+        }
+
         structuredLogger.info('whatsapp_orchestrator_latency', {
             tenantId,
             messageSid,
@@ -280,6 +369,7 @@ export const whatsappInboundOrchestrator = {
             durationMs: Date.now() - processingStartTime,
             intent: intentResult.intent,
             policy: policyResolution.type,
+            gateMode: gateResult.mode,
             hasSuggestion: createdSuggestion
         });
 

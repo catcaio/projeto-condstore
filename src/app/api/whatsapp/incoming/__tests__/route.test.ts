@@ -3,6 +3,12 @@ import { NextRequest } from 'next/server';
 import { POST } from '../route';
 import { verifyTwilioSignature } from '@/lib/security/webhook-verifier';
 import { whatsappInboundOrchestrator } from '@/modules/atendimento/whatsapp-inbound-orchestrator.service';
+import { rateLimiter } from '@/infra/security/rate-limiter';
+
+vi.mock('@/infra/security/rate-limiter', () => ({
+    rateLimiter: { limit: vi.fn() },
+    hashRateLimitKeyForLog: vi.fn().mockReturnValue('mocked-hash')
+}));
 
 vi.mock('@/lib/security/webhook-verifier', () => ({
     verifyTwilioSignature: vi.fn(),
@@ -46,6 +52,7 @@ describe('WhatsApp Inbound Route', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         process.env = { ...originalEnv, NODE_ENV: 'production', APP_URL: 'http://localhost:3000' } as any;
+        (rateLimiter.limit as any).mockResolvedValue({ allowed: true });
     });
 
     it('should reject invalid content-type with empty 200', async () => {
@@ -119,5 +126,26 @@ describe('WhatsApp Inbound Route', () => {
         const xml = await res.text();
         expect(xml).toContain('<Response>');
         expect(xml).toContain('Hello World');
+    });
+
+    it('should return empty TwiML when rate limited to prevent webhook storm', async () => {
+        (verifyTwilioSignature as any).mockReturnValue(true);
+        // Simulate rate limited state
+        (rateLimiter.limit as any).mockResolvedValue({ allowed: false });
+
+        const body = new URLSearchParams({ From: 'whatsapp:+5511999999999', To: 'whatsapp:+123', MessageSid: 'SM123', Body: 'Oi' }).toString();
+        const req = new NextRequest('http://localhost:3000/api/whatsapp/incoming', {
+            method: 'POST',
+            headers: { 'content-type': 'application/x-www-form-urlencoded', 'x-twilio-signature': 'valid' },
+            body
+        });
+        
+        const res = await POST(req);
+        expect(res.status).toBe(200);
+        expect(await res.text()).toContain('<Response></Response>');
+        
+        // Orchestrator shouldn't be called if rate limited
+        expect(whatsappInboundOrchestrator.process).not.toHaveBeenCalled();
+        expect(rateLimiter.limit).toHaveBeenCalledWith('whatsapp_incoming', expect.stringContaining('tenant123:from:'), expect.anything());
     });
 });
