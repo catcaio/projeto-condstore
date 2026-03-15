@@ -338,3 +338,5 @@
 | /api/cockpit/frank/suggestions/[id]/draft | GET/POST | internal | required | cockpit | live | Added |
 | /api/cockpit/metrics/summary | GET/POST | internal | required | cockpit | live | Added |
 | /api/cockpit/products/search | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/organizations/[id] | PATCH | internal | required | cockpit | live | Added |
+| /api/internal/jobs/seed-catalog | POST | internal | required | ops | live | Added |
