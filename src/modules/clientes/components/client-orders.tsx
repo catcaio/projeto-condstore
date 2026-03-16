@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { Button } from '@/ui/components';
+import { Package, Truck, CheckCircle2, Clock } from 'lucide-react';
 import { SectionHeader, StatusChip, SurfacePanel } from '@/ui/foundation';
-import type { ClientOrderActivity, ClientOrderStatus } from '../mock-data';
+import type { ClientOrderActivity, ClientOrderStatus } from '../types';
 
-function getStatusTone(status: ClientOrderStatus) {
+function getStatusColor(status: ClientOrderStatus) {
     if (status === 'aguardando-aprovacao') {
         return 'warning' as const;
     }
@@ -48,7 +49,7 @@ export function ClientOrders({
                                 <p className="text-sm font-semibold text-[hsl(var(--ui-text))]">Pedido #{item.id}</p>
                                 <p className="mt-1 text-sm text-[hsl(var(--ui-text-muted))]">{item.total}</p>
                             </div>
-                            <StatusChip label={item.status} tone={getStatusTone(item.status)} />
+                            <StatusChip label={item.status} tone={getStatusColor(item.status)} />
                         </div>
                         <p className="mt-3 text-xs font-medium uppercase tracking-[0.08em] text-[hsl(var(--ui-text-subtle))]">
                             {item.updatedAt}

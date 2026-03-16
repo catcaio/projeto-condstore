@@ -1,151 +1,147 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { parseLogisticsQueryState } from '@/modules/navigation/query-state';
-import { resolvePreferredItem } from '@/modules/navigation/selection-utils';
 import { Button } from '@/ui/components';
-import { ModuleNav, PageHeader, ShellContainer, StatusChip } from '@/ui/foundation';
-import { LogisticsActions } from './components/logistics-actions';
-import { LogisticsCustomerContext } from './components/logistics-customer-context';
-import { LogisticsDetail } from './components/logistics-detail';
-import { LogisticsList } from './components/logistics-list';
-import { LogisticsShippingContext } from './components/logistics-shipping-context';
-import { mockLogistics, type LogisticsPeriodBucket, type LogisticsPriority, type LogisticsStatus } from './mock-data';
-
-type StatusFilter = LogisticsStatus | 'todos';
-type PriorityFilter = LogisticsPriority | 'todas';
-type PeriodFilter = LogisticsPeriodBucket | 'todos';
-
-const carrierOptions = Array.from(new Set(mockLogistics.map((item) => item.carrier)));
+import { PageHeader, ShellContainer, StatusChip, UniversalListView, BulkActionBar, InspectorDrawer, SavedViewsTabs, OperationalTimelineWidget, AddNoteForm } from '@/ui/foundation';
+import { getOperationalHistoryAction, addOperationalNoteAction } from '@/modules/audit/audit.actions';
+import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank/actions/review';
+import { ActionPlayground } from '@/ui/frank/action-playground';
+import { BulkActionPreviewModal, BulkPreviewItem } from '@/ui/foundation/bulk-action-preview-modal';
+import { Truck, MapPin, AlertTriangle, Calculator, FileText, MessageSquare, Zap, RefreshCw } from 'lucide-react';
+import type { ColumnDef } from '@tanstack/react-table';
+import { useState } from 'react';
 
 export function LogisticsView() {
-    const searchParams = useSearchParams();
-    const querySignature = searchParams.toString();
-    const routeContext = useMemo(
-        () => parseLogisticsQueryState(searchParams, { carriers: carrierOptions }),
-        [querySignature, searchParams]
-    );
-    const [selectedId, setSelectedId] = useState(mockLogistics[0]?.id ?? '');
-    const [searchValue, setSearchValue] = useState('');
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
-    const [exceptionFilter, setExceptionFilter] = useState('todas');
-    const [carrierFilter, setCarrierFilter] = useState('todas');
-    const [regionFilter, setRegionFilter] = useState('todas');
-    const [deadlineFilter, setDeadlineFilter] = useState('todos');
-    const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('todas');
-    const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('todos');
+    const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [activeDrawerTab, setActiveDrawerTab] = useState('detalhes');
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [timelineHistory, setTimelineHistory] = useState<any[]>([]);
+    const [isLoadingTimeline, setIsLoadingTimeline] = useState(false);
 
-    const deferredSearch = useDeferredValue(searchValue);
+    const [pendingActions, setPendingActions] = useState<any[]>([]);
+    const [isLoadingActions, setIsLoadingActions] = useState(false);
 
-    useEffect(() => {
-        setSearchValue('');
-        setStatusFilter(routeContext.status ?? 'todos');
-        setExceptionFilter(routeContext.exception ?? 'todas');
-        setCarrierFilter(routeContext.carrier ?? 'todas');
-        setRegionFilter('todas');
-        setDeadlineFilter('todos');
-        setPriorityFilter('todas');
-        setPeriodFilter('todos');
-    }, [querySignature, routeContext.carrier, routeContext.exception, routeContext.status]);
-
-    const filteredItems = mockLogistics.filter((item) => {
-        const searchMatches =
-            deferredSearch.trim().length === 0 ||
-            [
-                item.id,
-                item.reference,
-                item.order.id,
-                item.order.customer.company,
-                item.carrier,
-                item.destination,
-            ]
-                .join(' ')
-                .toLowerCase()
-                .includes(deferredSearch.toLowerCase());
-
-        const statusMatches = statusFilter === 'todos' || item.status === statusFilter;
-        const exceptionMatches =
-            exceptionFilter === 'todas' ||
-            (exceptionFilter === 'com-excecao' ? item.hasException : !item.hasException);
-        const carrierMatches = carrierFilter === 'todas' || item.carrier === carrierFilter;
-        const regionMatches = regionFilter === 'todas' || item.region === regionFilter;
-        const deadlineMatches =
-            deadlineFilter === 'todos' ||
-            (deadlineFilter === 'janela' ? item.slaLabel === 'Dentro da janela' : deadlineFilter === 'rompido' ? item.slaLabel === 'SLA rompido' : item.slaLabel === 'SLA atendido');
-        const priorityMatches = priorityFilter === 'todas' || item.priority === priorityFilter;
-        const periodMatches = periodFilter === 'todos' || item.periodBucket === periodFilter;
-        const orderMatches = !routeContext.orderId || item.order.id === routeContext.orderId;
-        const clientMatches = !routeContext.clientId || item.order.customer.id === routeContext.clientId;
-
-        return searchMatches && statusMatches && exceptionMatches && carrierMatches && regionMatches && deadlineMatches && priorityMatches && periodMatches && orderMatches && clientMatches;
+    // Bulk Action Preview State
+    const [previewModalConfig, setPreviewModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        actionLabel: string;
+        actionType: 'update' | 'exception' | null;
+        items: BulkPreviewItem[];
+        isExecuting: boolean;
+    }>({
+        isOpen: false,
+        title: '',
+        description: '',
+        actionLabel: '',
+        actionType: null,
+        items: [],
+        isExecuting: false,
     });
 
-    useEffect(() => {
-        if (
-            !routeContext.logisticsId &&
-            !routeContext.orderId &&
-            !routeContext.clientId &&
-            !routeContext.status &&
-            !routeContext.exception &&
-            !routeContext.carrier
-        ) {
-            return;
-        }
+    const refreshTimeline = (id: string) => {
+        setIsLoadingTimeline(true);
+        getOperationalHistoryAction('shipment', id)
+            .then(data => setTimelineHistory(data))
+            .catch(console.error)
+            .finally(() => setIsLoadingTimeline(false));
+    };
 
-        const preferredPredicates: Array<(item: (typeof mockLogistics)[number]) => boolean> = [];
-        if (routeContext.orderId) {
-            preferredPredicates.push((item: (typeof mockLogistics)[number]) => item.order.id === routeContext.orderId);
-        }
-        if (routeContext.clientId) {
-            preferredPredicates.push((item: (typeof mockLogistics)[number]) => item.order.customer.id === routeContext.clientId);
-        }
+    const refreshActions = (id: string) => {
+        setIsLoadingActions(true);
+        getPendingFrankActions('shipment', id)
+            .then(data => setPendingActions(data))
+            .catch(console.error)
+            .finally(() => setIsLoadingActions(false));
+    };
 
-        const nextSelected = resolvePreferredItem({
-            items: filteredItems,
-            explicitId: routeContext.logisticsId,
-            getId: (item) => item.id,
-            preferredPredicates,
+    const handleApproveAction = async (actionId: string, updatedPayload: any) => {
+        const res = await approveAndExecuteFrankAction(actionId, updatedPayload);
+        if (selectedId && res.success) {
+            refreshActions(selectedId);
+            refreshTimeline(selectedId);
+        }
+        return res;
+    };
+
+    const handleRejectAction = async (actionId: string) => {
+        const res = await rejectFrankAction(actionId);
+        if (selectedId && res.success) {
+            refreshActions(selectedId);
+        }
+        return res;
+    };
+
+    const handleBulkActionPreview = (actionType: 'update' | 'exception') => {
+        const selectedIds = Object.keys(rowSelection).filter(k => rowSelection[k]);
+        if (selectedIds.length === 0) return;
+
+        const previewItems: BulkPreviewItem[] = selectedIds.map(id => {
+            let changes: BulkPreviewItem['changes'] = [];
+            
+            if (actionType === 'update') {
+                changes = [{
+                    label: 'Tracking',
+                    from: 'não atualizado',
+                    to: <span className="text-emerald-600 dark:text-emerald-500">sincronizado hoje</span>
+                }];
+            } else if (actionType === 'exception') {
+                changes = [{
+                    label: 'Status',
+                    from: 'regular',
+                    to: <span className="text-rose-600 dark:text-rose-500">exceção pendente</span>
+                }];
+            }
+
+            return {
+                id,
+                title: `Remessa de Logística ID: ${id}`,
+                subtitle: `Forçando sincronização e regras de notificação`,
+                changes
+            };
         });
 
-        if (nextSelected?.id) {
-            setSelectedId(nextSelected.id);
-        }
-    }, [
-        filteredItems,
-        querySignature,
-        routeContext.carrier,
-        routeContext.clientId,
-        routeContext.exception,
-        routeContext.logisticsId,
-        routeContext.orderId,
-        routeContext.status,
-    ]);
+        const actionConfigMap = {
+            update: {
+                title: 'Atualizar Tracking (Forçado)',
+                description: 'Você está prestes a forçar a checagem manual de tracking para as remessas.',
+                actionLabel: 'Sincronizar Selecionados'
+            },
+            exception: {
+                title: 'Reportar Exceção Manual',
+                description: 'Isto sinaliza uma ocorrência de transporte para análise e pausa SLAs.',
+                actionLabel: 'Reportar Exceção'
+            }
+        };
 
-    const selectedItem =
-        resolvePreferredItem({
-            items: filteredItems,
-            allItems: mockLogistics,
-            explicitId: selectedId,
-            getId: (item) => item.id,
-        }) ?? mockLogistics[0];
+        const config = actionConfigMap[actionType];
 
-    const routeItem = routeContext.logisticsId
-        ? mockLogistics.find((item) => item.id === routeContext.logisticsId)
-        : undefined;
-    const routeOrder = routeContext.orderId
-        ? mockLogistics.find((item) => item.order.id === routeContext.orderId)?.order
-        : undefined;
-    const routeClient = routeContext.clientId
-        ? mockLogistics.find((item) => item.order.customer.id === routeContext.clientId)?.order.customer
-        : undefined;
-
-    function handleSelect(id: string) {
-        startTransition(() => {
-            setSelectedId(id);
+        setPreviewModalConfig({
+            isOpen: true,
+            title: config.title,
+            description: config.description,
+            actionLabel: config.actionLabel,
+            actionType: actionType,
+            items: previewItems,
+            isExecuting: false,
         });
-    }
+    };
+
+    const handleExecuteBulkAction = async (itemIds: string[]) => {
+        setPreviewModalConfig(prev => ({ ...prev, isExecuting: true }));
+        try {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Call actual Server Action here
+            
+            setRowSelection({});
+            setPreviewModalConfig(prev => ({ ...prev, isOpen: false, isExecuting: false }));
+        } catch (error) {
+            console.error('Falha ao executar ação em lote', error);
+            setPreviewModalConfig(prev => ({ ...prev, isExecuting: false }));
+        }
+    };
 
     return (
         <ShellContainer>
@@ -155,12 +151,8 @@ export function LogisticsView() {
                 description="Fila viva para cotacao, SLA, tracking, excecoes e intervencao humana, conectada a pedido, cliente e conversa."
                 meta={
                     <>
-                        <StatusChip label="30 registros mock" tone="info" />
                         <StatusChip label="fila logistica real" tone="success" />
-                        <StatusChip label="deep links preparados" tone="warning" />
-                        {routeItem ? <StatusChip label={`logistica ${routeItem.id}`} tone="warning" /> : null}
-                        {routeOrder ? <StatusChip label={`pedido #${routeOrder.id}`} tone="neutral" /> : null}
-                        {routeClient ? <StatusChip label={`cliente ${routeClient.company}`} tone="neutral" /> : null}
+                        <StatusChip label="sem dados simulados" tone="info" />
                     </>
                 }
                 actions={
@@ -175,48 +167,140 @@ export function LogisticsView() {
                 }
             />
 
-            <ModuleNav
-                items={[
-                    { label: 'Fila', current: true, detail: 'Busca, SLA, excecao e prioridade' },
-                    { label: 'Detalhe', detail: 'Resumo, timeline, simulacoes e historico' },
-                    { label: 'Contexto', detail: 'Cliente, pedido e acoes rapidas' },
-                    { label: 'Evolucao', detail: 'Preparado para NBA e queue inteligente' },
-                ]}
+            <div className="min-h-[70vh] flex flex-col mt-4">
+                <UniversalListView
+                    data={[]} // Em breve
+                    columns={[
+                        { accessorKey: 'id', header: 'Código' },
+                        { accessorKey: 'order', header: 'Pedido' },
+                        { accessorKey: 'carrier', header: 'Transportadora' },
+                        { accessorKey: 'status', header: 'Status' },
+                        { accessorKey: 'sla', header: 'SLA' },
+                        { 
+                            id: 'actions', 
+                            header: '', 
+                            cell: () => (
+                                <div className="flex items-center gap-1 justify-end" onClick={e => e.stopPropagation()}>
+                                    <Button title="Cotar Frete" variant="ghost" size="icon" className="h-7 w-7 rounded text-[hsl(var(--ui-text-muted))] hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-500 dark:hover:bg-blue-950/30 transition-colors" onClick={() => console.warn('[TODO] Cotar Frete not wired')}>
+                                        <Calculator className="h-4 w-4" />
+                                    </Button>
+                                    <Button title="Atualizar Tracking" variant="ghost" size="icon" className="h-7 w-7 rounded text-[hsl(var(--ui-text-muted))] hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-500 dark:hover:bg-emerald-950/30 transition-colors" onClick={() => console.warn('[TODO] Atualizar Tracking not wired')}>
+                                        <MapPin className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            )
+                        },
+                    ]}
+                    searchPlaceholder="Buscar por conhecimento ou remessa..."
+                    views={[{ id: 'tabela', label: 'Tabela Densa', icon: <Truck className="h-4 w-4" /> }]}
+                    activeView="tabela"
+                    enableRowSelection
+                    rowSelection={rowSelection}
+                    onRowSelectionChange={setRowSelection}
+                    onRowClick={(row: any) => {
+                        setSelectedId(row.id as string);
+                        setIsDrawerOpen(true);
+                        setActiveDrawerTab('detalhes');
+                        setIsDrawerOpen(true);
+                        setActiveDrawerTab('detalhes');
+                        refreshTimeline(row.id as string);
+                    }}
+                />
+            </div>
+
+            <BulkActionBar
+                selectedCount={Object.keys(rowSelection).filter(k => rowSelection[k]).length}
+                onClearSelection={() => setRowSelection({})}
+            >
+                <Button variant="secondary" size="sm" className="h-8 rounded-full text-xs" onClick={() => handleBulkActionPreview('update')}>
+                    <MapPin className="mr-2 h-3.5 w-3.5" /> Atualizar Tracking
+                </Button>
+                <Button variant="secondary" size="sm" className="h-8 rounded-full text-xs text-rose-600 dark:text-rose-500 hover:text-rose-700 dark:hover:text-rose-400" onClick={() => handleBulkActionPreview('exception')}>
+                    <AlertTriangle className="mr-2 h-3.5 w-3.5" /> Reportar Exceção
+                </Button>
+            </BulkActionBar>
+
+            <BulkActionPreviewModal
+                isOpen={previewModalConfig.isOpen}
+                onClose={() => setPreviewModalConfig(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={handleExecuteBulkAction}
+                title={previewModalConfig.title}
+                description={previewModalConfig.description}
+                actionLabel={previewModalConfig.actionLabel}
+                items={previewModalConfig.items}
+                isExecuting={previewModalConfig.isExecuting}
             />
 
-            <div className="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)_22rem]">
-                <LogisticsList
-                    items={filteredItems}
-                    totalCount={mockLogistics.length}
-                    selectedId={selectedItem.id}
-                    searchValue={searchValue}
-                    statusFilter={statusFilter}
-                    exceptionFilter={exceptionFilter}
-                    carrierFilter={carrierFilter}
-                    regionFilter={regionFilter}
-                    deadlineFilter={deadlineFilter}
-                    priorityFilter={priorityFilter}
-                    periodFilter={periodFilter}
-                    carriers={carrierOptions}
-                    onSearchChange={setSearchValue}
-                    onStatusFilterChange={setStatusFilter}
-                    onExceptionFilterChange={setExceptionFilter}
-                    onCarrierFilterChange={setCarrierFilter}
-                    onRegionFilterChange={setRegionFilter}
-                    onDeadlineFilterChange={setDeadlineFilter}
-                    onPriorityFilterChange={setPriorityFilter}
-                    onPeriodFilterChange={setPeriodFilter}
-                    onSelect={handleSelect}
-                />
-
-                <LogisticsDetail item={selectedItem} />
-
-                <ShellContainer>
-                    <LogisticsCustomerContext item={selectedItem} />
-                    <LogisticsShippingContext item={selectedItem} />
-                    <LogisticsActions item={selectedItem} />
-                </ShellContainer>
-            </div>
+            <InspectorDrawer
+                isOpen={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)}
+                title={`Logística #${selectedId ?? ''}`}
+                tabs={[
+                    { id: 'detalhes', label: 'Detalhes', icon: <FileText className="h-4 w-4" /> },
+                    { id: 'timeline', label: 'Timeline', icon: <MessageSquare className="h-4 w-4" /> },
+                    { id: 'acoes', label: 'Ações (Frank)', icon: <Zap className="h-4 w-4 text-amber-500" /> }
+                ]}
+                activeTab={activeDrawerTab}
+                onTabChange={(tabId) => {
+                    setActiveDrawerTab(tabId);
+                    if (tabId === 'timeline' && selectedId) {
+                        refreshTimeline(selectedId);
+                    }
+                    if (tabId === 'acoes' && selectedId) {
+                        refreshActions(selectedId);
+                    }
+                }}
+            >
+                <div className="flex flex-col gap-8 pb-8 pt-4">
+                    {activeDrawerTab === 'detalhes' && (
+                        <div className="flex items-center justify-center p-8 text-sm text-[hsl(var(--ui-text-muted))] border border-dashed border-[hsl(var(--ui-border))] rounded-2xl mx-1">
+                            Detalhes da cotação e transporte serão exibidos aqui.
+                        </div>
+                    )}
+                    {activeDrawerTab === 'timeline' && (
+                        <div className="flex flex-col gap-6">
+                            <AddNoteForm 
+                                onSubmit={async (note) => {
+                                    if (!selectedId) return;
+                                    await addOperationalNoteAction('shipment', selectedId, note);
+                                    refreshTimeline(selectedId);
+                                }} 
+                                placeholder="Adicionar registro na logística..." 
+                            />
+                            <OperationalTimelineWidget history={timelineHistory} isLoading={isLoadingTimeline} />
+                        </div>
+                    )}
+                    {activeDrawerTab === 'acoes' && (
+                        <div className="flex flex-col gap-6 p-4">
+                            {isLoadingActions ? (
+                                <div className="flex flex-col items-center justify-center p-8">
+                                    <RefreshCw className="h-6 w-6 animate-spin text-zinc-400" />
+                                </div>
+                            ) : pendingActions.length > 0 ? (
+                                pendingActions.map(action => (
+                                    <ActionPlayground
+                                        key={action.id}
+                                        actionId={action.id}
+                                        type={action.type}
+                                        status={action.status}
+                                        payload={action.payload}
+                                        explanation={action.explanation as any}
+                                        onApprove={handleApproveAction}
+                                        onReject={handleRejectAction}
+                                    />
+                                ))
+                            ) : (
+                                <div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-[hsl(var(--ui-border))] rounded-2xl mx-1">
+                                    <Zap className="h-6 w-6 text-amber-500 mb-2 opacity-50" />
+                                    <p className="text-sm font-medium text-[hsl(var(--ui-text-muted))]">Zero ações pendentes</p>
+                                    <p className="text-xs text-[hsl(var(--ui-text-subtle))] mt-1">Nenhuma sugestão do Frank aguardando revisão para esta logística.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </InspectorDrawer>
         </ShellContainer>
     );
 }
+

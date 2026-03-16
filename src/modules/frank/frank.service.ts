@@ -4,6 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { crmTasks, simulations, conversations } from '@/drizzle/schema';
 import { frankContextBuilder } from './frank.context-builder';
 import { randomUUID } from 'crypto';
+import { crmService } from '@/modules/crm/crm.service';
 import { frankSuggestions } from './frank.suggestions';
 import { FrankOperationalDraft } from './frank.schema';
 
@@ -98,8 +99,9 @@ export const frankService = {
         }
 
         if (action === 'CREATE_QUOTE_DRAFT') {
+            const quoteId = randomUUID();
             await db.insert(simulations).values({
-                id: randomUUID(),
+                id: quoteId,
                 tenantId,
                 customerId: customerId || conversationId,
                 conversationId,
@@ -115,6 +117,32 @@ export const frankService = {
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
+
+            const syncResult = await crmService.syncSimulationToQuote({
+                tenantId,
+                customerId: customerId || undefined,
+                conversationId,
+                quoteId,
+                status: 'DRAFT',
+                subtotal: actionPayload?.total ? String(actionPayload.total) : '0',
+                freightAmount: '0',
+                totalAmount: actionPayload?.total ? String(actionPayload.total) : '0',
+                items: actionPayload?.items ? actionPayload.items.map((i: any) => ({
+                    description: i.name || 'Produto Base',
+                    quantity: i.quantity || 1,
+                    unitPrice: i.price || 0,
+                    totalPrice: (i.price || 0) * (i.quantity || 1)
+                })) : []
+            });
+
+            if (syncResult.opportunityId) {
+                await crmService.scheduleQuoteFollowUp({
+                    tenantId,
+                    quoteId,
+                    opportunityId: syncResult.opportunityId,
+                    hoursDelay: 24 // Frank quotes should have a slightly tighter SLA
+                });
+            }
 
             logger.info('Frank Assisted Quote Draft created', { tenantId, operatorId, conversationId });
             return true;

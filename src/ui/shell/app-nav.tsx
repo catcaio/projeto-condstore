@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { ChevronRight, Menu, X } from 'lucide-react';
+import { ChevronRight, Menu, X, LogOut, Loader2 } from 'lucide-react';
 import { getPrimaryNavigationGroups, type ModuleConfig } from '@/config/modules';
 
 function NavLink({ item, pathname }: { item: ModuleConfig; pathname: string }) {
@@ -13,29 +13,28 @@ function NavLink({ item, pathname }: { item: ModuleConfig; pathname: string }) {
     return (
         <Link
             href={item.route}
+            title={item.label}
             className={`
-                group relative flex items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-all duration-150
+                group relative flex items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors duration-150
+                md:justify-center md:px-0 md:h-11 md:w-11 md:rounded-xl md:mb-1
                 ${isActive
-                    ? 'border-[hsl(var(--ui-accent-blue)/0.22)] bg-[hsl(var(--ui-accent-blue)/0.08)] text-[hsl(var(--ui-text))] shadow-[inset_0_0_0_1px_hsl(var(--ui-accent-blue)/0.08)]'
-                    : 'border-transparent text-[hsl(var(--ui-text-muted))] hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-bg)/0.7)] hover:text-[hsl(var(--ui-text))]'
+                    ? 'bg-[hsl(var(--ui-accent-blue)/0.08)] text-[hsl(var(--ui-accent-blue))] font-medium md:bg-[hsl(var(--ui-accent-blue)/0.12)]'
+                    : 'text-[hsl(var(--ui-text-muted))] hover:bg-[hsl(var(--ui-bg)/0.8)] hover:text-[hsl(var(--ui-text))]'
                 }
             `}
         >
-            {isActive && (
-                <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-[hsl(var(--ui-accent-blue))]" />
-            )}
-            <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${isActive ? 'border-[hsl(var(--ui-accent-blue)/0.18)] bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue))]' : 'border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] text-[hsl(var(--ui-text-muted))] group-hover:text-[hsl(var(--ui-text))]'}`}>
-                <Icon className="h-4 w-4" />
+            <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md md:bg-transparent md:shadow-none md:ring-0 ${isActive ? 'bg-white text-[hsl(var(--ui-accent-blue))] shadow-sm ring-1 ring-black/5' : 'bg-transparent group-hover:bg-white group-hover:shadow-sm group-hover:ring-1 group-hover:ring-black/5 md:group-hover:bg-transparent md:group-hover:shadow-none'}`}>
+                <Icon className="h-5 w-5" />
             </span>
-            <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-semibold">{item.label}</span>
-                {item.summary ? (
-                    <span className={`mt-1 block text-[11px] leading-4 ${isActive ? 'text-[hsl(var(--ui-text-muted))]' : 'text-[hsl(var(--ui-text-subtle))]'}`}>
-                        {item.summary}
-                    </span>
-                ) : null}
+            <span className="min-w-0 flex-1 truncate text-sm md:hidden">
+                {item.label}
             </span>
-            <ChevronRight className={`mt-1 h-3.5 w-3.5 shrink-0 transition-transform ${isActive ? 'translate-x-0 text-[hsl(var(--ui-accent-blue))]' : 'text-[hsl(var(--ui-text-subtle))] group-hover:translate-x-0.5'}`} />
+            
+            {/* Tooltip for desktop */}
+            <div className="hidden md:group-hover:block absolute left-full ml-3 rounded bg-gray-900 px-2 py-1 text-xs font-semibold text-white whitespace-nowrap z-50">
+                {item.label}
+                <div className="absolute top-1/2 -left-1 -mt-1 h-2 w-2 rotate-45 bg-gray-900" />
+            </div>
         </Link>
     );
 }
@@ -43,16 +42,28 @@ function NavLink({ item, pathname }: { item: ModuleConfig; pathname: string }) {
 export function AppNav({ role, tenantId }: { role: string; tenantId: string | null }) {
     const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const navGroups = getPrimaryNavigationGroups();
 
+    const handleLogout = async () => {
+        setIsLoggingOut(true);
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/login';
+        } catch (e) {
+            console.error('Logout error', e);
+            setIsLoggingOut(false);
+        }
+    };
+
     const navContent = (
-        <nav className="flex flex-col gap-6">
+        <nav className="flex flex-col gap-8 h-full">
             {navGroups.map((group) => (
-                <div key={group.key}>
-                    <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))]">
+                <div key={group.key} className="flex flex-col items-center w-full">
+                    <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))] md:hidden w-full">
                         {group.title}
                     </p>
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex mb-4 md:mb-0 flex-col gap-1.5 w-full items-center">
                         {group.items.map((item) => (
                             <NavLink key={item.id} item={item} pathname={pathname} />
                         ))}
@@ -60,20 +71,33 @@ export function AppNav({ role, tenantId }: { role: string; tenantId: string | nu
                 </div>
             ))}
 
-            <div className="rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg)/0.7)] px-3 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))]">
-                    Sessao
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-[hsl(var(--ui-border))] px-2.5 py-1 text-[11px] font-medium text-[hsl(var(--ui-text-muted))]">
-                        Perfil: {role}
-                    </span>
-                    {tenantId ? (
-                        <span className="rounded-full border border-[hsl(var(--ui-border))] px-2.5 py-1 text-[11px] font-medium text-[hsl(var(--ui-text-muted))]">
-                            Tenant: {tenantId}
-                        </span>
-                    ) : null}
+            <div className="mt-auto pt-6 border-t border-[hsl(var(--ui-border))] flex flex-col gap-3">
+            <div className="mt-auto pt-6 border-t md:border-none border-[hsl(var(--ui-border))] flex flex-col gap-3 items-center w-full">
+                <div className="px-3 md:hidden w-full">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--ui-text-subtle))]">
+                        Sessão
+                    </p>
+                    <div className="mt-2 flex flex-col gap-1 text-[11px] text-[hsl(var(--ui-text-muted))]">
+                        <span>Perfil: <strong className="font-semibold text-slate-700">{role}</strong></span>
+                        {tenantId && <span>Tenant: <strong className="font-semibold text-slate-700">{tenantId}</strong></span>}
+                    </div>
                 </div>
+                <button 
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    title="Sair do Sistema"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 md:px-0 md:justify-center md:h-11 md:w-11 text-sm text-[hsl(var(--ui-text-muted))] hover:bg-red-50 hover:text-red-600 focus:outline-none transition-colors text-left group relative"
+                >
+                    {isLoggingOut ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogOut className="h-5 w-5" />}
+                    <span className="md:hidden">Sair</span>
+                    
+                    {/* Tooltip for desktop */}
+                    <div className="hidden md:group-hover:block absolute left-full ml-3 rounded bg-gray-900 px-2 py-1 text-xs font-semibold text-white whitespace-nowrap z-50">
+                        Sair
+                        <div className="absolute top-1/2 -left-1 -mt-1 h-2 w-2 rotate-45 bg-gray-900" />
+                    </div>
+                </button>
+            </div>
             </div>
         </nav>
     );

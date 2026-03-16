@@ -1,6 +1,6 @@
 import { useState, useEffect, ChangeEvent } from 'react';
 import { Button, Card, CardContent, CardFooter, CardHeader } from '@/ui/components';
-import { Bot, Copy, Pencil, X, Sparkles, Trash2 } from 'lucide-react';
+import { Send, Copy, Pencil, X, Sparkles, Trash2 } from 'lucide-react';
 
 interface Suggestion {
     id: string;
@@ -88,28 +88,28 @@ export function FrankSuggestionPanel({
     };
 
     return (
-        <Card className="border border-purple-200 bg-purple-50/30 shadow-sm mt-4">
-            <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0"
+        <Card className="w-full border border-gray-200 bg-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] mt-4 overflow-hidden rounded-xl">
+            <CardHeader className="py-2.5 px-4 flex flex-row items-center justify-between space-y-0 bg-gray-50/50 border-b border-gray-100"
                 heading={
-                    <div className="text-sm font-medium flex items-center text-purple-900">
-                        <Sparkles className="h-4 w-4 mr-2 text-purple-600" />
+                    <div className="text-[13px] font-bold flex items-center text-purple-700 tracking-wide uppercase">
+                        <Sparkles className="h-3.5 w-3.5 mr-1.5 text-purple-500" />
                         Sugestão do Frank
                     </div>
                 }
                 actions={
-                    <div className="flex space-x-2 text-xs text-purple-600">
+                    <div className="flex space-x-2 text-[10px] font-medium text-gray-500">
                         {suggestion.playbookId && (
-                            <span className="bg-purple-100 px-2 py-0.5 rounded-full capitalize">
+                            <span className="bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full capitalize">
                                 Fluxo Otimizado
                             </span>
                         )}
-                        <span className="bg-purple-100 px-2 py-0.5 rounded-full">
+                        <span className="bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full flex items-center gap-1">
                             {(parseFloat(suggestion.confidence) * 100).toFixed(0)}% trust
                         </span>
                     </div>
                 }
             />
-            <CardContent className="px-4 pb-2">
+            <CardContent className="px-5 py-4">
                 {isEditing ? (
                     <textarea 
                         value={editedText}
@@ -122,8 +122,8 @@ export function FrankSuggestionPanel({
                     </div>
                 )}
             </CardContent>
-            <CardFooter className="px-4 py-3 flex justify-between bg-purple-50 rounded-b-lg border-t border-purple-100">
-                <div className="flex space-x-2">
+            <CardFooter className="px-4 py-3 flex flex-wrap-reverse sm:flex-nowrap gap-2 justify-between bg-gray-50/80 rounded-b-xl border-t border-gray-100">
+                <div className="flex w-full sm:w-auto space-x-2 justify-between sm:justify-start">
                     {isEditing ? (
                         <>
                             <Button size="sm" variant="ghost" className="h-8 px-2 text-slate-500" onClick={() => setIsEditing(false)}>
@@ -147,7 +147,7 @@ export function FrankSuggestionPanel({
                 
                 <Button 
                     size="sm" 
-                    className="h-8 bg-purple-600 hover:bg-purple-700"
+                    className="h-8.5 w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition-all"
                     onClick={handleSend}
                     disabled={isSubmitting || isRejecting || !editedText.trim()}
                 >
@@ -155,7 +155,7 @@ export function FrankSuggestionPanel({
                         'Enviando...'
                     ) : (
                         <>
-                            <Bot className="h-4 w-4 mr-1.5" /> Enviar Mensagem
+                            <Send className="h-3.5 w-3.5 mr-1.5" /> Enviar Mensagem
                         </>
                     )}
                 </Button>

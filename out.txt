@@ -1,40 +1,5 @@
-
-> lojacond-frete-automacao@1.0.0 lint:design-system
-> vitest run src/__tests__/design-system.test.ts
-
-
-[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mC:/repos/projeto-condstore[39m
-
- [31mÔØ»[39m src/__tests__/design-system.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 236[2mms[22m[39m
-[31m   [31m├ù[31m Design System Consistency - No hardcoded colors[39m[32m 234[2mms[22m[39m
-
-ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ» Failed Tests 1 ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»
-
- FAIL  src/__tests__/design-system.test.ts > Design System Consistency - No hardcoded colors
-AssertionError: expected [ ÔÇª(2) ] to deeply equal []
-
-- Expected
-+ Received
-
-- []
-+ [
-+   "C:\\repos\\projeto-condstore\\src\\modules\\governance\\components\\governance-shell.tsx",
-+   "C:\\repos\\projeto-condstore\\src\\modules\\governance\\components\\task-detail-drawer.tsx",
-+ ]
-
- ÔØ» src/__tests__/design-system.test.ts:53:28
-     51|     }
-     52| 
-     53|     expect(hardcodedFiles).toEqual([]);
-       |                            ^
-     54| });
-     55| 
-
-ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1/1]ÔÄ»
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
-[2m      Tests [22m [1m[31m1 failed[39m[22m[90m (1)[39m
-[2m   Start at [22m 17:43:57
-[2m   Duration [22m 1.00s[2m (transform 44ms, setup 0ms, import 65ms, tests 236ms, environment 0ms)[22m
-
+Quality Gates	fail	1m21s	https://github.com/catcaio/projeto-condstore/actions/runs/23152040029/job/67256314745	
+Dependency Audit	pass	26s	https://github.com/catcaio/projeto-condstore/actions/runs/23152040135/job/67256314212	
+Lint & Release Check	pass	48s	https://github.com/catcaio/projeto-condstore/actions/runs/23152040135/job/67256314367	
+Vercel	pass	0	https://vercel.com/rafael-s-projects-f32fc2d1/projeto-condstore/E1Ffo8vMeBBsVPxP8QNqniBBj9HV	Deployment has completed
+Vercel Preview Comments	pass	0	https://vercel.com/github	

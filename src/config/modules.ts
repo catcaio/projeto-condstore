@@ -69,8 +69,8 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         authModule: 'operation',
         requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
-        navGroup: 'Core',
-        navOrder: 20,
+        navGroup: 'Governanca',
+        navOrder: 110,
         summary: 'Fila, capacidade, riscos e pontos de intervencao manual.',
         routes: [
             { pattern: '/operacao', title: 'Operacao' },
@@ -86,8 +86,8 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         authModule: 'operation',
         requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
-        navGroup: 'Operacao',
-        navOrder: 30,
+        navGroup: 'Core',
+        navOrder: 20,
         summary: 'Inbox operacional com fila densa, thread ativa e contexto lateral do cliente.',
         routes: [
             { pattern: '/conversas', title: 'Conversas' },
@@ -106,8 +106,8 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         authModule: 'operation',
         requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
-        navGroup: 'Operacao',
-        navOrder: 40,
+        navGroup: 'Core',
+        navOrder: 50,
         summary: 'Cliente 360 com relacionamento, pedidos, simulacoes e acoes operacionais.',
         routes: [
             { pattern: '/clientes', title: 'Clientes' },
@@ -123,8 +123,8 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         authModule: 'operation',
         requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
-        navGroup: 'Operacao',
-        navOrder: 50,
+        navGroup: 'Core',
+        navOrder: 30,
         summary: 'Fluxo operacional canonico do pedido com triagem, detalhe, cliente e logistica.',
         routes: [
             { pattern: '/pedidos', title: 'Pedidos' },
@@ -140,8 +140,8 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         authModule: 'frete',
         requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
-        navGroup: 'Operacao',
-        navOrder: 60,
+        navGroup: 'Core',
+        navOrder: 40,
         summary: 'Central logistica com fila de acompanhamento, simulacoes, SLA, excecoes e acoes operacionais.',
         routes: [
             { pattern: '/logistica', title: 'Logistica' },
@@ -527,7 +527,7 @@ export function getPrimaryNavigationGroups() {
         key: groupKey,
         title:
             groupKey === 'Core'
-                ? 'Core'
+                ? 'Cockpit Lojacond'
                 : groupKey === 'Operacao'
                   ? 'Operacao'
                   : groupKey === 'Inteligencia'

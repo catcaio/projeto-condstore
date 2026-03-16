@@ -1,12 +1,12 @@
 import { getCustomerWithContext } from './customer.repository';
 import type { ClientRecord, ClientStatus, ClientActivityBucket } from './types';
 import { db } from '@/db/client';
-import { customers, organizations, customerContacts, orders, freightSimulations } from '@/drizzle/schema';
+import { customers, organizations, customerContacts, orders, freightSimulations, crmOpportunities } from '@/drizzle/schema';
 import { eq, desc, sql, ne, and } from 'drizzle-orm';
 
 import { decryptString } from '@/infra/pii/crypto';
 
-export async function loadMockClientsHydrated(tenantId: string): Promise<ClientRecord[]> {
+export async function loadClientsHydrated(tenantId: string): Promise<ClientRecord[]> {
     const dbClients = await db
         .select({
             customer: customers,
@@ -37,12 +37,20 @@ export async function loadMockClientsHydrated(tenantId: string): Promise<ClientR
         .where(eq(freightSimulations.tenantId, tenantId))
         .orderBy(desc(freightSimulations.createdAt));
 
+    const allOpportunities = await db
+        .select()
+        .from(crmOpportunities)
+        .where(eq(crmOpportunities.tenantId, tenantId))
+        .orderBy(desc(crmOpportunities.updatedAt));
+
     return dbClients.map(({ customer, organization }) => {
         const myContacts = allContacts.filter(c => c.customerId === customer.id);
         const mainContact = myContacts.find(c => c.isPrimary) || myContacts[0];
         
         const myOrders = recentOrders.filter(o => o.customerId === customer.id).slice(0, 10);
         const mySimulations = allSimulations.slice(0, 10);
+        const myOps = allOpportunities.filter(o => o.customerId === customer.id);
+        const activeOp = myOps.find(o => o.status === 'active') || myOps[0];
 
         return {
             id: customer.id,
@@ -78,6 +86,13 @@ export async function loadMockClientsHydrated(tenantId: string): Promise<ClientR
                 status: s.carrierSelected ? 'cotacao_enviada' : 'pendente',
                 updatedAt: s.createdAt?.toISOString() || new Date().toISOString(),
             })),
+            opportunity: activeOp ? {
+                id: activeOp.id,
+                stage: activeOp.stage as any, // CrmStage
+                title: activeOp.title,
+                amount: activeOp.amount || '0',
+                lastActivityAt: activeOp.lastActivityAt?.toISOString() || activeOp.createdAt?.toISOString() || new Date().toISOString()
+            } : undefined
         } as ClientRecord;
     });
 }

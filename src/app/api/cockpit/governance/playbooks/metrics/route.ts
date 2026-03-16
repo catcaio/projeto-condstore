@@ -5,10 +5,10 @@ import { playbooks, governanceTaskEvents, governanceTasks } from '@/drizzle/sche
 import { eq, and, sql } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
+    const sessionRes = await requireAdmin(req);
+    if (!sessionRes.ok) return sessionRes.response;
+    
     try {
-        const sessionRes = await requireAdmin(req);
-        if (!sessionRes.ok) return sessionRes.response;
-        
         // 1. Playbooks Created
         const [createdRes] = await db.select({ count: sql<number>`count(*)` })
             .from(playbooks)

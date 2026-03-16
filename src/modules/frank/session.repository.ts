@@ -103,14 +103,21 @@ export async function createSessionState(
         autoResponsesCount: params?.autoResponsesCount ?? 0,
         lastAutoResponseAt: params?.lastAutoResponseAt ?? null,
         contextJson: params?.contextJson ?? null,
+    }).onDuplicateKeyUpdate({
+        set: {
+            updatedAt: new Date()
+        }
     });
 
-    logger.info('frank_session_created', { tenantId, sessionId, id });
+    logger.info('frank_session_created_or_updated', { tenantId, sessionId, id });
 
     // Return the newly created state
     const created = await db.select()
         .from(frankSessionState)
-        .where(eq(frankSessionState.id, id))
+        .where(and(
+            eq(frankSessionState.tenantId, tenantId),
+            eq(frankSessionState.sessionId, sessionId)
+        ))
         .limit(1);
 
     return created[0] as SessionState;

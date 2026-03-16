@@ -5,6 +5,7 @@ import { domineIntakeService } from '@/domine/domine-intake.service';
 import { eq, and, desc } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import crypto from 'crypto';
+import { crmService } from '@/modules/crm/crm.service';
 
 export interface CreateFreightQuoteInput {
     tenantId: string;
@@ -85,9 +86,35 @@ export class FreightQuoteService {
                 operatorId: input.operatorId,
                 cep: input.cep,
                 bestPrice: bestOption?.price,
-                carrier: bestOption?.carrier
-            }
+                }
         }).catch(e => logger.warn('Failed to emit QUOTE_SIMULATED', { error: e.message }));
+
+        // 5. Sync into CRM Opportunities & Quotes
+        const syncResult = await crmService.syncSimulationToQuote({
+            tenantId: input.tenantId,
+            customerId: input.customerId,
+            conversationId: input.conversationId,
+            quoteId,
+            status: 'DRAFT',
+            subtotal: String(subtotal),
+            freightAmount: String(bestFreight),
+            totalAmount: String(totalAmount),
+            items: items.map(i => ({
+                description: i.name || 'Produto Base',
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                totalPrice: i.unitPrice * i.quantity
+            }))
+        });
+
+        if (syncResult.opportunityId) {
+            await crmService.scheduleQuoteFollowUp({
+                tenantId: input.tenantId,
+                quoteId,
+                opportunityId: syncResult.opportunityId,
+                hoursDelay: 48
+            });
+        }
 
         return {
             quoteId,
@@ -186,9 +213,28 @@ export class FreightQuoteService {
                 quoteId,
                 conversationId: quote.conversationId,
                 discountAmount,
-                totalAmount
             }
         }).catch(e => logger.warn('Failed to emit QUOTE_REVISED', { error: e.message }));
+
+        // Sync change to CRM
+        await crmService.syncSimulationToQuote({
+            tenantId,
+            customerId: quote.customerId ?? undefined,
+            conversationId: quote.conversationId ?? undefined,
+            quoteId,
+            status: 'DRAFT',
+            subtotal: String(subtotal),
+            freightAmount: String(freightAmount),
+            totalAmount: String(totalAmount),
+            discountAmount: String(discountAmount),
+            expiresAt: updates.expiresAt !== undefined ? updates.expiresAt : quote.expiresAt,
+            items: items.map((i: any) => ({
+                description: i.name || 'Produto',
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                totalPrice: i.unitPrice * i.quantity
+            }))
+        });
 
         return await this.getQuoteById(tenantId, quoteId);
     }

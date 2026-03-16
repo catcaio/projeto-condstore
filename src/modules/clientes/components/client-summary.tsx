@@ -1,6 +1,6 @@
-import { StatusChip } from '@/ui/foundation';
+import { StatusChip, SurfacePanel } from '@/ui/foundation';
 import { ClientTags } from './client-tags';
-import type { ClientRecord, ClientStatus } from '../mock-data';
+import type { ClientRecord, ClientStatus } from '../types';
 
 function getStatusTone(status: ClientStatus) {
     if (status === 'vip') {

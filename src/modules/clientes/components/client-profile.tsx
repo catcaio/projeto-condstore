@@ -5,7 +5,17 @@ import { ClientSimulations } from './client-simulations';
 import { ClientSummary } from './client-summary';
 import type { ClientRecord } from '../mock-data';
 
-export function ClientProfile({ client }: { client: ClientRecord }) {
+export function ClientProfile({ client }: { client: ClientRecord | undefined }) {
+    if (!client) {
+        return (
+            <ShellContainer>
+                <div className="flex h-48 items-center justify-center text-sm text-[hsl(var(--ui-text-muted))]">
+                    Perfil de cliente não encontrado ou não associado.
+                </div>
+            </ShellContainer>
+        );
+    }
+
     return (
         <ShellContainer>
             <ClientSummary client={client} />
