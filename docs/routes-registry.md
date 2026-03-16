@@ -42,6 +42,7 @@
 | /api/db/migrate | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/debug/tenants | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/domine/intake | POST | public | controlled | domine | live | Universal Intake v1 — versioned, idempotent event ingestion |
+| /api/ecosystem/events | Ecosystem operational events feed | session | standard | INTERNAL | live | Event bus feed |
 | /api/events | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/health | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/history | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -121,6 +122,7 @@
 | /api/metrics/overview | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/metrics/rate-limit | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/metrics/rate-limit-alerts | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/notifications | Cockpit notifications endpoint | session | standard | INTERNAL | live | Operator notifications |
 | /api/painel-logistico | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/public/cotacao/intent | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/public/cotacao/quotes | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -128,6 +130,7 @@
 | /api/public/events | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/reports/ingest | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/reports/seed | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/search | Global workspace search | session | standard | INTERNAL | live | Cross-module search |
 | /api/simulate | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/supreme/ecosystem | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/ai-provider | TBA | public | none | PUBLIC | live | Auto-detected |
