@@ -1,6 +1,7 @@
 import { conversationRepository, type ConversationListFilter } from './conversation.repository';
 import { type ConversationRecord, type ConversationMessageRecord, type ConversationStatusType } from '@/drizzle/schema';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
+import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 
 export const conversationService = {
     async findOrCreateConversationByPhone(
@@ -176,6 +177,17 @@ export const conversationService = {
         }
 
         await conversationRepository.updateConversationStage(tenantId, conversationId, stage, lostReason);
+
+        // Emit ecosystem event for stage change
+        ecosystemEventsService.emitEvent({
+            tenantId,
+            type: 'lead_stage_changed',
+            entityType: 'conversation',
+            entityId: conversationId,
+            payload: { stage, previousStage: existingConv.stage, customerId },
+            actor: 'system',
+            source: 'atendimento',
+        }).catch(() => {});
 
         if (customerId) {
             let eventType: 'conversation_stage_changed' | 'deal_won' | 'deal_lost' = 'conversation_stage_changed';

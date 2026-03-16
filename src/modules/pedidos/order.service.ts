@@ -9,6 +9,7 @@ import {
 } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
+import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 
 export interface CreateOrderParams {
     tenantId: string;
@@ -119,9 +120,21 @@ export async function createOrderFromSimulation(params: CreateOrderParams) {
         });
     });
 
+    // 8. Emit ecosystem event (fire-and-forget, outside transaction)
+    ecosystemEventsService.emitEvent({
+        tenantId,
+        type: 'order_created',
+        entityType: 'order',
+        entityId: orderId,
+        payload: { simulationId, customerId, organizationId, totalAmount },
+        actor: createdBy,
+        source: 'pedidos',
+    }).catch(() => {});
+
     return {
         orderId,
         status: 'created',
         shipmentLink: `/logistica/rastreamento?orderId=${orderId}`, // Typical deep-link pattern
     };
 }
+

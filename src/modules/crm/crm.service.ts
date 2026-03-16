@@ -140,6 +140,17 @@ export const crmService = {
                 await db.update(crmOpportunities)
                     .set({ stage: 'quoted', lastActivityAt: new Date() })
                     .where(eq(crmOpportunities.id, opportunityId));
+
+                // Emit lead_stage_changed ecosystem event
+                ecosystemEventsService.emitEvent({
+                    tenantId: params.tenantId,
+                    type: 'lead_stage_changed',
+                    entityType: 'opportunity',
+                    entityId: opportunityId,
+                    payload: { newStage: 'quoted', customerId: params.customerId },
+                    actor: 'system',
+                    source: 'crm',
+                }).catch(() => {});
             } else {
                 // Should exist due to message projection, but fallback just in case
                 opportunityId = randomUUID();
