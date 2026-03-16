@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
-import { conversationMessages } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { conversationMessages, operationalEvents } from '@/drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
+import { randomUUID } from 'crypto';
+
+// Status weight for idempotent forward-only transitions
+const STATUS_WEIGHT: Record<string, number> = {
+    queued: 0,
+    sent: 1,
+    delivered: 2,
+    read: 3,
+    failed: 4, // failed can override any status
+};
+
+function shouldUpdate(current: string | null, incoming: string): boolean {
+    if (!current) return true;
+    if (incoming === 'failed') return true; // failed always wins
+    return (STATUS_WEIGHT[incoming] ?? 0) > (STATUS_WEIGHT[current] ?? -1);
+}
 
 // Handles Twilio Status Callbacks (sent, delivered, read, failed)
 export async function POST(request: NextRequest) {
@@ -75,27 +91,66 @@ export async function POST(request: NextRequest) {
                     mappedStatus = 'sent'; // Fallback
             }
 
+            // Idempotent: reject backward status transitions
+            if (!shouldUpdate(existing.deliveryStatus, mappedStatus)) {
+                logger.info('twilio_status_callback_skipped_backward', {
+                    messageSid,
+                    currentStatus: existing.deliveryStatus,
+                    incomingStatus: mappedStatus,
+                });
+                return new NextResponse('<Response></Response>', {
+                    status: 200,
+                    headers: { 'Content-Type': 'text/xml' },
+                });
+            }
+
+            const previousStatus = existing.deliveryStatus;
+
             await db.transaction(async (tx) => {
+                // Tenant-scoped update
                 await tx
                     .update(conversationMessages)
                     .set({
                         deliveryStatus: mappedStatus,
                     })
-                    .where(eq(conversationMessages.id, existing.id));
+                    .where(and(
+                        eq(conversationMessages.id, existing.id),
+                        eq(conversationMessages.tenantId, existing.tenantId)
+                    ));
 
                 if (mappedStatus === 'failed') {
                     const { conversations } = await import('@/drizzle/schema');
                     await tx
                         .update(conversations)
                         .set({ status: 'failed_delivery' })
-                        .where(eq(conversations.id, existing.conversationId));
+                        .where(and(
+                            eq(conversations.id, existing.conversationId),
+                            eq(conversations.tenantId, existing.tenantId)
+                        ));
                 }
+
+                // Audit: emit operational event for status change
+                await tx.insert(operationalEvents).values({
+                    id: randomUUID(),
+                    tenantId: existing.tenantId,
+                    eventType: 'delivery_status_changed',
+                    eventDomain: 'OPERATIONS',
+                    payload: {
+                        messageId: existing.id,
+                        conversationId: existing.conversationId,
+                        messageSid,
+                        previousStatus,
+                        newStatus: mappedStatus,
+                        twilioStatus: messageStatus,
+                    },
+                });
             });
 
             logger.info('twilio_status_callback_processed', {
                 messageSid,
                 messageStatus,
                 mappedStatus,
+                previousStatus,
                 messageId: existing.id,
             });
         }

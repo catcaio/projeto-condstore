@@ -7,7 +7,6 @@ import { conversationService } from '@/modules/atendimento/conversation.service'
 import { catalogService } from '@/modules/catalog/catalog.service';
 import { freightService } from '@/modules/freight/freight.service';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
-import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
 
 const mockResolveIntent = vi.fn().mockReturnValue({ intent: 'SUPPORT', confidence: 0.9, entities: [] });
 const mockResolveContextualIntent = vi.fn().mockImplementation((text: string) => {

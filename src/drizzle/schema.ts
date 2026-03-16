@@ -2449,12 +2449,12 @@ export type NewFrankActionRecord = typeof frankActions.$inferInsert;
 export const ecosystemEvents = mysqlTable('ecosystem_events', {
     id: varchar('id', { length: 36 }).primaryKey().notNull(),
     tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    type: varchar('type', { length: 80 }).notNull(),
-    entityType: varchar('entity_type', { length: 50 }).notNull(),
-    entityId: varchar('entity_id', { length: 128 }),
-    payloadJson: json('payload_json').notNull(),
-    actor: varchar('actor', { length: 128 }).notNull(),
-    source: varchar('source', { length: 50 }).notNull(),
+    type: varchar('type', { length: 100 }).notNull(),
+    entityType: varchar('entity_type', { length: 100 }).notNull(),
+    entityId: varchar('entity_id', { length: 255 }),
+    payloadJson: json('payload_json'),
+    actor: varchar('actor', { length: 255 }).notNull(),
+    source: varchar('source', { length: 100 }).notNull(),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
     idxEcoEventsTenantType: index('idx_eco_events_tenant_type').on(table.tenantId, table.type, table.createdAt),
