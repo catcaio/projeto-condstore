@@ -175,7 +175,7 @@ export async function POST(
         );
 
         if (conversation.status !== 'operator_active') {
-            await conversationService.markConversationWaitingCustomer(tenantId, conversationId);
+            await conversationService.updateConversationStatus(tenantId, conversationId, 'operator_active');
         }
 
         if (conversation.stage === 'NEW_LEAD') {

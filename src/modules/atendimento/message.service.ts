@@ -20,6 +20,7 @@ import { operationalEvents } from '@/drizzle/schema';
 import { randomUUID } from 'crypto';
 import type { ConversationMessageRecord } from '@/drizzle/schema';
 import { crmService } from '@/modules/crm/crm.service';
+import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 
 export const messageService = {
     async processInbound(
@@ -145,8 +146,19 @@ export const messageService = {
                 direction: 'INBOUND',
                 reconciliationRequired: true
             });
-            // NON-BLOCKING: we successfully wrote to conversation_messages.
+        // NON-BLOCKING: we successfully wrote to conversation_messages.
         }
+
+        // Emit ecosystem event (fire-and-forget)
+        ecosystemEventsService.emitEvent({
+            tenantId: params.tenantId,
+            type: 'message_received',
+            entityType: 'conversation',
+            entityId: params.conversationId,
+            payload: { channel: 'WHATSAPP', intent: params.intent, customerId: params.customerId },
+            actor: 'customer',
+            source: 'whatsapp',
+        }).catch(() => {});
 
         return inboundMessage;
     },
@@ -172,7 +184,7 @@ export const messageService = {
 
         const db = await getDb();
 
-        return await db.transaction(async (tx) => {
+        const outboundResult = await db.transaction(async (tx) => {
             const messageId = randomUUID();
             const advanceConversation = params.options?.advanceConversation ?? true;
 
@@ -225,6 +237,19 @@ export const messageService = {
 
             return insertedMessage;
         });
+
+        // Emit ecosystem event (fire-and-forget)
+        ecosystemEventsService.emitEvent({
+            tenantId: params.tenantId,
+            type: 'note_added',
+            entityType: 'conversation',
+            entityId: params.conversationId,
+            payload: { source: params.source, actorType: params.actorType, customerId: params.customerId },
+            actor: params.actorType === 'HUMAN' ? 'operator' : 'system',
+            source: 'atendimento',
+        }).catch(() => {});
+
+        return outboundResult;
     },
 
     async processSystemEvent(

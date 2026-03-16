@@ -2443,3 +2443,23 @@ export const frankActions = mysqlTable('frank_actions', {
 
 export type FrankActionRecord = typeof frankActions.$inferSelect;
 export type NewFrankActionRecord = typeof frankActions.$inferInsert;
+
+// --- Ecosystem Events ---
+
+export const ecosystemEvents = mysqlTable('ecosystem_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    type: varchar('type', { length: 100 }).notNull(),
+    entityType: varchar('entity_type', { length: 100 }).notNull(),
+    entityId: varchar('entity_id', { length: 255 }),
+    payloadJson: json('payload_json'),
+    actor: varchar('actor', { length: 255 }).notNull(),
+    source: varchar('source', { length: 100 }).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    idxEcoEventTenantType: index('idx_eco_event_tenant_type').on(table.tenantId, table.type),
+    idxEcoEventEntity: index('idx_eco_event_entity').on(table.tenantId, table.entityType, table.entityId),
+    idxEcoEventCreated: index('idx_eco_event_created').on(table.tenantId, table.createdAt),
+}));
+
+export type EcosystemEventRecord = typeof ecosystemEvents.$inferSelect;
