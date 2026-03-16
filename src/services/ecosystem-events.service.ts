@@ -16,6 +16,7 @@ export const EcosystemEventTypes = [
     'message_received',
     'quote_generated',
     'note_added',
+    'followup_scheduled',
 ] as const;
 
 export type EcosystemEventType = typeof EcosystemEventTypes[number];
