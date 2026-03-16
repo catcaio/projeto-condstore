@@ -1,18 +1,17 @@
-import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 import { ecosystemFeedService } from '@/modules/frank/services/ecosystem-feed.service';
 import { logger } from '@/infra/logger';
 import { getDb } from '@/infra/db';
 import { eq, desc, asc, and } from 'drizzle-orm';
 import { crmOpportunities, crmFollowUps } from '@/drizzle/schema';
+import { requireAdmin } from '@/infra/auth/guards';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
-        const headersList = await headers();
-        const tenantId = headersList.get('x-auth-tenant-id');
-        if (!tenantId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        const auth = await requireAdmin(req);
+        if (!auth.ok) return auth.response;
+
+        const tenantId = auth.session.tenantId;
 
         const body = await req.json();
         const { message, context } = body;
