@@ -2443,3 +2443,148 @@ export const frankActions = mysqlTable('frank_actions', {
 
 export type FrankActionRecord = typeof frankActions.$inferSelect;
 export type NewFrankActionRecord = typeof frankActions.$inferInsert;
+
+// --- Ecosystem Event Bus ---
+
+export const ecosystemEvents = mysqlTable('ecosystem_events', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    type: varchar('type', { length: 80 }).notNull(),
+    entityType: varchar('entity_type', { length: 50 }).notNull(),
+    entityId: varchar('entity_id', { length: 128 }),
+    payloadJson: json('payload_json').notNull(),
+    actor: varchar('actor', { length: 128 }).notNull(),
+    source: varchar('source', { length: 50 }).notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxEcoEventsTenantType: index('idx_eco_events_tenant_type').on(table.tenantId, table.type, table.createdAt),
+    idxEcoEventsTenantEntity: index('idx_eco_events_tenant_entity').on(table.tenantId, table.entityType, table.entityId),
+    idxEcoEventsCreatedAt: index('idx_eco_events_created_at').on(table.createdAt),
+}));
+
+export type EcosystemEventRecord = typeof ecosystemEvents.$inferSelect;
+export type NewEcosystemEventRecord = typeof ecosystemEvents.$inferInsert;
+
+// --- Workflow Engine ---
+
+export const workflowRules = mysqlTable('workflow_rules', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    triggerType: varchar('trigger_type', { length: 30 }).notNull(), // event, schedule, condition
+    triggerConfig: json('trigger_config').notNull(), // { eventType, schedule, conditionField, conditionOp, conditionValue }
+    conditionJson: json('condition_json'), // additional conditions
+    actionType: varchar('action_type', { length: 80 }).notNull(), // create_followup, send_notification, update_stage, etc.
+    actionConfig: json('action_config').notNull(), // action-specific params
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxWfRulesTenantActive: index('idx_wf_rules_tenant_active').on(table.tenantId, table.isActive),
+    idxWfRulesTrigger: index('idx_wf_rules_trigger').on(table.triggerType),
+}));
+
+export type WorkflowRuleRecord = typeof workflowRules.$inferSelect;
+export type NewWorkflowRuleRecord = typeof workflowRules.$inferInsert;
+
+export const workflowRuns = mysqlTable('workflow_runs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    ruleId: varchar('rule_id', { length: 36 }).notNull(),
+    triggerEventId: varchar('trigger_event_id', { length: 36 }),
+    status: varchar('status', { length: 30 }).notNull().default('running'), // running, completed, failed
+    resultJson: json('result_json'),
+    errorMsg: text('error_msg'),
+    startedAt: timestamp('started_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    completedAt: timestamp('completed_at'),
+}, (table) => ({
+    idxWfRunsTenantRule: index('idx_wf_runs_tenant_rule').on(table.tenantId, table.ruleId),
+    idxWfRunsStatus: index('idx_wf_runs_status').on(table.status),
+}));
+
+export type WorkflowRunRecord = typeof workflowRuns.$inferSelect;
+export type NewWorkflowRunRecord = typeof workflowRuns.$inferInsert;
+
+// --- Global Search Index ---
+
+export const searchIndex = mysqlTable('search_index', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    entityType: varchar('entity_type', { length: 50 }).notNull(), // customer, order, conversation, quote, shipment, note
+    entityId: varchar('entity_id', { length: 128 }).notNull(),
+    title: varchar('title', { length: 500 }).notNull(),
+    body: text('body'),
+    phone: varchar('phone', { length: 64 }),
+    email: varchar('email', { length: 128 }),
+    metadataJson: json('metadata_json'),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxSearchTenantEntity: uniqueIndex('uq_search_index_tenant_entity').on(table.tenantId, table.entityType, table.entityId),
+    idxSearchTenantTitle: index('idx_search_index_tenant_title').on(table.tenantId, table.title),
+}));
+
+export type SearchIndexRecord = typeof searchIndex.$inferSelect;
+export type NewSearchIndexRecord = typeof searchIndex.$inferInsert;
+
+// --- Notifications ---
+
+export const notifications = mysqlTable('notifications', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    userId: varchar('user_id', { length: 36 }).notNull(),
+    type: varchar('type', { length: 50 }).notNull(), // lead_hot, lead_followup_due, order_stuck, shipment_delayed, new_message
+    entityType: varchar('entity_type', { length: 50 }),
+    entityId: varchar('entity_id', { length: 128 }),
+    priority: varchar('priority', { length: 20 }).notNull().default('normal'), // low, normal, high, urgent
+    payload: json('payload'),
+    read: boolean('read').notNull().default(false),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxNotifUserRead: index('idx_notif_user_read').on(table.tenantId, table.userId, table.read, table.createdAt),
+    idxNotifCreated: index('idx_notif_created').on(table.createdAt),
+}));
+
+export type NotificationRecord = typeof notifications.$inferSelect;
+export type NewNotificationRecord = typeof notifications.$inferInsert;
+
+// --- Queue Jobs ---
+
+export const queueJobs = mysqlTable('queue_jobs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }),
+    type: varchar('type', { length: 80 }).notNull(), // recalculate_pipeline, generate_frank_insights, sync_search_index, evaluate_workflows
+    payload: json('payload').notNull(),
+    status: varchar('status', { length: 30 }).notNull().default('pending'), // pending, running, completed, failed, dead
+    attempts: int('attempts').notNull().default(0),
+    maxAttempts: int('max_attempts').notNull().default(3),
+    errorMsg: text('error_msg'),
+    scheduledAt: timestamp('scheduled_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxQueueStatus: index('idx_queue_jobs_status').on(table.status, table.scheduledAt),
+    idxQueueType: index('idx_queue_jobs_type').on(table.type, table.status),
+}));
+
+export type QueueJobRecord = typeof queueJobs.$inferSelect;
+export type NewQueueJobRecord = typeof queueJobs.$inferInsert;
+
+// --- Operational Metrics (Telemetry) ---
+
+export const operationalMetrics = mysqlTable('operational_metrics', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    metric: varchar('metric', { length: 80 }).notNull(), // time_to_first_reply, time_to_close_lead, order_processing_time, shipment_delay_rate
+    value: decimal('value', { precision: 12, scale: 4 }).notNull(),
+    entityType: varchar('entity_type', { length: 50 }),
+    entityId: varchar('entity_id', { length: 128 }),
+    metadataJson: json('metadata_json'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxOpMetricsTenantMetric: index('idx_op_metrics_tenant_metric').on(table.tenantId, table.metric, table.createdAt),
+    idxOpMetricsCreated: index('idx_op_metrics_created').on(table.createdAt),
+}));
+
+export type OperationalMetricRecord = typeof operationalMetrics.$inferSelect;
+export type NewOperationalMetricRecord = typeof operationalMetrics.$inferInsert;
