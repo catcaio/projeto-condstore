@@ -3,6 +3,8 @@ import { getDb } from '@/infra/db';
 import { eq, and } from 'drizzle-orm';
 import { crmOpportunities, crmQuotes, crmQuoteItems, crmFollowUps } from '@/drizzle/schema';
 import { randomUUID } from 'crypto';
+import { ecosystemEventsService } from '@/services/ecosystem-events.service';
+import { operationalAuditService } from '@/modules/audit/operational-audit.service';
 
 export const crmService = {
     /**
@@ -48,14 +50,36 @@ export const crmService = {
             } else if (params.direction === 'inbound') {
                 // Create new opportunity if inbound message and no active ops
                 const title = `Negociação Automática`;
+                const newOpportunityId = randomUUID();
                 await db.insert(crmOpportunities).values({
-                    id: randomUUID(),
+                    id: newOpportunityId,
                     tenantId: params.tenantId,
                     customerId: params.customerId,
                     title,
                     stage: 'new_lead',
                     status: 'active',
                     lastActivityAt: new Date(),
+                });
+
+                // Emit Ecosystem Event
+                await ecosystemEventsService.emitEvent({
+                    tenantId: params.tenantId,
+                    type: 'lead_created',
+                    entityType: 'opportunity',
+                    entityId: newOpportunityId,
+                    payload: { customerId: params.customerId, conversationId: params.conversationId },
+                    actor: 'SYSTEM',
+                    source: 'WHATSAPP_INBOUND',
+                });
+
+                // Emit Audit Log
+                await operationalAuditService.logActivity({
+                    tenantId: params.tenantId,
+                    entityType: 'opportunity',
+                    entityId: newOpportunityId,
+                    actionType: 'lead_created',
+                    origin: 'system',
+                    metadata: { customerId: params.customerId, conversationId: params.conversationId },
                 });
             }
         } catch (error) {
@@ -169,6 +193,27 @@ export const crmService = {
                 await db.insert(crmQuoteItems).values(itemValues);
             }
 
+            // Emit Ecosystem Event
+            await ecosystemEventsService.emitEvent({
+                tenantId: params.tenantId,
+                type: 'quote_generated',
+                entityType: 'quote',
+                entityId: params.quoteId,
+                payload: { opportunityId, totalAmount: params.totalAmount, conversationId: params.conversationId },
+                actor: 'SYSTEM',
+                source: 'FRANK_SIMULATION',
+            });
+
+            // Emit Audit Log
+            await operationalAuditService.logActivity({
+                tenantId: params.tenantId,
+                entityType: 'opportunity',
+                entityId: opportunityId,
+                actionType: 'quote_generated',
+                origin: 'frank',
+                metadata: { quoteId: params.quoteId, totalAmount: params.totalAmount, conversationId: params.conversationId },
+            });
+
             return { opportunityId };
 
         } catch (error) {
@@ -195,10 +240,11 @@ export const crmService = {
         const db = tx || await getDb();
         const hours = params.hoursDelay || 48; // Default 48 hours for a quote follow up
         const scheduledAt = new Date(Date.now() + hours * 60 * 60 * 1000);
+        const followUpId = randomUUID();
 
         try {
             await db.insert(crmFollowUps).values({
-                id: randomUUID(),
+                id: followUpId,
                 tenantId: params.tenantId,
                 opportunityId: params.opportunityId,
                 scheduledAt,
@@ -206,6 +252,28 @@ export const crmService = {
                 status: 'pending',
                 createdAt: new Date(),
             });
+            
+            // Emit Ecosystem Event
+            await ecosystemEventsService.emitEvent({
+                tenantId: params.tenantId,
+                type: 'followup_scheduled',
+                entityType: 'follow_up',
+                entityId: followUpId,
+                payload: { opportunityId: params.opportunityId, quoteId: params.quoteId, scheduledAt },
+                actor: 'SYSTEM',
+                source: 'AUTO_SCHEDULER',
+            });
+
+            // Emit Audit Log
+            await operationalAuditService.logActivity({
+                tenantId: params.tenantId,
+                entityType: 'opportunity',
+                entityId: params.opportunityId,
+                actionType: 'followup_scheduled',
+                origin: 'system',
+                metadata: { quoteId: params.quoteId, followUpId, scheduledAt },
+            });
+
             logger.info('Scheduled automatic quote follow-up', {
                 tenantId: params.tenantId,
                 quoteId: params.quoteId,

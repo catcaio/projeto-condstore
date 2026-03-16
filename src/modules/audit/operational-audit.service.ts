@@ -5,7 +5,7 @@ import { eq, and, asc, desc } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 
 export type OperationalEntityType = 'opportunity' | 'order' | 'client' | 'conversation' | 'shipment';
-export type ActionOrigin = 'ui' | 'bulk' | 'drawer' | 'palette' | 'frank';
+export type ActionOrigin = 'ui' | 'bulk' | 'drawer' | 'palette' | 'frank' | 'system';
 
 export interface LogOperationalActivityParams {
     tenantId: string;
