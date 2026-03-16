@@ -3,6 +3,7 @@ import { getDb } from '@/infra/db';
 import { orders, type ShipmentRecord } from '@/drizzle/schema';
 import { shipmentRepository, type ShipmentListFilter } from './shipment.repository';
 import { shipmentEvents } from './shipment.events';
+import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 
 export const shipmentService = {
     async createShipmentFromOrder(tenantId: string, orderId: string): Promise<ShipmentRecord> {
@@ -46,6 +47,17 @@ export const shipmentService = {
             customerId: order.customerId || undefined
         });
 
+        // Emit ecosystem event
+        ecosystemEventsService.emitEvent({
+            tenantId,
+            type: 'shipment_created',
+            entityType: 'shipment',
+            entityId: shipmentId,
+            payload: { orderId, carrier: order.carrier || 'Unknown' },
+            actor: 'system',
+            source: 'logistics',
+        }).catch(() => {});
+
         return newShipment;
     },
 
@@ -70,6 +82,19 @@ export const shipmentService = {
                 orderId: shipment.orderId,
                 status
             });
+
+            // Emit shipment_delayed if status is FAILED
+            if (status === 'FAILED') {
+                ecosystemEventsService.emitEvent({
+                    tenantId,
+                    type: 'shipment_delayed',
+                    entityType: 'shipment',
+                    entityId: shipmentId,
+                    payload: { orderId: shipment.orderId, status },
+                    actor: 'system',
+                    source: 'logistics',
+                }).catch(() => {});
+            }
         }
     },
 
@@ -83,3 +108,4 @@ export const shipmentService = {
 };
 
 export type { ShipmentListFilter };
+
