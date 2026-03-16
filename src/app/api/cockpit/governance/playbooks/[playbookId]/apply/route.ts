@@ -4,9 +4,10 @@ import { playbookService } from '@/modules/playbooks/playbook.service';
 import { ApplyPlaybookSchema } from '@/modules/playbooks/playbook.schemas';
 
 export async function POST(req: NextRequest, context: any) {
+    const sessionRes = await requireAdmin(req);
+    if (!sessionRes.ok) return sessionRes.response;
+
     try {
-        const sessionRes = await requireAdmin(req);
-        if (!sessionRes.ok) return sessionRes.response;
         const body = await req.json();
 
         const parsed = ApplyPlaybookSchema.safeParse({

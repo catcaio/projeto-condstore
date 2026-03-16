@@ -4,15 +4,15 @@ import { playbookService } from '@/modules/playbooks/playbook.service';
 import { CreatePlaybookSchema } from '@/modules/playbooks/playbook.schemas';
 
 export async function POST(req: NextRequest) {
-    try {
-        const sessionRes = await requireAdmin(req);
-        if (!sessionRes.ok) return sessionRes.response;
-        
-        // Tenant Supreme Permission verification or Role verification if needed
-        if (sessionRes.session.role !== 'admin' && sessionRes.session.role !== 'manager') {
-            return NextResponse.json({ error: 'Unauthorized to create playbooks' }, { status: 403 });
-        }
+    const sessionRes = await requireAdmin(req);
+    if (!sessionRes.ok) return sessionRes.response;
+    
+    // Tenant Supreme Permission verification or Role verification if needed
+    if (sessionRes.session.role !== 'admin' && sessionRes.session.role !== 'manager') {
+        return NextResponse.json({ error: 'Unauthorized to create playbooks' }, { status: 403 });
+    }
 
+    try {
         const body = await req.json();
         const parsed = CreatePlaybookSchema.safeParse(body);
 

@@ -7,11 +7,11 @@ import { crmOpportunities, crmFollowUps } from '@/drizzle/schema';
 import { requireAdmin } from '@/infra/auth/guards';
 
 export async function POST(req: NextRequest) {
-    try {
-        const auth = await requireAdmin(req);
-        if (!auth.ok) return auth.response;
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return auth.response;
+    const tenantId = auth.session.tenantId;
 
-        const tenantId = auth.session.tenantId;
+    try {
 
         const body = await req.json();
         const { message, context } = body;
