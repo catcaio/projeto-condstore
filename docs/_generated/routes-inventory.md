@@ -94,6 +94,7 @@
 | `/api/db/migrate` | API |
 | `/api/debug/tenants` | API |
 | `/api/domine/intake` | API |
+| `/api/ecosystem/events` | API |
 | `/api/events` | API |
 | `/api/freight/create-shipment` | API |
 | `/api/freight/insights` | API |
@@ -179,6 +180,7 @@
 | `/api/metrics/overview` | API |
 | `/api/metrics/rate-limit` | API |
 | `/api/metrics/rate-limit-alerts` | API |
+| `/api/notifications` | API |
 | `/api/orders/create-from-quote` | API |
 | `/api/painel-logistico` | API |
 | `/api/public/cotacao/intent` | API |
@@ -188,6 +190,7 @@
 | `/api/reports/ingest` | API |
 | `/api/reports/seed` | API |
 | `/api/sales/quote` | API |
+| `/api/search` | API |
 | `/api/simulate` | API |
 | `/api/supreme/ecosystem` | API |
 | `/api/tenants/[tenantId]/ai-provider` | API |

@@ -3,6 +3,7 @@ import { getDb } from '@/infra/db';
 import { eq, and } from 'drizzle-orm';
 import { crmOpportunities, crmQuotes, crmQuoteItems, crmFollowUps } from '@/drizzle/schema';
 import { randomUUID } from 'crypto';
+import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 
 export const crmService = {
     /**
@@ -48,8 +49,9 @@ export const crmService = {
             } else if (params.direction === 'inbound') {
                 // Create new opportunity if inbound message and no active ops
                 const title = `Negociação Automática`;
+                const oppId = randomUUID();
                 await db.insert(crmOpportunities).values({
-                    id: randomUUID(),
+                    id: oppId,
                     tenantId: params.tenantId,
                     customerId: params.customerId,
                     title,
@@ -57,6 +59,17 @@ export const crmService = {
                     status: 'active',
                     lastActivityAt: new Date(),
                 });
+
+                // Emit lead_created ecosystem event
+                ecosystemEventsService.emitEvent({
+                    tenantId: params.tenantId,
+                    type: 'lead_created',
+                    entityType: 'opportunity',
+                    entityId: oppId,
+                    payload: { customerId: params.customerId },
+                    actor: 'system',
+                    source: 'crm',
+                }).catch(() => {});
             }
         } catch (error) {
             logger.error('Failed to project message to CRM opportunity', error as Error, {
@@ -116,6 +129,17 @@ export const crmService = {
                 await db.update(crmOpportunities)
                     .set({ stage: 'quoted', lastActivityAt: new Date() })
                     .where(eq(crmOpportunities.id, opportunityId));
+
+                // Emit lead_stage_changed ecosystem event
+                ecosystemEventsService.emitEvent({
+                    tenantId: params.tenantId,
+                    type: 'lead_stage_changed',
+                    entityType: 'opportunity',
+                    entityId: opportunityId,
+                    payload: { newStage: 'quoted', customerId: params.customerId },
+                    actor: 'system',
+                    source: 'crm',
+                }).catch(() => {});
             } else {
                 // Should exist due to message projection, but fallback just in case
                 opportunityId = randomUUID();
@@ -168,6 +192,17 @@ export const crmService = {
 
                 await db.insert(crmQuoteItems).values(itemValues);
             }
+
+            // Emit quote_generated ecosystem event
+            ecosystemEventsService.emitEvent({
+                tenantId: params.tenantId,
+                type: 'quote_generated',
+                entityType: 'quote',
+                entityId: params.quoteId,
+                payload: { opportunityId, customerId: params.customerId, totalAmount: params.totalAmount },
+                actor: 'system',
+                source: 'crm',
+            }).catch(() => {});
 
             return { opportunityId };
 
