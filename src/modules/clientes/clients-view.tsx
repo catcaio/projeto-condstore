@@ -17,6 +17,7 @@ import type { ClientRecord, ClientActivityBucket, ClientStatus, CrmStage } from 
 import { PanelLeftClose, Kanban, List, CheckCircle2, UserPlus, FileArchive, MessageCircle, CalendarPlus, FileText, MessageSquare, Zap, RefreshCw } from 'lucide-react';
 import { SharedKanbanBoard, KanbanColumn, KanbanCard, DropdownStatusSelector } from '@/ui/foundation';
 import { updateClientOpportunityStage } from './actions/update-stage';
+import { bulkAdvanceClientStage, bulkAssignClientOwner, bulkArchiveClients } from './actions/bulk';
 import { getOperationalHistoryAction, addOperationalNoteAction } from '@/modules/audit/audit.actions';
 import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank/actions/review';
 import { ActionPlayground } from '@/ui/frank/action-playground';
@@ -216,8 +217,8 @@ export function ClientsView({ clients }: ClientsViewProps) {
                                   
                 changes = [{
                     label: 'Fase/Estágio',
-                    from: currentStage,
-                    to: <span className="text-emerald-600 dark:text-emerald-500">{nextPhase}</span>
+                    from: currentStage.replace('_', ' '),
+                    to: <span className="text-emerald-600 dark:text-emerald-500 capitalize">{nextPhase.toLowerCase().replace('_', ' ')}</span>
                 }];
             } else if (actionType === 'assign') {
                 changes = [{
@@ -275,17 +276,19 @@ export function ClientsView({ clients }: ClientsViewProps) {
     const handleExecuteBulkAction = async (itemIds: string[]) => {
         setPreviewModalConfig(prev => ({ ...prev, isExecuting: true }));
         try {
-            // Simulate network delay for bulk execution
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            // TODO: Call actual Server Action here (e.g. bulkAdvancePipelineStatus)
+            if (previewModalConfig.actionType === 'advance') {
+                await bulkAdvanceClientStage(itemIds);
+            } else if (previewModalConfig.actionType === 'assign') {
+                await bulkAssignClientOwner(itemIds, 'Julio Cezar');
+            } else if (previewModalConfig.actionType === 'archive') {
+                await bulkArchiveClients(itemIds);
+            }
             
-            // Clear selection and close modal on success
             setRowSelection({});
             setPreviewModalConfig(prev => ({ ...prev, isOpen: false, isExecuting: false }));
         } catch (error) {
             console.error('Falha ao executar ação em lote', error);
             setPreviewModalConfig(prev => ({ ...prev, isExecuting: false }));
-            // TODO: show toast error
         }
     };
 

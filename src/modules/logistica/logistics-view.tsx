@@ -6,6 +6,7 @@ import { PageHeader, ShellContainer, StatusChip, UniversalListView, BulkActionBa
 import { getOperationalHistoryAction, addOperationalNoteAction } from '@/modules/audit/audit.actions';
 import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank/actions/review';
 import { ActionPlayground } from '@/ui/frank/action-playground';
+import { bulkSyncLogisticsTracking, bulkReportLogisticsException } from './actions/bulk';
 import { BulkActionPreviewModal, BulkPreviewItem } from '@/ui/foundation/bulk-action-preview-modal';
 import { Truck, MapPin, AlertTriangle, Calculator, FileText, MessageSquare, Zap, RefreshCw } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -132,8 +133,11 @@ export function LogisticsView() {
     const handleExecuteBulkAction = async (itemIds: string[]) => {
         setPreviewModalConfig(prev => ({ ...prev, isExecuting: true }));
         try {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            // Call actual Server Action here
+            if (previewModalConfig.actionType === 'update') {
+                await bulkSyncLogisticsTracking(itemIds);
+            } else if (previewModalConfig.actionType === 'exception') {
+                await bulkReportLogisticsException(itemIds);
+            }
             
             setRowSelection({});
             setPreviewModalConfig(prev => ({ ...prev, isOpen: false, isExecuting: false }));
