@@ -14,6 +14,7 @@ import { OrderLogisticsContext } from './components/order-logistics-context';
 import { OperationalTimelineWidget, AddNoteForm } from '@/ui/foundation';
 import { getOperationalHistoryAction, addOperationalNoteAction } from '@/modules/audit/audit.actions';
 import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank/actions/review';
+import { bulkApproveOrders, bulkAssignOrderOwner, bulkCancelOrders } from './actions/bulk';
 import { ActionPlayground } from '@/ui/frank/action-playground';
 import type { OrderRecord, OrderChannel, OrderPeriodBucket, OrderPriority, OrderStatus } from './types';
 import { UniversalListView, InspectorDrawer, SavedViewsTabs, BulkActionBar } from '@/ui/foundation';
@@ -283,8 +284,13 @@ export function OrdersView({ orders }: OrdersViewProps) {
     const handleExecuteBulkAction = async (itemIds: string[]) => {
         setPreviewModalConfig(prev => ({ ...prev, isExecuting: true }));
         try {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            // TODO: Call actual Server Action
+            if (previewModalConfig.actionType === 'approve') {
+                await bulkApproveOrders(itemIds);
+            } else if (previewModalConfig.actionType === 'assign') {
+                await bulkAssignOrderOwner(itemIds, 'Julio Cezar');
+            } else if (previewModalConfig.actionType === 'cancel') {
+                await bulkCancelOrders(itemIds);
+            }
             
             setRowSelection({});
             setPreviewModalConfig(prev => ({ ...prev, isOpen: false, isExecuting: false }));
