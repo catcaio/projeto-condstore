@@ -1,6 +1,10 @@
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { Button } from '@/ui/components';
 import { SectionHeader, StatusChip, SurfacePanel } from '@/ui/foundation';
+import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank/actions/review';
+import { ActionPlayground } from '@/ui/frank/action-playground';
+import { Zap, RefreshCw } from 'lucide-react';
 import type { ConversationOrder, ConversationRecord, ConversationSimulation } from '../types';
 
 function getSimulationTone(status: ConversationSimulation['status']) {
@@ -36,6 +40,37 @@ function ContextLine({ label, value }: { label: string; value: string }) {
 }
 
 export function ConversationContext({ conversation }: { conversation: ConversationRecord }) {
+    const [pendingActions, setPendingActions] = useState<any[]>([]);
+    const [isLoadingActions, setIsLoadingActions] = useState(false);
+
+    const refreshActions = () => {
+        setIsLoadingActions(true);
+        getPendingFrankActions('conversation', conversation.id)
+            .then(data => setPendingActions(data))
+            .catch(console.error)
+            .finally(() => setIsLoadingActions(false));
+    };
+
+    useEffect(() => {
+        refreshActions();
+    }, [conversation.id]);
+
+    const handleApproveAction = async (actionId: string, updatedPayload: any) => {
+        const res = await approveAndExecuteFrankAction(actionId, updatedPayload);
+        if (res.success) {
+            refreshActions();
+        }
+        return res;
+    };
+
+    const handleRejectAction = async (actionId: string) => {
+        const res = await rejectFrankAction(actionId);
+        if (res.success) {
+            refreshActions();
+        }
+        return res;
+    };
+
     return (
         <SurfacePanel className="flex h-full min-h-[42rem] flex-col">
             <SectionHeader
@@ -114,6 +149,36 @@ export function ConversationContext({ conversation }: { conversation: Conversati
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+
+                <div className="rounded-[1.25rem] border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] p-4">
+                    <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-subtle))]">
+                        <Zap className="h-4 w-4 text-amber-500" /> Ações do Frank
+                    </p>
+                    <div className="mt-3 space-y-3">
+                        {isLoadingActions ? (
+                            <div className="flex justify-center p-4">
+                                <RefreshCw className="h-5 w-5 animate-spin text-[hsl(var(--ui-text-muted))]" />
+                            </div>
+                        ) : pendingActions.length > 0 ? (
+                            pendingActions.map(action => (
+                                <ActionPlayground
+                                    key={action.id}
+                                    actionId={action.id}
+                                    type={action.type}
+                                    status={action.status}
+                                    payload={action.payload}
+                                    explanation={action.explanation as any}
+                                    onApprove={handleApproveAction}
+                                    onReject={handleRejectAction}
+                                />
+                            ))
+                        ) : (
+                            <div className="text-center p-4 text-sm text-[hsl(var(--ui-text-muted))]">
+                                Sem sugestões para esta conversa.
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -10,6 +10,7 @@ import {
     getSortedRowModel,
     useReactTable,
     flexRender,
+    RowSelectionState,
 } from '@tanstack/react-table';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,9 @@ export interface DataTableProps<TData, TValue> {
     pageCount?: number;
     manualPagination?: boolean;
     manualSorting?: boolean;
+    rowSelection?: RowSelectionState;
+    onRowSelectionChange?: (rowSelection: RowSelectionState) => void;
+    enableRowSelection?: boolean | ((row: import('@tanstack/react-table').Row<TData>) => boolean);
     rowActions?: React.ReactNode;
     onRowClick?: (row: TData) => void;
     isLoading?: boolean;
@@ -57,6 +61,9 @@ export function DataTable<TData, TValue>({
     pageCount,
     manualPagination = false,
     manualSorting = false,
+    rowSelection: controlledRowSelection,
+    onRowSelectionChange: setControlledRowSelection,
+    enableRowSelection,
     onRowClick,
     isLoading,
     isError,
@@ -69,9 +76,11 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
     const [internalSorting, setInternalSorting] = useState<SortingState>(initialSorting);
     const [internalPagination, setInternalPagination] = useState({ pageIndex: 0, pageSize: 20 });
+    const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
 
     const sorting = controlledSorting !== undefined ? controlledSorting : internalSorting;
     const pagination = controlledPagination !== undefined ? controlledPagination : internalPagination;
+    const rowSelection = controlledRowSelection !== undefined ? controlledRowSelection : internalRowSelection;
 
     const table = useReactTable({
         data,
@@ -99,9 +108,19 @@ export function DataTable<TData, TValue>({
                 setInternalPagination(newPagination);
             }
         },
+        onRowSelectionChange: (updaterOrValue) => {
+            const newRowSelection = typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
+            if (setControlledRowSelection) {
+                setControlledRowSelection(newRowSelection);
+            } else {
+                setInternalRowSelection(newRowSelection);
+            }
+        },
+        enableRowSelection,
         state: {
             sorting,
             pagination,
+            rowSelection,
         },
     });
 

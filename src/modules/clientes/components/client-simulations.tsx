@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { Button } from '@/ui/components';
+import { Play, TrendingUp, AlertCircle, FileText } from 'lucide-react';
 import { SectionHeader, StatusChip, SurfacePanel } from '@/ui/foundation';
-import type { ClientSimulationActivity, ClientSimulationStatus } from '../mock-data';
+import type { ClientSimulationActivity, ClientSimulationStatus } from '../types';
 
 function getStatusTone(status: ClientSimulationStatus) {
     if (status === 'contingencia') {

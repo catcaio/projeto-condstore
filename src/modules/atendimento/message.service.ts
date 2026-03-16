@@ -19,6 +19,7 @@ import { conversationMessages, conversations } from '@/drizzle/schema';
 import { operationalEvents } from '@/drizzle/schema';
 import { randomUUID } from 'crypto';
 import type { ConversationMessageRecord } from '@/drizzle/schema';
+import { crmService } from '@/modules/crm/crm.service';
 
 export const messageService = {
     async processInbound(
@@ -109,6 +110,15 @@ export const messageService = {
                 .from(conversationMessages)
                 .where(eq(conversationMessages.id, messageId))
                 .limit(1);
+
+            // Project into CRM Opportunity (Non-blocking but transactional)
+            await crmService.projectMessageActivity({
+                tenantId: params.tenantId,
+                customerId: params.customerId,
+                conversationId: params.conversationId,
+                message: params.message,
+                direction: 'inbound'
+            }, tx);
 
             return insertedMessage;
         });
@@ -203,6 +213,15 @@ export const messageService = {
                 .from(conversationMessages)
                 .where(eq(conversationMessages.id, messageId))
                 .limit(1);
+
+            // Project into CRM Opportunity
+            await crmService.projectMessageActivity({
+                tenantId: params.tenantId,
+                customerId: params.customerId,
+                conversationId: params.conversationId,
+                message: params.message,
+                direction: 'outbound'
+            }, tx);
 
             return insertedMessage;
         });

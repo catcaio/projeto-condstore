@@ -12,6 +12,8 @@ import { ConversationList } from './components/conversation-list';
 import { ConversationThread } from './components/conversation-thread';
 import { useConversations } from './use-conversations';
 import type { ConversationPriority, ConversationStatus } from './types';
+import { PanelLeftClose, UserPlus, CheckCircle2, XCircle } from 'lucide-react';
+import { BulkActionBar } from '@/ui/foundation';
 
 type StatusFilter = ConversationStatus | 'todas';
 type PriorityFilter = ConversationPriority | 'todas';
@@ -44,6 +46,10 @@ export function ConversationsView() {
     const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('todas');
     const [ownerFilter, setOwnerFilter] = useState('todos');
     const [draft, setDraft] = useState('');
+
+    const [isContextOpen, setIsContextOpen] = useState(false);
+    const [isListOpen, setIsListOpen] = useState(false);
+    const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
 
     const deferredSearch = useDeferredValue(searchValue);
 
@@ -191,24 +197,51 @@ export function ConversationsView() {
                 ]}
             />
 
-            <div className="grid gap-6 xl:grid-cols-[23rem_minmax(0,1fr)_22rem]">
-                <ConversationList
-                    conversations={filteredConversations}
-                    totalCount={allConversations.length}
-                    selectedConversationId={selectedConversation?.id ?? ''}
-                    searchValue={searchValue}
-                    statusFilter={statusFilter}
-                    priorityFilter={priorityFilter}
-                    ownerFilter={ownerFilter}
-                    owners={ownerOptions}
-                    onSearchChange={setSearchValue}
-                    onStatusFilterChange={setStatusFilter}
-                    onPriorityFilterChange={setPriorityFilter}
-                    onOwnerFilterChange={setOwnerFilter}
-                    onSelectConversation={handleSelectConversation}
-                />
-                {selectedConversation ? (
-                    <>
+            {selectedConversation && (
+                <div className="flex justify-between items-center 2xl:hidden bg-[hsl(var(--ui-page))] px-4 py-2 mt-4 rounded-xl border border-[hsl(var(--ui-border))]">
+                    <Button variant="ghost" size="sm" className="xl:hidden" onClick={() => { setIsListOpen(!isListOpen); setIsContextOpen(false); }}>
+                        <PanelLeftClose className={`w-4 h-4 mr-2 ${isListOpen ? '' : 'rotate-180'}`} />
+                        {isListOpen ? 'Ocultar Fila' : 'Ver Fila'}
+                    </Button>
+                    <div className="xl:hidden" />
+                    <Button variant="ghost" size="sm" onClick={() => { setIsContextOpen(!isContextOpen); setIsListOpen(false); }}>
+                        {isContextOpen ? 'Ocultar Contexto' : 'Ver Contexto'}
+                        <PanelLeftClose className={`w-4 h-4 ml-2 ${isContextOpen ? 'rotate-180' : ''}`} />
+                    </Button>
+                </div>
+            )}
+
+            <div className={`flex flex-col xl:flex-row gap-6 items-start relative min-h-[70vh] ${selectedConversation ? 'mt-4' : 'mt-6'}`}>
+                {/* Left Pane (List) */}
+                <div className={`
+                    w-full xl:w-[320px] 2xl:w-[340px] shrink-0
+                    ${selectedConversation ? (isListOpen ? 'block' : 'hidden xl:block') : 'block'}
+                `}>
+                    <ConversationList
+                        conversations={filteredConversations}
+                        totalCount={allConversations.length}
+                        selectedConversationId={selectedConversation?.id ?? ''}
+                        searchValue={searchValue}
+                        statusFilter={statusFilter}
+                        priorityFilter={priorityFilter}
+                        ownerFilter={ownerFilter}
+                        owners={ownerOptions}
+                        onSearchChange={setSearchValue}
+                        onStatusFilterChange={setStatusFilter}
+                        onPriorityFilterChange={setPriorityFilter}
+                        onOwnerFilterChange={setOwnerFilter}
+                        onSelectConversation={handleSelectConversation}
+                        rowSelection={rowSelection}
+                        onRowSelectionChange={setRowSelection}
+                    />
+                </div>
+
+                {/* Center Pane */}
+                {selectedConversation && (
+                    <div className={`
+                        flex-1 min-w-0 w-full
+                        ${(isListOpen || isContextOpen) ? 'hidden xl:block' : 'block'}
+                    `}>
                         <ConversationThread
                             conversation={selectedConversation}
                             draft={draft}
@@ -222,10 +255,34 @@ export function ConversationsView() {
                                 }
                             }}
                         />
+                    </div>
+                )}
+
+                {/* Right Pane (Context) */}
+                {selectedConversation && (
+                    <div className={`
+                        w-full xl:w-[360px] 2xl:w-[380px] shrink-0
+                        ${isContextOpen ? 'block' : 'hidden 2xl:block'}
+                    `}>
                         <ConversationContext conversation={selectedConversation} />
-                    </>
-                ) : null}
+                    </div>
+                )}
             </div>
+
+            <BulkActionBar
+                selectedCount={Object.keys(rowSelection).filter(k => rowSelection[k]).length}
+                onClearSelection={() => setRowSelection({})}
+            >
+                <Button variant="secondary" size="sm" className="h-8 rounded-full text-xs" onClick={() => {}}>
+                    <UserPlus className="mr-2 h-3.5 w-3.5" /> Atribuir
+                </Button>
+                <Button variant="secondary" size="sm" className="h-8 rounded-full text-xs text-blue-600 dark:text-blue-500 hover:text-blue-700 dark:hover:text-blue-400" onClick={() => {}}>
+                    <CheckCircle2 className="mr-2 h-3.5 w-3.5" /> Resolver
+                </Button>
+                <Button variant="secondary" size="sm" className="h-8 rounded-full text-xs text-rose-600 dark:text-rose-500 hover:text-rose-700 dark:hover:text-rose-400" onClick={() => {}}>
+                    <XCircle className="mr-2 h-3.5 w-3.5" /> Escalar
+                </Button>
+            </BulkActionBar>
         </ShellContainer>
     );
 }

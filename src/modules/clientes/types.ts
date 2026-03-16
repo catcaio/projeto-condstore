@@ -1,5 +1,15 @@
 export type ClientStatus = 'ativo' | 'monitorado' | 'em-risco' | 'vip';
 
+export type CrmStage = 'new_lead' | 'qualified' | 'quoted' | 'proposal_sent' | 'negotiating' | 'won' | 'lost';
+
+export type ClientOpportunity = {
+    id: string;
+    stage: CrmStage;
+    title: string;
+    amount: string;
+    lastActivityAt: string;
+};
+
 export type ClientActivityBucket = 'agora' | 'hoje' | 'recente';
 
 export type ClientConversationStatus = 'aberta' | 'em-atendimento' | 'escalada' | 'resolvida';
@@ -55,4 +65,5 @@ export type ClientRecord = {
     conversations: ClientConversationActivity[];
     orders: ClientOrderActivity[];
     simulations: ClientSimulationActivity[];
+    opportunity?: ClientOpportunity;
 };

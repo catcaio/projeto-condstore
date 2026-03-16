@@ -184,7 +184,7 @@ async function executeDomainAction(type: FrankActionType, payload: any, tenantId
                 break;
             // Additional actions can be gracefully handled here.
             default:
-                console.log(`Action type ${type} executed successfully (no strict domain wiring yet).`);
+                console.info(`Action type ${type} executed successfully (no strict domain wiring yet).`);
                 break;
         }
     } catch (e) {

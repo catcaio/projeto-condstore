@@ -1,6 +1,6 @@
 import { EmptyState, FilterBar, SearchInput, SectionHeader, SurfacePanel, StatusChip } from '@/ui/foundation';
 import { ClientItem } from './client-item';
-import type { ClientActivityBucket, ClientRecord, ClientStatus } from '../mock-data';
+import type { ClientActivityBucket, ClientRecord, ClientStatus } from '../types';
 
 type StatusFilter = ClientStatus | 'todos';
 type ActivityFilter = ClientActivityBucket | 'todas';
@@ -45,6 +45,8 @@ export function ClientsList({
     onStatusFilterChange,
     onActivityFilterChange,
     onSelectClient,
+    rowSelection,
+    onRowSelectionChange,
 }: {
     clients: ClientRecord[];
     totalCount: number;
@@ -56,6 +58,8 @@ export function ClientsList({
     onStatusFilterChange: (value: StatusFilter) => void;
     onActivityFilterChange: (value: ActivityFilter) => void;
     onSelectClient: (clientId: string) => void;
+    rowSelection?: Record<string, boolean>;
+    onRowSelectionChange?: (rowSelection: Record<string, boolean>) => void;
 }) {
     return (
         <SurfacePanel className="flex h-full min-h-[42rem] flex-col">
@@ -114,6 +118,12 @@ export function ClientsList({
                                 client={client}
                                 selected={client.id === selectedClientId}
                                 onSelect={() => onSelectClient(client.id)}
+                                isSelected={!!rowSelection?.[client.id]}
+                                onSelectChange={(checked) => {
+                                    if (onRowSelectionChange) {
+                                        onRowSelectionChange({ ...rowSelection, [client.id]: checked });
+                                    }
+                                }}
                             />
                         ))}
                     </div>

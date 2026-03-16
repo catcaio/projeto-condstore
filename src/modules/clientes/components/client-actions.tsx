@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { MessageSquarePlus, PackagePlus, Plus, Truck } from 'lucide-react';
 import { Button } from '@/ui/components';
-import { SectionHeader, SurfacePanel } from '@/ui/foundation';
-import type { ClientRecord } from '../mock-data';
+import { SurfacePanel, SectionHeader } from '@/ui/foundation';
+import type { ClientRecord } from '../types';
 
 export function ClientActions({ client }: { client: ClientRecord }) {
     return (

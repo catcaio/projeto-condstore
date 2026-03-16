@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { Button } from '@/ui/components';
+import { MessageSquare, Phone, Mail, Globe, ArrowUpRight } from 'lucide-react';
 import { SectionHeader, StatusChip, SurfacePanel } from '@/ui/foundation';
-import type { ClientConversationActivity, ClientConversationStatus } from '../mock-data';
+import type { ClientConversationActivity, ClientConversationStatus } from '../types';
 
-function getStatusTone(status: ClientConversationStatus) {
+function getStatusColor(status: ClientConversationStatus) {
     if (status === 'escalada') {
         return 'critical' as const;
     }
@@ -48,7 +49,7 @@ export function ClientConversations({
                                 <p className="text-sm font-semibold text-[hsl(var(--ui-text))]">{item.title}</p>
                                 <p className="mt-1 text-sm text-[hsl(var(--ui-text-muted))]">{item.channel} • {item.owner}</p>
                             </div>
-                            <StatusChip label={item.status} tone={getStatusTone(item.status)} />
+                            <StatusChip label={item.status} tone={getStatusColor(item.status)} />
                         </div>
                         <p className="mt-3 text-xs font-medium uppercase tracking-[0.08em] text-[hsl(var(--ui-text-subtle))]">
                             {item.updatedAt}

@@ -48,6 +48,8 @@ export function ConversationList({
     onPriorityFilterChange,
     onOwnerFilterChange,
     onSelectConversation,
+    rowSelection,
+    onRowSelectionChange,
 }: {
     conversations: ConversationRecord[];
     totalCount: number;
@@ -62,6 +64,8 @@ export function ConversationList({
     onPriorityFilterChange: (value: PriorityFilter) => void;
     onOwnerFilterChange: (value: string) => void;
     onSelectConversation: (conversationId: string) => void;
+    rowSelection?: Record<string, boolean>;
+    onRowSelectionChange?: (rowSelection: Record<string, boolean>) => void;
 }) {
     return (
         <SurfacePanel className="flex h-full min-h-[42rem] flex-col">
@@ -131,6 +135,12 @@ export function ConversationList({
                                 conversation={conversation}
                                 selected={conversation.id === selectedConversationId}
                                 onSelect={() => onSelectConversation(conversation.id)}
+                                isSelected={!!rowSelection?.[conversation.id]}
+                                onSelectChange={(checked) => {
+                                    if (onRowSelectionChange) {
+                                        onRowSelectionChange({ ...rowSelection, [conversation.id]: checked });
+                                    }
+                                }}
                             />
                         ))}
                     </div>

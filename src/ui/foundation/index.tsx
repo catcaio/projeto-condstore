@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, Search } from 'lucide-react';
+import { ArrowUpRight, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge, Button, Card, CardContent, CardHeader } from '@/ui/components';
 import { DataTable, type DataTableProps } from '@/ui/components/data-table';
@@ -483,3 +483,101 @@ export function EntitySummaryCard({
         </SurfacePanel>
     );
 }
+
+export function SavedViewsTabs({
+    views,
+    activeView,
+    onChange
+}: {
+    views: { id: string; label: string; icon?: React.ReactNode }[];
+    activeView: string;
+    onChange: (id: string) => void;
+}) {
+    return (
+        <div className="flex items-center gap-1 rounded-lg border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] p-1">
+            {views.map(v => (
+                <button
+                    key={v.id}
+                    onClick={() => onChange(v.id)}
+                    className={cn(
+                        "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
+                        activeView === v.id
+                            ? "bg-[hsl(var(--ui-surface))] text-[hsl(var(--ui-text))] shadow-[0_1px_3px_rgba(0,0,0,0.05)] ring-1 ring-black/5"
+                            : "text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))]"
+                    )}
+                >
+                    {v.icon}
+                    {v.label}
+                </button>
+            ))}
+        </div>
+    );
+}
+
+export function InspectorDrawer({
+    isOpen,
+    onClose,
+    title,
+    children,
+    footer,
+    tabs,
+    activeTab,
+    onTabChange
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string | React.ReactNode;
+    children: React.ReactNode;
+    footer?: React.ReactNode;
+    tabs?: { id: string; label: string; icon?: React.ReactNode }[];
+    activeTab?: string;
+    onTabChange?: (id: string) => void;
+}) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex justify-end">
+            <div className="absolute inset-0 bg-black/5 backdrop-blur-[1px] md:bg-transparent md:backdrop-blur-none transition-opacity" onClick={onClose} />
+
+            <aside className={cn(
+                "relative z-50 flex h-full w-full max-w-[90vw] flex-col border-l border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] shadow-2xl transition-transform duration-300 ease-in-out md:w-[400px]",
+                isOpen ? "translate-x-0" : "translate-x-full"
+            )}>
+                <header className="flex flex-col border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))]">
+                    <div className="flex h-[4rem] items-center justify-between px-5">
+                        <div className="text-sm font-semibold tracking-[-0.01em] text-[hsl(var(--ui-text))] truncate pr-4">
+                            {title}
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[hsl(var(--ui-text-muted))] hover:bg-[hsl(var(--ui-page))] hover:text-[hsl(var(--ui-text))] transition-colors"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+                    {tabs && activeTab && onTabChange ? (
+                        <div className="px-5 pb-3">
+                            <SavedViewsTabs views={tabs} activeView={activeTab} onChange={onTabChange} />
+                        </div>
+                    ) : null}
+                </header>
+
+                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar bg-[hsl(var(--ui-surface))]">
+                    {children}
+                </div>
+
+                {footer ? (
+                    <div className="border-t border-[hsl(var(--ui-border))] p-4 bg-[hsl(var(--ui-page))]">
+                        {footer}
+                    </div>
+                ) : null}
+            </aside>
+        </div>
+    );
+}
+
+export * from './kanban';
+export * from './universal-list';
+export * from './command-palette';
+export * from './bulk-action-bar';
+export * from './inspector-widgets';

@@ -133,73 +133,56 @@ function toUiMessage(dbMessage: DbConversationMessage): ConversationMessage {
     };
 }
 
+import useSWR from 'swr';
+
+const fetcher = async (url: string) => {
+    const res = await fetch(url);
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Erro ${res.status}: ${text}`);
+    }
+    return res.json();
+};
+
 export function useConversations() {
-    const [conversations, setConversations] = useState<ConversationRecord[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [selectedConversationId, setSelectedConversationId] = useState<string>('');
-    const [threadLoading, setThreadLoading] = useState(false);
     const [sendingReply, setSendingReply] = useState(false);
 
-    const fetchConversations = useCallback(async () => {
-        try {
-            setLoading(true);
-            const res = await fetch('/api/cockpit/conversations');
+    const { data: listResponse, error: listError, isLoading: loading, mutate: mutateList } = useSWR(
+        '/api/cockpit/conversations',
+        fetcher,
+        { refreshInterval: 30000, revalidateOnFocus: true, deduupingInterval: 5000 }
+    );
 
-            if (!res.ok) {
-                const text = await res.text();
-                setError(`Erro ${res.status}: ${text}`);
-                return;
+    const { data: threadResponse, error: threadError, isValidating: threadLoading, mutate: mutateThread } = useSWR(
+        selectedConversationId ? `/api/cockpit/conversations/${selectedConversationId}` : null,
+        fetcher,
+        { refreshInterval: 10000, revalidateOnFocus: true }
+    );
+
+    const conversations = useMemo(() => {
+        if (!listResponse?.data) return [];
+
+        const list = (listResponse.data as DbConversation[]).map((dbConversation) => {
+            const mapped = toUiRecord(dbConversation);
+
+            if (dbConversation.id === selectedConversationId && threadResponse?.data?.messages) {
+                const messages = threadResponse.data.messages.map(toUiMessage) as ConversationMessage[];
+                return {
+                    ...mapped,
+                    messages,
+                    lastMessage: messages.length > 0 ? messages[messages.length - 1].body : mapped.lastMessage,
+                };
             }
-
-            const json = await res.json();
-            const data: DbConversation[] = json.data ?? [];
-            setConversations((current) => {
-                const currentById = new Map(current.map((conversation) => [conversation.id, conversation]));
-                return data.map((dbConversation) => {
-                    const mapped = toUiRecord(dbConversation);
-                    const existing = currentById.get(dbConversation.id);
-                    return existing ? { ...mapped, messages: existing.messages } : mapped;
-                });
-            });
-            setError(null);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erro desconhecido');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+            return mapped;
+        });
+        
+        return list;
+    }, [listResponse, threadResponse, selectedConversationId]);
 
     const loadConversationThread = useCallback(async (conversationId: string) => {
-        console.info('[cockpit] selectedConversationId', { conversationId });
         setSelectedConversationId(conversationId);
-        try {
-            setThreadLoading(true);
-            const response = await fetch(`/api/cockpit/conversations/${conversationId}`);
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`Erro ${response.status}: ${text}`);
-            }
-
-            const details = (await response.json()) as ConversationDetailsResponse;
-            const messages = (details.data?.messages ?? []).map(toUiMessage);
-
-            setConversations((current) => current.map((conversation) => (
-                conversation.id === conversationId
-                    ? {
-                        ...conversation,
-                        messages,
-                        lastMessage: messages[messages.length - 1]?.body ?? conversation.lastMessage,
-                    }
-                    : conversation
-            )));
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Falha ao carregar thread';
-            console.error('[cockpit] thread load failed', { conversationId, error: err });
-            setError(message);
-        } finally {
-            setThreadLoading(false);
-        }
+        // SWR will automatically trigger the fetch via the key change
     }, []);
 
     const selectedConversation = useMemo(
@@ -214,10 +197,7 @@ export function useConversations() {
             return { ok: false as const, error: 'Conversa ou mensagem invalida.' };
         }
 
-        console.info('[cockpit] composer submit', {
-            conversationId: selectedConversationId,
-            textLength: trimmed.length,
-        });
+        console.info('[cockpit] composer submit', { conversationId: selectedConversationId });
 
         setSendingReply(true);
         try {
@@ -227,19 +207,15 @@ export function useConversations() {
                 body: JSON.stringify({ text: trimmed }),
             });
 
-            console.info('[cockpit] outbound API call', {
-                conversationId: selectedConversationId,
-                status: response.status,
-            });
-
             if (!response.ok) {
                 const textResponse = await response.text();
                 throw new Error(`Erro ${response.status}: ${textResponse}`);
             }
 
-            await loadConversationThread(selectedConversationId);
+            // Invalidate the cache for this thread and the list to re-fetch immediately
+            await mutateThread();
+            await mutateList();
 
-            console.info('[cockpit] outbound success', { conversationId: selectedConversationId });
             return { ok: true as const };
         } catch (err) {
             console.error('[cockpit] outbound failed', { conversationId: selectedConversationId, error: err });
@@ -250,23 +226,10 @@ export function useConversations() {
         } finally {
             setSendingReply(false);
         }
-    }, [loadConversationThread, selectedConversationId]);
+    }, [mutateThread, mutateList, selectedConversationId]);
 
-    useEffect(() => {
-        fetchConversations();
-        const interval = setInterval(fetchConversations, 30_000);
-        return () => clearInterval(interval);
-    }, [fetchConversations]);
-
-    useEffect(() => {
-        if (!selectedConversationId) return;
-
-        const interval = setInterval(() => {
-            void loadConversationThread(selectedConversationId);
-        }, 5_000);
-
-        return () => clearInterval(interval);
-    }, [loadConversationThread, selectedConversationId]);
+    const error = listError ? (listError instanceof Error ? listError.message : String(listError)) : 
+                  threadError ? (threadError instanceof Error ? threadError.message : String(threadError)) : null;
 
     return {
         conversations,
@@ -279,6 +242,6 @@ export function useConversations() {
         setSelectedConversationId,
         loadConversationThread,
         sendReply,
-        refetch: fetchConversations,
+        refetch: mutateList,
     };
 }

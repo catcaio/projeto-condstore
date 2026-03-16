@@ -2326,3 +2326,120 @@ export type PlaybookRecord = typeof playbooks.$inferSelect;
 export type NewPlaybookRecord = typeof playbooks.$inferInsert;
 export type PlaybookStepRecord = typeof playbookSteps.$inferSelect;
 export type NewPlaybookStepRecord = typeof playbookSteps.$inferInsert;
+
+// --- CRM Operational (Phase 8 & 10) ---
+
+export const crmOpportunities = mysqlTable('crm_opportunities', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    customerId: varchar('customer_id', { length: 36 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    amount: decimal('amount', { precision: 12, scale: 2 }),
+    stage: varchar('stage', { length: 50 }).notNull().default('new_lead'), // new_lead, qualified, quoted, proposal_sent, awaiting_response, won, lost
+    status: varchar('status', { length: 30 }).notNull().default('active'), // active, won, lost
+    lossReason: varchar('loss_reason', { length: 255 }),
+    nextAction: varchar('next_action', { length: 255 }),
+    nextActionAt: timestamp('next_action_at'),
+    lastActivityAt: timestamp('last_activity_at').defaultNow().notNull(),
+    contextRef: json('context_ref'), // To store details like litragem, CEP, objections
+    responsibleUserId: varchar('responsible_user_id', { length: 36 }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    idxCrmOppTenantCustomer: index('idx_crm_opp_tenant_customer').on(table.tenantId, table.customerId),
+    idxCrmOppStage: index('idx_crm_opp_stage').on(table.tenantId, table.stage),
+}));
+
+export const crmQuotes = mysqlTable('crm_quotes', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    opportunityId: varchar('opportunity_id', { length: 36 }).notNull(),
+    validUntil: timestamp('valid_until'),
+    status: varchar('status', { length: 30 }).notNull().default('draft'), // draft, sent, accepted, rejected, expired
+    subtotal: decimal('subtotal', { precision: 12, scale: 2 }).notNull().default('0'),
+    discountAmount: decimal('discount_amount', { precision: 12, scale: 2 }).notNull().default('0'),
+    freightAmount: decimal('freight_amount', { precision: 12, scale: 2 }).notNull().default('0'),
+    totalAmount: decimal('total_amount', { precision: 12, scale: 2 }).notNull().default('0'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    idxCrmQuotesOpp: index('idx_crm_quotes_opp').on(table.tenantId, table.opportunityId),
+}));
+
+export const crmQuoteItems = mysqlTable('crm_quote_items', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    quoteId: varchar('quote_id', { length: 36 }).notNull(),
+    description: varchar('description', { length: 255 }).notNull(),
+    quantity: int('quantity').notNull().default(1),
+    unitPrice: decimal('unit_price', { precision: 12, scale: 2 }).notNull(),
+    totalPrice: decimal('total_price', { precision: 12, scale: 2 }).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    idxCrmQuoteItemsQuote: index('idx_crm_quote_items_quote').on(table.quoteId),
+}));
+
+export const crmFollowUps = mysqlTable('crm_follow_ups', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    opportunityId: varchar('opportunity_id', { length: 36 }).notNull(),
+    scheduledAt: timestamp('scheduled_at').notNull(),
+    completedAt: timestamp('completed_at'),
+    description: text('description'),
+    status: varchar('status', { length: 30 }).notNull().default('pending'), // pending, completed, canceled
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    idxCrmFollowUpsOpp: index('idx_crm_follow_ups_opp').on(table.tenantId, table.opportunityId),
+    idxCrmFollowUpsPending: index('idx_crm_follow_ups_pending').on(table.tenantId, table.status, table.scheduledAt),
+}));
+
+export type CrmOpportunityRecord = typeof crmOpportunities.$inferSelect;
+export type NewCrmOpportunityRecord = typeof crmOpportunities.$inferInsert;
+export type CrmQuoteRecord = typeof crmQuotes.$inferSelect;
+export type NewCrmQuoteRecord = typeof crmQuotes.$inferInsert;
+export type CrmQuoteItemRecord = typeof crmQuoteItems.$inferSelect;
+export type NewCrmQuoteItemRecord = typeof crmQuoteItems.$inferInsert;
+export type CrmFollowUpRecord = typeof crmFollowUps.$inferSelect;
+export type NewCrmFollowUpRecord = typeof crmFollowUps.$inferInsert;
+
+export const operationalAuditLogs = mysqlTable('operational_audit_logs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    entityType: varchar('entity_type', { length: 50 }).notNull(), // 'opportunity', 'order', 'client', etc.
+    entityId: varchar('entity_id', { length: 36 }).notNull(),
+    actorId: varchar('actor_id', { length: 255 }), // user id or 'frank'
+    actionType: varchar('action_type', { length: 100 }).notNull(), // 'status_changed', 'owner_assigned', 'note_added', etc.
+    beforeState: json('before_state'),
+    afterState: json('after_state'),
+    origin: varchar('origin', { length: 50 }).notNull().default('ui'), // 'ui', 'bulk', 'drawer', 'palette', 'frank'
+    metadata: json('metadata'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+    idxAuditTenantEntity: index('idx_audit_tenant_entity').on(table.tenantId, table.entityType, table.entityId),
+    idxAuditTenantActor: index('idx_audit_tenant_actor').on(table.tenantId, table.actorId),
+}));
+
+export type OperationalAuditLogRecord = typeof operationalAuditLogs.$inferSelect;
+export type NewOperationalAuditLogRecord = typeof operationalAuditLogs.$inferInsert;
+
+export const frankActions = mysqlTable('frank_actions', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    type: varchar('type', { length: 100 }).notNull(), // DOMÍNIO DA AÇÃO, e.g., 'moveOpportunityStage', 'assignOrderOwner'
+    status: varchar('status', { length: 30 }).notNull().default('draft'), // draft, review_required, approved, executing, executed, failed, cancelled
+    payload: json('payload').notNull(), // O payload que a action irá utilizar
+    explanation: json('explanation').notNull(), // { what: string, why: string, impact: string, risk: string, rollback: boolean }
+    createdBy: varchar('created_by', { length: 255 }).notNull().default('frank'), // O ID/Nome do construtor da action (normalmente Frank)
+    reviewedBy: varchar('reviewed_by', { length: 36 }), // O usuário que aprovou/rejeitou
+    entityType: varchar('entity_type', { length: 50 }).notNull(), // 'opportunity', 'order', 'client', etc.
+    entityId: varchar('entity_id', { length: 36 }).notNull(), // O ID do recurso sendo modificado
+    errorMsg: text('error_msg'), // Em caso de falha na action
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    idxFrankActionTenantEntity: index('idx_frank_action_tenant_entity').on(table.tenantId, table.entityType, table.entityId),
+    idxFrankActionStatus: index('idx_frank_action_status').on(table.tenantId, table.status),
+}));
+
+export type FrankActionRecord = typeof frankActions.$inferSelect;
+export type NewFrankActionRecord = typeof frankActions.$inferInsert;

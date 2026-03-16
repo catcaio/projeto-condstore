@@ -386,6 +386,27 @@
       "when": 1773616129635,
       "tag": "0066_complete_stephen_strange",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "5",
+      "when": 1773636501427,
+      "tag": "0067_naive_magma",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "5",
+      "when": 1773643274742,
+      "tag": "0068_shallow_thor",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "5",
+      "when": 1773652418370,
+      "tag": "0069_misty_enchantress",
+      "breakpoints": true
     }
   ]
 }
