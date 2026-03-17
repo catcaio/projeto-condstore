@@ -1,10 +1,10 @@
-import { appConfig } from '../../config/app.config';
-import { logger } from '../../infra/logger';
-import { melhorEnvioProvider } from '../../providers/melhorenvio.provider';
-import { freightTableProvider } from '../../infra/freight-table';
-import { FreightRequest, FreightOption, FreightStrategy } from './freight.types';
-import { CarrierAdapter, QuoteInput, NormalizedQuote } from '../shipping/carriers/types';
-import { ConcurrentQuoteEngine } from '../shipping/quote-engine/ConcurrentQuoteEngine';
+import { appConfig } from '@/config/app.config';
+import { logger } from '@/infra/logger';
+import { melhorEnvioProvider } from '@/providers/melhorenvio.provider';
+import { freightTableProvider } from '@/infra/freight-table';
+import type { CarrierAdapter, QuoteInput, NormalizedQuote } from '@/modules/shipping/carriers/types';
+import { ConcurrentQuoteEngine } from '@/modules/shipping/quote-engine/ConcurrentQuoteEngine';
+import { FreightRequest, FreightOption, FreightStrategy } from '../freight.types';
 import { getTableAdaptersForDestination } from './table-driven-adapter';
 
 export class MelhorEnvioAdapter implements CarrierAdapter {
@@ -68,7 +68,7 @@ export class TabelaAdapter implements CarrierAdapter {
     }
 }
 
-import { selectCarrierStrategy, type RoutingResult, type RoutingStrategy } from './carrier-router';
+import { selectCarrierStrategy, type RoutingResult } from './carrier-router';
 
 export class UnifiedQuoteEngine {
     private tabelaLegacy = new TabelaAdapter();

@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { TableDrivenAdapter } from '../src/modules/freight/table-driven-adapter';
+import { TableDrivenAdapter } from '../src/modules/freight/quoting/table-driven-adapter';
 
 const TEST_ZONES = [
     { name: 'SC (Florianópolis)', cep: '88010000' },

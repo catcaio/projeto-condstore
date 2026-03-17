@@ -110,11 +110,11 @@ vi.mock('@/infra/db', () => ({
     getDb: vi.fn(),
 }));
 
-vi.mock('@/modules/freight/packing-resolver', () => ({
+vi.mock('@/modules/freight/quoting/packing-resolver', () => ({
     resolvePackingDimensions: vi.fn(),
 }));
 
-vi.mock('@/modules/freight/table-driven-adapter', () => ({
+vi.mock('@/modules/freight/quoting/table-driven-adapter', () => ({
     TableDrivenAdapter: vi.fn(),
 }));
 

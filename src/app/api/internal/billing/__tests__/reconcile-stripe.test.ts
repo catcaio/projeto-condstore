@@ -62,7 +62,7 @@ vi.mock('../../../../../infra/http/request-trace', () => ({
     attachRequestIdHeader: vi.fn((res: any) => res),
 }));
 
-vi.mock('../../../../../infra/config/internal-token', () => ({
+vi.mock('../../../../../core/config/internal-token', () => ({
     isInternalTokenAuthorized: vi.fn((token: string) => token === 'valid-token'),
     getInternalExportTokenOrThrow: vi.fn(() => 'valid-token'),
 }));

@@ -4,12 +4,12 @@
  * Supports zone resolution, cubed weight, and full fee composition.
  */
 
-import { getDb } from '../../infra/db';
-import { carrierPolicies, carrierZones, carrierRateRows } from '../../drizzle/schema';
+import { getDb } from '@/infra/db';
+import { carrierPolicies, carrierZones, carrierRateRows } from '@/drizzle/schema';
 import { eq, and, gte, asc } from 'drizzle-orm';
-import { logger } from '../../infra/logger';
-import type { CarrierAdapter, QuoteInput, NormalizedQuote } from '../shipping/carriers/types';
-import { extractStateFromCep, resolveCarrierZone } from '../../core/freight/zone-resolver';
+import { logger } from '@/infra/logger';
+import type { CarrierAdapter, QuoteInput, NormalizedQuote } from '@/modules/shipping/carriers/types';
+import { extractStateFromCep, resolveCarrierZone } from '@/core/freight/zone-resolver';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

@@ -4,7 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { crmTasks, simulations, conversations } from '@/drizzle/schema';
 import { frankContextBuilder } from './frank.context-builder';
 import { randomUUID } from 'crypto';
-import { crmService } from '@/modules/crm/crm.service';
+import { crmService } from '@/modules/crm';
 import { frankSuggestions } from './frank.suggestions';
 import { FrankOperationalDraft } from './frank.schema';
 

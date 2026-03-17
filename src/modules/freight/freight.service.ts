@@ -14,11 +14,11 @@ import type {
   FreightStrategy,
   WeightDecision,
 } from './freight.types';
-import { unifiedQuoteEngine } from './quote-engine';
+import { unifiedQuoteEngine } from './quoting/quote-engine';
 import { redisClient } from '../../infra/redis.client';
 import { freightSimulationLogRepository } from '../../infra/repositories/freight-simulation-log.repository';
 import { domineIntakeService } from '../../domine/domine-intake.service';
-import { resolvePackingDimensions } from './packing-resolver';
+import { resolvePackingDimensions } from './quoting/packing-resolver';
 
 
 

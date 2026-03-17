@@ -9,7 +9,7 @@
  * Usage: npx tsx scripts/validate-carrier-router.ts
  */
 
-import { selectCarrierStrategy } from '../src/modules/freight/carrier-router';
+import { selectCarrierStrategy } from '../src/modules/freight/quoting/carrier-router';
 
 const PASS = '✅';
 const FAIL = '❌';

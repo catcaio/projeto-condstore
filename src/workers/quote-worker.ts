@@ -1,7 +1,7 @@
 import { subscribeEvent, publishEvent } from '../domine/event-bus';
 import { logger } from '../infra/logger';
 import crypto from 'crypto';
-import { unifiedQuoteEngine } from '../modules/freight/quote-engine';
+import { unifiedQuoteEngine } from '../modules/freight/quoting/quote-engine';
 import { FreightRequest } from '../modules/freight/freight.types';
 
 export function startQuoteWorker() {

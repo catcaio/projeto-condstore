@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getInternalExportTokenOrThrow } from '@/core/config/internal-token';
 import { getSessionUser, type SessionPayload } from './session';
 import { safeCompare } from '../../lib/security/safe-compare';
 
@@ -68,8 +69,6 @@ export async function requireAdminSession(
 
   return { ok: true, sessionUser, tenantId: sessionUser.tenantId };
 }
-
-import { getInternalExportTokenOrThrow } from '../config/internal-token';
 
 export type InternalTokenPurpose = 'diag' | 'export' | 'jobs' | 'qa_bootstrap' | 'any';
 

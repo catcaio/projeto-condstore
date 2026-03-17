@@ -94,7 +94,7 @@ describe('E2E Validation: WhatsApp → CRM Pipeline', () => {
         const mockDb = makeMockDb([]); // no active ops → triggers creation
         vi.mocked(getDb).mockResolvedValue(mockDb as any);
 
-        const { crmService } = await import('@/modules/crm/crm.service');
+const { crmService } = await import('@/modules/crm');
 
         await crmService.projectMessageActivity({
             tenantId,
@@ -138,7 +138,7 @@ describe('E2E Validation: WhatsApp → CRM Pipeline', () => {
         const mockDb = makeMockDb([existingOp]); // active op exists
         vi.mocked(getDb).mockResolvedValue(mockDb as any);
 
-        const { crmService } = await import('@/modules/crm/crm.service');
+const { crmService } = await import('@/modules/crm');
 
         await crmService.projectMessageActivity({
             tenantId,
@@ -160,7 +160,7 @@ describe('E2E Validation: WhatsApp → CRM Pipeline', () => {
         const mockDb = makeMockDb([existingOp]);
         vi.mocked(getDb).mockResolvedValue(mockDb as any);
 
-        const { crmService } = await import('@/modules/crm/crm.service');
+const { crmService } = await import('@/modules/crm');
 
         const result = await crmService.syncSimulationToQuote({
             tenantId,
@@ -203,7 +203,7 @@ describe('E2E Validation: WhatsApp → CRM Pipeline', () => {
         const mockDb = makeMockDb();
         vi.mocked(getDb).mockResolvedValue(mockDb as any);
 
-        const { crmService } = await import('@/modules/crm/crm.service');
+const { crmService } = await import('@/modules/crm');
 
         await crmService.scheduleQuoteFollowUp({
             tenantId,

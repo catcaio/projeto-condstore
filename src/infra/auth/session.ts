@@ -1,9 +1,9 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
+import { isDevRuntime, isQaAutomation } from '@/core/config/dev-runtime';
 import { logger } from '../logger';
 import { userRepository } from '../repositories/user.repository';
-import { isDevRuntime, isQaAutomation } from '../env/devOnly';
 
 export const COOKIE_NAME = 'condstore_session';
 const TOKEN_EXPIRY = '8h';
