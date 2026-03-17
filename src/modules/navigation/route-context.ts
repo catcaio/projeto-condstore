@@ -1,7 +1,7 @@
 import type { ClientActivityBucket, ClientStatus } from '@/modules/clientes/mock-data';
 import type { ConversationPriority, ConversationStatus } from '@/modules/conversas/mock-data';
 import type { LogisticsStatus } from '@/modules/logistica/mock-data';
-import type { OrderChannel, OrderPriority, OrderStatus } from '@/modules/pedidos/mock-data';
+import type { OrderChannel, OrderPriority, OrderStatus } from '@/modules/pedidos';
 
 export type ConversationsRouteContext = {
     conversationId?: string;

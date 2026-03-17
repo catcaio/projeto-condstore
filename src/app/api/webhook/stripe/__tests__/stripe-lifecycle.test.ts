@@ -94,7 +94,7 @@ vi.mock('@/modules/billing/services/billing.service', async (importOriginal) => 
 
 // ── Imports ───────────────────────────────────────────────────────────────────
 
-import { processStripeEvent } from '@/modules/billing/services/stripe-webhook.service';
+import { processStripeEvent } from '@/modules/billing';
 import { getDb } from '../../../../../infra/db';
 import type Stripe from 'stripe';
 

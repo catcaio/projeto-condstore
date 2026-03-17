@@ -18,7 +18,7 @@ import {
     type TenantSubscriptionRecord,
 } from '@/drizzle/schema';
 import { redisClient } from '@/infra/redis.client';
-import { finopsCacheKey } from '@/modules/finops/cache-keys';
+import { finopsCacheKey } from '@/modules/finops';
 import { logger } from '@/infra/logger';
 
 // ── Types ──────────────────────────────────────────────────────────────────
