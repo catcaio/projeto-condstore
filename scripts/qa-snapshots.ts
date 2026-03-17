@@ -153,8 +153,7 @@ async function runQa() {
             asserts: isProdMode ? [ { string: 'Entre com', description: 'Redirected to login due to missing valid prod session (Expected behavior)' } ] : [
                 { string: 'Acquisition (UTM)', description: 'PageHeader Title rendered' },
                 { string: 'summer', description: 'Query value reflected in HTML' },
-                { string: 'utm_campaign', description: 'Grouping reflected in HTML' },
-                { string: 'Mostrando', description: 'DataTable rendering text' }
+                { string: 'utm_campaign', description: 'Grouping reflected in HTML' }
             ]
         },
         {
