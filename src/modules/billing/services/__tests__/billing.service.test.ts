@@ -61,30 +61,30 @@ function makeMockDb() {
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-vi.mock('../../../infra/db', () => ({
+vi.mock('@/infra/db', () => ({
     getDb: vi.fn(),
 }));
 
-vi.mock('../../../infra/redis.client', () => ({
+vi.mock('@/infra/redis.client', () => ({
     redisClient: {
         isAvailable: vi.fn(() => true),
         set: vi.fn().mockResolvedValue(undefined),
     },
 }));
 
-vi.mock('../../../infra/repositories/token-usage-events.repository', () => ({
+vi.mock('@/modules/finops/cache-keys', () => ({
     finopsCacheKey: (id: string) => `cockpit:finops:${id}`,
 }));
 
-vi.mock('../../../infra/logger', () => ({
+vi.mock('@/infra/logger', () => ({
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
 // ── Imports ───────────────────────────────────────────────────────────────────
 
 import { upgradeTenantPlan, BillingServiceError } from '../billing.service';
-import { getDb } from '../../../infra/db';
-import { redisClient } from '../../../infra/redis.client';
+import { getDb } from '@/infra/db';
+import { redisClient } from '@/infra/redis.client';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

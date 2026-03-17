@@ -3,7 +3,7 @@ import { tenantCollections, tenantDocuments, tenantDocumentVersions, tenantInges
 import { eq, and } from 'drizzle-orm';
 import { logger } from '../../../../infra/logger';
 import { redisClient } from '../../../../infra/redis.client';
-import { planEnforcementService } from '../../../../modules/finops/plan-enforcement.service';
+import { planEnforcementService } from '@/modules/finops';
 import crypto from 'crypto';
 
 // Minimal API Mock due to MVP scope (using actual Google Drive SDK is out of scope if not specified, 

@@ -3,7 +3,7 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import { requireAdmin } from '@/infra/auth/guards';
 import { publicEvents } from '../../../../../drizzle/schema';
-import { requireActivePlan } from '../../../../../modules/billing/requireActivePlan';
+import { requireActivePlan } from '@/modules/billing';
 import { logger } from '@/infra/logger';
 
 export const runtime = 'nodejs';

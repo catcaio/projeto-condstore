@@ -4,7 +4,7 @@ import { SettingsPage, SettingsSection } from '@/ui/settings';
 import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
 import { UploadCard } from './components/upload-card';
 import { DocumentsList } from './components/documents-list';
-import { planEnforcementService } from '@/modules/finops/plan-enforcement.service';
+import { planEnforcementService } from '@/modules/finops';
 
 export default async function KnowledgeInboxPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const searchParams = await props.searchParams;

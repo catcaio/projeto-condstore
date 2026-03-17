@@ -1,8 +1,7 @@
 import { subscribeEvent } from '../domine/event-bus';
 import { logger } from '../infra/logger';
-import { processStripeEvent } from '../modules/billing/stripe-webhook.service';
+import { processStripeEvent, BillingServiceError } from '@/modules/billing';
 import type Stripe from 'stripe';
-import { BillingServiceError } from '../modules/billing/billing.service';
 
 export function startWebhookWorker() {
     logger.info('Starting Webhook Worker...');

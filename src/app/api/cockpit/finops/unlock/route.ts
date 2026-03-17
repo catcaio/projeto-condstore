@@ -7,7 +7,7 @@ import { makeRequestId, attachRequestIdHeader } from '../../../../../infra/http/
 import { errorResponse, ErrorCode } from '../../../../../infra/http/error-response';
 import { logger } from '../../../../../infra/logger';
 import { redisClient } from '../../../../../infra/redis.client';
-import { finopsCacheKey } from '../../../../../infra/repositories/token-usage-events.repository';
+import { finopsCacheKey } from '@/modules/finops/cache-keys';
 
 export const dynamic = 'force-dynamic';
 

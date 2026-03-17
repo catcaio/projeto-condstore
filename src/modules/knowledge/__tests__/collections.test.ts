@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { planEnforcementService } from '../../finops/plan-enforcement.service';
+import { planEnforcementService } from '@/modules/finops';
 
 vi.mock('../../../infra/repositories/tenant.repository', () => ({
     tenantRepository: {

@@ -6,7 +6,7 @@ const mockDbInsert = vi.hoisted(() => vi.fn());
 const mockDbUpdate = vi.hoisted(() => vi.fn());
 const mockDbSelect = vi.hoisted(() => vi.fn());
 
-vi.mock('../../../infra/db', () => ({
+vi.mock('@/infra/db', () => ({
     getDb: vi.fn().mockResolvedValue({
         transaction: mockDbTransaction,
     }),
@@ -15,14 +15,14 @@ vi.mock('../../../infra/db', () => ({
 const mockRedisSet = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const mockRedisIsAvail = vi.hoisted(() => vi.fn().mockReturnValue(true));
 
-vi.mock('../../../infra/redis.client', () => ({
+vi.mock('@/infra/redis.client', () => ({
     redisClient: {
         set: (...args: unknown[]) => mockRedisSet(...args),
         isAvailable: () => mockRedisIsAvail(),
     },
 }));
 
-vi.mock('../../../infra/logger', () => ({
+vi.mock('@/infra/logger', () => ({
     logger: {
         info: vi.fn(),
         error: vi.fn(),

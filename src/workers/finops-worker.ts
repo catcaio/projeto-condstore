@@ -5,7 +5,7 @@ import { DomineEvent } from '../domine/events/types';
 import { logger } from '../infra/logger';
 import { redisClient } from '../infra/redis.client';
 import { fireFinOpsAlert, fireFinOpsLockEvent } from '../core/ai/tenant-state-resolver';
-import { runMonthlyReset } from '../modules/finops/finops-reset.service';
+import { runMonthlyReset } from '@/modules/finops';
 
 const CONSUMER_NAME = `${os.hostname()}-${process.pid}`;
 

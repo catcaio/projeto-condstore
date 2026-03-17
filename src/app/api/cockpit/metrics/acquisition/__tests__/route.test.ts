@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET } from '../route';
 import { getSessionUser } from '../../../../../../infra/auth/session';
-import { requireActivePlan } from '../../../../../../modules/billing/requireActivePlan';
+import { requireActivePlan } from '@/modules/billing';
 import { getDb } from '../../../../../../infra/db';
 import { metricsDailyRepository } from '../../../../../../modules/metrics/metrics-daily.repository';
 import { tenantRepository } from '../../../../../../infra/repositories/tenant.repository';
@@ -10,7 +10,7 @@ import { isDevRuntime, isQaAutomation } from '../../../../../../infra/env/devOnl
 
 const mockExecute = vi.fn();
 
-vi.mock('../../../../../../modules/billing/requireActivePlan', () => ({
+vi.mock('@/modules/billing', () => ({
   requireActivePlan: vi.fn(),
 }));
 

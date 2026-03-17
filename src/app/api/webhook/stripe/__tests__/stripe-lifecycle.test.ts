@@ -84,17 +84,17 @@ vi.mock('../../../../../core/stripe/stripe-client', () => ({
     isStripeEnabled: vi.fn(() => true),
 }));
 
-vi.mock('../../../../../modules/billing/billing.service', () => ({
-    upgradeTenantPlan: vi.fn(),
-    BillingServiceError: class BillingServiceError extends Error {
-        code: string;
-        constructor(code: string, msg: string) { super(msg); this.code = code; }
-    },
-}));
+vi.mock('@/modules/billing/services/billing.service', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/modules/billing/services/billing.service')>();
+    return {
+        ...actual,
+        upgradeTenantPlan: vi.fn(),
+    };
+});
 
 // ── Imports ───────────────────────────────────────────────────────────────────
 
-import { processStripeEvent } from '../../../../../modules/billing/stripe-webhook.service';
+import { processStripeEvent } from '@/modules/billing/services/stripe-webhook.service';
 import { getDb } from '../../../../../infra/db';
 import type Stripe from 'stripe';
 

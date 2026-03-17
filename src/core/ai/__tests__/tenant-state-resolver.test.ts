@@ -44,7 +44,7 @@ vi.mock('../../../infra/logger', () => ({
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
-vi.mock('../../../modules/finops/finops-reset.service', () => ({
+vi.mock('@/modules/finops/services/finops-reset.service', () => ({
     needsReset: vi.fn().mockReturnValue(false),
     runMonthlyReset: vi.fn().mockResolvedValue(undefined),
 }));

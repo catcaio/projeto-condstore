@@ -5,7 +5,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { redisClient } from '../infra/redis.client';
 import { knowledgeStorage } from '../modules/knowledge/storage';
 import { googleDriveConnector } from '../modules/knowledge/connectors/google-drive/connector';
-import { planEnforcementService } from '../modules/finops/plan-enforcement.service';
+import { planEnforcementService } from '@/modules/finops';
 import { logger } from '../infra/logger';
 import crypto from 'crypto';
 

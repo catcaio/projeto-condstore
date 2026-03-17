@@ -1,10 +1,10 @@
 import type Stripe from 'stripe';
-import { getDb } from '../../infra/db';
-import { tenantSubscriptions } from '../../drizzle/schema';
+import { getDb } from '@/infra/db';
+import { tenantSubscriptions } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { upgradeTenantPlan, BillingServiceError } from './billing.service';
-import { structuredLogger } from '../../infra/log/logger';
-import { getPlanIdFromPriceId, getPriceWhitelist } from '../../core/stripe/stripe-client';
+import { structuredLogger } from '@/infra/log/logger';
+import { getPlanIdFromPriceId, getPriceWhitelist } from '@/core/stripe/stripe-client';
 
 export interface HandlerResult {
     processed: boolean;

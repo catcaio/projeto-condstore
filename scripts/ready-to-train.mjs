@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
+import crypto from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import dotenv from 'dotenv';
 
@@ -54,6 +55,54 @@ function safeInt(value, fallback) {
 function buildInternalHeaders(internalToken) {
   if (!internalToken) return undefined;
   return { 'x-internal-token': internalToken };
+}
+
+function normalizeToken(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function createEphemeralInternalToken() {
+  return crypto.randomBytes(24).toString('hex');
+}
+
+function hasConfiguredEnv(...names) {
+  return names.some((name) => normalizeToken(process.env[name]).length > 0);
+}
+
+function resolveReadyInternalToken({ argsToken, readyStartServer }) {
+  const configuredToken =
+    normalizeToken(argsToken) ||
+    normalizeToken(process.env.READY_INTERNAL_TOKEN) ||
+    normalizeToken(process.env.INTERNAL_EXPORT_TOKEN) ||
+    normalizeToken(process.env.INTERNAL_DIAG_TOKEN);
+
+  if (configuredToken) {
+    return {
+      token: configuredToken,
+      source: 'configured',
+      generatedForSpawnedServer: false,
+    };
+  }
+
+  if (!readyStartServer) {
+    return {
+      token: '',
+      source: 'missing',
+      generatedForSpawnedServer: false,
+    };
+  }
+
+  const generatedToken = createEphemeralInternalToken();
+  process.env.READY_INTERNAL_TOKEN = generatedToken;
+  process.env.INTERNAL_EXPORT_TOKEN = process.env.INTERNAL_EXPORT_TOKEN || generatedToken;
+  process.env.INTERNAL_DIAG_TOKEN = process.env.INTERNAL_DIAG_TOKEN || generatedToken;
+
+  return {
+    token: generatedToken,
+    source: 'generated_for_spawned_server',
+    generatedForSpawnedServer: true,
+  };
 }
 
 function getGitShortHash() {
@@ -449,7 +498,7 @@ async function fetchJsonProbe(url, { headers, timeoutMs = 1500 } = {}) {
   }
 }
 
-async function httpJsonCheck(stepName, url, { headers, unauthorizedHint } = {}) {
+async function httpJsonCheck(stepName, url, { headers, unauthorizedHint, allowSkipped = false } = {}) {
   const startedAt = Date.now();
   const probe = await fetchJsonProbe(url, { headers });
   if (!probe.reachable) {
@@ -462,6 +511,11 @@ async function httpJsonCheck(stepName, url, { headers, unauthorizedHint } = {}) 
   if (status === 401 && unauthorizedHint) {
     console.warn(`[ready-to-train] ${stepName} returned 401. ${unauthorizedHint}`);
   }
+  const skipped = status !== null && body?.skipped === true;
+  if (allowSkipped && skipped) {
+    return { durationMs, status, body, skipped: true };
+  }
+
   if (status === null || body?.ok !== true) {
     const err = new Error(`${stepName} unhealthy`);
     err.stepName = stepName;
@@ -604,6 +658,7 @@ async function ensureServerReady({
   startServer,
   startTimeoutMs,
   internalHeaders,
+  internalToken,
 }) {
   const healthUrl = new URL('/api/internal/health/db', baseUrl).toString();
   const initialProbe = await fetchJsonProbe(healthUrl, { headers: internalHeaders, timeoutMs: 1500 });
@@ -636,6 +691,13 @@ async function ensureServerReady({
     env: {
       ...process.env,
       PORT: String(port),
+      ...(internalToken
+        ? {
+            READY_INTERNAL_TOKEN: internalToken,
+            INTERNAL_EXPORT_TOKEN: process.env.INTERNAL_EXPORT_TOKEN || internalToken,
+            INTERNAL_DIAG_TOKEN: process.env.INTERNAL_DIAG_TOKEN || internalToken,
+          }
+        : {}),
     },
   });
 
@@ -802,17 +864,21 @@ async function main() {
     args.serverStartTimeoutMs ?? process.env.READY_SERVER_START_TIMEOUT_MS,
     20000,
   );
-  const internalToken =
-    String(args.internalToken ?? process.env.READY_INTERNAL_TOKEN ?? '').trim() ||
-    String(process.env.INTERNAL_EXPORT_TOKEN ?? '').trim();
+  const resolvedInternalToken = resolveReadyInternalToken({
+    argsToken: args.internalToken,
+    readyStartServer,
+  });
+  const internalToken = resolvedInternalToken.token;
   const internalHeaders = buildInternalHeaders(internalToken);
-  const unauthorizedHint = 'Set READY_INTERNAL_TOKEN (or INTERNAL_EXPORT_TOKEN) if internal endpoints require auth';
+  const unauthorizedHint =
+    'Set READY_INTERNAL_TOKEN, INTERNAL_EXPORT_TOKEN or INTERNAL_DIAG_TOKEN if internal endpoints require auth';
   const exportLimit = Math.max(1, Number.parseInt(args.exportLimit ?? process.env.READY_TO_TRAIN_EXPORT_LIMIT ?? '50', 10) || 50);
   const replayLimit = Math.max(1, Number.parseInt(args.replayLimit ?? process.env.READY_TO_TRAIN_REPLAY_LIMIT ?? '20', 10) || 20);
   const replayConcurrency = Math.max(1, Number.parseInt(args.replayConcurrency ?? process.env.READY_TO_TRAIN_REPLAY_CONCURRENCY ?? '2', 10) || 2);
   const replayBaseUrl = args.replayBaseUrl ?? process.env.DEFAULT_LMSTUDIO_BASE_URL ?? 'http://127.0.0.1:1234/v1';
   const replayModel = args.replayModel ?? process.env.DEFAULT_LMSTUDIO_MODEL ?? 'qwen2.5-7b-instruct-1m';
   const datasetVersion = args.datasetVersion ?? process.env.DATASET_VERSION ?? 'frank-events/v1';
+  const requireQdrantHealth = hasConfiguredEnv('QDRANT_URL', 'QDRANT_API_KEY', 'QDRANT_COLLECTION');
 
   const datasetsRoot = path.resolve('datasets');
   const trainDir = path.join(datasetsRoot, 'train');
@@ -870,8 +936,12 @@ async function main() {
       })),
     });
 
-    if (!internalToken) {
-      console.warn('[ready-to-train] no READY_INTERNAL_TOKEN/INTERNAL_EXPORT_TOKEN provided; trying internal endpoints without x-internal-token (dev bypass)');
+    if (resolvedInternalToken.generatedForSpawnedServer) {
+      console.log('[ready-to-train] generated ephemeral internal token for the temporary server');
+    } else if (!internalToken) {
+      console.warn(
+        '[ready-to-train] no READY_INTERNAL_TOKEN/INTERNAL_EXPORT_TOKEN/INTERNAL_DIAG_TOKEN provided; trying internal endpoints without x-internal-token',
+      );
     }
 
     serverState = await ensureServerReady({
@@ -881,6 +951,7 @@ async function main() {
       startServer: readyStartServer,
       startTimeoutMs: readyServerStartTimeoutMs,
       internalHeaders,
+      internalToken,
     });
     report.steps.push({
       step: 'server',
@@ -902,15 +973,24 @@ async function main() {
       ...(await httpJsonCheck('health_ai', new URL('/api/internal/health/ai', appBaseUrl).toString(), {
         headers: internalHeaders,
         unauthorizedHint: !internalToken ? unauthorizedHint : undefined,
+        allowSkipped: true,
       })),
     });
-    report.steps.push({
-      step: 'health_qdrant',
-      ...(await httpJsonCheck('health_qdrant', new URL('/api/internal/health/qdrant', appBaseUrl).toString(), {
-        headers: internalHeaders,
-        unauthorizedHint: !internalToken ? unauthorizedHint : undefined,
-      })),
-    });
+    if (requireQdrantHealth) {
+      report.steps.push({
+        step: 'health_qdrant',
+        ...(await httpJsonCheck('health_qdrant', new URL('/api/internal/health/qdrant', appBaseUrl).toString(), {
+          headers: internalHeaders,
+          unauthorizedHint: !internalToken ? unauthorizedHint : undefined,
+        })),
+      });
+    } else {
+      report.steps.push({
+        step: 'health_qdrant',
+        skipped: true,
+        reason: 'QDRANT_URL/QDRANT_API_KEY/QDRANT_COLLECTION not configured; vector store health is advisory for ready-to-train',
+      });
+    }
 
     report.steps.push({
       step: 'export_ndjson',
