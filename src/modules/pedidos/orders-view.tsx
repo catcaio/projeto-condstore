@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { parseOrdersQueryState } from '@/modules/navigation/query-state';
-import { resolvePreferredItem } from '@/modules/navigation/selection-utils';
+import { parseOrdersQueryState, resolvePreferredItem } from '@/modules/navigation';
 import { Button } from '@/ui/components';
 import { ModuleNav, PageHeader, ShellContainer, StatusChip } from '@/ui/foundation';
 import { OrderActions } from './components/order-actions';

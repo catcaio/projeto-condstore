@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
-import { rooms } from '@/modules/cockpit/rooms/rooms.registry';
-import { subrooms } from '@/modules/cockpit/rooms/subrooms.registry';
+import { rooms, subrooms } from '@/modules/cockpit';
 import { SubRoomCard } from '@/ui/cockpit/subroom-card';
 import { PageHeader } from '@/ui/components/PageHeader';
 import { ArrowLeft } from 'lucide-react';
