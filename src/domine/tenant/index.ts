@@ -23,5 +23,5 @@ export function resolveTenantCapabilities(tenantId: string): DomineCapabilities 
 }
 
 export function isDomineEnabled(tenantId: string): boolean {
-    return tenantId === "LOJACOND";
+    return tenantId === "LOJACOND" || tenantId === "condstore-public";
 }
