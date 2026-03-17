@@ -1,4 +1,4 @@
-import { rooms } from '@/modules/cockpit/rooms/rooms.registry';
+import { rooms } from '@/modules/cockpit';
 import { RoomCard } from '@/ui/cockpit/room-card';
 import { PageHeader } from '@/ui/components/PageHeader';
 import { headers } from 'next/headers';

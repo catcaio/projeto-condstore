@@ -1,4 +1,4 @@
-import { WorkspaceFoundationPage } from '@/modules/workspace/foundation';
+import { WorkspaceFoundationPage } from '@/modules/workspace';
 
 export const metadata = {
     title: 'Conversas — CONDSTORE OS',

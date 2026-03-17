@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createOrderFromSimulation } from '@/modules/pedidos/order.service';
+import { createOrderFromSimulation } from '@/modules/pedidos/server';
 import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 import { NextRequest } from 'next/server';
 import { structuredLogger } from '@/infra/log/logger';

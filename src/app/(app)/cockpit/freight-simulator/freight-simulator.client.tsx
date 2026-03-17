@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { parseFreightSimulatorQueryState } from '@/modules/navigation/query-state';
-import { mockOrders } from '@/modules/pedidos/mock-data';
+import { parseFreightSimulatorQueryState } from '@/modules/navigation';
+import { mockOrders } from '@/modules/pedidos';
 import { safeFetch } from '@/ui/lib/safe-fetch';
 import { Truck, Package, Plus, Trash2, Calculator, MapPin, Weight, Box } from 'lucide-react';
 

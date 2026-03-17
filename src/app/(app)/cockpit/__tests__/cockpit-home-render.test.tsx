@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import CockpitPage from '../page';
-import { rooms } from '@/modules/cockpit/rooms/rooms.registry';
+import { rooms } from '@/modules/cockpit';
 
 // Mock Next.js headers
 vi.mock('next/headers', () => ({
