@@ -116,14 +116,14 @@ async function processEvent(event: DomineEvent, payload: any): Promise<void> {
                 logger.warn('unknown_event_type', { type: payload.action, id: event.id });
         }
 
-        logger.info('event_processed_successfully', { id: event.id, type: payload.action, rawId });
+        logger.info('queue_jobs_processed_total', { id: event.id, type: payload.action, rawId });
         retryCounts.delete(rawId);
 
     } catch (err) {
         logger.error('event_processing_failed', err as Error, { id: event.id, rawId, attempt: attempts });
 
         if (attempts >= MAX_RETRIES) {
-            logger.error('finops_event_dlq', new Error('Max retries exceeded'), { id: event.id, payload });
+            logger.error('queue_jobs_failed_total', new Error('Max retries exceeded'), { id: event.id, payload });
             retryCounts.delete(rawId);
         } else {
             retryCounts.set(rawId, attempts);
@@ -141,7 +141,8 @@ export function startFinopsWorker() {
     });
 }
 
-if (require.main === module) {
+const isMain = import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}` || process.argv[1].endsWith('finops-worker.ts');
+if (isMain) {
     if (!redisClient.isAvailable()) {
         logger.error('Redis not available. Exiting finops worker.');
         process.exit(1);

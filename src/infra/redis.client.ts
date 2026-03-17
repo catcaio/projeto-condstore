@@ -17,6 +17,13 @@ class RedisService {
   }
 
   private initRedis() {
+    const isProd = process.env.NODE_ENV === 'production' || (process.env.NODE_ENV as string) === 'staging';
+    if (isProd && !process.env.REDIS_URL) {
+      const msg = '[CRITICAL] REDIS_URL is strictly required in production/staging environments. In-memory fallback is disabled.';
+      logger.error(msg);
+      throw new Error(msg);
+    }
+
     if (process.env.REDIS_URL && !this.redisInstance && !this.isConnecting) {
       this.isConnecting = true;
       try {
@@ -37,6 +44,10 @@ class RedisService {
     }
   }
   isAvailable(): boolean {
+    const isProd = process.env.NODE_ENV === 'production' || (process.env.NODE_ENV as string) === 'staging';
+    if (isProd && !this.redisInstance) {
+       throw new Error("[CRITICAL] Redis is unavailable in production! In-Memory fallback is strictly forbidden.");
+    }
     return !!this.redisInstance;
   }
 

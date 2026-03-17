@@ -59,6 +59,7 @@ export function startQuoteWorker() {
     });
 }
 
-if (require.main === module) {
+const isMain = import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}` || process.argv[1]?.endsWith('quote-worker.ts');
+if (isMain) {
     startQuoteWorker();
 }
