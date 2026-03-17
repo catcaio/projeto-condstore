@@ -4,7 +4,6 @@ import { orders, customers, organizations, freightShipments } from '@/drizzle/sc
 import { eq } from 'drizzle-orm';
 
 export async function loadOrdersHydrated(tenantId: string): Promise<OrderRecord[]> {
-    console.info("DEBUG loadOrdersHydrated. orders:", !!orders, "customers:", !!customers, "orgs:", !!organizations, "freightShipments:", !!freightShipments);
     let dbOrders: any[] = [];
     try {
         dbOrders = await db

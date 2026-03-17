@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AlertTriangle, CheckCheck, MessageSquare, Truck } from 'lucide-react';
 import { Button } from '@/ui/components';
 import { SectionHeader, SurfacePanel } from '@/ui/foundation';
-import type { OrderRecord } from '../mock-data';
+import type { OrderRecord } from '../types';
 
 export function OrderActions({ order }: { order: OrderRecord }) {
     return (

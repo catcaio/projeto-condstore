@@ -11,4 +11,4 @@ export type {
     OrderStatus,
     OrderTimelineState,
     OrderTimelineStep,
-} from './mock-data';
+} from './types';

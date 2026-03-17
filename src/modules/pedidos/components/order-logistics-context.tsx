@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/ui/components';
 import { SectionHeader, StatusChip, SurfacePanel } from '@/ui/foundation';
-import type { OrderLogisticsContext } from '../mock-data';
+import type { OrderLogisticsContext } from '../types';
 
 function getStatusTone(status: OrderLogisticsContext['logisticsStatus']) {
     if (status === 'com-excecao') {

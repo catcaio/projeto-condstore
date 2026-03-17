@@ -12,18 +12,6 @@ import type {
     OrderTimelineStep,
 } from './types';
 
-export type {
-    OrderChannel,
-    OrderEvent,
-    OrderLineItem,
-    OrderLogisticsContext,
-    OrderPeriodBucket,
-    OrderPriority,
-    OrderRecord,
-    OrderStatus,
-    OrderTimelineState,
-    OrderTimelineStep,
-};
 
 const statuses: OrderStatus[] = ['recebido', 'em-analise', 'aprovado', 'faturado', 'expedido', 'concluido', 'excecao'];
 const priorities: OrderPriority[] = ['critica', 'alta', 'media', 'baixa'];

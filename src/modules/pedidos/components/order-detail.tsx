@@ -1,7 +1,7 @@
 import { EventList, SectionHeader, SimpleDataTable, SurfacePanel } from '@/ui/foundation';
 import { OrderStatusTimeline } from './order-status-timeline';
 import { OrderSummary } from './order-summary';
-import type { OrderRecord } from '../mock-data';
+import type { OrderRecord } from '../types';
 
 export function OrderDetail({ order }: { order: OrderRecord }) {
     return (
