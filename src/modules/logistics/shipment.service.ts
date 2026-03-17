@@ -1,9 +1,12 @@
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import { orders, type ShipmentRecord } from '@/drizzle/schema';
-import { shipmentRepository, type ShipmentListFilter } from './shipment.repository';
+import { shipmentRepository } from './shipment.repository';
+import type { ShipmentListFilter } from './shipment.repository';
 import { shipmentEvents } from './shipment.events';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
+
+export type ShipmentStatus = 'CREATED' | 'SCHEDULED' | 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'FAILED';
 
 export const shipmentService = {
     async createShipmentFromOrder(tenantId: string, orderId: string): Promise<ShipmentRecord> {
@@ -64,11 +67,11 @@ export const shipmentService = {
     async updateShipmentStatus(
         tenantId: string,
         shipmentId: string,
-        status: 'CREATED' | 'SCHEDULED' | 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'FAILED',
+        status: ShipmentStatus,
         trackingCode?: string,
         trackingUrl?: string
     ): Promise<void> {
-        const updateData: any = { status };
+        const updateData: { status: string; trackingCode?: string; trackingUrl?: string } = { status };
         if (trackingCode !== undefined) updateData.trackingCode = trackingCode;
         if (trackingUrl !== undefined) updateData.trackingUrl = trackingUrl;
 
@@ -106,6 +109,3 @@ export const shipmentService = {
         return shipmentRepository.listShipments(tenantId, filter);
     }
 };
-
-export type { ShipmentListFilter };
-

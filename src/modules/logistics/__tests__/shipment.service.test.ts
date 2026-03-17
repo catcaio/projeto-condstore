@@ -88,7 +88,7 @@ describe('Shipment Logistics Service', () => {
     });
 
     it('should update tracking details and emit shipment_status_updated', async () => {
-        const mockShipment = { id: 'ship-1', orderId: 'order-1', status: 'CRETAED' };
+        const mockShipment = { id: 'ship-1', orderId: 'order-1', status: 'CREATED' };
         
         vi.mocked(shipmentRepository.updateShipment).mockResolvedValue();
         vi.mocked(shipmentRepository.findShipmentById).mockResolvedValue(mockShipment as any);
