@@ -6,10 +6,10 @@
  */
 
 import { getDb } from '../../infra/db';
+import { logger } from '../../infra/logger';
 import { freightSimulations, freightConfirmations, freightMemory } from '../../drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { randomUUID } from 'crypto';
-import { createHash } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 
 // ─── Product hash utility ───────────────────────────────────────────────────
 
@@ -86,7 +86,7 @@ export async function logFreightSimulation(input: SimulationLogInput): Promise<s
         });
     } catch (err) {
         // Non-blocking — don't crash freight calculation if logging fails
-        console.error('logFreightSimulation inserted failed:', err);
+        logger.error('logFreightSimulation insert failed', err as Error);
     }
 
     return id;
@@ -280,6 +280,6 @@ export async function upsertFreightMemory(input: MemoryUpsertInput): Promise<voi
                 .where(eq(freightMemory.id, row.id));
         }
     } catch (err) {
-        console.error('upsertFreightMemory failed (non-blocking):', err);
+        logger.error('upsertFreightMemory failed (non-blocking)', err as Error);
     }
 }
