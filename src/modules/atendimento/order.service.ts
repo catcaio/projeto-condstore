@@ -4,7 +4,7 @@ import { orders, simulations, conversations, type OrderRecord } from '@/drizzle/
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from './conversation.service';
 import { messageService } from './message.service';
-import { shipmentService } from '@/modules/logistics/shipment.service';
+import { shipmentService } from '@/modules/logistics/server';
 
 export interface OrderListFilter {
     status?: string;

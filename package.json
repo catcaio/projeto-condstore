@@ -11,6 +11,7 @@
     "lint:ops": "node -e \"require('fs').existsSync('infra/systemd/condstore-finops-worker.service') || (console.error('MISSING: infra/systemd/condstore-finops-worker.service'), process.exit(1))\"",
     "lint:env": "node ./scripts/check-env-leak.mjs",
     "lint:pii": "node scripts/verify-no-plaintext-pii.mjs",
+    "check:boundaries": "node --import tsx scripts/check-import-boundaries.ts",
     "install:clean": "cmd /c \"if exist node_modules rmdir /s /q node_modules & if exist package-lock.json del /f /q package-lock.json & call scripts\\npm-safe.cmd\"",
     "install:safe": "cmd /c \"call scripts\\npm-safe.cmd\"",
     "postinstall": "node scripts/patch-next-lint.mjs",
@@ -94,6 +95,9 @@
     "minimatch": ">=10.2.3",
     "eslint": "9.39.3",
     "@eslint/js": "9.39.3",
-    "serialize-javascript": ">=7.0.3"
+    "serialize-javascript": ">=7.0.3",
+    "fast-xml-parser": ">=5.5.6",
+    "flatted": ">=3.4.0",
+    "esbuild": ">=0.25.0"
   }
 }

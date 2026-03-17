@@ -5,7 +5,7 @@ import { tokenUsageEvents, tenantBudgets } from '../../drizzle/schema';
 import { logger } from '../logger';
 import { redisClient } from '../redis.client';
 import { publishEvent } from '../../core/events/event-bus';
-import { finopsCacheKey } from '@/modules/finops/cache-keys';
+import { finopsCacheKey } from '@/modules/finops';
 
 // ─── Cost map ─────────────────────────────────────────────────────────────────
 
