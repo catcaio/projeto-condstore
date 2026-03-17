@@ -13,10 +13,13 @@ class RedisService {
   private isConnecting: boolean = false;
 
   constructor() {
-    this.initRedis();
+    // Lazy initialization: connection is attempted on first usage (e.g. isAvailable() or getRawClient())
+    // to prevent build-time crashes when REDIS_URL is not yet available in process.env.
   }
 
   private initRedis() {
+    if (this.redisInstance || this.isConnecting) return;
+
     const isProd = process.env.NODE_ENV === 'production' || (process.env.NODE_ENV as string) === 'staging';
     if (isProd && !process.env.REDIS_URL) {
       const msg = '[CRITICAL] REDIS_URL is strictly required in production/staging environments. In-memory fallback is disabled.';
@@ -24,7 +27,7 @@ class RedisService {
       throw new Error(msg);
     }
 
-    if (process.env.REDIS_URL && !this.redisInstance && !this.isConnecting) {
+    if (process.env.REDIS_URL) {
       this.isConnecting = true;
       try {
         this.redisInstance = new Redis(process.env.REDIS_URL, {
@@ -43,7 +46,9 @@ class RedisService {
       }
     }
   }
+
   isAvailable(): boolean {
+    this.initRedis();
     const isProd = process.env.NODE_ENV === 'production' || (process.env.NODE_ENV as string) === 'staging';
     if (isProd && !this.redisInstance) {
        throw new Error("[CRITICAL] Redis is unavailable in production! In-Memory fallback is strictly forbidden.");
@@ -52,6 +57,7 @@ class RedisService {
   }
 
   getRawClient(): Redis | null {
+    this.initRedis();
     return this.redisInstance;
   }
 
