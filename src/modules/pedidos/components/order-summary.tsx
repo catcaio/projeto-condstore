@@ -1,5 +1,5 @@
 import { StatusChip } from '@/ui/foundation';
-import type { OrderRecord, OrderStatus } from '../mock-data';
+import type { OrderRecord, OrderStatus } from '../types';
 
 function getStatusTone(status: OrderStatus) {
     if (status === 'excecao') {

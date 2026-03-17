@@ -1,4 +1,4 @@
-import type { OrderTimelineStep } from '../mock-data';
+import type { OrderTimelineStep } from '../types';
 
 function getDotClasses(state: OrderTimelineStep['state']) {
     if (state === 'issue') {

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/ui/components';
 import { SectionHeader, SurfacePanel } from '@/ui/foundation';
 import { ClientTags } from '@/modules/clientes/components/client-tags';
-import type { OrderRecord } from '../mock-data';
+import type { OrderRecord } from '../types';
 
 function InfoLine({ label, value }: { label: string; value: string }) {
     return (
