@@ -6,6 +6,24 @@ import { randomUUID } from 'crypto';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 import { operationalAuditService } from '@/modules/audit/operational-audit.service';
 
+// ── Internal helper ────────────────────────────────────────────────────────
+
+async function findActiveOpportunity(db: any, tenantId: string, customerId: string) {
+    const results = await db.select()
+        .from(crmOpportunities)
+        .where(
+            and(
+                eq(crmOpportunities.tenantId, tenantId),
+                eq(crmOpportunities.customerId, customerId),
+                eq(crmOpportunities.status, 'active')
+            )
+        )
+        .limit(1);
+    return results[0] ?? null;
+}
+
+// ── Public service ─────────────────────────────────────────────────────────
+
 export const crmService = {
     /**
      * Projects a WhatsApp Interaction into the CRM Pipeline.
@@ -30,23 +48,13 @@ export const crmService = {
         const db = tx || await getDb();
 
         try {
-            // Find active opportunity
-            const activeOps = await db.select()
-                .from(crmOpportunities)
-                .where(
-                    and(
-                        eq(crmOpportunities.tenantId, params.tenantId),
-                        eq(crmOpportunities.customerId, params.customerId),
-                        eq(crmOpportunities.status, 'active')
-                    )
-                )
-                .limit(1);
+            const activeOp = await findActiveOpportunity(db, params.tenantId, params.customerId);
 
-            if (activeOps.length > 0) {
+            if (activeOp) {
                 // Update last activity
                 await db.update(crmOpportunities)
                     .set({ lastActivityAt: new Date() })
-                    .where(eq(crmOpportunities.id, activeOps[0].id));
+                    .where(eq(crmOpportunities.id, activeOp.id));
             } else if (params.direction === 'inbound') {
                 // Create new opportunity if inbound message and no active ops
                 const title = `Negociação Automática`;
@@ -120,22 +128,12 @@ export const crmService = {
         const db = tx || await getDb();
 
         try {
-            // Find active opportunity
-            const activeOps = await db.select()
-                .from(crmOpportunities)
-                .where(
-                    and(
-                        eq(crmOpportunities.tenantId, params.tenantId),
-                        eq(crmOpportunities.customerId, params.customerId),
-                        eq(crmOpportunities.status, 'active')
-                    )
-                )
-                .limit(1);
+            const activeOp = await findActiveOpportunity(db, params.tenantId, params.customerId);
 
             let opportunityId;
 
-            if (activeOps.length > 0) {
-                opportunityId = activeOps[0].id;
+            if (activeOp) {
+                opportunityId = activeOp.id;
                 // Update stage to quoted if not already won/lost
                 await db.update(crmOpportunities)
                     .set({ stage: 'quoted', lastActivityAt: new Date() })

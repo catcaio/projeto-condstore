@@ -5,7 +5,7 @@ import { domineIntakeService } from '@/domine/domine-intake.service';
 import { eq, and, desc } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import crypto from 'crypto';
-import { crmService } from '@/modules/crm/crm.service';
+import { crmService } from '@/modules/crm/server';
 
 export interface CreateFreightQuoteInput {
     tenantId: string;
