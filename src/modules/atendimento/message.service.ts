@@ -19,7 +19,7 @@ import { conversationMessages, conversations } from '@/drizzle/schema';
 import { operationalEvents } from '@/drizzle/schema';
 import { randomUUID } from 'crypto';
 import type { ConversationMessageRecord } from '@/drizzle/schema';
-import { crmService } from '@/modules/crm/crm.service';
+import { crmService } from '@/modules/crm/server';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 
 export const messageService = {
