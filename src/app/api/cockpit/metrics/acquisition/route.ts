@@ -18,7 +18,7 @@ import {
   parseWindow as parseWindowDays,
   type MetricsWindowPreset,
 } from '../../../../../infra/time/window';
-import { isDevRuntime, isQaAutomation } from '../../../../../core/config/dev-runtime';
+import { isDevRuntime, isQaAutomation } from '../../../../../infra/env/devOnly';
 
 export const runtime = 'nodejs';
 

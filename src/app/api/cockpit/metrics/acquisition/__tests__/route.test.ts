@@ -6,7 +6,7 @@ import { getDb } from '../../../../../../infra/db';
 import { metricsDailyRepository } from '../../../../../../modules/metrics/metrics-daily.repository';
 import { tenantRepository } from '../../../../../../infra/repositories/tenant.repository';
 import { redisClient } from '../../../../../../infra/redis.client';
-import { isDevRuntime, isQaAutomation } from '../../../../../../core/config/dev-runtime';
+import { isDevRuntime, isQaAutomation } from '../../../../../../infra/env/devOnly';
 
 const mockExecute = vi.fn();
 
@@ -43,7 +43,7 @@ vi.mock('../../../../../../infra/logger', () => ({
   },
 }));
 
-vi.mock('../../../../../../core/config/dev-runtime', () => ({
+vi.mock('../../../../../../infra/env/devOnly', () => ({
   isDevRuntime: vi.fn(() => true),
   isQaAutomation: vi.fn(() => false),
 }));

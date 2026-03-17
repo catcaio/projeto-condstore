@@ -3,10 +3,15 @@
 /**
  * release-check.mjs - Pre-release validation checklist
  *
- * Runs in ~2min on CI (no server, no db required):
+ * Runs local pre-release validation:
  * 1. npm run typecheck      (TypeScript validation)
  * 2. npm run build          (production build without DATABASE_URL)
- * 3. ready-to-train         (dataset + replay in fast mode)
+ * 3. ready-to-train         (dataset + replay in fast mode with auto-started local app server if needed)
+ *
+ * Contract:
+ * - The ready-to-train step requires app HTTP endpoints and DB-backed export data.
+ * - If READY_SERVER_URL is not already reachable, the script starts a temporary local server on an isolated port.
+ * - Internal auth is provisioned automatically for that temporary server when dev env vars are absent.
  *
  * Exit: 0 on PASS, 1 on FAIL
  */
@@ -37,7 +42,10 @@ const STEPS = [
     cmd: 'node',
     args: [path.join(__dirname, 'ready-to-train.mjs')],
     env: {
-      READY_START_SERVER: 'false',
+      READY_START_SERVER: 'true',
+      READY_SERVER_PORT: '3100',
+      READY_SERVER_URL: 'http://127.0.0.1:3100',
+      READY_SERVER_START_TIMEOUT_MS: '45000',
       READY_TO_TRAIN_EXPORT_LIMIT: '10',
       READY_TO_TRAIN_REPLAY_LIMIT: '5',
     },
