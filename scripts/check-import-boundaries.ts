@@ -4,8 +4,12 @@
 // Rules enforced:
 //   1. src/app/ must not import modules/X/services/Y directly
 //   2. src/app/ must not import modules/X/repositories/Y directly
-//   3. Modules must not import internals of other modules
-//      (services/, repositories/ of another module)
+//   3. src/app/ must not import modules/X/actions/Y directly
+//   4. src/app/ must not import modules/X/adapters/Y directly
+//   5. Modules must not import internals of other modules
+//      (services/, repositories/, actions/, adapters/, tools/,
+//       loaders/, components/, __tests__/ of another module)
+//   6. infra/ and core/ must not import module internals
 //
 // Allowed:
 //   - @/modules/<name>          (index.ts barrel)
@@ -13,6 +17,11 @@
 //   - @/modules/<name>/types    (public types)
 //   - @/modules/<name>/mock-data (mock data - tolerated)
 //   - Self-referencing within a module (./relative imports)
+//
+// Out of scope (requires broader refactor):
+//   - src/app/ → @/infra/** (API routes legitimately use infra utilities)
+//   - src/app/ → @/modules/X/X.service (flat file imports, no entrypoint yet)
+//   - Cross-module flat file imports where no entrypoint exists
 //
 // Usage:
 //   npm run check:boundaries
@@ -25,28 +34,64 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SRC_DIR = path.resolve(__dirname, '..', 'src');
 
-// Matches: from '@/modules/<module>/services/<anything>'
-// Matches: from '@/modules/<module>/repositories/<anything>'
-const DEEP_IMPORT_RE = /from\s+['"]@\/modules\/([^'"\/]+)\/(services|repositories)\/([^'"]+)['"]/g;
+// Matches: from '@/modules/<module>/<internal-directory>/<anything>'
+// Covers: services/, repositories/, actions/, adapters/, tools/,
+//         loaders/, components/, __tests__/, queries/
+const DEEP_IMPORT_RE = /from\s+['"]@\/modules\/([^'"\/]+)\/(services|repositories|actions|adapters|tools|loaders|components|__tests__|queries)\/([^'"]+)['"]/g;
 
 // Matches: from '@/modules/<module>/cache-keys' (specific known deep import)
 const KNOWN_DEEP_IMPORTS_RE = /from\s+['"]@\/modules\/([^'"\/]+)\/(cache-keys)['"]/g;
 
-// Files that are known to have deep imports that require refactor (tracked debt)
+// Files that are known to have deep imports that require refactor (tracked debt).
+// Each entry MUST have a TODO(boundary) comment explaining the reason and removal path.
 const ALLOWLIST: string[] = [
-  // frank tools import pedidos repository directly - needs refactor to add entrypoint
+  // ── frank tools → pedidos/freight repositories ─────────────────────────
+  // TODO(boundary): frank tools import pedidos/freight repositories directly.
+  // Removal: create @/modules/pedidos/server and @/modules/freight/server entrypoints.
   'src/modules/frank/tools/read-only/getRecentQuotes.tool.ts',
   'src/modules/frank/tools/read-only/getRecentOrders.tool.ts',
   'src/modules/frank/tools/read-only/getOrderStatus.tool.ts',
-  // atendimento imports pedidos repository - needs refactor
+  'src/modules/frank/tools/read-only/getShipmentStatus.tool.ts',
+
+  // ── atendimento → pedidos internals ────────────────────────────────────
+  // TODO(boundary): atendimento orchestrator imports pedidos services/ directory.
+  // Removal: create @/modules/pedidos/server entrypoint and re-export needed services.
   'src/modules/atendimento/whatsapp-inbound-orchestrator.service.ts',
-  // finops self-referencing (intra-module)
-  'src/modules/finops/services/finops-reset.service.ts',
-  // vi.mock() paths in tests (not actual imports, but pattern matches)
+
+  // ── test files (vi.mock paths match regex but are not runtime imports) ─
+  // TODO(boundary): vi.mock() paths in test files match the regex pattern.
+  // These are not actual runtime imports. Consider excluding __tests__/ from enforcement.
   'src/app/api/webhook/stripe/__tests__/stripe-lifecycle.test.ts',
   'src/app/api/webhook/stripe/__tests__/stripe-gates.test.ts',
-  // frank module is out of scope for this enforcement
+
+  // ── app routes → module internals ──────────────────────────────────────
+  // TODO(boundary): routes import module services/adapters/ directories directly.
+  // Removal: create server entrypoints for frank and freight modules.
   'src/app/api/cockpit/frank/feed/route.ts',
+  'src/app/api/freight/shipments/route.ts',
+  'src/app/api/internal/freight/shipments/route.ts',
+
+  // ── UI views → frank server actions ────────────────────────────────────
+  // TODO(boundary): cockpit views import frank/actions/review for server actions.
+  // Removal: create @/modules/frank entrypoint re-exporting the review action.
+  'src/modules/clientes/clients-view.tsx',
+  'src/modules/conversas/components/conversation-context.tsx',
+  'src/modules/logistica/logistics-view.tsx',
+  'src/modules/pedidos/orders-view.tsx',
+
+  // ── UI components cross-module ─────────────────────────────────────────
+  // TODO(boundary): UI pages/views import React components from other modules.
+  // Removal: create client entrypoints (index.ts) re-exporting public components.
+  'src/app/(admin)/cockpit/playbooks/new/page.tsx',
+  'src/app/(admin)/cockpit/playbooks/page.tsx',
+  'src/app/(admin)/cockpit/playbooks/[id]/page.tsx',
+  'src/modules/logistica/components/logistics-customer-context.tsx',
+  'src/modules/pedidos/components/order-customer-context.tsx',
+
+  // ── workspace → cockpit components ─────────────────────────────────────
+  // TODO(boundary): workspace foundation imports cockpit UI components.
+  // Removal: create @/modules/cockpit entrypoint re-exporting shell components.
+  'src/modules/workspace/foundation.tsx',
 ];
 
 interface Violation {
@@ -109,12 +154,12 @@ function scanFile(filePath: string): Violation[] {
     const trimmed = line.trim();
     if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
 
-    // Check deep imports into services/ or repositories/ of modules
+    // Check deep imports into internal directories of modules
     let match: RegExpExecArray | null;
     DEEP_IMPORT_RE.lastIndex = 0;
     while ((match = DEEP_IMPORT_RE.exec(line)) !== null) {
       const targetModule = match[1];
-      const targetLayer = match[2]; // services or repositories
+      const targetLayer = match[2]; // services, repositories, actions, adapters, etc.
 
       // Self-referencing within same module is OK (but prefer relative imports)
       if (fileModule === targetModule) continue;
