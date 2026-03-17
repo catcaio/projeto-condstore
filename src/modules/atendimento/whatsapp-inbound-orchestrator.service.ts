@@ -90,6 +90,8 @@ export const whatsappInboundOrchestrator = {
         const { tenantId, messageSid, accountSid, fromE164, fromHash, toPhone, rawBodyText, requestId } = payload;
         const processingStartTime = Date.now();
         
+        structuredLogger.info('whatsapp_orchestrator_step', { step: 'entrada_process', tenantId, messageSid, requestId, fromHash });
+
         // 1. Deduplication Lock
         const dedupAcquired = await inboundMessageDedupRepository.tryAcquire(messageSid, tenantId);
         if (!dedupAcquired) {
@@ -128,8 +130,10 @@ export const whatsappInboundOrchestrator = {
         }
 
         // 3. Central Customer Resolution (Find or Create)
+        structuredLogger.info('whatsapp_orchestrator_step', { step: 'iniciando_resolucao_customer', tenantId, messageSid, requestId, fromHash });
         const contactName = payload.profileName || 'Novo Lead WhatsApp';
         const identity = await customerResolutionService.resolveOrCreateCustomer(tenantId, fromE164, contactName);
+        structuredLogger.info('whatsapp_orchestrator_step', { step: 'customer_resolvido', tenantId, messageSid, requestId, customerId: identity.customerId });
         
         if (identity.isNew) {
             structuredLogger.info('new_lead_captured', {
@@ -151,12 +155,15 @@ export const whatsappInboundOrchestrator = {
             });
         }
 
+        structuredLogger.info('whatsapp_orchestrator_step', { step: 'iniciando_resolucao_conversation', tenantId, messageSid, requestId, fromHash });
         const conversation = await conversationService.findOrCreateConversationByPhone(
             tenantId, fromHash, encryptString(fromE164), 
             { customerId: identity.customerId, organizationId: identity.organizationId }
         );
+        structuredLogger.info('whatsapp_orchestrator_step', { step: 'conversation_resolvida', tenantId, messageSid, requestId, conversationId: conversation.id });
 
         if (conversation.status === 'operator_active') {
+            structuredLogger.info('whatsapp_orchestrator_step', { step: 'iniciando_persist_message_operator', tenantId, messageSid, requestId, conversationId: conversation.id });
             await messageService.processInbound({
                 tenantId,
                 conversationId: conversation.id,
@@ -201,6 +208,15 @@ export const whatsappInboundOrchestrator = {
 
         const intentResult = resolveContextualIntent(messageText, sessionAnchors);
         
+        structuredLogger.info('whatsapp_orchestrator_intent_resolved', {
+            tenantId,
+            messageSid,
+            intent: intentResult.intent,
+            confidence: intentResult.confidence,
+            hasSessionContext: Boolean(sessionState)
+        });
+
+        structuredLogger.info('whatsapp_orchestrator_step', { step: 'iniciando_persist_message_bot', tenantId, messageSid, requestId, conversationId: conversation.id });
         await messageService.processInbound({
             tenantId,
             conversationId: conversation.id,
@@ -215,6 +231,13 @@ export const whatsappInboundOrchestrator = {
             customerId: identity?.customerId ?? undefined,
             organizationId: identity?.organizationId ?? undefined,
             contactId: identity?.contactId ?? undefined
+        });
+
+        structuredLogger.info('whatsapp_orchestrator_message_persisted', {
+            tenantId,
+            conversationId: conversation.id,
+            messageSid,
+            intent: intentResult.intent
         });
 
         // 5. Entity Extraction

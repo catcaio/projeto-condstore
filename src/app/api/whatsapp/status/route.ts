@@ -38,6 +38,9 @@ export async function POST(request: NextRequest) {
 
         // Validate Twilio Signature
         const twilioUrl = process.env.APP_URL ? `${process.env.APP_URL}/api/whatsapp/status` : `https://${request.headers.get('host')}/api/whatsapp/status`;
+        
+        const { structuredLogger } = await import('@/infra/log/logger');
+        structuredLogger.info('webhook_status_total', { eventType: 'whatsapp', payload });
         const { verifyTwilioSignature } = await import('@/lib/security/webhook-verifier');
         
         if (process.env.NODE_ENV === 'production' && !verifyTwilioSignature(request, rawBody, payload, twilioUrl)) {
@@ -54,6 +57,22 @@ export async function POST(request: NextRequest) {
         if (!messageSid || !messageStatus) {
             return new NextResponse('<Response></Response>', {
                 status: 200, // Twilio requires 200 OK regardless
+                headers: { 'Content-Type': 'text/xml' },
+            });
+        }
+
+        const { rateLimiter, hashRateLimitKeyForLog } = await import('@/infra/security/rate-limiter');
+        const rlKey = `msg:${messageSid}`;
+        const rlDecision = await rateLimiter.limit('whatsapp_status', rlKey, { windowSec: 10, max: 20 });
+        
+        if (!rlDecision.allowed) {
+            logger.warn('whatsapp_status_rate_limited', {
+                route: '/api/whatsapp/status',
+                messageSid,
+                keyHash: hashRateLimitKeyForLog(rlKey)
+            });
+            return new NextResponse('<Response></Response>', {
+                status: 200,
                 headers: { 'Content-Type': 'text/xml' },
             });
         }

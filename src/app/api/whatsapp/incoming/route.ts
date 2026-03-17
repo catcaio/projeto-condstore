@@ -66,7 +66,10 @@ export async function POST(request: Request) {
         const payload: Record<string, string> = {};
         params.forEach((value, key) => { payload[key] = value; });
 
+        structuredLogger.info('webhook_incoming_total', { eventType: 'whatsapp', requestId });
+
         if (process.env.NODE_ENV === 'production' && !verifyTwilioSignature(request, rawBody, payload, twilioUrl)) {
+             structuredLogger.warn('webhook_invalid_signature_total', { eventType: 'whatsapp', requestId, route });
              structuredLogger.warn('whatsapp_incoming_invalid_signature', { requestId, route });
              return finish(twimlEmpty(requestId));
         }
@@ -159,10 +162,26 @@ export async function POST(request: Request) {
         return finish(twimlEmpty(requestId));
 
     } catch (err) {
+        let errorMsg = 'Unknown Error';
+        let errorName = 'UnknownError';
+        let errorStack = '';
+
+        if (err instanceof Error) {
+            errorMsg = err.message;
+            errorName = err.name;
+            errorStack = err.stack || '';
+        } else if (typeof err === 'string') {
+            errorMsg = err;
+        }
+
         structuredLogger.error('whatsapp_incoming_error', {
-            errorType: err instanceof Error ? err.name : 'UnknownError',
-            errorMessage: err instanceof Error ? err.message : String(err),
-            route, requestId, step: currentStep, messageSid: messageSidStr
+            errorType: errorName,
+            errorMessage: errorMsg,
+            errorStack,
+            route,
+            requestId,
+            step: currentStep,
+            messageSid: messageSidStr
         });
         
         return finish(twimlEmpty(requestId));
