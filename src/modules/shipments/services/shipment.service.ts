@@ -1,8 +1,8 @@
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import { orders, type ShipmentRecord } from '@/drizzle/schema';
-import { shipmentRepository, type ShipmentListFilter } from './shipment.repository';
-import { shipmentEvents } from './shipment.events';
+import { shipmentRepository, type ShipmentListFilter } from '../repositories/shipment.repository';
+import { shipmentEvents } from '../events/shipment.events';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 
 export const shipmentService = {

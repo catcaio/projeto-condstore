@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { shipmentService } from '../shipment.service';
-import { shipmentRepository } from '../shipment.repository';
-import { shipmentEvents } from '../shipment.events';
+import { shipmentRepository } from '../../repositories/shipment.repository';
+import { shipmentEvents } from '../../events/shipment.events';
 import * as dbInfra from '@/infra/db';
 
 vi.mock('@/infra/db', () => ({
     getDb: vi.fn(),
 }));
 
-vi.mock('../shipment.repository', () => ({
+vi.mock('../../repositories/shipment.repository', () => ({
     shipmentRepository: {
         findShipmentById: vi.fn(),
         findShipmentByOrderId: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock('../shipment.repository', () => ({
     }
 }));
 
-vi.mock('../shipment.events', () => ({
+vi.mock('../../events/shipment.events', () => ({
     shipmentEvents: {
         emitShipmentCreated: vi.fn(),
         emitShipmentStatusUpdated: vi.fn(),

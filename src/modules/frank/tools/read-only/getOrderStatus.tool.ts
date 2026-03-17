@@ -1,5 +1,5 @@
-import { getOrderAggregate } from '@/modules/pedidos/order.repository';
-import { getShipmentsForOrder } from '@/modules/freight/shipment-linkage.repository';
+import { getOrderAggregate } from '@/modules/orders/server';
+import { getShipmentsForOrder } from '@/modules/shipments';
 import { executeFrankTool } from '../tool-guard';
 import { selectLatestShipment, toShipmentSummary, type ShipmentSummary } from './shared';
 

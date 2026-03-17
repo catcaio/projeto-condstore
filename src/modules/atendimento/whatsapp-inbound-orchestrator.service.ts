@@ -17,7 +17,7 @@ import { resolveConversationMode, isEntitiesCompleteForIntent } from '@/modules/
 import { evaluateAutoResponseGuard } from '@/modules/frank/auto-response-guard';
 import { messageService } from '@/modules/atendimento/message.service';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
-import { findOrderWithShipmentByPrefix } from '@/modules/pedidos/order.repository';
+import { findOrderWithShipmentByPrefix } from '@/modules/orders/server';
 import { structuredLogger } from '@/infra/log/logger';
 import { logger } from '@/infra/logger';
 import { resolveInboundReplyPolicy, InboundReplyPolicy } from './whatsapp-reply-policy';

@@ -26,10 +26,10 @@ import { getCockpitData } from '@/modules/cockpit/data/get-cockpit-data';
 import { ClientsView } from '@/modules/clientes/clients-view';
 import { ConversationsView } from '@/modules/conversas/conversations-view';
 import { LogisticsView } from '@/modules/logistica/logistics-view';
-import { OrdersView } from '@/modules/pedidos/orders-view';
+import { OrdersView } from '@/modules/orders';
 import { SystemStatusPanel } from '@/modules/cockpit/components/system-status';
 import { loadClientsHydrated } from '@/modules/clientes/customer.loader';
-import { loadOrdersHydrated } from '@/modules/pedidos/order.loader';
+import { loadOrdersHydrated } from '@/modules/orders/server';
 import { getServerSessionUser } from '@/infra/auth/session';
 
 export type WorkspaceFoundationModuleId =

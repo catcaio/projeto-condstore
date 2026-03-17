@@ -82,7 +82,7 @@ vi.mock('@/modules/frank/conversation-control', () => ({
     isEntitiesCompleteForIntent: vi.fn().mockReturnValue(true)
 }));
 
-vi.mock('@/modules/pedidos/order.repository', () => ({
+vi.mock('@/modules/orders/order.repository', () => ({
     findOrderWithShipmentByPrefix: vi.fn()
 }));
 
@@ -220,7 +220,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
         const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
         (getSessionState as any).mockResolvedValue(null);
         
-        const { findOrderWithShipmentByPrefix } = await import('@/modules/pedidos/order.repository');
+        const { findOrderWithShipmentByPrefix } = await import('@/modules/orders/order.repository');
         (findOrderWithShipmentByPrefix as any).mockResolvedValue({
             orderId: 'uuid-1234',
             shipmentId: 'ship-5678'
@@ -241,7 +241,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
         const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
         (getSessionState as any).mockResolvedValue(null);
         
-        const { findOrderWithShipmentByPrefix } = await import('@/modules/pedidos/order.repository');
+        const { findOrderWithShipmentByPrefix } = await import('@/modules/orders/order.repository');
         (findOrderWithShipmentByPrefix as any).mockResolvedValue(null); // Not found
 
         await whatsappInboundOrchestrator.process(payload);

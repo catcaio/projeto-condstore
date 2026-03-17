@@ -1,4 +1,4 @@
-import { getRecentOrdersForCustomer } from '@/modules/pedidos/order.repository';
+import { getRecentOrdersForCustomer } from '@/modules/orders/server';
 import { getQuoteContext } from '@/modules/freight/quote-context.repository';
 import { executeFrankTool } from '../tool-guard';
 import { buildQuoteRouteSummary, clampSupportLimit } from './shared';

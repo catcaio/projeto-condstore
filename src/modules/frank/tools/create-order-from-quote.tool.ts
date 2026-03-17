@@ -1,4 +1,4 @@
-import { createOrderFromSimulation } from '../../pedidos/order.service';
+import { createOrderFromSimulation } from '@/modules/orders/server';
 import { logger } from '@/infra/logger';
 import { executeFrankTool } from './tool-guard';
 

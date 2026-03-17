@@ -1,5 +1,5 @@
 import { mockLogistics } from '@/modules/logistica/mock-data';
-import { mockOrders } from '@/modules/pedidos/mock-data';
+import { mockOrders } from '@/modules/orders';
 import type {
     CockpitActionQueueItem,
     CockpitAlert,
