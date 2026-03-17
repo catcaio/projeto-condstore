@@ -25,15 +25,15 @@ const mockRedisSet = vi.fn();
 
 // ─── Module mocks ─────────────────────────────────────────────────────────────
 
-vi.mock('../../../infra/db', () => ({
+vi.mock('@/infra/db', () => ({
     getDb: vi.fn().mockResolvedValue({} /* db object unused — calls go through vi fns */),
 }));
 
-vi.mock('../../../infra/logger', () => ({
+vi.mock('@/infra/logger', () => ({
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
-vi.mock('../../../infra/redis.client', () => ({
+vi.mock('@/infra/redis.client', () => ({
     redisClient: {
         get: (...args: any[]) => mockRedisGet(...args),
         set: (...args: any[]) => mockRedisSet(...args),

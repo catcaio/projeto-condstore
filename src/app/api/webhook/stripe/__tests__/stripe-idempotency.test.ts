@@ -67,7 +67,7 @@ vi.mock('../../../../../core/stripe/stripe-client', () => ({
     getPlanIdFromPriceId: vi.fn((pid: string) => pid === 'price_pro_test' ? 'plan_pro' : null),
 }));
 
-vi.mock('../../../../../modules/billing/billing.service', () => ({
+vi.mock('@/modules/billing', () => ({
     upgradeTenantPlan: (...args: any[]) => mockUpgrade(...args),
     BillingServiceError: class BillingServiceError extends Error {
         code: string;

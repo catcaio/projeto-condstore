@@ -5,7 +5,7 @@
  * Sem dependências de I/O — todas as funções são testáveis em isolamento.
  */
 
-import { COST_PER_1K } from '../../infra/repositories/token-usage-events.repository';
+import { COST_PER_1K } from '@/infra/repositories/token-usage-events.repository';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

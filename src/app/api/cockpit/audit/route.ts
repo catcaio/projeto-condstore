@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireActivePlan } from '../../../../modules/billing/requireActivePlan';
+import { requireActivePlan } from '@/modules/billing';
 import { requireAdmin } from '../../../../infra/auth/guards';
 import { getDb } from '@/infra/db';
 import { tenantEvents, domineEvents, userConsentsLog } from '../../../../drizzle/schema';
 import { eq, desc, asc, and, gte, lte, sql } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
-import { isDevRuntime, isQaAutomation } from '@/infra/env/devOnly';
+import { isDevRuntime, isQaAutomation } from '@/core/config/dev-runtime';
 
 export const runtime = 'nodejs';
 

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '../../infra/auth/session';
-import { getDb } from '../../infra/db';
-import { tenants } from '../../drizzle/schema';
+import { getSessionUser } from '@/infra/auth/session';
+import { getDb } from '@/infra/db';
+import { tenants } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { logger } from '../../infra/logger';
-import { isQaAutomation } from '../../infra/env/devOnly';
-import { safeCompare } from '../../lib/security/safe-compare';
+import { logger } from '@/infra/logger';
+import { isQaAutomation } from '@/core/config/dev-runtime';
+import { safeCompare } from '@/lib/security/safe-compare';
 
 /**
  * Validates that the authenticated user's tenant has an active subscription plan.

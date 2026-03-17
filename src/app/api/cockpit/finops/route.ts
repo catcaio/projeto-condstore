@@ -7,13 +7,16 @@ import { structuredLogger } from '../../../../infra/log/logger';
 import { redisClient } from '../../../../infra/redis.client';
 import { attachRequestIdHeader, makeRequestId } from '../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '../../../../infra/http/error-response';
-import { buildFinOpsPayload, type FinOpsPayload, type RawBudgetRow, type UsageEventRow } from '../../../../modules/finops/finops-budget.service';
+import {
+    buildFinOpsPayload,
+    finopsCacheKey,
+    type FinOpsPayload,
+    type RawBudgetRow,
+    type UsageEventRow,
+} from '@/modules/finops';
 
 const CACHE_TTL_SECONDS = 30;
-
-export function finopsCacheKey(tenantId: string): string {
-    return `cockpit:finops:${tenantId}`;
-}
+export { finopsCacheKey };
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();

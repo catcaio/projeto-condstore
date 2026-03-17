@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import { requireAdmin } from '@/infra/auth/guards';
-import { requireActivePlan } from '../../../../../modules/billing/requireActivePlan';
+import { requireActivePlan } from '@/modules/billing';
 import { logger } from '@/infra/logger';
 
 export const runtime = 'nodejs';

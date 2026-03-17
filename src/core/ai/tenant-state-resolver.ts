@@ -26,9 +26,9 @@ import { getDb } from '../../infra/db';
 import { tenantBudgets, finopsAlertEvents, finopsLockEvents } from '../../drizzle/schema';
 import { redisClient } from '../../infra/redis.client';
 import { logger } from '../../infra/logger';
-import { finopsCacheKey } from '../../infra/repositories/token-usage-events.repository';
-import { computeProjectedDays } from '../../modules/finops/finops-budget.service';
-import { needsReset, runMonthlyReset } from '../../modules/finops/finops-reset.service';
+import { finopsCacheKey } from '@/modules/finops/cache-keys';
+import { computeProjectedDays } from '@/modules/finops/services/finops-budget.service';
+import { needsReset, runMonthlyReset } from '@/modules/finops/services/finops-reset.service';
 import { publishEvent } from '../events/event-bus';
 
 export type TenantLockState = 'unlocked' | 'degraded' | 'degraded_preemptive' | 'locked';

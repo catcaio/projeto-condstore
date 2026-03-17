@@ -8,7 +8,7 @@ import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/
 import { structuredLogger } from '../../../../../infra/log/logger';
 import { withDistributedLock } from '../../../../../lib/http/with-distributed-lock';
 import { jobLock } from '../../../../../lib/infra/lock-keys';
-import { runFinopsReconciliation } from '../../../../../modules/jobs/finops-reconciliation.worker';
+import { runFinopsReconciliation } from '@/modules/finops';
 
 async function postHandler(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();

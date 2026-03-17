@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { messageRepository } from '@/infra/repositories/message.repository';
 import { simulationRepository } from '@/infra/repositories/simulation.repository';
 import { logger } from '@/infra/logger';
-import { requireActivePlan } from '@/modules/billing/requireActivePlan';
+import { requireActivePlan } from '@/modules/billing';
 
 export const dynamic = 'force-dynamic';
 

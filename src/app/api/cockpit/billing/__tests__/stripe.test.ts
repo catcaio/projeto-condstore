@@ -154,7 +154,7 @@ const mockUpgradeTenantPlan = vi.fn().mockResolvedValue({
     status: 'upgraded', plan: 'Pro', planId: 'plan_pro', newBudget: 500,
 });
 
-vi.mock('../../../../../modules/billing/billing.service', () => ({
+vi.mock('@/modules/billing', () => ({
     upgradeTenantPlan: (...args: any[]) => mockUpgradeTenantPlan(...args),
     BillingServiceError: class BillingServiceError extends Error {
         code: string;

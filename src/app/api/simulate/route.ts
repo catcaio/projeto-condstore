@@ -6,10 +6,10 @@ import { BusinessError, ErrorCode, getUserMessage } from '../../../infra/errors'
 import { logger } from '@/infra/logger';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
-import { requireActivePlan } from '../../../modules/billing/requireActivePlan';
+import { requireActivePlan } from '@/modules/billing';
 import { auditService } from '../../../modules/audit/audit.service';
 import { checkRateLimit } from '../../../infra/rate-limiter';
-import { planEnforcementService } from '../../../modules/finops/plan-enforcement.service';
+import { planEnforcementService } from '@/modules/finops';
 
 export const runtime = 'nodejs';
 

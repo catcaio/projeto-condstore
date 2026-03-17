@@ -6,7 +6,7 @@ import { ErrorCode, InfrastructureError } from '../errors';
 import { redisClient } from '../redis.client';
 import { encryptString, decryptString, isEncryptedString } from '../pii/crypto';
 import { hashPhoneForTenant } from '../pii/phone';
-import { planEnforcementService } from '../../modules/finops/plan-enforcement.service';
+import { planEnforcementService } from '@/modules/finops';
 
 /**
  * Compact message snapshot used by the context cache and Frank orchestrator.

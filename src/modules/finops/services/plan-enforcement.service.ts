@@ -1,10 +1,10 @@
-import { getDb } from '../../infra/db';
-import { simulations, messages } from '../../drizzle/schema';
+import { getDb } from '@/infra/db';
+import { simulations, messages } from '@/drizzle/schema';
 import { eq, and, sql, gte } from 'drizzle-orm';
-import { redisClient } from '../../infra/redis.client';
-import { tenantRepository } from '../../infra/repositories/tenant.repository';
-import { PLAN_LIMITS, FINOPS_THRESHOLDS, PlanId, FinopsState } from '../../config/plan-limits';
-import { logger } from '../../infra/logger';
+import { redisClient } from '@/infra/redis.client';
+import { tenantRepository } from '@/infra/repositories/tenant.repository';
+import { PLAN_LIMITS, FINOPS_THRESHOLDS, type PlanId, type FinopsState } from '@/config/plan-limits';
+import { logger } from '@/infra/logger';
 
 export type ActionType = 'freight_simulation' | 'whatsapp_outbound';
 

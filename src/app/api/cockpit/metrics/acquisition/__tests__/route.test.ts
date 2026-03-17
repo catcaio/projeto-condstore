@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET } from '../route';
 import { getSessionUser } from '../../../../../../infra/auth/session';
-import { requireActivePlan } from '../../../../../../modules/billing/requireActivePlan';
+import { requireActivePlan } from '@/modules/billing';
 import { getDb } from '../../../../../../infra/db';
 import { metricsDailyRepository } from '../../../../../../modules/metrics/metrics-daily.repository';
 import { tenantRepository } from '../../../../../../infra/repositories/tenant.repository';
 import { redisClient } from '../../../../../../infra/redis.client';
-import { isDevRuntime, isQaAutomation } from '../../../../../../infra/env/devOnly';
+import { isDevRuntime, isQaAutomation } from '../../../../../../core/config/dev-runtime';
 
 const mockExecute = vi.fn();
 
-vi.mock('../../../../../../modules/billing/requireActivePlan', () => ({
+vi.mock('@/modules/billing', () => ({
   requireActivePlan: vi.fn(),
 }));
 
@@ -43,7 +43,7 @@ vi.mock('../../../../../../infra/logger', () => ({
   },
 }));
 
-vi.mock('../../../../../../infra/env/devOnly', () => ({
+vi.mock('../../../../../../core/config/dev-runtime', () => ({
   isDevRuntime: vi.fn(() => true),
   isQaAutomation: vi.fn(() => false),
 }));
