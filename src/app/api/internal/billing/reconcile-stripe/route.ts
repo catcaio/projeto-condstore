@@ -22,7 +22,7 @@ import { withIdempotency } from '@/lib/http/with-idempotency';
 import { withReplayProtection } from '@/lib/http/with-replay-protection';
 import { withAuditLog } from '@/lib/http/with-audit-log';
 import { getStripe } from '../../../../../core/stripe/stripe-client';
-import { reconcileSubscriptionFromStripe, type LocalSubscription, type ReconcilePatch } from '../../../../../modules/billing/reconcile-stripe';
+import { reconcileSubscriptionFromStripe, type LocalSubscription, type ReconcilePatch } from '@/modules/billing';
 import { structuredLogger } from '../../../../../infra/log/logger';
 import { makeRequestId, attachRequestIdHeader } from '../../../../../infra/http/request-trace';
 import { withJsonBody } from '@/lib/http/with-json-body';

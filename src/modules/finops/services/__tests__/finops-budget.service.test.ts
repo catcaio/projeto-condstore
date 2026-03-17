@@ -17,22 +17,14 @@ import {
     buildFinOpsPayload,
     type RawBudgetRow,
     type UsageEventRow,
-} from '../../../modules/finops/finops-budget.service';
+} from '../finops-budget.service';
 
-// Mocks needed for the cache-key contract test (route + repo have I/O)
-vi.mock('../../../infra/db', () => ({ getDb: vi.fn() }));
-vi.mock('../../../infra/redis.client', () => ({
+// Mocks needed for the repository import used in the cache-key contract test.
+vi.mock('@/infra/db', () => ({ getDb: vi.fn() }));
+vi.mock('@/infra/redis.client', () => ({
     redisClient: { isAvailable: vi.fn().mockReturnValue(false), get: vi.fn(), set: vi.fn() },
 }));
-vi.mock('../../../infra/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
-vi.mock('../../../infra/log/logger', () => ({ structuredLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
-vi.mock('../../../infra/auth/guards', () => ({ requireAdmin: vi.fn() }));
-vi.mock('../../../infra/http/request-trace', () => ({ makeRequestId: vi.fn(() => 'req-x'), attachRequestIdHeader: vi.fn() }));
-vi.mock('../../../infra/http/error-response', () => ({
-    ErrorCode: { DB_ERROR: 'DB_ERROR', AUTH_REQUIRED: 'AUTH_REQUIRED' },
-    errorResponse: vi.fn(),
-    inferErrorCodeFromStatus: vi.fn(),
-}));
+vi.mock('@/infra/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
 
 // ─── computeProjectedDays ─────────────────────────────────────────────────────
 
@@ -178,15 +170,13 @@ describe('buildFinOpsPayload', () => {
 });
 
 // ─── Cache invalidation contract ─────────────────────────────────────────────
-// Verifies that the cache key derivation is consistent between route and repository
+// Verifies the canonical cache key contract exposed by the FinOps module.
 
 describe('finopsCacheKey contract', () => {
-    it('route and repository must agree on the same cache key format', async () => {
-        const { finopsCacheKey: repoKey } = await import('../../../infra/repositories/token-usage-events.repository');
-        const { finopsCacheKey: routeKey } = await import('../../../app/api/cockpit/finops/route');
+    it('module exposes the canonical cache key format', async () => {
+        const { finopsCacheKey: moduleKey } = await import('@/modules/finops/cache-keys');
 
         const tenantId = 'tenant-test-123';
-        expect(repoKey(tenantId)).toBe(routeKey(tenantId));
-        expect(repoKey(tenantId)).toBe('cockpit:finops:tenant-test-123');
+        expect(moduleKey(tenantId)).toBe('cockpit:finops:tenant-test-123');
     });
 });

@@ -4,7 +4,7 @@ import { getDb } from '../../../../../infra/db';
 import { logger } from '../../../../../infra/logger';
 import { redisClient } from '../../../../../infra/redis.client';
 import { requireAdmin } from '../../../../../infra/auth/guards';
-import { requireActivePlan } from '../../../../../modules/billing/requireActivePlan';
+import { requireActivePlan } from '@/modules/billing';
 import { isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '../../../../../modules/metrics/attribution-breakdown';
 import { metricsDailyRepository } from '../../../../../modules/metrics/metrics-daily.repository';
 import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/request-trace';
@@ -18,7 +18,7 @@ import {
   parseWindow as parseWindowDays,
   type MetricsWindowPreset,
 } from '../../../../../infra/time/window';
-import { isDevRuntime, isQaAutomation } from '../../../../../infra/env/devOnly';
+import { isDevRuntime, isQaAutomation } from '../../../../../core/config/dev-runtime';
 
 export const runtime = 'nodejs';
 

@@ -22,7 +22,7 @@ import {
     upgradeTenantPlan,
     getActivePlans,
     BillingServiceError,
-} from '../../../../../modules/billing/billing.service';
+} from '@/modules/billing';
 import { withJsonBody } from '@/lib/http/with-json-body';
 import { z } from 'zod';
 import { withDistributedLock } from '@/lib/infra/distributed-lock';

@@ -2,7 +2,7 @@ import { getDb } from '../../../../infra/db';
 import { tenantDocuments, tenantDocumentVersions, tenantKnowledgeQueries, messages, webhookEvents, tenantCollections } from '../../../../drizzle/schema';
 import { eq, count, and, desc, sql } from 'drizzle-orm';
 import { redisClient } from '../../../../infra/redis.client';
-import { planEnforcementService } from '../../../../modules/finops/plan-enforcement.service';
+import { planEnforcementService } from '@/modules/finops';
 import { knowledgeStorage } from '../../../../modules/knowledge/storage';
 import { logger } from '../../../../infra/logger';
 

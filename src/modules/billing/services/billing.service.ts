@@ -7,7 +7,7 @@
 
 import { randomUUID } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
-import { getDb } from '../../infra/db';
+import { getDb } from '@/infra/db';
 import {
     plans,
     tenantSubscriptions,
@@ -16,10 +16,10 @@ import {
     finopsLockEvents,
     type PlanRecord,
     type TenantSubscriptionRecord,
-} from '../../drizzle/schema';
-import { redisClient } from '../../infra/redis.client';
-import { finopsCacheKey } from '../../infra/repositories/token-usage-events.repository';
-import { logger } from '../../infra/logger';
+} from '@/drizzle/schema';
+import { redisClient } from '@/infra/redis.client';
+import { finopsCacheKey } from '@/modules/finops/cache-keys';
+import { logger } from '@/infra/logger';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

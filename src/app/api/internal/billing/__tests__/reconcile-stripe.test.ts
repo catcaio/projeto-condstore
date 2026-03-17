@@ -76,7 +76,7 @@ vi.mock('../../../../../core/stripe/stripe-client', () => ({
     isStripeEnabled: vi.fn(() => true),
 }));
 
-vi.mock('../../../../../modules/billing/reconcile-stripe', async (importOriginal) => {
+vi.mock('@/modules/billing', async (importOriginal) => {
     return await importOriginal();
 });
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { planEnforcementService } from '../plan-enforcement.service';
-import { tenantRepository } from '../../../infra/repositories/tenant.repository';
+import { tenantRepository } from '@/infra/repositories/tenant.repository';
 
 // Note: Using vi.mock directly since planEnforcementService manages its own getDb call, 
 // but we just mock getTenantUsage directly to test enforcePlanLimit logic easily

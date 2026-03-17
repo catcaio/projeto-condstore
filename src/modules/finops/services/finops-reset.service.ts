@@ -1,14 +1,14 @@
 import { randomUUID } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
-import { getDb } from '../../infra/db';
+import { getDb } from '@/infra/db';
 import {
     tenantBudgets,
     finopsMonthlyResets,
     finopsLockEvents,
-} from '../../drizzle/schema';
-import { logger } from '../../infra/logger';
-import { redisClient } from '../../infra/redis.client';
-import { finopsCacheKey } from '../../infra/repositories/token-usage-events.repository';
+} from '@/drizzle/schema';
+import { logger } from '@/infra/logger';
+import { redisClient } from '@/infra/redis.client';
+import { finopsCacheKey } from '@/modules/finops/cache-keys';
 
 /**
  * Retorna o "reset month" formatado como YYYY-MM

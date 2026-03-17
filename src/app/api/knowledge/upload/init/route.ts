@@ -4,7 +4,7 @@ import { tenantDocuments, tenantDocumentVersions } from '@/drizzle/schema';
 import { requireKnowledgePermission } from '@/modules/knowledge/rbac';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { knowledgeStorage } from '@/modules/knowledge/storage';
-import { planEnforcementService } from '@/modules/finops/plan-enforcement.service';
+import { planEnforcementService } from '@/modules/finops';
 import { eq, and, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { makeRequestId } from '@/infra/http/request-trace';

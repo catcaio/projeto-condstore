@@ -3,7 +3,7 @@ import { Progress, Badge } from '@/ui/components';
 import { DollarSign, Activity } from 'lucide-react';
 import { getUsageSummary } from '../queries';
 import { EmptyUsage } from './empty-states';
-import { planEnforcementService } from '../../../../modules/finops/plan-enforcement.service';
+import { planEnforcementService } from '@/modules/finops';
 
 const statusVariants: Record<string, "success" | "danger" | "muted" | "outline"> = {
     unlocked: 'success',
