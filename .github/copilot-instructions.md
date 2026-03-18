@@ -2,7 +2,7 @@
 
 ## Regras obrigatórias
 
-- Nunca alterar código em /src/core sem validação explícita
+- Nunca alterar código em `src/core/` sem validação explícita
 - Nunca quebrar isolamento de tenant
 - Nunca acessar dados entre tenants
 - Sempre manter tipagem TypeScript estrita
