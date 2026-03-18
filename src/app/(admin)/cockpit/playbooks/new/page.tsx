@@ -1,5 +1,5 @@
-import { GovernanceShell } from '@/modules/governance/components/governance-shell';
-import { PlaybookEditor } from '@/modules/playbooks/components/playbook-editor';
+import { GovernanceShell } from '@/modules/governance';
+import { PlaybookEditor } from '@/modules/playbooks';
 
 export const dynamic = 'force-dynamic';
 

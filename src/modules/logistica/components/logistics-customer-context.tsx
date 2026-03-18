@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/ui/components';
 import { SectionHeader, SurfacePanel } from '@/ui/foundation';
-import { ClientTags } from '@/modules/clientes/components/client-tags';
+import { ClientTags } from '@/modules/clientes';
 import type { LogisticsRecord } from '../mock-data';
 
 function InfoLine({ label, value }: { label: string; value: string }) {
