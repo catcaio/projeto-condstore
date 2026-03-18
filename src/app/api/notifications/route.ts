@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { notificationsService } from '@/services/notifications.service';
+import { requireSession } from '@/infra/auth/guards';
 
 export async function GET(request: NextRequest) {
+    const sessionResult = await requireSession(request);
+    if (!sessionResult.ok) return sessionResult.response;
+
+    const { tenantId, sub: userId } = sessionResult.session;
     const { searchParams } = new URL(request.url);
-
-    const tenantId = searchParams.get('tenantId');
-    const userId = searchParams.get('userId');
-
-    if (!tenantId || !userId) {
-        return NextResponse.json(
-            { error: 'tenantId and userId are required' },
-            { status: 400 },
-        );
-    }
 
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
 
@@ -31,15 +26,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+    const sessionResult = await requireSession(request);
+    if (!sessionResult.ok) return sessionResult.response;
+
+    const { tenantId, sub: userId } = sessionResult.session;
     const body = await request.json();
 
-    const { tenantId, notificationId, markAllRead, userId } = body;
+    const { notificationId, markAllRead } = body;
 
-    if (!tenantId) {
-        return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });
-    }
-
-    if (markAllRead && userId) {
+    if (markAllRead) {
         await notificationsService.markAllAsRead({ tenantId, userId });
         return NextResponse.json({ ok: true });
     }
@@ -49,5 +44,5 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ ok: true });
     }
 
-    return NextResponse.json({ error: 'notificationId or markAllRead+userId required' }, { status: 400 });
+    return NextResponse.json({ error: 'notificationId or markAllRead required' }, { status: 400 });
 }

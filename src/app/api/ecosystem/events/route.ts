@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
+import { requireSession } from '@/infra/auth/guards';
 
 export async function GET(request: NextRequest) {
-    const { searchParams } = new URL(request.url);
+    const sessionResult = await requireSession(request);
+    if (!sessionResult.ok) return sessionResult.response;
 
-    const tenantId = searchParams.get('tenantId');
-    if (!tenantId) {
-        return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });
-    }
+    const { tenantId } = sessionResult.session;
+    const { searchParams } = new URL(request.url);
 
     const events = await ecosystemEventsService.getEvents({
         tenantId,

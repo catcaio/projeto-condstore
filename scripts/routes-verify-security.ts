@@ -25,6 +25,18 @@ const PROTECTED_PREFIXES: { prefix: string; guards: string[] }[] = [
         prefix: '/api/tenants/',
         guards: ['requireSessionTenantMatch', 'requireAdmin', 'requireInternalToken'],
     },
+    {
+        prefix: '/api/search',
+        guards: ['requireSession', 'requireAdminSession', 'requireAdmin'],
+    },
+    {
+        prefix: '/api/notifications',
+        guards: ['requireSession', 'requireAdminSession', 'requireAdmin'],
+    },
+    {
+        prefix: '/api/ecosystem/events',
+        guards: ['requireSession', 'requireAdminSession', 'requireAdmin'],
+    },
 ];
 
 /**
