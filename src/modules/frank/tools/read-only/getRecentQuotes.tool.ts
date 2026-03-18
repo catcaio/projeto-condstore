@@ -1,5 +1,5 @@
-import { getRecentOrdersForCustomer } from '@/modules/pedidos/order.repository';
-import { getQuoteContext } from '@/modules/freight/quote-context.repository';
+import { getRecentOrdersForCustomer } from '@/modules/pedidos/server';
+import { getQuoteContext } from '@/modules/freight/server';
 import { executeFrankTool } from '../tool-guard';
 import { buildQuoteRouteSummary, clampSupportLimit } from './shared';
 
