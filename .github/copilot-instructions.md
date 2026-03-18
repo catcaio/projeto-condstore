@@ -11,11 +11,9 @@
 
 ## Arquitetura
 
-- Respeitar separação:
-  - core
-  - modules
-  - app
-  - infra
+- Respeitar a separação de camadas definida em `docs/architecture/module-boundaries.md` (ver seção **"Camadas do Sistema"**).
+- Considerar todas as camadas descritas nesse documento como fonte de verdade (por exemplo: `core`, `modules`, `app`, `infra`, `src/lib/`, `src/domine/`).
+- Quando em dúvida sobre a camada correta para um código, consultar primeiro `docs/architecture/module-boundaries.md`.
 
 - Não misturar responsabilidades entre camadas
 - Não criar dependência circular
