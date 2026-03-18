@@ -25,6 +25,18 @@ const PROTECTED_PREFIXES: { prefix: string; guards: string[] }[] = [
         prefix: '/api/tenants/',
         guards: ['requireSessionTenantMatch', 'requireAdmin', 'requireInternalToken'],
     },
+    {
+        prefix: '/api/search',
+        guards: ['requireSession', 'requireAdminSession', 'requireAdmin'],
+    },
+    {
+        prefix: '/api/notifications',
+        guards: ['requireSession', 'requireAdminSession', 'requireAdmin'],
+    },
+    {
+        prefix: '/api/ecosystem/events',
+        guards: ['requireSession', 'requireAdminSession', 'requireAdmin'],
+    },
 ];
 
 /**
@@ -55,6 +67,16 @@ function findRouteFiles(dir: string, baseRoute: string = ''): { routePath: strin
     return results;
 }
 
+function routeMatchesProtectedPrefix(routePath: string, prefix: string): boolean {
+    // Prefixes ending with '/' already include a path boundary; keep existing semantics
+    if (prefix.endsWith('/')) {
+        return routePath.startsWith(prefix);
+    }
+
+    // For prefixes without trailing '/', enforce a segment boundary to avoid over-matching
+    return routePath === prefix || routePath.startsWith(prefix + '/');
+}
+
 function verifyRouteSecurity() {
     console.log('🔒 Verifying security guardrails on protected routes...');
 
@@ -63,7 +85,7 @@ function verifyRouteSecurity() {
 
     for (const { routePath, filePath } of allRoutes) {
         // Check if this route falls under a protected prefix
-        const rule = PROTECTED_PREFIXES.find(p => routePath.startsWith(p.prefix));
+        const rule = PROTECTED_PREFIXES.find(p => routeMatchesProtectedPrefix(routePath, p.prefix));
         if (!rule) continue;
 
         const content = fs.readFileSync(filePath, 'utf-8');
@@ -83,7 +105,9 @@ function verifyRouteSecurity() {
         process.exit(1);
     }
 
-    const protectedCount = allRoutes.filter(r => PROTECTED_PREFIXES.some(p => r.routePath.startsWith(p.prefix))).length;
+    const protectedCount = allRoutes.filter(r =>
+        PROTECTED_PREFIXES.some(p => routeMatchesProtectedPrefix(r.routePath, p.prefix)),
+    ).length;
     console.log(`✅ All ${protectedCount} protected routes have security guardrails.`);
     process.exit(0);
 }

@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchService } from '@/services/search.service';
+import { requireSession } from '@/infra/auth/guards';
 
 export async function GET(request: NextRequest) {
+    const sessionResult = await requireSession(request);
+    if (!sessionResult.ok) return sessionResult.response;
+
+    const { tenantId } = sessionResult.session;
     const { searchParams } = new URL(request.url);
 
-    const tenantId = searchParams.get('tenantId');
     const query = searchParams.get('q');
 
-    if (!tenantId || !query) {
+    if (!query) {
         return NextResponse.json(
-            { error: 'tenantId and q are required' },
+            { error: 'q is required' },
             { status: 400 },
         );
     }
