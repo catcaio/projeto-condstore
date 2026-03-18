@@ -325,6 +325,7 @@
 | `/planos/envios` | Page |
 | `/plataforma` | Page |
 | `/plataforma/cockpit` | Page |
+| `/pricing` | Page |
 | `/privacidade` | Page |
 | `/produtos/crm` | Page |
 | `/produtos/domine` | Page |
