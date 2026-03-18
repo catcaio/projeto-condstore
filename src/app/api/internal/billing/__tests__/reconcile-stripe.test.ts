@@ -12,7 +12,7 @@
  *   5) dryRun => não persiste, mas retorna patches
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -122,8 +122,12 @@ describe('POST /api/internal/billing/reconcile-stripe', () => {
         _mockDbRows = [];
         _updateCapture.length = 0;
         _mockStripeSubResponse = {};
-        process.env.INTERNAL_JOB_TOKEN = 'valid-token';
+        vi.stubEnv('INTERNAL_JOB_TOKEN', 'valid-token');
         vi.mocked(getDb).mockImplementation(() => Promise.resolve(makeMockDb() as any));
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
     });
 
     it('returns 401 without valid x-internal-token', async () => {
