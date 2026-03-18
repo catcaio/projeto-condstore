@@ -82,6 +82,24 @@ describe('internal auth contract', () => {
     expect(result.ok).toBe(true);
   });
 
+  it('keeps local/dev boot coherent with session AUTH_SECRET fallback', () => {
+    process.env.NODE_ENV = 'development';
+    delete process.env.AUTH_SECRET;
+
+    expect(() => assertCriticalEnvSetup()).not.toThrow();
+  });
+
+  it('still requires AUTH_SECRET in strict runtimes', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.VERCEL_ENV = 'production';
+    process.env.INTERNAL_DIAG_TOKEN = 'diag-secret';
+    process.env.INTERNAL_EXPORT_TOKEN = 'export-secret';
+    process.env.INTERNAL_JOB_TOKEN = 'job-secret';
+    delete process.env.AUTH_SECRET;
+
+    expect(() => assertCriticalEnvSetup()).toThrow(/AUTH_SECRET/);
+  });
+
   it('fails early in strict runtime when critical internal tokens are missing', () => {
     process.env.NODE_ENV = 'production';
     process.env.VERCEL_ENV = 'preview';

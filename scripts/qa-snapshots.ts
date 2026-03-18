@@ -137,12 +137,16 @@ async function runQa() {
 
     type TargetAssert = { string?: string; testId?: string; description: string };
     type Target = { name: string; url: string; headers?: Record<string, string>; asserts: TargetAssert[] };
+    const prodLoginAssert = {
+        testId: 'login-build-label',
+        description: 'Redirected to login due to missing valid prod session (Expected behavior)',
+    } satisfies TargetAssert;
 
     const targets: Target[] = [
         {
             name: 'audit',
             url: `${BASE_URL}/cockpit/audit?status=success&page=2`,
-            asserts: isProdMode ? [ { string: 'Entre com', description: 'Redirected to login due to missing valid prod session (Expected behavior)' } ] : [
+            asserts: isProdMode ? [prodLoginAssert] : [
                 { string: 'Audit Logs', description: 'PageHeader Title rendered' },
                 { string: 'Eventos do Sistema', description: 'Table Summary text rendered' }
             ]
@@ -150,7 +154,7 @@ async function runQa() {
         {
             name: 'acquisition',
             url: `${BASE_URL}/cockpit/acquisition?groupBy=utm_campaign&q=summer&page=2`,
-            asserts: isProdMode ? [ { string: 'Entre com', description: 'Redirected to login due to missing valid prod session (Expected behavior)' } ] : [
+            asserts: isProdMode ? [prodLoginAssert] : [
                 { string: 'Acquisition (UTM)', description: 'PageHeader Title rendered' },
                 { string: 'summer', description: 'Query value reflected in HTML' },
                 { string: 'utm_campaign', description: 'Grouping reflected in HTML' }
@@ -160,7 +164,7 @@ async function runQa() {
             name: 'drilldown',
             url: `${BASE_URL}/cockpit/acquisition/drilldown?groupBy=utm_campaign&utm_campaign=summer_sale`,
             headers: headers,
-            asserts: isProdMode ? [ { string: 'Entre com', description: 'Redirected to login due to missing valid prod session (Expected behavior)' } ] : [
+            asserts: isProdMode ? [prodLoginAssert] : [
                 { string: 'Detalhes de Aquisição', description: 'Drilldown Page Title rendered' },
                 { string: 'Mostrando', description: 'Drilldown DataTable rendering text' }
             ]
@@ -169,7 +173,7 @@ async function runQa() {
             name: 'acquisition_no_plan',
             url: `${BASE_URL}/cockpit/acquisition`,
             headers: headersNoPlan,
-            asserts: isProdMode ? [ { string: 'Entre com', description: 'Redirected to login due to missing valid prod session (Expected behavior)' } ] : [
+            asserts: isProdMode ? [prodLoginAssert] : [
                 { string: 'Plano necessário', description: 'Access Gate Block Rendered for missing plan' }
             ]
         },
@@ -177,7 +181,7 @@ async function runQa() {
             name: 'audit_no_role',
             url: `${BASE_URL}/cockpit/audit`,
             headers: headersNoRole,
-            asserts: isProdMode ? [ { string: 'Entre com', description: 'Redirected to login due to missing valid prod session (Expected behavior)' } ] : [
+            asserts: isProdMode ? [prodLoginAssert] : [
                 { string: 'Sem permissão', description: 'Access Gate Block Rendered for insufficient role' }
             ]
         },
@@ -185,7 +189,7 @@ async function runQa() {
             name: 'acquisition_error',
             url: `${BASE_URL}/cockpit/acquisition?groupBy=UNSUPPORTED_GROUPING`,
             headers: headers,
-            asserts: isProdMode ? [ { string: 'Entre com', description: 'Redirected to login due to missing valid prod session (Expected behavior)' } ] : [
+            asserts: isProdMode ? [prodLoginAssert] : [
                 { string: 'Erro ao carregar', description: 'Server Error State Rendered for failed fetch' }
             ]
         },
@@ -227,8 +231,8 @@ async function runQa() {
             const res = await fetch(target.url, { headers: currentHeaders });
             let html = await res.text();
             
-            // NextJS redirects protected pages to /login. If hit, we intercept the redirect or the content of the login page
-            // The assertion "Entre com" corresponds to the login page form header.
+            // NextJS redirects protected pages to /login. We assert against a stable login QA marker
+            // instead of localized button copy to keep safe-mode snapshots resilient.
 
             // Save html snapshot
             const filePath = path.join(artifactsDir, `${target.name}.html`);

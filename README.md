@@ -117,6 +117,8 @@ npm run test:ci
 
 ### Internal Auth Contract
 
+> Este contrato centralizado cobre **tokens internos por propósito**. Ele não redefine toda a política global de config/auth do sistema.
+
 **Official env names**
 - `INTERNAL_DIAG_TOKEN` → propósito `diag`.
 - `INTERNAL_EXPORT_TOKEN` → propósito `export`.
@@ -132,6 +134,8 @@ npm run test:ci
 - Middleware e guards compartilham o mesmo contrato: `x-internal-token`/`?token=` para `diag`, `export` e `jobs`; `x-qa-token` (ou alias legado `x-qa-bootstrap`) para `qa_bootstrap`.
 - Em runtimes strict (`NODE_ENV=production`, `VERCEL_ENV=preview|production` ou `APP_ENV=staging`), a aplicação falha cedo se `INTERNAL_DIAG_TOKEN`, `INTERNAL_EXPORT_TOKEN` ou `INTERNAL_JOB_TOKEN` não estiverem configurados.
 - Em desenvolvimento, o fallback efêmero continua restrito ao par `diag/export` e não mascara o comportamento de staging/produção.
+- `/api/internal/*` permanece fail-closed sem token mesmo em desenvolvimento; o que continua flexível em dev é apenas o fallback efêmero usado por fluxos server-side de `diag/export`.
+- A política atual de `AUTH_SECRET` não mudou nesta PR: ele continua obrigatório em runtimes strict, enquanto o fallback local de `src/infra/auth/session.ts` segue preservado fora deles.
 
 ## Deployment
 

@@ -18,10 +18,10 @@ export function assertCriticalEnvSetup() {
     if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') return;
 
     requireEnv('DATABASE_URL');
-    requireEnv('AUTH_SECRET');
     requireEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000');
 
     if (isStrictRuntimeEnvironment()) {
+        requireEnv('AUTH_SECRET');
         const missingInternalTokenEnvs = getMissingCriticalInternalTokenEnvs();
         if (missingInternalTokenEnvs.length > 0) {
             throw new Error(
