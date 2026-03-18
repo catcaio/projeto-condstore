@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest) {
 
     const { notificationId, markAllRead } = body;
 
-    if (markAllRead) {
+    if (markAllRead === true) {
         await notificationsService.markAllAsRead({ tenantId, userId });
         return NextResponse.json({ ok: true });
     }
