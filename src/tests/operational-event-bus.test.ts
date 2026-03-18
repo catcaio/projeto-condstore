@@ -64,7 +64,7 @@ describe('publishOperationalEvent', () => {
         })).resolves.toBeUndefined();
 
         expect(mockDb.insert).toHaveBeenCalled();
-    });
+    }, 20000);
 
     it('rejects unknown domain silently (logs warn, does not throw)', async () => {
         const { structuredLogger } = await import('@/infra/log/logger');

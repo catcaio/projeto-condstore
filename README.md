@@ -104,10 +104,38 @@ npm run test:ci
 | `AUTH_SECRET` | JWT session signing |
 | `PII_ENCRYPTION_KEY` | AES-256-GCM key for PII encryption |
 | `REDIS_URL` | Cache, rate limiting, session support |
-| `INTERNAL_DIAG_TOKEN` | Internal API authentication |
+| `INTERNAL_DIAG_TOKEN` | Official token for diagnostics/health endpoints |
+| `INTERNAL_EXPORT_TOKEN` | Official token for export/read-only internal flows |
+| `INTERNAL_JOB_TOKEN` | Official token for jobs/cron/internal workers |
+| `INTERNAL_TOKEN` | Legacy alias accepted only for `jobs` routes |
+| `QA_BOOTSTRAP_TOKEN` | QA bootstrap token for `/api/internal/qa/*` |
+| `BOOTSTRAP_TOKEN` | Extra bootstrap header required only by guarded bootstrap flows |
 | `TWILIO_AUTH_TOKEN` | WhatsApp webhook signature verification |
 | `STRIPE_SECRET_KEY` | Payment webhook verification |
 | `MELHORENVIO_TOKEN` | Freight API integration |
+
+
+### Internal Auth Contract
+
+> Este contrato centralizado cobre **tokens internos por propósito**. Ele não redefine toda a política global de config/auth do sistema.
+
+**Official env names**
+- `INTERNAL_DIAG_TOKEN` → propósito `diag`.
+- `INTERNAL_EXPORT_TOKEN` → propósito `export`.
+- `INTERNAL_JOB_TOKEN` → propósito `jobs`.
+- `QA_BOOTSTRAP_TOKEN` → propósito `qa_bootstrap` para `/api/internal/qa/*`.
+- `BOOTSTRAP_TOKEN` → segundo fator adicional apenas para fluxos que chamam `requireInternalAuth(..., { requireBootstrapToken: true })`.
+
+**Legacy aliases**
+- `INTERNAL_TOKEN` é legado e continua aceito somente para propósito `jobs`.
+- Header `x-qa-bootstrap` continua aceito como alias legado de `x-qa-token`.
+
+**Usage rules by purpose**
+- Middleware e guards compartilham o mesmo contrato: `x-internal-token`/`?token=` para `diag`, `export` e `jobs`; `x-qa-token` (ou alias legado `x-qa-bootstrap`) para `qa_bootstrap`.
+- Em runtimes strict (`NODE_ENV=production`, `VERCEL_ENV=preview|production` ou `APP_ENV=staging`), a aplicação falha cedo se `INTERNAL_DIAG_TOKEN`, `INTERNAL_EXPORT_TOKEN` ou `INTERNAL_JOB_TOKEN` não estiverem configurados.
+- Em desenvolvimento, o fallback efêmero continua restrito ao par `diag/export` e não mascara o comportamento de staging/produção.
+- `/api/internal/*` permanece fail-closed sem token mesmo em desenvolvimento; o que continua flexível em dev é apenas o fallback efêmero usado por fluxos server-side de `diag/export`.
+- A política atual de `AUTH_SECRET` não mudou nesta PR: ele continua obrigatório em runtimes strict, enquanto o fallback local de `src/infra/auth/session.ts` segue preservado fora deles.
 
 ## Deployment
 

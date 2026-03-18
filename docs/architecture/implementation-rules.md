@@ -196,7 +196,7 @@ await emitEvent({
 
 1. `AUTH_SECRET`: Chave HS256 para JWT. Em produção, obrigatório — boot falha sem ela
 2. `PII_ENCRYPTION_KEY`: Chave AES-256-GCM. Em produção, obrigatório
-3. `INTERNAL_API_TOKEN`: Token para rotas internal. Validação fail-closed
+3. `INTERNAL_DIAG_TOKEN` / `INTERNAL_EXPORT_TOKEN` / `INTERNAL_JOB_TOKEN`: tokens oficiais por propósito para rotas internal. `INTERNAL_TOKEN` é apenas alias legado para jobs. Validação fail-closed
 4. Secrets nunca logados — logger auto-redact
 
 ### Rate Limiting

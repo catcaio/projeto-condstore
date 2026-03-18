@@ -104,7 +104,7 @@ As API routes seguem 5 padrões de autenticação e escopo:
 |---|---|---|---|
 | **Public** | `/api/public/*` | Nenhuma | `/api/public/cotacao/quotes`, `/api/public/events` |
 | **Cockpit** | `/api/cockpit/*` | Session cookie (any role) | `/api/cockpit/metrics`, `/api/cockpit/analytics/*` |
-| **Internal** | `/api/internal/*` | Internal token (`INTERNAL_API_TOKEN`) | `/api/internal/diag`, `/api/internal/jobs/*` |
+| **Internal** | `/api/internal/*` | Internal tokens por propósito (`INTERNAL_DIAG_TOKEN`, `INTERNAL_EXPORT_TOKEN`, `INTERNAL_JOB_TOKEN`) | `/api/internal/diag`, `/api/internal/jobs/*` |
 | **Tenant-scoped** | `/api/tenants/[tenantId]/*` | Session cookie + tenant match | `/api/tenants/[tenantId]/settings`, `/api/tenants/[tenantId]/domine/*` |
 | **Webhook** | `/api/webhook/*` | Signature verification | `/api/webhook/stripe` (Stripe sig), `/api/whatsapp/*` (Twilio sig) |
 

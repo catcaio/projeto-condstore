@@ -62,11 +62,6 @@ vi.mock('../../../../../infra/http/request-trace', () => ({
     attachRequestIdHeader: vi.fn((res: any) => res),
 }));
 
-vi.mock('../../../../../infra/config/internal-token', () => ({
-    isInternalTokenAuthorized: vi.fn((token: string) => token === 'valid-token'),
-    getInternalExportTokenOrThrow: vi.fn(() => 'valid-token'),
-}));
-
 vi.mock('../../../../../core/stripe/stripe-client', () => ({
     getStripe: vi.fn(() => ({
         subscriptions: {
@@ -127,6 +122,7 @@ describe('POST /api/internal/billing/reconcile-stripe', () => {
         _mockDbRows = [];
         _updateCapture.length = 0;
         _mockStripeSubResponse = {};
+        process.env.INTERNAL_JOB_TOKEN = 'valid-token';
         vi.mocked(getDb).mockImplementation(() => Promise.resolve(makeMockDb() as any));
     });
 

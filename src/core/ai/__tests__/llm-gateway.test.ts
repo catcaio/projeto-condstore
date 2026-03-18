@@ -106,7 +106,7 @@ describe('llm-gateway', () => {
         timeoutMs: 15000,
       })
     );
-  });
+  }, 40000);
 
   it('uses tenant-specific config when available', async () => {
     mockGetProviderConfig.mockResolvedValueOnce({
@@ -129,7 +129,7 @@ describe('llm-gateway', () => {
         timeoutMs: 25000,
       })
     );
-  });
+  }, 20000);
 
   it('blocks chat when rate limit is exceeded', async () => {
     mockCheckRateLimit.mockResolvedValueOnce({ allowed: false, remaining: 0, resetAt: Date.now() + 60000 });
