@@ -12,7 +12,7 @@
  *   5) dryRun => não persiste, mas retorna patches
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -60,11 +60,6 @@ vi.mock('../../../../../infra/log/logger', () => ({
 vi.mock('../../../../../infra/http/request-trace', () => ({
     makeRequestId: vi.fn(() => 'req-reconcile-test'),
     attachRequestIdHeader: vi.fn((res: any) => res),
-}));
-
-vi.mock('../../../../../infra/config/internal-token', () => ({
-    isInternalTokenAuthorized: vi.fn((token: string) => token === 'valid-token'),
-    getInternalExportTokenOrThrow: vi.fn(() => 'valid-token'),
 }));
 
 vi.mock('../../../../../core/stripe/stripe-client', () => ({
@@ -127,7 +122,12 @@ describe('POST /api/internal/billing/reconcile-stripe', () => {
         _mockDbRows = [];
         _updateCapture.length = 0;
         _mockStripeSubResponse = {};
+        vi.stubEnv('INTERNAL_JOB_TOKEN', 'valid-token');
         vi.mocked(getDb).mockImplementation(() => Promise.resolve(makeMockDb() as any));
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
     });
 
     it('returns 401 without valid x-internal-token', async () => {

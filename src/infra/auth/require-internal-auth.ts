@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireInternalToken, type InternalTokenPurpose } from './tenant-route-guard';
 import { requireAdmin } from './guards';
-import { safeCompare } from '@/lib/security/safe-compare';
+import {
+  extractInternalRequestCredentials,
+  isBootstrapTokenAuthorized,
+  isDevRuntimeEnvironment,
+  isStrictRuntimeEnvironment,
+} from '@/infra/config/internal-token-contract';
 import { structuredLogger } from '@/infra/log/logger';
 
 export type InternalAuthResult =
@@ -13,30 +18,20 @@ export interface InternalAuthOptions {
     purpose?: InternalTokenPurpose[];
     /** Require BOOTSTRAP_TOKEN header in addition to internal token */
     requireBootstrapToken?: boolean;
-    /** Block this route entirely in production (VERCEL_ENV=production) */
+    /** Block this route entirely in production/staging runtimes */
     blockInProduction?: boolean;
-    /** Block this route unless running in dev mode (NODE_ENV=development) */
+    /** Block this route unless running in dev mode */
     blockUnlessDev?: boolean;
-}
-
-function isProductionEnv(): boolean {
-    return process.env.VERCEL_ENV === 'production';
-}
-
-function isDevEnv(): boolean {
-    return process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'development';
 }
 
 /**
  * Unified internal auth guard.
  *
  * Tries, in order:
- * 1. Environment blocks (prod / dev-only)
- * 2. Internal token (x-internal-token header or ?token=)
+ * 1. Environment blocks (strict runtime / dev-only)
+ * 2. Internal token (x-internal-token or purpose-specific QA token)
  *    - Optionally validates x-bootstrap-token as well
  * 3. Fallback: admin session cookie
- *
- * At least one must pass; otherwise returns 401.
  */
 export async function requireInternalAuth(
     request: NextRequest,
@@ -44,8 +39,7 @@ export async function requireInternalAuth(
 ): Promise<InternalAuthResult> {
     const { purpose = ['any'], requireBootstrapToken = false, blockInProduction = false, blockUnlessDev = false } = options;
 
-    // ── Environment gates ────────────────────────────────────────────
-    if (blockInProduction && isProductionEnv()) {
+    if (blockInProduction && isStrictRuntimeEnvironment()) {
         structuredLogger.warn('internal_auth_blocked_production', {
             route: request.nextUrl.pathname,
             eventType: 'internal_auth',
@@ -59,7 +53,7 @@ export async function requireInternalAuth(
         };
     }
 
-    if (blockUnlessDev && !isDevEnv()) {
+    if (blockUnlessDev && !isDevRuntimeEnvironment()) {
         return {
             ok: false,
             response: NextResponse.json(
@@ -69,16 +63,12 @@ export async function requireInternalAuth(
         };
     }
 
-    // ── Internal token path ──────────────────────────────────────────
+    const credentials = extractInternalRequestCredentials(request);
     const tokenResult = requireInternalToken(request, { purpose });
 
     if (tokenResult.ok) {
-        // If bootstrap token is also required, validate it separately
         if (requireBootstrapToken) {
-            const bootstrapToken = request.headers.get('x-bootstrap-token');
-            const expectedBootstrapToken = process.env.BOOTSTRAP_TOKEN;
-
-            if (!expectedBootstrapToken) {
+            if (!process.env.BOOTSTRAP_TOKEN?.trim()) {
                 return {
                     ok: false,
                     response: NextResponse.json(
@@ -88,7 +78,7 @@ export async function requireInternalAuth(
                 };
             }
 
-            if (!safeCompare(bootstrapToken, expectedBootstrapToken)) {
+            if (!isBootstrapTokenAuthorized(credentials.bootstrapToken)) {
                 structuredLogger.warn('internal_auth_bootstrap_token_mismatch', {
                     route: request.nextUrl.pathname,
                     eventType: 'internal_auth',
@@ -106,26 +96,11 @@ export async function requireInternalAuth(
         return { ok: true, source: 'internal_token' };
     }
 
-    // ── QA token path (for qa_bootstrap purpose) ─────────────────────
-    if (purpose.includes('qa_bootstrap') || purpose.includes('any')) {
-        const qaToken = request.headers.get('x-qa-token') || request.nextUrl.searchParams.get('token');
-        const serverQaToken = process.env.QA_BOOTSTRAP_TOKEN?.trim()
-            || (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
-                ? process.env.INTERNAL_TOKEN?.trim()
-                : undefined);
-
-        if (serverQaToken && qaToken && safeCompare(qaToken, serverQaToken)) {
-            return { ok: true, source: 'bootstrap_token' };
-        }
-    }
-
-    // ── Admin session fallback ───────────────────────────────────────
     const adminResult = await requireAdmin(request);
     if (adminResult.ok) {
         return { ok: true, source: 'admin_session', tenantId: adminResult.session.tenantId };
     }
 
-    // ── All paths failed ─────────────────────────────────────────────
     return {
         ok: false,
         response: NextResponse.json(
