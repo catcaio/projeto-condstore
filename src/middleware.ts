@@ -1,6 +1,9 @@
 import { jwtVerify, type JWTPayload } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
-import { safeCompare } from './lib/security/safe-compare';
+import {
+    extractInternalRequestCredentials,
+    isInternalTokenAuthorizedForPurpose,
+} from './infra/config/internal-token-contract';
 import { logEdgeSecurityEvent } from './lib/security/edge-logger';
 
 const SESSION_COOKIE_NAME = 'condstore_session';
@@ -95,9 +98,6 @@ function forbiddenJsonResponse(message = 'Forbidden'): NextResponse {
 export async function middleware(req: NextRequest) {
     const pathname = req.nextUrl.pathname;
 
-    // ==========================================
-    // RULE 0: PUBLIC MATCHERS & KILL SWITCH
-    // ==========================================
     if (pathname.startsWith('/api/public/')) {
         if (process.env.PUBLIC_ENDPOINTS_DISABLED === 'true') {
             await logEdgeSecurityEvent({
@@ -111,22 +111,16 @@ export async function middleware(req: NextRequest) {
                 headers: { 'content-type': 'application/json' },
             });
         }
-        // Public endpoints have no token auth, proceed to app router
         return NextResponse.next();
     }
 
-    // Clone headers so we can set/strip things to pass down to Next
     const requestHeaders = new Headers(req.headers);
-
-    // Context for telemetry
     const clientIp = requestHeaders.get('x-forwarded-for');
     const requestId = requestHeaders.get('x-request-id') || 'unknown';
 
-    // Security Hardening: Strip potentially spoofable headers from the incoming client request
     const spoofedHeadersDetected = ['x-tenant-id', 'x-auth-tenant-id', 'x-auth-role', 'x-auth-user-id', 'x-auth-email', 'x-role', 'x-user-id'].some(h => requestHeaders.has(h));
 
     if (spoofedHeadersDetected) {
-        // Technically we are just stripping them, but we want to log the attempt
         await logEdgeSecurityEvent({
             requestId,
             route: pathname,
@@ -143,39 +137,13 @@ export async function middleware(req: NextRequest) {
     requestHeaders.delete('x-role');
     requestHeaders.delete('x-user-id');
 
-    // ==========================================
-    // RULE 1: /api/internal/*
-    // ==========================================
     if (pathname.startsWith('/api/internal/')) {
-        const token = req.headers.get('x-internal-token') || req.headers.get('x-qa-token') || req.nextUrl.searchParams.get('token');
-
-        const diagToken = process.env.INTERNAL_DIAG_TOKEN?.trim();
-        const exportToken = process.env.INTERNAL_EXPORT_TOKEN?.trim();
-        const jobToken = process.env.INTERNAL_JOB_TOKEN?.trim();
-        const internalToken = process.env.INTERNAL_TOKEN?.trim();
-        const qaToken = process.env.QA_BOOTSTRAP_TOKEN?.trim();
-
-        // Specific endpoints that might allow token via QS (e.g. data retention job callback from Vercel cron)
-        // Here we strictly check header or query using the central tokens.
-
-        // Exception specifically for QA automation
-        const isQaBootstrap = pathname === '/api/internal/qa/bootstrap-session' || pathname === '/api/internal/qa/setup';
-        const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
-        const hasGithubHeader = req.headers.get('x-github-actions') === 'true';
-
-        // Exception for local development
-        const isLocalDev = process.env.NODE_ENV === 'development';
-
-        let isAuthorized =
-            isLocalDev ||
-            safeCompare(token, diagToken) ||
-            safeCompare(token, exportToken) ||
-            safeCompare(token, jobToken) ||
-            safeCompare(token, internalToken);
-
-        if (!isAuthorized && isQaBootstrap && isGithubActions && hasGithubHeader && safeCompare(token, qaToken)) {
-            isAuthorized = true;
-        }
+        const credentials = extractInternalRequestCredentials(req);
+        const isAuthorized =
+            isInternalTokenAuthorizedForPurpose('any', credentials) ||
+            (pathname === '/api/internal/qa/bootstrap-session' || pathname === '/api/internal/qa/setup'
+                ? isInternalTokenAuthorizedForPurpose('qa_bootstrap', credentials)
+                : false);
 
         if (!isAuthorized) {
             await logEdgeSecurityEvent({
@@ -190,9 +158,6 @@ export async function middleware(req: NextRequest) {
         return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
-    // ==========================================
-    // RULE 2: Session Check for cockpit, admin, tenants
-    // ==========================================
     const cookieToken = req.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!cookieToken) {
         if (pathname.startsWith('/api/cockpit/') || pathname.startsWith('/api/admin/') || pathname.startsWith('/api/tenants/') || pathname.startsWith('/api/orders/')) {
@@ -205,8 +170,6 @@ export async function middleware(req: NextRequest) {
             return unauthorizedJsonResponse('Missing authentication token');
         }
     }
-
-    // NOTE: If missing but not hitting those above, we'd skip (though matcher prevents this code path)
 
     if (cookieToken) {
         const session = await verifyMiddlewareSessionToken(cookieToken);
@@ -221,16 +184,11 @@ export async function middleware(req: NextRequest) {
             return unauthorizedJsonResponse('Invalid or expired authentication token');
         }
 
-        // Set enriched trusted headers for downstream API handlers
         requestHeaders.set('x-auth-tenant-id', session.tenantId);
         requestHeaders.set('x-auth-user-id', session.sub);
         requestHeaders.set('x-auth-role', session.role);
 
-        // ==========================================
-        // RULE 3: /api/tenants/* 
-        // ==========================================
         if (pathname.startsWith('/api/tenants/')) {
-            // E.g. /api/tenants/tnt-xyz/health
             const segments = pathname.split('/').filter(Boolean);
             const idx = segments.indexOf('tenants');
             const routeTenantId = segments[idx + 1]?.trim();

@@ -47,12 +47,12 @@ describe('Production Smoke Test - Middleware', () => {
         expect(res.status).not.toBe(401);
     });
 
-    it('NÃO bloqueia /api/internal/* em dev', async () => {
+    it('mantem fail-closed em dev quando nenhum token interno é enviado', async () => {
         vi.stubEnv('NODE_ENV', 'development');
 
         const req = new NextRequest('http://localhost:3000/api/internal/diag');
         const res = await middleware(req) as NextResponse;
 
-        expect(res.status).not.toBe(401);
+        expect(res.status).toBe(401);
     });
 });
