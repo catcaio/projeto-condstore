@@ -274,6 +274,7 @@
 | /inbox/conversations/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
 | /login | TBA | public | none | PUBLIC | live | Auto-detected |
 | /painel-logistico | TBA | public | none | PUBLIC | live | Auto-detected |
+| /pricing | Pricing redirect | public | none | PUBLIC | live | Canonical redirect to /planos/envios preserving query string |
 | /planos/crm | TBA | public | none | PUBLIC | live | Auto-detected |
 | /planos/domine | TBA | public | none | PUBLIC | live | Auto-detected |
 | /planos/envios | TBA | public | none | PUBLIC | live | Auto-detected |
