@@ -42,15 +42,23 @@ const DEEP_IMPORT_RE = /from\s+['"]@\/modules\/([^'"\/]+)\/(services|repositorie
 // Matches: from '@/modules/<module>/cache-keys' (specific known deep import)
 const KNOWN_DEEP_IMPORTS_RE = /from\s+['"]@\/modules\/([^'"\/]+)\/(cache-keys)['"]/g;
 
+// ── Architectural Allowlist ──────────────────────────────────────────────
 // Files that are known to have deep imports that require refactor (tracked debt).
 // Each entry MUST have a TODO(boundary) comment explaining the reason and removal path.
-const ALLOWLIST: string[] = [
-  // ── test files (vi.mock paths match regex but are not runtime imports) ─
-  // TODO(boundary): vi.mock() paths in test files match the regex pattern.
-  // These are not actual runtime imports. Consider excluding __tests__/ from enforcement.
-  'src/app/api/webhook/stripe/__tests__/stripe-lifecycle.test.ts',
-  'src/app/api/webhook/stripe/__tests__/stripe-gates.test.ts',
-];
+//
+// STATUS: ✅ EMPTY — All deep-import violations have been resolved.
+//
+// Previous debt eliminated across PRs #141–#146:
+//   - frank tools → pedidos/freight repositories  → resolved via server entrypoints
+//   - atendimento → pedidos services              → resolved via server entrypoints
+//   - app routes → freight adapters               → resolved via server entrypoints
+//   - UI views → frank actions                    → resolved via client entrypoints
+//   - cockpit pages → governance/playbooks        → resolved via client entrypoints
+//   - module views → clientes components          → resolved via client entrypoints
+//   - workspace → cockpit components              → resolved via client entrypoints
+//   - test files (vi.mock)                        → stale entries, scanner now skips vi.mock()
+//
+const ALLOWLIST: string[] = [];
 
 interface Violation {
   file: string;
@@ -111,6 +119,9 @@ function scanFile(filePath: string): Violation[] {
     // Skip comment lines
     const trimmed = line.trim();
     if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+
+    // Skip vi.mock() / jest.mock() lines — these are test-time path references, not runtime imports
+    if (/\b(vi|jest)\.mock\s*\(/.test(trimmed)) continue;
 
     // Check deep imports into internal directories of modules
     let match: RegExpExecArray | null;
@@ -185,7 +196,11 @@ function main() {
   if (allViolations.length === 0) {
     console.log('PASS: No import boundary violations found.');
     console.log(`   Scanned ${files.length} files.`);
-    console.log(`   Allowlisted ${ALLOWLIST.length} files (tracked debt).`);
+    if (ALLOWLIST.length > 0) {
+      console.log(`   Allowlisted ${ALLOWLIST.length} files (tracked debt).`);
+    } else {
+      console.log('   Allowlist is EMPTY — architectural shield is fully active. 🛡️');
+    }
     process.exit(0);
   }
 
