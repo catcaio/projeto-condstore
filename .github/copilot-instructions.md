@@ -20,7 +20,7 @@
 - Não misturar responsabilidades entre camadas
 - Não criar dependência circular
 
-## PR Rules
+## Regras de PR
 
 - PRs devem ser pequenos
 - Uma responsabilidade por PR
