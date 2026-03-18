@@ -45,30 +45,11 @@ const KNOWN_DEEP_IMPORTS_RE = /from\s+['"]@\/modules\/([^'"\/]+)\/(cache-keys)['
 // Files that are known to have deep imports that require refactor (tracked debt).
 // Each entry MUST have a TODO(boundary) comment explaining the reason and removal path.
 const ALLOWLIST: string[] = [
-  // ── frank tools → pedidos/freight repositories ─────────────────────────
-  // TODO(boundary): frank tools import pedidos/freight repositories directly.
-  // Removal: create @/modules/pedidos/server and @/modules/freight/server entrypoints.
-  'src/modules/frank/tools/read-only/getRecentQuotes.tool.ts',
-  'src/modules/frank/tools/read-only/getRecentOrders.tool.ts',
-  'src/modules/frank/tools/read-only/getOrderStatus.tool.ts',
-  'src/modules/frank/tools/read-only/getShipmentStatus.tool.ts',
-
-  // ── atendimento → pedidos internals ────────────────────────────────────
-  // TODO(boundary): atendimento orchestrator imports pedidos services/ directory.
-  // Removal: create @/modules/pedidos/server entrypoint and re-export needed services.
-  'src/modules/atendimento/whatsapp-inbound-orchestrator.service.ts',
-
   // ── test files (vi.mock paths match regex but are not runtime imports) ─
   // TODO(boundary): vi.mock() paths in test files match the regex pattern.
   // These are not actual runtime imports. Consider excluding __tests__/ from enforcement.
   'src/app/api/webhook/stripe/__tests__/stripe-lifecycle.test.ts',
   'src/app/api/webhook/stripe/__tests__/stripe-gates.test.ts',
-
-  // ── app routes → module internals ──────────────────────────────────────
-  // TODO(boundary): routes import module adapters/ directories directly.
-  // Removal: create @/modules/freight/server entrypoint for adapter exports.
-  'src/app/api/freight/shipments/route.ts',
-  'src/app/api/internal/freight/shipments/route.ts',
 
   // ── UI components cross-module ─────────────────────────────────────────
   // TODO(boundary): UI pages/views import React components from other modules.
