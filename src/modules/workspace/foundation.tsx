@@ -17,17 +17,19 @@ import {
     StatusChip,
     SurfacePanel,
 } from '@/ui/foundation';
-import { CockpitAlertsPanel } from '@/modules/cockpit/components/alerts-panel';
-import { CockpitActionGrid } from '@/modules/cockpit/components/action-grid';
-import { ActionQueue } from '@/modules/cockpit/components/action-queue';
-import { OperationalEventFeed } from '@/modules/cockpit/components/event-feed';
-import { OperationalKpiStrip } from '@/modules/cockpit/components/kpi-strip';
+import {
+    CockpitAlertsPanel,
+    CockpitActionGrid,
+    ActionQueue,
+    OperationalEventFeed,
+    OperationalKpiStrip,
+    SystemStatusPanel,
+} from '@/modules/cockpit';
 import { getCockpitData } from '@/modules/cockpit/data/get-cockpit-data';
 import { ClientsView } from '@/modules/clientes/clients-view';
 import { ConversationsView } from '@/modules/conversas/conversations-view';
 import { LogisticsView } from '@/modules/logistica/logistics-view';
 import { OrdersView } from '@/modules/pedidos';
-import { SystemStatusPanel } from '@/modules/cockpit/components/system-status';
 import { loadClientsHydrated } from '@/modules/clientes/customer.loader';
 import { loadOrdersHydrated } from '@/modules/pedidos/server';
 import { getServerSessionUser } from '@/infra/auth/session';

@@ -1,6 +1,6 @@
 import { getServerSessionUser } from '@/infra/auth/session';
 import { playbookService } from '@/modules/playbooks/playbook.service';
-import { GovernanceShell } from '@/modules/governance/components/governance-shell';
+import { GovernanceShell } from '@/modules/governance';
 import Link from 'next/link';
 import { Plus, BookOpen, Clock, Play } from 'lucide-react';
 import { Button } from '@/ui/components/button';

@@ -69,20 +69,6 @@ const ALLOWLIST: string[] = [
   // Removal: create @/modules/freight/server entrypoint for adapter exports.
   'src/app/api/freight/shipments/route.ts',
   'src/app/api/internal/freight/shipments/route.ts',
-
-  // ── UI components cross-module ─────────────────────────────────────────
-  // TODO(boundary): UI pages/views import React components from other modules.
-  // Removal: create client entrypoints (index.ts) re-exporting public components.
-  'src/app/(admin)/cockpit/playbooks/new/page.tsx',
-  'src/app/(admin)/cockpit/playbooks/page.tsx',
-  'src/app/(admin)/cockpit/playbooks/[id]/page.tsx',
-  'src/modules/logistica/components/logistics-customer-context.tsx',
-  'src/modules/pedidos/components/order-customer-context.tsx',
-
-  // ── workspace → cockpit components ─────────────────────────────────────
-  // TODO(boundary): workspace foundation imports cockpit UI components.
-  // Removal: create @/modules/cockpit entrypoint re-exporting shell components.
-  'src/modules/workspace/foundation.tsx',
 ];
 
 interface Violation {
