@@ -162,5 +162,3 @@ npm run test:ci
 - Inbound WhatsApp now resolves customer identity by normalized phone and flags unidentified conversations for operator triage.
 - Supervised suggestions can include catalog product lookup and freight quote draft (when product + quantity + CEP are present), always requiring human approval before outbound send.
 - Scenario validation script: `node --import tsx scripts/test-whatsapp-scenarios.ts`.
-
-test: validating agent governance flow
