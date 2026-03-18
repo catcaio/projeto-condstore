@@ -11,6 +11,17 @@ import {
 let generatedDevToken: string | null = null;
 let warned = false;
 
+function safeCompare(a: string, b: string): boolean {
+  const aBuf = Buffer.from(a);
+  const bBuf = Buffer.from(b);
+
+  if (aBuf.length !== bBuf.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(aBuf, bBuf);
+}
+
 function getDiagOrExportToken(): string | null {
   const diagToken = getOfficialInternalTokens('diag')[0];
   if (diagToken) return diagToken;
@@ -60,8 +71,12 @@ export function getInternalTokenForPurposeOrThrow(
 }
 
 export function isInternalTokenAuthorized(token: string | null | undefined): boolean {
-  return getAcceptedInternalTokens('export').some(candidate => candidate === token)
-    || getAcceptedInternalTokens('diag').some(candidate => candidate === token);
+  if (token == null) {
+    return false;
+  }
+
+  return getAcceptedInternalTokens('export').some(candidate => safeCompare(candidate, token))
+    || getAcceptedInternalTokens('diag').some(candidate => safeCompare(candidate, token));
 }
 
 export { isDevRuntimeEnvironment, isStrictRuntimeEnvironment };
