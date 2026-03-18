@@ -11,14 +11,9 @@
 
 ## Arquitetura
 
-- Respeitar separação:
-  - core
-  - modules
-  - app
-  - infra
-
-- Não misturar responsabilidades entre camadas
-- Não criar dependência circular
+- Seguir sempre as regras e limites de módulos definidos em `docs/architecture/module-boundaries.md`
+- Em caso de divergência, considerar `docs/architecture/module-boundaries.md` como fonte da verdade e, se necessário, atualizar este arquivo
+- Não criar dependência circular entre módulos/camadas
 
 ## PR Rules
 
