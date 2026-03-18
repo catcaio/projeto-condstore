@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
-import { frankService } from '@/modules/frank/frank.service';
+import { frankService } from '@/modules/frank/server';
 
 interface RouteParams {
     params: Promise<{ id: string }>;

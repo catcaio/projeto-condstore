@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Button } from '@/ui/components';
 import { SectionHeader, StatusChip, SurfacePanel } from '@/ui/foundation';
-import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank/actions/review';
+import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank';
 import { ActionPlayground } from '@/ui/frank/action-playground';
 import { Zap, RefreshCw } from 'lucide-react';
 import type { ConversationOrder, ConversationRecord, ConversationSimulation } from '../types';

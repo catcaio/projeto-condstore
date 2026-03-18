@@ -18,7 +18,7 @@ import { SharedKanbanBoard, KanbanColumn, KanbanCard, DropdownStatusSelector } f
 import { updateClientOpportunityStage } from './actions/update-stage';
 import { bulkAdvanceClientStage, bulkAssignClientOwner, bulkArchiveClients } from './actions/bulk';
 import { getOperationalHistoryAction, addOperationalNoteAction } from '@/modules/audit/audit.actions';
-import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank/actions/review';
+import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank';
 import { ActionPlayground } from '@/ui/frank/action-playground';
 import { BulkActionPreviewModal, BulkPreviewItem } from '@/ui/foundation/bulk-action-preview-modal';
 

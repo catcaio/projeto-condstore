@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ecosystemFeedService } from '@/modules/frank/services/ecosystem-feed.service';
+import { ecosystemFeedService } from '@/modules/frank/server';
 import { logger } from '@/infra/logger';
 import { getDb } from '@/infra/db';
 import { eq, desc, asc, and } from 'drizzle-orm';
