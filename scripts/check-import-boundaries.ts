@@ -65,19 +65,10 @@ const ALLOWLIST: string[] = [
   'src/app/api/webhook/stripe/__tests__/stripe-gates.test.ts',
 
   // ── app routes → module internals ──────────────────────────────────────
-  // TODO(boundary): routes import module services/adapters/ directories directly.
-  // Removal: create server entrypoints for frank and freight modules.
-  'src/app/api/cockpit/frank/feed/route.ts',
+  // TODO(boundary): routes import module adapters/ directories directly.
+  // Removal: create @/modules/freight/server entrypoint for adapter exports.
   'src/app/api/freight/shipments/route.ts',
   'src/app/api/internal/freight/shipments/route.ts',
-
-  // ── UI views → frank server actions ────────────────────────────────────
-  // TODO(boundary): cockpit views import frank/actions/review for server actions.
-  // Removal: create @/modules/frank entrypoint re-exporting the review action.
-  'src/modules/clientes/clients-view.tsx',
-  'src/modules/conversas/components/conversation-context.tsx',
-  'src/modules/logistica/logistics-view.tsx',
-  'src/modules/pedidos/orders-view.tsx',
 
   // ── UI components cross-module ─────────────────────────────────────────
   // TODO(boundary): UI pages/views import React components from other modules.

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/ui/components';
 import { PageHeader, ShellContainer, StatusChip, UniversalListView, BulkActionBar, InspectorDrawer, SavedViewsTabs, OperationalTimelineWidget, AddNoteForm } from '@/ui/foundation';
 import { getOperationalHistoryAction, addOperationalNoteAction } from '@/modules/audit/audit.actions';
-import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank/actions/review';
+import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank';
 import { ActionPlayground } from '@/ui/frank/action-playground';
 import { bulkSyncLogisticsTracking, bulkReportLogisticsException } from './actions/bulk';
 import { BulkActionPreviewModal, BulkPreviewItem } from '@/ui/foundation/bulk-action-preview-modal';

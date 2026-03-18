@@ -12,7 +12,7 @@ import { OrderDetail } from './components/order-detail';
 import { OrderLogisticsContext } from './components/order-logistics-context';
 import { OperationalTimelineWidget, AddNoteForm } from '@/ui/foundation';
 import { getOperationalHistoryAction, addOperationalNoteAction } from '@/modules/audit/audit.actions';
-import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank/actions/review';
+import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank';
 import { bulkApproveOrders, bulkAssignOrderOwner, bulkCancelOrders } from './actions/bulk';
 import { ActionPlayground } from '@/ui/frank/action-playground';
 import type { OrderRecord, OrderChannel, OrderPeriodBucket, OrderPriority, OrderStatus } from './types';

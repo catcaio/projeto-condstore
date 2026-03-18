@@ -1,4 +1,4 @@
-import { ecosystemFeedService } from '@/modules/frank/services/ecosystem-feed.service';
+import { ecosystemFeedService } from '@/modules/frank/server';
 import { SettingsSection } from '@/ui/settings';
 import { Activity, ShieldAlert, Wrench, Briefcase, ExternalLink } from 'lucide-react';
 import { Badge } from '@/ui/components';
