@@ -12,7 +12,7 @@ import { freightShipments } from '@/drizzle/schema';
 import { eq, desc } from 'drizzle-orm';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
-import { createShipmentFromQuote, CreateShipmentInput } from '@/modules/freight/adapters/melhor-envio-shipment';
+import { createShipmentFromQuote, type CreateShipmentInput } from '@/modules/freight/server';
 
 export const dynamic = 'force-dynamic';
 

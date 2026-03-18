@@ -1,5 +1,5 @@
 import { deliveriesRepository } from '@/infra/repositories/deliveries.repository';
-import { getShipmentById } from '@/modules/freight/shipment-linkage.repository';
+import { getShipmentById } from '@/modules/freight/server';
 import { executeFrankTool } from '../tool-guard';
 
 export interface ShipmentLocationEventSummary {
