@@ -204,6 +204,8 @@ export const simulations = mysqlTable('simulations', {
     return {
         tenantIdCreatedAtIndex: index('idx_simulations_tenant_created_at').on(table.tenantId, table.createdAt),
         tenantIdConversationIdIndex: index('idx_simulations_tenant_conversation').on(table.tenantId, table.conversationId),
+        tenantIdStatusIndex: index('idx_simulations_tenant_status').on(table.tenantId, table.status),
+        tenantIdCustomerIndex: index('idx_simulations_tenant_customer').on(table.tenantId, table.customerId),
     };
 });
 
@@ -1359,6 +1361,8 @@ export const orders = mysqlTable('orders', {
     tenantCustomerIdx: index('idx_orders_tenant_customer').on(table.tenantId, table.customerId),
     tenantStatusIdx: index('idx_orders_tenant_status').on(table.tenantId, table.status),
     tenantQuoteUniqueIdx: uniqueIndex('idx_orders_tenant_quote_unique').on(table.tenantId, table.quoteId),
+    tenantCreatedIdx: index('idx_orders_tenant_created_at').on(table.tenantId, table.createdAt),
+    tenantConversationIdx: index('idx_orders_tenant_conversation').on(table.tenantId, table.conversationId),
 }));
 
 export type OrderRecord = typeof orders.$inferSelect;
@@ -1549,6 +1553,7 @@ export const operationalEvents = mysqlTable('operational_events', {
     idxDomainTime: index('idx_op_events_tenant_domain_time').on(table.tenantId, table.eventDomain, table.createdAt),
     idxTypeTime: index('idx_op_events_tenant_type_time').on(table.tenantId, table.eventType, table.createdAt),
     idxCustomerTime: index('idx_op_events_tenant_customer_time').on(table.tenantId, table.customerId, table.createdAt),
+    idxTenantTime: index('idx_op_events_tenant_time').on(table.tenantId, table.createdAt),
 }));
 
 export type OperationalEventRecord = typeof operationalEvents.$inferSelect;
@@ -1897,6 +1902,8 @@ export const freightShipments = mysqlTable('freight_shipments', {
     idxTenantSimulation: index('idx_freight_shipments_tenant_sim').on(table.tenantId, table.simulationId),
     idxTenantOrder: index('idx_freight_shipments_tenant_order').on(table.tenantId, table.orderId),
     idxTracking: index('idx_freight_shipments_tracking').on(table.trackingCode),
+    idxTenantCreated: index('idx_freight_shipments_tenant_created_at').on(table.tenantId, table.createdAt),
+    idxTenantStatus: index('idx_freight_shipments_tenant_status').on(table.tenantId, table.status),
 }));
 
 export type FreightShipmentRecord = typeof freightShipments.$inferSelect;
@@ -2103,6 +2110,8 @@ export const shipments = mysqlTable('shipments', {
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 }, (table) => ({
     idxShipmentsTenantOrder: index('idx_shipments_tenant_order').on(table.tenantId, table.orderId),
+    idxShipmentsTenantCreated: index('idx_shipments_tenant_created_at').on(table.tenantId, table.createdAt),
+    idxShipmentsTenantStatus: index('idx_shipments_tenant_status').on(table.tenantId, table.status),
 }));
 
 export type ShipmentRecord = typeof shipments.$inferSelect;
@@ -2118,6 +2127,8 @@ export const crmNotes = mysqlTable('crm_notes', {
     createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
     idxCrmNotesCustomer: index('idx_crm_notes_customer').on(table.tenantId, table.customerId),
+    idxCrmNotesConversation: index('idx_crm_notes_tenant_conversation').on(table.tenantId, table.conversationId),
+    idxCrmNotesCreated: index('idx_crm_notes_tenant_created_at').on(table.tenantId, table.createdAt),
 }));
 
 export const crmTasks = mysqlTable('crm_tasks', {
@@ -2133,6 +2144,9 @@ export const crmTasks = mysqlTable('crm_tasks', {
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
     idxCrmTasksCustomer: index('idx_crm_tasks_customer').on(table.tenantId, table.customerId),
+    idxCrmTasksStatus: index('idx_crm_tasks_tenant_status').on(table.tenantId, table.status),
+    idxCrmTasksConversation: index('idx_crm_tasks_tenant_conversation').on(table.tenantId, table.conversationId),
+    idxCrmTasksCreated: index('idx_crm_tasks_tenant_created_at').on(table.tenantId, table.createdAt),
 }));
 
 export type CrmNoteRecord = typeof crmNotes.$inferSelect;
@@ -2349,6 +2363,8 @@ export const crmOpportunities = mysqlTable('crm_opportunities', {
 }, (table) => ({
     idxCrmOppTenantCustomer: index('idx_crm_opp_tenant_customer').on(table.tenantId, table.customerId),
     idxCrmOppStage: index('idx_crm_opp_stage').on(table.tenantId, table.stage),
+    idxCrmOppStatus: index('idx_crm_opp_tenant_status').on(table.tenantId, table.status),
+    idxCrmOppCreated: index('idx_crm_opp_tenant_created_at').on(table.tenantId, table.createdAt),
 }));
 
 export const crmQuotes = mysqlTable('crm_quotes', {
@@ -2365,6 +2381,8 @@ export const crmQuotes = mysqlTable('crm_quotes', {
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
     idxCrmQuotesOpp: index('idx_crm_quotes_opp').on(table.tenantId, table.opportunityId),
+    idxCrmQuotesStatus: index('idx_crm_quotes_tenant_status').on(table.tenantId, table.status),
+    idxCrmQuotesCreated: index('idx_crm_quotes_tenant_created_at').on(table.tenantId, table.createdAt),
 }));
 
 export const crmQuoteItems = mysqlTable('crm_quote_items', {
