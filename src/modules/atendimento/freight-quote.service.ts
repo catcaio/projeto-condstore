@@ -309,10 +309,17 @@ export class FreightQuoteService {
             updatedAt: new Date()
         }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
 
-        // Sync CRM Quote to 'accepted'
-        const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
-        if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
-            await db.update(crmQuotes).set({ status: 'accepted', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+        // Sync CRM Quote to 'accepted' (non-blocking: failures are logged but do not prevent acceptance flow)
+        try {
+            const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
+            if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
+                await db.update(crmQuotes).set({ status: 'accepted', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+            }
+        } catch (error) {
+            logger.error(
+                { error, tenantId, quoteId },
+                'Failed to sync CRM quote status to accepted on quote acceptance'
+            );
         }
 
         // Emit operational event
