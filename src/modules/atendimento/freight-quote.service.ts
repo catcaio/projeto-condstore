@@ -271,12 +271,12 @@ export class FreightQuoteService {
 
         // Sync CRM Quote & Opportunity to 'sent'/'proposal_sent' (best-effort, non-blocking for the main flow)
         try {
-            const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
+            const crmQuoteResult = await db.select().from(crmQuotes).where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId))).limit(1);
             if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
-                await db.update(crmQuotes).set({ status: 'sent', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+                await db.update(crmQuotes).set({ status: 'sent', updatedAt: new Date() }).where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId)));
                 await db.update(crmOpportunities)
                     .set({ stage: 'proposal_sent', lastActivityAt: new Date() })
-                    .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId));
+                    .where(and(eq(crmOpportunities.tenantId, tenantId), eq(crmOpportunities.id, crmQuoteResult[0].opportunityId)));
             }
         } catch (error) {
             logger.error(
@@ -314,12 +314,12 @@ export class FreightQuoteService {
 
         // Sync CRM Quote to 'accepted' and opportunity to 'awaiting_response' (non-blocking)
         try {
-            const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
+            const crmQuoteResult = await db.select().from(crmQuotes).where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId))).limit(1);
             if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
-                await db.update(crmQuotes).set({ status: 'accepted', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+                await db.update(crmQuotes).set({ status: 'accepted', updatedAt: new Date() }).where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId)));
                 await db.update(crmOpportunities)
                     .set({ stage: 'awaiting_response', lastActivityAt: new Date() })
-                    .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId));
+                    .where(and(eq(crmOpportunities.tenantId, tenantId), eq(crmOpportunities.id, crmQuoteResult[0].opportunityId)));
             }
         } catch (error) {
             logger.error(

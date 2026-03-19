@@ -54,7 +54,7 @@ export const crmService = {
                 // Update last activity
                 await db.update(crmOpportunities)
                     .set({ lastActivityAt: new Date() })
-                    .where(eq(crmOpportunities.id, activeOp.id));
+                    .where(and(eq(crmOpportunities.tenantId, params.tenantId), eq(crmOpportunities.id, activeOp.id)));
             } else if (params.direction === 'inbound') {
                 // Create new opportunity if inbound message and no active ops
                 const title = `Negociação Automática`;
@@ -137,7 +137,7 @@ export const crmService = {
                 // Update stage to quoted if not already won/lost
                 await db.update(crmOpportunities)
                     .set({ stage: 'quoted', lastActivityAt: new Date() })
-                    .where(eq(crmOpportunities.id, opportunityId));
+                    .where(and(eq(crmOpportunities.tenantId, params.tenantId), eq(crmOpportunities.id, opportunityId)));
 
                 // Emit lead_stage_changed ecosystem event
                 ecosystemEventsService.emitEvent({
@@ -186,7 +186,7 @@ export const crmService = {
             if (params.items && params.items.length > 0) {
                 // For simplicity, recreate items on revision
                 await db.delete(crmQuoteItems)
-                    .where(eq(crmQuoteItems.quoteId, params.quoteId));
+                    .where(and(eq(crmQuoteItems.tenantId, params.tenantId), eq(crmQuoteItems.quoteId, params.quoteId)));
 
                 const itemValues = params.items.map(i => ({
                     id: randomUUID(),

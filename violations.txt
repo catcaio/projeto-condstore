@@ -1,0 +1,66 @@
+Found 13 violations.
+File: src\modules\atendimento\freight-quote.service.ts
+Table: crmQuotes
+Query: db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1)
+WHERE clause missing tenantId: (eq(crmQuotes.id, quoteId))
+---
+File: src\modules\atendimento\freight-quote.service.ts
+Table: crmQuotes
+Query: db.update(crmQuotes).set({ status: 'sent', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId))
+WHERE clause missing tenantId: (eq(crmQuotes.id, quoteId))
+---
+File: src\modules\atendimento\freight-quote.service.ts
+Table: crmOpportunities
+Query: db.update(crmOpportunities) .set({ stage: 'proposal_sent', lastActivityAt: new Date() }) .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId))
+WHERE clause missing tenantId: (eq(crmOpportunities.id, crmQuoteResult[0].opportunityId))
+---
+File: src\modules\atendimento\freight-quote.service.ts
+Table: crmQuotes
+Query: db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1)
+WHERE clause missing tenantId: (eq(crmQuotes.id, quoteId))
+---
+File: src\modules\atendimento\freight-quote.service.ts
+Table: crmQuotes
+Query: db.update(crmQuotes).set({ status: 'accepted', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId))
+WHERE clause missing tenantId: (eq(crmQuotes.id, quoteId))
+---
+File: src\modules\atendimento\freight-quote.service.ts
+Table: crmOpportunities
+Query: db.update(crmOpportunities) .set({ stage: 'awaiting_response', lastActivityAt: new Date() }) .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId))
+WHERE clause missing tenantId: (eq(crmOpportunities.id, crmQuoteResult[0].opportunityId))
+---
+File: src\modules\atendimento\order.service.ts
+Table: simulations
+Query: db.update(simulations).set({ status: 'EXPIRED' }).where(eq(simulations.id, quoteId))
+WHERE clause missing tenantId: (eq(simulations.id, quoteId))
+---
+File: src\modules\atendimento\order.service.ts
+Table: orders
+Query: db.select().from(orders).where(eq(orders.id, id)).limit(1)
+WHERE clause missing tenantId: (eq(orders.id, id))
+---
+File: src\modules\atendimento\order.service.ts
+Table: crmOpportunities
+Query: db.update(crmOpportunities) .set({ stage: 'won', status: 'won', lastActivityAt: new Date() }) .where(eq(crmOpportunities.id, crmQuote.opportunityId))
+WHERE clause missing tenantId: (eq(crmOpportunities.id, crmQuote.opportunityId))
+---
+File: src\modules\atendimento\order.service.ts
+Table: crmQuotes
+Query: db.update(crmQuotes) .set({ status: 'accepted', updatedAt: new Date() }) .where(eq(crmQuotes.id, quoteId))
+WHERE clause missing tenantId: (eq(crmQuotes.id, quoteId))
+---
+File: src\modules\crm\crm.service.ts
+Table: crmOpportunities
+Query: db.update(crmOpportunities) .set({ lastActivityAt: new Date() }) .where(eq(crmOpportunities.id, activeOp.id))
+WHERE clause missing tenantId: (eq(crmOpportunities.id, activeOp.id))
+---
+File: src\modules\crm\crm.service.ts
+Table: crmOpportunities
+Query: db.update(crmOpportunities) .set({ stage: 'quoted', lastActivityAt: new Date() }) .where(eq(crmOpportunities.id, opportunityId))
+WHERE clause missing tenantId: (eq(crmOpportunities.id, opportunityId))
+---
+File: src\modules\crm\crm.service.ts
+Table: crmQuoteItems
+Query: db.delete(crmQuoteItems) .where(eq(crmQuoteItems.quoteId, params.quoteId))
+WHERE clause missing tenantId: (eq(crmQuoteItems.quoteId, params.quoteId))
+---

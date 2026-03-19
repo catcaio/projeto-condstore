@@ -38,7 +38,7 @@ export const orderService = {
 
         if (quote.expiresAt && new Date(quote.expiresAt) < new Date()) {
             // Mark it as expired dynamically if past date
-            await db.update(simulations).set({ status: 'EXPIRED' }).where(eq(simulations.id, quoteId));
+            await db.update(simulations).set({ status: 'EXPIRED' }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
             throw new Error('Cannot convert an expired quote');
         }
 
@@ -78,7 +78,7 @@ export const orderService = {
             convertedAt: new Date() 
         }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
 
-        const [newOrder] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+        const [newOrder] = await db.select().from(orders).where(and(eq(orders.tenantId, tenantId), eq(orders.id, id))).limit(1);
 
         // 4. Update Conversation Stage to WON
         await conversationService.changeConversationStage(tenantId, conversationId, 'WON', quote.customerId || undefined);
@@ -89,11 +89,11 @@ export const orderService = {
         if (crmQuote && crmQuote.opportunityId) {
             await db.update(crmOpportunities)
                 .set({ stage: 'won', status: 'won', lastActivityAt: new Date() })
-                .where(eq(crmOpportunities.id, crmQuote.opportunityId));
+                .where(and(eq(crmOpportunities.tenantId, tenantId), eq(crmOpportunities.id, crmQuote.opportunityId)));
             
             await db.update(crmQuotes)
                 .set({ status: 'accepted', updatedAt: new Date() })
-                .where(eq(crmQuotes.id, quoteId));
+                .where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId)));
         }
 
         // 5. Emit Timeline Event
