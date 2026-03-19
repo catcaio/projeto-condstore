@@ -1,66 +1,32 @@
-Found 13 violations.
-File: src\modules\atendimento\freight-quote.service.ts
-Table: crmQuotes
-Query: db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1)
-WHERE clause missing tenantId: (eq(crmQuotes.id, quoteId))
----
-File: src\modules\atendimento\freight-quote.service.ts
-Table: crmQuotes
-Query: db.update(crmQuotes).set({ status: 'sent', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId))
-WHERE clause missing tenantId: (eq(crmQuotes.id, quoteId))
----
-File: src\modules\atendimento\freight-quote.service.ts
-Table: crmOpportunities
-Query: db.update(crmOpportunities) .set({ stage: 'proposal_sent', lastActivityAt: new Date() }) .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId))
-WHERE clause missing tenantId: (eq(crmOpportunities.id, crmQuoteResult[0].opportunityId))
----
-File: src\modules\atendimento\freight-quote.service.ts
-Table: crmQuotes
-Query: db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1)
-WHERE clause missing tenantId: (eq(crmQuotes.id, quoteId))
----
-File: src\modules\atendimento\freight-quote.service.ts
-Table: crmQuotes
-Query: db.update(crmQuotes).set({ status: 'accepted', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId))
-WHERE clause missing tenantId: (eq(crmQuotes.id, quoteId))
----
-File: src\modules\atendimento\freight-quote.service.ts
-Table: crmOpportunities
-Query: db.update(crmOpportunities) .set({ stage: 'awaiting_response', lastActivityAt: new Date() }) .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId))
-WHERE clause missing tenantId: (eq(crmOpportunities.id, crmQuoteResult[0].opportunityId))
----
-File: src\modules\atendimento\order.service.ts
-Table: simulations
-Query: db.update(simulations).set({ status: 'EXPIRED' }).where(eq(simulations.id, quoteId))
-WHERE clause missing tenantId: (eq(simulations.id, quoteId))
----
-File: src\modules\atendimento\order.service.ts
-Table: orders
-Query: db.select().from(orders).where(eq(orders.id, id)).limit(1)
-WHERE clause missing tenantId: (eq(orders.id, id))
----
-File: src\modules\atendimento\order.service.ts
-Table: crmOpportunities
-Query: db.update(crmOpportunities) .set({ stage: 'won', status: 'won', lastActivityAt: new Date() }) .where(eq(crmOpportunities.id, crmQuote.opportunityId))
-WHERE clause missing tenantId: (eq(crmOpportunities.id, crmQuote.opportunityId))
----
-File: src\modules\atendimento\order.service.ts
-Table: crmQuotes
-Query: db.update(crmQuotes) .set({ status: 'accepted', updatedAt: new Date() }) .where(eq(crmQuotes.id, quoteId))
-WHERE clause missing tenantId: (eq(crmQuotes.id, quoteId))
----
-File: src\modules\crm\crm.service.ts
-Table: crmOpportunities
-Query: db.update(crmOpportunities) .set({ lastActivityAt: new Date() }) .where(eq(crmOpportunities.id, activeOp.id))
-WHERE clause missing tenantId: (eq(crmOpportunities.id, activeOp.id))
----
-File: src\modules\crm\crm.service.ts
-Table: crmOpportunities
-Query: db.update(crmOpportunities) .set({ stage: 'quoted', lastActivityAt: new Date() }) .where(eq(crmOpportunities.id, opportunityId))
-WHERE clause missing tenantId: (eq(crmOpportunities.id, opportunityId))
----
-File: src\modules\crm\crm.service.ts
-Table: crmQuoteItems
-Query: db.delete(crmQuoteItems) .where(eq(crmQuoteItems.quoteId, params.quoteId))
-WHERE clause missing tenantId: (eq(crmQuoteItems.quoteId, params.quoteId))
----
+Tenant isolation scan baseline
+==============================
+
+This file documents the baseline for the tenant isolation scanner.
+It is intentionally kept as an evergreen artifact and MUST NOT contain
+a stale list of past violations or raw scanner output.
+
+Current expected baseline
+-------------------------
+
+Found 0 violations.
+
+How to run the scanner
+----------------------
+
+1. Run the tenant isolation scanner from the project root:
+   - (Document the exact command here, e.g. `pnpm tenant-scan` or similar.)
+2. Review the scanner output locally:
+   - If any violations are reported, fix them in the codebase.
+   - Re-run the scanner until it reports `0 violations`.
+3. Do NOT commit the full scanner output file.
+   - Update this file only if the expected baseline changes
+     (for example, if the scanner itself changes and introduces
+     new categories of checks).
+
+Notes
+-----
+
+- This file is versioned to track the intended tenant isolation
+  posture, not to store transient scan results.
+- If you are unsure how to interpret a scanner finding, reach out
+  to the security or platform team for guidance before merging.
