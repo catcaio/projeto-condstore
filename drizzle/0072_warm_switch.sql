@@ -1,0 +1,1 @@
+ALTER TABLE `orders` ADD CONSTRAINT `idx_orders_tenant_quote_unique` UNIQUE(`tenant_id`,`quote_id`);

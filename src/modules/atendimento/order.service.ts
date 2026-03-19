@@ -5,6 +5,8 @@ import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from './conversation.service';
 import { messageService } from './message.service';
 import { shipmentService } from '@/modules/logistics/server';
+import { redisClient } from '@/infra/redis.client';
+import { logger } from '@/infra/logger';
 
 export interface OrderListFilter {
     status?: string;
@@ -42,76 +44,135 @@ export const orderService = {
             throw new Error('Cannot convert an expired quote');
         }
 
-        // 1.5 Idempotency Guard
-        const [existingOrder] = await db.select()
-            .from(orders)
-            .where(and(eq(orders.tenantId, tenantId), eq(orders.quoteId, quoteId)))
-            .limit(1);
-        if (existingOrder) return existingOrder;
+        // 2. Adquirir Lock Distribuído
+        const lockKey = `lock:quote-to-order:${tenantId}:${quoteId}`;
+        const lockToken = randomUUID(); // Token único para ownership do lock
+        const acquired = await redisClient.setNx(lockKey, lockToken, 30); // 30s TTL
 
-        // 2. Map logical fields
-        const id = randomUUID();
-        const price = quote.bestPrice ? Number(quote.bestPrice) : quote.sellingPrice ? Number(quote.sellingPrice) : null;
-        const totalAmount = quote.totalAmount ? Number(quote.totalAmount) : price;
-        const deliveryDeadline = quote.bestCarrier === 'Melhor Envio' ? 5 : 3; // placeholder estimation
-
-        // 3. Create Order
-        await db.insert(orders).values({
-            id,
-            tenantId,
-            customerId: quote.customerId,
-            organizationId: quote.organizationId,
-            conversationId,
-            quoteId,
-            status: 'DRAFT',
-            carrier: quote.bestCarrier || 'Unknown Carrier',
-            service: quote.bestService || 'Standard',
-            price: price ? String(price) : null,
-            totalAmount: totalAmount ? String(totalAmount) : null,
-            deliveryDeadline: deliveryDeadline,
-            createdBy: operatorId,
-        });
-
-        // 3.5 Update Quote Status to CONVERTED
-        await db.update(simulations).set({ 
-            status: 'CONVERTED', 
-            convertedAt: new Date() 
-        }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
-
-        const [newOrder] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
-
-        // 4. Update Conversation Stage to WON
-        await conversationService.changeConversationStage(tenantId, conversationId, 'WON', quote.customerId || undefined);
-
-        // 4.5 Sync CRM Opportunity and Quote
-        const quoteResult = await db.select().from(crmQuotes).where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId))).limit(1);
-        const crmQuote = quoteResult[0];
-        if (crmQuote && crmQuote.opportunityId) {
-            await db.update(crmOpportunities)
-                .set({ stage: 'won', status: 'won', lastActivityAt: new Date() })
-                .where(eq(crmOpportunities.id, crmQuote.opportunityId));
-            
-            await db.update(crmQuotes)
-                .set({ status: 'accepted', updatedAt: new Date() })
-                .where(eq(crmQuotes.id, quoteId));
+        if (!acquired) {
+            logger.warn(`[OrderService] Falha ao adquirir lock para quote ${quoteId}. Possível double click ou concorrência.`, { lockKey });
+            // Fallback de idempotência forte durante colisão de trava:
+            const [concurrentOrder] = await db.select()
+                .from(orders)
+                .where(and(eq(orders.tenantId, tenantId), eq(orders.quoteId, quoteId)))
+                .limit(1);
+            if (concurrentOrder) {
+                logger.info(`[OrderService] Ordem pré-existente capturada na recuperação do lock para quote ${quoteId}`);
+                return concurrentOrder;
+            }
+            throw new Error('A cotação está sendo processada no momento. Por favor aguarde um instante.');
         }
 
-        // 5. Emit Timeline Event
-        await publishOperationalEvent({
-            tenantId,
-            eventType: 'order_created',
-            eventDomain: 'CONVERSION',
-            customerId: quote.customerId || undefined,
-            payload: {
-                orderId: id,
-                quoteId,
-                conversationId,
-                price,
-                carrier: quote.bestCarrier,
-            }
-        });
+        try {
+            logger.info(`[OrderService] Lock adquirido para quote ${quoteId}`, { lockKey });
 
-        return newOrder;
+            // 1.5 Idempotency Guard (Lock garantido)
+            const [existingOrder] = await db.select()
+                .from(orders)
+                .where(and(eq(orders.tenantId, tenantId), eq(orders.quoteId, quoteId)))
+                .limit(1);
+
+            if (existingOrder) {
+                logger.info(`[OrderService] Ordem existente validada com o lock, protegendo duplicidade. Idempotência cumprida.`, { quoteId });
+                return existingOrder;
+            }
+
+            // 2. Map logical fields
+            const id = randomUUID();
+            const price = quote.bestPrice ? Number(quote.bestPrice) : quote.sellingPrice ? Number(quote.sellingPrice) : null;
+            const totalAmount = quote.totalAmount ? Number(quote.totalAmount) : price;
+            const deliveryDeadline = quote.bestCarrier === 'Melhor Envio' ? 5 : 3; // placeholder estimation
+
+            // 3. Create Order
+            try {
+                await db.insert(orders).values({
+                    id,
+                    tenantId,
+                    customerId: quote.customerId,
+                    organizationId: quote.organizationId,
+                    conversationId,
+                    quoteId,
+                    status: 'DRAFT',
+                    carrier: quote.bestCarrier || 'Unknown Carrier',
+                    service: quote.bestService || 'Standard',
+                    price: price ? String(price) : null,
+                    totalAmount: totalAmount ? String(totalAmount) : null,
+                    deliveryDeadline: deliveryDeadline,
+                    createdBy: operatorId,
+                });
+                logger.info(`[OrderService] Order inserida no banco de dados. orderId=${id} para quoteId=${quoteId}`);
+            } catch (err: any) {
+                // Fallback proteção de banco (Restrição de unique key)
+                if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062 || (err.message && err.message.includes('Duplicate entry'))) {
+                    logger.warn(`[OrderService] Interceptada ER_DUP_ENTRY (Unique key violation) ao rodar db.insert para quote ${quoteId}`);
+                    const [fallbackOrder] = await db.select()
+                        .from(orders)
+                        .where(and(eq(orders.tenantId, tenantId), eq(orders.quoteId, quoteId)))
+                        .limit(1);
+                    if (fallbackOrder) {
+                        return fallbackOrder;
+                    }
+                }
+                throw err;
+            }
+
+            // 3.5 Update Quote Status to CONVERTED
+            await db.update(simulations).set({ 
+                status: 'CONVERTED', 
+                convertedAt: new Date() 
+            }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
+
+            const [newOrder] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+
+            // 4. Update Conversation Stage to WON
+            await conversationService.changeConversationStage(tenantId, conversationId, 'WON', quote.customerId || undefined);
+
+            // 4.5 Sync CRM Opportunity and Quote
+            const quoteResult = await db.select().from(crmQuotes).where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId))).limit(1);
+            const crmQuote = quoteResult[0];
+            if (crmQuote && crmQuote.opportunityId) {
+                await db.update(crmOpportunities)
+                    .set({ stage: 'won', status: 'won', lastActivityAt: new Date() })
+                    .where(eq(crmOpportunities.id, crmQuote.opportunityId));
+                
+                await db.update(crmQuotes)
+                    .set({ status: 'accepted', updatedAt: new Date() })
+                    .where(eq(crmQuotes.id, quoteId));
+            }
+
+            // 5. Emit Timeline Event
+            await publishOperationalEvent({
+                tenantId,
+                eventType: 'order_created',
+                eventDomain: 'CONVERSION',
+                customerId: quote.customerId || undefined,
+                payload: {
+                    orderId: id,
+                    quoteId,
+                    conversationId,
+                    price,
+                    carrier: quote.bestCarrier,
+                }
+            });
+
+            return newOrder;
+        } finally {
+            // Compare and Delete Atômico local-helper para liberar lock seguro
+            try {
+                const luaScript = `
+                    if redis.call("get", KEYS[1]) == ARGV[1] then
+                        return redis.call("del", KEYS[1])
+                    else
+                        return 0
+                    end
+                `;
+                const rawToken = JSON.stringify(lockToken);
+                await redisClient.eval(luaScript, 1, lockKey, rawToken);
+                logger.info(`[OrderService] Lock release tentado para quote ${quoteId}`, { lockKey });
+            } catch (err) {
+                logger.error(`[OrderService] Erro ao liberar lock: ${err}`);
+            }
+        }
     },
 
     async updateOrderStatus(
