@@ -131,7 +131,14 @@ export async function middleware(req: NextRequest) {
         return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
-    if (pathname.startsWith('/api/webhooks/') || pathname.startsWith('/api/webhook/') || pathname === '/api/health' || pathname.startsWith('/api/auth/')) {
+    if (
+        pathname.startsWith('/api/webhooks/') ||
+        pathname.startsWith('/api/webhook/') ||
+        pathname === '/api/health' ||
+        pathname.startsWith('/api/auth/') ||
+        pathname.startsWith('/api/whatsapp/') ||
+        pathname === '/api/cron/cleanup'
+    ) {
         return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
