@@ -87,8 +87,21 @@ describe('Tenant Isolation Enforcement', () => {
                         }
                     }
 
-                    if (!whereContent.includes('tenantId') && !whereContent.includes('tenant_id')) {
-                        violations.push(`Violation in ${path.relative(root, file)}:\nMissing 'tenantId' in where clause.\nTable: ${tableName}\nQuery snippet: ${fullQuery.substring(0, 150)}`);
+                    const tenantColumnPatterns = [
+                        `${tableName}.tenantId`,
+                        `${tableName}.tenant_id`,
+                        `"${tableName}".tenantId`,
+                        `"${tableName}".tenant_id`,
+                        `\`${tableName}\`.tenantId`,
+                        `\`${tableName}\`.tenant_id`,
+                    ];
+
+                    const hasTenantScopedWhere = tenantColumnPatterns.some(pattern =>
+                        whereContent.includes(pattern)
+                    );
+
+                    if (!hasTenantScopedWhere) {
+                        violations.push(`Violation in ${path.relative(root, file)}:\nMissing tenant-scoped column in where clause.\nTable: ${tableName}\nQuery snippet: ${fullQuery.substring(0, 150)}`);
                     }
                 } else {
                     violations.push(`Violation in ${path.relative(root, file)}:\nMissing '.where()' clause completely.\nTable: ${tableName}\nQuery snippet: ${fullQuery.substring(0, 150)}`);
