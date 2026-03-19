@@ -82,7 +82,7 @@ export const orderService = {
             const price = quote.bestPrice ? Number(quote.bestPrice) : quote.sellingPrice ? Number(quote.sellingPrice) : null;
             const totalAmount = quote.totalAmount ? Number(quote.totalAmount) : price;
             const deliveryDeadline = quote.bestCarrier === 'Melhor Envio' ? 5 : 3; // placeholder estimation
-            let orderId = id;
+            let orderId: string = id;
 
             // 3. Create Order
             try {
@@ -153,7 +153,7 @@ export const orderService = {
                 eventDomain: 'CONVERSION',
                 customerId: quote.customerId || undefined,
                 payload: {
-                    orderId: id,
+                    orderId: orderId,
                     quoteId,
                     conversationId,
                     price,
@@ -172,6 +172,7 @@ export const orderService = {
                         return 0
                     end
                 `;
+                // Para alinhar exatamente com o Redis caso a string já esteja escapada ou em raw pelo driver:
                 const rawToken = JSON.stringify(lockToken);
                 await redisClient.eval(luaScript, 1, lockKey, rawToken);
                 logger.info(`[OrderService] Lock release tentado para quote ${quoteId}`, { lockKey });
