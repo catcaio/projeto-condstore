@@ -135,15 +135,14 @@ export async function middleware(req: NextRequest) {
         pathname.startsWith('/api/webhooks/') ||
         pathname.startsWith('/api/webhook/') ||
         pathname === '/api/health' ||
-        pathname.startsWith('/api/health/') ||
-        pathname === '/api/debug' ||
-        pathname.startsWith('/api/debug/') ||
-        pathname.startsWith('/api/auth/')
+        pathname.startsWith('/api/auth/') ||
+        pathname.startsWith('/api/whatsapp/') ||
+        pathname === '/api/cron/cleanup'
     ) {
         return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
-    if (pathname.startsWith('/api/internal/')) {
+    if (pathname.startsWith('/api/internal/') || pathname === '/api/debug') {
         const credentials = extractInternalRequestCredentials(req);
         const isAuthorized =
             isInternalTokenAuthorizedForPurpose('any', credentials) ||
