@@ -142,11 +142,7 @@ export async function middleware(req: NextRequest) {
         return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
-    if (
-        pathname.startsWith('/api/internal/') ||
-        pathname === '/api/debug' ||
-        pathname.startsWith('/api/debug/')
-    ) {
+    if (pathname.startsWith('/api/internal/') || pathname === '/api/debug') {
         const credentials = extractInternalRequestCredentials(req);
         const isAuthorized =
             isInternalTokenAuthorizedForPurpose('any', credentials) ||
