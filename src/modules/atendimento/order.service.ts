@@ -1,6 +1,6 @@
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
-import { orders, simulations, conversations, type OrderRecord } from '@/drizzle/schema';
+import { orders, simulations, conversations, crmOpportunities, crmQuotes, type OrderRecord } from '@/drizzle/schema';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from './conversation.service';
 import { messageService } from './message.service';
@@ -82,6 +82,19 @@ export const orderService = {
 
         // 4. Update Conversation Stage to WON
         await conversationService.changeConversationStage(tenantId, conversationId, 'WON', quote.customerId || undefined);
+
+        // 4.5 Sync CRM Opportunity and Quote
+        const quoteResult = await db.select().from(crmQuotes).where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId))).limit(1);
+        const crmQuote = quoteResult[0];
+        if (crmQuote && crmQuote.opportunityId) {
+            await db.update(crmOpportunities)
+                .set({ stage: 'won', status: 'won', lastActivityAt: new Date() })
+                .where(eq(crmOpportunities.id, crmQuote.opportunityId));
+            
+            await db.update(crmQuotes)
+                .set({ status: 'converted', updatedAt: new Date() })
+                .where(eq(crmQuotes.id, quoteId));
+        }
 
         // 5. Emit Timeline Event
         await publishOperationalEvent({
