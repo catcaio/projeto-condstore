@@ -156,6 +156,20 @@ export async function middleware(req: NextRequest) {
         return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
+    // Allowlist for autonomous/internal-token API routes that do not use the session cookie.
+    // These routes implement their own authentication (e.g. internal token, cron headers)
+    // and should not be blocked by the generic `/api/*` session-cookie gate.
+    const autonomousApiPaths = [
+        '/api/cron/cleanup',
+        '/api/db/migrate',
+        '/api/painel-logistico',
+        '/api/supreme/ecosystem',
+    ];
+
+    if (autonomousApiPaths.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+        return NextResponse.next({ request: { headers: requestHeaders } });
+    }
+
     const cookieToken = req.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!cookieToken) {
         if (pathname.startsWith('/api/')) {
