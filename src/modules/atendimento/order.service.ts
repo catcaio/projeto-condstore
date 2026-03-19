@@ -92,7 +92,7 @@ export const orderService = {
                 .where(eq(crmOpportunities.id, crmQuote.opportunityId));
             
             await db.update(crmQuotes)
-                .set({ status: 'converted', updatedAt: new Date() })
+                .set({ status: 'accepted', updatedAt: new Date() })
                 .where(eq(crmQuotes.id, quoteId));
         }
 
