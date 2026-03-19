@@ -72,7 +72,7 @@ describe('Order Service Implementation', () => {
         // Assert CRM Opportunity and Quote got updated to won/converted
         expect(mockDb.update).toHaveBeenCalled();
         expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ stage: 'won', status: 'won' }));
-        expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ status: 'converted' }));
+        expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ status: 'accepted' }));
 
         // Assert we fired an event
         expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({

@@ -133,6 +133,7 @@ describe('Freight Quote Service', () => {
 
         expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ status: 'SENT' })); // simulations
         expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ status: 'sent' })); // crmQuotes
+        expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ stage: 'proposal_sent' })); // crmOpportunities
 
         expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
             eventType: 'quote_sent',
@@ -157,6 +158,7 @@ describe('Freight Quote Service', () => {
 
         expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ status: 'ACCEPTED' })); // simulations
         expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ status: 'accepted' })); // crmQuotes
+        expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ stage: 'awaiting_response' })); // crmOpportunities
 
         expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
             eventType: 'quote_accepted',

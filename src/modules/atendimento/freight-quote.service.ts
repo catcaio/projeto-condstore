@@ -1,5 +1,5 @@
 import { getDb } from '@/infra/db';
-import { simulations, crmQuotes } from '@/drizzle/schema';
+import { simulations, crmQuotes, crmOpportunities } from '@/drizzle/schema';
 import { freightService } from '../freight/freight.service';
 import { domineIntakeService } from '@/domine/domine-intake.service';
 import { eq, and, desc } from 'drizzle-orm';
@@ -269,16 +269,19 @@ export class FreightQuoteService {
             updatedAt: new Date()
         }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
 
-        // Sync CRM Quote to 'sent' (best-effort, non-blocking for the main flow)
+        // Sync CRM Quote & Opportunity to 'sent'/'proposal_sent' (best-effort, non-blocking for the main flow)
         try {
             const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
             if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
                 await db.update(crmQuotes).set({ status: 'sent', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+                await db.update(crmOpportunities)
+                    .set({ stage: 'proposal_sent', lastActivityAt: new Date() })
+                    .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId));
             }
         } catch (error) {
             logger.error(
-                { err: error, tenantId, quoteId },
-                'Failed to sync CRM quote to sent status after sending quote'
+                `Failed to sync CRM quote/opportunity to sent status after sending quote [tenant: ${tenantId}, quote: ${quoteId}]`,
+                error as Error
             );
         }
 
@@ -309,16 +312,19 @@ export class FreightQuoteService {
             updatedAt: new Date()
         }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
 
-        // Sync CRM Quote to 'accepted' (non-blocking: failures are logged but do not prevent acceptance flow)
+        // Sync CRM Quote to 'accepted' and opportunity to 'awaiting_response' (non-blocking)
         try {
             const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
             if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
                 await db.update(crmQuotes).set({ status: 'accepted', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+                await db.update(crmOpportunities)
+                    .set({ stage: 'awaiting_response', lastActivityAt: new Date() })
+                    .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId));
             }
         } catch (error) {
             logger.error(
-                { error, tenantId, quoteId },
-                'Failed to sync CRM quote status to accepted on quote acceptance'
+                `Failed to sync CRM quote/opportunity status to accepted on quote acceptance [tenant: ${tenantId}, quote: ${quoteId}]`,
+                error as Error
             );
         }
 
