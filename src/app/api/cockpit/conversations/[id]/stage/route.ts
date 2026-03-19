@@ -46,7 +46,7 @@ export async function PATCH(
     } catch (err: any) {
         if (err instanceof Error && err.name === 'ConversationStageConflictError') {
             logger.warn('Conversation stage conflict detected', { requestId });
-            return errorResponse('CONFLICT' as any, 409, requestId, err.message);
+            return errorResponse('LOCK_BUSY' as any, 409, requestId, err.message);
         }
 
         logger.error('Failed to change conversation stage', err as Error, { requestId });
