@@ -3,6 +3,7 @@ import { orderService } from '../order.service';
 import * as dbInfra from '@/infra/db';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from '../conversation.service';
+import { redisClient } from '@/infra/redis.client';
 
 vi.mock('@/infra/db', () => ({
     getDb: vi.fn(),
@@ -10,6 +11,14 @@ vi.mock('@/infra/db', () => ({
 
 vi.mock('@/lib/events/operational-event-bus', () => ({
     publishOperationalEvent: vi.fn(),
+}));
+
+vi.mock('@/infra/redis.client', () => ({
+    redisClient: {
+        setNx: vi.fn(),
+        del: vi.fn(),
+        eval: vi.fn(),
+    }
 }));
 
 vi.mock('../conversation.service', () => ({
@@ -27,6 +36,9 @@ vi.mock('../message.service', () => ({
 describe('Order Service Implementation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(redisClient.setNx).mockResolvedValue(true);
+        vi.mocked(redisClient.del).mockResolvedValue(undefined);
+        vi.mocked(redisClient.eval).mockResolvedValue(undefined);
     });
 
     it('should successfully create an order from a given quote and update conversation stage to WON', async () => {
@@ -110,6 +122,81 @@ describe('Order Service Implementation', () => {
         expect(mockDb.insert).not.toHaveBeenCalled();
         expect(mockDb.update).not.toHaveBeenCalled();
         expect(conversationService.changeConversationStage).not.toHaveBeenCalled();
+        expect(redisClient.eval).toHaveBeenCalled();
+    });
+
+    describe('Concurrency and Lock mechanisms', () => {
+        it('should throw Error if quote lock is currently held by another worker', async () => {
+            vi.mocked(redisClient.setNx).mockResolvedValueOnce(false); // lock held
+            
+            const mockDb = {
+                select: vi.fn().mockReturnThis(),
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockReturnThis(),
+                limit: vi.fn()
+                    .mockResolvedValueOnce([{ id: 'quote-456' }]) // quote exists
+                    .mockResolvedValueOnce([]) // existing order NOT found during lock fallback
+            };
+            vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+            await expect(orderService.createOrderFromQuote('t1', 'c1', 'quote-456', 'op1'))
+                .rejects.toThrow('A cotação está sendo processada no momento.');
+            
+            // Should NOT try to release lock because it didn't acquire it
+            expect(redisClient.eval).not.toHaveBeenCalled();
+        });
+
+        it('should return existing order if quote lock is held but order was already created (Double click bypass)', async () => {
+            vi.mocked(redisClient.setNx).mockResolvedValueOnce(false); // lock held
+
+            const existingOrder = { id: 'order-already' };
+            
+            const mockDb = {
+                select: vi.fn().mockReturnThis(),
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockReturnThis(),
+                limit: vi.fn()
+                    .mockResolvedValueOnce([{ id: 'quote-456' }]) // quote exists
+                    .mockResolvedValueOnce([existingOrder]) // existing order IS found
+            };
+            vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+            const order = await orderService.createOrderFromQuote('t1', 'c1', 'quote-456', 'op1');
+            expect(order).toEqual(existingOrder);
+            
+            // Should NOT try to release lock because it didn't acquire it
+            expect(redisClient.eval).not.toHaveBeenCalled();
+        });
+
+        it('should handle ER_DUP_ENTRY fallback by returning the newly created concurrent order', async () => {
+            vi.mocked(redisClient.setNx).mockResolvedValueOnce(true);
+
+            const mockQuote = { id: 'quote-123' };
+            const fallbackOrder = { id: 'order-concurrent' };
+
+            const mockDb = {
+                select: vi.fn().mockReturnThis(),
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockReturnThis(),
+                limit: vi.fn()
+                    .mockResolvedValueOnce([mockQuote]) // quote
+                    .mockResolvedValueOnce([]) // idempotency guard - none exists
+                    .mockResolvedValueOnce([fallbackOrder]) // fallback after duplicate entry
+                    .mockResolvedValueOnce([fallbackOrder]) // fetch newOrder at the end
+                    .mockResolvedValueOnce([{ opportunityId: 'opp-123' }]), // crm update
+                insert: vi.fn().mockReturnThis(),
+                values: vi.fn().mockRejectedValueOnce({ code: 'ER_DUP_ENTRY', message: 'Duplicate entry' }), // simulate race condition DB constraint
+                update: vi.fn().mockReturnThis(),
+                set: vi.fn().mockReturnThis(),
+            };
+
+            vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+            const order = await orderService.createOrderFromQuote('t1', 'c1', 'quote-123', 'op1');
+            
+            expect(order).toEqual(fallbackOrder);
+            expect(redisClient.eval).toHaveBeenCalled(); // Ensure lock deleted via safe eval
+        });
     });
 
     describe('updateOrderStatus', () => {

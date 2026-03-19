@@ -1,0 +1,1 @@
+ALTER TABLE `orders` DROP INDEX `idx_orders_tenant_quote_unique`;
