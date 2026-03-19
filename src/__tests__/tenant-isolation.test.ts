@@ -55,7 +55,7 @@ describe('Tenant Isolation Enforcement', () => {
             
             // We search for db statements (select, update, delete)
             // matching till the end of the line or semicolon
-            const regex = /db\.(?:select\([^)]*\)\.from|update|delete)\s*\(\s*([a-zA-Z0-9_]+)\s*\)([^;]*)/g;
+            const regex = /db\.(?:select\([^)]*\)\s*\.from|update|delete)\s*\(\s*([a-zA-Z0-9_]+)\s*\)([^;]*)/g;
             let match;
 
             while ((match = regex.exec(cleanContent)) !== null) {
