@@ -91,8 +91,8 @@ async function handler(request: NextRequest): Promise<NextResponse> {
         // Dedup Bucket server-side for milestones (unique per tenantId + type)
         // Store for 7 days in redis, but the real dedup happens because we just want ONE per tenant anyway.
         // Let's use 24h dedup for cockpit_viewed and module_clicked, and infinite (or 365 days) for the others.
-        let dedupKey;
-        let ttl;
+        let dedupKey: string;
+        let ttl: number;
         
         if (type === 'cockpit_viewed') {
             dedupKey = `dedup:appev:${tenantId}:${type}:${new Date().toISOString().split('T')[0]}`;
