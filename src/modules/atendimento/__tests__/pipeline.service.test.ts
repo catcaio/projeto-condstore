@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { pipelineMetricsService } from '../pipeline-metrics.service';
 import * as dbInfra from '@/infra/db';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
-import { conversationService } from '../conversation.service';
+import { ConversationStageConflictError, conversationService } from '../conversation.service';
 
 vi.mock('@/infra/db', () => ({
     getDb: vi.fn(),
@@ -10,6 +10,12 @@ vi.mock('@/infra/db', () => ({
 
 vi.mock('@/lib/events/operational-event-bus', () => ({
     publishOperationalEvent: vi.fn(),
+}));
+
+vi.mock('@/services/ecosystem-events.service', () => ({
+    ecosystemEventsService: {
+        emitEvent: vi.fn().mockResolvedValue(undefined),
+    }
 }));
 
 // Quick mock for conversation repo since it is exported as a const object
@@ -121,14 +127,14 @@ describe('Conversation Service - Stage Changes', () => {
 
     it('should throw conflict error when optimistic locking detects stale write', async () => {
         const { conversationRepository } = await import('../conversation.repository');
+        const { ecosystemEventsService } = await import('@/services/ecosystem-events.service');
         vi.mocked(conversationRepository.updateConversationStage).mockResolvedValueOnce(false);
 
         await expect(
             conversationService.changeConversationStage('tenant-1', 'conv-123', 'WON', 'cust-456')
-        ).rejects.toMatchObject({
-            name: 'ConversationStageConflictError',
-        });
+        ).rejects.toBeInstanceOf(ConversationStageConflictError);
 
+        expect(ecosystemEventsService.emitEvent).not.toHaveBeenCalled();
         expect(publishOperationalEvent).not.toHaveBeenCalled();
     });
 });

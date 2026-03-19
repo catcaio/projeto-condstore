@@ -5,6 +5,20 @@ import { PATCH as OwnerPatch } from '../owner/route';
 import { POST as NotesPost, GET as NotesGet } from '../notes/route';
 import { POST as TasksPost, GET as TasksGet } from '../tasks/route';
 
+const { mockChangeConversationStage, MockConversationStageConflictError } = vi.hoisted(() => {
+    class HoistedConversationStageConflictError extends Error {
+        constructor(message: string = 'Conversation stage changed by another operator') {
+            super(message);
+            this.name = 'ConversationStageConflictError';
+        }
+    }
+
+    return {
+        mockChangeConversationStage: vi.fn().mockResolvedValue({}),
+        MockConversationStageConflictError: HoistedConversationStageConflictError,
+    };
+});
+
 vi.mock('@/infra/auth/guards', () => ({
     requireAdmin: vi.fn().mockResolvedValue({
         ok: true,
@@ -22,8 +36,9 @@ vi.mock('@/modules/atendimento/conversation.repository', () => ({
 }));
 
 vi.mock('@/modules/atendimento/conversation.service', () => ({
+    ConversationStageConflictError: MockConversationStageConflictError,
     conversationService: {
-        changeConversationStage: vi.fn().mockResolvedValue({}),
+        changeConversationStage: mockChangeConversationStage,
     }
 }));
 
@@ -88,11 +103,9 @@ describe('Operational CRM Actions & Integration', () => {
     });
 
     it('returns 409 when service reports optimistic locking conflict', async () => {
-        const { conversationService } = await import('@/modules/atendimento/conversation.service');
-        vi.mocked(conversationService.changeConversationStage).mockRejectedValueOnce(
-            Object.assign(new Error('Conversation stage changed by another operator'), {
-                name: 'ConversationStageConflictError'
-            })
+        const { ConversationStageConflictError } = await import('@/modules/atendimento/conversation.service');
+        mockChangeConversationStage.mockRejectedValueOnce(
+            new ConversationStageConflictError('Conversation stage changed by another operator')
         );
 
         const req = new Request('http://localhost/api', {

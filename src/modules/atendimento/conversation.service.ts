@@ -192,8 +192,7 @@ export const conversationService = {
         );
 
         if (!updated) {
-            // CAS conflict / stale version: treat as benign no-op to keep this as best-effort
-            return;
+            throw new ConversationStageConflictError();
         }
 
         // Emit ecosystem event for stage change
