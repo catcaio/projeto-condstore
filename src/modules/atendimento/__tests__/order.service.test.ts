@@ -181,9 +181,7 @@ describe('Order Service Implementation', () => {
                 limit: vi.fn()
                     .mockResolvedValueOnce([mockQuote]) // quote
                     .mockResolvedValueOnce([]) // idempotency guard - none exists
-                    .mockResolvedValueOnce([fallbackOrder]) // fallback after duplicate entry
-                    .mockResolvedValueOnce([fallbackOrder]) // fetch newOrder at the end
-                    .mockResolvedValueOnce([{ opportunityId: 'opp-123' }]), // crm update
+                    .mockResolvedValueOnce([fallbackOrder]), // fallback after duplicate entry
                 insert: vi.fn().mockReturnThis(),
                 values: vi.fn().mockRejectedValueOnce({ code: 'ER_DUP_ENTRY', message: 'Duplicate entry' }), // simulate race condition DB constraint
                 update: vi.fn().mockReturnThis(),
@@ -195,7 +193,9 @@ describe('Order Service Implementation', () => {
             const order = await orderService.createOrderFromQuote('t1', 'c1', 'quote-123', 'op1');
             
             expect(order).toEqual(fallbackOrder);
-            expect(redisClient.eval).toHaveBeenCalled(); // Ensure lock deleted via safe eval
+            expect(mockDb.update).not.toHaveBeenCalled(); // side-effect should be bypassed
+            expect(conversationService.changeConversationStage).not.toHaveBeenCalled(); // side-effect should be bypassed
+            expect(redisClient.eval).toHaveBeenCalled(); // Ensure lock deletion evaluation runs
         });
     });
 
