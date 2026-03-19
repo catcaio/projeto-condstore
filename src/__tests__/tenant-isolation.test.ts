@@ -117,8 +117,7 @@ describe('Tenant Isolation Enforcement', () => {
         });
 
         if (violations.length > 0) {
-            console.log(`Found ${violations.length} tenant isolation violations.`);
-            console.log(violations.join('\n\n'));
+            console.error('TENANT VIOLATIONS:', JSON.stringify(violations, null, 2));
         }
         
         expect(violations.length).toBe(0);
