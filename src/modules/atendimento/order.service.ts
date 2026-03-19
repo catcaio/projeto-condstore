@@ -83,17 +83,36 @@ export const orderService = {
         // 4. Update Conversation Stage to WON
         await conversationService.changeConversationStage(tenantId, conversationId, 'WON', quote.customerId || undefined);
 
-        // 4.5 Sync CRM Opportunity and Quote
-        const quoteResult = await db.select().from(crmQuotes).where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId))).limit(1);
-        const crmQuote = quoteResult[0];
-        if (crmQuote && crmQuote.opportunityId) {
-            await db.update(crmOpportunities)
-                .set({ stage: 'won', status: 'won', lastActivityAt: new Date() })
-                .where(and(eq(crmOpportunities.tenantId, tenantId), eq(crmOpportunities.id, crmQuote.opportunityId)));
-            
-            await db.update(crmQuotes)
-                .set({ status: 'accepted', updatedAt: new Date() })
-                .where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId)));
+        // 4.5 Sync CRM Opportunity and Quote (best-effort)
+        try {
+            const quoteResult = await db
+                .select()
+                .from(crmQuotes)
+                .where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId)))
+                .limit(1);
+            const crmQuote = quoteResult[0];
+            if (crmQuote && crmQuote.opportunityId) {
+                await db
+                    .update(crmOpportunities)
+                    .set({ stage: 'won', status: 'won', lastActivityAt: new Date() })
+                    .where(
+                        and(
+                            eq(crmOpportunities.tenantId, tenantId),
+                            eq(crmOpportunities.id, crmQuote.opportunityId),
+                        ),
+                    );
+
+                await db
+                    .update(crmQuotes)
+                    .set({ status: 'accepted', updatedAt: new Date() })
+                    .where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId)));
+            }
+        } catch (error) {
+            // Best-effort: do not block order creation if CRM sync fails
+            console.error(
+                '[OrderService] Failed to sync CRM opportunity/quote during order conversion',
+                { tenantId, quoteId, error },
+            );
         }
 
         // 5. Emit Timeline Event
