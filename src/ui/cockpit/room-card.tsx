@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, Button } from '@/ui/components';
-import Link from 'next/link';
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ModuleLink } from './module-link';
 
 interface RoomCardProps {
     id: string;
@@ -19,11 +19,11 @@ export function RoomCard({ id, label, description, icon: Icon }: RoomCardProps) 
                 actions={<Icon className="h-6 w-6 text-indigo-500" />}
             />
             <CardContent className="flex-1 flex flex-col justify-end pt-4">
-                <Link href={`/cockpit/rooms/${id}`} className="w-full">
+                <ModuleLink id={id} className="w-full">
                     <Button variant="secondary" className="w-full">
                         Abrir Sala
                     </Button>
-                </Link>
+                </ModuleLink>
             </CardContent>
         </Card>
     );

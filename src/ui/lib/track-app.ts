@@ -1,7 +1,7 @@
 import { safeFetch } from './safe-fetch';
 
 export interface AppTrackingEvent {
-    type: 'signup_created' | 'store_connected' | 'first_freight_simulation' | 'first_whatsapp_message' | 'cockpit_viewed';
+    type: 'signup_created' | 'store_connected' | 'first_freight_simulation' | 'first_whatsapp_message' | 'cockpit_viewed' | 'module_clicked';
     metadata?: Record<string, any>;
 }
 

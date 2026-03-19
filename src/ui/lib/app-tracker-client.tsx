@@ -11,8 +11,8 @@ export function ApplicationTracker() {
         // Tracker fires signup_created on ANY first app load (dedup server-side guarantees only 1 per tenant)
         trackAppEvent({ type: 'signup_created' });
 
-        // Track cockpit_viewed if on /cockpit or /home
-        if (pathname === '/dashboard' || pathname === '/home') {
+        // Track cockpit_viewed if on /cockpit or its root subroutes
+        if (pathname === '/cockpit' || pathname === '/cockpit/overview') {
             trackAppEvent({ type: 'cockpit_viewed' });
         }
     }, [pathname]);
