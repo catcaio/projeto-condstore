@@ -1358,7 +1358,6 @@ export const orders = mysqlTable('orders', {
 }, (table) => ({
     tenantCustomerIdx: index('idx_orders_tenant_customer').on(table.tenantId, table.customerId),
     tenantStatusIdx: index('idx_orders_tenant_status').on(table.tenantId, table.status),
-    tenantQuoteUniqueIdx: uniqueIndex('idx_orders_tenant_quote_unique').on(table.tenantId, table.quoteId),
 }));
 
 export type OrderRecord = typeof orders.$inferSelect;
