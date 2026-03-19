@@ -192,9 +192,7 @@ export const conversationService = {
         );
 
         if (!updated) {
-            // CAS conflict: another operator changed the stage in the meantime.
-            // Treat as best-effort no-op so shared callers don't surface this as a 500.
-            return;
+            throw new ConversationStageConflictError();
         }
 
         // Emit ecosystem event for stage change

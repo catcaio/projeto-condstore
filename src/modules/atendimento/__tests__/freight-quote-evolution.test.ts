@@ -7,11 +7,16 @@ import { conversationService } from '../conversation.service';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { crmService } from '@/modules/crm/server';
 
-vi.mock('../conversation.service', () => ({
-    conversationService: {
-        changeConversationStage: vi.fn(),
-    }
-}));
+vi.mock('../conversation.service', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../conversation.service')>();
+    return {
+        ...actual,
+        conversationService: {
+            ...actual.conversationService,
+            changeConversationStage: vi.fn(),
+        }
+    };
+});
 
 vi.mock('@/lib/events/operational-event-bus', () => ({
     publishOperationalEvent: vi.fn(),

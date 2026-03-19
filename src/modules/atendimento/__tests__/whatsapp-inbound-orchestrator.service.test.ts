@@ -52,12 +52,17 @@ vi.mock('@/modules/atendimento/message.service', () => ({
     messageService: { processInbound: vi.fn() }
 }));
 
-vi.mock('@/modules/atendimento/conversation.service', () => ({
-    conversationService: { 
-        findOrCreateConversationByPhone: vi.fn(),
-        hasRecentOperatorMessage: vi.fn()
-    }
-}));
+vi.mock('@/modules/atendimento/conversation.service', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/modules/atendimento/conversation.service')>();
+    return {
+        ...actual,
+        conversationService: {
+            ...actual.conversationService,
+            findOrCreateConversationByPhone: vi.fn(),
+            hasRecentOperatorMessage: vi.fn()
+        }
+    };
+});
 
 vi.mock('@/modules/catalog/catalog.service', () => ({
     catalogService: { searchProductsByName: vi.fn() }

@@ -21,11 +21,16 @@ vi.mock('@/modules/atendimento/conversation.repository', () => ({
     }
 }));
 
-vi.mock('@/modules/atendimento/conversation.service', () => ({
-    conversationService: {
-        changeConversationStage: vi.fn().mockResolvedValue({}),
-    }
-}));
+vi.mock('@/modules/atendimento/conversation.service', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@/modules/atendimento/conversation.service')>();
+    return {
+        ...actual,
+        conversationService: {
+            ...actual.conversationService,
+            changeConversationStage: vi.fn().mockResolvedValue({}),
+        }
+    };
+});
 
 const mockDbUpdate = vi.fn().mockReturnThis();
 const mockDbSet = vi.fn().mockReturnThis();
@@ -88,11 +93,9 @@ describe('Operational CRM Actions & Integration', () => {
     });
 
     it('returns 409 when service reports optimistic locking conflict', async () => {
-        const { conversationService } = await import('@/modules/atendimento/conversation.service');
+        const { conversationService, ConversationStageConflictError } = await import('@/modules/atendimento/conversation.service');
         vi.mocked(conversationService.changeConversationStage).mockRejectedValueOnce(
-            Object.assign(new Error('Conversation stage changed by another operator'), {
-                name: 'ConversationStageConflictError'
-            })
+            new ConversationStageConflictError()
         );
 
         const req = new Request('http://localhost/api', {

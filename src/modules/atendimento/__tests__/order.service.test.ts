@@ -21,11 +21,16 @@ vi.mock('@/infra/redis.client', () => ({
     }
 }));
 
-vi.mock('../conversation.service', () => ({
-    conversationService: {
-        changeConversationStage: vi.fn().mockResolvedValue(undefined),
-    }
-}));
+vi.mock('../conversation.service', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../conversation.service')>();
+    return {
+        ...actual,
+        conversationService: {
+            ...actual.conversationService,
+            changeConversationStage: vi.fn().mockResolvedValue(undefined),
+        }
+    };
+});
 
 vi.mock('../message.service', () => ({
     messageService: {
