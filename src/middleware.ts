@@ -31,13 +31,7 @@ export const config = {
         '/freight/simulations/:path*',
         '/attribution/:path*',
         '/settings/:path*',
-        '/api/internal/:path*',
-        '/api/cockpit/:path*',
-        '/api/tenants/:path*',
-        '/api/admin/:path*',
-        '/api/orders/:path*',
-        '/api/public/:path*',
-        '/api/webhooks/:path*'
+        '/api/:path*'
     ],
 };
 
@@ -98,22 +92,6 @@ function forbiddenJsonResponse(message = 'Forbidden'): NextResponse {
 export async function middleware(req: NextRequest) {
     const pathname = req.nextUrl.pathname;
 
-    if (pathname.startsWith('/api/public/')) {
-        if (process.env.PUBLIC_ENDPOINTS_DISABLED === 'true') {
-            await logEdgeSecurityEvent({
-                requestId: req.headers.get('x-request-id') || 'unknown',
-                route: pathname,
-                reason: 'public_kill_switch_triggered',
-                ip: req.headers.get('x-forwarded-for')
-            });
-            return new NextResponse(JSON.stringify({ error: 'Service temporarily unavailable' }), {
-                status: 503,
-                headers: { 'content-type': 'application/json' },
-            });
-        }
-        return NextResponse.next();
-    }
-
     const requestHeaders = new Headers(req.headers);
     const clientIp = requestHeaders.get('x-forwarded-for');
     const requestId = requestHeaders.get('x-request-id') || 'unknown';
@@ -136,6 +114,26 @@ export async function middleware(req: NextRequest) {
     requestHeaders.delete('x-auth-email');
     requestHeaders.delete('x-role');
     requestHeaders.delete('x-user-id');
+
+    if (pathname.startsWith('/api/public/')) {
+        if (process.env.PUBLIC_ENDPOINTS_DISABLED === 'true') {
+            await logEdgeSecurityEvent({
+                requestId,
+                route: pathname,
+                reason: 'public_kill_switch_triggered',
+                ip: clientIp
+            });
+            return new NextResponse(JSON.stringify({ error: 'Service temporarily unavailable' }), {
+                status: 503,
+                headers: { 'content-type': 'application/json' },
+            });
+        }
+        return NextResponse.next({ request: { headers: requestHeaders } });
+    }
+
+    if (pathname.startsWith('/api/webhooks/') || pathname.startsWith('/api/webhook/') || pathname.startsWith('/api/health') || pathname.startsWith('/api/debug') || pathname.startsWith('/api/auth/')) {
+        return NextResponse.next({ request: { headers: requestHeaders } });
+    }
 
     if (pathname.startsWith('/api/internal/')) {
         const credentials = extractInternalRequestCredentials(req);
@@ -160,7 +158,7 @@ export async function middleware(req: NextRequest) {
 
     const cookieToken = req.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!cookieToken) {
-        if (pathname.startsWith('/api/cockpit/') || pathname.startsWith('/api/admin/') || pathname.startsWith('/api/tenants/') || pathname.startsWith('/api/orders/')) {
+        if (pathname.startsWith('/api/')) {
             await logEdgeSecurityEvent({
                 requestId,
                 route: pathname,

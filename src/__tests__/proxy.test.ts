@@ -102,6 +102,42 @@ describe("Global Edge Middleware Enforcement", () => {
             expect(await res.json()).toEqual({ error: "Missing authentication token" });
         });
 
+        it("should block /api/simulate if session is missing", async () => {
+            const req = makeRequest("/api/simulate", {});
+            const res = await middleware(req);
+            expect(res.status).toBe(401);
+            expect(await res.json()).toEqual({ error: "Missing authentication token" });
+        });
+
+        it("should allow public webhook endpoints without session", async () => {
+            const req = makeRequest("/api/webhooks/stripe", { "x-stripe-signature": "sig" });
+            const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation(() => new NextResponse());
+            await middleware(req);
+            expect(nextSpy).toHaveBeenCalled();
+            nextSpy.mockRestore();
+        });
+
+        it("should strip spoofed headers and allow /api/simulate with valid session", async () => {
+            (jose.jwtVerify as any).mockResolvedValue({
+                payload: { sub: "usr_1", tenantId: "tnt_2", role: "admin" }
+            });
+            const req = makeRequest("/api/simulate", { "x-tenant-id": "hacker_tenant" }, { condstore_session: "good-token" });
+
+            const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
+                const h = args?.request?.headers as Headers;
+                // Spoofed header should be removed
+                expect(h.get("x-tenant-id")).toBeNull();
+                // Valid auth headers should be injected
+                expect(h.get("x-auth-tenant-id")).toBe("tnt_2");
+                expect(h.get("x-auth-user-id")).toBe("usr_1");
+                return new NextResponse();
+            });
+
+            await middleware(req);
+            expect(nextSpy).toHaveBeenCalled();
+            nextSpy.mockRestore();
+        });
+
         it("should block /api/cockpit/* if session JWT is invalid", async () => {
             (jose.jwtVerify as any).mockRejectedValue(new Error("Invalid token"));
             const req = makeRequest("/api/cockpit/dashboard", {}, { condstore_session: "bad-token" });
