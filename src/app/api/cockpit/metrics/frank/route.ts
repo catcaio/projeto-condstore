@@ -68,14 +68,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     tenantId = auth.session.tenantId;
 
-    const requestedTenantId = request.nextUrl.searchParams.get('tenantId');
-    if (requestedTenantId && requestedTenantId !== tenantId) {
-        return finalize(
-            errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Cross-tenant access forbidden'),
-            ErrorCode.FORBIDDEN,
-        );
-    }
-
     try {
         const url = request.nextUrl;
 

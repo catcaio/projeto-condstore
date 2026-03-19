@@ -79,7 +79,7 @@ describe('GET /api/cockpit/metrics/frank', () => {
         );
     });
 
-    it('rejects cross-tenant requests', async () => {
+    it('ignores arbitrary tenantId query params and keeps session tenant scope', async () => {
         const request = {
             nextUrl: new URL('http://localhost/api/cockpit/metrics/frank?tenantId=other-tenant'),
             headers: new Headers(),
@@ -89,12 +89,13 @@ describe('GET /api/cockpit/metrics/frank', () => {
         const response = await GET(request);
         const json = await response.json();
 
-        expect(response.status).toBe(403);
-        expect(json).toMatchObject({
-            error: {
-                message: 'Cross-tenant access forbidden'
-            }
-        });
-        expect(getFrankAssistMetrics).not.toHaveBeenCalled();
+        expect(response.status).toBe(200);
+        expect(json.ok).toBe(true);
+        expect(json.data.tenantId).toBe('tenant-session');
+        expect(getFrankAssistMetrics).toHaveBeenCalledWith(
+            expect.objectContaining({
+                tenantId: 'tenant-session',
+            }),
+        );
     });
 });
