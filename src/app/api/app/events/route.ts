@@ -14,7 +14,7 @@ import crypto from 'node:crypto';
 const BODY_MAX_BYTES = 16 * 1024;
 
 const appEventSchema = z.object({
-    type: z.enum(['signup_created', 'store_connected', 'first_freight_simulation', 'first_whatsapp_message', 'cockpit_viewed']),
+    type: z.enum(['signup_created', 'store_connected', 'first_freight_simulation', 'first_whatsapp_message', 'cockpit_viewed', 'module_clicked']),
     metadata: z.record(z.string(), z.any()).optional().nullable(),
     ts: z.number().int().positive(),
 }).strict();
@@ -90,14 +90,23 @@ async function handler(request: NextRequest): Promise<NextResponse> {
 
         // Dedup Bucket server-side for milestones (unique per tenantId + type)
         // Store for 7 days in redis, but the real dedup happens because we just want ONE per tenant anyway.
-        // Let's use 24h dedup for cockpit_viewed, and infinite (or 365 days) for the others.
-        // For simplicity, we just check redis. If not in redis, we insert, relying on DB or just insert and let queries handle unique.
-        // The prompt says "Dedup server-side para marcos (ex: unique per tenantId+type) para evitar spam."
-        const dedupKey = type === 'cockpit_viewed'
-            ? `dedup:appev:${tenantId}:${type}:${new Date().toISOString().split('T')[0]}` // Dedup por dia
-            : `dedup:appev:${tenantId}:${type}`; // Dedup global para milestones
-
-        const ttl = type === 'cockpit_viewed' ? 24 * 60 * 60 : 365 * 24 * 60 * 60;
+        // Let's use 24h dedup for cockpit_viewed and module_clicked, and infinite (or 365 days) for the others.
+        let dedupKey: string;
+        let ttl: number;
+        
+        if (type === 'cockpit_viewed') {
+            dedupKey = `dedup:appev:${tenantId}:${type}:${new Date().toISOString().split('T')[0]}`;
+            ttl = 24 * 60 * 60;
+        } else if (type === 'module_clicked') {
+            const moduleId = metadata?.module || 'unknown';
+            const moduleKey = moduleId === 'unknown' ? 'unknown' : sha256Hex(String(moduleId));
+            // Dedup clicks to the same module per day per tenant to avoid noise, still gets basic usage stats.
+            dedupKey = `dedup:appev:${tenantId}:${type}:${moduleKey}:${new Date().toISOString().split('T')[0]}`;
+            ttl = 24 * 60 * 60;
+        } else {
+            dedupKey = `dedup:appev:${tenantId}:${type}`;
+            ttl = 365 * 24 * 60 * 60;
+        }
 
         const isSet = await redisClient.setNx(dedupKey, '1', ttl);
         if (!isSet) {
