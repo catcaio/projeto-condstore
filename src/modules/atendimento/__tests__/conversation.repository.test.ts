@@ -12,7 +12,7 @@ describe('conversationRepository.updateConversationStage', () => {
     });
 
     it('applies compare-and-swap update and increments version when row matches', async () => {
-        const whereMock = vi.fn().mockResolvedValue([{ affectedRows: 1 }]);
+        const whereMock = vi.fn().mockResolvedValue({ affectedRows: 1 });
         const setMock = vi.fn().mockReturnValue({ where: whereMock });
         const updateMock = vi.fn().mockReturnValue({ set: setMock });
 
@@ -36,7 +36,7 @@ describe('conversationRepository.updateConversationStage', () => {
     });
 
     it('returns false when compare-and-swap does not affect rows', async () => {
-        const whereMock = vi.fn().mockResolvedValue([{ affectedRows: 0 }]);
+        const whereMock = vi.fn().mockResolvedValue({ affectedRows: 0 });
         const setMock = vi.fn().mockReturnValue({ where: whereMock });
         const updateMock = vi.fn().mockReturnValue({ set: setMock });
 
