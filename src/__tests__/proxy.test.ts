@@ -94,6 +94,71 @@ describe("Global Edge Middleware Enforcement", () => {
         });
     });
 
+    describe("Targeted Matcher rules: Health & Debug", () => {
+        it("should allow exactly /api/health and strip spoofed headers", async () => {
+             const reqHealth = makeRequest("/api/health", { "x-tenant-id": "hacker" });
+             const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
+                 const h = args?.request?.headers as Headers;
+                 expect(h.get("x-tenant-id")).toBeNull();
+                 return new NextResponse();
+             });
+             await middleware(reqHealth);
+             expect(nextSpy).toHaveBeenCalled();
+             nextSpy.mockRestore();
+        });
+
+        it("should return 405 for POST /api/health", async () => {
+            const { POST } = await import("../app/api/health/route");
+            const res = await POST();
+            expect(res.status).toBe(405);
+        });
+
+        it("should NOT allow /api/healthcheck (matcher bypass)", async () => {
+            const req = makeRequest("/api/healthcheck", {});
+            const res = await middleware(req);
+            expect(res.status).toBe(401);
+            expect(await res.json()).toEqual({ error: "Missing authentication token" });
+        });
+
+        it("should block /api/debug without Auth", async () => {
+            const req = makeRequest("/api/debug", {});
+            const res = await middleware(req);
+            expect(res.status).toBe(401);
+            expect(await res.json()).toEqual({ error: "Unauthorized internal access" });
+        });
+
+        it("should block /api/debug with INVALID token", async () => {
+            const req = makeRequest("/api/debug", { "x-internal-token": "hacked" });
+            const res = await middleware(req);
+            expect(res.status).toBe(401);
+        });
+
+        it("should allow exactly /api/debug with VALID token and strip spoofed headers", async () => {
+             process.env.INTERNAL_JOB_TOKEN = "valid-job-token";
+             const req = makeRequest("/api/debug", {
+                 "x-tenant-id": "hacker",
+                 "x-internal-token": "valid-job-token"
+             });
+             const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
+                 const h = args?.request?.headers as Headers;
+                 expect(h.get("x-tenant-id")).toBeNull();
+                 return new NextResponse();
+             });
+             await middleware(req);
+             expect(nextSpy).toHaveBeenCalled();
+             nextSpy.mockRestore();
+        });
+
+        it("should NOT allow /api/debugger (matcher bypass)", async () => {
+             process.env.INTERNAL_JOB_TOKEN = "valid-job-token";
+             const req = makeRequest("/api/debugger", { "x-internal-token": "valid-job-token" });
+             // Should verify cookieToken because it falls into regular API logic, completely ignoring the internal token
+             const res = await middleware(req);
+             expect(res.status).toBe(401);
+             expect(await res.json()).toEqual({ error: "Missing authentication token" });
+        });
+    });
+
     describe("RULE 2 & 3: Session Check & Tenant Authorization", () => {
         it("should block /api/cockpit/* if session is missing", async () => {
             const req = makeRequest("/api/cockpit/dashboard", {});
