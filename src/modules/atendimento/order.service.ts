@@ -82,6 +82,7 @@ export const orderService = {
             const price = quote.bestPrice ? Number(quote.bestPrice) : quote.sellingPrice ? Number(quote.sellingPrice) : null;
             const totalAmount = quote.totalAmount ? Number(quote.totalAmount) : price;
             const deliveryDeadline = quote.bestCarrier === 'Melhor Envio' ? 5 : 3; // placeholder estimation
+            let orderId = id;
 
             // 3. Create Order
             try {
@@ -110,10 +111,15 @@ export const orderService = {
                         .where(and(eq(orders.tenantId, tenantId), eq(orders.quoteId, quoteId)))
                         .limit(1);
                     if (fallbackOrder) {
-                        return fallbackOrder;
+                        // Usa o pedido existente e continua o fluxo de conversão
+                        orderId = fallbackOrder.id;
+                    } else {
+                        // Se não encontrar o pedido existente, propaga o erro original
+                        throw err;
                     }
+                } else {
+                    throw err;
                 }
-                throw err;
             }
 
             // 3.5 Update Quote Status to CONVERTED
@@ -122,7 +128,7 @@ export const orderService = {
                 convertedAt: new Date() 
             }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
 
-            const [newOrder] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+            const [newOrder] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
 
             // 4. Update Conversation Stage to WON
             await conversationService.changeConversationStage(tenantId, conversationId, 'WON', quote.customerId || undefined);
