@@ -1,13 +1,20 @@
 import fs from 'fs';
 import path from 'path';
 
-const SCOPE = [
+const DEFAULT_SCOPE = [
     'src/modules/atendimento',
     'src/modules/crm',
     'src/modules/pedidos',
     'src/services/notifications.service.ts',
     'src/services/search.service.ts'
 ];
+
+const SCOPE = process.env.TENANT_ISOLATION_SCOPE
+    ? process.env.TENANT_ISOLATION_SCOPE
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : DEFAULT_SCOPE;
 
 function getAllFiles(dirPath, arrayOfFiles = []) {
     if (!fs.existsSync(dirPath)) return arrayOfFiles;
