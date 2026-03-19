@@ -1,9 +1,30 @@
 import fs from 'fs';
 import path from 'path';
 
-const APP_DIR = path.join(process.cwd(), 'src', 'app');
+type GuardRule = {
+    guards: string[];
+    source: string;
+};
 
-// Prefixes that require security guardrails and the guards they accept
+const APP_DIR = process.env.ROUTES_VERIFY_APP_DIR
+    ? path.resolve(process.env.ROUTES_VERIFY_APP_DIR)
+    : path.join(process.cwd(), 'src', 'app');
+
+const GUARDED_TOKEN_PATTERNS: Record<string, RegExp> = {
+    requireInternalToken: /requireInternalToken\s*\(/,
+    requireInternalAuth: /requireInternalAuth\s*\(/,
+    requireAdmin: /requireAdmin\s*\(/,
+    requireAdminSession: /requireAdminSession\s*\(/,
+    requireSession: /requireSession\s*\(/,
+    requireSessionTenantMatch: /requireSessionTenantMatch\s*\(/,
+    assertDevOnly: /assertDevOnly\s*\(/,
+    'x-internal-token': /(?:headers|get|safeCompare)[\s\S]{0,160}['"]x-internal-token['"]/,
+    'x-qa-token': /(?:headers|get|safeCompare)[\s\S]{0,160}['"]x-qa-token['"]/,
+    'x-bootstrap-token': /(?:headers|get|safeCompare)[\s\S]{0,160}['"]x-bootstrap-token['"]/,
+};
+
+// Prefixes that require security guardrails and the guards they accept.
+// Prefix rules also apply to future subroutes that follow the same audited patterns.
 const PROTECTED_PREFIXES: { prefix: string; guards: string[] }[] = [
     {
         prefix: '/api/internal/',
@@ -19,11 +40,19 @@ const PROTECTED_PREFIXES: { prefix: string; guards: string[] }[] = [
     },
     {
         prefix: '/api/cockpit/',
-        guards: ['requireAdmin', 'requireInternalToken'],
+        guards: ['requireAdmin'],
     },
     {
         prefix: '/api/tenants/',
-        guards: ['requireSessionTenantMatch', 'requireAdmin', 'requireInternalToken'],
+        guards: ['requireSessionTenantMatch', 'requireAdminSession', 'requireAdmin', 'requireInternalToken'],
+    },
+    {
+        prefix: '/api/freight/',
+        guards: ['requireAdmin'],
+    },
+    {
+        prefix: '/api/sales/quote',
+        guards: ['requireAdmin'],
     },
     {
         prefix: '/api/search',
@@ -39,10 +68,6 @@ const PROTECTED_PREFIXES: { prefix: string; guards: string[] }[] = [
     },
 ];
 
-/**
- * Recursively find all route.ts files under src/app,
- * returning pairs of [routePath, absoluteFilePath].
- */
 function findRouteFiles(dir: string, baseRoute: string = ''): { routePath: string; filePath: string }[] {
     const results: { routePath: string; filePath: string }[] = [];
     if (!fs.existsSync(dir)) return results;
@@ -68,13 +93,53 @@ function findRouteFiles(dir: string, baseRoute: string = ''): { routePath: strin
 }
 
 function routeMatchesProtectedPrefix(routePath: string, prefix: string): boolean {
-    // Prefixes ending with '/' already include a path boundary; keep existing semantics
     if (prefix.endsWith('/')) {
         return routePath.startsWith(prefix);
     }
 
-    // For prefixes without trailing '/', enforce a segment boundary to avoid over-matching
     return routePath === prefix || routePath.startsWith(prefix + '/');
+}
+
+function resolveRule(routePath: string): GuardRule | null {
+    const prefixRule = PROTECTED_PREFIXES.find(rule => routeMatchesProtectedPrefix(routePath, rule.prefix));
+    if (!prefixRule) return null;
+
+    return {
+        guards: prefixRule.guards,
+        source: `protected prefix \`${prefixRule.prefix}\``,
+    };
+}
+
+function resolveReExportTarget(filePath: string, content: string): string | null {
+    const match = content.match(/export\s*\{[^}]+\}\s*from\s*['"]([^'"]+)['"]/);
+    const importPath = match?.[1];
+    if (!importPath) return null;
+
+    if (importPath.startsWith('@/')) {
+        return path.join(process.cwd(), 'src', importPath.slice(2));
+    }
+
+    if (importPath.startsWith('.')) {
+        return path.resolve(path.dirname(filePath), importPath);
+    }
+
+    return null;
+}
+
+function hasAcceptableGuard(filePath: string, guards: string[], visited = new Set<string>()): boolean {
+    if (visited.has(filePath) || !fs.existsSync(filePath)) return false;
+    visited.add(filePath);
+
+    const content = fs.readFileSync(filePath, 'utf-8');
+    if (guards.some(guard => GUARDED_TOKEN_PATTERNS[guard]?.test(content))) {
+        return true;
+    }
+
+    const reExportTarget = resolveReExportTarget(filePath, content);
+    if (!reExportTarget) return false;
+
+    const targetFilePath = reExportTarget.endsWith('.ts') ? reExportTarget : `${reExportTarget}.ts`;
+    return hasAcceptableGuard(targetFilePath, guards, visited);
 }
 
 function verifyRouteSecurity() {
@@ -84,17 +149,16 @@ function verifyRouteSecurity() {
     const violations: string[] = [];
 
     for (const { routePath, filePath } of allRoutes) {
-        // Check if this route falls under a protected prefix
-        const rule = PROTECTED_PREFIXES.find(p => routeMatchesProtectedPrefix(routePath, p.prefix));
+        const rule = resolveRule(routePath);
         if (!rule) continue;
 
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const hasGuard = rule.guards.some(guard => content.includes(guard));
+        const hasGuard = hasAcceptableGuard(filePath, rule.guards);
 
         if (!hasGuard) {
             violations.push(routePath);
             console.error(`  ❌ SECURITY GUARD MISSING for route: ${routePath}`);
             console.error(`     File: ${path.relative(process.cwd(), filePath)}`);
+            console.error(`     Rule source: ${rule.source}`);
             console.error(`     Expected one of: ${rule.guards.join(', ')}`);
         }
     }
@@ -105,9 +169,7 @@ function verifyRouteSecurity() {
         process.exit(1);
     }
 
-    const protectedCount = allRoutes.filter(r =>
-        PROTECTED_PREFIXES.some(p => routeMatchesProtectedPrefix(r.routePath, p.prefix)),
-    ).length;
+    const protectedCount = allRoutes.filter(route => resolveRule(route.routePath)).length;
     console.log(`✅ All ${protectedCount} protected routes have security guardrails.`);
     process.exit(0);
 }
