@@ -31,13 +31,7 @@ export const config = {
         '/freight/simulations/:path*',
         '/attribution/:path*',
         '/settings/:path*',
-        '/api/internal/:path*',
-        '/api/cockpit/:path*',
-        '/api/tenants/:path*',
-        '/api/admin/:path*',
-        '/api/orders/:path*',
-        '/api/public/:path*',
-        '/api/webhooks/:path*'
+        '/api/:path*'
     ],
 };
 
@@ -98,22 +92,6 @@ function forbiddenJsonResponse(message = 'Forbidden'): NextResponse {
 export async function middleware(req: NextRequest) {
     const pathname = req.nextUrl.pathname;
 
-    if (pathname.startsWith('/api/public/')) {
-        if (process.env.PUBLIC_ENDPOINTS_DISABLED === 'true') {
-            await logEdgeSecurityEvent({
-                requestId: req.headers.get('x-request-id') || 'unknown',
-                route: pathname,
-                reason: 'public_kill_switch_triggered',
-                ip: req.headers.get('x-forwarded-for')
-            });
-            return new NextResponse(JSON.stringify({ error: 'Service temporarily unavailable' }), {
-                status: 503,
-                headers: { 'content-type': 'application/json' },
-            });
-        }
-        return NextResponse.next();
-    }
-
     const requestHeaders = new Headers(req.headers);
     const clientIp = requestHeaders.get('x-forwarded-for');
     const requestId = requestHeaders.get('x-request-id') || 'unknown';
@@ -137,6 +115,34 @@ export async function middleware(req: NextRequest) {
     requestHeaders.delete('x-role');
     requestHeaders.delete('x-user-id');
 
+    if (pathname.startsWith('/api/public/')) {
+        if (process.env.PUBLIC_ENDPOINTS_DISABLED === 'true') {
+            await logEdgeSecurityEvent({
+                requestId,
+                route: pathname,
+                reason: 'public_kill_switch_triggered',
+                ip: clientIp
+            });
+            return new NextResponse(JSON.stringify({ error: 'Service temporarily unavailable' }), {
+                status: 503,
+                headers: { 'content-type': 'application/json' },
+            });
+        }
+        return NextResponse.next({ request: { headers: requestHeaders } });
+    }
+
+    if (
+        pathname.startsWith('/api/webhooks/') ||
+        pathname.startsWith('/api/webhook/') ||
+        pathname === '/api/health' ||
+        pathname.startsWith('/api/health/') ||
+        pathname === '/api/debug' ||
+        pathname.startsWith('/api/debug/') ||
+        pathname.startsWith('/api/auth/')
+    ) {
+        return NextResponse.next({ request: { headers: requestHeaders } });
+    }
+
     if (pathname.startsWith('/api/internal/')) {
         const credentials = extractInternalRequestCredentials(req);
         const isAuthorized =
@@ -158,9 +164,23 @@ export async function middleware(req: NextRequest) {
         return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
+    // Allowlist for autonomous/internal-token API routes that do not use the session cookie.
+    // These routes implement their own authentication (e.g. internal token, cron headers)
+    // and should not be blocked by the generic `/api/*` session-cookie gate.
+    const autonomousApiPaths = [
+        '/api/cron/cleanup',
+        '/api/db/migrate',
+        '/api/painel-logistico',
+        '/api/supreme/ecosystem',
+    ];
+
+    if (autonomousApiPaths.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+        return NextResponse.next({ request: { headers: requestHeaders } });
+    }
+
     const cookieToken = req.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!cookieToken) {
-        if (pathname.startsWith('/api/cockpit/') || pathname.startsWith('/api/admin/') || pathname.startsWith('/api/tenants/') || pathname.startsWith('/api/orders/')) {
+        if (pathname.startsWith('/api/')) {
             await logEdgeSecurityEvent({
                 requestId,
                 route: pathname,
