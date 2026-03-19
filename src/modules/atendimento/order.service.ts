@@ -111,8 +111,9 @@ export const orderService = {
                         .where(and(eq(orders.tenantId, tenantId), eq(orders.quoteId, quoteId)))
                         .limit(1);
                     if (fallbackOrder) {
-                        // Usa o pedido existente e continua o fluxo de conversão
-                        orderId = fallbackOrder.id;
+                        // Oponente venceu a corrida e inseriu; este contexto virou follower tardio
+                        logger.info(`[OrderService] Abortando side-effects de winner pois o banco já possuía a order (Fallback concluído)`);
+                        return fallbackOrder;
                     } else {
                         // Se não encontrar o pedido existente, propaga o erro original
                         throw err;
@@ -173,7 +174,7 @@ export const orderService = {
                     end
                 `;
                 // Para alinhar exatamente com o Redis caso a string já esteja escapada ou em raw pelo driver:
-                const rawToken = JSON.stringify(lockToken);
+                const rawToken = lockToken;
                 await redisClient.eval(luaScript, 1, lockKey, rawToken);
                 logger.info(`[OrderService] Lock release tentado para quote ${quoteId}`, { lockKey });
             } catch (err) {
