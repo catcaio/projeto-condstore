@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, Button } from '@/ui/components';
+import { Card, CardContent, CardHeader } from '@/ui/components';
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ModuleLink } from './module-link';
@@ -20,9 +20,7 @@ export function RoomCard({ id, label, description, icon: Icon }: RoomCardProps) 
             />
             <CardContent className="flex-1 flex flex-col justify-end pt-4">
                 <ModuleLink id={id} className="w-full">
-                    <Button variant="secondary" className="w-full">
-                        Abrir Sala
-                    </Button>
+                    Abrir Sala
                 </ModuleLink>
             </CardContent>
         </Card>
