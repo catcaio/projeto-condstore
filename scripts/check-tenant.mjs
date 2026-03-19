@@ -57,7 +57,7 @@ targetFiles.forEach(file => {
     const cleanContent = content.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, ''); 
     
     // Pattern to catch db.xxx() up to a semicolon or logical sequence boundary
-    const regex = /db\.(?:select\([^)]*\)\.from|update|delete)\s*\(\s*([a-zA-Z0-9_]+)\s*\)([^;]*)/g;
+    const regex = /db\.(?:select\([^)]*\)\s*\.from|update|delete)\s*\(\s*([a-zA-Z0-9_]+)\s*\)([^;]*)/g;
     let match;
 
     while ((match = regex.exec(cleanContent)) !== null) {

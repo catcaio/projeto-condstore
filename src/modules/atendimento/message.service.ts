@@ -109,7 +109,7 @@ export const messageService = {
 
             const [insertedMessage] = await tx.select()
                 .from(conversationMessages)
-                .where(eq(conversationMessages.id, messageId))
+                .where(and(eq(conversationMessages.tenantId, params.tenantId), eq(conversationMessages.id, messageId)))
                 .limit(1);
 
             // Project into CRM Opportunity (Non-blocking but transactional)
@@ -223,7 +223,7 @@ export const messageService = {
 
             const [insertedMessage] = await tx.select()
                 .from(conversationMessages)
-                .where(eq(conversationMessages.id, messageId))
+                .where(and(eq(conversationMessages.tenantId, params.tenantId), eq(conversationMessages.id, messageId)))
                 .limit(1);
 
             // Project into CRM Opportunity
