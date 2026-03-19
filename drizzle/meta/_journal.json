@@ -428,6 +428,13 @@
       "when": 1773934591003,
       "tag": "0072_warm_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "5",
+      "when": 1773937287109,
+      "tag": "0073_large_bishop",
+      "breakpoints": true
     }
   ]
 }
