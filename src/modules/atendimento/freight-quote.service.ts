@@ -1,11 +1,13 @@
 import { getDb } from '@/infra/db';
-import { simulations } from '@/drizzle/schema';
+import { simulations, crmQuotes, crmOpportunities } from '@/drizzle/schema';
 import { freightService } from '../freight/freight.service';
 import { domineIntakeService } from '@/domine/domine-intake.service';
 import { eq, and, desc } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import crypto from 'crypto';
 import { crmService } from '@/modules/crm/server';
+import { conversationService } from './conversation.service';
+import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 
 export interface CreateFreightQuoteInput {
     tenantId: string;
@@ -88,6 +90,23 @@ export class FreightQuoteService {
                 bestPrice: bestOption?.price,
                 }
         }).catch(e => logger.warn('Failed to emit QUOTE_SIMULATED', { error: e.message }));
+
+        // 4.5 Update Conversation Stage to QUOTED
+        await conversationService.changeConversationStage(
+            input.tenantId,
+            input.conversationId,
+            'QUOTED',
+            input.customerId || undefined
+        );
+
+        // Emit operational event manually
+        await publishOperationalEvent({
+            tenantId: input.tenantId,
+            eventType: 'quoted',
+            eventDomain: 'CONVERSION',
+            customerId: input.customerId,
+            payload: { quoteId, conversationId: input.conversationId }
+        });
 
         // 5. Sync into CRM Opportunities & Quotes
         const syncResult = await crmService.syncSimulationToQuote({
@@ -250,6 +269,31 @@ export class FreightQuoteService {
             updatedAt: new Date()
         }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
 
+        // Sync CRM Quote & Opportunity to 'sent'/'proposal_sent' (best-effort, non-blocking for the main flow)
+        try {
+            const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
+            if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
+                await db.update(crmQuotes).set({ status: 'sent', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+                await db.update(crmOpportunities)
+                    .set({ stage: 'proposal_sent', lastActivityAt: new Date() })
+                    .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId));
+            }
+        } catch (error) {
+            logger.error(
+                `Failed to sync CRM quote/opportunity to sent status after sending quote [tenant: ${tenantId}, quote: ${quoteId}]`,
+                error as Error
+            );
+        }
+
+        // Emit operational event
+        await publishOperationalEvent({
+            tenantId,
+            eventType: 'quote_sent',
+            eventDomain: 'CONVERSION',
+            customerId: quote.customerId || undefined,
+            payload: { quoteId, conversationId: quote.conversationId }
+        });
+
         return true;
     }
 
@@ -267,6 +311,31 @@ export class FreightQuoteService {
             status: 'ACCEPTED',
             updatedAt: new Date()
         }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
+
+        // Sync CRM Quote to 'accepted' and opportunity to 'awaiting_response' (non-blocking)
+        try {
+            const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
+            if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
+                await db.update(crmQuotes).set({ status: 'accepted', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+                await db.update(crmOpportunities)
+                    .set({ stage: 'awaiting_response', lastActivityAt: new Date() })
+                    .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId));
+            }
+        } catch (error) {
+            logger.error(
+                `Failed to sync CRM quote/opportunity status to accepted on quote acceptance [tenant: ${tenantId}, quote: ${quoteId}]`,
+                error as Error
+            );
+        }
+
+        // Emit operational event
+        await publishOperationalEvent({
+            tenantId,
+            eventType: 'quote_accepted',
+            eventDomain: 'CONVERSION',
+            customerId: quote.customerId || undefined,
+            payload: { quoteId, conversationId: quote.conversationId }
+        });
 
         return true;
     }

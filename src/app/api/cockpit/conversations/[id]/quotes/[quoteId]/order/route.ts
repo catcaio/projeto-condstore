@@ -13,7 +13,7 @@ export async function POST(
     const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
     
-    const { tenantId, user } = auth.session as any;
+    const { tenantId, sub } = auth.session as any;
 
     try {
         const { id: conversationId, quoteId } = await context.params;
@@ -22,7 +22,7 @@ export async function POST(
             tenantId,
             conversationId,
             quoteId,
-            user.id
+            sub
         );
 
         return NextResponse.json({ ok: true, data: newOrder });

@@ -3,6 +3,26 @@ import { FreightQuoteService } from '../freight-quote.service';
 import * as dbInfra from '@/infra/db';
 import { freightService } from '@/modules/freight/freight.service';
 import { domineIntakeService } from '@/domine/domine-intake.service';
+import { conversationService } from '../conversation.service';
+import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
+import { crmService } from '@/modules/crm/server';
+
+vi.mock('../conversation.service', () => ({
+    conversationService: {
+        changeConversationStage: vi.fn(),
+    }
+}));
+
+vi.mock('@/lib/events/operational-event-bus', () => ({
+    publishOperationalEvent: vi.fn(),
+}));
+
+vi.mock('@/modules/crm/server', () => ({
+    crmService: {
+        syncSimulationToQuote: vi.fn().mockResolvedValue({ opportunityId: 'opp-1' }),
+        scheduleQuoteFollowUp: vi.fn(),
+    }
+}));
 
 vi.mock('@/infra/db', () => ({
     getDb: vi.fn(),
@@ -138,9 +158,18 @@ describe('Commercial Quote Evolution - Freight Quote Service', () => {
     });
 
     it('should transition quote status properly on send and accept', async () => {
-        const mockQuoteRow = { id: 'quote-3', status: 'DRAFT' };
+        const mockQuoteRow = { id: 'quote-3', status: 'DRAFT', conversationId: 'conv-1', customerId: 'cust-1' };
         vi.spyOn(service, 'getQuoteById').mockResolvedValue(mockQuoteRow as any);
-        const mockDb = { update: vi.fn().mockReturnThis(), set: mockDbUpdate, where: mockDbWhere };
+        
+        const mockDb = {
+            select: vi.fn().mockReturnThis(),
+            from: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockResolvedValue([{ opportunityId: 'opp-1' }]),
+            update: vi.fn().mockReturnThis(),
+            set: mockDbUpdate,
+        };
+        
         vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
 
         await service.sendQuote('t1', 'quote-3');

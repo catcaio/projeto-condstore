@@ -47,7 +47,8 @@ describe('Order Service Implementation', () => {
             limit: vi.fn()
                 .mockResolvedValueOnce([mockQuote]) // fetch quote phase
                 .mockResolvedValueOnce([]) // idempotency guard
-                .mockResolvedValueOnce([{ id: 'mocked-id', status: 'CREATED' }]), // fetch saved order phase
+                .mockResolvedValueOnce([{ id: 'mocked-id', status: 'CREATED' }]) // fetch saved order phase
+                .mockResolvedValueOnce([{ opportunityId: 'opp-123' }]), // fetch crm quote phase
             insert: vi.fn().mockReturnThis(),
             values: vi.fn().mockResolvedValue([{ insertId: 'mocked-id' }]),
             update: vi.fn().mockReturnThis(),
@@ -67,6 +68,11 @@ describe('Order Service Implementation', () => {
             'WON',
             'custom-123'
         );
+
+        // Assert CRM Opportunity and Quote got updated to won/converted
+        expect(mockDb.update).toHaveBeenCalled();
+        expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ stage: 'won', status: 'won' }));
+        expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ status: 'accepted' }));
 
         // Assert we fired an event
         expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
@@ -90,7 +96,8 @@ describe('Order Service Implementation', () => {
             where: vi.fn().mockReturnThis(),
             limit: vi.fn()
                 .mockResolvedValueOnce([mockQuote]) // found quote
-                .mockResolvedValueOnce([existingOrder]), // idempotency hit
+                .mockResolvedValueOnce([existingOrder]) // idempotency hit
+                .mockResolvedValueOnce([{ opportunityId: 'opp-123' }]), // fetch crm quote phase
             insert: vi.fn(),
             update: vi.fn()
         };
