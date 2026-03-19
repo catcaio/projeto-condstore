@@ -15,8 +15,8 @@ vi.mock('@/lib/events/operational-event-bus', () => ({
 // Quick mock for conversation repo since it is exported as a const object
 vi.mock('../conversation.repository', () => ({
     conversationRepository: {
-        updateConversationStage: vi.fn().mockResolvedValue(undefined),
-        getConversationById: vi.fn().mockResolvedValue({ id: 'conv-123', stage: 'NEW_LEAD' }),
+        updateConversationStage: vi.fn().mockResolvedValue(true),
+        getConversationById: vi.fn().mockResolvedValue({ id: 'conv-123', stage: 'NEW_LEAD', version: 0 }),
     }
 }));
 
@@ -76,8 +76,16 @@ describe('Conversation Service - Stage Changes', () => {
     });
 
     it('should fire correct operational events on stage change (DEAL_WON)', async () => {
+        const { conversationRepository } = await import('../conversation.repository');
         await conversationService.changeConversationStage('tenant-1', 'conv-123', 'WON', 'cust-456');
 
+        expect(conversationRepository.updateConversationStage).toHaveBeenCalledWith(
+            'tenant-1',
+            'conv-123',
+            0,
+            'WON',
+            undefined
+        );
         expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
             tenantId: 'tenant-1',
             eventType: 'deal_won',
@@ -101,12 +109,26 @@ describe('Conversation Service - Stage Changes', () => {
         const { conversationRepository } = await import('../conversation.repository');
         vi.mocked(conversationRepository.getConversationById).mockResolvedValueOnce({
             id: 'conv-123',
-            stage: 'QUOTED'
+            stage: 'QUOTED',
+            version: 5
         } as any);
 
         await conversationService.changeConversationStage('tenant-1', 'conv-123', 'IN_ATTENDANCE', 'cust-456');
 
         expect(conversationRepository.updateConversationStage).not.toHaveBeenCalled();
+        expect(publishOperationalEvent).not.toHaveBeenCalled();
+    });
+
+    it('should throw conflict error when optimistic locking detects stale write', async () => {
+        const { conversationRepository } = await import('../conversation.repository');
+        vi.mocked(conversationRepository.updateConversationStage).mockResolvedValueOnce(false);
+
+        await expect(
+            conversationService.changeConversationStage('tenant-1', 'conv-123', 'WON', 'cust-456')
+        ).rejects.toMatchObject({
+            name: 'ConversationStageConflictError',
+        });
+
         expect(publishOperationalEvent).not.toHaveBeenCalled();
     });
 });

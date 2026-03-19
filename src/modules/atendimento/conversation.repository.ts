@@ -24,6 +24,20 @@ export interface ConversationListFilter {
     offset?: number;
 }
 
+function extractAffectedRows(result: unknown): number {
+    if (Array.isArray(result)) {
+        const first = result[0] as { affectedRows?: number; rowsAffected?: number } | undefined;
+        if (typeof first?.affectedRows === 'number') return first.affectedRows;
+        if (typeof first?.rowsAffected === 'number') return first.rowsAffected;
+        return 0;
+    }
+
+    const value = result as { affectedRows?: number; rowsAffected?: number } | undefined;
+    if (typeof value?.affectedRows === 'number') return value.affectedRows;
+    if (typeof value?.rowsAffected === 'number') return value.rowsAffected;
+    return 0;
+}
+
 export const conversationRepository = {
     async findOrCreateConversationByPhone(
         tenantId: string,
@@ -278,13 +292,26 @@ export const conversationRepository = {
     async updateConversationStage(
         tenantId: string,
         conversationId: string,
+        expectedVersion: number,
         stage: 'NEW_LEAD' | 'IN_ATTENDANCE' | 'QUOTED' | 'WON' | 'LOST',
         lostReason?: string
-    ): Promise<void> {
+    ): Promise<boolean> {
         const db = await getDb();
-        await db.update(conversations)
-            .set({ stage, ...(lostReason ? { lostReason } : {}) })
-            .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
+        const result = await db.update(conversations)
+            .set({
+                stage,
+                version: sql`${conversations.version} + 1`,
+                ...(lostReason ? { lostReason } : {}),
+            })
+            .where(
+                and(
+                    eq(conversations.tenantId, tenantId),
+                    eq(conversations.id, conversationId),
+                    eq(conversations.version, expectedVersion)
+                )
+            );
+
+        return extractAffectedRows(result) > 0;
     },
 
     async getConversationMessages(tenantId: string, conversationId: string): Promise<ConversationMessageRecord[]> {

@@ -44,6 +44,11 @@ export async function PATCH(
 
         return NextResponse.json({ ok: true });
     } catch (err: any) {
+        if (err instanceof Error && err.name === 'ConversationStageConflictError') {
+            logger.warn('Conversation stage conflict detected', { requestId });
+            return errorResponse('CONFLICT' as any, 409, requestId, err.message);
+        }
+
         logger.error('Failed to change conversation stage', err as Error, { requestId });
         return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);
     }
