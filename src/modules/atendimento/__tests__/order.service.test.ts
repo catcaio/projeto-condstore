@@ -181,9 +181,13 @@ describe('Order Service Implementation', () => {
                 limit: vi.fn()
                     .mockResolvedValueOnce([mockQuote]) // quote
                     .mockResolvedValueOnce([]) // idempotency guard - none exists
-                    .mockResolvedValueOnce([fallbackOrder]), // fallback after duplicate entry
+                    .mockResolvedValueOnce([fallbackOrder]) // fallback after duplicate entry
+                    .mockResolvedValueOnce([fallbackOrder]) // fetch newOrder at the end
+                    .mockResolvedValueOnce([{ opportunityId: 'opp-123' }]), // crm update
                 insert: vi.fn().mockReturnThis(),
-                values: vi.fn().mockRejectedValueOnce({ code: 'ER_DUP_ENTRY', message: 'Duplicate entry' }) // simulate race condition DB constraint
+                values: vi.fn().mockRejectedValueOnce({ code: 'ER_DUP_ENTRY', message: 'Duplicate entry' }), // simulate race condition DB constraint
+                update: vi.fn().mockReturnThis(),
+                set: vi.fn().mockReturnThis(),
             };
 
             vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
