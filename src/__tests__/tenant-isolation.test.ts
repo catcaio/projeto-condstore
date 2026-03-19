@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import fg from 'fast-glob';
 
 const SCOPE = [
     'src/modules/atendimento',
@@ -11,30 +12,25 @@ const SCOPE = [
 ];
 
 function getAllFiles(dirPath: string, arrayOfFiles: string[] = []) {
-    if (!fs.existsSync(dirPath)) return arrayOfFiles;
-    
-    const stat = fs.statSync(dirPath);
-    if (stat.isFile()) {
-        if (dirPath.endsWith('.ts') && !dirPath.includes('.test.ts') && !dirPath.includes('.spec.ts')) {
-            arrayOfFiles.push(dirPath);
-        }
+    if (!fs.existsSync(dirPath)) {
         return arrayOfFiles;
     }
 
-    const files = fs.readdirSync(dirPath);
-    files.forEach((file) => {
-        // Ignora pastas inúteis se existirem
-        if (file === 'node_modules' || file === 'dist') return;
-        const fullPath = path.join(dirPath, file);
-        if (fs.statSync(fullPath).isDirectory()) {
-            arrayOfFiles = getAllFiles(fullPath, arrayOfFiles);
-        } else {
-            if (file.endsWith('.ts') && !file.includes('.test.ts') && !file.includes('.spec.ts')) {
-                arrayOfFiles.push(fullPath);
-            }
-        }
+    const root = path.resolve(dirPath).replace(/\\/g, '/');
+
+    const matches = fg.sync('**/*.ts', {
+        cwd: root,
+        onlyFiles: true,
+        ignore: [
+            '**/*.test.ts',
+            '**/*.spec.ts',
+            'node_modules/**',
+            'dist/**',
+        ],
+        dot: false,
     });
-    return arrayOfFiles;
+
+    return arrayOfFiles.concat(matches.map((file) => path.join(root, file)));
 }
 
 describe('Tenant Isolation Enforcement', () => {
