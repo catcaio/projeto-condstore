@@ -16,8 +16,19 @@ function getAllFiles(dirPath: string, arrayOfFiles: string[] = []) {
         return arrayOfFiles;
     }
 
+    const stat = fs.statSync(dirPath);
+    
+    // 2. arquivo .ts -> retornar o próprio arquivo
+    if (stat.isFile()) {
+        if (dirPath.endsWith('.ts') && !dirPath.includes('.test.ts') && !dirPath.includes('.spec.ts')) {
+            arrayOfFiles.push(path.resolve(dirPath));
+        }
+        return arrayOfFiles;
+    }
+
     const root = path.resolve(dirPath).replace(/\\/g, '/');
 
+    // 1. diretório -> varrer arquivos .ts normalmente
     const matches = fg.sync('**/*.ts', {
         cwd: root,
         onlyFiles: true,
