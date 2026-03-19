@@ -174,6 +174,13 @@ describe("Global Edge Middleware Enforcement", () => {
             expect(await res.json()).toEqual({ error: "Missing authentication token" });
         });
 
+        it("should block representative global route /api/events/track if session missing", async () => {
+            const req = makeRequest("/api/events/track", {});
+            const res = await middleware(req);
+            expect(res.status).toBe(401);
+            expect(await res.json()).toEqual({ error: "Missing authentication token" });
+        });
+
         it("should allow public webhook endpoints without session", async () => {
             const req = makeRequest("/api/webhooks/stripe", { "x-stripe-signature": "sig" });
             const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation(() => new NextResponse());

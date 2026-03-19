@@ -31,12 +31,7 @@ export const config = {
         '/freight/simulations/:path*',
         '/attribution/:path*',
         '/settings/:path*',
-        // Limit middleware to specific API routes that rely on session-cookie auth.
-        // Avoid a broad `/api/:path*` matcher so routes with custom auth (cron, webhooks,
-        // internal-token endpoints, etc.) can continue to handle authentication themselves.
-        '/api/health',
-        '/api/debug',
-        '/api/debug/:path*',
+        '/api/:path*'
     ],
 };
 
