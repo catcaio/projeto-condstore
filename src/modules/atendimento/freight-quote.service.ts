@@ -269,10 +269,17 @@ export class FreightQuoteService {
             updatedAt: new Date()
         }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
 
-        // Sync CRM Quote to 'sent'
-        const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
-        if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
-            await db.update(crmQuotes).set({ status: 'sent', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+        // Sync CRM Quote to 'sent' (best-effort, non-blocking for the main flow)
+        try {
+            const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
+            if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
+                await db.update(crmQuotes).set({ status: 'sent', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+            }
+        } catch (error) {
+            logger.error(
+                { err: error, tenantId, quoteId },
+                'Failed to sync CRM quote to sent status after sending quote'
+            );
         }
 
         // Emit operational event
