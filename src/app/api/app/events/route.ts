@@ -99,8 +99,9 @@ async function handler(request: NextRequest): Promise<NextResponse> {
             ttl = 24 * 60 * 60;
         } else if (type === 'module_clicked') {
             const moduleId = metadata?.module || 'unknown';
+            const moduleKey = moduleId === 'unknown' ? 'unknown' : sha256Hex(String(moduleId));
             // Dedup clicks to the same module per day per tenant to avoid noise, still gets basic usage stats.
-            dedupKey = `dedup:appev:${tenantId}:${type}:${moduleId}:${new Date().toISOString().split('T')[0]}`;
+            dedupKey = `dedup:appev:${tenantId}:${type}:${moduleKey}:${new Date().toISOString().split('T')[0]}`;
             ttl = 24 * 60 * 60;
         } else {
             dedupKey = `dedup:appev:${tenantId}:${type}`;
