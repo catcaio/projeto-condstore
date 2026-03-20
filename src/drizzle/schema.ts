@@ -2050,6 +2050,7 @@ export const conversations = mysqlTable('conversations', {
     channel: varchar('channel', { length: 20 }).notNull().default('WHATSAPP'),
     status: mysqlEnum('status', ConversationStatusEnum).notNull().default('new'),
     stage: mysqlEnum('stage', ['NEW_LEAD', 'IN_ATTENDANCE', 'QUOTED', 'WON', 'LOST']).notNull().default('NEW_LEAD'),
+    version: int('version').notNull().default(0),
     assignedTo: varchar('assigned_to', { length: 36 }),
     lostReason: varchar('lost_reason', { length: 255 }),
     lastMessageAt: timestamp('last_message_at').default(sql`CURRENT_TIMESTAMP`),

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { conversationService } from '@/modules/atendimento/conversation.service';
+import { ConversationStageConflictError, conversationService } from '@/modules/atendimento/conversation.service';
 import { conversationRepository } from '@/modules/atendimento/conversation.repository';
 import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
@@ -44,6 +44,11 @@ export async function PATCH(
 
         return NextResponse.json({ ok: true });
     } catch (err: any) {
+        if (err instanceof ConversationStageConflictError) {
+            logger.warn('Conversation stage conflict detected', { requestId });
+            return errorResponse('CONFLICT' as any, 409, requestId, err.message);
+        }
+
         logger.error('Failed to change conversation stage', err as Error, { requestId });
         return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);
     }

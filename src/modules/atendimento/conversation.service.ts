@@ -3,6 +3,13 @@ import { type ConversationRecord, type ConversationMessageRecord, type Conversat
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 
+export class ConversationStageConflictError extends Error {
+    constructor(message: string = 'Conversation stage changed by another operator') {
+        super(message);
+        this.name = 'ConversationStageConflictError';
+    }
+}
+
 export const conversationService = {
     async findOrCreateConversationByPhone(
         tenantId: string,
@@ -176,7 +183,17 @@ export const conversationService = {
             lostReason = 'No reason provided';
         }
 
-        await conversationRepository.updateConversationStage(tenantId, conversationId, stage, lostReason);
+        const updated = await conversationRepository.updateConversationStage(
+            tenantId,
+            conversationId,
+            existingConv.version,
+            stage,
+            lostReason
+        );
+
+        if (!updated) {
+            throw new ConversationStageConflictError();
+        }
 
         // Emit ecosystem event for stage change
         ecosystemEventsService.emitEvent({

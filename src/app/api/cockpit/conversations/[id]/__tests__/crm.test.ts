@@ -5,6 +5,20 @@ import { PATCH as OwnerPatch } from '../owner/route';
 import { POST as NotesPost, GET as NotesGet } from '../notes/route';
 import { POST as TasksPost, GET as TasksGet } from '../tasks/route';
 
+const { mockChangeConversationStage, MockConversationStageConflictError } = vi.hoisted(() => {
+    class HoistedConversationStageConflictError extends Error {
+        constructor(message: string = 'Conversation stage changed by another operator') {
+            super(message);
+            this.name = 'ConversationStageConflictError';
+        }
+    }
+
+    return {
+        mockChangeConversationStage: vi.fn().mockResolvedValue({}),
+        MockConversationStageConflictError: HoistedConversationStageConflictError,
+    };
+});
+
 vi.mock('@/infra/auth/guards', () => ({
     requireAdmin: vi.fn().mockResolvedValue({
         ok: true,
@@ -15,15 +29,16 @@ vi.mock('@/infra/auth/guards', () => ({
 
 vi.mock('@/modules/atendimento/conversation.repository', () => ({
     conversationRepository: {
-        getConversationById: vi.fn().mockResolvedValue({ id: 'conv-1', customerId: 'cust-1', assignedTo: 'op1', stage: 'NEW_LEAD' }),
+        getConversationById: vi.fn().mockResolvedValue({ id: 'conv-1', customerId: 'cust-1', assignedTo: 'op1', stage: 'NEW_LEAD', version: 0 }),
         assignConversation: vi.fn().mockResolvedValue({}),
         unassignConversation: vi.fn().mockResolvedValue({}),
     }
 }));
 
 vi.mock('@/modules/atendimento/conversation.service', () => ({
+    ConversationStageConflictError: MockConversationStageConflictError,
     conversationService: {
-        changeConversationStage: vi.fn().mockResolvedValue({}),
+        changeConversationStage: mockChangeConversationStage,
     }
 }));
 
@@ -85,6 +100,46 @@ describe('Operational CRM Actions & Integration', () => {
         const resOk = await StagePatch(reqWithReason as any, { params: Promise.resolve({ id: '1' }) });
         const bodyOk = await resOk.json();
         expect(bodyOk.ok).toBe(true);
+    });
+
+    it('returns 409 when service reports optimistic locking conflict', async () => {
+        const { ConversationStageConflictError } = await import('@/modules/atendimento/conversation.service');
+        mockChangeConversationStage.mockRejectedValueOnce(
+            new ConversationStageConflictError('Conversation stage changed by another operator')
+        );
+
+        const req = new Request('http://localhost/api', {
+            method: 'PATCH',
+            body: JSON.stringify({ stage: 'WON' })
+        });
+
+        const res = await StagePatch(req as any, { params: Promise.resolve({ id: '1' }) });
+        const body = await res.json();
+
+        expect(res.status).toBe(409);
+        expect(body.error.code).toBe('CONFLICT');
+    });
+
+    it('uses tenant scope from session in stage change flow', async () => {
+        const { conversationRepository } = await import('@/modules/atendimento/conversation.repository');
+        const { conversationService } = await import('@/modules/atendimento/conversation.service');
+
+        const req = new Request('http://localhost/api', {
+            method: 'PATCH',
+            body: JSON.stringify({ stage: 'IN_ATTENDANCE' })
+        });
+
+        const res = await StagePatch(req as any, { params: Promise.resolve({ id: 'conv-123' }) });
+        expect(res.status).toBe(200);
+
+        expect(conversationRepository.getConversationById).toHaveBeenCalledWith('t1', 'conv-123');
+        expect(conversationService.changeConversationStage).toHaveBeenCalledWith(
+            't1',
+            'conv-123',
+            'IN_ATTENDANCE',
+            'cust-1',
+            undefined
+        );
     });
 
     it('allows assigning an owner symmetrically', async () => {
