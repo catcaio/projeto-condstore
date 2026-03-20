@@ -4,6 +4,7 @@ import { createOrderFromSimulation } from '@/modules/pedidos/server';
 import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 import { NextRequest } from 'next/server';
 import { structuredLogger } from '@/infra/log/logger';
+import { redisClient } from '@/infra/redis.client';
 
 const createOrderSchema = z.object({
     simulationId: z.string().uuid(),
@@ -44,6 +45,20 @@ export async function POST(req: NextRequest) {
         }
 
         const data = parsed.data;
+
+        const lockKey = `lock:order:simulation:${data.simulationId}`;
+        const lockAcquired = await redisClient.setNx(lockKey, '1', 60);
+
+        if (!lockAcquired) {
+            structuredLogger.warn('api_orders_create_from_quote_duplicate', {
+                simulationId: data.simulationId,
+                tenantId,
+            });
+            return NextResponse.json(
+                { error: 'Order creation already in progress or completed for this simulation' },
+                { status: 409 },
+            );
+        }
 
         // 2. Execute Business Logic
         const result = await createOrderFromSimulation({
