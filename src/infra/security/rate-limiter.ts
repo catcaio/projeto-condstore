@@ -25,7 +25,6 @@ export type RouteSensitivity = 'critical' | 'public_safe' | 'failopen_memory';
  * Critical scopes (webhooks, internal, purge-user, etc) remain strictly fail-closed.
  */
 const FALLBACK_MEMORY_SCOPES = new Set([
-  'auth.login',
   'public_home', 'public_docs', 'public_pricing', 'public_robots', 'public_sitemap',
   'cotacao_intent', 'cotacao_quotes', 'public_events'
 ]);

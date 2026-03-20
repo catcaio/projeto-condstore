@@ -92,55 +92,6 @@ describe('security rate-limiter redis failure hardening', () => {
     expect(JSON.stringify(logContext)).not.toContain('admin');
   });
 
-  it('uses memory fallback for auth.login (failopen scope) when redis is unavailable', async () => {
-    const limiter = new RateLimiter();
-
-    const result = await limiter.limit('auth.login', '1.2.3.4:user@example.com', {
-      max: 5,
-      windowSec: 60,
-    });
-
-    // Should be allowed (memory fallback, first request)
-    expect(result.allowed).toBe(true);
-    expect(result.remaining).toBeGreaterThan(0);
-    expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
-      'rate_limiter_fallback_local_used',
-      expect.objectContaining({
-        eventType: 'rate_limiter',
-        scope: 'auth.login',
-        reason: 'redis_unavailable',
-        rateLimitMode: 'failopen_memory',
-        sensitivity: 'failopen_memory',
-      }),
-    );
-    // Must NOT call fail_closed for auth.login
-    expect(mockStructuredLogger.error).not.toHaveBeenCalledWith(
-      'rate_limiter_redis_failure_fail_closed',
-      expect.anything(),
-    );
-  });
-
-  it('auth.login memory fallback still rate-limits after exceeding max', async () => {
-    const limiter = new RateLimiter();
-
-    // Exhaust the limit (5 requests)
-    for (let i = 0; i < 5; i++) {
-      await limiter.limit('auth.login', '1.2.3.4:brute', {
-        max: 5,
-        windowSec: 60,
-      });
-    }
-
-    // 6th request should be blocked
-    const result = await limiter.limit('auth.login', '1.2.3.4:brute', {
-      max: 5,
-      windowSec: 60,
-    });
-
-    expect(result.allowed).toBe(false);
-    expect(result.remaining).toBe(0);
-  });
-
   it('uses memory fallback for public_safe scopes when redis is unavailable', async () => {
     const limiter = new RateLimiter();
 
@@ -195,30 +146,4 @@ describe('security rate-limiter redis failure hardening', () => {
     );
   });
 
-  it('auth.login uses memory fallback even when redis errors (not just unavailable)', async () => {
-    mockRedis.isAvailable.mockReturnValue(true);
-    mockRedis.incr.mockResolvedValue(0);
-    mockRedis.get.mockResolvedValue(0);
-
-    const limiter = new RateLimiter();
-    const result = await limiter.limit('auth.login', '1.2.3.4:user@example.com', {
-      max: 5,
-      windowSec: 60,
-    });
-
-    // Should use memory fallback, not fail-closed
-    expect(result.allowed).toBe(true);
-    expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
-      'rate_limiter_fallback_local_used',
-      expect.objectContaining({
-        scope: 'auth.login',
-        reason: 'redis_error',
-        rateLimitMode: 'failopen_memory',
-      }),
-    );
-    expect(mockStructuredLogger.error).not.toHaveBeenCalledWith(
-      'rate_limiter_redis_failure_fail_closed',
-      expect.anything(),
-    );
-  });
 });

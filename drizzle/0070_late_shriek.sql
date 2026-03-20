@@ -83,16 +83,19 @@ CREATE TABLE `workflow_runs` (
 	CONSTRAINT `workflow_runs_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-DROP INDEX `idx_eco_event_tenant_type` ON `ecosystem_events`;--> statement-breakpoint
-DROP INDEX `idx_eco_event_entity` ON `ecosystem_events`;--> statement-breakpoint
-DROP INDEX `idx_eco_event_created` ON `ecosystem_events`;--> statement-breakpoint
-ALTER TABLE `ecosystem_events` MODIFY COLUMN `type` varchar(80) NOT NULL;--> statement-breakpoint
-ALTER TABLE `ecosystem_events` MODIFY COLUMN `entity_type` varchar(50) NOT NULL;--> statement-breakpoint
-ALTER TABLE `ecosystem_events` MODIFY COLUMN `entity_id` varchar(128);--> statement-breakpoint
-ALTER TABLE `ecosystem_events` MODIFY COLUMN `payload_json` json NOT NULL;--> statement-breakpoint
-ALTER TABLE `ecosystem_events` MODIFY COLUMN `actor` varchar(128) NOT NULL;--> statement-breakpoint
-ALTER TABLE `ecosystem_events` MODIFY COLUMN `source` varchar(50) NOT NULL;--> statement-breakpoint
-ALTER TABLE `ecosystem_events` MODIFY COLUMN `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP;--> statement-breakpoint
+CREATE TABLE `ecosystem_events` (
+	`id` varchar(36) NOT NULL,
+	`tenant_id` varchar(36) NOT NULL,
+	`type` varchar(80) NOT NULL,
+	`entity_type` varchar(50) NOT NULL,
+	`entity_id` varchar(128),
+	`payload_json` json NOT NULL,
+	`actor` varchar(128) NOT NULL,
+	`source` varchar(50) NOT NULL,
+	`created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT `ecosystem_events_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
 CREATE INDEX `idx_notif_user_read` ON `notifications` (`tenant_id`,`user_id`,`read`,`created_at`);--> statement-breakpoint
 CREATE INDEX `idx_notif_created` ON `notifications` (`created_at`);--> statement-breakpoint
 CREATE INDEX `idx_op_metrics_tenant_metric` ON `operational_metrics` (`tenant_id`,`metric`,`created_at`);--> statement-breakpoint
