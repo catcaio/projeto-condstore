@@ -31,7 +31,8 @@ export const config = {
         '/freight/simulations/:path*',
         '/attribution/:path*',
         '/settings/:path*',
-        '/api/:path*'
+        '/api/:path*',
+        '/t/:path*'
     ],
 };
 
@@ -187,6 +188,17 @@ export async function middleware(req: NextRequest) {
                 ip: clientIp
             });
             return unauthorizedJsonResponse('Missing authentication token');
+        } else if (
+            pathname.startsWith('/t/') ||
+            pathname.startsWith('/dashboard/') ||
+            pathname.startsWith('/cockpit/') ||
+            pathname.startsWith('/operacao/') ||
+            pathname.startsWith('/inbox/')
+        ) {
+            // For UI routes, redirect to login
+            const loginUrl = new URL('/auth/login', req.url);
+            loginUrl.searchParams.set('callbackUrl', encodeURI(pathname));
+            return NextResponse.redirect(loginUrl);
         }
     }
 
@@ -200,7 +212,13 @@ export async function middleware(req: NextRequest) {
                 reason: 'invalid_jwt',
                 ip: clientIp
             });
-            return unauthorizedJsonResponse('Invalid or expired authentication token');
+            if (pathname.startsWith('/api/')) {
+                return unauthorizedJsonResponse('Invalid or expired authentication token');
+            } else {
+                const loginUrl = new URL('/auth/login', req.url);
+                loginUrl.searchParams.set('callbackUrl', encodeURI(pathname));
+                return NextResponse.redirect(loginUrl);
+            }
         }
 
         requestHeaders.set('x-auth-tenant-id', session.tenantId);
