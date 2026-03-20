@@ -456,6 +456,13 @@
       "when": 1773945491673,
       "tag": "0076_stormy_lorna_dane",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "5",
+      "when": 1774023582056,
+      "tag": "0077_bent_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }
