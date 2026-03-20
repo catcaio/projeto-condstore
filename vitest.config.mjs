@@ -34,6 +34,17 @@ export default defineConfig({
     pool: process.env.VITEST_POOL === "threads" ? "threads" : "forks",
     threads: false,
     watch: false,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary", "lcov"],
+      reportsDirectory: "./coverage",
+      thresholds: {
+        statements: 58.5,
+        branches: 46.9,
+        functions: 49.5,
+        lines: 59.9,
+      },
+    },
     include: [
       "src/**/*.test.ts",
       "src/**/*.test.tsx",
