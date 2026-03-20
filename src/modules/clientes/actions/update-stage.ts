@@ -1,14 +1,15 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getDb } from '@/infra/db';
+import { getDb, withTenantIdNotDeleted } from '@/infra/db';
 import { crmOpportunities } from '@/drizzle/schema';
-import { eq } from 'drizzle-orm';
 import type { CrmStage } from '../types';
+import { getTenantId } from '@/modules/audit/audit.actions';
 
 export async function updateClientOpportunityStage(opportunityId: string, newStage: CrmStage) {
     if (!opportunityId || !newStage) return;
     
+    const tenantId = await getTenantId();
     const db = await getDb();
     
     await db.update(crmOpportunities)
@@ -17,7 +18,7 @@ export async function updateClientOpportunityStage(opportunityId: string, newSta
             updatedAt: new Date(),
             lastActivityAt: new Date()
         })
-        .where(eq(crmOpportunities.id, opportunityId));
+        .where(withTenantIdNotDeleted(crmOpportunities, tenantId, opportunityId));
 
     revalidatePath('/cockpit/clientes');
     revalidatePath('/clientes');

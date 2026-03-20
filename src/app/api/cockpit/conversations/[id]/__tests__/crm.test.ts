@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as dbInfra from '@/infra/db';
 import { PATCH as StagePatch } from '../stage/route';
 import { PATCH as OwnerPatch } from '../owner/route';
 import { POST as NotesPost, GET as NotesGet } from '../notes/route';
 import { POST as TasksPost, GET as TasksGet } from '../tasks/route';
+import { crmRepository } from '@/modules/crm/server';
 
 const { mockChangeConversationStage, MockConversationStageConflictError } = vi.hoisted(() => {
     class HoistedConversationStageConflictError extends Error {
@@ -40,6 +40,18 @@ vi.mock('@/modules/atendimento/conversation.service', () => ({
     conversationService: {
         changeConversationStage: mockChangeConversationStage,
     }
+}));
+
+vi.mock('@/modules/crm/server', () => ({
+    crmRepository: {
+        listNotesByCustomer: vi.fn().mockResolvedValue([]),
+        createNote: vi.fn().mockResolvedValue({ id: 'note-1', content: 'Internal feedback' }),
+        listTasksByCustomer: vi.fn().mockResolvedValue([]),
+        createTask: vi.fn().mockResolvedValue({ id: 't-1', title: 'Call Client back', status: 'OPEN' }),
+        findTaskById: vi.fn(),
+        updateTaskStatus: vi.fn(),
+    },
+    crmService: {},
 }));
 
 const mockDbUpdate = vi.fn().mockReturnThis();
@@ -160,15 +172,12 @@ describe('Operational CRM Actions & Integration', () => {
             method: 'POST',
             body: JSON.stringify({ content: 'Internal feedback' })
         });
-        
-        // Mock the final SELECT query inside POST notes to return our created object
-        mockDbWhere.mockResolvedValueOnce([{ id: 'note-1', content: 'Internal feedback' }]);
 
         const res = await NotesPost(req as any, { params: Promise.resolve({ id: '1' }) });
         const body = await res.json();
         
         expect(body.ok).toBe(true);
-        expect(mockDbValues).toHaveBeenCalledWith(expect.objectContaining({
+        expect(crmRepository.createNote).toHaveBeenCalledWith(expect.objectContaining({
             content: 'Internal feedback',
             authorOperatorId: 'op1'
         }));
@@ -176,11 +185,9 @@ describe('Operational CRM Actions & Integration', () => {
 
     it('lists tasks tied to the customer including correct default OPEN status', async () => {
         const req = new Request('http://localhost/api', { method: 'POST', body: JSON.stringify({ title: 'Call Client back', dueAt: new Date().toISOString() }) });
-        
-        mockDbWhere.mockResolvedValueOnce([{ id: 't-1', title: 'Call Client back' }]);
         const res = await TasksPost(req as any, { params: Promise.resolve({ id: '1' }) });
         expect((await res.json()).ok).toBe(true);
-        expect(mockDbValues).toHaveBeenCalledWith(expect.objectContaining({
+        expect(crmRepository.createTask).toHaveBeenCalledWith(expect.objectContaining({
             title: 'Call Client back',
             status: 'OPEN'
         }));

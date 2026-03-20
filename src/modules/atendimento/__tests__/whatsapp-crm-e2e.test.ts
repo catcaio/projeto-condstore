@@ -11,7 +11,13 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { randomUUID } from 'crypto';
 
 // ── Mock infrastructure ──────────────────────────────────────────────
-vi.mock('@/infra/db', () => ({ getDb: vi.fn() }));
+vi.mock('@/infra/db', async () => {
+    const actual = await vi.importActual<typeof import('@/infra/db')>('@/infra/db');
+    return {
+        ...actual,
+        getDb: vi.fn(),
+    };
+});
 vi.mock('@/infra/logger', () => ({
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));

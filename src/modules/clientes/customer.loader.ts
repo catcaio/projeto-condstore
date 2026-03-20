@@ -3,6 +3,7 @@ import type { ClientRecord, ClientStatus, ClientActivityBucket } from './types';
 import { db } from '@/db/client';
 import { customers, organizations, customerContacts, orders, freightSimulations, crmOpportunities } from '@/drizzle/schema';
 import { eq, desc, sql, ne, and } from 'drizzle-orm';
+import { withTenantNotDeleted } from '@/infra/db';
 
 import { decryptString } from '@/infra/pii/crypto';
 
@@ -28,7 +29,7 @@ export async function loadClientsHydrated(tenantId: string): Promise<ClientRecor
     const recentOrders = await db
         .select()
         .from(orders)
-        .where(eq(orders.tenantId, tenantId))
+        .where(withTenantNotDeleted(orders, tenantId))
         .orderBy(desc(orders.createdAt));
 
     const allSimulations = await db
@@ -40,7 +41,7 @@ export async function loadClientsHydrated(tenantId: string): Promise<ClientRecor
     const allOpportunities = await db
         .select()
         .from(crmOpportunities)
-        .where(eq(crmOpportunities.tenantId, tenantId))
+        .where(withTenantNotDeleted(crmOpportunities, tenantId))
         .orderBy(desc(crmOpportunities.updatedAt));
 
     return dbClients.map(({ customer, organization }) => {

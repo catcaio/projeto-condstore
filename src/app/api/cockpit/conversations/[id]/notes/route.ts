@@ -3,11 +3,9 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
-import { getDb } from '@/infra/db';
-import { crmNotes } from '@/drizzle/schema';
-import { and, eq, desc } from 'drizzle-orm';
 import { conversationRepository } from '@/modules/atendimento/conversation.repository';
 import crypto from 'crypto';
+import { crmRepository } from '@/modules/crm/server';
 
 export async function GET(
     request: NextRequest,
@@ -26,10 +24,7 @@ export async function GET(
             return NextResponse.json({ ok: true, data: [] });
         }
 
-        const db = await getDb();
-        const notes = await db.select().from(crmNotes)
-            .where(and(eq(crmNotes.tenantId, tenantId), eq(crmNotes.customerId, conversation.customerId)))
-            .orderBy(desc(crmNotes.createdAt));
+        const notes = await crmRepository.listNotesByCustomer(tenantId, conversation.customerId);
 
         return NextResponse.json({ ok: true, data: notes });
     } catch (err: any) {
@@ -62,10 +57,9 @@ export async function POST(
             return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Conversation must have a linked customer to add notes');
         }
 
-        const db = await getDb();
         const id = crypto.randomUUID();
 
-        await db.insert(crmNotes).values({
+        const newNote = await crmRepository.createNote({
             id,
             tenantId,
             customerId: conversation.customerId,
@@ -73,8 +67,6 @@ export async function POST(
             authorOperatorId: user?.id || 'system',
             content
         });
-
-        const [newNote] = await db.select().from(crmNotes).where(eq(crmNotes.id, id));
 
         return NextResponse.json({ ok: true, data: newNote });
     } catch (err: any) {

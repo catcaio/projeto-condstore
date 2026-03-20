@@ -1,4 +1,4 @@
-import { getDb } from '@/infra/db';
+import { getDb, withTenantNotDeleted } from '@/infra/db';
 import { eq, and, desc, or, isNull } from 'drizzle-orm';
 import {
     conversations,
@@ -123,7 +123,7 @@ export const frankContextBuilder = {
                 const dbOrders = await db
                     .select()
                     .from(orders)
-                    .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, customer.id)))
+                    .where(withTenantNotDeleted(orders, tenantId, eq(orders.customerId, customer.id)))
                     .orderBy(desc(orders.createdAt))
                     .limit(5);
 
@@ -159,11 +159,14 @@ export const frankContextBuilder = {
                 }));
 
                 // Operational Data
-                const tasks = await db.select().from(crmTasks).where(and(
-                    eq(crmTasks.tenantId, tenantId),
-                    eq(crmTasks.customerId, customer.id),
-                    or(eq(crmTasks.status, 'OPEN'), isNull(crmTasks.status))
-                ));
+                const tasks = await db.select().from(crmTasks).where(
+                    withTenantNotDeleted(
+                        crmTasks,
+                        tenantId,
+                        eq(crmTasks.customerId, customer.id),
+                        or(eq(crmTasks.status, 'OPEN'), isNull(crmTasks.status)),
+                    ),
+                );
                 openTasks = tasks.map((t) => {
                     const isOverdue = t.dueAt ? new Date() > t.dueAt : false;
                     return {
@@ -175,10 +178,9 @@ export const frankContextBuilder = {
                     };
                 });
 
-                const notes = await db.select().from(crmNotes).where(and(
-                    eq(crmNotes.tenantId, tenantId),
-                    eq(crmNotes.customerId, customer.id)
-                )).limit(10);
+                const notes = await db.select().from(crmNotes)
+                    .where(withTenantNotDeleted(crmNotes, tenantId, eq(crmNotes.customerId, customer.id)))
+                    .limit(10);
                 recentNotes = notes.length;
             }
         }

@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
 import { getTenantId } from '@/modules/audit/audit.actions';
 import { operationalAuditService } from '@/modules/audit/operational-audit.service';
+import { withTenantNotDeleted } from '@/infra/db';
 
 export async function createQuickOpportunity() {
     const tenantId = await getTenantId();
@@ -38,22 +39,12 @@ export async function approveAllPendingOrders() {
     const tenantId = await getTenantId();
     const ordersToApprove = await db.select({ id: orders.id })
         .from(orders)
-        .where(
-            and(
-                eq(orders.tenantId, tenantId),
-                inArray(orders.status, ['recebido', 'validacao'])
-            )
-        );
+        .where(withTenantNotDeleted(orders, tenantId, inArray(orders.status, ['recebido', 'validacao'])));
 
     if (ordersToApprove.length > 0) {
         await db.update(orders)
             .set({ status: 'producao', updatedAt: new Date() })
-            .where(
-                and(
-                    eq(orders.tenantId, tenantId),
-                    inArray(orders.status, ['recebido', 'validacao'])
-                )
-            );
+            .where(withTenantNotDeleted(orders, tenantId, inArray(orders.status, ['recebido', 'validacao'])));
 
         for (const row of ordersToApprove) {
             await operationalAuditService.logActivity({
@@ -76,22 +67,12 @@ export async function forceTrackingSync() {
     const tenantId = await getTenantId();
     const shipmentsToSync = await db.select({ id: shipments.id })
         .from(shipments)
-        .where(
-            and(
-                eq(shipments.tenantId, tenantId),
-                eq(shipments.status, 'CREATED')
-            )
-        );
+        .where(withTenantNotDeleted(shipments, tenantId, eq(shipments.status, 'CREATED')));
 
     if (shipmentsToSync.length > 0) {
         await db.update(shipments)
             .set({ status: 'IN_TRANSIT', updatedAt: new Date() })
-            .where(
-                and(
-                    eq(shipments.tenantId, tenantId),
-                    eq(shipments.status, 'CREATED')
-                )
-            );
+            .where(withTenantNotDeleted(shipments, tenantId, eq(shipments.status, 'CREATED')));
 
         for (const row of shipmentsToSync) {
             await operationalAuditService.logActivity({

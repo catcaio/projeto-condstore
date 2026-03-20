@@ -1,0 +1,11 @@
+ALTER TABLE `crm_follow_ups` ADD `deleted_at` timestamp;--> statement-breakpoint
+ALTER TABLE `crm_notes` ADD `deleted_at` timestamp;--> statement-breakpoint
+ALTER TABLE `crm_opportunities` ADD `deleted_at` timestamp;--> statement-breakpoint
+ALTER TABLE `crm_quote_items` ADD `deleted_at` timestamp;--> statement-breakpoint
+ALTER TABLE `crm_quotes` ADD `deleted_at` timestamp;--> statement-breakpoint
+ALTER TABLE `crm_tasks` ADD `deleted_at` timestamp;--> statement-breakpoint
+ALTER TABLE `freight_shipments` ADD `external_shipment_id` varchar(64);--> statement-breakpoint
+ALTER TABLE `freight_shipments` ADD `deleted_at` timestamp;--> statement-breakpoint
+ALTER TABLE `orders` ADD `deleted_at` timestamp;--> statement-breakpoint
+ALTER TABLE `shipments` ADD `deleted_at` timestamp;--> statement-breakpoint
+ALTER TABLE `freight_shipments` ADD CONSTRAINT `uq_freight_shipments_external_shipment_id` UNIQUE(`external_shipment_id`);

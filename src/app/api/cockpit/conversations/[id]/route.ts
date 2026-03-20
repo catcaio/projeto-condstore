@@ -1,7 +1,7 @@
 import { and, desc, eq, sql, or, isNull, ne } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
-import { getDb } from '@/infra/db';
+import { getDb, withTenantIdNotDeleted, withTenantNotDeleted } from '@/infra/db';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                     revenue: sql<number>`sum(${orders.price})`,
                     lastOrderAt: sql<Date>`max(${orders.createdAt})`
                 }).from(orders)
-                .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, resolvedCustomerId), eq(orders.status, 'CONFIRMED')));
+                .where(withTenantNotDeleted(orders, tenantId, eq(orders.customerId, resolvedCustomerId), eq(orders.status, 'CONFIRMED')));
 
                 totalOrders = Number(ordersStats?.count ?? 0);
                 totalRevenue = Number(ordersStats?.revenue ?? 0);
@@ -191,24 +191,26 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                     items: simulations.items,
                 }).from(orders)
                   .innerJoin(simulations, eq(orders.quoteId, simulations.id))
-                  .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, resolvedCustomerId), eq(orders.status, 'CONFIRMED')))
+                  .where(withTenantNotDeleted(orders, tenantId, eq(orders.customerId, resolvedCustomerId), eq(orders.status, 'CONFIRMED')))
                   .orderBy(desc(orders.createdAt))
                   .limit(5);
 
                 purchasedProducts = recentPurchasedItems.map(row => row.items).flat().filter(Boolean);
 
                 recentNotes = await db.select().from(crmNotes)
-                    .where(and(eq(crmNotes.tenantId, tenantId), eq(crmNotes.customerId, resolvedCustomerId)))
+                    .where(withTenantNotDeleted(crmNotes, tenantId, eq(crmNotes.customerId, resolvedCustomerId)))
                     .orderBy(desc(crmNotes.createdAt))
                     .limit(5);
 
-                const currentTimestamp = new Date();
                 upcomingTasks = await db.select().from(crmTasks)
-                    .where(and(
-                        eq(crmTasks.tenantId, tenantId),
-                        eq(crmTasks.customerId, resolvedCustomerId),
-                        or(eq(crmTasks.status, 'OPEN'), isNull(crmTasks.status))
-                    ))
+                    .where(
+                        withTenantNotDeleted(
+                            crmTasks,
+                            tenantId,
+                            eq(crmTasks.customerId, resolvedCustomerId),
+                            or(eq(crmTasks.status, 'OPEN'), isNull(crmTasks.status)),
+                        ),
+                    )
                     // Ordering by dueAt conceptually. Simple string mapped if nulls first/last allowed, or simple code ordering.
                     .orderBy(desc(crmTasks.createdAt))
                     .limit(10);
@@ -218,19 +220,19 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                 ? await db
                     .select()
                     .from(orders)
-                    .where(and(eq(orders.tenantId, tenantId), eq(orders.id, frankSession.lastOrderId)))
+                    .where(withTenantIdNotDeleted(orders, tenantId, frankSession.lastOrderId))
                     .limit(1)
                 : resolvedCustomerId
                     ? await db
                         .select()
                         .from(orders)
-                        .where(and(eq(orders.tenantId, tenantId), eq(orders.customerId, resolvedCustomerId)))
+                        .where(withTenantNotDeleted(orders, tenantId, eq(orders.customerId, resolvedCustomerId)))
                         .orderBy(desc(orders.createdAt))
                         .limit(1)
                     : await db
                         .select()
                         .from(orders)
-                        .where(and(eq(orders.tenantId, tenantId), eq(orders.conversationId, conversationId)))
+                        .where(withTenantNotDeleted(orders, tenantId, eq(orders.conversationId, conversationId)))
                         .orderBy(desc(orders.createdAt))
                         .limit(1);
             lastOrder = lastOrderResult ?? null;
@@ -264,18 +266,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
                 ? await db
                     .select()
                     .from(shipments)
-                    .where(
-                        and(
-                            eq(shipments.tenantId, tenantId),
-                            eq(shipments.id, frankSession.lastReferencedShipmentId),
-                        ),
-                    )
+                    .where(withTenantIdNotDeleted(shipments, tenantId, frankSession.lastReferencedShipmentId))
                     .limit(1)
                 : lastOrder
                     ? await db
                         .select()
                         .from(shipments)
-                        .where(and(eq(shipments.tenantId, tenantId), eq(shipments.orderId, lastOrder.id)))
+                        .where(withTenantNotDeleted(shipments, tenantId, eq(shipments.orderId, lastOrder.id)))
                         .orderBy(desc(shipments.updatedAt))
                         .limit(1)
                     : [];
@@ -302,7 +299,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
             .orderBy(desc(simulations.createdAt));
             
         const conversationOrders = await db.select().from(orders)
-            .where(and(eq(orders.tenantId, tenantId), eq(orders.conversationId, conversationId)))
+            .where(withTenantNotDeleted(orders, tenantId, eq(orders.conversationId, conversationId)))
             .orderBy(desc(orders.createdAt));
 
         const organization = presentOrganization(organizationRecord ?? null);

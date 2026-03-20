@@ -5,9 +5,13 @@ import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from '../conversation.service';
 import { redisClient } from '@/infra/redis.client';
 
-vi.mock('@/infra/db', () => ({
-    getDb: vi.fn(),
-}));
+vi.mock('@/infra/db', async () => {
+    const actual = await vi.importActual<typeof import('@/infra/db')>('@/infra/db');
+    return {
+        ...actual,
+        getDb: vi.fn(),
+    };
+});
 
 vi.mock('@/lib/events/operational-event-bus', () => ({
     publishOperationalEvent: vi.fn(),

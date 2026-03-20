@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ecosystemFeedService } from '@/modules/frank/server';
 import { logger } from '@/infra/logger';
-import { getDb } from '@/infra/db';
-import { eq, desc, asc, and } from 'drizzle-orm';
-import { crmOpportunities, crmFollowUps } from '@/drizzle/schema';
 import { requireAdmin } from '@/infra/auth/guards';
+import { crmRepository } from '@/modules/crm/server';
 
 export async function POST(req: NextRequest) {
     const auth = await requireAdmin(req);
@@ -63,8 +61,7 @@ export async function POST(req: NextRequest) {
 
         // Use Case: Commercial Pulse
         if (lowercaseMsg.includes('quente') || lowercaseMsg.includes('frio') || lowercaseMsg.includes('lead') || lowercaseMsg.includes('oportunidade') || lowercaseMsg.includes('pipeline') || lowercaseMsg.includes('negócio')) {
-            const db = await getDb();
-            const ops = await db.select().from(crmOpportunities).where(eq(crmOpportunities.tenantId, tenantId)).orderBy(desc(crmOpportunities.updatedAt)).limit(5);
+            const ops = await crmRepository.listRecentOpportunities(tenantId, 5);
             let reply = `**Análise de Pipeline (Oportunidades recentes):**\n\n`;
             if (ops.length === 0) {
                 reply += `Não encontrei oportunidades ativas. O balde está frio.`;
@@ -79,11 +76,7 @@ export async function POST(req: NextRequest) {
 
         // Use Case: Follow-ups
         if (lowercaseMsg.includes('follow-up') || lowercaseMsg.includes('retornar') || lowercaseMsg.includes('pendente') || lowercaseMsg.includes('agendamento')) {
-            const db = await getDb();
-            const followUps = await db.select().from(crmFollowUps)
-                .where(and(eq(crmFollowUps.tenantId, tenantId), eq(crmFollowUps.status, 'pending')))
-                .orderBy(asc(crmFollowUps.scheduledAt))
-                .limit(3);
+            const followUps = await crmRepository.listPendingFollowUps(tenantId, 3);
                 
             let reply = `**Ações de Retorno Pendentes:**\n\n`;
             if (followUps.length === 0) {

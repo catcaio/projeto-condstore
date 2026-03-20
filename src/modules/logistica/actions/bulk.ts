@@ -2,10 +2,11 @@
 
 import { db } from '@/db/client';
 import { shipments } from '@/drizzle/schema';
-import { eq, inArray, and } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 import { getTenantId } from '@/modules/audit/audit.actions';
 import { operationalAuditService } from '@/modules/audit/operational-audit.service';
 import { revalidatePath } from 'next/cache';
+import { withTenantNotDeleted } from '@/infra/db';
 
 export async function bulkSyncLogisticsTracking(shipmentIds: string[]) {
     if (!shipmentIds.length) return { success: false };
@@ -13,12 +14,7 @@ export async function bulkSyncLogisticsTracking(shipmentIds: string[]) {
     
     await db.update(shipments)
         .set({ status: 'IN_TRANSIT', updatedAt: new Date() })
-        .where(
-            and(
-                eq(shipments.tenantId, tenantId),
-                inArray(shipments.id, shipmentIds)
-            )
-        );
+        .where(withTenantNotDeleted(shipments, tenantId, inArray(shipments.id, shipmentIds)));
 
     for (const id of shipmentIds) {
         await operationalAuditService.logActivity({
@@ -42,12 +38,7 @@ export async function bulkReportLogisticsException(shipmentIds: string[]) {
     
     await db.update(shipments)
         .set({ status: 'EXCEPTION', updatedAt: new Date() })
-        .where(
-            and(
-                eq(shipments.tenantId, tenantId),
-                inArray(shipments.id, shipmentIds)
-            )
-        );
+        .where(withTenantNotDeleted(shipments, tenantId, inArray(shipments.id, shipmentIds)));
 
     for (const id of shipmentIds) {
         await operationalAuditService.logActivity({
