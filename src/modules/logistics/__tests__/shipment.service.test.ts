@@ -4,9 +4,13 @@ import { shipmentRepository } from '../shipment.repository';
 import { shipmentEvents } from '../shipment.events';
 import * as dbInfra from '@/infra/db';
 
-vi.mock('@/infra/db', () => ({
-    getDb: vi.fn(),
-}));
+vi.mock('@/infra/db', async () => {
+    const actual = await vi.importActual<typeof import('@/infra/db')>('@/infra/db');
+    return {
+        ...actual,
+        getDb: vi.fn(),
+    };
+});
 
 vi.mock('../shipment.repository', () => ({
     shipmentRepository: {

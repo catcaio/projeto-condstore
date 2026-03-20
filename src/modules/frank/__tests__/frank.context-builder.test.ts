@@ -2,9 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { frankContextBuilder } from '../frank.context-builder';
 import { getDb } from '@/infra/db';
 
-vi.mock('@/infra/db', () => ({
-    getDb: vi.fn(),
-}));
+vi.mock('@/infra/db', async () => {
+    const actual = await vi.importActual<typeof import('@/infra/db')>('@/infra/db');
+    return {
+        ...actual,
+        getDb: vi.fn(),
+    };
+});
 
 describe('Frank Context Builder', () => {
     let mockDb: any;

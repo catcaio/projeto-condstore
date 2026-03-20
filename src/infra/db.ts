@@ -1,4 +1,5 @@
 
+import { and, eq, isNull, type SQLWrapper } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
 import { logger } from './logger';
@@ -53,5 +54,52 @@ export async function getDb() {
     }
     // Return drizzle instance using the singleton pool
     return drizzle(globalForDb.conn, { mode: 'default' });
+}
+
+type MaybeCondition = SQLWrapper | undefined;
+type SoftDeleteTable = {
+    deletedAt: unknown;
+};
+type TenantScopedSoftDeleteTable = SoftDeleteTable & {
+    tenantId: unknown;
+};
+type TenantScopedEntityTable = TenantScopedSoftDeleteTable & {
+    id: unknown;
+};
+
+function compactConditions(conditions: MaybeCondition[]): SQLWrapper[] {
+    return conditions.filter((condition): condition is SQLWrapper => Boolean(condition));
+}
+
+export function withNotDeleted<TTable extends SoftDeleteTable>(
+    table: TTable,
+    ...conditions: MaybeCondition[]
+) {
+    return and(isNull(table.deletedAt as never), ...compactConditions(conditions));
+}
+
+export function withTenantNotDeleted<TTable extends TenantScopedSoftDeleteTable>(
+    table: TTable,
+    tenantId: string,
+    ...conditions: MaybeCondition[]
+) {
+    return withNotDeleted(table, eq(table.tenantId as never, tenantId), ...conditions);
+}
+
+export function withTenantIdNotDeleted<TTable extends TenantScopedEntityTable>(
+    table: TTable,
+    tenantId: string,
+    id: string,
+    ...conditions: MaybeCondition[]
+) {
+    return withTenantNotDeleted(table, tenantId, eq(table.id as never, id), ...conditions);
+}
+
+export function activeJoin<TTable extends SoftDeleteTable>(table: TTable, joinCondition: SQLWrapper) {
+    return and(joinCondition, isNull(table.deletedAt as never));
+}
+
+export function softDeletePatch(deletedAt = new Date()) {
+    return { deletedAt };
 }
 

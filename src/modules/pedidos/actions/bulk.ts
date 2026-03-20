@@ -2,10 +2,11 @@
 
 import { db } from '@/db/client';
 import { orders } from '@/drizzle/schema';
-import { eq, inArray, and } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 import { getTenantId } from '@/modules/audit/audit.actions';
 import { operationalAuditService } from '@/modules/audit/operational-audit.service';
 import { revalidatePath } from 'next/cache';
+import { withTenantNotDeleted } from '@/infra/db';
 
 // ── Shared helper ──────────────────────────────────────────────────────────
 
@@ -23,12 +24,7 @@ async function executeBulkAction({ orderIds, setValues, actionType, auditState }
 
     await db.update(orders)
         .set({ ...setValues, updatedAt: new Date() })
-        .where(
-            and(
-                eq(orders.tenantId, tenantId),
-                inArray(orders.id, orderIds)
-            )
-        );
+        .where(withTenantNotDeleted(orders, tenantId, inArray(orders.id, orderIds)));
 
     for (const id of orderIds) {
         await operationalAuditService.logActivity({

@@ -7,7 +7,13 @@
 
 // ── Repository exports for cross-module consumers ────────────────────
 export { getQuoteContext } from './quote-context.repository';
-export { getShipmentsForOrder, getShipmentById } from './shipment-linkage.repository';
+export {
+    findFreightShipmentByExternalShipmentId,
+    getShipmentById,
+    getShipmentsForOrder,
+    listFreightShipments,
+    updateFreightShipmentStatus,
+} from './shipment-linkage.repository';
 
 // ── Adapter exports for app routes ───────────────────────────────────
 export { createShipmentFromQuote } from './adapters/melhor-envio-shipment';

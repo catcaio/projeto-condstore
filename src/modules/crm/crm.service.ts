@@ -1,26 +1,10 @@
 import { logger } from '@/infra/logger';
 import { getDb } from '@/infra/db';
-import { eq, and } from 'drizzle-orm';
-import { crmOpportunities, crmQuotes, crmQuoteItems, crmFollowUps } from '@/drizzle/schema';
+import { crmQuotes } from '@/drizzle/schema';
 import { randomUUID } from 'crypto';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 import { operationalAuditService } from '@/modules/audit/operational-audit.service';
-
-// ── Internal helper ────────────────────────────────────────────────────────
-
-async function findActiveOpportunity(db: any, tenantId: string, customerId: string) {
-    const results = await db.select()
-        .from(crmOpportunities)
-        .where(
-            and(
-                eq(crmOpportunities.tenantId, tenantId),
-                eq(crmOpportunities.customerId, customerId),
-                eq(crmOpportunities.status, 'active')
-            )
-        )
-        .limit(1);
-    return results[0] ?? null;
-}
+import { crmRepository } from './crm.repository';
 
 // ── Public service ─────────────────────────────────────────────────────────
 
@@ -45,21 +29,18 @@ export const crmService = {
             return;
         }
 
-        const db = tx || await getDb();
-
         try {
-            const activeOp = await findActiveOpportunity(db, params.tenantId, params.customerId);
+            const activeOp = await crmRepository.findActiveOpportunity(params.tenantId, params.customerId, tx);
 
             if (activeOp) {
-                // Update last activity
-                await db.update(crmOpportunities)
-                    .set({ lastActivityAt: new Date() })
-                    .where(eq(crmOpportunities.id, activeOp.id));
+                await crmRepository.updateOpportunity(params.tenantId, activeOp.id, {
+                    lastActivityAt: new Date(),
+                    updatedAt: new Date(),
+                }, tx);
             } else if (params.direction === 'inbound') {
-                // Create new opportunity if inbound message and no active ops
                 const title = `Negociação Automática`;
                 const newOpportunityId = randomUUID();
-                await db.insert(crmOpportunities).values({
+                await crmRepository.createOpportunity({
                     id: newOpportunityId,
                     tenantId: params.tenantId,
                     customerId: params.customerId,
@@ -67,7 +48,7 @@ export const crmService = {
                     stage: 'new_lead',
                     status: 'active',
                     lastActivityAt: new Date(),
-                });
+                }, tx);
 
                 // Emit Ecosystem Event
                 await ecosystemEventsService.emitEvent({
@@ -125,19 +106,20 @@ export const crmService = {
     ): Promise<{ opportunityId?: string }> {
         if (!params.customerId) return { opportunityId: undefined }; // Cannot attach quote to unidentified lead
         
-        const db = tx || await getDb();
+        const db = tx ?? await getDb();
 
         try {
-            const activeOp = await findActiveOpportunity(db, params.tenantId, params.customerId);
+            const activeOp = await crmRepository.findActiveOpportunity(params.tenantId, params.customerId, db);
 
             let opportunityId;
 
             if (activeOp) {
                 opportunityId = activeOp.id;
-                // Update stage to quoted if not already won/lost
-                await db.update(crmOpportunities)
-                    .set({ stage: 'quoted', lastActivityAt: new Date() })
-                    .where(eq(crmOpportunities.id, opportunityId));
+                await crmRepository.updateOpportunity(params.tenantId, opportunityId, {
+                    stage: 'quoted',
+                    lastActivityAt: new Date(),
+                    updatedAt: new Date(),
+                }, db);
 
                 // Emit lead_stage_changed ecosystem event
                 ecosystemEventsService.emitEvent({
@@ -150,9 +132,8 @@ export const crmService = {
                     source: 'crm',
                 }).catch(() => {});
             } else {
-                // Should exist due to message projection, but fallback just in case
                 opportunityId = randomUUID();
-                await db.insert(crmOpportunities).values({
+                await crmRepository.createOpportunity({
                     id: opportunityId,
                     tenantId: params.tenantId,
                     customerId: params.customerId,
@@ -160,7 +141,7 @@ export const crmService = {
                     stage: 'quoted',
                     status: 'active',
                     lastActivityAt: new Date(),
-                });
+                }, db);
             }
 
             // Sync Quote
@@ -182,12 +163,7 @@ export const crmService = {
                 .values({ ...quoteData, createdAt: new Date() })
                 .onDuplicateKeyUpdate({ set: quoteData });
 
-            // Sync Quote Items
             if (params.items && params.items.length > 0) {
-                // For simplicity, recreate items on revision
-                await db.delete(crmQuoteItems)
-                    .where(eq(crmQuoteItems.quoteId, params.quoteId));
-
                 const itemValues = params.items.map(i => ({
                     id: randomUUID(),
                     tenantId: params.tenantId,
@@ -199,7 +175,7 @@ export const crmService = {
                     createdAt: new Date(),
                 }));
 
-                await db.insert(crmQuoteItems).values(itemValues);
+                await crmRepository.replaceQuoteItems(params.tenantId, params.quoteId, itemValues, db);
             }
 
             // Emit Ecosystem Event
@@ -246,13 +222,12 @@ export const crmService = {
         },
         tx?: any
     ): Promise<void> {
-        const db = tx || await getDb();
         const hours = params.hoursDelay || 48; // Default 48 hours for a quote follow up
         const scheduledAt = new Date(Date.now() + hours * 60 * 60 * 1000);
         const followUpId = randomUUID();
 
         try {
-            await db.insert(crmFollowUps).values({
+            await crmRepository.createFollowUp({
                 id: followUpId,
                 tenantId: params.tenantId,
                 opportunityId: params.opportunityId,
@@ -260,7 +235,7 @@ export const crmService = {
                 description: `Follow-up automático da cotação ${params.quoteId.split('-')[0]}`,
                 status: 'pending',
                 createdAt: new Date(),
-            });
+            }, tx);
             
             // Emit Ecosystem Event
             await ecosystemEventsService.emitEvent({

@@ -1,5 +1,4 @@
-import { eq, and } from 'drizzle-orm';
-import { getDb } from '@/infra/db';
+import { getDb, withTenantIdNotDeleted } from '@/infra/db';
 import { orders, type ShipmentRecord } from '@/drizzle/schema';
 import { shipmentRepository } from './shipment.repository';
 import type { ShipmentListFilter } from './shipment.repository';
@@ -16,7 +15,7 @@ export const shipmentService = {
         // Verify order
         const [order] = await db.select()
             .from(orders)
-            .where(and(eq(orders.tenantId, tenantId), eq(orders.id, orderId)))
+            .where(withTenantIdNotDeleted(orders, tenantId, orderId))
             .limit(1);
 
         if (!order) throw new Error('Order not found');

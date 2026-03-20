@@ -15,7 +15,7 @@ import {
 } from '@/drizzle/schema';
 import type { InternalDiagSnapshot } from '@/infra/diagnostics/internal-diag';
 import { collectInternalDiagSnapshot } from '@/infra/diagnostics/internal-diag';
-import { getDb } from '@/infra/db';
+import { getDb, withTenantNotDeleted } from '@/infra/db';
 import { simulationRepository } from '@/infra/repositories/simulation.repository';
 import { tenantRepository } from '@/infra/repositories/tenant.repository';
 
@@ -676,7 +676,7 @@ export async function loadCockpitRawData(
                     updatedAt: freightShipments.updatedAt,
                 })
                 .from(freightShipments)
-                .where(eq(freightShipments.tenantId, context.tenantId))
+                .where(withTenantNotDeleted(freightShipments, context.tenantId))
                 .orderBy(desc(freightShipments.updatedAt))
                 .limit(60);
 
@@ -826,9 +826,10 @@ export async function loadCockpitRawData(
                 .select({ count: sql<number>`COUNT(*)` })
                 .from(freightShipments)
                 .where(
-                    and(
-                        eq(freightShipments.tenantId, context.tenantId),
-                        sql`LOWER(${freightShipments.status}) NOT IN ('entregue', 'delivered')`
+                    withTenantNotDeleted(
+                        freightShipments,
+                        context.tenantId,
+                        sql`LOWER(${freightShipments.status}) NOT IN ('entregue', 'delivered')`,
                     )
                 );
 

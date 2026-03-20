@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
-import { freightShipments, freightConfirmations } from '@/drizzle/schema';
-import { eq, desc } from 'drizzle-orm';
+import { freightConfirmations } from '@/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
-import { createShipmentFromQuote, type CreateShipmentInput } from '@/modules/freight/server';
+import { createShipmentFromQuote, listFreightShipments, type CreateShipmentInput } from '@/modules/freight/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,13 +25,7 @@ export async function GET(request: NextRequest) {
     try {
         const db = await getDb();
 
-        // Fetch shipments
-        const shipments = await db
-            .select()
-            .from(freightShipments)
-            .where(eq(freightShipments.tenantId, tenantId))
-            .orderBy(desc(freightShipments.createdAt))
-            .limit(100);
+        const shipments = await listFreightShipments(tenantId, 100);
 
         if (shipments.length === 0) {
             return NextResponse.json({ ok: true, data: [] });

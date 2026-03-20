@@ -1,5 +1,5 @@
 import { eq, and, desc, sql } from 'drizzle-orm';
-import { getDb } from '@/infra/db';
+import { getDb, withTenantIdNotDeleted, withTenantNotDeleted } from '@/infra/db';
 import { orders, simulations, conversations, crmOpportunities, crmQuotes, type OrderRecord } from '@/drizzle/schema';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from './conversation.service';
@@ -54,7 +54,7 @@ export const orderService = {
             // Fallback de idempotência forte durante colisão de trava:
             const [concurrentOrder] = await db.select()
                 .from(orders)
-                .where(and(eq(orders.tenantId, tenantId), eq(orders.quoteId, quoteId)))
+                .where(withTenantNotDeleted(orders, tenantId, eq(orders.quoteId, quoteId)))
                 .limit(1);
             if (concurrentOrder) {
                 logger.info(`[OrderService] Ordem pré-existente capturada na recuperação do lock para quote ${quoteId}`);
@@ -69,7 +69,7 @@ export const orderService = {
             // 1.5 Idempotency Guard (Lock garantido)
             const [existingOrder] = await db.select()
                 .from(orders)
-                .where(and(eq(orders.tenantId, tenantId), eq(orders.quoteId, quoteId)))
+                .where(withTenantNotDeleted(orders, tenantId, eq(orders.quoteId, quoteId)))
                 .limit(1);
 
             if (existingOrder) {
@@ -108,7 +108,7 @@ export const orderService = {
                     logger.warn(`[OrderService] Interceptada ER_DUP_ENTRY (Unique key violation) ao rodar db.insert para quote ${quoteId}`);
                     const [fallbackOrder] = await db.select()
                         .from(orders)
-                        .where(and(eq(orders.tenantId, tenantId), eq(orders.quoteId, quoteId)))
+                        .where(withTenantNotDeleted(orders, tenantId, eq(orders.quoteId, quoteId)))
                         .limit(1);
                     if (fallbackOrder) {
                         // Oponente venceu a corrida e inseriu; este contexto virou follower tardio
@@ -129,22 +129,22 @@ export const orderService = {
                 convertedAt: new Date() 
             }).where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
 
-            const [newOrder] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+            const [newOrder] = await db.select().from(orders).where(withTenantIdNotDeleted(orders, tenantId, orderId)).limit(1);
 
             // 4. Update Conversation Stage to WON
             await conversationService.changeConversationStage(tenantId, conversationId, 'WON', quote.customerId || undefined);
 
             // 4.5 Sync CRM Opportunity and Quote
-            const quoteResult = await db.select().from(crmQuotes).where(and(eq(crmQuotes.tenantId, tenantId), eq(crmQuotes.id, quoteId))).limit(1);
+            const quoteResult = await db.select().from(crmQuotes).where(withTenantIdNotDeleted(crmQuotes, tenantId, quoteId)).limit(1);
             const crmQuote = quoteResult[0];
             if (crmQuote && crmQuote.opportunityId) {
                 await db.update(crmOpportunities)
                     .set({ stage: 'won', status: 'won', lastActivityAt: new Date() })
-                    .where(eq(crmOpportunities.id, crmQuote.opportunityId));
+                    .where(withTenantIdNotDeleted(crmOpportunities, tenantId, crmQuote.opportunityId));
                 
                 await db.update(crmQuotes)
                     .set({ status: 'accepted', updatedAt: new Date() })
-                    .where(eq(crmQuotes.id, quoteId));
+                    .where(withTenantIdNotDeleted(crmQuotes, tenantId, quoteId));
             }
 
             // 5. Emit Timeline Event
@@ -189,7 +189,7 @@ export const orderService = {
         status: 'DRAFT' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELED'
     ): Promise<void> {
         const db = await getDb();
-        const [order] = await db.select().from(orders).where(and(eq(orders.tenantId, tenantId), eq(orders.id, orderId))).limit(1);
+        const [order] = await db.select().from(orders).where(withTenantIdNotDeleted(orders, tenantId, orderId)).limit(1);
         
         if (!order) throw new Error('Order not found');
 
@@ -218,7 +218,7 @@ export const orderService = {
         
         await db.update(orders)
             .set({ status })
-            .where(and(eq(orders.tenantId, tenantId), eq(orders.id, orderId)));
+            .where(withTenantIdNotDeleted(orders, tenantId, orderId));
 
         // If order just got CONFIRMED, spawn its shipment
         if (status === 'CONFIRMED') {
@@ -262,7 +262,7 @@ export const orderService = {
         const db = await getDb();
         const [order] = await db.select()
             .from(orders)
-            .where(and(eq(orders.tenantId, tenantId), eq(orders.id, orderId)))
+            .where(withTenantIdNotDeleted(orders, tenantId, orderId))
             .limit(1);
         return order;
     },
@@ -270,17 +270,16 @@ export const orderService = {
     async listOrders(tenantId: string, filter: OrderListFilter): Promise<OrderRecord[]> {
         const db = await getDb();
         
-        const conditions = [eq(orders.tenantId, tenantId)];
-        if (filter.status) {
-            conditions.push(eq(orders.status, filter.status));
-        }
-        if (filter.conversationId) {
-            conditions.push(eq(orders.conversationId, filter.conversationId));
-        }
-
         return db.select()
             .from(orders)
-            .where(and(...conditions))
+            .where(
+                withTenantNotDeleted(
+                    orders,
+                    tenantId,
+                    filter.status ? eq(orders.status, filter.status) : undefined,
+                    filter.conversationId ? eq(orders.conversationId, filter.conversationId) : undefined,
+                ),
+            )
             .orderBy(desc(orders.createdAt))
             .limit(Math.min(filter.limit || 50, 100))
             .offset(filter.offset || 0);

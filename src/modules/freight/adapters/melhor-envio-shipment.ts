@@ -216,6 +216,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
             simulationId: input.simulationId,
             carrier: input.carrierName,
             service: input.serviceName,
+            externalShipmentId: String(data.id),
             trackingCode: trackingCode,
             shipmentPrice: String(data.price || input.quotePrice),
             status: data.status || 'pending',

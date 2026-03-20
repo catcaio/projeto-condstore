@@ -10,6 +10,7 @@ import {
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
+import { withTenantNotDeleted } from '@/infra/db';
 
 export interface CreateOrderParams {
     tenantId: string;
@@ -96,12 +97,7 @@ export async function createOrderFromSimulation(params: CreateOrderParams) {
         // (Typically shipments are created after orders, but we link in case of async race conditions or pre-auth flows)
         await tx.update(freightShipments)
             .set({ orderId })
-            .where(
-                and(
-                    eq(freightShipments.tenantId, tenantId),
-                    eq(freightShipments.simulationId, simulationId)
-                )
-            );
+            .where(withTenantNotDeleted(freightShipments, tenantId, eq(freightShipments.simulationId, simulationId)));
 
         // 7. Generate Timeline Event
         await tx.insert(customerTimelineEvents).values({

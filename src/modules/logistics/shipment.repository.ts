@@ -1,5 +1,5 @@
-import { eq, and, desc } from 'drizzle-orm';
-import { getDb } from '@/infra/db';
+import { eq, desc } from 'drizzle-orm';
+import { getDb, softDeletePatch, withTenantIdNotDeleted, withTenantNotDeleted } from '@/infra/db';
 import { shipments, type ShipmentRecord } from '@/drizzle/schema';
 
 export interface ShipmentListFilter {
@@ -13,7 +13,7 @@ export const shipmentRepository = {
         const db = await getDb();
         const [shipment] = await db.select()
             .from(shipments)
-            .where(and(eq(shipments.tenantId, tenantId), eq(shipments.id, shipmentId)))
+            .where(withTenantIdNotDeleted(shipments, tenantId, shipmentId))
             .limit(1);
         return shipment;
     },
@@ -22,7 +22,7 @@ export const shipmentRepository = {
         const db = await getDb();
         const [shipment] = await db.select()
             .from(shipments)
-            .where(and(eq(shipments.tenantId, tenantId), eq(shipments.orderId, orderId)))
+            .where(withTenantNotDeleted(shipments, tenantId, eq(shipments.orderId, orderId)))
             .limit(1);
         return shipment;
     },
@@ -48,20 +48,21 @@ export const shipmentRepository = {
         const db = await getDb();
         await db.update(shipments)
             .set(data)
-            .where(and(eq(shipments.tenantId, tenantId), eq(shipments.id, shipmentId)));
+            .where(withTenantIdNotDeleted(shipments, tenantId, shipmentId));
+    },
+
+    async softDeleteShipment(tenantId: string, shipmentId: string): Promise<void> {
+        const db = await getDb();
+        await db.update(shipments)
+            .set({ ...softDeletePatch(), updatedAt: new Date() })
+            .where(withTenantIdNotDeleted(shipments, tenantId, shipmentId));
     },
 
     async listShipments(tenantId: string, filter: ShipmentListFilter): Promise<ShipmentRecord[]> {
         const db = await getDb();
-        const conditions = [eq(shipments.tenantId, tenantId)];
-        
-        if (filter.status) {
-            conditions.push(eq(shipments.status, filter.status));
-        }
-
         return db.select()
             .from(shipments)
-            .where(and(...conditions))
+            .where(withTenantNotDeleted(shipments, tenantId, filter.status ? eq(shipments.status, filter.status) : undefined))
             .orderBy(desc(shipments.createdAt))
             .limit(Math.min(filter.limit || 50, 100))
             .offset(filter.offset || 0);

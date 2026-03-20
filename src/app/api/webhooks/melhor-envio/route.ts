@@ -8,13 +8,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
-import { freightShipments, freightSimulations } from '@/drizzle/schema';
+import { freightSimulations } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import { structuredLogger } from '@/infra/log/logger';
 import { confirmFreight } from '@/modules/freight/freight-audit';
 import { upsertFreightMemory } from '@/modules/freight/freight-audit';
 import { verifyMelhorEnvioWebhook } from '@/lib/security/melhorenvio-webhook-verifier';
+import { findFreightShipmentByExternalShipmentId, updateFreightShipmentStatus } from '@/modules/freight/server';
 
 export async function POST(request: NextRequest) {
     // ── Webhook signature verification ────────────────────────────────
@@ -36,29 +37,29 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         logger.info('webhook:melhor_envio received', { event: body.event ?? 'unknown' });
 
-        // Expected format from ME: 
-        // { "id": "123", "event": "tracking.updated", "payload": { "id": "123", "status": "posted", "tracking": "XX123BR" } }
+        // Expected format from ME:
+        // { "event": "order.posted", "data": { "id": "uuid", "status": "posted", "tracking": "XX123BR" } }
+        // Keep payload/body fallbacks for compatibility with older local fixtures.
+        const eventData = body.data ?? body.payload ?? body;
 
-        const trackingCode = body.payload?.tracking || body.tracking;
-        const newStatus = body.payload?.status || body.status;
+        const externalShipmentId = eventData?.id ?? body.id;
+        const trackingCode = eventData?.tracking ?? body.tracking ?? null;
+        const newStatus = eventData?.status ?? body.status;
 
-        if (!trackingCode || !newStatus) {
-            return NextResponse.json({ ok: false, error: 'Missing tracking or status' }, { status: 400 });
+        if (!externalShipmentId || !newStatus) {
+            return NextResponse.json({ ok: false, error: 'Missing shipment id or status' }, { status: 400 });
+        }
+
+        const shipment = await findFreightShipmentByExternalShipmentId(externalShipmentId, trackingCode);
+
+        if (!shipment) {
+            logger.warn('webhook:melhor_envio unknown shipment', { externalShipmentId, trackingCode });
+            return NextResponse.json({ ok: false, error: 'Shipment not found' }, { status: 404 });
         }
 
         const db = await getDb();
-        const shipments = await db.select().from(freightShipments).where(eq(freightShipments.trackingCode, trackingCode)).limit(1);
 
-        if (shipments.length === 0) {
-            logger.warn('webhook:melhor_envio unknown tracking', { trackingCode });
-            return NextResponse.json({ ok: false, error: 'Tracking not found' }, { status: 404 });
-        }
-
-        const shipment = shipments[0];
-
-        await db.update(freightShipments)
-            .set({ status: newStatus })
-            .where(eq(freightShipments.id, shipment.id));
+        await updateFreightShipmentStatus(shipment.tenantId, shipment.id, newStatus);
 
         logger.info('webhook:melhor_envio shipment updated', {
             id: shipment.id, trackingCode, newStatus

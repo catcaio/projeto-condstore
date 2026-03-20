@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { v4 as uuidv4 } from 'uuid';
 import { FrankActionType, getActionSchema } from '../action-contracts';
 import { ZodError } from 'zod';
+import { withTenantIdNotDeleted } from '@/infra/db';
 
 export type ActionResponse = {
     success: boolean;
@@ -165,17 +166,17 @@ async function executeDomainAction(type: FrankActionType, payload: any, tenantId
             case 'order_update_status':
                 await db.update(orders)
                     .set({ status: payload.newStatus, updatedAt: new Date() })
-                    .where(and(eq(orders.id, payload.orderId), eq(orders.tenantId, tenantId)));
+                    .where(withTenantIdNotDeleted(orders, tenantId, payload.orderId));
                 break;
             case 'order_assign_owner':
                 await db.update(orders)
                     .set({ ownerId: payload.newOwnerId, updatedAt: new Date() })
-                    .where(and(eq(orders.id, payload.orderId), eq(orders.tenantId, tenantId)));
+                    .where(withTenantIdNotDeleted(orders, tenantId, payload.orderId));
                 break;
             case 'logistics_update_shipment_status':
                 await db.update(shipments)
                     .set({ status: payload.newStatus.toUpperCase(), updatedAt: new Date() })
-                    .where(and(eq(shipments.id, payload.shipmentId), eq(shipments.tenantId, tenantId)));
+                    .where(withTenantIdNotDeleted(shipments, tenantId, payload.shipmentId));
                 break;
             case 'conversation_assign_owner':
                 await db.update(conversations)

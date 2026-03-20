@@ -4,6 +4,7 @@ import { customers, customerContacts, organizations, orders, freightSimulations 
 import { createHash } from 'node:crypto';
 import { normalizePhone } from '@/lib/phone';
 import { decryptString } from '@/infra/pii/crypto';
+import { withTenantNotDeleted } from '@/infra/db';
 
 /**
  * Hash phone number using SHA-256 for privacy-safe storage.
@@ -76,12 +77,7 @@ export async function getCustomerWithContext(tenantId: string, customerId: strin
     const recentOrders = await db
         .select()
         .from(orders)
-        .where(
-            and(
-                eq(orders.tenantId, tenantId),
-                eq(orders.customerId, customerId)
-            )
-        )
+        .where(withTenantNotDeleted(orders, tenantId, eq(orders.customerId, customerId)))
         .orderBy(desc(orders.createdAt))
         .limit(10);
 

@@ -1,5 +1,5 @@
 import { eq, and, desc, sql, inArray, gt, asc, ne } from 'drizzle-orm';
-import { getDb } from '@/infra/db';
+import { getDb, withTenantNotDeleted } from '@/infra/db';
 import {
     conversations,
     conversationMessages,
@@ -380,7 +380,7 @@ export const conversationRepository = {
             : [null as any];
 
         const [lastOrder] = await db.select().from(orders)
-            .where(and(eq(orders.tenantId, tenantId), eq(orders.conversationId, conversation.id)))
+            .where(withTenantNotDeleted(orders, tenantId, eq(orders.conversationId, conversation.id)))
             .orderBy(desc(orders.createdAt)).limit(1);
 
         const [lastQuote] = lastOrder?.freightSimulationId
@@ -391,7 +391,7 @@ export const conversationRepository = {
 
         const [shipment] = lastOrder
             ? await db.select().from(shipments)
-                .where(and(eq(shipments.tenantId, tenantId), eq(shipments.orderId, lastOrder.id)))
+                .where(withTenantNotDeleted(shipments, tenantId, eq(shipments.orderId, lastOrder.id)))
                 .orderBy(desc(shipments.createdAt)).limit(1)
             : [null as any];
 

@@ -1357,6 +1357,7 @@ export const orders = mysqlTable('orders', {
     logisticsStatus: varchar('logistics_status', { length: 50 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
 }, (table) => ({
     tenantCustomerIdx: index('idx_orders_tenant_customer').on(table.tenantId, table.customerId),
     tenantStatusIdx: index('idx_orders_tenant_status').on(table.tenantId, table.status),
@@ -1893,14 +1894,17 @@ export const freightShipments = mysqlTable('freight_shipments', {
     orderId: varchar('order_id', { length: 36 }),
     carrier: varchar('carrier', { length: 60 }).notNull(),
     service: varchar('service', { length: 60 }).notNull(),
+    externalShipmentId: varchar('external_shipment_id', { length: 64 }),
     trackingCode: varchar('tracking_code', { length: 60 }),
     shipmentPrice: decimal('shipment_price', { precision: 10, scale: 2 }),
     status: varchar('status', { length: 30 }).notNull().default('pending'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
 }, (table) => ({
     idxTenantSimulation: index('idx_freight_shipments_tenant_sim').on(table.tenantId, table.simulationId),
     idxTenantOrder: index('idx_freight_shipments_tenant_order').on(table.tenantId, table.orderId),
+    uqExternalShipmentId: uniqueIndex('uq_freight_shipments_external_shipment_id').on(table.externalShipmentId),
     idxTracking: index('idx_freight_shipments_tracking').on(table.trackingCode),
     idxTenantCreated: index('idx_freight_shipments_tenant_created_at').on(table.tenantId, table.createdAt),
     idxTenantStatus: index('idx_freight_shipments_tenant_status').on(table.tenantId, table.status),
@@ -2109,6 +2113,7 @@ export const shipments = mysqlTable('shipments', {
     estimatedDelivery: int('estimated_delivery'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
 }, (table) => ({
     idxShipmentsTenantOrder: index('idx_shipments_tenant_order').on(table.tenantId, table.orderId),
     idxShipmentsTenantCreated: index('idx_shipments_tenant_created_at').on(table.tenantId, table.createdAt),
@@ -2126,6 +2131,7 @@ export const crmNotes = mysqlTable('crm_notes', {
     authorOperatorId: varchar('author_operator_id', { length: 36 }).notNull(),
     content: text('content').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
 }, (table) => ({
     idxCrmNotesCustomer: index('idx_crm_notes_customer').on(table.tenantId, table.customerId),
     idxCrmNotesConversation: index('idx_crm_notes_tenant_conversation').on(table.tenantId, table.conversationId),
@@ -2143,6 +2149,7 @@ export const crmTasks = mysqlTable('crm_tasks', {
     status: varchar('status', { length: 30 }).notNull().default('OPEN'), // OPEN, DONE, CANCELED
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
 }, (table) => ({
     idxCrmTasksCustomer: index('idx_crm_tasks_customer').on(table.tenantId, table.customerId),
     idxCrmTasksStatus: index('idx_crm_tasks_tenant_status').on(table.tenantId, table.status),
@@ -2361,6 +2368,7 @@ export const crmOpportunities = mysqlTable('crm_opportunities', {
     responsibleUserId: varchar('responsible_user_id', { length: 36 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
 }, (table) => ({
     idxCrmOppTenantCustomer: index('idx_crm_opp_tenant_customer').on(table.tenantId, table.customerId),
     idxCrmOppStage: index('idx_crm_opp_stage').on(table.tenantId, table.stage),
@@ -2380,6 +2388,7 @@ export const crmQuotes = mysqlTable('crm_quotes', {
     totalAmount: decimal('total_amount', { precision: 12, scale: 2 }).notNull().default('0'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
 }, (table) => ({
     idxCrmQuotesOpp: index('idx_crm_quotes_opp').on(table.tenantId, table.opportunityId),
     idxCrmQuotesStatus: index('idx_crm_quotes_tenant_status').on(table.tenantId, table.status),
@@ -2395,6 +2404,7 @@ export const crmQuoteItems = mysqlTable('crm_quote_items', {
     unitPrice: decimal('unit_price', { precision: 12, scale: 2 }).notNull(),
     totalPrice: decimal('total_price', { precision: 12, scale: 2 }).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
 }, (table) => ({
     idxCrmQuoteItemsQuote: index('idx_crm_quote_items_quote').on(table.quoteId),
 }));
@@ -2408,6 +2418,7 @@ export const crmFollowUps = mysqlTable('crm_follow_ups', {
     description: text('description'),
     status: varchar('status', { length: 30 }).notNull().default('pending'), // pending, completed, canceled
     createdAt: timestamp('created_at').defaultNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
 }, (table) => ({
     idxCrmFollowUpsOpp: index('idx_crm_follow_ups_opp').on(table.tenantId, table.opportunityId),
     idxCrmFollowUpsPending: index('idx_crm_follow_ups_pending').on(table.tenantId, table.status, table.scheduledAt),

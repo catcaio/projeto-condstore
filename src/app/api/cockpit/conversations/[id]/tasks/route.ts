@@ -3,11 +3,9 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
-import { getDb } from '@/infra/db';
-import { crmTasks } from '@/drizzle/schema';
-import { and, eq, desc } from 'drizzle-orm';
 import { conversationRepository } from '@/modules/atendimento/conversation.repository';
 import crypto from 'crypto';
+import { crmRepository } from '@/modules/crm/server';
 
 export async function GET(
     request: NextRequest,
@@ -26,10 +24,7 @@ export async function GET(
             return NextResponse.json({ ok: true, data: [] });
         }
 
-        const db = await getDb();
-        const tasks = await db.select().from(crmTasks)
-            .where(and(eq(crmTasks.tenantId, tenantId), eq(crmTasks.customerId, conversation.customerId)))
-            .orderBy(desc(crmTasks.createdAt));
+        const tasks = await crmRepository.listTasksByCustomer(tenantId, conversation.customerId);
 
         return NextResponse.json({ ok: true, data: tasks });
     } catch (err: any) {
@@ -62,12 +57,10 @@ export async function POST(
             return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Conversation must have a linked customer to create tasks');
         }
 
-        const db = await getDb();
         const id = crypto.randomUUID();
-        
         const finalOperatorId = assignedOperatorId || conversation.assignedTo || user?.id || 'system';
 
-        await db.insert(crmTasks).values({
+        const newTask = await crmRepository.createTask({
             id,
             tenantId,
             customerId: conversation.customerId,
@@ -77,8 +70,6 @@ export async function POST(
             dueAt: dueAt ? new Date(dueAt) : null,
             status: 'OPEN'
         });
-
-        const [newTask] = await db.select().from(crmTasks).where(eq(crmTasks.id, id));
 
         return NextResponse.json({ ok: true, data: newTask });
     } catch (err: any) {

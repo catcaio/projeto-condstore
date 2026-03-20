@@ -1,4 +1,4 @@
-import { getDb } from '@/infra/db';
+import { getDb, withTenantIdNotDeleted } from '@/infra/db';
 import { simulations, crmQuotes, crmOpportunities } from '@/drizzle/schema';
 import { freightService } from '../freight/freight.service';
 import { domineIntakeService } from '@/domine/domine-intake.service';
@@ -271,12 +271,12 @@ export class FreightQuoteService {
 
         // Sync CRM Quote & Opportunity to 'sent'/'proposal_sent' (best-effort, non-blocking for the main flow)
         try {
-            const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
+            const crmQuoteResult = await db.select().from(crmQuotes).where(withTenantIdNotDeleted(crmQuotes, tenantId, quoteId)).limit(1);
             if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
-                await db.update(crmQuotes).set({ status: 'sent', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+                await db.update(crmQuotes).set({ status: 'sent', updatedAt: new Date() }).where(withTenantIdNotDeleted(crmQuotes, tenantId, quoteId));
                 await db.update(crmOpportunities)
                     .set({ stage: 'proposal_sent', lastActivityAt: new Date() })
-                    .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId));
+                    .where(withTenantIdNotDeleted(crmOpportunities, tenantId, crmQuoteResult[0].opportunityId));
             }
         } catch (error) {
             logger.error(
@@ -314,12 +314,12 @@ export class FreightQuoteService {
 
         // Sync CRM Quote to 'accepted' and opportunity to 'awaiting_response' (non-blocking)
         try {
-            const crmQuoteResult = await db.select().from(crmQuotes).where(eq(crmQuotes.id, quoteId)).limit(1);
+            const crmQuoteResult = await db.select().from(crmQuotes).where(withTenantIdNotDeleted(crmQuotes, tenantId, quoteId)).limit(1);
             if (crmQuoteResult[0] && crmQuoteResult[0].opportunityId) {
-                await db.update(crmQuotes).set({ status: 'accepted', updatedAt: new Date() }).where(eq(crmQuotes.id, quoteId));
+                await db.update(crmQuotes).set({ status: 'accepted', updatedAt: new Date() }).where(withTenantIdNotDeleted(crmQuotes, tenantId, quoteId));
                 await db.update(crmOpportunities)
                     .set({ stage: 'awaiting_response', lastActivityAt: new Date() })
-                    .where(eq(crmOpportunities.id, crmQuoteResult[0].opportunityId));
+                    .where(withTenantIdNotDeleted(crmOpportunities, tenantId, crmQuoteResult[0].opportunityId));
             }
         } catch (error) {
             logger.error(
