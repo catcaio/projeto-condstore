@@ -18,6 +18,7 @@
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "test": "npm run test:ci",
     "test:ci": "npm run lint:env && npm run lint:pii && cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=threads vitest run --configLoader runner --config vitest.config.mjs",
+    "test:coverage": "npm run lint:env && npm run lint:pii && cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=forks vitest run --configLoader runner --config vitest.config.mjs --coverage",
     "test:win-stable": "cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=forks vitest run --configLoader runner --config vitest.config.mjs",
     "release:check": "node scripts/release-check.mjs",
     "staging:smoke": "node --import tsx scripts/smoke/staging-smoke.ts",
@@ -69,6 +70,7 @@
   "devDependencies": {
     "@eslint/js": "9.39.3",
     "@playwright/test": "^1.58.2",
+    "@vitest/coverage-v8": "4.0.18",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.3.3",
     "@types/node-fetch": "2.6.13",
