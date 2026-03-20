@@ -75,11 +75,12 @@ describe("Global Edge Middleware Enforcement", () => {
             expect(res.headers.get('content-type')).not.toBe('application/json');
         });
 
-        it("should parse token from query string and allow if valid", async () => {
+        it("should reject token in query string as it is no longer supported", async () => {
             process.env.INTERNAL_TOKEN = "query-token";
             const req = makeRequest("/api/internal/tasks?token=query-token", {});
             const res = await middleware(req);
-            expect((res as any).status).toBe(200);
+            expect((res as any).status).toBe(401);
+            expect(await res.json()).toEqual({ error: "Unauthorized internal access" });
         });
 
         it("should allow QA bootstrap bypass in actions environment", async () => {
