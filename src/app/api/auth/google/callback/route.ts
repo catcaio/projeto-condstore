@@ -84,12 +84,15 @@ export async function GET(request: NextRequest) {
         const existingUser = existingUsers[0];
 
         if (existingUser) {
-            // User exists → update provider info if needed, create session
+            // Conta já existe → verificar hijack. Apenas permitir se já for google.
             if (existingUser.authProvider !== 'google') {
-                await db
-                    .update(users)
-                    .set({ authProvider: 'google', providerId: googleUser.sub, name: existingUser.name || googleUser.name, emailVerifiedAt: new Date() })
-                    .where(eq(users.id, existingUser.id));
+                structuredLogger.warn('google_oauth_account_takeover_blocked', {
+                    eventType: 'auth_security',
+                    email: normalizedEmail,
+                    existingProvider: existingUser.authProvider,
+                    attemptedProvider: 'google',
+                });
+                return NextResponse.redirect(`${baseUrl}/login?error=account_exists_different_provider`);
             }
 
             const token = await createSessionToken({

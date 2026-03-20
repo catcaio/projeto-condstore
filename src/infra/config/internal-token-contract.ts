@@ -99,12 +99,10 @@ export function extractInternalRequestCredentials(request: { headers: Pick<Heade
   const searchParams = request.nextUrl?.searchParams ?? new URL(request.url ?? 'http://localhost').searchParams;
 
   return {
-    token: request.headers.get('x-internal-token') || searchParams.get('token'),
+    token: request.headers.get('x-internal-token'),
     qaToken:
       request.headers.get('x-qa-token') ||
-      request.headers.get('x-qa-bootstrap') ||
-      searchParams.get('qaToken') ||
-      searchParams.get('token'),
+      request.headers.get('x-qa-bootstrap'),
     bootstrapToken: request.headers.get('x-bootstrap-token'),
   };
 }

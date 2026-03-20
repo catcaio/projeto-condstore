@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
         structuredLogger.info('webhook_incoming_total', { eventType: 'whatsapp', requestId });
 
-        if (process.env.NODE_ENV === 'production' && !verifyTwilioSignature(request, rawBody, payload, twilioUrl)) {
+        if (!verifyTwilioSignature(request, rawBody, payload, twilioUrl)) {
              structuredLogger.warn('webhook_invalid_signature_total', { eventType: 'whatsapp', requestId, route });
              structuredLogger.warn('whatsapp_incoming_invalid_signature', { requestId, route });
              return finish(twimlEmpty(requestId));
