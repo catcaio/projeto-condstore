@@ -71,6 +71,14 @@ export async function GET(request: NextRequest) {
         }
 
         const googleUser = await userInfoRes.json() as GoogleUserInfo;
+
+        if (googleUser.email_verified !== true) {
+            structuredLogger.warn('google_oauth_email_not_verified', {
+                eventType: 'auth_security',
+            });
+            return NextResponse.redirect(`${baseUrl}/login?error=google_email_not_verified`);
+        }
+
         const normalizedEmail = googleUser.email.toLowerCase().trim();
 
         // ── 3. Find existing user ─────────────────────────────────────
@@ -88,7 +96,6 @@ export async function GET(request: NextRequest) {
             if (existingUser.authProvider !== 'google') {
                 structuredLogger.warn('google_oauth_account_takeover_blocked', {
                     eventType: 'auth_security',
-                    email: normalizedEmail,
                     existingProvider: existingUser.authProvider,
                     attemptedProvider: 'google',
                 });
