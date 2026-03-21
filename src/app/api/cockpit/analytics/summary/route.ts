@@ -3,6 +3,8 @@ import { sql } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import { requireAdmin } from '@/infra/auth/guards';
 import { requireActivePlan } from '@/modules/billing';
+import { errorResponse, ErrorCode } from '@/infra/http/error-response';
+import { getTracedRequestId, makeRequestId, withRequestTrace } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 
 export const runtime = 'nodejs';
@@ -56,8 +58,9 @@ function toRate(numerator: number, denominator: number): number {
   return Number(((numerator / denominator) * 100).toFixed(1));
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireAdmin(request);
+async function handler(request: NextRequest): Promise<NextResponse> {
+  const requestId = getTracedRequestId(request) ?? makeRequestId(request);
+  const auth = await requireAdmin(request, { requestId });
   if (!auth.ok) {
     return auth.response;
   }
@@ -122,7 +125,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const pricingView = funnelCountMap.get('pricing_view') ?? 0;
     const pricingClickCheckout = funnelCountMap.get('pricing_click_checkout') ?? 0;
 
-    return NextResponse.json({
+    const payload = {
       totalEvents,
       uniqueAnon,
       counts,
@@ -135,14 +138,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           click_checkout_over_pricing_view: toRate(pricingClickCheckout, pricingView),
         },
       },
-    });
+    };
+
+    logger.info('analytics_summary_loaded', { requestId, tenantId, route: '/api/cockpit/analytics/summary', totalEvents });
+    const response = NextResponse.json(payload);
+    response.headers.set('x-request-id', requestId);
+    return response;
   } catch (error) {
-    logger.error('cockpit/analytics/summary: failed to load summary', error as Error, { tenantId });
+    logger.error('cockpit/analytics/summary: failed to load summary', error as Error, { tenantId, requestId });
 
     if (isAnalyticsTableMissing(error)) {
-      return NextResponse.json({ error: 'Analytics table not migrated' }, { status: 503 });
+      return errorResponse(ErrorCode.DB_ERROR, 503, requestId, 'Analytics table not migrated');
     }
 
-    return NextResponse.json({ error: 'Failed to load analytics summary' }, { status: 500 });
+    return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Failed to load analytics summary');
   }
 }
+
+export const GET = withRequestTrace(handler);
