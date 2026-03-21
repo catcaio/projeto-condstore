@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
 
     try {
         const { searchParams } = new URL(request.url);
-        const limit = Number(searchParams.get('limit')) || 200;
+        const limitParam = Number(searchParams.get('limit')) || 200;
+        const limit = Math.min(limitParam, 500);
         const conversationId = searchParams.get('conversationId') || undefined;
         
         const orders = await orderService.listOrders(tenantId, { limit, conversationId });

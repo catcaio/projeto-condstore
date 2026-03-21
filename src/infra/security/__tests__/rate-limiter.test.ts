@@ -92,6 +92,31 @@ describe('security rate-limiter redis failure hardening', () => {
     expect(JSON.stringify(logContext)).not.toContain('admin');
   });
 
+  it('fails closed in production for critical scopes (auth.login) when redis is unavailable', async () => {
+    const limiter = new RateLimiter();
+    const now = Date.now();
+
+    const result = await limiter.limit('auth.login', '1.2.3.4:admin', {
+      max: 5,
+      windowSec: 60,
+    });
+
+    expect(result).toEqual({
+      allowed: false,
+      remaining: 0,
+      resetAt: now + 60_000,
+      limit: 5,
+    });
+    expect(mockStructuredLogger.error).toHaveBeenCalledWith(
+      'rate_limiter_redis_failure_fail_closed',
+      expect.objectContaining({
+        eventType: 'rate_limiter',
+        scope: 'auth.login',
+        rateLimitMode: 'fail_closed',
+      }),
+    );
+  });
+
   it('uses memory fallback for public_safe scopes when redis is unavailable', async () => {
     const limiter = new RateLimiter();
 

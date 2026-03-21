@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
         const limitStr = searchParams.get('limit');
         const offsetStr = searchParams.get('offset');
 
-        const limit = limitStr ? parseInt(limitStr, 10) : 50;
+        const parsedLimit = limitStr ? parseInt(limitStr, 10) : 50;
+        const limit = Math.min(parsedLimit, 500);
         const offset = offsetStr ? parseInt(offsetStr, 10) : 0;
 
         const filters: any = { limit, offset };

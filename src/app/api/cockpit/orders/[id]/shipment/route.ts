@@ -39,7 +39,12 @@ export async function PATCH(
     try {
         const { id: orderId } = await context.params;
         // The shipmentId must be provided in the body or resolved via the orderId
-        const body = await request.json().catch(() => ({}));
+        let body;
+        try {
+            body = await request.json();
+        } catch {
+            return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Invalid JSON body');
+        }
         const { status, trackingCode, trackingUrl, shipmentId } = body;
 
         let targetShipmentId = shipmentId;
