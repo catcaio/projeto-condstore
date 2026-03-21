@@ -419,6 +419,18 @@ export const whatsappInboundOrchestrator = {
                     });
                 } catch (error) {
                     logger.warn('whatsapp_freight_simulation_failed', { requestId, tenantId, destinationZip, error: error instanceof Error ? error.message : String(error) });
+                    void funnelRepository.saveEvent({
+                        tenantId,
+                        phoneNumber: fromE164,
+                        sessionId: fromHash,
+                        stage: FunnelStage.FLOW_ABORTED,
+                        attribution: {
+                            utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
+                            utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
+                            utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
+                            refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
+                        }
+                    });
                 }
             }
 
