@@ -117,7 +117,11 @@ export async function createSessionState(
         contextJson: params?.contextJson ?? null,
     }).onDuplicateKeyUpdate({
         set: {
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            ...(params?.attributionToken !== undefined ? { attributionToken: params.attributionToken } : {}),
+            ...(params?.utmSource !== undefined ? { utmSource: params.utmSource } : {}),
+            ...(params?.utmMedium !== undefined ? { utmMedium: params.utmMedium } : {}),
+            ...(params?.utmCampaign !== undefined ? { utmCampaign: params.utmCampaign } : {}),
         }
     });
 

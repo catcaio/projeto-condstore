@@ -30,8 +30,7 @@ import {
 
 import { extractAttributionTokenFromText } from '@/infra/attribution/token-parser';
 import { attributionClickRepository } from '@/infra/repositories/attribution-click.repository';
-import type { AttributionSnapshot } from '@/infra/attribution/attribution.types';
-import { sessionManager } from '@/core/conversation/session-manager';
+
 export interface WebhookOrchestratorPayload {
     tenantId: string;
     messageSid: string;
@@ -194,25 +193,27 @@ export const whatsappInboundOrchestrator = {
         }
 
         // 3.5 Attribution Extraction
-        let attributionTokenStr: string | undefined;
-        let utmSourceStr: string | undefined;
-        let utmMediumStr: string | undefined;
-        let utmCampaignStr: string | undefined;
+        let attributionTokenStr: string | null = null;
+        let utmSourceStr: string | null = null;
+        let utmMediumStr: string | null = null;
+        let utmCampaignStr: string | null = null;
+        let hasNewAttribution = false;
 
         const extractedToken = extractAttributionTokenFromText(messageText);
         if (extractedToken) {
             const consumeRes = await attributionClickRepository.consumeByToken(extractedToken, { tenantId, requestId });
             if (consumeRes?.attribution) {
+                hasNewAttribution = true;
                 attributionTokenStr = extractedToken;
-                utmSourceStr = consumeRes.attribution.utmSource || undefined;
-                utmMediumStr = consumeRes.attribution.utmMedium || undefined;
-                utmCampaignStr = consumeRes.attribution.utmCampaign || undefined;
+                utmSourceStr = consumeRes.attribution.utmSource || null;
+                utmMediumStr = consumeRes.attribution.utmMedium || null;
+                utmCampaignStr = consumeRes.attribution.utmCampaign || null;
                 
                 structuredLogger.info('whatsapp_attribution_consumed', {
                     tenantId,
                     messageSid,
                     requestId,
-                    attributionToken: extractedToken,
+                    attributionTokenPrefix: extractedToken.substring(0, 6) + '***',
                     utmSource: utmSourceStr,
                     utmCampaign: utmCampaignStr
                 });
@@ -239,17 +240,24 @@ export const whatsappInboundOrchestrator = {
 
         const intentResult = resolveContextualIntent(messageText, sessionAnchors);
 
+        const currentAttribution = hasNewAttribution ? {
+            utmSource: utmSourceStr,
+            utmMedium: utmMediumStr,
+            utmCampaign: utmCampaignStr,
+            refToken: attributionTokenStr
+        } : {
+            utmSource: sessionState?.utmSource ?? null,
+            utmMedium: sessionState?.utmMedium ?? null,
+            utmCampaign: sessionState?.utmCampaign ?? null,
+            refToken: sessionState?.attributionToken ?? null,
+        };
+
         void funnelRepository.saveEvent({
             tenantId,
             phoneNumber: fromE164,
             sessionId: fromHash,
             stage: FunnelStage.FLOW_STARTED,
-            attribution: {
-                utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
-                utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
-                utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
-                refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
-            }
+            attribution: currentAttribution
         });
 
         if (intentResult.intent) {
@@ -258,12 +266,7 @@ export const whatsappInboundOrchestrator = {
                 phoneNumber: fromE164,
                 sessionId: fromHash,
                 stage: FunnelStage.INTENT_DETECTED,
-                attribution: {
-                    utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
-                    utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
-                    utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
-                    refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
-                }
+                attribution: currentAttribution
             });
         }
         
@@ -311,12 +314,7 @@ export const whatsappInboundOrchestrator = {
                 phoneNumber: fromE164,
                 sessionId: fromHash,
                 stage: FunnelStage.CEP_PROVIDED,
-                attribution: {
-                    utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
-                    utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
-                    utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
-                    refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
-                }
+                attribution: currentAttribution
             });
         }
 
@@ -326,12 +324,7 @@ export const whatsappInboundOrchestrator = {
                 phoneNumber: fromE164,
                 sessionId: fromHash,
                 stage: FunnelStage.QUANTITY_PROVIDED,
-                attribution: {
-                    utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
-                    utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
-                    utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
-                    refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
-                }
+                attribution: currentAttribution
             });
         }
 
@@ -387,12 +380,7 @@ export const whatsappInboundOrchestrator = {
                     const freightQuote = await freightService.simulateFreightQuote({
                         tenantId, productId: primaryProduct.productId, quantity,
                         destinationZip, unitWeight: primaryProduct.weight,
-                        attribution: {
-                            utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
-                            utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
-                            utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
-                            refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
-                        }
+                        attribution: currentAttribution
                     });
                     suggestedResponse = `${suggestedResponse}\n\n${formatFreightQuoteResponse({
                         destinationZip, freightPrice: freightQuote.freightPrice, estimatedDays: freightQuote.estimatedDays, carrier: freightQuote.carrier,
@@ -404,12 +392,7 @@ export const whatsappInboundOrchestrator = {
                         phoneNumber: fromE164,
                         sessionId: fromHash,
                         stage: FunnelStage.FREIGHT_QUOTED,
-                        attribution: {
-                            utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
-                            utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
-                            utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
-                            refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
-                        }
+                        attribution: currentAttribution
                     });
                     
                     await publishOperationalEvent({
@@ -424,12 +407,7 @@ export const whatsappInboundOrchestrator = {
                         phoneNumber: fromE164,
                         sessionId: fromHash,
                         stage: FunnelStage.FLOW_ABORTED,
-                        attribution: {
-                            utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
-                            utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
-                            utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
-                            refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
-                        }
+                        attribution: currentAttribution
                     });
                 }
             }
@@ -454,12 +432,7 @@ export const whatsappInboundOrchestrator = {
                     phoneNumber: fromE164,
                     sessionId: fromHash,
                     stage: FunnelStage.ASKED_CEP,
-                    attribution: {
-                        utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
-                        utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
-                        utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
-                        refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
-                    }
+                    attribution: currentAttribution
                 });
             }
             
