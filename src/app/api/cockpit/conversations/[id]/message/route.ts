@@ -63,7 +63,12 @@ export async function POST(
     try {
         const { id: conversationId } = await context.params;
         activeConversationId = conversationId;
-        const body = await request.json().catch(() => ({}));
+        let body;
+        try {
+            body = await request.json();
+        } catch {
+            return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid JSON body');
+        }
         const payloadText = typeof body?.text === 'string' ? body.text : body?.message;
 
         if (!payloadText || typeof payloadText !== 'string' || payloadText.trim() === '') {
