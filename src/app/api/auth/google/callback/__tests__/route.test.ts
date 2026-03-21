@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { GET } from '../route';
 import { NextRequest } from 'next/server';
 
@@ -7,14 +7,19 @@ vi.mock('@/infra/auth/session', () => ({ createSessionToken: vi.fn(), COOKIE_NAM
 vi.mock('@/infra/log/logger', () => ({ structuredLogger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() } }));
 
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
 
 describe('Google OAuth Callback', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        process.env.GOOGLE_CLIENT_ID = 'test-client';
-        process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
-        process.env.NEXTAUTH_URL = 'http://localhost:3000';
+        vi.stubEnv('GOOGLE_CLIENT_ID', 'test-client');
+        vi.stubEnv('GOOGLE_CLIENT_SECRET', 'test-secret');
+        vi.stubEnv('NEXTAUTH_URL', 'http://localhost:3000');
+        vi.stubGlobal('fetch', mockFetch);
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+        vi.unstubAllGlobals();
     });
 
     it('rejects login when email_verified is false', async () => {

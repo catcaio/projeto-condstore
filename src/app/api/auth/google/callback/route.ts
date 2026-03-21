@@ -75,7 +75,6 @@ export async function GET(request: NextRequest) {
         if (googleUser.email_verified !== true) {
             structuredLogger.warn('google_oauth_email_not_verified', {
                 eventType: 'auth_security',
-                email: googleUser.email,
             });
             return NextResponse.redirect(`${baseUrl}/login?error=google_email_not_verified`);
         }
@@ -97,7 +96,6 @@ export async function GET(request: NextRequest) {
             if (existingUser.authProvider !== 'google') {
                 structuredLogger.warn('google_oauth_account_takeover_blocked', {
                     eventType: 'auth_security',
-                    email: normalizedEmail,
                     existingProvider: existingUser.authProvider,
                     attemptedProvider: 'google',
                 });
