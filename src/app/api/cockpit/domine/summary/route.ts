@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { DomineSummary } from "../../../../../domine/contracts/domineSummary";
 import { isDomineEnabled } from "../../../../../domine/tenant";
 import { requireAdmin } from '@/infra/auth/guards';
+import { errorResponse, ErrorCode } from '@/infra/http/error-response';
+import { getTracedRequestId, makeRequestId, withRequestTrace } from '@/infra/http/request-trace';
+import { logger } from '@/infra/logger';
 
-export async function GET(request: NextRequest) {
-    const auth = await requireAdmin(request);
+async function handler(request: NextRequest) {
+    const requestId = getTracedRequestId(request) ?? makeRequestId(request);
+    const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
     const { tenantId } = auth.session;
 
     if (!isDomineEnabled(tenantId)) {
-        return NextResponse.json({ error: "Domine not enabled for this tenant" }, { status: 404 });
+        logger.warn('domine_not_enabled', { requestId, tenantId, route: '/api/cockpit/domine/summary' });
+        return errorResponse(ErrorCode.FORBIDDEN, 404, requestId, "Domine not enabled for this tenant");
     }
 
     const payload: DomineSummary = {
@@ -22,5 +27,10 @@ export async function GET(request: NextRequest) {
         generatedAt: new Date().toISOString(),
     };
 
-    return NextResponse.json(payload);
+    logger.info('domine_summary_loaded', { requestId, tenantId, route: '/api/cockpit/domine/summary' });
+    const response = NextResponse.json(payload);
+    response.headers.set('x-request-id', requestId);
+    return response;
 }
+
+export const GET = withRequestTrace(handler);
