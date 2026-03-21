@@ -249,7 +249,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return finalize(NextResponse.json(payload, {
       status: 200,
-      headers: { 'Cache-Control': 'private, max-age=60' },
+      headers: { 'Cache-Control': groupBy ? 'no-store, max-age=0' : 'private, max-age=60' },
     }));
   } catch (error) {
     logger.error('cockpit/metrics/freight: unexpected error', error as Error, { tenantId });

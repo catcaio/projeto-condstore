@@ -463,6 +463,13 @@
       "when": 1774023582056,
       "tag": "0077_bent_lady_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "5",
+      "when": 1774075153182,
+      "tag": "0078_spooky_gertrude_yorkes",
+      "breakpoints": true
     }
   ]
 }

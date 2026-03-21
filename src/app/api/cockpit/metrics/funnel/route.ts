@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
 
         return finalize(NextResponse.json(responseData, {
             headers: {
-                'Cache-Control': `private, max-age=${CACHE_TTL_SECONDS}`,
+                'Cache-Control': groupBy ? 'no-store, max-age=0' : `private, max-age=${CACHE_TTL_SECONDS}`,
                 'X-Cache': 'MISS',
                 'X-Request-Id': requestId,
             },

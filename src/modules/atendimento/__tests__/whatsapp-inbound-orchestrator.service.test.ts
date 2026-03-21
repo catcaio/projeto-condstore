@@ -40,6 +40,14 @@ vi.mock('@/lib/events/operational-event-bus', () => ({
     publishOperationalEvent: vi.fn()
 }));
 
+vi.mock('@/infra/repositories/attribution-click.repository', () => ({
+    attributionClickRepository: { consumeByToken: vi.fn() }
+}));
+
+vi.mock('@/infra/attribution/token-parser', () => ({
+    extractAttributionTokenFromText: vi.fn()
+}));
+
 vi.mock('@/modules/customers/identity-resolver/identity-resolver.service', () => ({
     resolveCustomerByPhone: vi.fn()
 }));
@@ -316,5 +324,36 @@ describe('WhatsApp Inbound Orchestrator', () => {
         }));
         
         expect(policy.type).toBe('SUPERVISED_NO_REPLY');
+    });
+
+    it('Should extract and consume attribution token, and persist in session', async () => {
+        const payload = { ...defaultPayload, rawBodyText: 'Mensagem teste t=attr_token_999' };
+        
+        const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
+        (getSessionState as any).mockResolvedValue(null);
+        
+        const { extractAttributionTokenFromText } = await import('@/infra/attribution/token-parser');
+        (extractAttributionTokenFromText as any).mockReturnValue('attr_token_999');
+
+        const { attributionClickRepository } = await import('@/infra/repositories/attribution-click.repository');
+        (attributionClickRepository.consumeByToken as any).mockResolvedValue({
+            attribution: {
+                utmSource: 'meta',
+                utmCampaign: 'blackfriday',
+                utmMedium: 'cpc'
+            }
+        });
+
+        await whatsappInboundOrchestrator.process(payload);
+
+        expect(extractAttributionTokenFromText).toHaveBeenCalledWith('Mensagem teste t=attr_token_999');
+        expect(attributionClickRepository.consumeByToken).toHaveBeenCalledWith('attr_token_999', expect.any(Object));
+
+        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
+            attributionToken: 'attr_token_999',
+            utmSource: 'meta',
+            utmCampaign: 'blackfriday',
+            utmMedium: 'cpc'
+        }));
     });
 });

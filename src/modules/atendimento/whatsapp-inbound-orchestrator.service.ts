@@ -10,6 +10,7 @@ import { catalogService } from '@/modules/catalog/catalog.service';
 import { resolveCustomerByPhone } from '@/modules/customers/identity-resolver/identity-resolver.service';
 import { customerResolutionService } from '@/modules/customers/customer-resolution.service';
 import { freightService } from '@/modules/freight/freight.service';
+import { funnelRepository, FunnelStage } from '@/modules/funnel/funnel.repository';
 import { resolveEntities } from '@/modules/frank/entity-resolver';
 import { resolveIntent, resolveContextualIntent, type SessionAnchors, type Intent } from '@/modules/frank/intent-resolver';
 import { getSessionState, createSessionState, updateSessionState } from '@/modules/frank/session.repository';
@@ -27,6 +28,10 @@ import {
     formatProductSuggestionsResponse,
 } from '@/lib/formatters/whatsapp-response';
 
+import { extractAttributionTokenFromText } from '@/infra/attribution/token-parser';
+import { attributionClickRepository } from '@/infra/repositories/attribution-click.repository';
+import type { AttributionSnapshot } from '@/infra/attribution/attribution.types';
+import { sessionManager } from '@/core/conversation/session-manager';
 export interface WebhookOrchestratorPayload {
     tenantId: string;
     messageSid: string;
@@ -188,6 +193,32 @@ export const whatsappInboundOrchestrator = {
             });
         }
 
+        // 3.5 Attribution Extraction
+        let attributionTokenStr: string | undefined;
+        let utmSourceStr: string | undefined;
+        let utmMediumStr: string | undefined;
+        let utmCampaignStr: string | undefined;
+
+        const extractedToken = extractAttributionTokenFromText(messageText);
+        if (extractedToken) {
+            const consumeRes = await attributionClickRepository.consumeByToken(extractedToken, { tenantId, requestId });
+            if (consumeRes?.attribution) {
+                attributionTokenStr = extractedToken;
+                utmSourceStr = consumeRes.attribution.utmSource || undefined;
+                utmMediumStr = consumeRes.attribution.utmMedium || undefined;
+                utmCampaignStr = consumeRes.attribution.utmCampaign || undefined;
+                
+                structuredLogger.info('whatsapp_attribution_consumed', {
+                    tenantId,
+                    messageSid,
+                    requestId,
+                    attributionToken: extractedToken,
+                    utmSource: utmSourceStr,
+                    utmCampaign: utmCampaignStr
+                });
+            }
+        }
+
         // 4. NLP Intent Context & Resolution
         const sessionState = await getSessionState(tenantId, fromHash);
         
@@ -207,6 +238,21 @@ export const whatsappInboundOrchestrator = {
         }
 
         const intentResult = resolveContextualIntent(messageText, sessionAnchors);
+
+        if (intentResult.intent) {
+            void funnelRepository.saveEvent({
+                tenantId,
+                phoneNumber: fromE164,
+                sessionId: fromHash,
+                stage: FunnelStage.INTENT_DETECTED,
+                attribution: {
+                    utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
+                    utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
+                    utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
+                    refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
+                }
+            });
+        }
         
         structuredLogger.info('whatsapp_orchestrator_intent_resolved', {
             tenantId,
@@ -245,6 +291,36 @@ export const whatsappInboundOrchestrator = {
         const destinationZip = extractCep(messageText);
         const productQuery = extractProductQuery(messageText, entityResult.entities);
         const quantity = resolveQuantity(messageText, entityResult.entities.quantity);
+
+        if (destinationZip) {
+            void funnelRepository.saveEvent({
+                tenantId,
+                phoneNumber: fromE164,
+                sessionId: fromHash,
+                stage: FunnelStage.CEP_PROVIDED,
+                attribution: {
+                    utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
+                    utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
+                    utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
+                    refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
+                }
+            });
+        }
+
+        if (quantity > 0) {
+            void funnelRepository.saveEvent({
+                tenantId,
+                phoneNumber: fromE164,
+                sessionId: fromHash,
+                stage: FunnelStage.QUANTITY_PROVIDED,
+                attribution: {
+                    utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
+                    utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
+                    utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
+                    refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
+                }
+            });
+        }
 
         // 5.5 Resolve Actual Order and Shipment Anchors
         let validOrderId: string | undefined = undefined;
@@ -298,11 +374,30 @@ export const whatsappInboundOrchestrator = {
                     const freightQuote = await freightService.simulateFreightQuote({
                         tenantId, productId: primaryProduct.productId, quantity,
                         destinationZip, unitWeight: primaryProduct.weight,
+                        attribution: {
+                            utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
+                            utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
+                            utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
+                            refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
+                        }
                     });
                     suggestedResponse = `${suggestedResponse}\n\n${formatFreightQuoteResponse({
                         destinationZip, freightPrice: freightQuote.freightPrice, estimatedDays: freightQuote.estimatedDays, carrier: freightQuote.carrier,
                     })}`;
                     freightQuoted = true;
+
+                    void funnelRepository.saveEvent({
+                        tenantId,
+                        phoneNumber: fromE164,
+                        sessionId: fromHash,
+                        stage: FunnelStage.FREIGHT_QUOTED,
+                        attribution: {
+                            utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
+                            utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
+                            utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
+                            refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
+                        }
+                    });
                     
                     await publishOperationalEvent({
                         tenantId, eventType: 'freight_quoted', eventDomain: 'OPERATIONS',
@@ -400,7 +495,7 @@ export const whatsappInboundOrchestrator = {
         // Determine if we are incrementing the counter due to an outbound auto-reply taking place
         const shouldIncrementCounter = !guardResult.blocked && policyResolution.type === 'AUTO_REPLY_ALLOWED';
 
-        const updateParams = {
+        const updateParams: import('@/modules/frank/session.repository').UpdateSessionParams = {
             currentIntent: intentResult.intent,
             lastToolUsed: createdSuggestion ? 'freight_simulation_tool' : undefined,
             ...(validOrderId ? { lastOrderId: validOrderId } : {}),
@@ -408,6 +503,13 @@ export const whatsappInboundOrchestrator = {
             autoResponsesCount: shouldIncrementCounter ? autoResponsesCount + 1 : autoResponsesCount,
             ...(shouldIncrementCounter ? { lastAutoResponseAt: new Date() } : {})
         };
+
+        if (attributionTokenStr) {
+            updateParams.attributionToken = attributionTokenStr;
+            updateParams.utmSource = utmSourceStr;
+            updateParams.utmMedium = utmMediumStr;
+            updateParams.utmCampaign = utmCampaignStr;
+        }
 
         if (sessionState) {
             await updateSessionState(tenantId, fromHash, updateParams);

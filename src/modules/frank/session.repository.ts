@@ -30,6 +30,10 @@ export interface SessionState {
     lastToolUsed: string | null;
     autoResponsesCount: number;
     lastAutoResponseAt: Date | null;
+    attributionToken: string | null;
+    utmSource: string | null;
+    utmMedium: string | null;
+    utmCampaign: string | null;
     contextJson: Record<string, unknown> | null;
     createdAt: Date;
     updatedAt: Date;
@@ -48,6 +52,10 @@ export interface UpdateSessionParams {
     lastToolUsed?: string | null;
     autoResponsesCount?: number;
     lastAutoResponseAt?: Date | null;
+    attributionToken?: string | null;
+    utmSource?: string | null;
+    utmMedium?: string | null;
+    utmCampaign?: string | null;
     contextJson?: Record<string, unknown> | null;
 }
 
@@ -102,6 +110,10 @@ export async function createSessionState(
         lastToolUsed: params?.lastToolUsed ?? null,
         autoResponsesCount: params?.autoResponsesCount ?? 0,
         lastAutoResponseAt: params?.lastAutoResponseAt ?? null,
+        attributionToken: params?.attributionToken ?? null,
+        utmSource: params?.utmSource ?? null,
+        utmMedium: params?.utmMedium ?? null,
+        utmCampaign: params?.utmCampaign ?? null,
         contextJson: params?.contextJson ?? null,
     }).onDuplicateKeyUpdate({
         set: {
@@ -147,6 +159,10 @@ export async function updateSessionState(
     if (params.lastToolUsed !== undefined) updateData.lastToolUsed = params.lastToolUsed;
     if (params.autoResponsesCount !== undefined) updateData.autoResponsesCount = params.autoResponsesCount;
     if (params.lastAutoResponseAt !== undefined) updateData.lastAutoResponseAt = params.lastAutoResponseAt;
+    if (params.attributionToken !== undefined) updateData.attributionToken = params.attributionToken;
+    if (params.utmSource !== undefined) updateData.utmSource = params.utmSource;
+    if (params.utmMedium !== undefined) updateData.utmMedium = params.utmMedium;
+    if (params.utmCampaign !== undefined) updateData.utmCampaign = params.utmCampaign;
     if (params.contextJson !== undefined) updateData.contextJson = params.contextJson;
 
     if (Object.keys(updateData).length === 0) return;

@@ -113,9 +113,7 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
     const userAgent = request.headers.get('user-agent');
     const landingUrl = capString(searchParams.get('landing_url'), LANDING_URL_MAX_LENGTH);
-    const existingToken = await attributionClickRepository.getByToken(token);
-
-    if (existingToken) {
+    if (token) {
       await attributionClickRepository.upsertByToken({
         token,
         tenantId: capString(searchParams.get('tenant_id'), 36),
@@ -128,14 +126,6 @@ export async function GET(
         landingUrl,
         userAgentHash: sha256Hex(userAgent),
         ipHash,
-      });
-    } else {
-      structuredLogger.info('tracking_token_not_found', {
-        requestId,
-        route,
-        eventType: 'tracking_token_not_found',
-        refHash: sha256Hex(token)?.slice(0, 16),
-        ipHash: ipHash.slice(0, 16),
       });
     }
 
