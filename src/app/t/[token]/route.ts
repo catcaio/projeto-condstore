@@ -114,6 +114,17 @@ export async function GET(
     const userAgent = request.headers.get('user-agent');
     const landingUrl = capString(searchParams.get('landing_url'), LANDING_URL_MAX_LENGTH);
     if (token) {
+      const existingToken = await attributionClickRepository.getByToken(token);
+      if (!existingToken) {
+        structuredLogger.warn('invalid_tracking_token_not_found', {
+          requestId,
+          route,
+          eventType: 'invalid_token',
+          token,
+        });
+        return finalize(errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'invalid_token'));
+      }
+
       await attributionClickRepository.upsertByToken({
         token,
         tenantId: capString(searchParams.get('tenant_id'), 36),

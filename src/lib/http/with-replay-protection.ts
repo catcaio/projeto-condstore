@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateReplayProtection } from '../security/replay-protection';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type HandlerWrapper = (req: NextRequest, ctx: any) => Promise<Response>;
+type HandlerWrapper = (req: NextRequest, ctx?: any) => Promise<Response>;
 
 /**
  * Wraps a Next.js route handler with replay attack protection.

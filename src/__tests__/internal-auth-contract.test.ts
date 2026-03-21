@@ -19,7 +19,7 @@ describe('internal auth contract', () => {
     delete process.env.QA_BOOTSTRAP_TOKEN;
     delete process.env.BOOTSTRAP_TOKEN;
     delete process.env.CI;
-    process.env.NODE_ENV = 'test';
+    vi.stubEnv('NODE_ENV', 'test');
     process.env.AUTH_SECRET = 'test-secret-at-least-16-chars';
     process.env.DATABASE_URL = 'mysql://user:pass@localhost:3306/db';
     process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
@@ -83,14 +83,14 @@ describe('internal auth contract', () => {
   });
 
   it('keeps local/dev boot coherent with session AUTH_SECRET fallback', () => {
-    process.env.NODE_ENV = 'development';
+    vi.stubEnv('NODE_ENV', 'development');
     delete process.env.AUTH_SECRET;
 
     expect(() => assertCriticalEnvSetup()).not.toThrow();
   });
 
   it('still requires AUTH_SECRET in strict runtimes', () => {
-    process.env.NODE_ENV = 'production';
+    vi.stubEnv('NODE_ENV', 'production');
     process.env.VERCEL_ENV = 'production';
     process.env.INTERNAL_DIAG_TOKEN = 'diag-secret';
     process.env.INTERNAL_EXPORT_TOKEN = 'export-secret';
@@ -101,7 +101,7 @@ describe('internal auth contract', () => {
   });
 
   it('fails early in strict runtime when critical internal tokens are missing', () => {
-    process.env.NODE_ENV = 'production';
+    vi.stubEnv('NODE_ENV', 'production');
     process.env.VERCEL_ENV = 'preview';
 
     expect(() => assertCriticalEnvSetup()).toThrow(

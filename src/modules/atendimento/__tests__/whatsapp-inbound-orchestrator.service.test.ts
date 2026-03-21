@@ -81,8 +81,8 @@ vi.mock('@/modules/frank/suggestions/suggestion.service', () => ({
 
 vi.mock('@/modules/frank/session.repository', () => ({
     getSessionState: vi.fn(),
-    createSessionState: vi.fn(),
-    updateSessionState: vi.fn()
+    createSessionState: vi.fn().mockResolvedValue({ id: 'mock-session-id' }),
+    updateSessionState: vi.fn().mockResolvedValue({ id: 'mock-session-id' })
 }));
 
 vi.mock('@/modules/frank/conversation-control', () => ({
@@ -206,14 +206,15 @@ describe('WhatsApp Inbound Orchestrator', () => {
     it('Should fallback to standard intent when no session state exists', async () => {
         const payload = { ...defaultPayload, rawBodyText: 'quero ver os produtos' };
         
-        const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
+        const { getSessionState, createSessionState, updateSessionState } = await import('@/modules/frank/session.repository');
         (getSessionState as any).mockResolvedValue(null);
 
         await whatsappInboundOrchestrator.process(payload);
         
         expect(mockResolveContextualIntent).toHaveBeenCalledWith('quero ver os produtos', null);
         
-        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
+        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash');
+        expect(updateSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
             currentIntent: expect.any(String)
         }));
     });
@@ -233,7 +234,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
     it('Should persist order and shipment anchors when resolved successfully', async () => {
         const payload = { ...defaultPayload, rawBodyText: 'onde esta o pedido 12345?' };
         
-        const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
+        const { getSessionState, createSessionState, updateSessionState } = await import('@/modules/frank/session.repository');
         (getSessionState as any).mockResolvedValue(null);
         
         const { findOrderWithShipmentByPrefix } = await import('@/modules/pedidos/order.repository');
@@ -244,7 +245,8 @@ describe('WhatsApp Inbound Orchestrator', () => {
 
         await whatsappInboundOrchestrator.process(payload);
         
-        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
+        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash');
+        expect(updateSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
             lastOrderId: 'uuid-1234',
             lastReferencedShipmentId: 'ship-5678',
             currentIntent: expect.any(String)
@@ -254,7 +256,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
     it('Should safely ignore invalid order without crashing and not persist anchor', async () => {
         const payload = { ...defaultPayload, rawBodyText: 'onde esta o pedido 99999?' };
         
-        const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
+        const { getSessionState, createSessionState, updateSessionState } = await import('@/modules/frank/session.repository');
         (getSessionState as any).mockResolvedValue(null);
         
         const { findOrderWithShipmentByPrefix } = await import('@/modules/pedidos/order.repository');
@@ -262,11 +264,12 @@ describe('WhatsApp Inbound Orchestrator', () => {
 
         await whatsappInboundOrchestrator.process(payload);
         
-        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
+        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash');
+        expect(updateSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
             currentIntent: expect.any(String)
         }));
         // Should purely persist intent, omitting lastOrderId mapping
-        const callArgs = (createSessionState as any).mock.calls[0][2];
+        const callArgs = (updateSessionState as any).mock.calls[0][2];
         expect(callArgs).not.toHaveProperty('lastOrderId');
         expect(callArgs).not.toHaveProperty('lastReferencedShipmentId');
     });
@@ -337,7 +340,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
     it('Should extract and consume attribution token, and persist in session', async () => {
         const payload = { ...defaultPayload, rawBodyText: 'Mensagem teste t=attr_token_999' };
         
-        const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
+        const { getSessionState, createSessionState, updateSessionState } = await import('@/modules/frank/session.repository');
         (getSessionState as any).mockResolvedValue(null);
         
         const { extractAttributionTokenFromText } = await import('@/infra/attribution/token-parser');
@@ -357,7 +360,8 @@ describe('WhatsApp Inbound Orchestrator', () => {
         expect(extractAttributionTokenFromText).toHaveBeenCalledWith('Mensagem teste t=attr_token_999');
         expect(attributionClickRepository.consumeByToken).toHaveBeenCalledWith('attr_token_999', expect.any(Object));
 
-        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
+        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash');
+        expect(updateSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
             attributionToken: 'attr_token_999',
             utmSource: 'meta',
             utmCampaign: 'blackfriday',
