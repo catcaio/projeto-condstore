@@ -42,6 +42,14 @@ describe('Middleware', () => {
         expect(res.headers.get('location')).toContain('/auth/login?callbackUrl=');
     });
 
+    it('redirects unauthenticated access to /cockpit/ routes to /auth/login', async () => {
+        const req = new NextRequest('http://localhost/cockpit/orders');
+        const res = await middleware(req);
+        
+        expect(res.status).toBe(307);
+        expect(res.headers.get('location')).toContain('/auth/login?callbackUrl=');
+    });
+
     it('allows access to /api/ routes with valid session cookie and injects headers', async () => {
         const req = new NextRequest('http://localhost/api/protected');
         req.cookies.set('condstore_session', 'mock-valid-token');
