@@ -19,6 +19,8 @@ const GUARDED_TOKEN_PATTERNS: Record<string, RegExp> = {
     'requireWebhookSignature': /requireWebhookSignature\s*\(/,
     'requireActivePlan': /requireActivePlan\s*\(/,
     'requireKnowledgePermission': /requireKnowledgePermission\s*\(/,
+    'admin-token': /process\.env\.ADMIN_TOKEN/,
+    'seed-token': /process\.env\.SEED_TOKEN/,
 };
 
 // Define strictly what bypasses the guard check entirely (because it relies on different mechanisms like webhook signature or is actually public)
@@ -30,8 +32,7 @@ const PUBLIC_PREFIXES = [
     '/api/whatsapp/',
     '/api/health',
     '/api/cron/',
-    '/api/domine/intake',
-    '/api/reports/'
+    '/api/domine/intake'
 ];
 
 const DEFAULT_GUARDS = [
@@ -47,7 +48,9 @@ const DEFAULT_GUARDS = [
     'x-bootstrap-token',
     'requireWebhookSignature',
     'requireActivePlan',
-    'requireKnowledgePermission'
+    'requireKnowledgePermission',
+    'admin-token',
+    'seed-token'
 ];
 
 function findRouteFiles(dir: string, baseRoute: string = ''): { routePath: string; filePath: string }[] {
@@ -70,8 +73,6 @@ function findRouteFiles(dir: string, baseRoute: string = ''): { routePath: strin
             // Only care about /api routes in app directory
             if (routePath.startsWith('/api') || routePath === '/api') {
                 results.push({ routePath, filePath: fullPath });
-            } else if (baseRoute === '' && fullPath.includes('src\\app\\api')) {
-                // If baseRoute is empty but we're in api dir some way
             }
         }
     }
@@ -131,11 +132,11 @@ function hasInsecureInputExtraction(filePath: string): string | null {
     }
 
     // Checking for body extraction of tenantId - this is a crude but effective regex for a warning.
-    // It looks for common patterns like const { tenantId } = await request.json() or body.tenantId
-    const bodyExtractRegex = /(?:const|let|var)\s*(?:\{[^}]*\b(tenantId|userId)\b[^}]*\}|.*?\b(?:tenantId|userId)\b\s*=.*?await\s*(?:request|req)\.json\(\))/;
+    // It looks for common patterns like const { tenantId } = await request.json()
+    const bodyExtractRegex = /(?:const|let|var)\s*\{[^}]*\b(tenantId|userId)\b[^}]*\}\s*=\s*(?:await\s+)?(?:request|req)\.json\(\)/;
     const matchBody = content.match(bodyExtractRegex);
     if (matchBody) {
-        return null;
+        return `Extracts ${matchBody[1]} from request body. Use secure session instead.`;
     }
 
     return null;
@@ -181,7 +182,7 @@ function verifyRouteSecurity() {
     }
 
     console.log(`✅ All ${protectedCount} protected routes have security guardrails.`);
-    console.log(`✅ No public routes extracting tenantId/userId insecurely.`);
+    console.log(`✅ No protected routes extracting tenantId/userId insecurely via request.`);
     process.exit(0);
 }
 

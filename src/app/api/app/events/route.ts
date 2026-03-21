@@ -45,7 +45,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();
 
     try {
-        const sessionResult = await requireSession(request);
+        const sessionResult = await requireSession(request, { requestId });
         if (!sessionResult.ok) {
             return sessionResult.response;
         }

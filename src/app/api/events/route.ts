@@ -103,7 +103,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
             return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid JSON payload');
         }
 
-        const sessionResult = await requireSession(request);
+        const sessionResult = await requireSession(request, { requestId });
         if (!sessionResult.ok) {
             return sessionResult.response;
         }
