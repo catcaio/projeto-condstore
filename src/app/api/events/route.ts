@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyticsService } from '../../../modules/analytics/analytics.service';
 import { z } from 'zod';
-import { getSessionUser } from '../../../infra/auth/session';
+import { requireSession } from '../../../infra/auth/guards';
 import { getTracedRequestId, makeRequestId, withRequestTrace } from '../../../infra/http/request-trace';
 import { attributionClickRepository } from '../../../infra/repositories/attribution-click.repository';
 import { normalizeAttributionSnapshot } from '../../../infra/attribution/attribution.types';
@@ -103,11 +103,11 @@ async function handler(request: NextRequest): Promise<NextResponse> {
             return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid JSON payload');
         }
 
-        const session = await getSessionUser(request);
-        tenantId = session?.tenantId?.trim();
-        if (!tenantId) {
-            return errorResponse(ErrorCode.AUTH_REQUIRED, 401, requestId, 'UNAUTHORIZED');
+        const sessionResult = await requireSession(request);
+        if (!sessionResult.ok) {
+            return sessionResult.response;
         }
+        tenantId = sessionResult.session.tenantId;
 
         const parseResult = eventSchema.safeParse(bodyObj);
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getServerSessionUser } from '../../../../infra/auth/session';
+import { requireSession } from '../../../../infra/auth/guards';
 import { getDb } from '../../../../infra/db';
 import { tenantEvents } from '../../../../drizzle/schema';
 import { getTracedRequestId, makeRequestId, withRequestTrace } from '../../../../infra/http/request-trace';
@@ -45,12 +45,12 @@ async function handler(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();
 
     try {
-        const session = await getServerSessionUser();
-        if (!session || !session.tenantId) {
-            return errorResponse(ErrorCode.UNKNOWN, 401, requestId, 'Unauthorized');
+        const sessionResult = await requireSession(request);
+        if (!sessionResult.ok) {
+            return sessionResult.response;
         }
 
-        const tenantId = session.tenantId;
+        const tenantId = sessionResult.session.tenantId;
 
         const ipHash = sha256Hex(getClientIp(request)) ?? 'ip_unknown';
         const rateLimitKey = `app_events_ip:${ipHash}:${tenantId}`;
@@ -122,7 +122,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
             tenantId,
             type: type,
             payload: JSON.stringify({
-                userId: session.sub,
+                userId: sessionResult.session.sub,
                 requestId,
                 metadata: cleanedProps,
                 clientTs: ts,

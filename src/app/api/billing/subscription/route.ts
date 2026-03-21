@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '@/infra/auth/session';
+import { requireSession } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
 import { tenants } from '../../../../drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -8,11 +8,11 @@ import { makeRequestId } from '@/infra/http/request-trace';
 
 export async function GET(req: NextRequest) {
     // ── Auth: tenantId MUST come from the verified session, never from query params ──
-    const session = await getSessionUser(req);
-    if (!session?.tenantId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const sessionResult = await requireSession(req);
+    if (!sessionResult.ok) {
+        return sessionResult.response;
     }
-    const tenantId = session.tenantId;
+    const tenantId = sessionResult.session.tenantId;
 
     try {
         const db = await getDb();
