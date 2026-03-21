@@ -332,6 +332,7 @@
 | `/produtos/envios` | Page |
 | `/seguranca` | Page |
 | `/settings` | Page |
+| `/showcase` | Page |
 | `/signup` | Page |
 | `/sistema/dlq` | Page |
 | `/sistema/health` | Page |
