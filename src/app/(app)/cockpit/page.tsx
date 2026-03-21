@@ -29,7 +29,7 @@ export default async function CockpitPage(props: { searchParams: Promise<{ [key:
     return (
         <div className="flex-1 overflow-auto bg-gray-50/50 p-6">
             <div className="mx-auto max-w-7xl space-y-8">
-                <CockpitOperationalDashboard />
+                <CockpitOperationalDashboard tenantId={tenantId} />
                 
                 <div className="pt-8 mt-8 border-t border-gray-200">
                     <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">

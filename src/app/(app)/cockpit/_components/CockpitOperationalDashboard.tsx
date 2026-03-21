@@ -9,7 +9,11 @@ import { CockpitFreightBlock } from './CockpitFreightBlock';
 
 export type GroupByFilter = 'utm_source' | 'utm_campaign' | 'none';
 
-export function CockpitOperationalDashboard() {
+interface CockpitDashboardProps {
+    tenantId?: string;
+}
+
+export function CockpitOperationalDashboard({ tenantId }: CockpitDashboardProps) {
     const [groupBy, setGroupBy] = useState<GroupByFilter>('utm_campaign');
     
     const [metrics, setMetrics] = useState<any>(null);
@@ -22,25 +26,42 @@ export function CockpitOperationalDashboard() {
     const fetchAll = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
         setError('');
+        const errors: string[] = [];
         try {
-            const qs = groupBy !== 'none' ? `?groupBy=${groupBy}` : '';
-            const [mRes, fRes, frRes] = await Promise.all([
+            const params = new URLSearchParams();
+            if (groupBy !== 'none') params.set('groupBy', groupBy);
+            if (tenantId) params.set('tenantId', tenantId);
+            const qs = params.toString() ? `?${params.toString()}` : '';
+
+            const [mRes, fRes, frRes] = await Promise.allSettled([
                 safeFetch(`/api/cockpit/metrics${qs}`),
                 safeFetch(`/api/cockpit/metrics/funnel${qs}`),
                 safeFetch(`/api/cockpit/metrics/freight${qs}`)
             ]);
 
-            if (!mRes.ok || !fRes.ok || !frRes.ok) throw new Error('Falha ao carregar dados do Cockpit.');
+            if (mRes.status === 'fulfilled' && mRes.value.ok) {
+                setMetrics(await mRes.value.json());
+            } else { errors.push('métricas'); }
 
-            setMetrics(await mRes.json());
-            setFunnel(await fRes.json());
-            setFreight(await frRes.json());
+            if (fRes.status === 'fulfilled' && fRes.value.ok) {
+                setFunnel(await fRes.value.json());
+            } else { errors.push('funil'); }
+
+            if (frRes.status === 'fulfilled' && frRes.value.ok) {
+                setFreight(await frRes.value.json());
+            } else { errors.push('frete'); }
+
+            if (errors.length > 0) {
+                setError(`Falha parcial ao carregar: ${errors.join(', ')}`);
+            } else {
+                setError('');
+            }
         } catch (err: any) {
             setError(err.message || 'Erro de comunicação');
         } finally {
             setLoading(false);
         }
-    }, [groupBy]);
+    }, [groupBy, tenantId]);
 
     useEffect(() => {
         fetchAll();

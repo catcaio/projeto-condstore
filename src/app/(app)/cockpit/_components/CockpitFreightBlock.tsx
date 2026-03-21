@@ -7,7 +7,8 @@ export function CockpitFreightBlock({ freight, loading }: { freight: any, loadin
         return <div className="h-64 rounded-xl w-full bg-slate-200 animate-pulse" />;
     }
 
-    const { total_simulations_7d = 0, avg_peso_7d = 0, top_ufs_7d = [], avg_valor_by_uf_7d = [] } = freight || {};
+    const { total_simulations_7d = 0, avg_peso_7d: rawPeso, top_ufs_7d = [], avg_valor_by_uf_7d = [] } = freight || {};
+    const avg_peso_7d = Number(rawPeso) || 0;
 
     // Combine Top UFs with their corresponding average values
     const ufDataList = top_ufs_7d.map((ufData: any) => {
