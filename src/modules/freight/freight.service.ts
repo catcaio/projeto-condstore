@@ -305,6 +305,7 @@ class FreightService {
     destinationZip: string;
     tenantId?: string;
     unitWeight?: number;
+    attribution?: import('@/infra/attribution/attribution.types').AttributionSnapshot | null;
   }): Promise<{ freightPrice: number; estimatedDays: number; carrier: string }> {
     if (!input.productId || !input.quantity || !input.destinationZip) {
       throw new BusinessError(
@@ -320,6 +321,7 @@ class FreightService {
       quantity: input.quantity,
       destinationCep: input.destinationZip.replace(/\D/g, ''),
       unitWeight: input.unitWeight,
+      attribution: input.attribution,
     });
 
     const best = result.options[0];
