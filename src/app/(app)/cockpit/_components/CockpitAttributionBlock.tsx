@@ -8,11 +8,24 @@ export function CockpitAttributionBlock({ funnel, groupBy, loading }: { funnel: 
         return <div className="h-64 rounded-xl w-full bg-slate-200 animate-pulse" />;
     }
 
+    if (!funnel && !loading) {
+        return (
+            <Card className="h-full">
+                <CardHeader heading="Atribuição de Canais" subheading="Volume de engajamento captado nos últimos 7 dias" />
+                <CardContent>
+                    <div className="text-center py-8 text-sm text-slate-500">
+                        Dados de atribuição temporariamente indisponíveis.
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
     const breakdown = funnel?.attribution_breakdown_7d?.buckets || [];
 
     if (groupBy === 'none') {
         return (
-            <Card>
+            <Card className="h-full">
                 <CardHeader 
                     heading="Atribuição de Canais" 
                     subheading="Selecione um filtro de agrupamento (utm_source ou utm_campaign) para visualizar o detalhamento"

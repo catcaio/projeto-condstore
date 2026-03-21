@@ -7,16 +7,33 @@ export function CockpitFreightBlock({ freight, loading }: { freight: any, loadin
         return <div className="h-64 rounded-xl w-full bg-slate-200 animate-pulse" />;
     }
 
+    if (!freight && !loading) {
+        return (
+            <Card>
+                <CardHeader heading="Simulações de Frete (7 dias)" subheading="Distribuição geográfica e custo logístico" />
+                <CardContent>
+                    <div className="text-center py-6 text-sm text-slate-500">
+                        Dados de frete temporariamente indisponíveis.
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
     const { total_simulations_7d = 0, avg_peso_7d: rawPeso, top_ufs_7d = [], avg_valor_by_uf_7d = [] } = freight || {};
     const avg_peso_7d = Number(rawPeso) || 0;
 
     // Combine Top UFs with their corresponding average values
-    const ufDataList = top_ufs_7d.map((ufData: any) => {
-        const valData = avg_valor_by_uf_7d.find((v: any) => v.uf === ufData.uf);
+    const safeTopUfs = Array.isArray(top_ufs_7d) ? top_ufs_7d : [];
+    const safeAvgValor = Array.isArray(avg_valor_by_uf_7d) ? avg_valor_by_uf_7d : [];
+
+    const ufDataList = safeTopUfs.map((ufData: any) => {
+        const valData = safeAvgValor.find((v: any) => v.uf === ufData.uf);
+        const parsedValor = valData ? Number(valData.avg_valor) : 0;
         return {
-            uf: ufData.uf,
-            count: ufData.count,
-            avgValor: valData ? valData.avg_valor : 0
+            uf: ufData.uf || 'N/A',
+            count: Number(ufData.count) || 0,
+            avgValor: isNaN(parsedValor) ? 0 : parsedValor
         };
     });
 

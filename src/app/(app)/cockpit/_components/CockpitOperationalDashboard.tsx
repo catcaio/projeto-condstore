@@ -40,19 +40,19 @@ export function CockpitOperationalDashboard({ tenantId }: CockpitDashboardProps)
             ]);
 
             if (mRes.status === 'fulfilled' && mRes.value.ok) {
-                setMetrics(await mRes.value.json());
+                try { setMetrics(await mRes.value.json()); } catch { errors.push('métricas'); }
             } else { errors.push('métricas'); }
 
             if (fRes.status === 'fulfilled' && fRes.value.ok) {
-                setFunnel(await fRes.value.json());
+                try { setFunnel(await fRes.value.json()); } catch { errors.push('funil'); }
             } else { errors.push('funil'); }
 
             if (frRes.status === 'fulfilled' && frRes.value.ok) {
-                setFreight(await frRes.value.json());
+                try { setFreight(await frRes.value.json()); } catch { errors.push('frete'); }
             } else { errors.push('frete'); }
 
             if (errors.length > 0) {
-                setError(`Falha parcial ao carregar: ${errors.join(', ')}`);
+                setError(`Aviso: falha parcial ao carregar ${errors.join(', ')}. Os demais dados continuam operacionais.`);
             } else {
                 setError('');
             }

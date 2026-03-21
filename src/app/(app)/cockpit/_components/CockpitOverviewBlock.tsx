@@ -11,20 +11,24 @@ export function CockpitOverviewBlock({ metrics, funnel, loading }: { metrics: an
         );
     }
 
-    const { mensagensHoje = 0, cotacoesHoje = 0, pedidosHoje = 0, erros24h = 0 } = metrics || {};
-    const flowStarted = funnel?.window_7d?.counts?.flow_started || 0;
+    const mensagensHoje = metrics ? metrics.mensagensHoje ?? 0 : null;
+    const cotacoesHoje = metrics ? metrics.cotacoesHoje ?? 0 : null;
+    const erros24h = metrics ? metrics.erros24h ?? 0 : null;
+    const flowStarted = funnel ? funnel?.window_7d?.counts?.flow_started ?? 0 : null;
     
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricBox title="Mensagens (Hoje)" value={mensagensHoje} />
             <MetricBox title="Sessões Iniciadas (7d)" value={flowStarted} />
             <MetricBox title="Cotações (Hoje)" value={cotacoesHoje} />
-            <MetricBox title="Erros Críticos (24h)" value={erros24h} alert={erros24h > 0} />
+            <MetricBox title="Erros Críticos (24h)" value={erros24h} alert={erros24h !== null && erros24h > 0} />
         </div>
     );
 }
 
-function MetricBox({ title, value, alert = false }: { title: string, value: number, alert?: boolean }) {
+function MetricBox({ title, value, alert = false }: { title: string, value: number | null, alert?: boolean }) {
+    const displayValue = value === null ? '-' : value.toLocaleString();
+
     return (
         <Card variant="elevated" className={`overflow-hidden border-l-4 ${alert ? 'border-red-500' : 'border-indigo-500'}`}>
             <CardContent className="p-5 flex flex-col justify-center">
@@ -32,7 +36,7 @@ function MetricBox({ title, value, alert = false }: { title: string, value: numb
                     {title}
                 </span>
                 <span className={`text-3xl font-extrabold tracking-tight ${alert ? 'text-red-600' : 'text-slate-800'}`}>
-                    {value.toLocaleString()}
+                    {displayValue}
                 </span>
             </CardContent>
         </Card>

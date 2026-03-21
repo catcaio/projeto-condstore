@@ -138,7 +138,8 @@ export async function middleware(req: NextRequest) {
         pathname === '/api/health' ||
         pathname.startsWith('/api/auth/') ||
         pathname.startsWith('/api/whatsapp/') ||
-        pathname === '/api/cron/cleanup'
+        pathname === '/api/cron/cleanup' ||
+        pathname.startsWith('/t/')
     ) {
         return NextResponse.next({ request: { headers: requestHeaders } });
     }
@@ -189,7 +190,6 @@ export async function middleware(req: NextRequest) {
             });
             return unauthorizedJsonResponse('Missing authentication token');
         } else if (
-            pathname.startsWith('/t/') ||
             pathname.startsWith('/dashboard/') ||
             pathname.startsWith('/cockpit/') ||
             pathname.startsWith('/operacao/') ||

@@ -1,4 +1,4 @@
-﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET } from '../route';
 import { attributionClickRepository } from '../../../../infra/repositories/attribution-click.repository';
 import { rateLimiter } from '../../../../infra/security/rate-limiter';
@@ -96,6 +96,26 @@ describe('GET /t/[token]', () => {
       ok: false,
       error: { code: 'VALIDATION_ERROR' },
     });
+  });
+
+  it('Shield 1/2: returns 400 VALIDATION_ERROR when token does not exist in datastore (anti-arbitrary creation)', async () => {
+    vi.mocked(attributionClickRepository.getByToken).mockResolvedValueOnce(null);
+
+    const request = {
+      nextUrl: new URL('http://localhost/t/fake_token_123'),
+      headers: new Headers({ 'x-forwarded-for': '203.0.113.10' }),
+    } as never;
+
+    const response = await GET(request, { params: Promise.resolve({ token: 'fake_token_123' }) });
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toMatchObject({
+      ok: false,
+      error: { code: 'VALIDATION_ERROR' },
+    });
+    // Crucial: Upsert is not called, data base is shielded
+    expect(attributionClickRepository.upsertByToken).not.toHaveBeenCalled();
   });
 
   it('applies tracking rate limit and returns 429 with headers after allowed requests', async () => {

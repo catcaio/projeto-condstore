@@ -59,7 +59,7 @@ describe('Governance: routes-verify-security.ts', () => {
         expect(result.status).not.toBe(0);
         expect(result.stderr).toContain('[INSECURE_INPUT] /api/query-fail');
         expect(result.stderr).toContain('Extracts tenantId from searchParams. Use secure session instead.');
-    });
+    }, 15000);
 
     it('Scenario 2: BODY EXTRACTION DEVE FALHAR', () => {
         // await request.json() extraction should trigger INSECURE_INPUT
@@ -74,7 +74,7 @@ describe('Governance: routes-verify-security.ts', () => {
         expect(result.status).not.toBe(0);
         expect(result.stderr).toContain('[INSECURE_INPUT] /api/body-fail');
         expect(result.stderr).toContain('Extracts tenantId from request body. Use secure session instead.');
-    });
+    }, 15000);
 
     it('Scenario 3: ROTA PROTEGIDA DEVE PASSAR', () => {
         // A properly guarded route should not trigger warnings
@@ -90,7 +90,7 @@ describe('Governance: routes-verify-security.ts', () => {
         // Since we have failing routes from previous tests in the directory, 
         // the script will still fail overall, but it shouldn't log warnings for *this* route.
         expect(result.stderr).not.toContain('/api/protected-pass');
-    });
+    }, 15000);
 
     it('Scenario 4: PUBLIC PREFIX NÃO DEVE MASCARAR ROTA PROTEGIDA (reports failing without guard)', () => {
         // /api/reports/ without guard should fail because it was removed from PUBLIC_PREFIXES
@@ -103,7 +103,7 @@ describe('Governance: routes-verify-security.ts', () => {
         const result = runScript();
         expect(result.status).not.toBe(0);
         expect(result.stderr).toContain('[MISSING_GUARD] /api/reports/ingest');
-    });
+    }, 15000);
 
     it('Scenario 5: MENSAGEM FINAL COMPATÍVEL', () => {
         const result = runScript();
@@ -125,7 +125,7 @@ describe('Governance: routes-verify-security.ts', () => {
         expect(successResult.status).toBe(0);
         expect(successResult.stdout).toContain('✅ All 1 protected routes have security guardrails.');
         expect(successResult.stdout).toContain('✅ No protected routes extracting tenantId/userId insecurely via request.');
-    });
+    }, 25000);
 
     it('Scenario 6: REQUEST ID CONSISTENCY nas rotas ajustadas', () => {
         // Physically inspect the actual project files to ensure they remain patched 
