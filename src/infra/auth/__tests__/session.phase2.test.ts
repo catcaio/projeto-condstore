@@ -27,7 +27,7 @@ describe('Session Mock Admin Bypass', () => {
 
     it('denies mock-admin bypass if VERCEL_ENV is production', async () => {
         vi.stubEnv('VERCEL_ENV', 'production');
-        vi.stubEnv('INTERNAL_QA_TOKEN', 'some-valid-token');
+        vi.stubEnv('QA_BOOTSTRAP_TOKEN', 'some-valid-token');
 
         (mockJose.jwtVerify as any).mockResolvedValue({
             payload: { sub: 'mock-admin', sv: 1 }
@@ -40,9 +40,9 @@ describe('Session Mock Admin Bypass', () => {
         expect(session).toBeNull();
     });
 
-    it('denies mock-admin bypass if INTERNAL_QA_TOKEN is missing', async () => {
+    it('denies mock-admin bypass if QA_BOOTSTRAP_TOKEN is missing', async () => {
         vi.stubEnv('VERCEL_ENV', 'preview');
-        delete process.env.INTERNAL_QA_TOKEN;
+        delete process.env.QA_BOOTSTRAP_TOKEN;
 
         (mockJose.jwtVerify as any).mockResolvedValue({
             payload: { sub: 'mock-admin', sv: 1 }
@@ -56,7 +56,7 @@ describe('Session Mock Admin Bypass', () => {
 
     it('allows mock-admin bypass in non-production with token', async () => {
         vi.stubEnv('VERCEL_ENV', 'preview');
-        vi.stubEnv('INTERNAL_QA_TOKEN', 'some-valid-token-1234');
+        vi.stubEnv('QA_BOOTSTRAP_TOKEN', 'some-valid-token-1234');
 
         (mockJose.jwtVerify as any).mockResolvedValue({
             payload: { sub: 'mock-admin', sv: 1, role: 'admin' }

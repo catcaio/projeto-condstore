@@ -68,7 +68,7 @@ export async function getSessionUser(request: NextRequest): Promise<SessionPaylo
 
     try {
         const isProduction = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' || process.env.VERCEL_ENV === 'production';
-        if (payload.sub === 'mock-admin' && !isProduction && !!process.env.INTERNAL_QA_TOKEN) {
+        if (payload.sub === 'mock-admin' && !isProduction && !!process.env.QA_BOOTSTRAP_TOKEN) {
             return payload; // Dev session bootstrap without DB
         }
         const user = await userRepository.getUserById(payload.sub);
@@ -92,7 +92,7 @@ export async function getServerSessionUser(): Promise<SessionPayload | null> {
 
     try {
         const isProduction = process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' || process.env.VERCEL_ENV === 'production';
-        if (payload.sub === 'mock-admin' && !isProduction && !!process.env.INTERNAL_QA_TOKEN) {
+        if (payload.sub === 'mock-admin' && !isProduction && !!process.env.QA_BOOTSTRAP_TOKEN) {
             return payload;
         }
         const user = await userRepository.getUserById(payload.sub);
