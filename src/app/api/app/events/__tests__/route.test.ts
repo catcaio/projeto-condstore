@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import { getDb } from '../../../../../infra/db';
 import { tenantEvents } from '../../../../../drizzle/schema';
 import { redisClient } from '../../../../../infra/redis.client';
-import { getServerSessionUser } from '../../../../../infra/auth/session';
+import { requireSession } from '../../../../../infra/auth/guards';
 
 vi.mock('../../../../../infra/db', () => ({
     getDb: vi.fn().mockResolvedValue({
@@ -12,8 +12,8 @@ vi.mock('../../../../../infra/db', () => ({
     })
 }));
 
-vi.mock('../../../../../infra/auth/session', () => ({
-    getServerSessionUser: vi.fn()
+vi.mock('../../../../../infra/auth/guards', () => ({
+    requireSession: vi.fn()
 }));
 
 vi.mock('../../../../../infra/redis.client', () => ({
@@ -33,7 +33,10 @@ vi.mock('../../../../../infra/security/rate-limiter', () => ({
 describe('POST /api/app/events', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        (getServerSessionUser as any).mockResolvedValue({ sub: 'user_1', tenantId: 'tenant_1' });
+        (requireSession as any).mockResolvedValue({
+            ok: true,
+            session: { sub: 'user_1', tenantId: 'tenant_1', role: 'admin' }
+        });
     });
 
     const createRequest = (body: any) => {
@@ -94,7 +97,10 @@ describe('POST /api/app/events', () => {
     });
 
     it('returns 401 if user is not authenticated', async () => {
-        (getServerSessionUser as any).mockResolvedValue(null);
+        (requireSession as any).mockResolvedValue({
+            ok: false,
+            response: new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+        });
 
         const req = createRequest({ type: 'signup_created', ts: Date.now() });
         const res = await POST(req);
