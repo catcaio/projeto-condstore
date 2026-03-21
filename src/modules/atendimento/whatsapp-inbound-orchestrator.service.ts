@@ -239,6 +239,19 @@ export const whatsappInboundOrchestrator = {
 
         const intentResult = resolveContextualIntent(messageText, sessionAnchors);
 
+        void funnelRepository.saveEvent({
+            tenantId,
+            phoneNumber: fromE164,
+            sessionId: fromHash,
+            stage: FunnelStage.FLOW_STARTED,
+            attribution: {
+                utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
+                utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
+                utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
+                refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
+            }
+        });
+
         if (intentResult.intent) {
             void funnelRepository.saveEvent({
                 tenantId,
@@ -422,6 +435,21 @@ export const whatsappInboundOrchestrator = {
                 customerId: identity?.customerId ?? null, sessionId: fromHash, entityId: conversation.id,
                 payload: { conversationId: conversation.id, suggestionId, supervised: true, productMatches: products.length },
             });
+            
+            if (!destinationZip) {
+                void funnelRepository.saveEvent({
+                    tenantId,
+                    phoneNumber: fromE164,
+                    sessionId: fromHash,
+                    stage: FunnelStage.ASKED_CEP,
+                    attribution: {
+                        utmSource: sessionState?.utmSource ?? utmSourceStr ?? null,
+                        utmMedium: sessionState?.utmMedium ?? utmMediumStr ?? null,
+                        utmCampaign: sessionState?.utmCampaign ?? utmCampaignStr ?? null,
+                        refToken: sessionState?.attributionToken ?? attributionTokenStr ?? null,
+                    }
+                });
+            }
             
             createdSuggestion = true;
         }
