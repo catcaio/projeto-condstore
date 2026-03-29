@@ -1,164 +1,133 @@
 # CONDSTORE OS
 
-Multi-tenant B2B operational system focusing on **Assisted Wholesale CRM and Logistics**. It binds human-driven WhatsApp conversations, CRM Pipeline, multi-carrier freight quoting, and order orchestration inside a unified command center (Cockpit).
+Sistema SaaS multi-tenant para operação comercial via WhatsApp, CRM e logística, com Cockpit operacional e camada de IA (Frank) em modo supervisionado.
 
-> **Note**: For a detailed view of live versus frozen capabilities, refer to [Current Product State](docs/current-product-state.md).
+## Visão geral
 
-## Core Capabilities
+O repositório concentra uma aplicação Next.js (App Router) com:
 
-| Capability | Description |
-|---|---|
-| **Human Atendimento (Inbox)** | Real-time Twilio WhatsApp Business integration with operator interface and multi-tenant isolation |
-| **Pipeline CRM** | Visual Kanban for sales stages (New → Quoted → Won) linked natively to chat sessions |
-| **Freight Engine** | Multi-carrier quoting injected directly on the chat UX (Movvi, Mengue, Braspress tables + Melhor Envio) |
-| **Order Management** | Convert approved quotes into operational Orders seamlessly via the CRM interface |
-| **Delivery Tracking** | Logistical Shipments generated synchronously upon Order confirmation, attaching trackable endpoints |
-| **Frank AI** | Intent detection, context resolution, session state, and tool-based order orchestration |
-| **Delivery Tracking** | Shipment linkage, carrier tracking, and exception detection |
-| **Cockpit** | Operational dashboards with metrics, SLA monitoring, and real-time alerts |
-| **Event Bus** | Asynchronous operational events (DOMINE Engine) with DLQ, retry, and PII-sanitized telemetry |
-| **Multi-Tenant** | Native isolation via application RLS, session validation, and JWT payload strictly enforced |
-| **AI Infrastructure (Frozen)** | Backend readiness for Playbooks & Knowledge RAG — fully structured, runtime frozen for operational determinism |
+- UI de operação (`/cockpit`, `/clientes`, `/pedidos`, `/logistica`, etc.).
+- API routes para fluxos transacionais (WhatsApp, CRM, frete, pedidos, billing, rotas internas).
+- Módulos de domínio em `src/modules/*`.
+- Infra compartilhada para autenticação, segurança, banco, cache, eventos e observabilidade.
 
-## System Flow (Human-driven CRM + Logistics Lifecycle)
+## Capacidades principais (implementadas no código)
 
+- **Atendimento WhatsApp com Twilio**: ingestão webhook, verificação de assinatura, resolução de tenant por número Twilio e políticas de resposta (`ACK_ONLY`, `SUPERVISED_NO_REPLY`, `AUTO_REPLY_ALLOWED`).
+- **CRM e atendimento**: serviços/repositórios de conversa, métricas de pipeline, oportunidades e timeline.
+- **Frete multi-transportadora**: motor de cotação com adaptadores (incluindo Melhor Envio e tabelas internas), memória operacional e vínculo de shipment.
+- **Pedidos e logística**: criação/consulta de pedidos, shipment service/repository e integração com dados de frete.
+- **Frank (IA) com governança**: orquestrador, sugestões supervisionadas, tools, memória, intent linker e gateway de provider centralizado.
+- **Eventos operacionais e DOMINE**: publicação de eventos com sanitização de PII, processamento assíncrono com DLQ e trilha de auditoria.
+
+## Stack real
+
+- **Runtime/App**: Next.js 16 + React 19 + TypeScript.
+- **Banco**: MySQL/TiDB via Drizzle ORM.
+- **Cache/limites**: Redis (com fallback em memória fora de runtime estrito).
+- **Integrações**: Twilio, Stripe, OpenAI-compatible providers, Qdrant, Melhor Envio.
+- **Qualidade**: ESLint, Vitest, TypeScript strict, scripts de verificação de rotas e schema.
+
+## Arquitetura em alto nível
+
+```txt
+Request
+  -> middleware.ts (sessão, headers de auth, proteção de rotas, token interno)
+  -> API Route (src/app/api/**)
+  -> guards (requireSession / requireSessionTenantMatch / requireInternalAuth / requireAdmin)
+  -> serviço de domínio (src/modules/*, src/core/*)
+  -> repositório (src/infra/repositories/*)
+  -> Drizzle (src/infra/db.ts) e Redis (src/infra/redis.client.ts)
 ```
-WhatsApp message from End-Customer
-  → Inbox Chat (Cockpit Human Atendimento)
-  → Sales Rep operates on CRM Pipeline Stage
-  → Freight simulation directly attached to conversation
-  → Operator sends Quote URL directly to chat
-  → Quote approval (Customer)
-  → Click "Criar Pedido" transforms Deal to WON and spawns Logistics Order (CREATED)
-  → Order transitions to CONFIRMED spawning Shipment Engine integrations
-  → Delivery Tracking (Tracking links directly tied back to CRM sidebar view)
-  → Event Bus processes conversion and calculates dashboard metrics
+
+## Estrutura principal do projeto
+
+```txt
+src/
+  app/                 # páginas e API routes (App Router)
+  modules/             # domínio por contexto (atendimento, freight, frank, pedidos, ...)
+  core/                # núcleos transversais (AI gateway, eventos, stripe, regras)
+  infra/               # auth, db, redis, log, segurança, observabilidade
+  drizzle/             # schema e migrações
+  lib/                 # utilitários, formatadores e barramento operacional
+scripts/               # validações, inventário/segurança de rotas, smoke, QA
+docs/                  # estado do produto, runbooks e documentação técnica complementar
 ```
 
-## Key Components
+## Como navegar no código
 
-### Human CRM & Cockpit (`src/modules/clientes/` & `src/app/.../cockpit/atendimento/`)
-Customer organization, pipeline generation, unified multi-tenant inbox for answering prospects, escalating opportunities, and injecting operational orders directly inside the sales environment.
+- Comece por `src/middleware.ts` para entender fronteiras de acesso.
+- Veja `src/app/api/whatsapp/incoming/route.ts` para o fluxo real de entrada WhatsApp.
+- Siga para `src/modules/atendimento/whatsapp-inbound-orchestrator.service.ts` e `src/modules/frank/*` para a decisão de resposta.
+- Para frete/pedidos/logística: `src/modules/freight/*`, `src/modules/pedidos/*`, `src/modules/logistics/*`.
+- Para multi-tenant e guards: `src/infra/auth/*` e `src/infra/db.ts`.
+- Para eventos: `src/lib/events/operational-event-bus.ts` e `src/modules/domine/*`.
 
-### Frank AI (`src/modules/frank/` - Runtime Frozen)
-Advanced intent detection and RAG intelligence architecture built for automation, currently frozen on deterministic commands in favor of operator precision in wholesale logistics.
+## Setup local
 
-### Freight Engine (`src/modules/freight/`)
-Multi-carrier quote engine with table-driven adapters, packing resolution, carrier routing, and shipment linkage. Supports Melhor Envio API and custom freight tables (Movvi, Mengue, Braspress).
+### 1) Pré-requisitos
 
-### Orders (`src/modules/pedidos/`)
-Order lifecycle management: creation from freight quotes, status tracking, item management, and event timeline.
+- Node.js 20+
+- npm
+- MySQL local (ou TiDB compatível)
+- (Opcional) Redis local
 
-### CRM (`src/modules/clientes/`)
-Customer and organization management with contact normalization, phone hashing (SHA-256), and encrypted PII storage.
-
-### Cockpit (`src/modules/cockpit/`)
-Operational dashboard aggregating metrics, analytics, attribution, and system health across all domains.
-
-### DOMINE Event Bus (`src/modules/domine/`)
-Asynchronous event engine with webhook intake, processor loop, DLQ management, and event payload contracts.
-
-### Supreme Engine (`src/modules/frank/` + cockpit governance)
-AI governance layer controlling permissions, findings, playbooks, and operational boundaries for Frank.
-
-## Security
-
-- **Route Guards**: All 115+ API routes protected by `requireAdmin`, `requireSessionTenantMatch`, `requireInternalAuth`, `requireActivePlan`, or signature verification
-- **Proxy Middleware** (`src/proxy.ts`): Session enforcement for cockpit and API routes
-- **PII Protection**: Phone hashing (SHA-256), AES-256-GCM encryption, event payload sanitization
-- **Webhook Hardening**: Stripe/Twilio signature verification, deduplication, idempotency
-- **RBAC**: Role-based access (admin, operator, viewer) with tenant-scoped context
-- **Audit Trail**: Complete event logging with timestamp, author, and context
-- **CI Quality Gates**: Typecheck, lint, tests, build, schema verification, route registry guardrails
-
-## Development Setup
+### 2) Banco local (opcional via Docker)
 
 ```bash
-# Install dependencies
-npm install
-
-# Environment variables (create .env.local)
-DATABASE_URL=mysql://...
-REDIS_URL=redis://...
-AUTH_SECRET=...
-PII_ENCRYPTION_KEY=...
-
-# Run dev server
-npm run dev
-
-# Type checking
-npm run typecheck
-
-# Production build
-npm run build
-
-# Tests
-npm run test:ci
+docker compose up -d mysql
 ```
 
-### Required Environment Variables
+### 3) Instalação e execução
 
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | TiDB/MySQL connection (lazy-initialized) |
-| `AUTH_SECRET` | JWT session signing |
-| `PII_ENCRYPTION_KEY` | AES-256-GCM key for PII encryption |
-| `REDIS_URL` | Cache, rate limiting, session support |
-| `INTERNAL_DIAG_TOKEN` | Official token for diagnostics/health endpoints |
-| `INTERNAL_EXPORT_TOKEN` | Official token for export/read-only internal flows |
-| `INTERNAL_JOB_TOKEN` | Official token for jobs/cron/internal workers |
-| `INTERNAL_TOKEN` | Legacy alias accepted only for `jobs` routes |
-| `QA_BOOTSTRAP_TOKEN` | QA bootstrap token for `/api/internal/qa/*` |
-| `BOOTSTRAP_TOKEN` | Extra bootstrap header required only by guarded bootstrap flows |
-| `TWILIO_AUTH_TOKEN` | WhatsApp webhook signature verification |
-| `STRIPE_SECRET_KEY` | Payment webhook verification |
-| `MELHORENVIO_TOKEN` | Freight API integration |
+```bash
+npm install
+npm run dev
+```
 
+## Variáveis de ambiente essenciais
 
-### Internal Auth Contract
+Sem `.env.example` versionado, então use como base os pontos abaixo.
 
-> Este contrato centralizado cobre **tokens internos por propósito**. Ele não redefine toda a política global de config/auth do sistema.
+### Mínimo para subir app localmente
 
-**Official env names**
-- `INTERNAL_DIAG_TOKEN` → propósito `diag`.
-- `INTERNAL_EXPORT_TOKEN` → propósito `export`.
-- `INTERNAL_JOB_TOKEN` → propósito `jobs`.
-- `QA_BOOTSTRAP_TOKEN` → propósito `qa_bootstrap` para `/api/internal/qa/*`.
-- `BOOTSTRAP_TOKEN` → segundo fator adicional apenas para fluxos que chamam `requireInternalAuth(..., { requireBootstrapToken: true })`.
+- `DATABASE_URL` (com nome de database no path)
+- `AUTH_SECRET`
 
-**Legacy aliases**
-- `INTERNAL_TOKEN` é legado e continua aceito somente para propósito `jobs`.
-- Header `x-qa-bootstrap` continua aceito como alias legado de `x-qa-token`.
+### Necessárias por capacidade
 
-**Usage rules by purpose**
-- Middleware e guards compartilham o mesmo contrato: `x-internal-token`/`?token=` para `diag`, `export` e `jobs`; `x-qa-token` (ou alias legado `x-qa-bootstrap`) para `qa_bootstrap`.
-- Em runtimes strict (`NODE_ENV=production`, `VERCEL_ENV=preview|production` ou `APP_ENV=staging`), a aplicação falha cedo se `INTERNAL_DIAG_TOKEN`, `INTERNAL_EXPORT_TOKEN` ou `INTERNAL_JOB_TOKEN` não estiverem configurados.
-- Em desenvolvimento, o fallback efêmero continua restrito ao par `diag/export` e não mascara o comportamento de staging/produção.
-- `/api/internal/*` permanece fail-closed sem token mesmo em desenvolvimento; o que continua flexível em dev é apenas o fallback efêmero usado por fluxos server-side de `diag/export`.
-- A política atual de `AUTH_SECRET` não mudou nesta PR: ele continua obrigatório em runtimes strict, enquanto o fallback local de `src/infra/auth/session.ts` segue preservado fora deles.
+- **PII/criptografia**: `PII_ENCRYPTION_KEY` (obrigatória em produção; em dev há fallback inseguro).
+- **WhatsApp/Twilio**: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` (e configuração por tenant para envio).
+- **Frete/Melhor Envio**: `MELHORENVIO_TOKEN`.
+- **Stripe**: `STRIPE_SECRET_KEY` + price IDs (`STRIPE_PRICE_*`) + flag `NEXT_PUBLIC_STRIPE_ENABLED`.
+- **Interno/diagnóstico/jobs**: `INTERNAL_DIAG_TOKEN`, `INTERNAL_EXPORT_TOKEN`, `INTERNAL_JOB_TOKEN`, `QA_BOOTSTRAP_TOKEN` e opcional `BOOTSTRAP_TOKEN`.
+- **Redis**: `REDIS_URL` (obrigatória em runtime estrito).
 
-## Deployment
+## Scripts importantes
 
-- **Platform**: Vercel (Production + Preview) with Turbopack builds
-- **Database**: TiDB (MySQL-compatible) with Drizzle ORM
-- **CI Pipeline**: GitHub Actions running typecheck → lint → tests → build → schema verification → route registry verification
-- **Quality Gate Philosophy**: Fail-closed. Missing secrets block boot in production. Rate limiter fails closed without Redis. Unregistered routes block CI.
+- `npm run dev` — desenvolvimento.
+- `npm run build` / `npm run start` — build e execução de produção.
+- `npm run lint` — lint.
+- `npm run typecheck` — checagem TypeScript.
+- `npm run test:ci` / `npm run test:coverage` — testes.
+- `npm run routes:sync` — inventário/verificação de rotas.
+- `npm run routes:verify-security` — validação de guardas de segurança por rota.
+- `npm run db:verify` — verificação de drift de schema.
 
-## Tech Stack
+## Segurança e guardrails
 
-- **Framework**: Next.js 16 (App Router, Turbopack)
-- **Language**: TypeScript (strict)
-- **ORM**: Drizzle ORM
-- **Database**: TiDB/MySQL
-- **Cache**: Redis
-- **Tests**: Vitest
-- **Hosting**: Vercel
-- **WhatsApp**: Twilio Business API
-- **Payments**: Stripe
-- **Freight**: Melhor Envio API + custom table adapters
+- **Isolamento multi-tenant**: `tenantId` em sessão + filtros de query por tenant.
+- **Proteção de rotas**: middleware + guards (`requireSession`, `requireSessionTenantMatch`, `requireAdmin`, `requireInternalAuth`).
+- **Webhook hardening**: validação de assinatura Twilio/Stripe e idempotência/dedup em webhooks.
+- **Proteção de PII**: criptografia AES-GCM e redação em logs/eventos.
+- **Rate limiting/circuit breaker**: aplicados em pontos críticos (ex.: entrada WhatsApp e integrações externas).
 
-## WhatsApp supervised operational flow
+## Estado atual do produto (baseado no código)
 
-- Inbound WhatsApp now resolves customer identity by normalized phone and flags unidentified conversations for operator triage.
-- Supervised suggestions can include catalog product lookup and freight quote draft (when product + quantity + CEP are present), always requiring human approval before outbound send.
-- Scenario validation script: `node --import tsx scripts/test-whatsapp-scenarios.ts`.
+- **Ativo e em uso no código**: atendimento WhatsApp, CRM, frete, pedidos, logística, billing, eventos e camada Frank supervisionada.
+- **IA Frank**: existe runtime, tools e worker; operação pode ser restringida por flags (`FRANK_RUNTIME_ENABLED`, `FRANK_RUNTIME_MODE`), permitindo modo supervisionado.
+- **Maturidade heterogênea de UI**: há telas e módulos que ainda usam partes mock/placeholder no front-end enquanto o backend já possui estrutura de domínio e schema para os mesmos contextos.
+
+## Documento técnico complementar
+
+Para mapa arquitetural interno e invariantes, veja [`ARCHITECTURE.md`](./ARCHITECTURE.md).
