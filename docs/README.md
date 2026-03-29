@@ -34,6 +34,21 @@ Processo oficial de implantação para clientes piloto.
 
 ---
 
+## ROI e Prova de Valor
+
+Pacote oficial de documentação para medir, rastrear e provar o valor dos pilotos do MVP.
+
+| Arquivo | Descrição |
+|---|---|
+| [docs/roi/README.md](./roi/README.md) | Índice e guia de uso |
+| [docs/roi/roi-metrics.md](./roi/roi-metrics.md) | Definição de todas as métricas rastreadas |
+| [docs/roi/baseline-capture.md](./roi/baseline-capture.md) | Template para capturar estado inicial |
+| [docs/roi/pilot-scorecard.md](./roi/pilot-scorecard.md) | Scorecard de rastreamento semanal |
+| [docs/roi/weekly-review.md](./roi/weekly-review.md) | Roteiro e checklist de revisão semanal |
+| [docs/roi/case-study-template.md](./roi/case-study-template.md) | Template para converter pilotos em prova social |
+
+---
+
 ## Demo do MVP
 
 Material para demonstrações comerciais do MVP. Reproduzível por qualquer pessoa do time.
