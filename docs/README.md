@@ -44,7 +44,9 @@ Pacote oficial de documentação para medir, rastrear e provar o valor dos pilot
 | [docs/roi/roi-metrics.md](./roi/roi-metrics.md) | Definição de todas as métricas rastreadas |
 | [docs/roi/baseline-capture.md](./roi/baseline-capture.md) | Template para capturar estado inicial |
 | [docs/roi/pilot-scorecard.md](./roi/pilot-scorecard.md) | Scorecard de rastreamento semanal |
+| [docs/roi/pilot-weekly-log-template.md](./roi/pilot-weekly-log-template.md) | Registro operacional semanal do piloto |
 | [docs/roi/weekly-review.md](./roi/weekly-review.md) | Roteiro e checklist de revisão semanal |
+| [docs/roi/roi-summary-template.md](./roi/roi-summary-template.md) | Resumo executivo de encerramento do piloto |
 | [docs/roi/case-study-template.md](./roi/case-study-template.md) | Template para converter pilotos em prova social |
 
 ---
