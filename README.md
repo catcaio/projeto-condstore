@@ -6,10 +6,18 @@ Sistema SaaS multi-tenant para operação comercial via WhatsApp, CRM e logísti
 
 O repositório concentra uma aplicação Next.js (App Router) com:
 
-- UI de operação (`/cockpit`, `/clientes`, `/pedidos`, `/logistica`, etc.).
-- API routes para fluxos transacionais (WhatsApp, CRM, frete, pedidos, billing, rotas internas).
-- Módulos de domínio em `src/modules/*`.
-- Infra compartilhada para autenticação, segurança, banco, cache, eventos e observabilidade.
+## MVP CONDSTORE OS — Documentação oficial
+
+**Lote 1 (MVP) em produção.** Para definições completas do que é o MVP, o que faz, o que não faz e como funciona, consulte [Documentação do MVP](docs/mvp/README.md).
+
+Links rápidos:
+- **[O que é o MVP?](docs/mvp/mvp-definition.md)** — Definição, ICP, proposta de valor
+- **[Como funciona?](docs/mvp/architecture-map.md)** — Fluxo de sistema, módulos, dependências
+- **[O que o operador vê?](docs/mvp/cockpit-map.md)** — Telas, workflows, papéis
+- **[O que está fora do escopo?](docs/mvp/boundaries.md)** — Blockers e features não-MVP
+- **[Do que dependemos?](docs/mvp/dependencies.md)** — Serviços externos, modos de falha
+
+> **Para qualquer pessoa revisando, implementando ou suportando CONDSTORE OS: Comece por [docs/mvp/README.md](docs/mvp/README.md)**
 
 ## Capacidades principais (implementadas no código)
 
