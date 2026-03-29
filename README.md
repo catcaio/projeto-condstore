@@ -4,6 +4,19 @@ Multi-tenant B2B operational system focusing on **Assisted Wholesale CRM and Log
 
 > **Note**: For a detailed view of live versus frozen capabilities, refer to [Current Product State](docs/current-product-state.md).
 
+## MVP CONDSTORE OS — Official Documentation
+
+**This is the Lote 1 (MVP) documentation. For comprehensive definitions of what the MVP is, what it does, what it doesn't do, and what the architecture looks like, refer to [MVP Documentation](docs/mvp/README.md).**
+
+Quick links:
+- **[What is the MVP?](docs/mvp/mvp-definition.md)** — Definition, ICP, value proposition
+- **[How does it work?](docs/mvp/architecture-map.md)** — System flow, modules, dependencies
+- **[What does the operator see?](docs/mvp/cockpit-map.md)** — UI screens, workflows, roles
+- **[What's out of scope?](docs/mvp/boundaries.md)** — Explicit blockers and non-MVP features
+- **[What do we depend on?](docs/mvp/dependencies.md)** — External services, failure modes
+
+> **For anyone reviewing, implementing, or supporting CONDSTORE OS: Start with [docs/mvp/README.md](docs/mvp/README.md)**
+
 ## Core Capabilities
 
 | Capability | Description |
