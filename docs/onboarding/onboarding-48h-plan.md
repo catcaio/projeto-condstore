@@ -146,7 +146,7 @@ O responsável CONDSTORE OS precisa estar ativamente presente — não monitoran
 |---|---|---|
 | Pedidos criados | ≥ 2 | ≥ 5 |
 | Cotações geradas | ≥ 3 | ≥ 8 |
-| Conversas abertas no inbox | ≥ 2 | ≥ 5 |
+| Conversas abertas no inbox | ≥ 3 | ≥ 5 |
 | Erros críticos não resolvidos | 0 | 0 |
 | Operador usou sem ajuda | ≥ 1 vez | Maioria das vezes |
 
