@@ -49,6 +49,23 @@ Pacote oficial de documentação para medir, rastrear e provar o valor dos pilot
 
 ---
 
+## Vendas e Prospecção
+
+Pacote operacional para prospecção, qualificação, demo, fechamento e handoff do piloto.
+
+| Arquivo | Descrição |
+|---|---|
+| [docs/sales/README.md](./sales/README.md) | Fluxo completo: prospecção → qualificação → demo → fechamento → onboarding |
+| [docs/sales/icp-definition.md](./sales/icp-definition.md) | Perfil ideal de cliente, critérios de fit e descarte |
+| [docs/sales/outbound-script.md](./sales/outbound-script.md) | Abordagens curtas para outreach inicial |
+| [docs/sales/qualification-script.md](./sales/qualification-script.md) | Perguntas objetivas com saída binária |
+| [docs/sales/call-structure.md](./sales/call-structure.md) | Roteiro fixo de call de 15–30 min |
+| [docs/sales/objection-handling.md](./sales/objection-handling.md) | Objeções reais e respostas diretas |
+| [docs/sales/closing-script.md](./sales/closing-script.md) | Conversão para piloto com próximo passo claro |
+| [docs/sales/follow-up.md](./sales/follow-up.md) | Follow-ups D+1, D+3 e D+7 |
+
+---
+
 ## Demo do MVP
 
 Material para demonstrações comerciais do MVP. Reproduzível por qualquer pessoa do time.
