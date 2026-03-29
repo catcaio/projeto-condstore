@@ -67,6 +67,19 @@ export const hardFrozenSurfaces = [
   },
 ];
 
+export const freightConversationQuotePrefixes = [
+  'src/app/api/cockpit/conversations/[id]/quotes/',
+];
+
+export const frankCompatibilitySeamPrefixes = [
+  'src/modules/frank/entity-resolver.ts',
+  'src/modules/frank/intent-resolver.ts',
+  'src/modules/frank/session.repository.ts',
+  'src/modules/frank/conversation-control.ts',
+  'src/modules/frank/auto-response-guard.ts',
+  'src/modules/frank/suggestions/',
+];
+
 export const scopeRules = [
   {
     label: 'Tooling e governança',
@@ -75,6 +88,7 @@ export const scopeRules = [
   },
   {
     label: 'WhatsApp supervisionado',
+    coreArea: 'whatsapp',
     prefixes: [
       'src/modules/atendimento/',
       'src/app/api/whatsapp/',
@@ -82,10 +96,12 @@ export const scopeRules = [
       'src/app/(app)/cockpit/atendimento/',
       'src/app/api/cockpit/conversations/',
     ],
+    excludePrefixes: freightConversationQuotePrefixes,
     commands: ['npm run guardrail:mvp-freeze', 'npm run test:whatsapp', 'npm run lint', 'npm run typecheck'],
   },
   {
     label: 'Cockpit operacional',
+    coreArea: 'cockpit',
     prefixes: [
       'src/modules/cockpit/',
       'src/app/(app)/cockpit/',
@@ -98,6 +114,7 @@ export const scopeRules = [
   },
   {
     label: 'Frete, pedidos e shipments',
+    coreArea: 'freight',
     prefixes: [
       'src/modules/freight/',
       'src/modules/logistics/',
@@ -106,8 +123,34 @@ export const scopeRules = [
       'src/modules/shipping/',
       'src/app/api/public/cotacao/',
       'src/app/api/orders/',
+      ...freightConversationQuotePrefixes,
     ],
     commands: ['npm run guardrail:mvp-freeze', 'npm run test:freight', 'npm run lint', 'npm run typecheck'],
+  },
+];
+
+export const supportSeamEscalations = [
+  {
+    label: 'DOMINE e barramento de eventos usados pelo core',
+    prefixes: [
+      'src/domine/',
+      'src/modules/domine/',
+      'src/lib/events/',
+      'src/app/api/domine/intake/',
+      'src/app/api/internal/jobs/domine-process/',
+    ],
+    commands: ['npm run test:mvp'],
+  },
+  {
+    label: 'Costuras supervisionadas do Frank usadas pelo core',
+    prefixes: frankCompatibilitySeamPrefixes,
+    commands: ['npm run test:mvp'],
+  },
+  {
+    label: 'Repositórios shared cruzando áreas core',
+    prefixes: ['src/infra/repositories/'],
+    commands: ['npm run test:mvp'],
+    minCoreAreas: 2,
   },
 ];
 
