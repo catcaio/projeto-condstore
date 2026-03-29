@@ -25,13 +25,21 @@ describe('Middleware', () => {
         expect(data.error).toBe('Missing authentication token');
     });
 
-    it('redirects unauthenticated access to /t/ routes to /auth/login', async () => {
+    it('allows unauthenticated access to public /t/[token] routes', async () => {
         const req = new NextRequest('http://localhost/t/dashboard');
         const res = await middleware(req);
-        
-        expect(res.status).toBe(307); // Next.js redirect default status or check headers
+
+        expect(res.status).toBe(200);
+        expect(res.headers.get('location')).toBeNull();
+    });
+
+    it('redirects unauthenticated access to non-public nested /t/* routes to /auth/login', async () => {
+        const req = new NextRequest('http://localhost/t/dashboard/history');
+        const res = await middleware(req);
+
+        expect(res.status).toBe(307);
         expect(res.headers.get('location')).toContain('/auth/login?callbackUrl=');
-        expect(res.headers.get('location')).toContain('%2Ft%2Fdashboard');
+        expect(res.headers.get('location')).toContain('%2Ft%2Fdashboard%2Fhistory');
     });
 
     it('redirects unauthenticated access to /dashboard/ routes to /auth/login', async () => {

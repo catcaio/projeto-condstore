@@ -34,14 +34,17 @@ describe('Frank Service Copilot Orchestrator', () => {
             conversation: { id: 'conv-123', stage: 'NEW_LEAD', messages: [] },
             customer: null,
             pipeline: { recentQuotes: [], recentOrders: [] },
-            operacional: { ownerId: null, openTasks: 0, recentNotes: 0 }
+            operacional: { ownerId: null, openTasks: [], recentNotes: 0 }
         };
 
         const mockSuggestion = {
             summary: 'Client asked about pricing.',
-            suggestedReply: 'Here is the pricing...',
-            suggestedAction: 'CREATE_QUOTE' as const,
-            insights: ['Client is a new lead']
+            suggestedReplyDraft: 'Here is the pricing...',
+            suggestedAction: 'CREATE_QUOTE_DRAFT' as const,
+            actionPayload: null,
+            insights: ['Client is a new lead'],
+            warnings: [],
+            confidence: 'HIGH' as const,
         };
 
         vi.mocked(frankContextBuilder.buildContext).mockResolvedValue(mockContext);

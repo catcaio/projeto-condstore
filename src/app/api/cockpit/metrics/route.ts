@@ -151,7 +151,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return finalize(NextResponse.json(payload, {
       status: 200,
-      headers: { 'Cache-Control': 'private, max-age=30', 'X-Request-Id': requestId },
+      headers: { 'Cache-Control': groupBy ? 'no-store, max-age=0' : 'private, max-age=30', 'X-Request-Id': requestId },
     }));
   } catch (error) {
     structuredLogger.error('cockpit_metrics_failed', {

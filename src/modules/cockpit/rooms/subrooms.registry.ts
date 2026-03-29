@@ -26,7 +26,7 @@ export const subrooms: SubRoomDef[] = [
     { id: 'shipments', roomId: 'logistica', label: 'Shipments', description: 'Acompanhamento de envios logísticos', route: '/cockpit/orders?tab=shipments', actionLabel: 'Ver Shipments' },
     { id: 'rastreamento', roomId: 'logistica', label: 'Rastreamento', description: 'Status de rastreio de pacotes', route: '/cockpit/logistica/rastreamento', actionLabel: 'Rastrear' },
 
-    // Frank
+    // MVP freeze: preservar estes atalhos apenas como fronteira de compatibilidade; não ampliar Frank sem opt-in explícito.
     { id: 'playbooks', roomId: 'frank', label: 'Playbooks', description: 'Construa fluxos e réguas de negociação ativas', route: '/cockpit/frank/playbooks', actionLabel: 'Configurar' },
     { id: 'knowledge', roomId: 'frank', label: 'Knowledge Base', description: 'Injetar pdfs e treinar inteligência primária', route: '/cockpit/frank/knowledge', actionLabel: 'Treinar Base' },
     { id: 'sugestoes', roomId: 'frank', label: 'Sugestões', description: 'Supervisão de respostas em modo guiado', route: '/cockpit/frank/suggestions', actionLabel: 'Revisar Sugestões' },

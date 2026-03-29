@@ -4,18 +4,18 @@ const planData = [
     { id: 'essencial', stripePriceId: 'price_essencial_placeholder' },
     { id: 'growth', stripePriceId: 'price_growth_placeholder' },
 ];
-import { getSessionUser } from '@/infra/auth/session';
+import { requireSession } from '@/infra/auth/guards';
 import { logger } from '@/infra/logger';
 import { createStripeCheckoutSession } from '../../../lib/billing/stripe';
 
 export async function POST(req: NextRequest) {
     try {
         // ── Auth: tenantId MUST come from the verified session, never from the body ──
-        const session = await getSessionUser(req);
-        if (!session?.tenantId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const sessionResult = await requireSession(req);
+        if (!sessionResult.ok) {
+            return sessionResult.response;
         }
-        const tenantId = session.tenantId;
+        const tenantId = sessionResult.session.tenantId;
 
         const body = await req.json();
         const { planId } = body; // planId from body is safe — it's just a plan selector

@@ -3,7 +3,7 @@ import { writeAuditLog, ActorType } from '../security/require-audit-log';
 import { structuredLogger as logger } from '../../infra/log/logger';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type HandlerWrapper = (req: NextRequest, ctx: any) => Promise<Response>;
+type HandlerWrapper = (req: NextRequest, ctx?: any) => Promise<Response>;
 
 export interface AuditLogConfig {
     action: string;

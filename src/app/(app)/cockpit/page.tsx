@@ -1,13 +1,11 @@
 import { rooms } from '@/modules/cockpit';
 import { RoomCard } from '@/ui/cockpit/room-card';
-import { PageHeader } from '@/ui/components/PageHeader';
 import { headers } from 'next/headers';
 import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
-import { EcosystemChangePanel } from '@/ui/cockpit/ecosystem-change-panel';
-import { Suspense } from 'react';
+import { CockpitOperationalDashboard } from './_components/CockpitOperationalDashboard';
 
 export const metadata = {
-    title: 'Launcher Operacional — CONDSTORE OS',
+    title: 'Cockpit Operacional — CONDSTORE OS',
 };
 
 export const dynamic = 'force-dynamic';
@@ -31,24 +29,16 @@ export default async function CockpitPage(props: { searchParams: Promise<{ [key:
     return (
         <div className="flex-1 overflow-auto bg-gray-50/50 p-6">
             <div className="mx-auto max-w-7xl space-y-8">
-                <PageHeader 
-                    title="Launcher Operacional" 
-                    subtitle="Bem-vindo ao centro de controle. Selecione a sala de trabalho desejada."
-                />
+                <CockpitOperationalDashboard tenantId={tenantId} />
                 
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                    <div className="xl:col-span-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {rooms.map((room) => (
-                                <RoomCard key={room.id} {...room} />
-                            ))}
-                        </div>
-                    </div>
-                    
-                    <div className="xl:col-span-1">
-                        <Suspense fallback={<div className="h-64 rounded-xl bg-gray-100 animate-pulse w-full"></div>}>
-                            <EcosystemChangePanel tenantId={tenantId} />
-                        </Suspense>
+                <div className="pt-8 mt-8 border-t border-gray-200">
+                    <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">
+                        Salas de Operação
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        {rooms.map((room) => (
+                            <RoomCard key={room.id} {...room} />
+                        ))}
                     </div>
                 </div>
             </div>

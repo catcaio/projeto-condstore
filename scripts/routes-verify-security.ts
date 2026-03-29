@@ -1,11 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 
-type GuardRule = {
-    guards: string[];
-    source: string;
-};
-
 const APP_DIR = process.env.ROUTES_VERIFY_APP_DIR
     ? path.resolve(process.env.ROUTES_VERIFY_APP_DIR)
     : path.join(process.cwd(), 'src', 'app');
@@ -21,51 +16,41 @@ const GUARDED_TOKEN_PATTERNS: Record<string, RegExp> = {
     'x-internal-token': /(?:headers|get|safeCompare)[\s\S]{0,160}['"]x-internal-token['"]/,
     'x-qa-token': /(?:headers|get|safeCompare)[\s\S]{0,160}['"]x-qa-token['"]/,
     'x-bootstrap-token': /(?:headers|get|safeCompare)[\s\S]{0,160}['"]x-bootstrap-token['"]/,
+    'requireWebhookSignature': /requireWebhookSignature\s*\(/,
+    'requireActivePlan': /requireActivePlan\s*\(/,
+    'requireKnowledgePermission': /requireKnowledgePermission\s*\(/,
+    'admin-token': /process\.env\.ADMIN_TOKEN/,
+    'seed-token': /process\.env\.SEED_TOKEN/,
 };
 
-// Prefixes that require security guardrails and the guards they accept.
-// Prefix rules also apply to future subroutes that follow the same audited patterns.
-const PROTECTED_PREFIXES: { prefix: string; guards: string[] }[] = [
-    {
-        prefix: '/api/internal/',
-        guards: [
-            'requireInternalToken',
-            'requireInternalAuth',
-            'requireAdmin',
-            'assertDevOnly',
-            'x-internal-token',
-            'x-qa-token',
-            'x-bootstrap-token',
-        ],
-    },
-    {
-        prefix: '/api/cockpit/',
-        guards: ['requireAdmin'],
-    },
-    {
-        prefix: '/api/tenants/',
-        guards: ['requireSessionTenantMatch', 'requireAdminSession', 'requireAdmin', 'requireInternalToken'],
-    },
-    {
-        prefix: '/api/freight/',
-        guards: ['requireAdmin'],
-    },
-    {
-        prefix: '/api/sales/quote',
-        guards: ['requireAdmin'],
-    },
-    {
-        prefix: '/api/search',
-        guards: ['requireSession', 'requireAdminSession', 'requireAdmin'],
-    },
-    {
-        prefix: '/api/notifications',
-        guards: ['requireSession', 'requireAdminSession', 'requireAdmin'],
-    },
-    {
-        prefix: '/api/ecosystem/events',
-        guards: ['requireSession', 'requireAdminSession', 'requireAdmin'],
-    },
+// Define strictly what bypasses the guard check entirely (because it relies on different mechanisms like webhook signature or is actually public)
+const PUBLIC_PREFIXES = [
+    '/api/public/',
+    '/api/auth/',
+    '/api/webhook',
+    '/api/webhooks/',
+    '/api/whatsapp/',
+    '/api/health',
+    '/api/cron/',
+    '/api/domine/intake'
+];
+
+const DEFAULT_GUARDS = [
+    'requireInternalToken',
+    'requireInternalAuth',
+    'requireAdmin',
+    'requireAdminSession',
+    'requireSession',
+    'requireSessionTenantMatch',
+    'assertDevOnly',
+    'x-internal-token',
+    'x-qa-token',
+    'x-bootstrap-token',
+    'requireWebhookSignature',
+    'requireActivePlan',
+    'requireKnowledgePermission',
+    'admin-token',
+    'seed-token'
 ];
 
 function findRouteFiles(dir: string, baseRoute: string = ''): { routePath: string; filePath: string }[] {
@@ -85,29 +70,18 @@ function findRouteFiles(dir: string, baseRoute: string = ''): { routePath: strin
             results.push(...findRouteFiles(fullPath, nextBase));
         } else if (entry === 'route.ts') {
             const routePath = baseRoute === '' ? '/' : baseRoute;
-            results.push({ routePath, filePath: fullPath });
+            // Only care about /api routes in app directory
+            if (routePath.startsWith('/api') || routePath === '/api') {
+                results.push({ routePath, filePath: fullPath });
+            }
         }
     }
 
     return results;
 }
 
-function routeMatchesProtectedPrefix(routePath: string, prefix: string): boolean {
-    if (prefix.endsWith('/')) {
-        return routePath.startsWith(prefix);
-    }
-
-    return routePath === prefix || routePath.startsWith(prefix + '/');
-}
-
-function resolveRule(routePath: string): GuardRule | null {
-    const prefixRule = PROTECTED_PREFIXES.find(rule => routeMatchesProtectedPrefix(routePath, rule.prefix));
-    if (!prefixRule) return null;
-
-    return {
-        guards: prefixRule.guards,
-        source: `protected prefix \`${prefixRule.prefix}\``,
-    };
+function isPublicRoute(routePath: string): boolean {
+    return PUBLIC_PREFIXES.some(prefix => routePath === prefix || routePath.startsWith(prefix.endsWith('/') ? prefix : prefix + '/'));
 }
 
 function resolveReExportTarget(filePath: string, content: string): string | null {
@@ -142,35 +116,73 @@ function hasAcceptableGuard(filePath: string, guards: string[], visited = new Se
     return hasAcceptableGuard(targetFilePath, guards, visited);
 }
 
-function verifyRouteSecurity() {
-    console.log('🔒 Verifying security guardrails on protected routes...');
-
-    const allRoutes = findRouteFiles(APP_DIR);
-    const violations: string[] = [];
-
-    for (const { routePath, filePath } of allRoutes) {
-        const rule = resolveRule(routePath);
-        if (!rule) continue;
-
-        const hasGuard = hasAcceptableGuard(filePath, rule.guards);
-
-        if (!hasGuard) {
-            violations.push(routePath);
-            console.error(`  ❌ SECURITY GUARD MISSING for route: ${routePath}`);
-            console.error(`     File: ${path.relative(process.cwd(), filePath)}`);
-            console.error(`     Rule source: ${rule.source}`);
-            console.error(`     Expected one of: ${rule.guards.join(', ')}`);
+// Function to verify if there's any extraction of tenantId or userId from searchParams or request.json()
+// which bypasses secure session extraction.
+function hasInsecureInputExtraction(filePath: string): string | null {
+    if (!fs.existsSync(filePath)) return null;
+    const content = fs.readFileSync(filePath, 'utf-8');
+    
+    // Check for searchParams.get('tenantId') or searchParams.get('userId')
+    const searchParamsRegex = /\.get\(['"`](tenantId|userId)['"`]\)/;
+    const matchSearch = content.match(searchParamsRegex);
+    if (matchSearch) {
+        if (!filePath.includes('audit\\route.ts') && !filePath.includes('audit/route.ts')) {
+            return `Extracts ${matchSearch[1]} from searchParams. Use secure session instead.`;
         }
     }
 
-    if (violations.length > 0) {
+    // Checking for body extraction of tenantId - this is a crude but effective regex for a warning.
+    // It looks for common patterns like const { tenantId } = await request.json()
+    const bodyExtractRegex = /(?:const|let|var)\s*\{[^}]*\b(tenantId|userId)\b[^}]*\}\s*=\s*(?:await\s+)?(?:request|req)\.json\(\)/;
+    const matchBody = content.match(bodyExtractRegex);
+    if (matchBody) {
+        return `Extracts ${matchBody[1]} from request body. Use secure session instead.`;
+    }
+
+    return null;
+}
+
+function verifyRouteSecurity() {
+    console.log('🔒 Verifying security guardrails on ALL api routes...');
+
+    // Only get routes in app/api
+    const apiDir = path.join(APP_DIR, 'api');
+    const allRoutes = findRouteFiles(apiDir, '/api');
+    const violations: string[] = [];
+    const insecureInputs: string[] = [];
+    let protectedCount = 0;
+
+    for (const { routePath, filePath } of allRoutes) {
+        if (isPublicRoute(routePath)) {
+            continue;
+        }
+
+        protectedCount++;
+        const hasGuard = hasAcceptableGuard(filePath, DEFAULT_GUARDS);
+        const insecureInput = hasInsecureInputExtraction(filePath);
+
+        if (!hasGuard) {
+            violations.push(routePath);
+            console.error(`[MISSING_GUARD] ${routePath} (${path.relative(process.cwd(), filePath)})`);
+        }
+
+        if (insecureInput) {
+            if (!routePath.startsWith('/api/internal/')) {
+                 insecureInputs.push(routePath);
+                 console.error(`[INSECURE_INPUT] ${routePath} (${path.relative(process.cwd(), filePath)}) -> ${insecureInput}`);
+            }
+        }
+    }
+
+    if (violations.length > 0 || insecureInputs.length > 0) {
         console.error(`\n🛑 ${violations.length} route(s) missing security guardrails!`);
-        console.error('Add the appropriate guard to each route handler before merging.');
+        console.error(`🛑 ${insecureInputs.length} route(s) extracting tenantId/userId insecurely!`);
+        console.error('Add the appropriate guard and remove insecure inputs before merging.');
         process.exit(1);
     }
 
-    const protectedCount = allRoutes.filter(route => resolveRule(route.routePath)).length;
     console.log(`✅ All ${protectedCount} protected routes have security guardrails.`);
+    console.log(`✅ No protected routes extracting tenantId/userId insecurely via request.`);
     process.exit(0);
 }
 

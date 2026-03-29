@@ -4,6 +4,8 @@ import { getDb } from '@/infra/db';
 import { requireAdmin } from '@/infra/auth/guards';
 import { publicEvents } from '../../../../../drizzle/schema';
 import { requireActivePlan } from '@/modules/billing';
+import { errorResponse, ErrorCode } from '@/infra/http/error-response';
+import { getTracedRequestId, makeRequestId, withRequestTrace } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 
 export const runtime = 'nodejs';
@@ -38,8 +40,9 @@ function safeParseProps(raw: string | null): EventProps | { _parseError: true; r
   }
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireAdmin(request);
+async function handler(request: NextRequest): Promise<NextResponse> {
+  const requestId = getTracedRequestId(request) ?? makeRequestId(request);
+  const auth = await requireAdmin(request, { requestId });
   if (!auth.ok) {
     return auth.response;
   }
@@ -56,11 +59,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const parsedLimit = Number.parseInt(searchParams.get('limit') ?? '100', 10);
 
   if (Number.isNaN(parsedLimit) || parsedLimit < 1) {
-    return NextResponse.json({ error: 'Invalid limit. Must be a positive integer.' }, { status: 400 });
+    logger.warn('analytics_events_invalid_limit', { requestId, tenantId, route: '/api/cockpit/analytics/events', limit: searchParams.get('limit') });
+    return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid limit. Must be a positive integer.');
   }
 
   if (parsedLimit > 500) {
-    return NextResponse.json({ error: 'Invalid limit. Maximum allowed is 500.' }, { status: 400 });
+    logger.warn('analytics_events_invalid_limit_max', { requestId, tenantId, route: '/api/cockpit/analytics/events', limit: searchParams.get('limit') });
+    return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid limit. Maximum allowed is 500.');
   }
 
   const filters = [eq(publicEvents.tenantId, tenantId)];
@@ -90,15 +95,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       .orderBy(desc(publicEvents.createdAt))
       .limit(parsedLimit);
 
-    return NextResponse.json({
+    const payload = {
       events: events.map((item) => ({
         ...item,
         props: safeParseProps(item.props),
         userAgent: item.userAgent ? item.userAgent.slice(0, 120) : null,
       })),
-    });
+    };
+
+    logger.info('analytics_events_loaded', { requestId, tenantId, route: '/api/cockpit/analytics/events', count: payload.events.length });
+    const response = NextResponse.json(payload);
+    response.headers.set('x-request-id', requestId);
+    return response;
   } catch (error) {
     logger.error('cockpit/analytics/events: failed to load events', error as Error, {
+      requestId,
       tenantId,
       event,
       anonId,
@@ -106,9 +117,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
 
     if (isAnalyticsTableMissing(error)) {
-      return NextResponse.json({ error: 'Analytics table not migrated' }, { status: 503 });
+      return errorResponse(ErrorCode.DB_ERROR, 503, requestId, 'Analytics table not migrated');
     }
 
-    return NextResponse.json({ error: 'Failed to load analytics events' }, { status: 500 });
+    return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Failed to load analytics events');
   }
 }
+
+export const GET = withRequestTrace(handler);

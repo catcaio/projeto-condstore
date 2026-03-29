@@ -24,7 +24,7 @@ describe('Global Search API Security', () => {
             ok: false,
             code: 'auth_required' as any,
             requestId: 'req-1',
-            response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+            response: NextResponse.json({ ok: false, error: { code: 'AUTH_REQUIRED' as any, requestId: 'req-1', message: 'Unauthorized' } }, { status: 401 }),
         });
 
         const req = new Request('http://localhost:3000/api/search?q=test');
@@ -38,7 +38,7 @@ describe('Global Search API Security', () => {
         vi.mocked(requireSession).mockResolvedValue({
             ok: true,
             requestId: 'req-1',
-            session: { tenantId: 'real-tenant', sub: 'user-1', role: 'member' },
+            session: { tenantId: 'session-tenant', sub: 'user-1', role: 'operator', email: 'test@cond.store', sv: 1 },
         });
 
         vi.mocked(searchService.searchEntities).mockResolvedValue([]);
@@ -50,7 +50,7 @@ describe('Global Search API Security', () => {
         expect(res.status).toBe(200);
         // Ensure it searches within 'real-tenant', completely ignoring 'fake-tenant'
         expect(searchService.searchEntities).toHaveBeenCalledWith(expect.objectContaining({
-            tenantId: 'real-tenant',
+            tenantId: 'session-tenant',
             query: 'query',
         }));
     });

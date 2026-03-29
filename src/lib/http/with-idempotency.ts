@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkIdempotencyKey, saveIdempotentResponse } from '../security/idempotency';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type HandlerWrapper = (req: NextRequest, ctx: any) => Promise<Response>;
+type HandlerWrapper = (req: NextRequest, ctx?: any) => Promise<Response>;
 
 /**
  * Wraps a Next.js App Router API handler (`POST`, `PUT`, `PATCH`, `DELETE`) with idempotency guarantees.

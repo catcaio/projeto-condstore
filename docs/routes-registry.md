@@ -289,6 +289,7 @@
 | /plataforma/cockpit | TBA | public | none | PUBLIC | live | Auto-detected |
 | /avaliacao | TBA | public | none | PUBLIC | live | Auto-detected |
 | /settings | TBA | public | none | PUBLIC | live | Auto-detected |
+| /showcase | GET | public | none | PUBLIC | live | Product showcase overview page |
 | /signup | GET | public | none | auth | live | User registration page with role selection |
 | /supreme | TBA | public | none | PUBLIC | live | Auto-detected |
 | /t/[token] | TBA | public | none | PUBLIC | live | Auto-detected |

@@ -4,7 +4,7 @@ import { LockAcquisitionError } from '../infra/errors';
 import { errorResponse, ErrorCode } from '../../infra/http/error-response';
 import { makeRequestId } from '../../infra/http/request-trace';
 
-type HandlerWrapper = (req: NextRequest, ctx: any) => Promise<Response>;
+type HandlerWrapper = (req: NextRequest, ctx?: any) => Promise<Response>;
 
 /**
  * Wraps a Next.js App Router API handler with a distributed lock.

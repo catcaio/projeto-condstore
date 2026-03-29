@@ -154,6 +154,14 @@ async function runQa() {
             ]
         },
         {
+            name: 'cockpit_operacional',
+            url: `${BASE_URL}/cockpit`,
+            asserts: isProdMode ? [prodLoginAssert] : [
+                { string: 'Controle Operacional', description: 'Dashboard Page Title rendered' },
+                { string: 'Salas de Operação', description: 'Legacy rooms section rendered' }
+            ]
+        },
+        {
             name: 'acquisition',
             url: `${BASE_URL}/cockpit/acquisition?groupBy=utm_campaign&q=summer&page=2`,
             asserts: isProdMode ? [prodLoginAssert] : [
