@@ -19,6 +19,21 @@ Documentação oficial do MVP (Lote 1). Fonte única de verdade sobre o que é o
 
 ---
 
+## Onboarding de Pilotos
+
+Processo oficial de implantação para clientes piloto.
+
+| Arquivo | Descrição |
+|---|---|
+| [docs/onboarding/README.md](./onboarding/README.md) | Índice e ordem de uso |
+| [docs/onboarding/onboarding-data-required.md](./onboarding/onboarding-data-required.md) | Dados obrigatórios a coletar do cliente |
+| [docs/onboarding/onboarding-checklist.md](./onboarding/onboarding-checklist.md) | Checklist de implantação (8 blocos) |
+| [docs/onboarding/onboarding-flow.md](./onboarding/onboarding-flow.md) | Fluxo de implantação passo a passo |
+| [docs/onboarding/onboarding-48h-plan.md](./onboarding/onboarding-48h-plan.md) | Plano detalhado das primeiras 48 horas |
+| [docs/onboarding/onboarding-acceptance.md](./onboarding/onboarding-acceptance.md) | Critérios de aceite e revisão de 30 dias |
+
+---
+
 ## Demo do MVP
 
 Material para demonstrações comerciais do MVP. Reproduzível por qualquer pessoa do time.
