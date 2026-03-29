@@ -63,6 +63,16 @@ Material para demonstrações comerciais do MVP. Reproduzível por qualquer pess
 
 ---
 
+## Pilotos e Ativação
+
+Processo operacional para captar, qualificar, fechar e acompanhar os primeiros pilotos do MVP.
+
+| Arquivo | Descrição |
+|---|---|
+| [docs/pilots/README.md](./pilots/README.md) | Índice, fluxo e ordem de uso |
+
+---
+
 ## Produto / GTM
 
 | Arquivo | Descrição |
