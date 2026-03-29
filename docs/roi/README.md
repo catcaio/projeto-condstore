@@ -1,324 +1,207 @@
-# ROI e Prova de Valor — Pacote de Documentação
+# ROI e Prova de Valor — Pacote de Documentacao
 
-Guia oficial para medir, rastrear e provar o valor do CONDSTORE OS nos pilotos.
+Guia oficial para medir, acompanhar e fechar o valor do CONDSTORE OS nos pilotos.
 
-**Objetivo geral:** Transformar cada piloto bem-sucedido em prova social escalável para vender os próximos pilotos.
+**Objetivo geral:** transformar cada piloto em evidencia objetiva de uso, ganho operacional e decisao clara de continuidade.
 
 ---
 
-## Arquivos deste diretório
+## Arquivos deste diretorio
 
 ### [roi-metrics.md](./roi-metrics.md)
 
 **Quando usar:** Antes de iniciar qualquer piloto
 
-**O que faz:** Catálogo centralizado de todas as métricas que serão rastreadas — adoção, velocidade, volume, qualidade e ROI
+**O que faz:** Define as metricas que serao observadas durante o piloto
 
-**Conteúdo:**
-- Métricas de adoção (dias de uso, conversas, cotações, pedidos)
-- Métricas de velocidade (tempo de cotação antes vs. depois)
-- Métricas de volume (pedidos criados, carriers usados)
-- Métricas de qualidade (erros críticos, NPS, satisfação)
-- Métricas de ROI (horas economizadas, payback period)
+**Conteudo:**
+- Adocao
+- Velocidade
+- Volume
+- Qualidade
+- ROI
 
-**Tempo de leitura:** 10 minutos
-
-**Próxima ação:** Passe para baseline-capture.md
+**Proxima acao:** Passar para `baseline-capture.md`
 
 ---
 
 ### [baseline-capture.md](./baseline-capture.md)
 
-**Quando usar:** Primeiro dia do piloto, antes de qualquer uso
+**Quando usar:** No primeiro dia, antes de qualquer uso real
 
-**O que faz:** Template para capturar situação atual — números, dores, ferramentas. A comparação ao final é feita contra isso.
+**O que faz:** Captura a situacao inicial do cliente para comparacao posterior
 
-**Conteúdo:**
-- Informações da empresa (segmento, localização, tamanho)
-- Operação atual (quantos operadores, quantos pedidos/mês)
-- Processo de cotação (quais ferramentas usam, tempo por cotação)
-- Gestão de pedidos (visibilidade, pedidos perdidos)
-- Baseline de números (tabela com valores iniciais)
-- Expectativa qualitativa (o que espera resolver)
+**Conteudo:**
+- Estrutura atual da operacao
+- Processo de cotacao
+- Ferramentas usadas hoje
+- Dores e expectativa do cliente
+- Baseline de numeros
 
-**Tempo de preenchimento:** 30–45 minutos (em conversa com cliente)
-
-**Próxima ação:** Inicie pilot-scorecard.md na semana 1
+**Proxima acao:** Iniciar `pilot-scorecard.md`
 
 ---
 
 ### [pilot-scorecard.md](./pilot-scorecard.md)
 
-**Quando usar:** Toda segunda-feira durante 4 semanas do piloto
+**Quando usar:** Toda semana durante o piloto
 
-**O que faz:** Uma página para rastrear adoção, velocidade, risco e ROI de forma consolidada
+**O que faz:** Consolida adocao, velocidade, risco e calculo de ROI
 
-**Conteúdo:**
-- Métrica de adoção (dias de uso, conversas, cotações, pedidos)
-- Métrica de velocidade (tempo de cotação, abas por pedido)
-- Métrica de risco (erros críticos, tickets, NPS)
-- Cálculo de ROI (economia semanal e projeção mensal)
-- Observações qualitativas (o que funcionou, o que não)
+**Conteudo:**
+- Conversas, cotacoes e pedidos
+- Tempo de cotacao
+- Erros, tickets e satisfacao
+- Economia estimada e projecao
 
-**Tempo de preenchimento:** 15 minutos (recolher dados + preencher)
+**Proxima acao:** Levar os dados para `weekly-review.md`
 
-**Próxima ação:** Use antes de weekly-review.md toda sexta
+---
+
+### [pilot-weekly-log-template.md](./pilot-weekly-log-template.md)
+
+**Quando usar:** Depois de cada acompanhamento semanal
+
+**O que faz:** Registra a semana de forma operacional e deixa uma decisao objetiva
+
+**Conteudo:**
+- Identificacao do cliente e da semana
+- Conversas atendidas, cotacoes concluidas, pedidos criados e acompanhados
+- Tempo medio de cotacao e de resposta
+- Incidentes ou bloqueios
+- Percepcao do operador e do gestor
+- Acoes da proxima semana
+- Decisao da semana: manter, corrigir, escalar ou encerrar
+
+**Proxima acao:** Arquivar como registro da semana e preparar a semana seguinte
 
 ---
 
 ### [weekly-review.md](./weekly-review.md)
 
-**Quando usar:** Toda sexta-feira com operador (e gestor se possível)
+**Quando usar:** Toda sexta-feira ou ultimo dia util da semana
 
-**O que faz:** Roteiro de 20 minutos para conversa semanal — mostrar números, ouvir problemas, orientar
+**O que faz:** Guia a conversa curta de acompanhamento com operador e, quando possivel, gestor
 
-**Conteúdo:**
-- Checklist pré-call (5 min de preparação)
-- Agenda da call (abertura → números → problemas → próximos passos)
-- Script com frases padrão
-- Exemplos de cenários (operador não usou, usou pouco, usou muito, tem erro)
-- Registro pós-call (o que fazer depois)
+**Conteudo:**
+- Checklist pre-call
+- Agenda da conversa
+- Script por cenario
+- Registro pos-call
 
-**Tempo de call:** 15–20 minutos
+**Proxima acao:** Preencher `pilot-weekly-log-template.md`
 
-**Próxima ação:** Registre resultado e prepare scorecard da semana seguinte
+---
+
+### [roi-summary-template.md](./roi-summary-template.md)
+
+**Quando usar:** Na reuniao final de encerramento do piloto
+
+**O que faz:** Consolida baseline, resultados, comparativo antes/depois, ganhos percebidos, limitacoes e recomendacao final
+
+**Conteudo:**
+- Problema inicial
+- Baseline capturado
+- Resultados observados
+- Metricas comparativas antes/depois
+- Ganhos percebidos
+- Limitacoes encontradas
+- Recomendacao final
+- Blocos finais: pronto para virar case? pronto para proposta comercial?
+
+**Proxima acao:** Se fizer sentido, alimentar `case-study-template.md`
 
 ---
 
 ### [case-study-template.md](./case-study-template.md)
 
-**Quando usar:** Ao final do piloto bem-sucedido (semana 4 + revisão de 30 dias)
+**Quando usar:** Depois do fechamento do piloto, quando houver material suficiente para virar prova de valor
 
-**O que faz:** Template para converter números + depoimento em história de prova social
+**O que faz:** Converte resultados validados em um case legivel
 
-**Conteúdo:**
-- Resumo executivo (1 parágrafo que responde: qual era o problema, como resolvemos, qual foi o resultado)
-- Contexto (quem é a empresa, segmento, tamanho)
-- O problema (descrição da dor antes do CONDSTORE OS)
-- A solução (como o sistema funcionou)
-- O resultado (tabela antes vs. depois)
-- Depoimento do cliente (citação direta)
-- Timeline do piloto
-- O que funcionou (3 pontos fortes)
-- O que foi desafio (2 desafios + solução)
-- Lições para próximos pilotos
-- Conclusão e status de continuidade
+**Conteudo:**
+- Resumo executivo
+- Contexto do cliente
+- Problema
+- Solucao
+- Resultado
+- Depoimento
+- Timeline
+- Licoes
 
-**Tempo de preenchimento:** 45 minutos (coleta + redação)
-
-**Próxima ação:** Publicar em docs/pilots/ ou usar em pitch de próximos clientes
+**Proxima acao:** Publicar ou reutilizar como referencia interna
 
 ---
 
 ## Fluxo de uso completo
 
-```
-[DIA 1 — SEGUNDA]
-└─→ Preencher baseline-capture.md
-    (conversa com cliente, 30–45 min)
+```text
+[DIA 1]
+baseline-capture.md
 
-[SEMANA 1 — SEGUNDA-FEIRA]
-└─→ Preencher pilot-scorecard.md — SEMANA 1
-    (15 min)
+[SEMANA 1-4]
+pilot-scorecard.md
+weekly-review.md
+pilot-weekly-log-template.md
 
-[SEMANA 1 — SEXTA-FEIRA]
-└─→ Conduzir weekly-review.md com operador
-    (20 min call + 15 min registro)
+[ENCERRAMENTO]
+roi-summary-template.md
 
-[SEMANA 2 — SEGUNDA-FEIRA]
-└─→ Preencher pilot-scorecard.md — SEMANA 2
-    (15 min)
-
-[SEMANA 2 — SEXTA-FEIRA]
-└─→ Conduzir weekly-review.md com operador
-    (20 min call + 15 min registro)
-
-[SEMANA 3 — SEGUNDA-FEIRA]
-└─→ Preencher pilot-scorecard.md — SEMANA 3
-    (15 min)
-
-[SEMANA 3 — SEXTA-FEIRA]
-└─→ Conduzir weekly-review.md com operador
-    (20 min call + 15 min registro)
-
-[SEMANA 4 — SEGUNDA-FEIRA]
-└─→ Preencher pilot-scorecard.md — SEMANA 4
-    (15 min)
-
-[SEMANA 4 — SEXTA-FEIRA]
-└─→ Conduzir weekly-review.md com operador
-    (20 min call + 15 min registro)
-└─→ Preparar revisão formal de 30 dias
-
-[DIA 30 — REVISÃO]
-└─→ Conduzir revisão com cliente (veja docs/onboarding/onboarding-acceptance.md)
-└─→ Decidir continuidade (contrato / estender / encerrar)
-
-[PÓS-PILOTO — SUCESSO]
-└─→ Preencher case-study-template.md
-    (45 min de coleta + redação)
-└─→ Publicar como prova social
+[SE HOUVER MATERIAL]
+case-study-template.md
 ```
 
 ---
 
-## Sequência de leitura recomendada
+## Quando usar cada um
 
-### Para primeira vez (antes de primeiro piloto)
-1. Leia **roi-metrics.md** completo — entenda o que será rastreado
-2. Leia **baseline-capture.md** completo — entenda a estrutura de captura
-3. Leia **pilot-scorecard.md** até "Exemplo preenchido (Semana 1)" — veja como fica
+1. `baseline-capture.md`
+   Use para congelar o "antes" do cliente.
 
-### Para cada piloto (repetir 4 vezes)
-4. Semana 1: Preencha **baseline-capture.md** (dia 1) → **pilot-scorecard.md** (seg) → **weekly-review.md** (sex)
-5. Semana 2–4: Repita scorecard + review toda semana
+2. `pilot-scorecard.md`
+   Use para acompanhar tendencia semanal e calculo de ROI.
 
-### Para sucesso comprovado
-6. Preencha **case-study-template.md** completo
-7. Revise exemplos em **case-study-template.md** — inspire-se na redação
+3. `weekly-review.md`
+   Use para conduzir a conversa semanal com operador e gestor.
 
----
+4. `pilot-weekly-log-template.md`
+   Use para registrar a semana, anotar bloqueios e fechar uma decisao clara.
 
-## Dicas para manter consistência
+5. `roi-summary-template.md`
+   Use para a reuniao final, com comparacao antes/depois e recomendacao objetiva.
 
-### Baseline
-
-- Quanto mais preciso, melhor a comparação ao final
-- Números aproximados são aceitáveis
-- A pergunta qualitativa "qual é a dor principal?" é ouro — use como referência no final
-
-### Scorecard
-
-- Preencha toda segunda, não deixe pra depois
-- 15 minutos você tem — não é muito
-- Dados aproximados OK (você quer tendência, não precisão exata)
-- Acumule números (semana 2 = semana 1 + semana 2, não só semana 2)
-
-### Weekly Review
-
-- Telefone/videochamada, não e-mail
-- Energia humana vende — comunique que você se importa com o resultado
-- Sempre termine com próxima ação agendada
-- Envie mensagem de agradecimento no WhatsApp 5 min depois
-
-### Case Study
-
-- Escreva enquanto a vitória está fresca (não deixa pro final do ano)
-- Dados + emoção = poder de venda
-- Revise que não menciona Frank, IA, automação ou features frozen
-- Leia em voz alta — se soar artificial, reescreva
+6. `case-study-template.md`
+   Use apenas quando o piloto ja tiver resultado suficiente para virar prova de valor.
 
 ---
 
-## Integração com documentação existente
+## Coerencia entre os arquivos
 
-Este pacote se integra com:
-
-- **docs/onboarding/onboarding-flow.md** — fluxo de implementação
-  - baseline-capture.md acontece no Dia 1 (FASE 2)
-  - pilot-scorecard.md começa na FASE 5 (Início assistido)
-
-- **docs/onboarding/onboarding-48h-plan.md** — métricas das primeiras 48h
-  - Primeiros valores de pilot-scorecard.md vêm daqui (conversas, cotações, pedidos)
-  - Métricas são as mesmas
-
-- **docs/onboarding/onboarding-acceptance.md** — critérios de aceite
-  - Métricas de aceite técnico (48h) → parte de scorecard SEMANA 1
-  - Métricas de aceite operacional (48h) → parte de scorecard SEMANA 1
-  - Métricas de aceite piloto (30 dias) → usadas em case-study-template.md
-
-- **docs/product/gtm-mvp.md** — ROI calculado na proposta comercial
-  - Validar que números em "ETAPA 6 — Estrutura de pricing" fazem sentido com dados reais
-  - Use case-study-template.md para gerar prova social
+- `baseline-capture.md` define o ponto de partida.
+- `pilot-scorecard.md` mostra os numeros que evoluem durante o piloto.
+- `weekly-review.md` organiza a conversa semanal.
+- `pilot-weekly-log-template.md` vira a ata objetiva da semana e registra a decisao.
+- `roi-summary-template.md` fecha o piloto para reuniao executiva.
+- `case-study-template.md` so entra depois, quando o fechamento ja estiver sustentado pelos dados.
 
 ---
 
-## Exemplo de fluxo real
+## Regras de uso
 
-**Cliente:** Distribuidora de alimentos XYZ, 5 operadores
-
-**Dia 1 (10/03):**
-Preencher baseline-capture.md
-- 120 pedidos/mês
-- Tempo cotação: 12 min
-- 4 ferramentas por pedido
-- ~10 pedidos perdidos/mês
-- Setup fee: R$ 600
-- Custo hora: R$ 45
-
-**Semana 1 — Seg (13/03):**
-Preencher pilot-scorecard.md — Semana 1
-- Dias de uso: 4/5
-- Cotações: 8
-- Pedidos: 5
-- Tempo cotação: 2.5 min (↓ 79%)
-- Economia: 1.27h × R$ 45 = R$ 57
-
-**Semana 1 — Sex (14/03):**
-Conduzir weekly-review.md
-- Operador: "Gostei, mas não consegui segunda porque WhatsApp tava fora"
-- Ação: Testar mais segunda semana
-
-**Semana 4 — Seg (01/04):**
-Preencher pilot-scorecard.md — Semana 4
-- Dias de uso: 7/7
-- Cotações (acumulado): 73
-- Pedidos (acumulado): 55
-- Tempo cotação: 28 seg (↓ 96%)
-- Economia semanal: 5.39h × R$ 45 = R$ 243
-- Projeção mensal: R$ 555
-
-**Dia 30 (30/03):**
-Revisão formal com cliente
-- Resultados positivos? Sim
-- Continua? Sim, 12 meses
-
-**Pós-piloto:**
-Preencher case-study-template.md
-- Publicado como prova social
-- Usado em pitch para cliente 2
+- Trabalhe com fatos e numeros aproximados quando o cliente nao tiver precisao exata.
+- Nao transforme o fechamento do piloto em pitch inflado.
+- Nao prometa automacao fora do MVP.
+- Se a recomendacao final for `ajustar` ou `encerrar`, registre isso com clareza.
 
 ---
 
-## KPIs do pacote ROI
+## Sequencia recomendada
 
-Sim, o próprio pacote tem métricas de sucesso:
-
-| Métrica | Target | Frequência |
-|---|---|---|
-| Baselines capturados | 100% (1 por piloto) | Dia 1 de cada piloto |
-| Scorecards preenchidos | 100% (4 por piloto) | Toda segunda, 4x |
-| Weekly reviews conduzidas | 100% (4 por piloto) | Toda sexta, 4x |
-| Case studies criados | 100% de pilotos bem-sucedidos | Após dia 30 |
-| Tempo piloto ROI | Acumulado | Depois de 4 pilotos |
-| Prova social gerada | 3–5 case studies por semestre | Acumulado |
-
----
-
-## Troubleshooting
-
-**"Não tenho tempo para preencher scorecard toda segunda"**
-→ Automatize coleta (crie uma query do banco que extrai números) e deixe só redação para você
-
-**"Operador não quer fazer weekly review"**
-→ Ofereça de forma diferente (WhatsApp rápido em vez de call? Chat group?). Só não elimine — é crítico.
-
-**"Caso study fica muito longo"**
-→ Corte observações redundantes. Máximo 3–5 minutos de leitura. Se passou, delete o que é menos importante.
-
-**"Cliente quer que eu esconda números"**
-→ Use nomes fictícios. Mas NUNCA invente dados. Melhor publicar 2 case studies reais que 10 fictícios.
-
----
-
-## Próximos passos
-
-Depois de 3–4 pilotos bem-documentados:
-- Consolidar aprendizados em docs/lessons-learned.md
-- Refinar scorecard baseado em feedback
-- Considerar automação de coleta de dados
-
-Depois de 5+ case studies:
-- Publicar em website
-- Usar em pitch estruturado de prospects
-- Apresentar em webinar ou comunidade
+1. Ler `roi-metrics.md`
+2. Preencher `baseline-capture.md`
+3. Repetir por semana:
+   - `pilot-scorecard.md`
+   - `weekly-review.md`
+   - `pilot-weekly-log-template.md`
+4. Encerrar com `roi-summary-template.md`
+5. Se houver base, montar `case-study-template.md`
