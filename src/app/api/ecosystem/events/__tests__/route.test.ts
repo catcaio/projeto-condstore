@@ -24,7 +24,7 @@ describe('Global Ecosystem Events API Security', () => {
             ok: false,
             code: 'auth_required' as any,
             requestId: 'req-1',
-            response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+            response: NextResponse.json({ ok: false, error: { code: 'AUTH_REQUIRED' as any, requestId: 'req-1', message: 'Unauthorized' } }, { status: 401 }),
         });
 
         const req = new Request('http://localhost:3000/api/ecosystem/events');
@@ -37,7 +37,7 @@ describe('Global Ecosystem Events API Security', () => {
         vi.mocked(requireSession).mockResolvedValue({
             ok: true,
             requestId: 'req-1',
-            session: { tenantId: 'session-tenant', sub: 'user-1', role: 'member' },
+            session: { tenantId: 'session-tenant', sub: 'user-1', role: 'operator', email: 'test@cond.store', sv: 1 },
         });
 
         vi.mocked(ecosystemEventsService.getEvents).mockResolvedValue([]);

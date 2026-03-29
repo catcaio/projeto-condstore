@@ -29,7 +29,7 @@ describe('notifications route hardening regression', () => {
             ok: false,
             code: 'auth_required' as any,
             requestId: 'req-1',
-            response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+            response: NextResponse.json({ ok: false, error: { code: 'AUTH_REQUIRED' as any, requestId: 'req-1', message: 'Unauthorized' } }, { status: 401 }),
         });
 
         const req = new Request('http://localhost:3000/api/notifications?tenantId=spoofed-tenant&userId=spoofed-user');
@@ -44,7 +44,7 @@ describe('notifications route hardening regression', () => {
         vi.mocked(requireSession).mockResolvedValue({
             ok: true,
             requestId: 'req-1',
-            session: { tenantId: 'tenant-from-session', sub: 'user-from-session', role: 'member' },
+            session: { tenantId: 'tenant-from-session', sub: 'user-from-session', role: 'operator', email: 'test@cond.store', sv: 1 },
         });
         vi.mocked(notificationsService.getUserNotifications).mockResolvedValue([]);
         vi.mocked(notificationsService.getUnreadCount).mockResolvedValue(0);
@@ -79,7 +79,7 @@ describe('notifications route hardening regression', () => {
         vi.mocked(requireSession).mockResolvedValue({
             ok: true,
             requestId: 'req-1',
-            session: { tenantId: 'tenant-from-session', sub: 'user-from-session', role: 'member' },
+            session: { tenantId: 'tenant-from-session', sub: 'user-from-session', role: 'operator', email: 'test@cond.store', sv: 1 },
         });
 
         const req = new Request('http://localhost:3000/api/notifications', {
@@ -108,7 +108,7 @@ describe('notifications route hardening regression', () => {
         vi.mocked(requireSession).mockResolvedValue({
             ok: true,
             requestId: 'req-1',
-            session: { tenantId: 'tenant-from-session', sub: 'user-from-session', role: 'member' },
+            session: { tenantId: 'tenant-from-session', sub: 'user-from-session', role: 'operator', email: 'test@cond.store', sv: 1 },
         });
 
         const req = new Request('http://localhost:3000/api/notifications', {

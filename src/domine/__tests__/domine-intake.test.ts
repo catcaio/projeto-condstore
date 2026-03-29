@@ -23,30 +23,30 @@ describe('DomineIntakeService', () => {
     // ── Validation ────────────────────────────────────────────────────
 
     it('rejects missing tenantId', async () => {
-        await expect(svc.publish({ tenantId: '', type: 'FINOPS_EVENT', source: 'cockpit' }))
+        await expect(svc.publish({ tenantId: '', type: 'FINOPS_EVENT', source: 'cockpit', payload: {} }))
             .rejects.toThrow(DomineIntakeError);
     });
 
     it('rejects missing type', async () => {
-        await expect(svc.publish({ tenantId: 'LOJACOND', type: '', source: 'cockpit' }))
+        await expect(svc.publish({ tenantId: 'LOJACOND', type: '', source: 'cockpit', payload: {} }))
             .rejects.toThrow(DomineIntakeError);
     });
 
     it('rejects invalid source', async () => {
-        await expect(svc.publish({ tenantId: 'LOJACOND', type: 'FINOPS_EVENT', source: 'hacker' as any }))
+        await expect(svc.publish({ tenantId: 'LOJACOND', type: 'WEBHOOK_RECEIVED', source: 'invalid_source' as any, payload: {} }))
             .rejects.toThrow(DomineIntakeError);
     });
 
     // ── LOJACOND Guard ────────────────────────────────────────────────
 
     it('rejects non-LOJACOND tenant', async () => {
-        await expect(svc.publish({ tenantId: 'OTHER_TENANT', type: 'FINOPS_EVENT', source: 'cockpit' }))
+        await expect(svc.publish({ tenantId: 'OTHER_TENANT', type: 'FINOPS_EVENT', source: 'cockpit', payload: {} }))
             .rejects.toThrow('not enabled');
     });
 
     it('rejects non-LOJACOND with correct error code', async () => {
         try {
-            await svc.publish({ tenantId: 'OTHER_TENANT', type: 'FINOPS_EVENT', source: 'cockpit' });
+            await svc.publish({ tenantId: 'OTHER_TENANT', type: 'FINOPS_EVENT', source: 'cockpit', payload: {} });
         } catch (e: any) {
             expect(e).toBeInstanceOf(DomineIntakeError);
             expect(e.code).toBe('TENANT_NOT_ENABLED');
@@ -78,6 +78,7 @@ describe('DomineIntakeService', () => {
             tenantId: 'LOJACOND',
             type: 'WEBHOOK_RECEIVED',
             source: 'webhook',
+            payload: {},
         });
 
         const call = mockPublish.mock.calls[0][0];
@@ -95,6 +96,7 @@ describe('DomineIntakeService', () => {
             type: 'FINOPS_EVENT',
             source: 'internal',
             idempotencyKey: 'dup-key',
+            payload: {},
         });
 
         expect(result.inserted).toBe(false);

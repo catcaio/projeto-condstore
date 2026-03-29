@@ -87,7 +87,7 @@ describe('Login API Route Hardening', () => {
     it('should return 500 JSON if critical envs missing (simulated 503/500), never HTML', async () => {
         // Remove critical variables to trigger the fallback block inside POST
         delete process.env.DATABASE_URL;
-        process.env.NODE_ENV = 'production';
+        vi.stubEnv('NODE_ENV', 'production');
 
         const req = new NextRequest('http://localhost:3000/api/auth/login', {
             method: 'POST',
@@ -102,6 +102,6 @@ describe('Login API Route Hardening', () => {
         expect(data.success).toBe(false);
         expect(data.error).toBeDefined();
 
-        process.env.NODE_ENV = 'test'; // Restore for next tests
+        vi.stubEnv('NODE_ENV', 'test'); // Restore for next tests
     });
 });

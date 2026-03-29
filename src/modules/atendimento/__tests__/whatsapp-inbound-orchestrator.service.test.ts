@@ -20,6 +20,8 @@ vi.mock('@/modules/frank/intent-resolver', () => ({
     resolveContextualIntent: (...args: any[]) => mockResolveContextualIntent(...args)
 }));
 
+// Removed vi.mock for entity-resolver so existing tests don't break.
+
 vi.mock('@/infra/repositories/inbound-message-dedup.repository', () => ({
     inboundMessageDedupRepository: { tryAcquire: vi.fn() }
 }));
@@ -81,8 +83,8 @@ vi.mock('@/modules/frank/suggestions/suggestion.service', () => ({
 
 vi.mock('@/modules/frank/session.repository', () => ({
     getSessionState: vi.fn(),
-    createSessionState: vi.fn(),
-    updateSessionState: vi.fn()
+    createSessionState: vi.fn().mockResolvedValue({ id: 'mock-session-id' }),
+    updateSessionState: vi.fn().mockResolvedValue({ id: 'mock-session-id' })
 }));
 
 vi.mock('@/modules/frank/conversation-control', () => ({
@@ -206,14 +208,15 @@ describe('WhatsApp Inbound Orchestrator', () => {
     it('Should fallback to standard intent when no session state exists', async () => {
         const payload = { ...defaultPayload, rawBodyText: 'quero ver os produtos' };
         
-        const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
+        const { getSessionState, createSessionState, updateSessionState } = await import('@/modules/frank/session.repository');
         (getSessionState as any).mockResolvedValue(null);
 
         await whatsappInboundOrchestrator.process(payload);
         
         expect(mockResolveContextualIntent).toHaveBeenCalledWith('quero ver os produtos', null);
         
-        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
+        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash');
+        expect(updateSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
             currentIntent: expect.any(String)
         }));
     });
@@ -233,7 +236,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
     it('Should persist order and shipment anchors when resolved successfully', async () => {
         const payload = { ...defaultPayload, rawBodyText: 'onde esta o pedido 12345?' };
         
-        const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
+        const { getSessionState, createSessionState, updateSessionState } = await import('@/modules/frank/session.repository');
         (getSessionState as any).mockResolvedValue(null);
         
         const { findOrderWithShipmentByPrefix } = await import('@/modules/pedidos/order.repository');
@@ -244,7 +247,8 @@ describe('WhatsApp Inbound Orchestrator', () => {
 
         await whatsappInboundOrchestrator.process(payload);
         
-        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
+        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash');
+        expect(updateSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
             lastOrderId: 'uuid-1234',
             lastReferencedShipmentId: 'ship-5678',
             currentIntent: expect.any(String)
@@ -254,7 +258,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
     it('Should safely ignore invalid order without crashing and not persist anchor', async () => {
         const payload = { ...defaultPayload, rawBodyText: 'onde esta o pedido 99999?' };
         
-        const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
+        const { getSessionState, createSessionState, updateSessionState } = await import('@/modules/frank/session.repository');
         (getSessionState as any).mockResolvedValue(null);
         
         const { findOrderWithShipmentByPrefix } = await import('@/modules/pedidos/order.repository');
@@ -262,11 +266,12 @@ describe('WhatsApp Inbound Orchestrator', () => {
 
         await whatsappInboundOrchestrator.process(payload);
         
-        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
+        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash');
+        expect(updateSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
             currentIntent: expect.any(String)
         }));
         // Should purely persist intent, omitting lastOrderId mapping
-        const callArgs = (createSessionState as any).mock.calls[0][2];
+        const callArgs = (updateSessionState as any).mock.calls[0][2];
         expect(callArgs).not.toHaveProperty('lastOrderId');
         expect(callArgs).not.toHaveProperty('lastReferencedShipmentId');
     });
@@ -337,7 +342,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
     it('Should extract and consume attribution token, and persist in session', async () => {
         const payload = { ...defaultPayload, rawBodyText: 'Mensagem teste t=attr_token_999' };
         
-        const { getSessionState, createSessionState } = await import('@/modules/frank/session.repository');
+        const { getSessionState, createSessionState, updateSessionState } = await import('@/modules/frank/session.repository');
         (getSessionState as any).mockResolvedValue(null);
         
         const { extractAttributionTokenFromText } = await import('@/infra/attribution/token-parser');
@@ -357,7 +362,8 @@ describe('WhatsApp Inbound Orchestrator', () => {
         expect(extractAttributionTokenFromText).toHaveBeenCalledWith('Mensagem teste t=attr_token_999');
         expect(attributionClickRepository.consumeByToken).toHaveBeenCalledWith('attr_token_999', expect.any(Object));
 
-        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
+        expect(createSessionState).toHaveBeenCalledWith('t1', 'hash');
+        expect(updateSessionState).toHaveBeenCalledWith('t1', 'hash', expect.objectContaining({
             attributionToken: 'attr_token_999',
             utmSource: 'meta',
             utmCampaign: 'blackfriday',
@@ -410,5 +416,97 @@ describe('WhatsApp Inbound Orchestrator', () => {
                 utmMedium: 'social'
             }
         }));
+    });
+
+    it('Shield 3: Should not crash inbound flow if attribution consumeByToken throws', async () => {
+        const payload = { ...defaultPayload, rawBodyText: 'ola token attr_crash' };
+        
+        const { getSessionState } = await import('@/modules/frank/session.repository');
+        (getSessionState as any).mockResolvedValue({ id: 'sess_123' });
+
+        const { extractAttributionTokenFromText } = await import('@/infra/attribution/token-parser');
+        (extractAttributionTokenFromText as any).mockReturnValue('attr_crash');
+
+        const { attributionClickRepository } = await import('@/infra/repositories/attribution-click.repository');
+        (attributionClickRepository.consumeByToken as any).mockRejectedValue(new Error('DB Timeout'));
+
+        const { funnelRepository } = await import('@/modules/funnel/funnel.repository');
+
+        const policy = await whatsappInboundOrchestrator.process(payload);
+        
+        // Assert orchestrator did not crash
+        expect(policy).toBeDefined();
+        expect(['SUPERVISED_NO_REPLY', 'AUTO_REPLY_ALLOWED', 'ACK_ONLY']).toContain(policy.type);
+        
+        // Assert funnel continued saving events
+        expect(funnelRepository.saveEvent).toHaveBeenCalledWith(expect.objectContaining({
+            stage: 'FLOW_STARTED'
+        }));
+    });
+
+    it('Shield 4: Should use real sessionState.id, not fromHash, in funnel events', async () => {
+        const payload = { ...defaultPayload, fromHash: 'invalid_hash_should_not_be_used' };
+        
+        const { getSessionState } = await import('@/modules/frank/session.repository');
+        (getSessionState as any).mockResolvedValue({ id: 'real_uuid_1234' });
+
+        const { funnelRepository } = await import('@/modules/funnel/funnel.repository');
+
+        await whatsappInboundOrchestrator.process(payload);
+
+        expect(funnelRepository.saveEvent).toHaveBeenCalledWith(expect.objectContaining({
+            sessionId: 'real_uuid_1234', // Must be real UUID
+            stage: 'FLOW_STARTED'
+        }));
+    });
+
+    it('Shield 5.1: Should NOT emit QUANTITY_PROVIDED if quantity is inferred or absent', async () => {
+        const payload = { ...defaultPayload, rawBodyText: 'CEP 01000-000' };
+        
+        const { getSessionState } = await import('@/modules/frank/session.repository');
+        (getSessionState as any).mockResolvedValue({ id: 'sess_123' });
+
+        const entityResolver = await import('@/modules/frank/entity-resolver');
+        const spy = vi.spyOn(entityResolver, 'resolveEntities').mockReturnValue({
+            entities: { quantity: null, product: null, orderId: null, documentType: null, volume: null },
+            confidence: 0.5,
+            raw: 'CEP 01000-000'
+        });
+
+        const { funnelRepository } = await import('@/modules/funnel/funnel.repository');
+        (funnelRepository.saveEvent as any).mockClear();
+
+        await whatsappInboundOrchestrator.process(payload);
+
+        const emitCalls = (funnelRepository.saveEvent as any).mock.calls;
+        const hasQuantityEmit = emitCalls.some((call: any[]) => call[0].stage === 'QUANTITY_PROVIDED');
+        
+        expect(hasQuantityEmit).toBe(false);
+        spy.mockRestore();
+    });
+
+    it('Shield 5.2: Should emit QUANTITY_PROVIDED if quantity is explicitly provided', async () => {
+        const payload = { ...defaultPayload, rawBodyText: '5 unidades para 01000-000' };
+        
+        const { getSessionState } = await import('@/modules/frank/session.repository');
+        (getSessionState as any).mockResolvedValue({ id: 'sess_123' });
+
+        const entityResolver = await import('@/modules/frank/entity-resolver');
+        const spy = vi.spyOn(entityResolver, 'resolveEntities').mockReturnValue({
+            entities: { quantity: 5, product: null, orderId: null, documentType: null, volume: null }, 
+            confidence: 0.9,
+            raw: '5 unidades para 01000-000'
+        });
+
+        const { funnelRepository } = await import('@/modules/funnel/funnel.repository');
+        (funnelRepository.saveEvent as any).mockClear();
+
+        await whatsappInboundOrchestrator.process(payload);
+
+        const emitCalls = (funnelRepository.saveEvent as any).mock.calls;
+        const hasQuantityEmit = emitCalls.some((call: any[]) => call[0].stage === 'QUANTITY_PROVIDED');
+        
+        expect(hasQuantityEmit).toBe(true);
+        spy.mockRestore();
     });
 });

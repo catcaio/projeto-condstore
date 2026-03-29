@@ -15,10 +15,10 @@ describe('Suggestion Events Typing', () => {
         emitSuggestionGenerated('t1', {
             suggestionId: 's1',
             sessionId: 'ses1',
+            conversationId: 'conv1',
             intent: 'greeting',
             confidence: 0.99
         });
-
         expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
             tenantId: 't1',
             eventType: 'frank_suggestion_generated',

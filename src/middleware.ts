@@ -90,8 +90,15 @@ function forbiddenJsonResponse(message = 'Forbidden'): NextResponse {
     });
 }
 
+function isPublicTrackingPath(pathname: string): boolean {
+    const segments = pathname.split('/').filter(Boolean);
+    return segments.length === 2 && segments[0] === 't';
+}
+
 export async function middleware(req: NextRequest) {
     const pathname = req.nextUrl.pathname;
+    const isTrackingPath = pathname.startsWith('/t/');
+    const isPublicTrackingRoute = isPublicTrackingPath(pathname);
 
     const requestHeaders = new Headers(req.headers);
     const clientIp = requestHeaders.get('x-forwarded-for');
@@ -138,7 +145,8 @@ export async function middleware(req: NextRequest) {
         pathname === '/api/health' ||
         pathname.startsWith('/api/auth/') ||
         pathname.startsWith('/api/whatsapp/') ||
-        pathname === '/api/cron/cleanup'
+        pathname === '/api/cron/cleanup' ||
+        isPublicTrackingRoute
     ) {
         return NextResponse.next({ request: { headers: requestHeaders } });
     }
@@ -189,7 +197,7 @@ export async function middleware(req: NextRequest) {
             });
             return unauthorizedJsonResponse('Missing authentication token');
         } else if (
-            pathname.startsWith('/t/') ||
+            isTrackingPath ||
             pathname.startsWith('/dashboard/') ||
             pathname.startsWith('/cockpit/') ||
             pathname.startsWith('/operacao/') ||
