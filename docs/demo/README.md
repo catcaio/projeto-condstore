@@ -48,6 +48,20 @@ Os 7 passos exatos da demo, com:
 
 ---
 
+
+### [demo-tenant-runbook.md](./demo-tenant-runbook.md)
+**Setup técnico reproduzível do tenant de demo/piloto**
+
+Inclui:
+- comando único de seed (`npm run seed:demo-tenant`)
+- variáveis opcionais para tenant/senha
+- garantias de idempotência e isolamento multi-tenant
+- validação objetiva pós-seed
+
+**Executar antes de cada demo e no bootstrap de piloto.**
+
+---
+
 ### [demo-dataset.md](./demo-dataset.md)
 **Dados fictícios padronizados**
 
@@ -65,14 +79,16 @@ Os 7 passos exatos da demo, com:
 ## Ordem de leitura
 
 **Antes da primeira demo:**
-1. `demo-dataset.md` — entender os dados que estarão no sistema
-2. `demo-script.md` — aprender o roteiro completo
-3. `demo-flow.md` — entender cada etapa tecnicamente
-4. `demo-checklist.md` — preparar o ambiente
+1. `demo-tenant-runbook.md` — executar o seed reproduzível
+2. `demo-dataset.md` — entender os dados que estarão no sistema
+3. `demo-script.md` — aprender o roteiro completo
+4. `demo-flow.md` — entender cada etapa tecnicamente
+5. `demo-checklist.md` — preparar o ambiente
 
 **Antes de cada demo subsequente:**
-1. `demo-checklist.md` — executar item a item (10 minutos)
-2. `demo-flow.md` — revisar as etapas (5 minutos)
+1. `demo-tenant-runbook.md` — reaplicar seed baseline
+2. `demo-checklist.md` — executar item a item (10 minutos)
+3. `demo-flow.md` — revisar as etapas (5 minutos)
 
 ---
 
