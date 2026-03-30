@@ -55,6 +55,7 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
     const [loadingMsgs, setLoadingMsgs] = useState(false);
     const [sending, setSending] = useState(false);
     const [creatingCustomer, setCreatingCustomer] = useState(false);
+    const [flowRefreshKey, setFlowRefreshKey] = useState(0);
     
     // UI state
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -205,6 +206,14 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
             console.error('Failed to approve suggestion', e);
         }
         return false;
+    };
+
+    const handleConversationFlowChanged = async () => {
+        if (!activeConvId) return;
+
+        await fetchMessages(activeConvId, true);
+        await fetchConversations();
+        setFlowRefreshKey(current => current + 1);
     };
 
     const StatusBadge = ({ status }: { status: string }) => {
@@ -494,8 +503,12 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                         {/* Ferramentas de Frete e Orders */}
                         <div className="flex-1">
                             <DynamicFieldsRenderer entity="conversation" entityId={activeConvId} />
-                            <OrderShipmentPanel conversationId={activeConvId} />
-                            <FreightQuotePanel conversationId={activeConvId} />
+                            <OrderShipmentPanel
+                                conversationId={activeConvId}
+                                refreshKey={flowRefreshKey}
+                                onFlowChanged={handleConversationFlowChanged}
+                            />
+                            <FreightQuotePanel conversationId={activeConvId} onFlowChanged={handleConversationFlowChanged} />
                             
                             <div className="mt-4 border-t border-[hsl(var(--ui-border))] px-4 pt-4 pb-8">
                                 <TimelineFeed entityId={activeConvId} title="Timeline" />
