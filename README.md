@@ -19,6 +19,8 @@ Links rápidos:
 
 > **Para qualquer pessoa revisando, implementando ou suportando CONDSTORE OS: Comece por [docs/mvp/README.md](docs/mvp/README.md)**
 
+Para demos/pilotos reproduzíveis, use o runbook em [`docs/demo/demo-tenant-runbook.md`](docs/demo/demo-tenant-runbook.md).
+
 ## Capacidades principais (implementadas no código)
 
 - **Atendimento WhatsApp com Twilio**: ingestão webhook, verificação de assinatura, resolução de tenant por número Twilio e políticas de resposta (`ACK_ONLY`, `SUPERVISED_NO_REPLY`, `AUTO_REPLY_ALLOWED`).
@@ -121,6 +123,7 @@ Sem `.env.example` versionado, então use como base os pontos abaixo.
 - `npm run routes:sync` — inventário/verificação de rotas.
 - `npm run routes:verify-security` — validação de guardas de segurança por rota.
 - `npm run db:verify` — verificação de drift de schema.
+- `npm run seed:demo-tenant` — cria dataset reproduzível de demo/piloto (tenant isolado).
 
 ## Segurança e guardrails
 
