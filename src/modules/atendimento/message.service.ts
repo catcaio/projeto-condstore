@@ -14,7 +14,7 @@
  */
 import { logger } from '@/infra/logger';
 import { getDb } from '@/infra/db';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, desc } from 'drizzle-orm';
 import { conversationMessages, conversations } from '@/drizzle/schema';
 import { operationalEvents } from '@/drizzle/schema';
 import { randomUUID } from 'crypto';
@@ -188,6 +188,29 @@ export const messageService = {
             const messageId = randomUUID();
             const advanceConversation = params.options?.advanceConversation ?? true;
 
+            const [lastInboundMessage] = await tx
+                .select({
+                    id: conversationMessages.id,
+                    createdAt: conversationMessages.createdAt,
+                })
+                .from(conversationMessages)
+                .where(
+                    and(
+                        eq(conversationMessages.tenantId, params.tenantId),
+                        eq(conversationMessages.conversationId, params.conversationId),
+                        eq(conversationMessages.direction, 'inbound'),
+                    ),
+                )
+                .orderBy(desc(conversationMessages.createdAt))
+                .limit(1);
+
+            const responseTimeMs =
+                params.source === 'OPERATOR' &&
+                params.actorType === 'HUMAN' &&
+                lastInboundMessage?.createdAt
+                    ? Math.max(0, Date.now() - new Date(lastInboundMessage.createdAt).getTime())
+                    : null;
+
             await tx.insert(conversationMessages).values({
                 id: messageId,
                 tenantId: params.tenantId,
@@ -220,6 +243,23 @@ export const messageService = {
                     messageId: messageId,
                 }
             });
+
+            if (responseTimeMs !== null) {
+                await tx.insert(operationalEvents).values({
+                    id: randomUUID(),
+                    tenantId: params.tenantId,
+                    eventType: 'message_replied',
+                    eventDomain: 'OPERATIONS',
+                    customerId: params.customerId ?? null,
+                    payload: {
+                        conversationId: params.conversationId,
+                        source: params.source,
+                        messageId,
+                        repliedToMessageId: lastInboundMessage?.id ?? null,
+                        responseTimeMs,
+                    },
+                });
+            }
 
             const [insertedMessage] = await tx.select()
                 .from(conversationMessages)
