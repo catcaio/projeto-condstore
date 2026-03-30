@@ -47,6 +47,14 @@ export interface RetentionMetrics {
     reactivated_customers_total: number;
 }
 
+export interface RoiPilotMetrics {
+    avg_response_time_seconds: number;
+    avg_quote_time_minutes: number;
+    orders_created_total: number;
+    handoffs_total: number;
+    operational_conversion_rate: number;
+}
+
 export interface TenantCoreMetrics {
     tenantId: string;
     range: { from: string; to: string };
@@ -55,6 +63,7 @@ export interface TenantCoreMetrics {
     operations: OperationsMetrics;
     revenue: RevenueMetrics;
     retention: RetentionMetrics;
+    roi: RoiPilotMetrics;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -78,6 +87,32 @@ async function countEvents(
             ),
         );
     return rows[0]?.total ?? 0;
+}
+
+
+async function avgNumericPayloadByEvent(
+    tenantId: string,
+    eventType: string,
+    payloadKey: string,
+    range: MetricsDateRange,
+): Promise<number> {
+    const db = await getDb();
+    const rows = await db
+        .select({
+            avgValue: sql<number>`AVG(CAST(JSON_UNQUOTE(JSON_EXTRACT(${operationalEvents.payload}, ${`$.${payloadKey}`})) AS DECIMAL(20,4)))`,
+        })
+        .from(operationalEvents)
+        .where(
+            and(
+                eq(operationalEvents.tenantId, tenantId),
+                eq(operationalEvents.eventType, eventType),
+                gte(operationalEvents.createdAt, range.from),
+                lte(operationalEvents.createdAt, range.to),
+            ),
+        );
+
+    const value = Number(rows[0]?.avgValue ?? 0);
+    return Number.isFinite(value) ? value : 0;
 }
 
 /** Safe division — returns 0 if denominator is 0. */
@@ -156,18 +191,49 @@ export async function getRetentionMetrics(
     return { repeat_orders_total, reactivated_customers_total };
 }
 
+
+export async function getRoiPilotMetrics(
+    tenantId: string,
+    range: MetricsDateRange,
+): Promise<RoiPilotMetrics> {
+    const [
+        avgResponseTimeMs,
+        avgQuoteTimeMs,
+        orders_created_total,
+        handoffs_total,
+        wonDeals,
+        quotedDeals,
+    ] = await Promise.all([
+        avgNumericPayloadByEvent(tenantId, 'message_replied', 'responseTimeMs', range),
+        avgNumericPayloadByEvent(tenantId, 'quote_created', 'quoteTimeMs', range),
+        countEvents(tenantId, 'order_created', range),
+        countEvents(tenantId, 'conversation_assigned', range),
+        countEvents(tenantId, 'deal_won', range),
+        countEvents(tenantId, 'quote_created', range),
+    ]);
+
+    return {
+        avg_response_time_seconds: Math.round((avgResponseTimeMs / 1000) * 100) / 100,
+        avg_quote_time_minutes: Math.round((avgQuoteTimeMs / (1000 * 60)) * 100) / 100,
+        orders_created_total,
+        handoffs_total,
+        operational_conversion_rate: safeRate(wonDeals, quotedDeals),
+    };
+}
+
 // ── getTenantCoreMetrics ──────────────────────────────────────────────────────
 
 export async function getTenantCoreMetrics(
     tenantId: string,
     range: MetricsDateRange,
 ): Promise<TenantCoreMetrics> {
-    const [acquisition, conversion, operations, revenue, retention] = await Promise.all([
+    const [acquisition, conversion, operations, revenue, retention, roi] = await Promise.all([
         getAcquisitionMetrics(tenantId, range),
         getConversionMetrics(tenantId, range),
         getOperationsMetrics(tenantId, range),
         getRevenueMetrics(tenantId, range),
         getRetentionMetrics(tenantId, range),
+        getRoiPilotMetrics(tenantId, range),
     ]);
 
     return {
@@ -178,5 +244,6 @@ export async function getTenantCoreMetrics(
         operations,
         revenue,
         retention,
+        roi,
     };
 }
