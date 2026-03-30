@@ -19,3 +19,35 @@
 - Rode `npm run scope:pr-tests` para descobrir o menor conjunto de comandos compatível com os arquivos alterados.
 - Registre evidência objetiva dos comandos executados e dos resultados na PR ou no fechamento da tarefa.
 - Se usar `ALLOW_FROZEN_SURFACE_CHANGES=1`, explique o motivo na PR e aponte qual critério de unfreeze foi atendido.
+
+
+## Agent Workflows
+
+Os seguintes playbooks estão disponíveis no repositório:
+
+### Core Rules
+- .agents/rules/condstore-core.md
+- .agents/rules/delivery-standard.md
+- .agents/rules/security-core.md
+
+### Workflows
+- .agents/workflows/backend-specialist.md
+- .agents/workflows/integration-flow-runner.md
+- .agents/workflows/debugger.md
+- .agents/workflows/pr-auditor.md
+- .agents/workflows/feature-shipper.md
+
+---
+
+## Como usar workflows
+
+Quando uma tarefa exigir um papel específico, o agente deve:
+
+1. Ler o workflow correspondente em `.agents/workflows/`
+2. Aplicar as regras em `.agents/rules/`
+3. Executar a tarefa respeitando o escopo do MVP e guardrails
+
+Se houver conflito:
+- regras do AGENTS.md prevalecem
+- depois rules/
+- depois workflow

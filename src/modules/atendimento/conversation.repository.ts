@@ -53,7 +53,7 @@ export const conversationRepository = {
                 and(
                     eq(conversations.tenantId, tenantId),
                     eq(conversations.phoneHash, phoneHash),
-                    inArray(conversations.status, ['new', 'triaged', 'awaiting_human', 'operator_active', 'draft_ready', 'approved'])
+                    inArray(conversations.status, ['new', 'triaged', 'awaiting_human', 'operator_active', 'draft_ready', 'approved', 'sent', 'delivered'])
                 )
             )
             .orderBy(desc(conversations.lastMessageAt))

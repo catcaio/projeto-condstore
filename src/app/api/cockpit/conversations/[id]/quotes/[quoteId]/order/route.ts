@@ -3,7 +3,26 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
+import { freightQuoteService } from '@/modules/atendimento/freight-quote.service';
 import { orderService } from '@/modules/atendimento/order.service';
+
+function classifyCreateOrderError(message: string) {
+    if (message.includes('A cotação está sendo processada')) {
+        return { code: 'LOCK_BUSY' as const, status: 409 };
+    }
+
+    if (
+        message.includes('Quote not found') ||
+        message.includes('Quote does not belong') ||
+        message.includes('Cannot convert') ||
+        message.includes('Quote already converted') ||
+        message.includes('A cotacao precisa estar aprovada')
+    ) {
+        return { code: 'VALIDATION_ERROR' as const, status: 400 };
+    }
+
+    return { code: 'INTERNAL_ERROR' as const, status: 500 };
+}
 
 export async function POST(
     request: NextRequest,
@@ -17,6 +36,15 @@ export async function POST(
 
     try {
         const { id: conversationId, quoteId } = await context.params;
+        const quote = await freightQuoteService.getQuoteById(tenantId, quoteId);
+
+        if (!quote) {
+            return errorResponse('NOT_FOUND' as any, 404, requestId, 'Quote not found');
+        }
+
+        if (quote.conversationId !== conversationId) {
+            return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Quote does not belong to this conversation');
+        }
 
         const newOrder = await orderService.createOrderFromQuote(
             tenantId,
@@ -28,6 +56,8 @@ export async function POST(
         return NextResponse.json({ ok: true, data: newOrder });
     } catch (err: any) {
         logger.error('Failed to create order from quote', err as Error, { requestId });
-        return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);
+        const message = err instanceof Error ? err.message : 'Failed to create order from quote';
+        const classification = classifyCreateOrderError(message);
+        return errorResponse(classification.code as any, classification.status, requestId, message);
     }
 }
