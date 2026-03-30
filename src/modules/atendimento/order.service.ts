@@ -40,7 +40,10 @@ export const orderService = {
 
         if (quote.expiresAt && new Date(quote.expiresAt) < new Date()) {
             // Mark it as expired dynamically if past date
-            await db.update(simulations).set({ status: 'EXPIRED' }).where(eq(simulations.id, quoteId));
+            await db
+                .update(simulations)
+                .set({ status: 'EXPIRED' })
+                .where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
             throw new Error('Cannot convert an expired quote');
         }
 
