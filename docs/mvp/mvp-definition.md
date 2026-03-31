@@ -21,7 +21,7 @@ O CONDSTORE OS centraliza três tarefas que hoje vivem em ferramentas separadas:
 
 - **Inbox WhatsApp:** recebe mensagens via Twilio, exibe com histórico do cliente
 - **Cotação multi-carrier:** consulta Melhor Envio API + carriers de tabela (Movvi, Mengue, Braspress) em paralelo
-- **Criação de pedido:** converte cotação aprovada em order com um clique
+- **Criação de pedido:** converte cotação aprovada (ACCEPTED) em pedido — inicia como DRAFT, operador confirma para acionar logística
 - **Fila de logística:** acompanhamento de status até a entrega
 - **Pipeline CRM:** Kanban de negociação por stage
 - **Gestão de clientes:** histórico consolidado de pedidos e interações
