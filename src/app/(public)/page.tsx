@@ -1,13 +1,12 @@
 import {
     Truck, BarChart3, Bot, MessageSquare, Shield, Zap,
     Package, Users, Clock, TrendingUp, Workflow, LayoutDashboard,
-    Target, Inbox, ScanSearch, FileCheck, MapPin,
-    Gauge, Smartphone,
+    Target, ScanSearch, FileCheck, Smartphone,
 } from 'lucide-react';
 import {
     PageContainer, PageSection, SectionIntro, HeroSection,
-    FeatureGrid, CTASection, ModuleGrid, ComparisonBand, OperationFlow,
-    FlowSection, TrustBand, FaqSection, ScrollReveal,
+    FeatureGrid, CTASection, ModuleGrid, ComparisonBand,
+    TrustBand, FaqSection, ScrollReveal, MvpCoreFlowSection,
 } from '@/ui/site';
 import Link from 'next/link';
 
@@ -115,7 +114,7 @@ export default function HomePage() {
                 </PageSection>
             </ScrollReveal>
 
-            {/* ━━━ 5. FLUXO INTERATIVO ━━━ */}
+            {/* ━━━ 5. FLUXO MVP SUPERVISIONADO ━━━ */}
             <ScrollReveal>
                 <PageSection spacing="xl" borderTop id="operacao">
                     <PageContainer>
@@ -123,72 +122,20 @@ export default function HomePage() {
                             {/* Left: editorial intro */}
                             <div className="lg:sticky lg:top-32">
                                 <SectionIntro
-                                    eyebrow="O sistema vivo"
-                                    title="Do WhatsApp ao cockpit em um único fluxo."
-                                    description="Cada etapa alimenta a próxima. O contexto nunca se perde. O operador nunca começa do zero."
+                                    eyebrow="Fluxo central do MVP"
+                                    title="WhatsApp → Cotação → Aprovação → Pedido → Logística → Cockpit."
+                                    description="Fluxo supervisionado, com gate de aprovação obrigatório e bloqueio automático sem aceite. Cada estado deixa trilha operacional auditável."
                                     align="left"
                                 />
-                                <div className="mt-8 flex items-center gap-4">
-                                    <div className="flex -space-x-1.5">
-                                        {['bg-[hsl(var(--ui-accent-blue))]', 'bg-[hsl(var(--ui-success))]', 'bg-[hsl(var(--ui-accent-blue-strong))]'].map((bg, i) => (
-                                            <div key={i} className={`h-8 w-8 rounded-full border-2 border-[hsl(var(--ui-page))] ${bg} flex items-center justify-center`}>
-                                                <span className="text-[9px] font-bold text-white">{['C', 'P', 'L'][i]}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <span className="text-xs text-[hsl(var(--ui-text-subtle))] font-medium">
-                                        Conversas → Pedidos → Logística
-                                    </span>
+                                <div className="mt-8 rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.4)] p-4">
+                                    <p className="text-[11px] uppercase tracking-[0.16em] font-semibold text-[hsl(var(--ui-text-subtle))]">Regra operacional</p>
+                                    <p className="mt-2 text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">
+                                        Sem aprovação explícita do cliente, a conversão não avança para pedido nem inicia logística.
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Right: the pipeline */}
-                            <div className="relative">
-                                <div className="absolute -top-8 -bottom-8 -left-4 -right-4 rounded-3xl border border-[hsl(var(--ui-border)/0.2)] bg-[hsl(var(--ui-surface)/0.15)]" />
-                                <div className="relative z-10 p-2 md:p-4">
-                                    <OperationFlow
-                                        steps={[
-                                            {
-                                                icon: Inbox,
-                                                label: 'Nova mensagem recebida',
-                                                detail: 'WhatsApp, portal ou API. O sistema captura e notifica em tempo real.',
-                                            },
-                                            {
-                                                icon: Users,
-                                                label: 'Cliente identificado',
-                                                detail: 'Perfil, histórico de pedidos e conversas anteriores carregados automaticamente.',
-                                                accent: 'var(--ui-success)',
-                                            },
-                                            {
-                                                icon: ScanSearch,
-                                                label: 'Intenção detectada',
-                                                detail: 'Frank Supremo analisa a mensagem e identifica: cotação, pedido, tracking ou suporte.',
-                                            },
-                                            {
-                                                icon: Zap,
-                                                label: 'Simulação criada',
-                                                detail: 'Cotação multi-transportadora gerada em milissegundos com margem calculada.',
-                                            },
-                                            {
-                                                icon: FileCheck,
-                                                label: 'Pedido confirmado',
-                                                detail: 'Pedido registrado com estado, responsável e timeline de eventos.',
-                                                accent: 'var(--ui-success)',
-                                            },
-                                            {
-                                                icon: MapPin,
-                                                label: 'Logística em andamento',
-                                                detail: 'Etiqueta gerada, coleta agendada, tracking ativo. Exceções detectadas.',
-                                            },
-                                            {
-                                                icon: Gauge,
-                                                label: 'Cockpit atualizado',
-                                                detail: 'Métricas, SLA e dashboards alimentados automaticamente. Ciclo fechado.',
-                                            },
-                                        ]}
-                                    />
-                                </div>
-                            </div>
+                            <MvpCoreFlowSection />
                         </div>
                     </PageContainer>
                 </PageSection>
