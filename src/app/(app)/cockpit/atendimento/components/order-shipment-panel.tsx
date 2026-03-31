@@ -1,9 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle2, ExternalLink, Loader2, Package, RefreshCw, ShieldCheck, Truck } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ExternalLink, Loader2, Package, RefreshCw, Truck } from 'lucide-react';
 import { DynamicFieldsRenderer } from '@/ui/cockpit/custom-fields/dynamic-fields-renderer';
-import { Badge } from '@/ui/components';
+import {
+    buildActionErrorFromResponse,
+    buildActionSuccess,
+    buildUnexpectedActionError,
+    InlineActionFeedback,
+    type ActionFeedbackState,
+} from './inline-action-feedback';
 
 interface ShipmentDetail {
     id: string;
@@ -21,105 +27,138 @@ interface OrderOverview {
 
 interface OrderShipmentPanelProps {
     conversationId: string;
-    refreshKey?: number;
-    onFlowChanged?: () => void | Promise<void>;
+    refreshToken?: number;
+    onFlowUpdated?: () => Promise<void> | void;
 }
 
-interface PanelNotice {
-    tone: 'success' | 'error';
-    title: string;
-    message: string;
-    requestId?: string;
+const ORDER_STATUS_LABELS: Record<string, string> = {
+    DRAFT: 'Rascunho operacional',
+    CONFIRMED: 'Confirmado',
+    PROCESSING: 'Em separacao',
+    SHIPPED: 'Em transporte',
+    DELIVERED: 'Entregue',
+    CANCELED: 'Cancelado',
+};
+
+const SHIPMENT_STATUS_LABELS: Record<string, string> = {
+    CREATED: 'Criado',
+    SCHEDULED: 'Agendado',
+    PICKED_UP: 'Coletado',
+    IN_TRANSIT: 'Em transito',
+    OUT_FOR_DELIVERY: 'Saiu para entrega',
+    DELIVERED: 'Entregue',
+    FAILED: 'Falha operacional',
+};
+
+function formatCurrency(value?: string) {
+    return `R$ ${Number(value || 0).toFixed(2).replace('.', ',')}`;
 }
 
-function getOrderStatusMeta(status: string) {
-    switch (status) {
-        case 'CONFIRMED':
-            return { label: 'Confirmado', variant: 'success' as const };
-        case 'PROCESSING':
-            return { label: 'Em separacao', variant: 'default' as const };
-        case 'SHIPPED':
-            return { label: 'Em transporte', variant: 'default' as const };
-        case 'DELIVERED':
-            return { label: 'Entregue', variant: 'success' as const };
-        case 'CANCELED':
-            return { label: 'Cancelado', variant: 'danger' as const };
-        default:
-            return { label: 'Rascunho', variant: 'outline' as const };
-    }
+function shortCode(id: string) {
+    return id.split('-')[0];
 }
 
-async function readApiError(response: Response, fallbackMessage: string) {
-    try {
-        const payload = await response.json();
+function getNextStep(order: OrderOverview | null, shipment: ShipmentDetail | null) {
+    if (!order) {
         return {
-            message: payload?.error?.message || fallbackMessage,
-            requestId: payload?.error?.requestId as string | undefined,
+            title: 'Pedido ainda nao criado',
+            description: 'Depois da aprovacao do cliente, gere o pedido em DRAFT a partir da cotacao enviada.',
         };
-    } catch {
-        return { message: fallbackMessage };
     }
+
+    if (order.status === 'DRAFT') {
+        return {
+            title: 'Confirmar pedido',
+            description: 'A confirmacao do pedido libera o shipment e inicia a execucao logistica real.',
+        };
+    }
+
+    if (!shipment) {
+        return {
+            title: 'Aguardando shipment',
+            description: 'O shipment nasce a partir da confirmacao. Atualize o painel se ele ainda nao apareceu.',
+        };
+    }
+
+    if (shipment.status === 'DELIVERED') {
+        return {
+            title: 'Shipment concluido',
+            description: 'Pedido e entrega fechados no fluxo supervisionado do MVP.',
+        };
+    }
+
+    return {
+        title: 'Acompanhar shipment',
+        description: `Shipment em ${SHIPMENT_STATUS_LABELS[shipment.status] ?? shipment.status.toLowerCase()}.`,
+    };
 }
 
-export default function OrderShipmentPanel({ conversationId, refreshKey = 0, onFlowChanged }: OrderShipmentPanelProps) {
+export default function OrderShipmentPanel({
+    conversationId,
+    refreshToken = 0,
+    onFlowUpdated,
+}: OrderShipmentPanelProps) {
     const [order, setOrder] = useState<OrderOverview | null>(null);
     const [shipment, setShipment] = useState<ShipmentDetail | null>(null);
     const [loading, setLoading] = useState(false);
     const [confirming, setConfirming] = useState(false);
-    const [notice, setNotice] = useState<PanelNotice | null>(null);
+    const [loadFeedback, setLoadFeedback] = useState<ActionFeedbackState | null>(null);
+    const [actionFeedback, setActionFeedback] = useState<ActionFeedbackState | null>(null);
 
-    const fetchData = async () => {
-        setLoading(true);
+    const fetchData = async (showLoading = true) => {
+        if (showLoading) {
+            setLoading(true);
+        }
+        setLoadFeedback(null);
+
         try {
-            // First find the order
             const orderRes = await fetch(`/api/cockpit/orders?conversationId=${conversationId}&limit=1`);
-            if (orderRes.ok) {
-                const json = await orderRes.json();
-                if (json.data && json.data.length > 0) {
-                    const foundOrder = json.data[0];
-                    setOrder(foundOrder);
-                    
-                    // Then find shipment
-                    const shipRes = await fetch(`/api/cockpit/orders/${foundOrder.id}/shipment`);
-                    if (shipRes.ok) {
-                        const shipJson = await shipRes.json();
-                        setShipment(shipJson.data || null);
-                        setNotice(null);
-                    } else {
-                        const error = await readApiError(shipRes, 'Nao foi possivel carregar o shipment deste pedido.');
-                        setShipment(null);
-                        setNotice({
-                            tone: 'error',
-                            title: 'Falha ao carregar shipment',
-                            message: error.message,
-                            requestId: error.requestId,
-                        });
-                    }
-                } else {
-                    setOrder(null);
-                    setShipment(null);
-                    setNotice(null);
-                }
-            } else {
-                const error = await readApiError(orderRes, 'Nao foi possivel carregar o pedido desta conversa.');
+            if (!orderRes.ok) {
                 setOrder(null);
                 setShipment(null);
-                setNotice({
-                    tone: 'error',
-                    title: 'Falha ao carregar pedido',
-                    message: error.message,
-                    requestId: error.requestId,
-                });
+                setLoadFeedback(await buildActionErrorFromResponse(
+                    orderRes,
+                    'Falha ao carregar pedido',
+                    'Nao foi possivel consultar o pedido vinculado a esta conversa.'
+                ));
+                return;
             }
-        } catch (err) {
-            console.error(err);
-            setNotice({
-                tone: 'error',
-                title: 'Falha ao carregar andamento',
-                message: 'Nao foi possivel atualizar pedido e logistica agora.',
-            });
+
+            const orderJson = await orderRes.json();
+            if (!orderJson.data || orderJson.data.length === 0) {
+                setOrder(null);
+                setShipment(null);
+                return;
+            }
+
+            const foundOrder = orderJson.data[0] as OrderOverview;
+            setOrder(foundOrder);
+
+            const shipRes = await fetch(`/api/cockpit/orders/${foundOrder.id}/shipment`);
+            if (!shipRes.ok) {
+                setShipment(null);
+                setLoadFeedback(await buildActionErrorFromResponse(
+                    shipRes,
+                    'Falha ao carregar shipment',
+                    'Nao foi possivel consultar o shipment deste pedido.'
+                ));
+                return;
+            }
+
+            const shipJson = await shipRes.json();
+            setShipment(shipJson.data || null);
+        } catch (error) {
+            console.error(error);
+            setOrder(null);
+            setShipment(null);
+            setLoadFeedback(buildUnexpectedActionError(
+                'Falha ao carregar painel',
+                'Nao foi possivel consultar pedido e shipment desta conversa.'
+            ));
         } finally {
-            setLoading(false);
+            if (showLoading) {
+                setLoading(false);
+            }
         }
     };
 
@@ -127,173 +166,181 @@ export default function OrderShipmentPanel({ conversationId, refreshKey = 0, onF
         if (conversationId) {
             void fetchData();
         }
-    }, [conversationId, refreshKey]);
+    }, [conversationId, refreshToken]);
 
     const handleConfirmOrder = async () => {
-        if (!order || confirming) return;
+        if (!order || order.status !== 'DRAFT') return;
 
         setConfirming(true);
-        setNotice(null);
+        setActionFeedback(null);
 
         try {
             const res = await fetch(`/api/cockpit/orders/${order.id}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'CONFIRMED' })
+                body: JSON.stringify({ status: 'CONFIRMED' }),
             });
 
             if (res.ok) {
-                await fetchData();
-                await Promise.resolve(onFlowChanged?.());
-                setNotice({
-                    tone: 'success',
-                    title: 'Pedido confirmado',
-                    message: 'A confirmacao foi registrada e o shipment foi aberto para a logistica.',
-                });
+                setActionFeedback(buildActionSuccess(
+                    'Pedido confirmado',
+                    'Pedido confirmado e shipment liberado para a operacao logistica.'
+                ));
+                await fetchData(false);
+                await Promise.resolve(onFlowUpdated?.());
             } else {
-                const error = await readApiError(res, 'Nao foi possivel confirmar o pedido.');
-                setNotice({
-                    tone: 'error',
-                    title: 'Confirmacao nao concluida',
-                    message: error.message,
-                    requestId: error.requestId,
-                });
+                setActionFeedback(await buildActionErrorFromResponse(
+                    res,
+                    'Falha ao confirmar pedido',
+                    'Nao foi possivel confirmar o pedido neste momento.'
+                ));
             }
-        } catch {
-            setNotice({
-                tone: 'error',
-                title: 'Falha na requisicao',
-                message: 'Nao foi possivel confirmar o pedido agora.',
-            });
+        } catch (error) {
+            console.error(error);
+            setActionFeedback(buildUnexpectedActionError(
+                'Falha ao confirmar pedido',
+                'Nao foi possivel concluir a requisicao de confirmacao.'
+            ));
         } finally {
             setConfirming(false);
         }
     };
 
-    if (loading && !order) {
-        return <div className="p-4 text-xs text-center text-[hsl(var(--ui-text-muted))]">Carregando andamento...</div>;
-    }
-
-    if (!order) return null; // Only show if an order exists!
-
-    const orderStatus = getOrderStatusMeta(order.status);
+    const nextStep = getNextStep(order, shipment);
 
     return (
         <div className="flex flex-col border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))]">
             <div className="p-4 flex justify-between items-center border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))]">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
-                    <Package className="w-4 h-4 text-[hsl(var(--ui-accent-blue))]" /> Pedido Gerado
+                    <Package className="w-4 h-4 text-[hsl(var(--ui-accent-blue))]" /> Pedido e Shipment
                 </h3>
-                <button onClick={fetchData} className="p-1 hover:bg-[hsl(var(--ui-bg-hover))] rounded-md" title="Atualizar">
+                <button onClick={() => void fetchData()} className="p-1 hover:bg-[hsl(var(--ui-bg-hover))] rounded-md" title="Atualizar">
                     <RefreshCw className={`w-3.5 h-3.5 text-[hsl(var(--ui-text-muted))] ${loading ? 'animate-spin' : ''}`} />
                 </button>
             </div>
-            
+
             <div className="p-4 flex flex-col gap-3">
-                <div className="flex justify-between items-center">
-                    <span className="text-xs font-medium text-[hsl(var(--ui-text-muted))]">Status do Pedido:</span>
-                    <Badge variant={orderStatus.variant}>{orderStatus.label}</Badge>
+                <div className="rounded-lg border border-[hsl(var(--ui-accent-blue)/0.18)] bg-[hsl(var(--ui-accent-blue)/0.08)] px-3 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--ui-accent-blue-ink))]">
+                        Proximo passo operacional
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text))]">{nextStep.title}</p>
+                    <p className="mt-1 text-sm leading-5 text-[hsl(var(--ui-text-muted))]">{nextStep.description}</p>
                 </div>
 
-                <div className="flex justify-between items-center">
-                    <span className="text-xs font-medium text-[hsl(var(--ui-text-muted))]">Valor Registrado:</span>
-                    <span className="text-xs font-bold text-[hsl(var(--ui-success-ink))]">R$ {Number(order.price || 0).toFixed(2).replace('.', ',')}</span>
-                </div>
+                <InlineActionFeedback feedback={loadFeedback} />
+                <InlineActionFeedback feedback={actionFeedback} />
 
-                {notice && (
-                    <div
-                        className={`rounded-md border p-3 ${
-                            notice.tone === 'success'
-                                ? 'border-[hsl(var(--ui-success)/0.3)] bg-[hsl(var(--ui-success)/0.08)] text-[hsl(var(--ui-success-ink))]'
-                                : 'border-[hsl(var(--ui-danger)/0.3)] bg-[hsl(var(--ui-danger)/0.08)] text-[hsl(var(--ui-danger-ink))]'
-                        }`}
-                    >
-                        <div className="flex items-start gap-2">
-                            {notice.tone === 'success' ? (
-                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                            ) : (
-                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                            )}
-                            <div className="min-w-0">
-                                <div className="text-xs font-semibold">{notice.title}</div>
-                                <div className="mt-1 text-xs leading-relaxed">{notice.message}</div>
-                                {notice.requestId && (
-                                    <div className="mt-1 text-[10px] opacity-80">Req. {notice.requestId}</div>
-                                )}
-                            </div>
-                        </div>
+                {loading && !order ? (
+                    <div className="text-xs text-center text-[hsl(var(--ui-text-muted))] py-4">Carregando andamento operacional...</div>
+                ) : !order ? (
+                    <div className="rounded-lg border border-dashed border-[hsl(var(--ui-border-strong))] bg-white px-4 py-4">
+                        <p className="text-sm font-medium text-[hsl(var(--ui-text))]">Nenhum pedido vinculado a esta conversa.</p>
+                        <p className="mt-1 text-sm leading-5 text-[hsl(var(--ui-text-muted))]">
+                            Quando o cliente aprovar a cotacao enviada, gere o pedido em DRAFT neste mesmo fluxo.
+                        </p>
                     </div>
-                )}
-
-                {order.status === 'DRAFT' && (
-                    <div className="rounded-md border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] px-3 py-2 text-xs text-[hsl(var(--ui-text-muted))]">
-                        <div className="font-medium text-[hsl(var(--ui-text))]">Pedido criado com sucesso.</div>
-                        <div className="mt-1 leading-relaxed">
-                            O proximo passo operacional e confirmar o pedido para abrir a logistica sem sair desta conversa.
-                        </div>
-                        <button
-                            onClick={handleConfirmOrder}
-                            disabled={confirming}
-                            className="mt-3 inline-flex items-center gap-2 rounded-md bg-[hsl(var(--ui-accent-blue))] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
-                        >
-                            {confirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                            Confirmar pedido e abrir shipment
-                        </button>
-                    </div>
-                )}
-
-                {/* Shipment Details */}
-                <div className="mt-2 pt-3 border-t border-[hsl(var(--ui-border))]">
-                    <div className="flex items-center gap-1.5 mb-2">
-                        <Truck className="w-3.5 h-3.5 text-[hsl(var(--ui-text-muted))]" />
-                        <span className="text-xs font-semibold text-[hsl(var(--ui-text-muted))] uppercase tracking-wider">Logística e Entrega</span>
-                    </div>
-
-                    {!shipment ? (
-                        <div className="text-xs text-[hsl(var(--ui-text-muted))] italic">
-                            {order.status === 'DRAFT'
-                                ? 'Shipment ainda nao foi aberto porque o pedido segue em rascunho.'
-                                : 'Shipment ainda nao vinculado a este pedido.'}
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-2 mt-2">
-                            <div className="flex flex-col gap-0.5">
-                                <span className="text-[10px] text-[hsl(var(--ui-text-muted))]">Transportadora</span>
-                                <span className="text-xs font-medium">{shipment.carrier}</span>
-                            </div>
-                            
-                            <div className="flex flex-col gap-0.5">
-                                <span className="text-[10px] text-[hsl(var(--ui-text-muted))]">Status</span>
-                                <span className="text-xs font-semibold text-blue-700">{shipment.status}</span>
+                ) : (
+                    <>
+                        <div className="rounded-lg border border-[hsl(var(--ui-border))] bg-white px-3 py-3">
+                            <div className="flex justify-between items-center gap-3">
+                                <div>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-muted))]">
+                                        Pedido
+                                    </p>
+                                    <p className="mt-1 text-sm font-medium text-[hsl(var(--ui-text))]">
+                                        #{shortCode(order.id)}
+                                    </p>
+                                </div>
+                                <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-700">
+                                    {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                                </span>
                             </div>
 
-                            {shipment.trackingCode && shipment.trackingUrl && (
-                                <a 
-                                    href={shipment.trackingUrl} 
-                                    target="_blank" 
-                                    rel="noreferrer"
-                                    className="mt-1 flex items-center justify-between p-2 rounded border border-[hsl(var(--ui-border))] bg-white hover:bg-gray-50 transition-colors"
+                            <div className="mt-3 flex justify-between items-center">
+                                <span className="text-xs font-medium text-[hsl(var(--ui-text-muted))]">Valor registrado</span>
+                                <span className="text-sm font-bold text-[hsl(var(--ui-success-ink))]">{formatCurrency(order.price)}</span>
+                            </div>
+
+                            {order.status === 'DRAFT' ? (
+                                <button
+                                    onClick={handleConfirmOrder}
+                                    disabled={confirming}
+                                    className="mt-4 w-full rounded-md bg-[hsl(var(--ui-accent-blue))] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[hsl(var(--ui-accent-blue-hover))] disabled:opacity-50"
                                 >
-                                    <div className="flex flex-col gap-0.5">
-                                        <span className="text-[10px] text-[hsl(var(--ui-text-muted))]">Código de Rastreio</span>
-                                        <span className="text-xs font-bold font-mono text-[hsl(var(--ui-accent-blue))]">{shipment.trackingCode}</span>
+                                    {confirming ? (
+                                        <span className="inline-flex items-center gap-2">
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            Confirmando pedido...
+                                        </span>
+                                    ) : (
+                                        'Confirmar pedido e abrir shipment'
+                                    )}
+                                </button>
+                            ) : (
+                                <p className="mt-4 text-xs leading-5 text-[hsl(var(--ui-text-muted))]">
+                                    Pedido ja confirmado no fluxo operacional. O proximo passo agora e acompanhar a execucao do shipment.
+                                </p>
+                            )}
+
+                            <a href={`/cockpit/orders/${order.id}`} className="mt-4 inline-flex text-xs text-[hsl(var(--ui-accent-blue))] hover:underline font-medium">
+                                Ver detalhes do pedido
+                            </a>
+                        </div>
+
+                        <div className="rounded-lg border border-[hsl(var(--ui-border))] bg-white px-3 py-3">
+                            <div className="flex items-center gap-1.5">
+                                <Truck className="w-3.5 h-3.5 text-[hsl(var(--ui-text-muted))]" />
+                                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-muted))]">
+                                    Shipment
+                                </span>
+                            </div>
+
+                            {!shipment ? (
+                                <p className="mt-3 text-sm leading-5 text-[hsl(var(--ui-text-muted))]">
+                                    {order.status === 'DRAFT'
+                                        ? 'O shipment sera criado automaticamente depois da confirmacao do pedido.'
+                                        : 'Shipment ainda nao encontrado. Atualize o painel para sincronizar o contexto real da operacao.'}
+                                </p>
+                            ) : (
+                                <div className="mt-3 flex flex-col gap-3">
+                                    <div className="flex justify-between items-center gap-3">
+                                        <div>
+                                            <p className="text-[10px] text-[hsl(var(--ui-text-muted))] uppercase">Transportadora</p>
+                                            <p className="text-sm font-medium text-[hsl(var(--ui-text))]">{shipment.carrier}</p>
+                                        </div>
+                                        <span className="rounded-full bg-[hsl(var(--ui-accent-blue)/0.08)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[hsl(var(--ui-accent-blue-ink))]">
+                                            {SHIPMENT_STATUS_LABELS[shipment.status] ?? shipment.status}
+                                        </span>
                                     </div>
-                                    <ExternalLink className="w-4 h-4 text-[hsl(var(--ui-accent-blue))]" />
-                                </a>
+
+                                    {shipment.trackingCode && shipment.trackingUrl ? (
+                                        <a
+                                            href={shipment.trackingUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex items-center justify-between rounded border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))] px-3 py-2 hover:bg-white transition-colors"
+                                        >
+                                            <div>
+                                                <p className="text-[10px] text-[hsl(var(--ui-text-muted))] uppercase">Codigo de rastreio</p>
+                                                <p className="mt-1 font-mono text-sm font-semibold text-[hsl(var(--ui-accent-blue))]">
+                                                    {shipment.trackingCode}
+                                                </p>
+                                            </div>
+                                            <ExternalLink className="w-4 h-4 text-[hsl(var(--ui-accent-blue))]" />
+                                        </a>
+                                    ) : null}
+                                </div>
                             )}
                         </div>
-                    )}
-                </div>
 
-                {shipment && shipment.id && (
-                    <div className="mt-4 pt-4 border-t border-[hsl(var(--ui-border))]">
-                        <DynamicFieldsRenderer entity="shipment" entityId={shipment.id} />
-                    </div>
+                        {shipment?.id ? (
+                            <div className="mt-1 pt-1 border-t border-[hsl(var(--ui-border))]">
+                                <DynamicFieldsRenderer entity="shipment" entityId={shipment.id} />
+                            </div>
+                        ) : null}
+                    </>
                 )}
-
-                <a href={`/cockpit/orders/${order.id}`} className="mt-2 text-center text-xs text-[hsl(var(--ui-accent-blue))] hover:underline font-medium">
-                    Abrir pedido
-                </a>
             </div>
         </div>
     );

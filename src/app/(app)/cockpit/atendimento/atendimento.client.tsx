@@ -6,19 +6,43 @@ import { ptBR } from 'date-fns/locale';
 import { Send, User, Clock, Check, RefreshCw, AlertCircle, Phone, History, X, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
 import { Badge } from '@/ui/components';
 import FreightQuotePanel from './components/freight-quote-panel';
-import PipelineActions from './components/pipeline-actions';
 import OrderShipmentPanel from './components/order-shipment-panel';
 import { FrankSuggestionPanel } from './components/frank-suggestion-panel';
+import {
+    buildActionErrorFromResponse,
+    buildActionSuccess,
+    buildUnexpectedActionError,
+    InlineActionFeedback,
+    type ActionFeedbackState,
+} from './components/inline-action-feedback';
 import { DynamicFieldsRenderer } from '@/ui/cockpit/custom-fields/dynamic-fields-renderer';
 import { TimelineFeed } from '@/ui/timeline/timeline-feed';
-import { PlaybookQuickActions } from '@/ui/playbooks/playbook-quick-actions';
+
+type ConversationStage = 'NEW_LEAD' | 'IN_ATTENDANCE' | 'QUOTED' | 'WON' | 'LOST';
+type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'CONVERTED' | 'EXPIRED' | 'LOST' | 'CANCELED';
+type OrderStatus = 'DRAFT' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
+
+interface ConversationQuoteContext {
+    quoteId: string;
+    status: QuoteStatus | string;
+    createdAt: string;
+    sentAt?: string | null;
+    isExpired?: boolean;
+}
+
+interface ConversationOrderContext {
+    orderId: string;
+    status: OrderStatus | string;
+    createdAt: string;
+    lastStatusUpdateAt?: string;
+}
 
 interface Conversation {
     id: string;
     phoneHash?: string;
     phone?: string;
-    status: 'OPEN' | 'WAITING_CUSTOMER' | 'WAITING_INTERNAL' | 'RESOLVED';
-    stage?: 'NEW' | 'QUALIFYING' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST';
+    status: string;
+    stage?: ConversationStage;
     assignedTo?: string;
     lastMessageAt: string;
     customer?: {
@@ -34,8 +58,9 @@ interface Conversation {
         currentStep?: string;
         contextJson?: any;
     };
+    quoteContext?: ConversationQuoteContext[];
+    orderContext?: ConversationOrderContext[];
 }
-
 
 interface Message {
     id: string;
@@ -45,23 +70,216 @@ interface Message {
     createdAt: string;
 }
 
-export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
+interface FlowStep {
+    label: string;
+    state: 'done' | 'current' | 'pending';
+    detail: string;
+}
+
+const STAGE_LABELS: Record<ConversationStage, string> = {
+    NEW_LEAD: 'Novo lead',
+    IN_ATTENDANCE: 'Em atendimento',
+    QUOTED: 'Cotado',
+    WON: 'Ganho',
+    LOST: 'Perdido',
+};
+
+const QUOTE_STATUS_LABELS: Record<string, string> = {
+    DRAFT: 'rascunho',
+    SENT: 'enviada',
+    ACCEPTED: 'aprovada',
+    CONVERTED: 'convertida',
+    EXPIRED: 'expirada',
+    LOST: 'perdida',
+    CANCELED: 'cancelada',
+};
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+    DRAFT: 'rascunho operacional',
+    CONFIRMED: 'confirmado',
+    PROCESSING: 'em separação',
+    SHIPPED: 'em transporte',
+    DELIVERED: 'entregue',
+    CANCELED: 'cancelado',
+};
+
+const CONVERSATION_STATUS_META: Record<string, { label: string; variant: 'default' | 'danger' | 'outline' | 'success' | 'muted' }> = {
+    OPEN: { label: 'Novo', variant: 'default' },
+    WAITING_INTERNAL: { label: 'Aguardando Operador', variant: 'danger' },
+    WAITING_CUSTOMER: { label: 'Aguardando Cliente', variant: 'outline' },
+    RESOLVED: { label: 'Resolvido', variant: 'success' },
+    new: { label: 'Novo', variant: 'default' },
+    triaged: { label: 'Triado', variant: 'muted' },
+    awaiting_human: { label: 'Aguardando operador', variant: 'danger' },
+    operator_active: { label: 'Em atendimento', variant: 'default' },
+    sent: { label: 'Aguardando cliente', variant: 'outline' },
+    draft_ready: { label: 'Rascunho pronto', variant: 'muted' },
+    approved: { label: 'Aprovado', variant: 'success' },
+};
+
+function getLatestQuote(conversation: Conversation | null) {
+    return conversation?.quoteContext?.[0] ?? null;
+}
+
+function getLatestOrder(conversation: Conversation | null) {
+    return conversation?.orderContext?.[0] ?? null;
+}
+
+function shortCode(id: string) {
+    return id.split('-')[0];
+}
+
+function getFlowStyles(state: FlowStep['state']) {
+    if (state === 'done') {
+        return {
+            container: 'border-[hsl(var(--ui-success)/0.2)] bg-[hsl(var(--ui-success)/0.08)]',
+            dot: 'bg-[hsl(var(--ui-success))]',
+            label: 'text-[hsl(var(--ui-success-ink))]',
+        };
+    }
+
+    if (state === 'current') {
+        return {
+            container: 'border-[hsl(var(--ui-accent-blue)/0.2)] bg-[hsl(var(--ui-accent-blue)/0.08)]',
+            dot: 'bg-[hsl(var(--ui-accent-blue))]',
+            label: 'text-[hsl(var(--ui-accent-blue-ink))]',
+        };
+    }
+
+    return {
+        container: 'border-[hsl(var(--ui-border))] bg-white',
+        dot: 'bg-gray-300',
+        label: 'text-[hsl(var(--ui-text))]',
+    };
+}
+
+function getOperationalFlow(conversation: Conversation | null) {
+    const latestQuote = getLatestQuote(conversation);
+    const latestOrder = getLatestOrder(conversation);
+    const quoteStatus = latestQuote?.status ?? null;
+    const orderStatus = latestOrder?.status ?? null;
+    const quoteStatusLabel = quoteStatus ? (QUOTE_STATUS_LABELS[quoteStatus] ?? quoteStatus.toLowerCase()) : null;
+    const orderExists = Boolean(latestOrder);
+    const shipmentStarted = orderStatus ? ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'].includes(orderStatus) : false;
+    const quoteStepState: FlowStep['state'] = !latestQuote
+        ? 'current'
+        : quoteStatus === 'DRAFT'
+            ? 'current'
+            : 'done';
+    const approvalStepState: FlowStep['state'] =
+        orderExists || quoteStatus === 'ACCEPTED' || quoteStatus === 'CONVERTED'
+            ? 'done'
+            : quoteStatus === 'SENT'
+                ? 'current'
+                : 'pending';
+
+    let nextStepTitle = 'Gerar cotação operacional';
+    let nextStepDescription = 'Simule a primeira cotação a partir desta conversa para seguir no fluxo supervisionado.';
+
+    if (quoteStatus === 'DRAFT') {
+        nextStepTitle = 'Enviar cotação ao cliente';
+        nextStepDescription = 'Publique a cotação no WhatsApp antes de registrar qualquer aprovação.';
+    } else if (quoteStatus === 'SENT') {
+        nextStepTitle = 'Registrar aprovação do cliente';
+        nextStepDescription = 'Quando o cliente confirmar no WhatsApp, registre a aprovação da cotação antes de abrir o pedido em DRAFT.';
+    } else if (quoteStatus === 'ACCEPTED' && !orderExists) {
+        nextStepTitle = 'Criar pedido DRAFT';
+        nextStepDescription = 'A aprovação já está registrada. Gere o pedido operacional em DRAFT para seguir.';
+    } else if (orderStatus === 'DRAFT') {
+        nextStepTitle = 'Confirmar pedido';
+        nextStepDescription = 'A confirmação libera a criação do shipment e inicia a execução logística.';
+    } else if (shipmentStarted && orderStatus !== 'DELIVERED') {
+        nextStepTitle = 'Acompanhar shipment';
+        nextStepDescription = 'O pedido já foi confirmado e o shipment está em andamento no fluxo real do MVP.';
+    } else if (orderStatus === 'DELIVERED') {
+        nextStepTitle = 'Fluxo concluído';
+        nextStepDescription = 'Pedido e shipment concluídos sem pendência operacional nesta conversa.';
+    }
+
+    const approvalDetail = !latestQuote
+        ? 'A aprovação só entra no fluxo depois de existir uma cotação.'
+        : quoteStatus === 'DRAFT'
+            ? 'Envie a cotação ao cliente antes de registrar aprovação.'
+            : quoteStatus === 'SENT'
+                ? 'Use a ação de aprovação somente após a confirmação do cliente no WhatsApp.'
+            : quoteStatus === 'ACCEPTED'
+                ? 'Aprovação registrada para gerar o pedido.'
+                : quoteStatus === 'CONVERTED'
+                    ? 'A aprovação já foi convertida em pedido.'
+                    : `Cotação ${quoteStatusLabel ?? 'em andamento'}.`;
+
+    const steps: FlowStep[] = [
+        {
+            label: 'WhatsApp',
+            state: 'done',
+            detail: 'Canal supervisionado ativo nesta conversa.',
+        },
+        {
+            label: 'Cotação',
+            state: quoteStepState,
+            detail: latestQuote
+                ? `Cotação ${quoteStatusLabel ?? 'gerada'} no contexto operacional.`
+                : 'Gerar a cotação operacional a partir do atendimento.',
+        },
+        {
+            label: 'Aprovação',
+            state: approvalStepState,
+            detail: approvalDetail,
+        },
+        {
+            label: 'Pedido DRAFT',
+            state: orderExists ? 'done' : quoteStatus === 'ACCEPTED' ? 'current' : 'pending',
+            detail: latestOrder
+                ? `Pedido #${shortCode(latestOrder.orderId)} em ${ORDER_STATUS_LABELS[latestOrder.status] ?? latestOrder.status.toLowerCase()}.`
+                : 'O pedido nasce somente depois da aprovação do cliente.',
+        },
+        {
+            label: 'Confirmação',
+            state: shipmentStarted ? 'done' : orderStatus === 'DRAFT' ? 'current' : 'pending',
+            detail: orderStatus === 'DRAFT'
+                ? 'Confirmar o pedido para liberar o shipment.'
+                : shipmentStarted
+                    ? 'Pedido confirmado e liberado para logística.'
+                    : 'A confirmação só fica disponível após criar o pedido DRAFT.',
+        },
+        {
+            label: 'Shipment',
+            state: orderStatus === 'DELIVERED' ? 'done' : shipmentStarted ? 'current' : 'pending',
+            detail: orderStatus === 'DELIVERED'
+                ? 'Shipment concluído.'
+                : shipmentStarted
+                    ? 'Shipment em andamento após a confirmação.'
+                    : 'O shipment nasce a partir da confirmação do pedido.',
+        },
+    ];
+
+    return {
+        nextStepTitle,
+        nextStepDescription,
+        steps,
+    };
+}
+
+export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: string }) {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeConvId, setActiveConvId] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [activeConvDetails, setActiveConvDetails] = useState<Conversation | null>(null);
-    
+
     const [loadingList, setLoadingList] = useState(true);
     const [loadingMsgs, setLoadingMsgs] = useState(false);
     const [sending, setSending] = useState(false);
     const [creatingCustomer, setCreatingCustomer] = useState(false);
-    const [flowRefreshKey, setFlowRefreshKey] = useState(0);
-    
+
     // UI state
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isContextOpen, setIsContextOpen] = useState(false); // Controls 3rd pane on <2xl screens
-    
+
     const [draftText, setDraftText] = useState('');
+    const [customerDraftName, setCustomerDraftName] = useState('');
+    const [composerFeedback, setComposerFeedback] = useState<ActionFeedbackState | null>(null);
+    const [contextFeedback, setContextFeedback] = useState<ActionFeedbackState | null>(null);
+    const [contextRefreshToken, setContextRefreshToken] = useState(0);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const abortControllers = useRef<{
@@ -109,6 +327,19 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
         }
     };
 
+    const refreshActiveConversation = async (conversationId = activeConvId) => {
+        if (!conversationId) {
+            await fetchConversations();
+            return;
+        }
+
+        await Promise.all([
+            fetchConversations(),
+            fetchMessages(conversationId, true),
+        ]);
+        setContextRefreshToken((current) => current + 1);
+    };
+
     useEffect(() => {
         fetchConversations();
         const t = setInterval(fetchConversations, 15000); // poll list every 15s
@@ -140,9 +371,16 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    useEffect(() => {
+        setComposerFeedback(null);
+        setContextFeedback(null);
+        setCustomerDraftName('');
+    }, [activeConvId]);
+
     const handleSend = async () => {
         if (!draftText.trim() || !activeConvId) return;
         setSending(true);
+        setComposerFeedback(null);
         try {
             const res = await fetch(`/api/cockpit/conversations/${activeConvId}/message`, {
                 method: 'POST',
@@ -151,39 +389,59 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
             });
             if (res.ok) {
                 setDraftText('');
-                fetchMessages(activeConvId, true);
-                fetchConversations();
+                setComposerFeedback(buildActionSuccess(
+                    'Mensagem enviada',
+                    'Resposta publicada no WhatsApp e contexto do atendimento atualizado.'
+                ));
+                await refreshActiveConversation(activeConvId);
             } else {
-                alert('Erro ao enviar a mensagem.');
+                setComposerFeedback(await buildActionErrorFromResponse(
+                    res,
+                    'Falha ao enviar mensagem',
+                    'Nao foi possivel publicar a mensagem no WhatsApp.'
+                ));
             }
-        } catch (e) {
-            alert('Falha na requisição.');
+        } catch {
+            setComposerFeedback(buildUnexpectedActionError(
+                'Falha ao enviar mensagem',
+                'Nao foi possivel concluir a requisicao do WhatsApp.'
+            ));
         } finally {
             setSending(false);
         }
     };
 
     const handleCreateCustomer = async () => {
-        if (!activeConvId) return;
-        const name = prompt('Nome do contato/empresa:');
-        if (!name) return;
-        
+        if (!activeConvId || !customerDraftName.trim()) return;
+
         setCreatingCustomer(true);
+        setContextFeedback(null);
         try {
             const res = await fetch(`/api/cockpit/conversations/${activeConvId}/customer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ name: customerDraftName.trim() }),
             });
             if (res.ok) {
-                fetchMessages(activeConvId, true);
-                fetchConversations();
+                setCustomerDraftName('');
+                setContextFeedback(buildActionSuccess(
+                    'Cliente identificado',
+                    'A conversa agora esta vinculada a um cadastro operacional.'
+                ));
+                await refreshActiveConversation(activeConvId);
             } else {
-                alert('Erro ao criar cliente.');
+                setContextFeedback(await buildActionErrorFromResponse(
+                    res,
+                    'Falha ao identificar cliente',
+                    'Nao foi possivel vincular a conversa a um cadastro.'
+                ));
             }
-        } catch(e) {
-            console.error(e);
-            alert('Falha na requisição.');
+        } catch (error) {
+            console.error(error);
+            setContextFeedback(buildUnexpectedActionError(
+                'Falha ao identificar cliente',
+                'Nao foi possivel concluir a requisicao de cadastro.'
+            ));
         } finally {
             setCreatingCustomer(false);
         }
@@ -191,6 +449,7 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
 
     const handleApproveAndSend = async (text: string, suggestionId: string) => {
         if (!activeConvId) return false;
+        setComposerFeedback(null);
         try {
             const approveRes = await fetch(`/api/cockpit/frank/suggestions/${suggestionId}/approve`, {
                 method: 'POST',
@@ -198,33 +457,34 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                 body: JSON.stringify({ finalResponse: text }),
             });
             if (approveRes.ok) {
-                fetchMessages(activeConvId, true);
-                fetchConversations();
+                setComposerFeedback(buildActionSuccess(
+                    'Sugestao aprovada e enviada',
+                    'A resposta foi publicada no WhatsApp e o contexto foi recarregado.'
+                ));
+                await refreshActiveConversation(activeConvId);
                 return true;
             }
+            setComposerFeedback(await buildActionErrorFromResponse(
+                approveRes,
+                'Falha ao aprovar sugestao',
+                'Nao foi possivel aprovar e enviar a sugestao neste momento.'
+            ));
         } catch (e) {
             console.error('Failed to approve suggestion', e);
+            setComposerFeedback(buildUnexpectedActionError(
+                'Falha ao aprovar sugestao',
+                'Nao foi possivel concluir a aprovacao no fluxo supervisionado.'
+            ));
         }
         return false;
     };
 
-    const handleConversationFlowChanged = async () => {
-        if (!activeConvId) return;
-
-        await fetchMessages(activeConvId, true);
-        await fetchConversations();
-        setFlowRefreshKey(current => current + 1);
-    };
-
     const StatusBadge = ({ status }: { status: string }) => {
-        switch (status) {
-            case 'OPEN': return <Badge variant="default">Novo</Badge>;
-            case 'WAITING_INTERNAL': return <Badge variant="danger">Aguardando Operador</Badge>;
-            case 'WAITING_CUSTOMER': return <Badge variant="outline">Aguardando Cliente</Badge>;
-            case 'RESOLVED': return <Badge variant="success">Resolvido</Badge>;
-            default: return <Badge variant="muted">{status}</Badge>;
-        }
+        const meta = CONVERSATION_STATUS_META[status];
+        return <Badge variant={meta?.variant ?? 'muted'}>{meta?.label ?? status}</Badge>;
     };
+
+    const operationalFlow = getOperationalFlow(activeConvDetails);
 
     return (
         <div className="flex bg-[hsl(var(--ui-bg-subtle))] overflow-hidden absolute inset-0">
@@ -332,20 +592,48 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                                     </button>
                                 </div>
                             </div>
-                            
-                            
-                            <div className="bg-gradient-to-r from-gray-50 to-white px-4 py-2.5 rounded-lg border border-gray-100 shadow-sm">
-                                <div className="flex justify-between items-center mb-1.5">
-                                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Pipeline de Vendas (CRM)</span>
+                            <div className="bg-gradient-to-r from-gray-50 to-white px-4 py-3 rounded-lg border border-gray-100 shadow-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Fluxo Supervisionado do MVP</span>
+                                    {activeConvDetails.stage ? (
+                                        <span className="rounded-full border border-[hsl(var(--ui-border))] bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-muted))]">
+                                            {STAGE_LABELS[activeConvDetails.stage] ?? activeConvDetails.stage}
+                                        </span>
+                                    ) : null}
                                 </div>
-                                <PipelineActions 
-                                    conversationId={activeConvId} 
-                                    currentStage={activeConvDetails.stage || 'NEW'} 
-                                    onStageChanged={() => {
-                                        fetchMessages(activeConvId, true);
-                                        fetchConversations();
-                                    }} 
-                                />
+                                <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                                    {operationalFlow.steps.map((step) => {
+                                        const styles = getFlowStyles(step.state);
+
+                                        return (
+                                            <div
+                                                key={step.label}
+                                                className={`rounded-lg border px-3 py-3 ${styles.container}`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`h-2 w-2 rounded-full ${styles.dot}`} />
+                                                    <span className={`text-xs font-semibold uppercase tracking-[0.12em] ${styles.label}`}>
+                                                        {step.label}
+                                                    </span>
+                                                </div>
+                                                <p className="mt-2 text-sm leading-5 text-[hsl(var(--ui-text-muted))]">
+                                                    {step.detail}
+                                                </p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="mt-3 rounded-lg border border-[hsl(var(--ui-accent-blue)/0.18)] bg-[hsl(var(--ui-accent-blue)/0.08)] px-3 py-3">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--ui-accent-blue-ink))]">
+                                        Proximo passo operacional
+                                    </p>
+                                    <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text))]">
+                                        {operationalFlow.nextStepTitle}
+                                    </p>
+                                    <p className="mt-1 text-sm leading-5 text-[hsl(var(--ui-text-muted))]">
+                                        {operationalFlow.nextStepDescription}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                         
@@ -370,7 +658,8 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                             <div ref={messagesEndRef} className="h-4" />
                         </div>
 
-                        <div className="px-3 md:px-6 shrink-0 z-10 sticky bottom-[116px] md:bottom-[132px]">
+                        <div className="px-3 md:px-6 shrink-0 z-10 sticky bottom-[116px] md:bottom-[132px] space-y-3">
+                            <InlineActionFeedback feedback={composerFeedback} />
                             <FrankSuggestionPanel 
                                 conversationId={activeConvId} 
                                 onApproveAndSend={handleApproveAndSend} 
@@ -427,7 +716,7 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                     `}>
                         <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-gray-50/80 sticky top-0 z-10 shrink-0 flex justify-between items-center">
                             <h3 className="font-bold text-sm text-[hsl(var(--ui-text))] flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-purple-600" /> Contexto & Ferramentas
+                                <Sparkles className="w-4 h-4 text-purple-600" /> Contexto Operacional
                             </h3>
                             <button 
                                 className="2xl:hidden bg-white hover:bg-gray-100 p-1.5 rounded-md border text-gray-500 transition-colors shadow-sm"
@@ -455,20 +744,34 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                         {/* Identidade do Cliente */}
                         <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-white">
                             <h3 className="font-semibold text-sm mb-3">Identidade do Cliente</h3>
+                            <InlineActionFeedback feedback={contextFeedback} className="mb-3" />
                             {activeConvDetails.customer ? (
                                 <div className="text-sm">
                                     <p className="font-medium text-[hsl(var(--ui-text))]">{activeConvDetails.customer.name}</p>
                                     {activeConvDetails.organization && <p className="text-[hsl(var(--ui-text-muted))] text-xs mt-1">{activeConvDetails.organization.name}</p>}
                                 </div>
                             ) : (
-                                <div className="text-sm">
-                                    <p className="text-[hsl(var(--ui-text-muted))] mb-3">Cliente não identificado no banco de dados.</p>
-                                    <button 
+                                <div className="text-sm space-y-3">
+                                    <p className="text-[hsl(var(--ui-text-muted))]">
+                                        Cliente ainda nao identificado. Vincule o contato antes de seguir com a operacao.
+                                    </p>
+                                    <label className="block">
+                                        <span className="mb-1 block text-xs font-medium text-[hsl(var(--ui-text-muted))]">
+                                            Nome do contato ou empresa
+                                        </span>
+                                        <input
+                                            value={customerDraftName}
+                                            onChange={(event) => setCustomerDraftName(event.target.value)}
+                                            placeholder="Ex.: Acme Distribuicao"
+                                            className="w-full rounded-md border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] px-3 py-2 text-sm text-[hsl(var(--ui-text))] outline-none focus:border-[hsl(var(--ui-accent-blue))]"
+                                        />
+                                    </label>
+                                    <button
                                         onClick={handleCreateCustomer}
-                                        disabled={creatingCustomer}
+                                        disabled={creatingCustomer || !customerDraftName.trim()}
                                         className="w-full bg-[hsl(var(--ui-accent-blue))] hover:bg-[hsl(var(--ui-accent-blue-hover))] text-white p-2 rounded-md transition-colors text-xs font-medium flex items-center justify-center disabled:opacity-50"
                                     >
-                                        {creatingCustomer ? 'Criando...' : 'Criar Cliente a partir da conversa'}
+                                        {creatingCustomer ? 'Vinculando...' : 'Vincular cliente a conversa'}
                                     </button>
                                 </div>
                             )}
@@ -495,20 +798,19 @@ export default function AtendimentoClient({ tenantId }: { tenantId: string }) {
                             </div>
                         )}
 
-                        {/* Playbooks */}
-                        <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))]">
-                            <PlaybookQuickActions entity="conversation" entityId={activeConvId} />
-                        </div>
-
                         {/* Ferramentas de Frete e Orders */}
                         <div className="flex-1">
                             <DynamicFieldsRenderer entity="conversation" entityId={activeConvId} />
                             <OrderShipmentPanel
                                 conversationId={activeConvId}
-                                refreshKey={flowRefreshKey}
-                                onFlowChanged={handleConversationFlowChanged}
+                                refreshToken={contextRefreshToken}
+                                onFlowUpdated={refreshActiveConversation}
                             />
-                            <FreightQuotePanel conversationId={activeConvId} onFlowChanged={handleConversationFlowChanged} />
+                            <FreightQuotePanel
+                                conversationId={activeConvId}
+                                refreshToken={contextRefreshToken}
+                                onFlowUpdated={refreshActiveConversation}
+                            />
                             
                             <div className="mt-4 border-t border-[hsl(var(--ui-border))] px-4 pt-4 pb-8">
                                 <TimelineFeed entityId={activeConvId} title="Timeline" />
