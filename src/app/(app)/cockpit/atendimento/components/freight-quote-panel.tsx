@@ -1,9 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Package, Search, Send, Loader2, Plus, Clock, Truck } from 'lucide-react';
+import { Clock, Loader2, Package, Plus, Search, Send, ThumbsUp, Truck } from 'lucide-react';
 import { Badge } from '@/ui/components';
 import { format } from 'date-fns';
+import {
+    buildActionErrorFromResponse,
+    buildActionSuccess,
+    buildUnexpectedActionError,
+    InlineActionFeedback,
+    type ActionFeedbackState,
+} from './inline-action-feedback';
 
 interface QuoteResult {
     id: string;
@@ -15,18 +22,67 @@ interface QuoteResult {
     status?: string;
 }
 
-export default function FreightQuotePanel({ conversationId }: { conversationId: string }) {
+interface FreightQuotePanelProps {
+    conversationId: string;
+    refreshToken?: number;
+    onFlowUpdated?: () => Promise<void> | void;
+}
+
+function getQuoteStatusMeta(status?: string) {
+    switch (status) {
+        case 'SENT':
+            return {
+                label: 'Registrar aprovação',
+                helper: 'Use esta etapa somente depois da confirmação do cliente no WhatsApp.',
+            };
+        case 'ACCEPTED':
+            return {
+                label: 'Gerar pedido DRAFT',
+                helper: 'A aprovação já foi registrada. O próximo passo é abrir o pedido operacional.',
+            };
+        case 'CONVERTED':
+            return {
+                label: 'Pedido DRAFT gerado',
+                helper: 'A cotação já virou pedido. Siga para a confirmação operacional.',
+            };
+        case 'EXPIRED':
+            return {
+                label: 'Refazer cotação',
+                helper: 'Refaça a cotação antes de seguir no atendimento.',
+            };
+        default:
+            return {
+                label: 'Enviar cotação',
+                helper: 'Envie a cotação no WhatsApp antes de avançar o fluxo.',
+            };
+    }
+}
+
+export default function FreightQuotePanel({
+    conversationId,
+    refreshToken = 0,
+    onFlowUpdated,
+}: FreightQuotePanelProps) {
     const [quotes, setQuotes] = useState<QuoteResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [simulating, setSimulating] = useState(false);
     const [sendingId, setSendingId] = useState<string | null>(null);
+    const [acceptingId, setAcceptingId] = useState<string | null>(null);
     const [creatingOrderId, setCreatingOrderId] = useState<string | null>(null);
     const [view, setView] = useState<'list' | 'form'>('list');
+    const [feedback, setFeedback] = useState<ActionFeedbackState | null>(null);
 
     // Form states
     const [cep, setCep] = useState('');
     const [weight, setWeight] = useState('');
     const [quantity, setQuantity] = useState('1');
+
+    const refreshFlow = async () => {
+        await Promise.all([
+            fetchQuotes(),
+            Promise.resolve(onFlowUpdated?.()),
+        ]);
+    };
 
     const fetchQuotes = async () => {
         setLoading(true);
@@ -35,9 +91,19 @@ export default function FreightQuotePanel({ conversationId }: { conversationId: 
             if (res.ok) {
                 const json = await res.json();
                 setQuotes(json.data);
+                return;
             }
+            setFeedback(await buildActionErrorFromResponse(
+                res,
+                'Falha operacional',
+                'Nao foi possivel carregar as cotacoes deste atendimento.'
+            ));
         } catch (err) {
             console.error(err);
+            setFeedback(buildUnexpectedActionError(
+                'Falha operacional',
+                'Nao foi possivel carregar as cotacoes deste atendimento.'
+            ));
         } finally {
             setLoading(false);
         }
@@ -45,13 +111,15 @@ export default function FreightQuotePanel({ conversationId }: { conversationId: 
 
     useEffect(() => {
         if (conversationId) {
-            fetchQuotes();
+            void fetchQuotes();
             setView('list');
         }
-    }, [conversationId]);
+    }, [conversationId, refreshToken]);
 
     const handleSimulate = async () => {
         if (!cep || !weight || !quantity) return;
+
+        setFeedback(null);
         setSimulating(true);
         try {
             const res = await fetch(`/api/cockpit/conversations/${conversationId}/quotes`, {
@@ -62,55 +130,120 @@ export default function FreightQuotePanel({ conversationId }: { conversationId: 
 
             if (res.ok) {
                 setView('list');
-                fetchQuotes();
-                // Clear form
-                setCep(''); setWeight(''); setQuantity('1');
+                setCep('');
+                setWeight('');
+                setQuantity('1');
+                await refreshFlow();
+                setFeedback(buildActionSuccess(
+                    'Cotação registrada',
+                    'A cotação foi salva no atendimento e está pronta para envio no WhatsApp.'
+                ));
             } else {
-                alert('Erro ao simular frete.');
+                setFeedback(await buildActionErrorFromResponse(
+                    res,
+                    'Falha ao registrar cotação',
+                    'Não foi possível registrar a cotação.'
+                ));
             }
         } catch (err) {
-            alert('Falha na requisição.');
+            console.error(err);
+            setFeedback(buildUnexpectedActionError(
+                'Falha ao registrar cotação',
+                'Não foi possível registrar a cotação.'
+            ));
         } finally {
             setSimulating(false);
         }
     };
 
     const handleSendToCustomer = async (quoteId: string) => {
-        if (!confirm('Deseja enviar o resultado desta cotação para o cliente no WhatsApp?')) return;
+        setFeedback(null);
         setSendingId(quoteId);
         try {
             const res = await fetch(`/api/cockpit/conversations/${conversationId}/quotes/${quoteId}/send`, {
                 method: 'POST'
             });
             if (res.ok) {
-                alert('Cotação enviada com sucesso!');
-                fetchQuotes(); // refresh status if needed
+                await refreshFlow();
+                setFeedback(buildActionSuccess(
+                    'Cotação enviada',
+                    'A proposta foi enviada no WhatsApp. O próximo passo é registrar a aprovação do cliente.'
+                ));
             } else {
-                alert('Erro ao enviar cotação.');
+                setFeedback(await buildActionErrorFromResponse(
+                    res,
+                    'Falha ao enviar cotação',
+                    'Não foi possível enviar a cotação ao cliente.'
+                ));
             }
         } catch (err) {
-            alert('Falha na requisição.');
+            console.error(err);
+            setFeedback(buildUnexpectedActionError(
+                'Falha ao enviar cotação',
+                'Não foi possível enviar a cotação ao cliente.'
+            ));
         } finally {
             setSendingId(null);
         }
     };
 
+    const handleAcceptQuote = async (quoteId: string) => {
+        setFeedback(null);
+        setAcceptingId(quoteId);
+        try {
+            const res = await fetch(`/api/cockpit/conversations/${conversationId}/quotes/${quoteId}/accept`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                await refreshFlow();
+                setFeedback(buildActionSuccess(
+                    'Aprovação registrada',
+                    'A cotação foi marcada como aprovada e já pode virar pedido em DRAFT.'
+                ));
+            } else {
+                setFeedback(await buildActionErrorFromResponse(
+                    res,
+                    'Falha ao registrar aprovação',
+                    'Não foi possível registrar a aprovação da cotação.'
+                ));
+            }
+        } catch (err) {
+            console.error(err);
+            setFeedback(buildUnexpectedActionError(
+                'Falha ao registrar aprovação',
+                'Não foi possível concluir a atualização da cotação.'
+            ));
+        } finally {
+            setAcceptingId(null);
+        }
+    };
+
     const handleCreateOrder = async (quoteId: string) => {
-        if (!confirm('Transformar essa cotação em um Pedido Logístico? A conversa será marcada como Ganho.')) return;
+        setFeedback(null);
         setCreatingOrderId(quoteId);
         try {
             const res = await fetch(`/api/cockpit/conversations/${conversationId}/quotes/${quoteId}/order`, {
                 method: 'POST'
             });
             if (res.ok) {
-                alert('Pedido criado com sucesso!');
-                // trigger a full reload to show the stage change
-                window.location.reload();
+                await refreshFlow();
+                setFeedback(buildActionSuccess(
+                    'Pedido em DRAFT criado',
+                    'O pedido foi aberto em DRAFT. O fluxo agora segue para a confirmação operacional.'
+                ));
             } else {
-                alert('Erro ao converter pedido.');
+                setFeedback(await buildActionErrorFromResponse(
+                    res,
+                    'Falha ao criar pedido',
+                    'Não foi possível gerar o pedido em DRAFT.'
+                ));
             }
         } catch (err) {
-            alert('Falha na requisição.');
+            console.error(err);
+            setFeedback(buildUnexpectedActionError(
+                'Falha ao criar pedido',
+                'Não foi possível gerar o pedido em DRAFT.'
+            ));
         } finally {
             setCreatingOrderId(null);
         }
@@ -141,6 +274,8 @@ export default function FreightQuotePanel({ conversationId }: { conversationId: 
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+                <InlineActionFeedback feedback={feedback} />
+
                 {view === 'form' ? (
                     <div className="flex flex-col gap-3">
                         <div>
@@ -181,7 +316,7 @@ export default function FreightQuotePanel({ conversationId }: { conversationId: 
                             className="mt-2 w-full bg-[hsl(var(--ui-accent-blue))] text-white p-2 rounded-md flex items-center justify-center gap-2 text-sm font-medium transition-colors disabled:opacity-50"
                         >
                             {simulating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                            Simular
+                            Simular cotação
                         </button>
                     </div>
                 ) : (
@@ -191,11 +326,17 @@ export default function FreightQuotePanel({ conversationId }: { conversationId: 
                         ) : quotes.length === 0 ? (
                             <div className="text-center text-xs text-[hsl(var(--ui-text-muted))] py-4 flex flex-col items-center gap-2">
                                 <Package className="w-8 h-8 opacity-20" />
-                                Nenhuma cotação salva.
+                                Nenhuma cotação salva. Registre a cotação para continuar o atendimento supervisionado.
                             </div>
                         ) : (
                             <div className="flex flex-col gap-3">
-                                {quotes.map(q => (
+                                {quotes.map(q => {
+                                    const statusMeta = getQuoteStatusMeta(q.status);
+                                    const canSendQuote = (q.status || 'DRAFT') === 'DRAFT';
+                                    const canAcceptQuote = q.status === 'SENT';
+                                    const canCreateOrder = q.status === 'ACCEPTED';
+
+                                    return (
                                     <div key={q.id} className="border border-[hsl(var(--ui-border))] rounded-md p-3 bg-[hsl(var(--ui-bg))]">
                                         <div className="flex justify-between items-start mb-2">
                                             <div className="font-semibold text-sm">
@@ -208,32 +349,59 @@ export default function FreightQuotePanel({ conversationId }: { conversationId: 
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <div className="flex items-start justify-between gap-3 rounded-md border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))] px-3 py-2">
+                                            <div className="min-w-0">
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[hsl(var(--ui-text-muted))]">
+                                                    Proximo passo operacional
+                                                </p>
+                                                <p className="mt-1 text-xs font-medium text-[hsl(var(--ui-text))]">{statusMeta.label}</p>
+                                                <p className="mt-1 text-[11px] leading-5 text-[hsl(var(--ui-text-muted))]">{statusMeta.helper}</p>
+                                            </div>
+                                            <Badge variant="outline">{q.status || 'DRAFT'}</Badge>
+                                        </div>
                                         
                                         <div className="flex justify-between items-center mt-3 pt-3 border-t border-[hsl(var(--ui-border))]">
                                             <div className="text-[10px] text-[hsl(var(--ui-text-muted))] flex items-center gap-1">
                                                 <Clock className="w-3 h-3" /> {format(new Date(q.createdAt), 'dd/MM HH:mm')}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <button 
-                                                    onClick={() => handleCreateOrder(q.id)}
-                                                    disabled={creatingOrderId === q.id || sendingId === q.id}
-                                                    className="text-xs bg-[hsl(var(--ui-accent-blue))] text-white hover:bg-blue-600 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50"
-                                                >
-                                                    {creatingOrderId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Package className="w-3 h-3" />}
-                                                    Criar Pedido
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleSendToCustomer(q.id)}
-                                                    disabled={sendingId === q.id || creatingOrderId === q.id}
-                                                    className="text-xs bg-[hsl(var(--ui-bg-subtle))] hover:bg-[hsl(var(--ui-border))] border border-[hsl(var(--ui-border))] px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50"
-                                                >
-                                                    {sendingId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-                                                    Enviar
-                                                </button>
+                                                {canAcceptQuote ? (
+                                                    <button 
+                                                        onClick={() => handleAcceptQuote(q.id)}
+                                                        disabled={acceptingId === q.id || sendingId === q.id || creatingOrderId === q.id}
+                                                        className="text-xs bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50"
+                                                    >
+                                                        {acceptingId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <ThumbsUp className="w-3 h-3" />}
+                                                        Registrar aprovação
+                                                    </button>
+                                                ) : null}
+
+                                                {canCreateOrder ? (
+                                                    <button 
+                                                        onClick={() => handleCreateOrder(q.id)}
+                                                        disabled={creatingOrderId === q.id || sendingId === q.id || acceptingId === q.id}
+                                                        className="text-xs bg-[hsl(var(--ui-accent-blue))] text-white hover:bg-blue-600 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50"
+                                                    >
+                                                        {creatingOrderId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Package className="w-3 h-3" />}
+                                                        Gerar pedido DRAFT
+                                                    </button>
+                                                ) : null}
+
+                                                {canSendQuote ? (
+                                                    <button 
+                                                        onClick={() => handleSendToCustomer(q.id)}
+                                                        disabled={sendingId === q.id || creatingOrderId === q.id || acceptingId === q.id}
+                                                        className="text-xs bg-[hsl(var(--ui-bg-subtle))] hover:bg-[hsl(var(--ui-border))] border border-[hsl(var(--ui-border))] px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50"
+                                                    >
+                                                        {sendingId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                                                        Enviar no WhatsApp
+                                                    </button>
+                                                ) : null}
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                );})}
                             </div>
                         )}
                     </>
