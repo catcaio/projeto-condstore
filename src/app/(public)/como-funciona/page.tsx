@@ -87,11 +87,10 @@ export default function ComoFuncionaPage() {
             </PageSection>
 
             <CTASection
-                title="Pronto para ver na prática?"
-                subtitle="Crie sua conta e comece a operar com infraestrutura de verdade."
+                title="Pronto para operar o MVP supervisionado na prática?"
+                subtitle="Siga o mesmo caminho principal do site oficial para iniciar sua operação."
                 ctas={[
-                    { label: 'Começar agora', href: '/signup' },
-                    { label: 'Ver soluções', href: '/solucoes', variant: 'secondary' },
+                    { label: 'Iniciar operação no MVP', href: '/signup' },
                 ]}
             />
         </>
