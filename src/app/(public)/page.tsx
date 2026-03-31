@@ -1,12 +1,10 @@
 import {
     AlertTriangle,
     BarChart3,
-    CheckCircle2,
     ClipboardCheck,
     Clock3,
     Gauge,
     Hand,
-    MessageSquare,
     Route,
     Shield,
     Timer,
@@ -16,7 +14,7 @@ import {
     CTASection,
     FeatureGrid,
     HeroSection,
-    OperationFlow,
+    MvpCoreFlowSection,
     PageContainer,
     PageSection,
     ScrollReveal,
@@ -144,39 +142,7 @@ export default function HomePage() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="relative rounded-3xl border border-[hsl(var(--ui-border)/0.35)] bg-[hsl(var(--ui-surface)/0.2)] p-3 md:p-5">
-                                <OperationFlow
-                                    steps={[
-                                        {
-                                            icon: MessageSquare,
-                                            label: 'Mensagem recebida e roteada',
-                                            detail: 'Entrada por WhatsApp com contexto do cliente e histórico de conversas já disponível.',
-                                        },
-                                        {
-                                            icon: ClipboardCheck,
-                                            label: 'Cotação validada pelo operador',
-                                            detail: 'Sugestões podem acelerar o processo, mas quem aprova condição é o time responsável.',
-                                            accent: 'var(--ui-success)',
-                                        },
-                                        {
-                                            icon: CheckCircle2,
-                                            label: 'Pedido aprovado e registrado',
-                                            detail: 'Pedido nasce com estado definido, responsável e checkpoints rastreáveis.',
-                                        },
-                                        {
-                                            icon: Route,
-                                            label: 'Shipment monitorado ponta a ponta',
-                                            detail: 'Coleta, trânsito, exceção e entrega atualizam a mesma timeline operacional.',
-                                            accent: 'var(--ui-success)',
-                                        },
-                                        {
-                                            icon: Gauge,
-                                            label: 'Cockpit atualizado em tempo real',
-                                            detail: 'SLA, backlog e performance ficam visíveis para decisão diária de operação.',
-                                        },
-                                    ]}
-                                />
-                            </div>
+                            <MvpCoreFlowSection />
                         </div>
                     </PageContainer>
                 </PageSection>
