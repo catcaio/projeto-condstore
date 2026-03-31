@@ -48,7 +48,7 @@ src/app/api/** — todos os endpoints autenticados
 
 src/infra/repositories/** — filtros por tenant em queries
 
-src/modules/atendimento, freight, pedidos, crm, cockpit, frank — isolamento nos serviços
+src/modules/{atendimento,freight,pedidos,crm,cockpit,frank} — isolamento nos serviços
 
 src/middleware.ts — injeção correta de tenantId
 

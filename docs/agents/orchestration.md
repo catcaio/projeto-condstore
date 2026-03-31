@@ -95,7 +95,7 @@ Mudança que altera comportamento observável, fluxo existente ou regra de negó
 
 | Agente | Motivo da proibição |
 |--------|---------------------|
-| `product-manager` | MEDIUM tem escopo e requisito já conhecidos |
+| `product-lead` | MEDIUM tem escopo e requisito já conhecidos |
 | `solution-architect` | MEDIUM não exige decisão arquitetural nova |
 | `task-decomposer` | MEDIUM é linear — não há frentes paralelas |
 | `agent-orchestrator` | MEDIUM é executado por agente único ou dupla simples |
@@ -145,7 +145,7 @@ Mudança que cria novo comportamento no sistema, impacta múltiplos domínios, e
 | Classificação | Pipeline | Número de etapas | Notas |
 |--------------|----------|-----------------|-------|
 | 🟢 **SMALL** | [Small Change / Small Fix](#74-small-change--small-fix-pipeline--small-) | 5 etapas | `explorer-agent` opcional se área óbvia |
-| 🟡 **MEDIUM** | [Medium Change Pipeline](#72-medium-change-pipeline--medium-) | 7 etapas | Sem product-manager, solution-architect, agent-orchestrator, feature-shipper |
+| 🟡 **MEDIUM** | [Medium Change Pipeline](#72-medium-change-pipeline--medium-) | 7 etapas | Sem product-lead, solution-architect, agent-orchestrator, feature-shipper |
 | 🔴 **LARGE** | [Feature Development Pipeline](#71-feature-development-pipeline--large-) | 14 etapas | Pipeline completo com todas as camadas |
 
 > ⚠️ **Nem toda feature precisa passar por todas as 14 etapas.**
@@ -187,8 +187,7 @@ Tabela de obrigatoriedade por tamanho de task. Leia como: o agente **deve** / **
 
 | Agente | 🟢 SMALL | 🟡 MEDIUM | 🔴 LARGE |
 |--------|---------|---------|---------|
-| `product-manager` | ❌ não usar | ❌ não usar¹ | ✅ obrigatório |
-| `product-owner` | ❌ não usar | ❌ não usar¹ | ✅ obrigatório |
+| `product-lead` | ❌ não usar | ❌ não usar¹ | ✅ obrigatório |
 | `explorer-agent` | ⚪ opcional (área conhecida) | ✅ obrigatório | ✅ obrigatório |
 | `solution-architect` | ❌ não usar | ❌ não usar¹ | ✅ obrigatório |
 | `task-decomposer` | ❌ não usar | ❌ não usar¹ | ✅ obrigatório (frentes paralelas) |
@@ -213,7 +212,7 @@ Tabela de obrigatoriedade por tamanho de task. Leia como: o agente **deve** / **
 | `preflight-release-guard` | ✅ obrigatório | ✅ obrigatório | ✅ obrigatório |
 | `pr-auditor` | ❌ não usar (salvo MVP core) | ⚪ obrigatório se bug crítico | ✅ obrigatório |
 | `pr-closer` | ✅ obrigatório | ✅ obrigatório | ✅ obrigatório |
-| `documentation-writer` | ❌ não usar | ⚪ se novo contrato/fluxo criado | ✅ se contrato operacional mudou |
+| `docs-runbook-keeper` | ❌ não usar | ⚪ pós-merge se necessário | ✅ obrigatório se comportamento operacional mudou |
 | `docs-runbook-keeper` | ❌ não usar | ⚪ pós-merge se necessário | ✅ obrigatório se comportamento operacional mudou |
 | `agent-orchestrator` | ❌ não usar | ❌ não usar¹ | ✅ obrigatório (frentes paralelas) |
 | `seo-specialist` | ❌ não usar | ❌ não usar | ⚪ se página pública/aquisição afetada |
@@ -228,13 +227,14 @@ Tabela de obrigatoriedade por tamanho de task. Leia como: o agente **deve** / **
 
 ## 3. Regras Sempre-Ativas
 
-As três regras abaixo aplicam-se **automaticamente a todos os agentes**, em todas as tarefas, sem exceção:
+As quatro regras abaixo aplicam-se **automaticamente a todos os agentes**, em todas as tarefas, sem exceção:
 
 | Arquivo | Propósito |
 |---------|-----------|
 | `.agents/rules/condstore-core.md` | Princípios de execução: operar sobre estado real, mapear impacto em todas as camadas, nunca concluir com suposição |
 | `.agents/rules/delivery-standard.md` | Padrão de entrega: validar antes de concluir, considerar impacto em métricas/cockpit, nunca marcar completo sem evidência real |
 | `.agents/rules/security-core.md` | Segurança: nunca confiar em tenantId/userId do request, validar auth/permissões/isolamento em toda rota crítica |
+| `.agents/rules/mvp-freeze.md` | Escopo MVP: superfícies core vs. frozen, obrigatoriedade do `guardrail:mvp-freeze` antes de PR em superfícies de produto |
 
 ---
 
@@ -246,8 +246,7 @@ Entra apenas em tasks **LARGE** com impacto no escopo ou direção do produto.
 
 | Agente | Papel |
 |--------|-------|
-| `product-manager` | Transforma ideias brutas em especificação executável (discovery, requisitos, critérios de aceite) |
-| `product-owner` | Organiza backlog, prioriza, confirma que tarefa está dentro do escopo MVP |
+| `product-lead` | Discovery, requisitos, critérios de aceite, priorização de backlog e confirmação de escopo MVP |
 
 ---
 
@@ -321,7 +320,7 @@ Execução sequencial obrigatória. Nenhuma etapa pode ser pulada.
 | `pr-auditor` | Auditoria completa: diff, segurança, testes, CI, consistência, regressões. **LARGE obrigatório; MEDIUM condicional.** |
 | `pr-closer` | Gate final de produção: mergeia somente quando mergeable=TRUE + CI verde + sem blockers. **Todos os níveis.** |
 
-> ⚠️ `pre-PR` é alias de `preflight-release-guard`. Usar sempre `preflight-release-guard`.
+> ⚠️ `pre-PR` foi removido do repositório. Usar sempre `preflight-release-guard`.
 
 ---
 
@@ -330,8 +329,7 @@ Documentação deve chegar ao PR **antes do preflight** quando a mudança altera
 
 | Agente | Papel |
 |--------|-------|
-| `documentation-writer` | **Cria** documentação nova: contratos de API, novos fluxos, setup, guias, playbooks |
-| `docs-runbook-keeper` | **Mantém e consolida** documentação existente: runbooks, README, padrões, decisões operacionais |
+| `docs-runbook-keeper` | Cria e mantém toda documentação operacional: contratos de API, novos fluxos, setup, runbooks, README, padrões e decisões |
 
 **Regra de acionamento de documentação:**
 
@@ -339,7 +337,7 @@ Documentação deve chegar ao PR **antes do preflight** quando a mudança altera
 SE mudança altera: comportamento operacional, runbook, rota crítica,
                     contrato de API, fluxo de cotação, aprovação,
                     métricas do cockpit, autenticação, permissões
-→ documentation-writer ou docs-runbook-keeper atua ANTES do preflight-release-guard
+→ docs-runbook-keeper atua ANTES do preflight-release-guard
 → Doc atualizada deve constar no mesmo PR
 
 SE mudança é interna, refactoring sem impacto externo, ou fix técnico isolado
@@ -370,8 +368,7 @@ SE mudança é interna, refactoring sem impacto externo, ou fix técnico isolado
 
 | Agente | Trigger de Entrada | Obrigatório em | Condicional em |
 |--------|-------------------|----------------|----------------|
-| `product-manager` | Nova feature LARGE / ideia sem spec | LARGE | — |
-| `product-owner` | Dúvida de prioridade / escopo MVP | LARGE | MEDIUM (escopo incerto) |
+| `product-lead` | Nova feature LARGE / ideia sem spec / dúvida de escopo MVP | LARGE | MEDIUM (escopo incerto) |
 | `explorer-agent` | Qualquer mudança MEDIUM ou LARGE | MEDIUM, LARGE | SMALL (área desconhecida) |
 | `solution-architect` | Mudança cross-layer / decisão de arquitetura | LARGE | MEDIUM cross-layer |
 | `task-decomposer` | Múltiplas frentes / incerteza de ordem | LARGE (paralelo) | MEDIUM complexo |
@@ -396,8 +393,7 @@ SE mudança é interna, refactoring sem impacto externo, ou fix técnico isolado
 | `preflight-release-guard` | Antes de todo PR | **Todos os níveis** | — |
 | `pr-auditor` | Após preflight em LARGE e bugs críticos | LARGE | MEDIUM crítico |
 | `pr-closer` | Após pr-auditor (LARGE) ou preflight (SMALL/MEDIUM) | **Todos os níveis** | — |
-| `documentation-writer` | Nova documentação a criar | LARGE com novo contrato | MEDIUM com novo fluxo |
-| `docs-runbook-keeper` | Atualização de doc existente | LARGE com impacto operacional | MEDIUM pós-merge |
+| `docs-runbook-keeper` | Criação ou atualização de documentação operacional | LARGE com contrato/fluxo novo | MEDIUM pós-merge |
 | `agent-orchestrator` | LARGE com frentes paralelas / cross-layer | LARGE multiagente | MEDIUM com 3+ agentes |
 | `seo-specialist` | Mudança em páginas públicas com objetivo de ranqueamento | — | LARGE página pública |
 
@@ -441,8 +437,8 @@ Para features novas ou mudanças estruturais com impacto real no produto. Use ap
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  ESTRATÉGIA                                                 │
-│  1. product-manager     → spec, requisitos, critérios       │
-│  2. product-owner       → prioridade, escopo MVP confirmado │
+│  1. product-lead        → spec, requisitos, prioridade,     │
+│                           critérios de aceite, escopo MVP   │
 └────────────────────────────┬────────────────────────────────┘
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -469,7 +465,7 @@ Para features novas ou mudanças estruturais com impacto real no produto. Use ap
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  DOCUMENTAÇÃO (pré-PR se mudança operacional)               │
-│  10. documentation-writer / docs-runbook-keeper             │
+│  10. docs-runbook-keeper                                    │
 │      → obrigatório antes do preflight se contrato mudou     │
 └────────────────────────────┬────────────────────────────────┘
                              ▼
@@ -555,8 +551,7 @@ CONDICIONAL — entra somente se critério for satisfeito:
   ⚪ security-auditor          → mudança toca auth/dados sensíveis
 
 PROIBIDO por padrão em MEDIUM:
-  ❌ product-manager
-  ❌ product-owner
+  ❌ product-lead
   ❌ solution-architect
   ❌ task-decomposer
   ❌ agent-orchestrator
@@ -633,7 +628,7 @@ Para tasks **SMALL**: texto, estilo, config, refactoring localizado, ajuste de v
 5. pr-closer                 → merge
 ```
 
-> Sem `product-manager`, `product-owner`, `solution-architect`, `task-decomposer`.
+> Sem `product-lead`, `solution-architect`, `task-decomposer`.
 > Sem `pr-auditor` (a menos que mudança toque surface MVP core → reclassifique como MEDIUM/LARGE).
 > Sem `feature-shipper` (PR é criada diretamente pelo especialista).
 > `explorer-agent` pode ser omitido somente se escopo é **arquivo único e impacto é 100% óbvio**.
@@ -644,8 +639,7 @@ Para tasks **SMALL**: texto, estilo, config, refactoring localizado, ajuste de v
 ## 8. Regras de Dependência e Bloqueio
 
 ```
-product-manager         ──→ deve completar antes de solution-architect (LARGE)
-product-owner           ──→ deve confirmar escopo antes de qualquer implementação (LARGE)
+product-lead            ──→ deve completar spec e confirmar escopo antes de solution-architect (LARGE)
 explorer-agent          ──→ deve mapear antes de qualquer implementação MEDIUM/LARGE
 solution-architect      ──→ deve decidir antes de backend/frontend iniciarem (LARGE)
 database-architect      ──→ deve completar migração antes de backend-specialist (se há schema change)
@@ -709,7 +703,7 @@ pr-closer               ──→ merge somente com mergeable=TRUE + CI verde + 
 ### `seo-specialist`
 - **Nível:** LARGE condicional (páginas públicas)
 - **Entra quando:** mudança em páginas públicas com objetivo de ranqueamento orgânico; landing pages; página de cotação pública; conteúdo indexável
-- **Acionado por:** `product-manager` (quando objetivo inclui aquisição orgânica) ou solicitação explícita
+- **Acionado por:** `product-lead` (quando objetivo inclui aquisição orgânica) ou solicitação explícita
 - **Fluxo:** Especialista pontual — após frontend-specialist, antes de preflight
 
 ### `security-auditor` — Obrigatoriedade por Nível
@@ -746,7 +740,7 @@ NÃO USAR (SMALL e MEDIUM de baixo risco):
 
 ### Regras obrigatórias para MVP Core
 
-1. **`product-owner` confirma escopo** antes de qualquer implementação — nenhuma expansão para áreas congeladas (Frank runtime, RAG, DOMINE Console, playbooks)
+1. **`product-lead` confirma escopo** antes de qualquer implementação — nenhuma expansão para áreas congeladas (Frank runtime, RAG, DOMINE Console, playbooks)
 2. **`security-auditor` é obrigatório** — isolamento de tenant é crítico em todas as superfícies
 3. **`data-consistency-enforcer` é obrigatório** — métricas do cockpit dependem de dados limpos
 4. **`preflight-release-guard` executa** `npm run guardrail:mvp-freeze` antes de abrir PR
@@ -816,11 +810,10 @@ Se `pr-closer` encontrar problema de código → retorna para o agente implement
 ✅ implementação → preflight-release-guard → [pr-auditor] → pr-closer
 ```
 
-**5. Usar `documentation-writer` para manutenção de docs existentes**
+**5. Criar documentação nova sem usar `docs-runbook-keeper`**
 ```
-❌ documentation-writer atualiza runbook existente
 ✅ docs-runbook-keeper atualiza runbook existente
-   documentation-writer cria doc nova
+✅ docs-runbook-keeper cria documentação nova de contrato ou fluxo
 ```
 
 **6. Usar `solution-architect` para mudanças triviais (SMALL)**
@@ -829,16 +822,16 @@ Se `pr-closer` encontrar problema de código → retorna para o agente implement
 ✅ backend-specialist renomeia diretamente (SMALL → Small Fix Pipeline)
 ```
 
-**7. Usar `product-manager` ou `product-owner` em bugfix técnico**
+**7. Usar `product-lead` em bugfix técnico**
 ```
-❌ product-manager analisa bug de null pointer
+❌ product-lead analisa bug de null pointer
 ✅ explorer-agent → debugger → qa-validator → pr-closer
 ```
 
 **8. Deixar documentação operacional para pós-merge quando contrato mudou**
 ```
 ❌ implementar nova rota → merge → atualizar docs depois
-✅ implementar nova rota → documentation-writer (antes do preflight) → merge com doc no PR
+✅ implementar nova rota → docs-runbook-keeper (antes do preflight) → merge com doc no PR
 ```
 
 **9. Usar `pr-auditor` sem `preflight-release-guard` ter passado**
@@ -856,7 +849,7 @@ Se `pr-closer` encontrar problema de código → retorna para o agente implement
 **11. Expandir para áreas congeladas sem autorização explícita**
 ```
 ❌ adicionar Frank runtime em PR de cotação
-✅ product-owner confirma escopo → ALLOW_FROZEN_SURFACE_CHANGES=1 com justificativa documentada
+✅ product-lead confirma escopo → ALLOW_FROZEN_SURFACE_CHANGES=1 com justificativa documentada
 ```
 
 **12. Usar `agent-orchestrator` em tasks SMALL ou bugfix simples**
@@ -884,10 +877,10 @@ Se `pr-closer` encontrar problema de código → retorna para o agente implement
 
 | Conflito | Resolução Oficial |
 |----------|------------------|
-| `pre-PR` vs `preflight-release-guard` | `pre-PR` é alias obsoleto. Usar sempre `preflight-release-guard` |
-| `documentation-writer` vs `docs-runbook-keeper` | `documentation-writer` cria; `docs-runbook-keeper` mantém e consolida |
+| `pre-PR` vs `preflight-release-guard` | `pre-PR` foi removido. Usar sempre `preflight-release-guard` |
+| `documentation-writer` vs `docs-runbook-keeper` | `documentation-writer` foi removido — absorvido por `docs-runbook-keeper`, que agora cria e mantém toda documentação operacional |
 | `test-generator` vs `qa-automation-engineer` | `test-generator` gera código de testes unit/integration; `qa-automation-engineer` constrói suites E2E e integra ao CI |
-| `product-manager` vs `product-owner` | `product-manager` faz discovery e spec; `product-owner` prioriza backlog e confirma escopo MVP |
+| `product-manager` + `product-owner` vs `product-lead` | Ambos foram consolidados em `product-lead`, que cobre discovery, spec, priorização e confirmação de escopo MVP |
 | `security-auditor` vs `penetration-tester` | `security-auditor` faz auditoria de código/configuração; `penetration-tester` faz testes ofensivos controlados (escalonado do auditor ou pré go-live) |
 | `feature-shipper` vs `pr-closer` | `feature-shipper` empacota implementação (apenas LARGE); `pr-closer` executa merge (todos os níveis) — ver §11 |
 | Bug Fix vs Feature MEDIUM | Bug Fix Pipeline (7 etapas) serve para ambos os casos MEDIUM — bugs e features menores sem impacto estratégico |

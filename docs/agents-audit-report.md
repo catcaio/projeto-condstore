@@ -9,7 +9,7 @@
 
 ## 1. Diagnóstico Geral
 
-O repositório possui **31 workflows** e **3 regras sempre-ativas**, mas o `AGENTS.md` oficial referencia apenas **5 workflows**. Isso significa que 26 agentes existem no repositório sem rastreabilidade formal, sem garantia de que seguem o MVP freeze, e sem posicionamento claro na cadeia de execução.
+**Estado base antes desta PR:** o repositório possuía **31 workflows** e **3 regras sempre-ativas**, mas o `AGENTS.md` oficial referenciava apenas **5 workflows**. Isso significa que 26 agentes existiam no repositório sem rastreabilidade formal, sem garantia de que seguiam o MVP freeze, e sem posicionamento claro na cadeia de execução. Esta PR corrige esse estado.
 
 ### Inventário atual
 
@@ -24,7 +24,8 @@ O repositório possui **31 workflows** e **3 regras sempre-ativas**, mas o `AGEN
 | **Segurança** | `security-auditor`, `penetration-tester` |
 | **Produto** | `product-manager`, `product-owner`, `solution-architect` |
 | **Documentação** | `documentation-writer`, `docs-runbook-keeper` |
-| **Fora do contexto CONDSTORE** | `mobile-developer`, `seo-specialist`, `devops-automator` |
+| **Fora do contexto CONDSTORE** | `mobile-developer`, `seo-specialist` |
+| **Uso condicional (infra/CI)** | `devops-automator` |
 
 ---
 
@@ -59,10 +60,10 @@ O CONDSTORE é um SaaS B2B com área autenticada para operadores. O público (di
 
 > **Impacto:** Agente de baixo ROI para o estágio atual do produto. Risco de otimizar área errada.
 
-**`devops-automator.md`**  
+**`devops-automator.md`** *(avaliado — mantido com uso condicional)*
 O deploy do CONDSTORE é gerenciado pela Vercel (Next.js). O CI está no `.github/workflows/ci.yml`. A infraestrutura é mínima e reproduzível. Um agente de DevOps genérico pode conflitar com decisões de infra já tomadas ou expandir escopo para além do necessário.
 
-> **Impacto:** Risco de mudanças de infra não alinhadas com a stack Vercel + GitHub Actions atual.
+> **Decisão:** Mantido no repositório com uso condicional — entra apenas em falhas de CI de origem de infra ou mudanças explícitas de pipeline. Não é acionado em features de produto.
 
 ### 2.3 Agentes sem contexto do MVP freeze
 
@@ -111,14 +112,19 @@ As 3 regras existentes são sólidas. Proposta de adição:
 - Nunca expandir escopo para áreas frozen sem justificativa explícita
 - Se tocar dependência frozen, preservar costura existente
 
-### 3.2 Agentes a remover
+### 3.2 Agentes removidos
 
 | Agente | Motivo |
 |---|---|
-| `mobile-developer.md` | Sem superfície no projeto. Zero ROI. |
-| `seo-specialist.md` | Fora do modelo de aquisição do MVP B2B. |
 | `pre-PR.md` | Duplicata inferior do `preflight-release-guard.md`. |
 | `documentation-writer.md` | Duplicata do `docs-runbook-keeper.md`. |
+
+### 3.2b Agentes avaliados e mantidos por decisão
+
+| Agente | Avaliação | Decisão |
+|---|---|---|
+| `mobile-developer.md` | Sem superfície no projeto atual (web-only). | **Mantido** — reservado para expansão futura mobile. |
+| `seo-specialist.md` | Aquisição B2B não é via busca orgânica no MVP. | **Mantido** — ativo para landing page e superfícies públicas. |
 
 ### 3.3 Agentes a consolidar
 
@@ -281,14 +287,16 @@ SEGURANÇA (3)
 DOCUMENTAÇÃO (1, consolidado)
 └── docs-runbook-keeper.md     [absorve documentation-writer]
 
-REMOVIDOS (4)
-├── mobile-developer.md        ← sem superfície no projeto
-├── seo-specialist.md          ← fora do modelo de aquisição B2B
+REMOVIDOS (2)
 ├── pre-PR.md                  ← duplicata do preflight-release-guard
 └── documentation-writer.md    ← duplicata do docs-runbook-keeper
+
+MANTIDOS POR DECISÃO (2)
+├── mobile-developer.md        ← reservado para expansão futura mobile
+└── seo-specialist.md          ← ativo para landing page e superfícies públicas
 ```
 
-**Resultado:** de 31 workflows → **28 ativos** (incluindo 5 novos), com 4 removidos e 2 consolidações.
+**Resultado:** de 31 workflows → **33 ativos** (incluindo 6 novos), com 2 removidos e 2 consolidações (product-lead absorveu product-manager + product-owner; docs-runbook-keeper absorveu documentation-writer).
 
 ---
 
@@ -365,7 +373,7 @@ O `AGENTS.md` precisa ser expandido para listar todos os agentes disponíveis. A
 | **P1** | Criar `atendimento-specialist.md` | Módulo crítico do MVP sem agente dedicado. |
 | **P1** | Criar `freight-flow-specialist.md` | Core diferencial do produto sem agente dedicado. |
 | **P1** | Remover `pre-PR.md` | Eliminar confusão com `preflight-release-guard.md`. |
-| **P1** | Remover `mobile-developer.md` e `seo-specialist.md` | Agentes sem superfície. Ruído na equipe. |
+| **P1** | `mobile-developer.md` e `seo-specialist.md` avaliados | Mantidos por decisão — mobile para expansão futura; seo para landing page. |
 | **P2** | Criar `tenant-isolation-auditor.md` | Multi-tenant é invariante de segurança crítico. |
 | **P2** | Criar `cockpit-validator.md` | Superfície principal do operador sem validação dedicada. |
 | **P2** | Atualizar `AGENTS.md` com todos os agentes | Rastreabilidade e onboarding. |
@@ -380,12 +388,13 @@ O `AGENTS.md` precisa ser expandido para listar todos os agentes disponíveis. A
 
 | Dimensão | Estado Atual | Estado Proposto |
 |---|---|---|
-| Total de agentes | 31 workflows | 28 ativos (4 removidos, 5 novos, 2 consolidados) |
-| Agentes no AGENTS.md | 5 | 28 (todos rastreáveis) |
+| Total de agentes | 31 workflows + 3 regras | 33 workflows + 4 regras (37 total rastreáveis) |
+| Agentes no AGENTS.md | 5 | 37 (todos rastreáveis) |
 | Agentes com guardrail MVP freeze | 0 | 4+ (via regra sempre-ativa) |
 | Agentes especializados em domínio CONDSTORE | 0 | 5 (atendimento, frete, frank, cockpit, tenant) |
 | Duplicatas ativas | 4 | 0 |
-| Agentes fora do escopo do produto | 3 | 0 |
+| Agentes removidos | — | 2 (pre-PR, documentation-writer) |
+| Agentes mantidos por decisão | — | 2 (mobile-developer, seo-specialist) |
 | Cobertura dos módulos críticos | Parcial | Completa |
 
 O gap mais crítico é a ausência de agentes especializados nos módulos centrais do produto (atendimento, frete, Frank) e a ausência de guardrails de MVP freeze em todos os agentes. Uma equipe de agentes bem estruturada para o CONDSTORE deve refletir o produto real, não um kit genérico adaptado superficialmente.
