@@ -118,6 +118,7 @@ Sem `.env.example` versionado, então use como base os pontos abaixo.
 - `npm run dev` — desenvolvimento.
 - `npm run build` / `npm run start` — build e execução de produção.
 - `npm run lint` — lint.
+- `npm run lint:secrets-critical` — falha CI se `AUTH_SECRET` estiver ausente/em fallback dev e se `PII_ENCRYPTION_KEY` faltar fora de `NODE_ENV=development`.
 - `npm run typecheck` — checagem TypeScript.
 - `npm run test:ci` / `npm run test:coverage` — testes.
 - `npm run routes:sync` — inventário/verificação de rotas.
@@ -132,6 +133,7 @@ Sem `.env.example` versionado, então use como base os pontos abaixo.
 - **Webhook hardening**: validação de assinatura Twilio/Stripe e idempotência/dedup em webhooks.
 - **Proteção de PII**: criptografia AES-GCM e redação em logs/eventos.
 - **Rate limiting/circuit breaker**: aplicados em pontos críticos (ex.: entrada WhatsApp e integrações externas).
+- **Regra operacional de CI**: `AUTH_SECRET` não pode usar fallback dev e `PII_ENCRYPTION_KEY` é obrigatória fora de `development`.
 
 ## Estado atual do produto (baseado no código)
 
