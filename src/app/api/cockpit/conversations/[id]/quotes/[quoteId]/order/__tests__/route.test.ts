@@ -16,14 +16,14 @@ vi.mock('@/modules/atendimento/order.service', () => ({
 
 vi.mock('@/modules/atendimento/freight-quote.service', () => ({
     freightQuoteService: {
-        getQuoteById: vi.fn().mockResolvedValue({ id: 'quote1', conversationId: 'conv1' }),
+        getQuoteById: vi.fn().mockResolvedValue({ id: 'quote1', conversationId: 'conv1', status: 'ACCEPTED' }),
     }
 }));
 
 describe('Accept Quote -> Order Route', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(freightQuoteService.getQuoteById).mockResolvedValue({ id: 'quote1', conversationId: 'conv1' } as any);
+        vi.mocked(freightQuoteService.getQuoteById).mockResolvedValue({ id: 'quote1', conversationId: 'conv1', status: 'ACCEPTED' } as any);
     });
 
     it('resolves operatorId purely using auth.session.sub (no legacy fallback to user.id)', async () => {
@@ -48,6 +48,28 @@ describe('Accept Quote -> Order Route', () => {
             'quote1',
             'op-123'
         );
+    });
+
+
+
+    it('blocks order creation when policy classifies action as HIGH_RISK without accepted quote', async () => {
+        vi.mocked(requireAdmin).mockResolvedValue({
+            ok: true,
+            requestId: 'req-1',
+            session: { tenantId: 't1', sub: 'op-123', role: 'admin' },
+        } as any);
+        vi.mocked(freightQuoteService.getQuoteById).mockResolvedValue({ id: 'quote1', conversationId: 'conv1', status: 'SENT' } as any);
+
+        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { method: 'POST' });
+        const context = { params: Promise.resolve({ id: 'conv1', quoteId: 'quote1' }) };
+
+        const res = await POST(req as any, context);
+        const body = await res.json();
+
+        expect(res.status).toBe(400);
+        expect(body.ok).toBe(false);
+        expect(body.error.message).toContain('cotacao precisa estar aprovada');
+        expect(orderService.createOrderFromQuote).not.toHaveBeenCalled();
     });
 
     it('returns 400 when quote belongs to another conversation', async () => {
