@@ -28,6 +28,7 @@ Para demos/pilotos reproduzíveis, use o runbook em [`docs/demo/demo-tenant-runb
 - **Frete multi-transportadora**: motor de cotação com adaptadores (incluindo Melhor Envio e tabelas internas), memória operacional e vínculo de shipment.
 - **Pedidos e logística**: criação/consulta de pedidos, shipment service/repository e integração com dados de frete.
 - **Frank (IA) com governança**: orquestrador, sugestões supervisionadas, tools, memória, intent linker e gateway de provider centralizado.
+- **Frank agent loop (base mínima)**: camada incremental com planner/policy/tool contract (`ToolResult`), memória operacional básica e telemetria estruturada no fluxo de conversão de cotação aprovada para pedido.
 - **Eventos operacionais e DOMINE**: publicação de eventos com sanitização de PII, processamento assíncrono com DLQ e trilha de auditoria.
 
 ## Stack real

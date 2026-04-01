@@ -5,6 +5,7 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { freightQuoteService } from '@/modules/atendimento/freight-quote.service';
 import { orderService } from '@/modules/atendimento/order.service';
+import { runFrankAgentTool } from '@/modules/frank/agent-loop';
 
 function classifyCreateOrderError(message: string) {
     if (message.includes('A cotação está sendo processada')) {
@@ -46,14 +47,28 @@ export async function POST(
             return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Quote does not belong to this conversation');
         }
 
-        const newOrder = await orderService.createOrderFromQuote(
-            tenantId,
-            conversationId,
-            quoteId,
-            sub
-        );
+        const toolResult = await runFrankAgentTool({
+            requestId,
+            action: 'CREATE_ORDER_FROM_ACCEPTED_QUOTE',
+            quoteStatus: quote.status ?? null,
+            execute: async () => orderService.createOrderFromQuote(
+                tenantId,
+                conversationId,
+                quoteId,
+                sub
+            ),
+        });
 
-        return NextResponse.json({ ok: true, data: newOrder });
+        if (!toolResult.ok) {
+            if (toolResult.errorCode === 'POLICY_BLOCKED') {
+                return errorResponse('VALIDATION_ERROR' as never, 400, requestId, toolResult.errorMessage ?? 'Failed to create order from quote');
+            }
+
+            const classification = classifyCreateOrderError(toolResult.errorMessage ?? 'Failed to create order from quote');
+            return errorResponse(classification.code as never, classification.status, requestId, toolResult.errorMessage ?? 'Failed to create order from quote');
+        }
+
+        return NextResponse.json({ ok: true, data: toolResult.data });
     } catch (err: any) {
         logger.error('Failed to create order from quote', err as Error, { requestId });
         const message = err instanceof Error ? err.message : 'Failed to create order from quote';
