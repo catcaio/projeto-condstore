@@ -24,14 +24,14 @@ import { resolvePackingDimensions } from '@/modules/freight/packing-resolver';
 import { TableDrivenAdapter } from '@/modules/freight/table-driven-adapter';
 import { loadOperationalSettings } from '@/core/freight/operational-settings';
 import { logFreightSimulation } from '@/modules/freight/freight-audit';
-import { createOrderFromQuoteTool } from './tools/create-order-from-quote.tool';
 import { isFrankAssistantMode } from './tools/tool-guard';
 import { getCustomerContextTool } from './tools/read-only/getCustomerContext.tool';
 import { getRecentOrdersTool, type RecentOrderSummary } from './tools/read-only/getRecentOrders.tool';
-import { getOrderStatusTool, type OrderStatusResult } from './tools/read-only/getOrderStatus.tool';
-import { getShipmentStatusTool, type ShipmentStatusResult } from './tools/read-only/getShipmentStatus.tool';
+import { type OrderStatusResult } from './tools/read-only/getOrderStatus.tool';
+import { type ShipmentStatusResult } from './tools/read-only/getShipmentStatus.tool';
 import { getRecentQuotesTool, type RecentQuoteSummary } from './tools/read-only/getRecentQuotes.tool';
 import { resolveFrankCustomerReference, type ShipmentSummary } from './tools/read-only/shared';
+import { runTool } from './tools/tool-runner';
 import { updateSessionState } from './session.repository';
 import { getDb } from '@/infra/db';
 import { carrierPolicies, customers, customerTimelineEvents } from '@/drizzle/schema';
@@ -40,7 +40,6 @@ import { logger } from '@/infra/logger';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { twilioProvider } from '@/providers/twilio.provider';
 import { catalogService } from '@/modules/catalog/catalog.service';
-import { freightService } from '@/modules/freight/freight.service';
 import { formatProductQueryResponse, formatFreightSimulationResponse } from '@/lib/formatters/whatsapp-response';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -469,6 +468,7 @@ async function handleAssistantIntent(params: {
     const { tenantId, message, phone, intentResult, context, cep, productRef, extractedEntities } = params;
     const startedAt = Date.now();
     const explicitId = extractUuidLikeId(message) ?? extractedEntities?.orderId ?? null;
+    const requestId = crypto.randomUUID();
 
     if (isLowConfidenceAssistantIntent(intentResult)) {
         return finalizeAssistantResponse({
@@ -517,14 +517,16 @@ async function handleAssistantIntent(params: {
             let customerId: string | null = null;
 
             if (explicitId) {
-                orderStatus = await getOrderStatusTool({ tenantId, orderId: explicitId });
+                const toolResult = await runTool('get_order_status', { tenantId, orderId: explicitId }, { tenantId, requestId });
+                orderStatus = toolResult.ok ? toolResult.data : null;
             }
 
             if (!orderStatus && context?.sessionState?.lastOrderId) {
-                orderStatus = await getOrderStatusTool({
+                const toolResult = await runTool('get_order_status', {
                     tenantId,
                     orderId: context.sessionState.lastOrderId,
-                });
+                }, { tenantId, requestId });
+                orderStatus = toolResult.ok ? toolResult.data : null;
             }
 
             if (!orderStatus) {
@@ -582,10 +584,11 @@ async function handleAssistantIntent(params: {
                 }
 
                 assumedMostRecent = true;
-                orderStatus = await getOrderStatusTool({
+                const toolResult = await runTool('get_order_status', {
                     tenantId,
                     orderId: recentOrders[0].orderId,
-                });
+                }, { tenantId, requestId });
+                orderStatus = toolResult.ok ? toolResult.data : null;
             }
 
             if (!orderStatus) {
@@ -637,10 +640,11 @@ async function handleAssistantIntent(params: {
             let partialOrderStatus: OrderStatusResult | null = null;
 
             if (explicitId) {
-                shipmentStatus = await getShipmentStatusTool({
+                const toolResult = await runTool('get_shipment_status', {
                     tenantId,
                     shipmentId: explicitId,
-                });
+                }, { tenantId, requestId });
+                shipmentStatus = toolResult.ok ? toolResult.data : null;
             }
 
             if (!shipmentStatus) {
@@ -704,7 +708,7 @@ async function handleAssistantIntent(params: {
                 }
 
                 partialOrderStatus = candidateOrderId
-                    ? await getOrderStatusTool({ tenantId, orderId: candidateOrderId })
+                    ? (await runTool('get_order_status', { tenantId, orderId: candidateOrderId }, { tenantId, requestId })).data
                     : null;
 
                 toolUsed = 'get_order_status>get_shipment_status';
@@ -734,10 +738,11 @@ async function handleAssistantIntent(params: {
                     });
                 }
 
-                shipmentStatus = await getShipmentStatusTool({
+                const toolResult = await runTool('get_shipment_status', {
                     tenantId,
                     shipmentId: partialOrderStatus.linkedShipment.shipmentId,
-                });
+                }, { tenantId, requestId });
+                shipmentStatus = toolResult.ok ? toolResult.data : null;
             }
 
             if (!shipmentStatus) {
@@ -1329,12 +1334,21 @@ export async function handleIncomingMessage(
         }).catch(() => {});
 
         try {
-            const result = await freightService.simulateFreight({
+            const toolResult = await runTool('freight_calculation', {
                 tenantId,
                 productId: productIdentifier,
                 quantity,
                 destinationZip: cepRaw,
+            }, {
+                tenantId,
+                requestId: sessionId ?? crypto.randomUUID(),
             });
+
+            if (!toolResult.ok || !toolResult.data) {
+                throw new Error(toolResult.error?.message ?? 'Falha ao calcular frete.');
+            }
+
+            const result = toolResult.data;
 
             publishOperationalEvent({
                 tenantId,
@@ -1411,7 +1425,7 @@ export async function handleIncomingMessage(
             const itemName = lastQuote.productRef ? `Produto: ${lastQuote.productRef}` : 'Produto Genérico';
             const itemPrice = lastQuote.quotedFreight ? parseFloat(lastQuote.quotedFreight) : 0; // Using freight as placeholder price if no product price available
 
-            const orderResult = await createOrderFromQuoteTool({
+            const toolResult = await runTool('create_order_from_quote', {
                 tenantId,
                 simulationId: lastQuote.simulationId,
                 customerId: resolvedCustomerId,
@@ -1421,7 +1435,26 @@ export async function handleIncomingMessage(
                     quantity: 1,
                     unitPrice: itemPrice > 0 ? itemPrice : 1, // Ensure non-zero
                 }]
+            }, {
+                tenantId,
+                requestId: sessionId ?? crypto.randomUUID(),
+                allowHighRisk: gateResult.mode === 'SUPERVISED',
             });
+
+            if (!toolResult.ok || !toolResult.data) {
+                return {
+                    reply: `Não consegui executar essa ação automaticamente porque ela exige aprovação operacional. Um atendente humano pode finalizar por você no cockpit.`,
+                    intent: intentResult.intent,
+                    intentConfidence: intentResult.confidence,
+                    cep,
+                    productRef,
+                    simulationId: null,
+                    carrierSuggested: null,
+                    context,
+                };
+            }
+
+            const orderResult = toolResult.data;
 
             // Emit explicit Frank interaction timeline event
             await db.insert(customerTimelineEvents).values({
