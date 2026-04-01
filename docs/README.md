@@ -127,6 +127,7 @@ Processo operacional para captar, qualificar, fechar e acompanhar os primeiros p
 | [docs/ops/rollback-plan.md](./ops/rollback-plan.md) | Plano de rollback |
 | [docs/ops/worker-finops.md](./ops/worker-finops.md) | Worker FinOps |
 | [docs/ops/staging-bootstrap.md](./ops/staging-bootstrap.md) | Bootstrap de staging |
+| [docs/ops/mvp-go-live-operational-structure.md](./ops/mvp-go-live-operational-structure.md) | Estrutura operacional da initiative MVP Go Live (Linear) |
 | [docs/cutover-prod.md](./cutover-prod.md) | Procedimento de cutover para produção |
 | [docs/go-no-go.md](./go-no-go.md) | Critérios de go/no-go |
 
