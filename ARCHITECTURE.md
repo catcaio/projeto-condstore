@@ -122,6 +122,7 @@ Controles observáveis no código:
 - Modo supervisionado suportado (`SUPERVISED_ONLY`) para geração de sugestão sem envio autônomo indiscriminado.
 - Tool model com guard de execução (`src/modules/frank/tools/tool-guard.ts`).
 - Agent loop mínimo para ações operacionais críticas: `src/modules/frank/agent-loop.ts` (planner + policy + memory + telemetry), integrado de forma compatível no fluxo `Quote -> Order`.
+- Separação de sub-agentes no loop Frank: o planner classifica ação por domínio (`ATENDIMENTO`, `CRM`, `FREIGHT`, `LOGISTICA`) e registra handoff explícito para troubleshooting e governança operacional.
 
 ## 8) Segurança e invariantes arquiteturais
 
