@@ -42,7 +42,7 @@ export interface FrankPlannerInput {
 
 const ACTION_RISK_MAP: Record<FrankAgentAction, FrankRiskLevel> = {
     READ_QUOTE_CONTEXT: 'LOW_RISK',
-    REQUEST_QUOTE_APPROVAL: 'MEDIUM_RISK',
+    REQUEST_QUOTE_APPROVAL: 'HIGH_RISK',
     CREATE_ORDER_FROM_ACCEPTED_QUOTE: 'HIGH_RISK',
 };
 
@@ -54,22 +54,44 @@ export function decideNextAction(input: FrankPlannerInput, state: FrankAgentStat
     return input.requestedAction;
 }
 
+function resolveNextAllowedActions(quoteStatus: string | null): FrankAgentAction[] {
+    if (quoteStatus === 'ACCEPTED') {
+        return ['READ_QUOTE_CONTEXT', 'CREATE_ORDER_FROM_ACCEPTED_QUOTE'];
+    }
+
+    if (quoteStatus === 'SENT' || quoteStatus === 'DRAFT') {
+        return ['READ_QUOTE_CONTEXT', 'REQUEST_QUOTE_APPROVAL'];
+    }
+
+    return ['READ_QUOTE_CONTEXT'];
+}
+
 export function evaluatePolicy(input: FrankPolicyInput): FrankPolicyDecision {
     const riskLevel = ACTION_RISK_MAP[input.action];
+    const nextAllowedActions = resolveNextAllowedActions(input.quoteStatus);
 
-    if (riskLevel === 'HIGH_RISK' && input.quoteStatus !== 'ACCEPTED') {
+    if (input.action === 'REQUEST_QUOTE_APPROVAL' && !input.quoteStatus) {
+        return {
+            riskLevel,
+            allowed: false,
+            reason: 'Ação bloqueada: cotação inexistente para solicitar aprovação.',
+            nextAllowedActions,
+        };
+    }
+
+    if (input.action === 'CREATE_ORDER_FROM_ACCEPTED_QUOTE' && input.quoteStatus !== 'ACCEPTED') {
         return {
             riskLevel,
             allowed: false,
             reason: 'A cotacao precisa estar aprovada antes de criar o pedido.',
-            nextAllowedActions: ['READ_QUOTE_CONTEXT', 'REQUEST_QUOTE_APPROVAL'],
+            nextAllowedActions,
         };
     }
 
     return {
         riskLevel,
         allowed: true,
-        nextAllowedActions: ['READ_QUOTE_CONTEXT', 'REQUEST_QUOTE_APPROVAL', 'CREATE_ORDER_FROM_ACCEPTED_QUOTE'],
+        nextAllowedActions,
     };
 }
 
@@ -119,10 +141,12 @@ export async function runFrankAgentTool(params: {
             },
         };
 
-        logger.info('frank_agent_loop_execution', {
+        logger.warn('frank_agent_loop_execution_blocked', {
             requestId: params.requestId,
             action: plannedAction,
             outcome: blockedResult.status,
+            reason: blockedResult.errorMessage,
+            riskLevel: policy.riskLevel,
             durationMs: Date.now() - start,
         });
 
@@ -152,6 +176,7 @@ export async function runFrankAgentTool(params: {
             requestId: params.requestId,
             action: plannedAction,
             outcome: success.status,
+            riskLevel: policy.riskLevel,
             durationMs: Date.now() - start,
         });
 
@@ -175,6 +200,7 @@ export async function runFrankAgentTool(params: {
             requestId: params.requestId,
             action: plannedAction,
             outcome: failed.status,
+            riskLevel: policy.riskLevel,
             durationMs: Date.now() - start,
         });
 

@@ -29,6 +29,22 @@ describe('Frank agent loop (minimal)', () => {
         expect(result.data).toEqual({ quoteId: 'q-1' });
     });
 
+
+    it('blocks high-risk approval request when quote context is missing', async () => {
+        const result = await runFrankAgentTool({
+            requestId: 'req-approval-1',
+            action: 'REQUEST_QUOTE_APPROVAL',
+            quoteStatus: null,
+            execute: async () => ({ ok: true }),
+        });
+
+        expect(result.ok).toBe(false);
+        expect(result.status).toBe('BLOCKED_BY_POLICY');
+        expect(result.errorCode).toBe('POLICY_BLOCKED');
+        expect(result.errorMessage).toContain('cotação inexistente');
+        expect(result.nextAllowedActions).toEqual(['READ_QUOTE_CONTEXT']);
+    });
+
     it('always returns ToolResult shape on execution failure', async () => {
         const result = await runFrankAgentTool({
             requestId: 'req-3',

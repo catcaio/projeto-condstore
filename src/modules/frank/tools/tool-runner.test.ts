@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { simulateFreightMock, createOrderMock, getOrderStatusMock } = vi.hoisted(() => ({
     simulateFreightMock: vi.fn(),
@@ -27,6 +27,9 @@ vi.mock('./read-only/getShipmentStatus.tool', () => ({
 import { runTool } from './tool-runner';
 
 describe('runTool', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
     it('executes valid low-risk tools and normalizes response', async () => {
         simulateFreightMock.mockResolvedValueOnce({ carrier: 'x', price: 10, deliveryDays: 2 });
 
@@ -49,7 +52,7 @@ describe('runTool', () => {
         expect(result.error).toBeNull();
     });
 
-    it('blocks high-risk tool without policy precondition', async () => {
+    it('blocks high-risk order creation tool without policy precondition', async () => {
         const result = await runTool(
             'create_order_from_quote',
             {
@@ -68,6 +71,50 @@ describe('runTool', () => {
         expect(result.ok).toBe(false);
         expect(result.error?.code).toBe('POLICY_BLOCKED');
         expect(createOrderMock).not.toHaveBeenCalled();
+    });
+
+
+    it('blocks high-risk quote creation tool without policy precondition', async () => {
+        const result = await runTool(
+            'create_quote',
+            {
+                tenantId: 'tenant-1',
+                productId: 'prod-1',
+                quantity: 1,
+                destinationZip: '01001000',
+            },
+            {
+                tenantId: 'tenant-1',
+                requestId: 'req-quote-blocked',
+            },
+        );
+
+        expect(result.ok).toBe(false);
+        expect(result.error?.code).toBe('POLICY_BLOCKED');
+        expect(simulateFreightMock).not.toHaveBeenCalled();
+    });
+
+    it('allows high-risk tools when explicit precondition is provided', async () => {
+        simulateFreightMock.mockResolvedValueOnce({ carrier: 'x', price: 11, deliveryDays: 3 });
+
+        const result = await runTool(
+            'create_quote',
+            {
+                tenantId: 'tenant-1',
+                productId: 'prod-1',
+                quantity: 1,
+                destinationZip: '01001000',
+            },
+            {
+                tenantId: 'tenant-1',
+                requestId: 'req-quote-allowed',
+                allowHighRisk: true,
+            },
+        );
+
+        expect(result.ok).toBe(true);
+        expect(result.error).toBeNull();
+        expect(result.data).toEqual({ carrier: 'x', price: 11, deliveryDays: 3 });
     });
 
     it('returns structured execution error on tool failure', async () => {

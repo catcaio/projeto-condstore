@@ -21,7 +21,12 @@ export interface FrankToolPolicyDecision {
     reason?: string;
 }
 
-const HIGH_RISK_ACTIONS: ReadonlySet<FrankToolAction> = new Set(['create_order_from_quote']);
+const HIGH_RISK_ACTIONS: ReadonlySet<FrankToolAction> = new Set([
+    'create_quote',
+    'create_order_from_quote',
+]);
+
+const HIGH_RISK_BLOCK_REASON = 'missing_high_risk_precondition';
 
 export function evaluateFrankToolPolicy(
     action: FrankToolAction,
@@ -35,13 +40,14 @@ export function evaluateFrankToolPolicy(
             requestId: context.requestId,
             action,
             riskLevel,
-            reason: 'missing_high_risk_precondition',
+            reason: HIGH_RISK_BLOCK_REASON,
+            requiredValidation: 'allowHighRisk=true',
         });
 
         return {
             allowed: false,
             riskLevel,
-            reason: 'missing_high_risk_precondition',
+            reason: HIGH_RISK_BLOCK_REASON,
         };
     }
 
