@@ -47,6 +47,28 @@ describe('runTool', () => {
         expect(result.ok).toBe(true);
         expect(result.data).toEqual({ carrier: 'x', price: 10, deliveryDays: 2 });
         expect(result.error).toBeNull();
+        expect(result.riskLevel).toBe('LOW_RISK');
+    });
+
+    it('classifies quote creation as medium risk and allows execution', async () => {
+        simulateFreightMock.mockResolvedValueOnce({ carrier: 'x', price: 12, deliveryDays: 3 });
+
+        const result = await runTool(
+            'create_quote',
+            {
+                tenantId: 'tenant-1',
+                productId: 'prod-1',
+                quantity: 1,
+                destinationZip: '01001000',
+            },
+            {
+                tenantId: 'tenant-1',
+                requestId: 'req-1b',
+            },
+        );
+
+        expect(result.ok).toBe(true);
+        expect(result.riskLevel).toBe('MEDIUM_RISK');
     });
 
     it('blocks high-risk tool without policy precondition', async () => {
@@ -68,6 +90,25 @@ describe('runTool', () => {
         expect(result.ok).toBe(false);
         expect(result.error?.code).toBe('POLICY_BLOCKED');
         expect(createOrderMock).not.toHaveBeenCalled();
+    });
+
+    it('blocks execution when input tenant does not match context tenant', async () => {
+        const result = await runTool(
+            'get_order_status',
+            {
+                tenantId: 'tenant-2',
+                orderId: 'ord-1',
+            },
+            {
+                tenantId: 'tenant-1',
+                requestId: 'req-2b',
+            },
+        );
+
+        expect(result.ok).toBe(false);
+        expect(result.error?.code).toBe('POLICY_BLOCKED');
+        expect(result.error?.details).toEqual({ reason: 'tenant_mismatch' });
+        expect(getOrderStatusMock).not.toHaveBeenCalled();
     });
 
     it('returns structured execution error on tool failure', async () => {
