@@ -76,7 +76,9 @@ export async function runTool<TAction extends FrankToolAction>(
     context: ToolRunnerContext,
 ): Promise<ToolResult<RunnerOutputMap[TAction]>> {
     const startedAt = Date.now();
-    const decision = evaluateFrankToolPolicy(action, context);
+    const decision = evaluateFrankToolPolicy(action, context, {
+        targetTenantId: extractTenantId(input),
+    });
 
     if (!decision.allowed) {
         const durationMs = Date.now() - startedAt;
@@ -153,6 +155,15 @@ export async function runTool<TAction extends FrankToolAction>(
             },
         };
     }
+}
+
+function extractTenantId(input: unknown): string | undefined {
+    if (!input || typeof input !== 'object') {
+        return undefined;
+    }
+
+    const maybeTenantId = (input as { tenantId?: unknown }).tenantId;
+    return typeof maybeTenantId === 'string' && maybeTenantId.length > 0 ? maybeTenantId : undefined;
 }
 
 async function executeToolAction<TAction extends FrankToolAction>(

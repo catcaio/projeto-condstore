@@ -7,12 +7,16 @@ export type FrankToolAction =
     | 'get_order_status'
     | 'get_shipment_status';
 
-export type FrankToolRiskLevel = 'LOW_RISK' | 'HIGH_RISK';
+export type FrankToolRiskLevel = 'LOW_RISK' | 'MEDIUM_RISK' | 'HIGH_RISK';
 
 export interface FrankToolPolicyContext {
     tenantId: string;
     requestId: string;
     allowHighRisk?: boolean;
+}
+
+export interface FrankToolPolicyInput {
+    targetTenantId?: string;
 }
 
 export interface FrankToolPolicyDecision {
@@ -21,13 +25,37 @@ export interface FrankToolPolicyDecision {
     reason?: string;
 }
 
-const HIGH_RISK_ACTIONS: ReadonlySet<FrankToolAction> = new Set(['create_order_from_quote']);
+const ACTION_RISK_MAP: Readonly<Record<FrankToolAction, FrankToolRiskLevel>> = {
+    freight_calculation: 'LOW_RISK',
+    create_quote: 'MEDIUM_RISK',
+    create_order_from_quote: 'HIGH_RISK',
+    get_order_status: 'LOW_RISK',
+    get_shipment_status: 'LOW_RISK',
+};
 
 export function evaluateFrankToolPolicy(
     action: FrankToolAction,
     context: FrankToolPolicyContext,
+    input: FrankToolPolicyInput = {},
 ): FrankToolPolicyDecision {
-    const riskLevel: FrankToolRiskLevel = HIGH_RISK_ACTIONS.has(action) ? 'HIGH_RISK' : 'LOW_RISK';
+    const riskLevel = ACTION_RISK_MAP[action];
+
+    if (input.targetTenantId && input.targetTenantId !== context.tenantId) {
+        logger.warn('frank_tool_policy_blocked', {
+            tenantId: context.tenantId,
+            requestId: context.requestId,
+            action,
+            riskLevel,
+            reason: 'tenant_mismatch',
+            targetTenantId: input.targetTenantId,
+        });
+
+        return {
+            allowed: false,
+            riskLevel,
+            reason: 'tenant_mismatch',
+        };
+    }
 
     if (riskLevel === 'HIGH_RISK' && !context.allowHighRisk) {
         logger.warn('frank_tool_policy_blocked', {
