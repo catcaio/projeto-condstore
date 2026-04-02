@@ -30,6 +30,7 @@ Para demos/pilotos reproduzíveis, use o runbook em [`docs/demo/demo-tenant-runb
 - **Frank (IA) com governança**: orquestrador, sugestões supervisionadas, tools, memória, intent linker e gateway de provider centralizado.
 - **Frank agent loop (base mínima)**: camada incremental com planner/policy/tool contract (`ToolResult`), memória operacional básica e telemetria estruturada no fluxo de conversão de cotação aprovada para pedido.
 - **Eventos operacionais e DOMINE**: publicação de eventos com sanitização de PII, processamento assíncrono com DLQ e trilha de auditoria.
+- **Tudico Fase 2 (pesquisa epistemológica)**: versionamento de hipóteses, diff entre versões, paper cards, inconsistency board e auditoria epistemológica via tools dedicadas no cockpit.
 
 ## Stack real
 

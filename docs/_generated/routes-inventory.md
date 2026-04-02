@@ -90,6 +90,14 @@
 | `/api/cockpit/saved-views` | API |
 | `/api/cockpit/status` | API |
 | `/api/cockpit/timeline` | API |
+| `/api/cockpit/tudico/audit-response` | API |
+| `/api/cockpit/tudico/claim-conflicts` | API |
+| `/api/cockpit/tudico/hypotheses` | API |
+| `/api/cockpit/tudico/hypotheses/compare` | API |
+| `/api/cockpit/tudico/inconsistencies` | API |
+| `/api/cockpit/tudico/papers` | API |
+| `/api/cockpit/tudico/papers/[id]` | API |
+| `/api/cockpit/tudico/tools` | API |
 | `/api/cron/cleanup` | API |
 | `/api/db/migrate` | API |
 | `/api/debug/tenants` | API |
@@ -284,6 +292,7 @@
 | `/cockpit/supreme` | Page |
 | `/cockpit/supreme/benchmarks` | Page |
 | `/cockpit/timeline` | Page |
+| `/cockpit/tudico` | Page |
 | `/como-funciona` | Page |
 | `/concept-layer-preview` | Page |
 | `/configuracoes` | Page |
