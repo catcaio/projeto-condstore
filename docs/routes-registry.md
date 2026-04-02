@@ -4,6 +4,7 @@
 |---|---|---|---|---|---|---|
 | / | TBA | public | none | PUBLIC | live | Auto-detected |
 | /about | TBA | public | none | PUBLIC | live | Auto-detected |
+| /area-estudo/estrutura-quantica-relacional | Hub didático da Área de Estudo (Estrutura Quântica-Relacional) | public | none | PUBLIC | live | Rota isolada para conteúdo didático e freeze explícito das frentes paralelas |
 | /api/app/events | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/auth/login | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/auth/logout | TBA | public | none | PUBLIC | live | Auto-detected |

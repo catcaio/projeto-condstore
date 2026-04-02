@@ -73,6 +73,7 @@ docs/                  # estado do produto, runbooks e documentação técnica c
 - Para frete/pedidos/logística: `src/modules/freight/*`, `src/modules/pedidos/*`, `src/modules/logistics/*`.
 - Para multi-tenant e guards: `src/infra/auth/*` e `src/infra/db.ts`.
 - Para eventos: `src/lib/events/operational-event-bus.ts` e `src/modules/domine/*`.
+- Para o hub didático isolado da Área de Estudo: `src/app/(public)/area-estudo/estrutura-quantica-relacional/page.tsx` e `content.ts`.
 
 ## Setup local
 
