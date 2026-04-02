@@ -1,5 +1,5 @@
 import { freightService } from '@/modules/freight/freight.service';
-import { logger } from '@/infra/logger';
+import { structuredLogger } from '@/infra/log/logger';
 import { createOrderFromQuoteTool, type CreateOrderFromQuoteParams } from './create-order-from-quote.tool';
 import { getOrderStatusTool, type GetOrderStatusParams, type OrderStatusResult } from './read-only/getOrderStatus.tool';
 import { getShipmentStatusTool, type GetShipmentStatusParams, type ShipmentStatusResult } from './read-only/getShipmentStatus.tool';
@@ -94,7 +94,7 @@ export async function runTool<TAction extends FrankToolAction>(
             },
         };
 
-        logger.warn('frank_tool_runner_completed', {
+        structuredLogger.warn('frank_tool_runner_completed', {
             tenantId: context.tenantId,
             requestId: context.requestId,
             action,
@@ -110,7 +110,7 @@ export async function runTool<TAction extends FrankToolAction>(
         const data = await executeToolAction(action, input);
         const durationMs = Date.now() - startedAt;
 
-        logger.info('frank_tool_runner_completed', {
+        structuredLogger.info('frank_tool_runner_completed', {
             tenantId: context.tenantId,
             requestId: context.requestId,
             action,
@@ -132,12 +132,13 @@ export async function runTool<TAction extends FrankToolAction>(
         const durationMs = Date.now() - startedAt;
         const message = error instanceof Error ? error.message : 'Unknown tool execution error';
 
-        logger.error('frank_tool_runner_failed', error as Error, {
+        structuredLogger.error('frank_tool_runner_failed', {
             tenantId: context.tenantId,
             requestId: context.requestId,
             action,
             input: sanitizeTelemetryInput(input),
             durationMs,
+            error,
         });
 
         return {

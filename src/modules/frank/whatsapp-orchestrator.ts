@@ -37,6 +37,7 @@ import { getDb } from '@/infra/db';
 import { carrierPolicies, customers, customerTimelineEvents } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
+import { structuredLogger } from '@/infra/log/logger';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { twilioProvider } from '@/providers/twilio.provider';
 import { catalogService } from '@/modules/catalog/catalog.service';
@@ -246,6 +247,7 @@ function buildAssistantResult(params: {
 
 async function finalizeAssistantResponse(params: {
     tenantId: string;
+    requestId: string;
     reply: string;
     intentResult: IntentResult;
     context: ConversationContext | null;
@@ -283,6 +285,7 @@ async function finalizeAssistantResponse(params: {
 
     logger.info('frank_assist_response', {
         tenantId: params.tenantId,
+        requestId: params.requestId,
         ...responsePayload,
         missingContextReason: params.outcome === 'fallback' ? params.fallbackReason : undefined,
         customerId: params.customerId ?? undefined,
@@ -298,7 +301,10 @@ async function finalizeAssistantResponse(params: {
         entityId,
         customerId: params.customerId ?? null,
         sessionId,
-        payload: responsePayload,
+        payload: {
+            ...responsePayload,
+            requestId: params.requestId,
+        },
     });
 
     if (params.outcome === 'fallback') {
@@ -306,6 +312,7 @@ async function finalizeAssistantResponse(params: {
 
         logger.warn('frank_assist_handoff', {
             tenantId: params.tenantId,
+            requestId: params.requestId,
             intent: params.intentResult.intent,
             reason: handoffReason,
             toolUsed,
@@ -326,6 +333,7 @@ async function finalizeAssistantResponse(params: {
                 intent: params.intentResult.intent,
                 toolUsed,
                 reason: handoffReason,
+                requestId: params.requestId,
             },
         });
     }
@@ -457,6 +465,7 @@ function formatRecentQuotesReply(recentQuotes: RecentQuoteSummary[]): string {
 
 async function handleAssistantIntent(params: {
     tenantId: string;
+    requestId: string;
     message: string;
     phone?: string;
     intentResult: IntentResult;
@@ -465,14 +474,14 @@ async function handleAssistantIntent(params: {
     productRef: string | null;
     extractedEntities?: ExtractedEntities;
 }): Promise<OrchestratorResult> {
-    const { tenantId, message, phone, intentResult, context, cep, productRef, extractedEntities } = params;
+    const { tenantId, requestId, message, phone, intentResult, context, cep, productRef, extractedEntities } = params;
     const startedAt = Date.now();
     const explicitId = extractUuidLikeId(message) ?? extractedEntities?.orderId ?? null;
-    const requestId = crypto.randomUUID();
 
     if (isLowConfidenceAssistantIntent(intentResult)) {
         return finalizeAssistantResponse({
             tenantId,
+            requestId,
             reply: formatSupportResponse({
                 answer: 'Não consegui classificar essa solicitação com segurança.',
                 nextStep: ASSISTANT_REPHRASE_GUIDANCE,
@@ -494,6 +503,7 @@ async function handleAssistantIntent(params: {
         case 'PRODUTO':
             return finalizeAssistantResponse({
                 tenantId,
+                requestId,
                 reply: formatSupportResponse({
                     answer: 'Estou em modo assistente com leitura estrita.',
                     facts: ['Neste momento eu só consulto dados de pedido, envio, cotação e contexto do cliente.'],
@@ -542,6 +552,7 @@ async function handleAssistantIntent(params: {
                 if (!customerId) {
                     return finalizeAssistantResponse({
                         tenantId,
+                        requestId,
                         reply: formatSupportResponse({
                             answer: 'Não consegui localizar o cliente desta conversa com segurança.',
                             nextStep: ASSISTANT_HUMAN_GUIDANCE,
@@ -567,6 +578,7 @@ async function handleAssistantIntent(params: {
                 if (recentOrders.length === 0) {
                     return finalizeAssistantResponse({
                         tenantId,
+                        requestId,
                         reply: formatSupportResponse({
                             answer: 'Não encontrei pedido para este cliente.',
                             nextStep: ASSISTANT_HUMAN_GUIDANCE,
@@ -594,6 +606,7 @@ async function handleAssistantIntent(params: {
             if (!orderStatus) {
                 return finalizeAssistantResponse({
                     tenantId,
+                    requestId,
                     reply: formatSupportResponse({
                         answer: 'Não encontrei esse pedido com segurança.',
                         nextStep: ASSISTANT_HUMAN_GUIDANCE,
@@ -613,6 +626,7 @@ async function handleAssistantIntent(params: {
 
             return finalizeAssistantResponse({
                 tenantId,
+                requestId,
                 reply: formatOrderStatusReply(orderStatus, {
                     assumedMostRecent,
                     nextStep: orderStatus.linkedShipment
@@ -663,6 +677,7 @@ async function handleAssistantIntent(params: {
                     if (!customerId) {
                         return finalizeAssistantResponse({
                             tenantId,
+                            requestId,
                             reply: formatSupportResponse({
                                 answer: 'Não consegui localizar o cliente desta conversa com segurança.',
                                 nextStep: ASSISTANT_HUMAN_GUIDANCE,
@@ -687,6 +702,7 @@ async function handleAssistantIntent(params: {
                     if (recentOrders.length === 0) {
                         return finalizeAssistantResponse({
                             tenantId,
+                            requestId,
                             reply: formatSupportResponse({
                                 answer: 'Não encontrei envio para este cliente.',
                                 nextStep: ASSISTANT_HUMAN_GUIDANCE,
@@ -716,6 +732,7 @@ async function handleAssistantIntent(params: {
                 if (!partialOrderStatus?.linkedShipment) {
                     return finalizeAssistantResponse({
                         tenantId,
+                        requestId,
                         reply: formatSupportResponse({
                             answer: partialOrderStatus
                                 ? `Encontrei o pedido ${partialOrderStatus.order.id}, mas o envio ainda não está disponível para consulta.`
@@ -748,6 +765,7 @@ async function handleAssistantIntent(params: {
             if (!shipmentStatus) {
                 return finalizeAssistantResponse({
                     tenantId,
+                    requestId,
                     reply: formatSupportResponse({
                         answer: 'Não encontrei esse envio com segurança.',
                         nextStep: ASSISTANT_HUMAN_GUIDANCE,
@@ -775,6 +793,7 @@ async function handleAssistantIntent(params: {
 
             return finalizeAssistantResponse({
                 tenantId,
+                requestId,
                 reply: shipmentReply,
                 intentResult,
                 context,
@@ -797,6 +816,7 @@ async function handleAssistantIntent(params: {
             if (!customerId) {
                 return finalizeAssistantResponse({
                     tenantId,
+                    requestId,
                     reply: formatSupportResponse({
                         answer: 'Não consegui localizar o cliente desta conversa com segurança.',
                         nextStep: ASSISTANT_HUMAN_GUIDANCE,
@@ -820,6 +840,7 @@ async function handleAssistantIntent(params: {
             if (recentOrders.length === 0) {
                 return finalizeAssistantResponse({
                     tenantId,
+                    requestId,
                     reply: formatSupportResponse({
                         answer: 'Não encontrei pedidos recentes para este cliente.',
                         nextStep: ASSISTANT_HUMAN_GUIDANCE,
@@ -838,6 +859,7 @@ async function handleAssistantIntent(params: {
 
             return finalizeAssistantResponse({
                 tenantId,
+                requestId,
                 reply: formatRecentOrdersReply(recentOrders),
                 intentResult,
                 context,
@@ -858,6 +880,7 @@ async function handleAssistantIntent(params: {
             if (!customerId) {
                 return finalizeAssistantResponse({
                     tenantId,
+                    requestId,
                     reply: formatSupportResponse({
                         answer: 'Não consegui localizar o cliente desta conversa com segurança.',
                         nextStep: ASSISTANT_QUOTE_GUIDANCE,
@@ -881,6 +904,7 @@ async function handleAssistantIntent(params: {
             if (recentQuotes.length === 0) {
                 return finalizeAssistantResponse({
                     tenantId,
+                    requestId,
                     reply: formatSupportResponse({
                         answer: 'Não encontrei cotações recentes para este cliente.',
                         nextStep: ASSISTANT_QUOTE_GUIDANCE,
@@ -899,6 +923,7 @@ async function handleAssistantIntent(params: {
 
             return finalizeAssistantResponse({
                 tenantId,
+                requestId,
                 reply: formatRecentQuotesReply(recentQuotes),
                 intentResult,
                 context,
@@ -923,6 +948,7 @@ async function handleAssistantIntent(params: {
             if (!customerContext) {
                 return finalizeAssistantResponse({
                     tenantId,
+                    requestId,
                     reply: formatSupportResponse({
                         answer: 'Não encontrei contexto suficiente para esse cliente.',
                         nextStep: ASSISTANT_HUMAN_GUIDANCE,
@@ -950,6 +976,7 @@ async function handleAssistantIntent(params: {
 
             return finalizeAssistantResponse({
                 tenantId,
+                requestId,
                 reply: formatSupportResponse({
                     answer: `Encontrei o cadastro vinculado à organização ${organizationName}.`,
                     facts: [
@@ -981,6 +1008,7 @@ async function handleAssistantIntent(params: {
         default:
             return finalizeAssistantResponse({
                 tenantId,
+                requestId,
                 reply: formatSupportResponse({
                     answer: 'Não consegui resolver essa consulta com segurança.',
                     nextStep: ASSISTANT_REPHRASE_GUIDANCE,
@@ -1003,7 +1031,10 @@ export async function handleIncomingMessage(
     tenantId: string,
     message: string,
     phone?: string,
+    options?: { requestId?: string },
 ): Promise<OrchestratorResult> {
+    const requestId = options?.requestId ?? crypto.randomUUID();
+    structuredLogger.info('frank_orchestrator_start', { tenantId, requestId, eventType: 'orchestrator_start' });
     const assistantMode = isFrankAssistantMode();
     const cep = extractCep(message);
     const cepRaw = extractCepRaw(message);
@@ -1510,6 +1541,7 @@ export async function handleIncomingMessage(
             const finalReply = `${playbook.responseBase}\n\n${playbook.nextStepSuggestion ?? ''}`.trim();
             const assistantResult = await finalizeAssistantResponse({
                 tenantId,
+                requestId,
                 reply: finalReply,
                 intentResult,
                 context,
@@ -1529,6 +1561,7 @@ export async function handleIncomingMessage(
 
         const assistantResult = await handleAssistantIntent({
             tenantId,
+            requestId,
             message,
             phone,
             intentResult,
@@ -1605,6 +1638,13 @@ export async function handleIncomingMessage(
         }).catch(() => {});
     }
 
+    structuredLogger.info('frank_orchestrator_end', {
+        tenantId,
+        requestId,
+        intent: intentResult.intent,
+        confidence: intentResult.confidence,
+        eventType: 'orchestrator_end',
+    });
     return genericResult;
 }
 

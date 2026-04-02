@@ -1,4 +1,4 @@
-import { logger } from '@/infra/logger';
+import { structuredLogger } from '@/infra/log/logger';
 
 export type FrankToolAction =
     | 'freight_calculation'
@@ -30,7 +30,7 @@ export function evaluateFrankToolPolicy(
     const riskLevel: FrankToolRiskLevel = HIGH_RISK_ACTIONS.has(action) ? 'HIGH_RISK' : 'LOW_RISK';
 
     if (riskLevel === 'HIGH_RISK' && !context.allowHighRisk) {
-        logger.warn('frank_tool_policy_blocked', {
+        structuredLogger.warn('frank_tool_policy_blocked', {
             tenantId: context.tenantId,
             requestId: context.requestId,
             action,

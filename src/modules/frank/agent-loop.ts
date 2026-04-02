@@ -1,4 +1,4 @@
-import { logger } from '@/infra/logger';
+import { structuredLogger } from '@/infra/log/logger';
 
 export type ToolResult = {
     ok: boolean;
@@ -119,7 +119,7 @@ export async function runFrankAgentTool(params: {
             },
         };
 
-        logger.info('frank_agent_loop_execution', {
+        structuredLogger.info('frank_agent_loop_execution', {
             requestId: params.requestId,
             action: plannedAction,
             outcome: blockedResult.status,
@@ -148,7 +148,7 @@ export async function runFrankAgentTool(params: {
             },
         };
 
-        logger.info('frank_agent_loop_execution', {
+        structuredLogger.info('frank_agent_loop_execution', {
             requestId: params.requestId,
             action: plannedAction,
             outcome: success.status,
@@ -171,11 +171,13 @@ export async function runFrankAgentTool(params: {
             },
         };
 
-        logger.info('frank_agent_loop_execution', {
+        structuredLogger.warn('frank_agent_loop_execution', {
             requestId: params.requestId,
             action: plannedAction,
             outcome: failed.status,
             durationMs: Date.now() - start,
+            errorCode: failed.errorCode,
+            errorMessage: message,
         });
 
         return failed;
