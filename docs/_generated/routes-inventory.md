@@ -225,6 +225,7 @@
 | `/api/whatsapp/incoming` | API |
 | `/api/whatsapp/status` | API |
 | `/app` | Page |
+| `/area-estudo/estrutura-quantica-relacional` | Page |
 | `/attribution` | Page |
 | `/avaliacao` | Page |
 | `/billing` | Page |
