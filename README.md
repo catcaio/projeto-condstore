@@ -142,6 +142,18 @@ Sem `.env.example` versionado, então use como base os pontos abaixo.
 - **IA Frank**: existe runtime, tools e worker; operação pode ser restringida por flags (`FRANK_RUNTIME_ENABLED`, `FRANK_RUNTIME_MODE`), permitindo modo supervisionado.
 - **Maturidade heterogênea de UI**: há telas e módulos que ainda usam partes mock/placeholder no front-end enquanto o backend já possui estrutura de domínio e schema para os mesmos contextos.
 
+
+## Tudico MVP (Pesquisa isolada)
+
+Foi adicionada uma superfície isolada de pesquisa em `/(app)/tudico` com API dedicada em `/api/tudico/query`, sem integração com Frank runtime nem com fluxos operacionais de CRM/frete/cockpit.
+
+Componentes principais:
+- `src/modules/tudico/**`: core loop mínimo, memory/context layer, registry de tools e protocolo epistemológico.
+- `docs/tudico/spec.md` e `docs/tudico/design.md`: fases S (Spec) e D (Design) do fluxo SDD.
+- `docs/tudico/master-document.md`: documento mestre inicial para ingestão.
+
+Esse MVP usa store em memória tenant-scoped na fase 1 para reduzir complexidade e preservar isolamento de escopo.
+
 ## Documento técnico complementar
 
 Para mapa arquitetural interno e invariantes, veja [`ARCHITECTURE.md`](./ARCHITECTURE.md).

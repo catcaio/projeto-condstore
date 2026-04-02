@@ -174,3 +174,17 @@ Gates executados em CI:
 - O código contém módulos/UI em estágios de maturidade diferentes (partes com mock/placeholder coexistem com serviços e schema já reais).
 - Em runtime estrito, segredos críticos (auth, tokens internos, redis e integrações) devem estar presentes; não assumir fallback de desenvolvimento.
 - Qualquer novo fluxo deve manter: escopo de tenant, logs estruturados, tolerância a falhas externas e uso do gateway central para IA.
+
+
+## 13) Tudico (agente de pesquisa isolado - MVP)
+
+A arquitetura inclui um MVP isolado do Tudico para estudo da frente Estrutura Quântica-Relacional:
+
+- **UI**: `src/app/(app)/tudico/page.tsx` (hub inicial com claims, glossary, inconsistências e perguntas em aberto).
+- **API**: `src/app/api/tudico/query/route.ts` (tenant-scoped por `x-auth-tenant-id`).
+- **Domínio**: `src/modules/tudico/**` (context manager/memory, tools registry obrigatório e output protocol epistemológico).
+
+Invariantes:
+- Tudico não chama gateway de IA nem providers externos na fase 1.
+- Tudico não integra com Frank e não executa fluxos operacionais do CONDSTORE.
+- Toda consulta mantém escopo por tenant.

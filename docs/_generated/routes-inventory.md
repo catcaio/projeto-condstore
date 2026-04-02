@@ -218,6 +218,7 @@
 | `/api/tenants/[tenantId]/secrets/rotate` | API |
 | `/api/tenants/[tenantId]/secrets/test` | API |
 | `/api/tenants/[tenantId]/settings` | API |
+| `/api/tudico/query` | API |
 | `/api/webhook` | API |
 | `/api/webhook/fallback` | API |
 | `/api/webhook/stripe` | API |
@@ -344,6 +345,7 @@
 | `/tecnologias` | Page |
 | `/tenant` | Page |
 | `/termos` | Page |
+| `/tudico` | Page |
 | `/valores` | Page |
 | `/vendas/clientes` | Page |
 | `/vendas/cotacao` | Page |

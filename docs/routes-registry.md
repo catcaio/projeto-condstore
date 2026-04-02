@@ -351,3 +351,5 @@
 | /api/cockpit/governance/playbooks/[playbookId]/apply | GET/POST | internal | requireAdmin | cockpit | live | Added |
 | /api/cockpit/governance/playbooks/metrics | GET/POST | internal | requireAdmin | cockpit | live | Added |
 | /api/cockpit/frank/feed | POST | internal | requireAdmin | cockpit | live | Added |
+| /api/tudico/query | POST | internal | required | tudico | live | Endpoint isolado do Tudico para consultas epistemológicas tenant-scoped |
+| /tudico | GET | internal | required | tudico | live | Hub inicial do Tudico com claims, glossary, inconsistências e perguntas em aberto |
