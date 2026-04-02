@@ -4,6 +4,7 @@ const mockCreate = vi.hoisted(() => vi.fn());
 const mockFindById = vi.hoisted(() => vi.fn());
 const mockUpdateStatus = vi.hoisted(() => vi.fn());
 const mockListPending = vi.hoisted(() => vi.fn());
+const mockLogActivity = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/events/operational-event-bus', () => ({
     publishOperationalEvent: vi.fn().mockResolvedValue(undefined)
@@ -18,11 +19,18 @@ vi.mock('../suggestion.repository', () => ({
     }
 }));
 
+vi.mock('@/modules/audit/operational-audit.service', () => ({
+    operationalAuditService: {
+        logActivity: mockLogActivity,
+    },
+}));
+
 import { suggestionService } from '../suggestion.service';
 
 describe('SuggestionService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockLogActivity.mockResolvedValue(undefined);
     });
 
     it('generateSuggestion should create and emit event', async () => {
@@ -54,6 +62,13 @@ describe('SuggestionService', () => {
 
         expect(ok).toBe(true);
         expect(mockUpdateStatus).toHaveBeenCalledWith('tenant-1', 'sugg-1', 'approved', 'op-1', 'Original');
+        expect(mockLogActivity).toHaveBeenCalledWith(expect.objectContaining({
+            tenantId: 'tenant-1',
+            entityType: 'suggestion',
+            entityId: 'sugg-1',
+            actorId: 'op-1',
+            actionType: 'suggestion_approved',
+        }));
     });
 
     it('approveSuggestion should update status and emit edited event', async () => {
@@ -71,6 +86,13 @@ describe('SuggestionService', () => {
 
         expect(ok).toBe(true);
         expect(mockUpdateStatus).toHaveBeenCalledWith('tenant-1', 'sugg-2', 'edited', 'op-1', 'Edited');
+        expect(mockLogActivity).toHaveBeenCalledWith(expect.objectContaining({
+            tenantId: 'tenant-1',
+            entityType: 'suggestion',
+            entityId: 'sugg-2',
+            actorId: 'op-1',
+            actionType: 'suggestion_edited',
+        }));
     });
 
     it('rejectSuggestion should update status to rejected', async () => {
@@ -84,5 +106,12 @@ describe('SuggestionService', () => {
 
         expect(ok).toBe(true);
         expect(mockUpdateStatus).toHaveBeenCalledWith('tenant-1', 'sugg-3', 'rejected', 'op-1');
+        expect(mockLogActivity).toHaveBeenCalledWith(expect.objectContaining({
+            tenantId: 'tenant-1',
+            entityType: 'suggestion',
+            entityId: 'sugg-3',
+            actorId: 'op-1',
+            actionType: 'suggestion_rejected',
+        }));
     });
 });
