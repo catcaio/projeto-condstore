@@ -163,6 +163,15 @@
 | /api/webhook/fallback | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/webhook/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cockpit/conversations | GET | internal | requireAdmin | cockpit | live | List conversations |
+| /api/cockpit/tudico/audit-response | POST | internal | requireAdmin | tudico | live | Executa auditoria epistemológica de resposta com alertas anti-confirmação |
+| /api/cockpit/tudico/claim-conflicts | GET | internal | requireAdmin | tudico | live | Lista inconsistências por claim (inconsistency board) |
+| /api/cockpit/tudico/hypotheses | GET, POST | internal | requireAdmin | tudico | live | Lista e cria versões formais de hipótese |
+| /api/cockpit/tudico/hypotheses/compare | GET | internal | requireAdmin | tudico | live | Diff estruturado entre duas versões de hipótese |
+| /api/cockpit/tudico/inconsistencies | GET, POST | internal | requireAdmin | tudico | live | Lista e abre inconsistências vinculadas a claim/paper |
+| /api/cockpit/tudico/papers | GET | internal | requireAdmin | tudico | live | Lista paper cards estruturados (com seed inicial) |
+| /api/cockpit/tudico/papers/[id] | GET | internal | requireAdmin | tudico | live | Detalha um paper card específico |
+| /api/cockpit/tudico/tools | POST | internal | requireAdmin | tudico | live | Dispatcher das tools Tudico (audit, compare, conflicts, paper cards) |
+| /cockpit/tudico | GET | frontend | requireAdmin | tudico | live | Painel mínimo da Fase 2 com versões, diff, papers e board |
 | /api/cockpit/conversations/[id] | GET | internal | requireAdmin | cockpit | live | Get conversation details |
 | /api/cockpit/conversations/[id]/message | POST | internal | requireAdmin | cockpit | live | Send operator response via Twilio |
 | /api/cockpit/conversations/[id]/customer | POST | internal | requireAdmin | cockpit | live | Create CRM customer from active conversation |
