@@ -3,6 +3,7 @@ import { POST } from '../route';
 import { requireAdmin } from '@/infra/auth/guards';
 import { freightQuoteService } from '@/modules/atendimento/freight-quote.service';
 import { orderService } from '@/modules/atendimento/order.service';
+import { OrderBillingRequiredError } from '@/modules/billing/guards/assertTenantCanOperateOrders';
 
 vi.mock('@/infra/auth/guards', () => ({
     requireAdmin: vi.fn(),
@@ -10,19 +11,20 @@ vi.mock('@/infra/auth/guards', () => ({
 
 vi.mock('@/modules/atendimento/order.service', () => ({
     orderService: {
-        createOrderFromQuote: vi.fn().mockResolvedValue({ id: 'new-order' }),
+        createOrderFromQuote: vi.fn(),
     }
 }));
 
 vi.mock('@/modules/atendimento/freight-quote.service', () => ({
     freightQuoteService: {
-        getQuoteById: vi.fn().mockResolvedValue({ id: 'quote1', conversationId: 'conv1', status: 'ACCEPTED' }),
+        getQuoteById: vi.fn(),
     }
 }));
 
 describe('Accept Quote -> Order Route', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(orderService.createOrderFromQuote).mockResolvedValue({ id: 'new-order' } as any);
         vi.mocked(freightQuoteService.getQuoteById).mockResolvedValue({ id: 'quote1', conversationId: 'conv1', status: 'ACCEPTED' } as any);
     });
 
@@ -50,7 +52,32 @@ describe('Accept Quote -> Order Route', () => {
         );
     });
 
+    it('returns 402 when billing gate blocks order creation', async () => {
+        vi.mocked(requireAdmin).mockResolvedValue({
+            ok: true,
+            requestId: 'req-1',
+            session: { tenantId: 't1', sub: 'op-123', role: 'admin' },
+        } as any);
+        vi.mocked(orderService.createOrderFromQuote).mockRejectedValueOnce(
+            new OrderBillingRequiredError('t1', 'past_due'),
+        );
 
+        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { method: 'POST' });
+        const context = { params: Promise.resolve({ id: 'conv1', quoteId: 'quote1' }) };
+
+        const res = await POST(req as any, context);
+        const body = await res.json();
+
+        expect(res.status).toBe(402);
+        expect(body).toEqual({
+            ok: false,
+            error: {
+                code: 'VALIDATION_ERROR',
+                requestId: expect.any(String),
+                message: "Tenant subscription status 'past_due' does not allow order creation or confirmation.",
+            },
+        });
+    });
 
     it('blocks order creation when policy classifies action as HIGH_RISK without accepted quote', async () => {
         vi.mocked(requireAdmin).mockResolvedValue({

@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
-import { errorResponse } from '@/infra/http/error-response';
+import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { freightQuoteService } from '@/modules/atendimento/freight-quote.service';
 import { orderService } from '@/modules/atendimento/order.service';
+import { isOrderBillingRequiredError } from '@/modules/billing/guards/assertTenantCanOperateOrders';
 import { runFrankAgentTool } from '@/modules/frank/agent-loop';
+
+function isOrderBillingRequiredMessage(message: string) {
+    return message.includes('does not allow order creation or confirmation.');
+}
 
 function classifyCreateOrderError(message: string) {
     if (message.includes('A cotação está sendo processada')) {
         return { code: 'LOCK_BUSY' as const, status: 409 };
+    }
+
+    if (isOrderBillingRequiredMessage(message)) {
+        return { code: ErrorCode.VALIDATION_ERROR, status: 402 };
     }
 
     if (
@@ -19,7 +28,7 @@ function classifyCreateOrderError(message: string) {
         message.includes('Quote already converted') ||
         message.includes('A cotacao precisa estar aprovada')
     ) {
-        return { code: 'VALIDATION_ERROR' as const, status: 400 };
+        return { code: ErrorCode.VALIDATION_ERROR, status: 400 };
     }
 
     return { code: 'INTERNAL_ERROR' as const, status: 500 };
@@ -34,9 +43,9 @@ export async function POST(
     if (!auth.ok) return auth.response;
     
     const { tenantId, sub } = auth.session as any;
+    const { id: conversationId, quoteId } = await context.params;
 
     try {
-        const { id: conversationId, quoteId } = await context.params;
         const quote = await freightQuoteService.getQuoteById(tenantId, quoteId);
 
         if (!quote) {
@@ -60,16 +69,28 @@ export async function POST(
         });
 
         if (!toolResult.ok) {
-            if (toolResult.errorCode === 'POLICY_BLOCKED') {
-                return errorResponse('VALIDATION_ERROR' as never, 400, requestId, toolResult.errorMessage ?? 'Failed to create order from quote');
-            }
-
             const classification = classifyCreateOrderError(toolResult.errorMessage ?? 'Failed to create order from quote');
-            return errorResponse(classification.code as never, classification.status, requestId, toolResult.errorMessage ?? 'Failed to create order from quote');
+            return errorResponse(
+                classification.code as never,
+                classification.status,
+                requestId,
+                toolResult.errorMessage ?? 'Failed to create order from quote',
+            );
         }
 
         return NextResponse.json({ ok: true, data: toolResult.data });
     } catch (err: any) {
+        if (isOrderBillingRequiredError(err)) {
+            logger.warn('Order creation blocked by billing gate', {
+                requestId,
+                tenantId,
+                conversationId,
+                quoteId,
+                planStatus: err.planStatus,
+            });
+            return errorResponse(ErrorCode.VALIDATION_ERROR, err.statusCode, requestId, err.message);
+        }
+
         logger.error('Failed to create order from quote', err as Error, { requestId });
         const message = err instanceof Error ? err.message : 'Failed to create order from quote';
         const classification = classifyCreateOrderError(message);
