@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from 'drizzle-orm';
+import { sql, type SQL } from 'drizzle-orm';
 import { getDb } from '../../../../../../infra/db';
 import { requireAdmin } from '../../../../../../infra/auth/guards';
 import { makeRequestId } from '../../../../../../infra/http/request-trace';
@@ -8,6 +8,20 @@ export const runtime = 'nodejs';
 
 import { isDevRuntime, isQaAutomation } from '../../../../../../infra/env/devOnly';
 
+const SAFE_UTM_COLUMNS = {
+    utm_source: sql`utm_source`,
+    utm_campaign: sql`utm_campaign`,
+    utm_medium: sql`utm_medium`,
+    utm_content: sql`utm_content`,
+    utm_term: sql`utm_term`,
+} as const satisfies Record<string, SQL>;
+
+type SafeUtmField = keyof typeof SAFE_UTM_COLUMNS;
+
+function isSafeUtmField(value: string): value is SafeUtmField {
+    return Object.prototype.hasOwnProperty.call(SAFE_UTM_COLUMNS, value);
+}
+
 export async function GET(request: NextRequest) {
     const requestId = makeRequestId(request);
     const auth = await requireAdmin(request, { requestId });
@@ -15,10 +29,20 @@ export async function GET(request: NextRequest) {
 
     const tenantId = auth.session.tenantId;
     const searchParams = request.nextUrl.searchParams;
-    const groupBy = searchParams.get('groupBy') || 'utm_source';
+    const requestedGroupBy = searchParams.get('groupBy') || 'utm_source';
 
-    const utmParam = groupBy === 'utm_campaign' ? 'utm_campaign' : 'utm_source';
-    // Use "summer" as mock default in Dev if not found, or let it pass what was provided
+    if (!isSafeUtmField(requestedGroupBy)) {
+        return NextResponse.json(
+            {
+                success: false,
+                error: 'Invalid groupBy. Use utm_source, utm_campaign, utm_medium, utm_content or utm_term.',
+            },
+            { status: 400 },
+        );
+    }
+
+    const utmParam = requestedGroupBy;
+    const utmColumn = SAFE_UTM_COLUMNS[utmParam];
     const rawUtmValue = searchParams.get(utmParam) || searchParams.get('q');
     const utmValue = rawUtmValue || ''; // Allow empty strings for (none) buckets
 
@@ -29,17 +53,16 @@ export async function GET(request: NextRequest) {
     try {
         const db = await getDb();
 
-        // Handle mock if empty in DEV
-        let mockEvents = [];
         const isDev = isDevRuntime() || isQaAutomation();
+        const utmFilter = sql`IFNULL(${utmColumn}, '') = ${utmValue}`;
 
         const countRes = await db.execute(sql`
         SELECT COUNT(*) as count FROM (
-            SELECT id FROM public_events WHERE tenant_id = ${tenantId} AND IFNULL(${sql.raw(utmParam)}, '') = ${utmValue}
+            SELECT id FROM public_events WHERE tenant_id = ${tenantId} AND ${utmFilter}
             UNION ALL
-            SELECT id FROM attribution_clicks WHERE tenant_id = ${tenantId} AND IFNULL(${sql.raw(utmParam)}, '') = ${utmValue}
+            SELECT id FROM attribution_clicks WHERE tenant_id = ${tenantId} AND ${utmFilter}
             UNION ALL
-            SELECT id FROM freight_simulation_logs WHERE tenant_id = ${tenantId} AND IFNULL(${sql.raw(utmParam)}, '') = ${utmValue}
+            SELECT id FROM freight_simulation_logs WHERE tenant_id = ${tenantId} AND ${utmFilter}
         ) as combined
     `);
 
@@ -50,15 +73,15 @@ export async function GET(request: NextRequest) {
             const dataRes = await db.execute(sql`
             SELECT id, created_at as timestamp, 'PUBLIC_EVENT' as type, event as action 
             FROM public_events 
-            WHERE tenant_id = ${tenantId} AND IFNULL(${sql.raw(utmParam)}, '') = ${utmValue}
+            WHERE tenant_id = ${tenantId} AND ${utmFilter}
             UNION ALL
             SELECT id, created_at as timestamp, 'CLICK' as type, 'visit' as action 
             FROM attribution_clicks 
-            WHERE tenant_id = ${tenantId} AND IFNULL(${sql.raw(utmParam)}, '') = ${utmValue}
+            WHERE tenant_id = ${tenantId} AND ${utmFilter}
             UNION ALL
             SELECT id, created_at as timestamp, 'SIMULATION' as type, 'quote' as action 
             FROM freight_simulation_logs 
-            WHERE tenant_id = ${tenantId} AND IFNULL(${sql.raw(utmParam)}, '') = ${utmValue}
+            WHERE tenant_id = ${tenantId} AND ${utmFilter}
             ORDER BY timestamp DESC
             LIMIT ${limit} OFFSET ${offset}
         `);

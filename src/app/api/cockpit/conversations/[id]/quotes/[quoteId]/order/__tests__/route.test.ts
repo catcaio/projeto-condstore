@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from '../route';
 import { requireAdmin } from '@/infra/auth/guards';
 import { orderService } from '@/modules/atendimento/order.service';
+import { OrderBillingRequiredError } from '@/modules/billing/guards/assertTenantCanOperateOrders';
 
 vi.mock('@/infra/auth/guards', () => ({
     requireAdmin: vi.fn(),
@@ -40,5 +41,32 @@ describe('Accept Quote -> Order Route', () => {
             'quote1',
             'op-123'
         );
+    });
+
+    it('returns 402 when billing gate blocks order creation', async () => {
+        vi.mocked(requireAdmin).mockResolvedValue({
+            ok: true,
+            requestId: 'req-1',
+            session: { tenantId: 't1', sub: 'op-123', role: 'admin' },
+        } as any);
+        vi.mocked(orderService.createOrderFromQuote).mockRejectedValue(
+            new OrderBillingRequiredError('t1', 'past_due'),
+        );
+
+        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { method: 'POST' });
+        const context = { params: Promise.resolve({ id: 'conv1', quoteId: 'quote1' }) };
+
+        const res = await POST(req as any, context);
+        const body = await res.json();
+
+        expect(res.status).toBe(402);
+        expect(body).toEqual({
+            ok: false,
+            error: {
+                code: 'VALIDATION_ERROR',
+                requestId: expect.any(String),
+                message: "Tenant subscription status 'past_due' does not allow order creation or confirmation.",
+            },
+        });
     });
 });

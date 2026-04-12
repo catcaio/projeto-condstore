@@ -37,6 +37,12 @@ vi.mock('../message.service', () => ({
     }
 }));
 
+vi.mock('@/modules/logistics/server', () => ({
+    shipmentService: {
+        createShipmentFromOrder: vi.fn().mockResolvedValue(undefined),
+    }
+}));
+
 describe('Order Service Implementation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -61,6 +67,7 @@ describe('Order Service Implementation', () => {
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             limit: vi.fn()
+                .mockResolvedValueOnce([{ planStatus: 'trialing' }]) // tenant billing gate
                 .mockResolvedValueOnce([mockQuote]) // fetch quote phase
                 .mockResolvedValueOnce([]) // idempotency guard
                 .mockResolvedValueOnce([{ id: 'mocked-id', status: 'CREATED' }]) // fetch saved order phase
@@ -111,6 +118,7 @@ describe('Order Service Implementation', () => {
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             limit: vi.fn()
+                .mockResolvedValueOnce([{ planStatus: 'active' }]) // tenant billing gate
                 .mockResolvedValueOnce([mockQuote]) // found quote
                 .mockResolvedValueOnce([existingOrder]) // idempotency hit
                 .mockResolvedValueOnce([{ opportunityId: 'opp-123' }]), // fetch crm quote phase
@@ -138,6 +146,7 @@ describe('Order Service Implementation', () => {
                 from: vi.fn().mockReturnThis(),
                 where: vi.fn().mockReturnThis(),
                 limit: vi.fn()
+                    .mockResolvedValueOnce([{ planStatus: 'active' }]) // tenant billing gate
                     .mockResolvedValueOnce([{ id: 'quote-456' }]) // quote exists
                     .mockResolvedValueOnce([]) // existing order NOT found during lock fallback
             };
@@ -160,6 +169,7 @@ describe('Order Service Implementation', () => {
                 from: vi.fn().mockReturnThis(),
                 where: vi.fn().mockReturnThis(),
                 limit: vi.fn()
+                    .mockResolvedValueOnce([{ planStatus: 'active' }]) // tenant billing gate
                     .mockResolvedValueOnce([{ id: 'quote-456' }]) // quote exists
                     .mockResolvedValueOnce([existingOrder]) // existing order IS found
             };
@@ -183,6 +193,7 @@ describe('Order Service Implementation', () => {
                 from: vi.fn().mockReturnThis(),
                 where: vi.fn().mockReturnThis(),
                 limit: vi.fn()
+                    .mockResolvedValueOnce([{ planStatus: 'active' }]) // tenant billing gate
                     .mockResolvedValueOnce([mockQuote]) // quote
                     .mockResolvedValueOnce([]) // idempotency guard - none exists
                     .mockResolvedValueOnce([fallbackOrder]), // fallback after duplicate entry
@@ -211,7 +222,9 @@ describe('Order Service Implementation', () => {
                 where: vi.fn().mockReturnThis(),
                 select: vi.fn().mockReturnThis(),
                 from: vi.fn().mockReturnThis(),
-                limit: vi.fn().mockResolvedValue([{ id: 'order-1', customerId: 'cust-1', status: 'DRAFT', conversationId: 'conv-1' }])
+                limit: vi.fn()
+                    .mockResolvedValueOnce([{ id: 'order-1', customerId: 'cust-1', status: 'DRAFT', conversationId: 'conv-1' }])
+                    .mockResolvedValueOnce([{ planStatus: 'active' }])
             };
 
             vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
@@ -230,6 +243,27 @@ describe('Order Service Implementation', () => {
                 expect.stringContaining('foi confirmado e enviado para separação'),
                 expect.objectContaining({ event: 'order_confirmed' })
             );
+        });
+
+        it('should block order confirmation when tenant billing status is not allowed', async () => {
+            const mockDb = {
+                update: vi.fn().mockReturnThis(),
+                set: vi.fn().mockReturnThis(),
+                where: vi.fn().mockReturnThis(),
+                select: vi.fn().mockReturnThis(),
+                from: vi.fn().mockReturnThis(),
+                limit: vi.fn()
+                    .mockResolvedValueOnce([{ id: 'order-1', customerId: 'cust-1', status: 'DRAFT', conversationId: 'conv-1' }])
+                    .mockResolvedValueOnce([{ planStatus: 'past_due' }])
+            };
+
+            vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+            await expect(orderService.updateOrderStatus('tenant-1', 'order-1', 'CONFIRMED'))
+                .rejects.toThrow("Tenant subscription status 'past_due' does not allow order creation or confirmation.");
+
+            expect(mockDb.update).not.toHaveBeenCalled();
+            expect(publishOperationalEvent).not.toHaveBeenCalled();
         });
 
         it('should throw Error if trying to illegally regress order status processing backward', async () => {
@@ -262,7 +296,9 @@ describe('Order Service Implementation', () => {
             select: vi.fn().mockReturnThis(),
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
-            limit: vi.fn().mockResolvedValue([]), // no quotes returned
+            limit: vi.fn()
+                .mockResolvedValueOnce([{ planStatus: 'active' }])
+                .mockResolvedValueOnce([]), // no quotes returned
         };
 
         vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
@@ -270,6 +306,25 @@ describe('Order Service Implementation', () => {
         await expect(
             orderService.createOrderFromQuote('tenant-1', 'conv-123', 'invalid-quote', 'operator-999')
         ).rejects.toThrow('Quote not found');
+    });
+
+    it('should block order creation when tenant billing status is not allowed', async () => {
+        const mockDb = {
+            select: vi.fn().mockReturnThis(),
+            from: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockResolvedValue([{ planStatus: 'past_due' }]),
+            insert: vi.fn(),
+        };
+
+        vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+        await expect(
+            orderService.createOrderFromQuote('tenant-1', 'conv-123', 'quote-456', 'operator-999')
+        ).rejects.toThrow("Tenant subscription status 'past_due' does not allow order creation or confirmation.");
+
+        expect(mockDb.insert).not.toHaveBeenCalled();
+        expect(redisClient.setNx).not.toHaveBeenCalled();
     });
 
     it('should prevent conversion if quote status is EXPIRED, CANCELED, or LOST', async () => {
@@ -280,7 +335,9 @@ describe('Order Service Implementation', () => {
                 select: vi.fn().mockReturnThis(),
                 from: vi.fn().mockReturnThis(),
                 where: vi.fn().mockReturnThis(),
-                limit: vi.fn().mockResolvedValue([mockQuote]), 
+                limit: vi.fn()
+                    .mockResolvedValueOnce([{ planStatus: 'active' }])
+                    .mockResolvedValueOnce([mockQuote]), 
             };
             vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
 
@@ -298,7 +355,9 @@ describe('Order Service Implementation', () => {
             select: vi.fn().mockReturnThis(),
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
-            limit: vi.fn().mockResolvedValue([mockQuote]), 
+            limit: vi.fn()
+                .mockResolvedValueOnce([{ planStatus: 'active' }])
+                .mockResolvedValueOnce([mockQuote]), 
             update: vi.fn().mockReturnThis(),
             set: vi.fn().mockReturnThis(),
         };

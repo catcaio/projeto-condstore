@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
-import { errorResponse } from '@/infra/http/error-response';
+import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { orderService } from '@/modules/atendimento/order.service';
+import { isOrderBillingRequiredError } from '@/modules/billing/guards/assertTenantCanOperateOrders';
 
 export async function PATCH(
     request: NextRequest,
@@ -14,9 +15,9 @@ export async function PATCH(
     if (!auth.ok) return auth.response;
     
     const { tenantId } = auth.session as any;
+    const { id: orderId } = await context.params;
 
     try {
-        const { id: orderId } = await context.params;
         const body = await request.json().catch(() => ({}));
         const { status } = body;
 
@@ -29,6 +30,16 @@ export async function PATCH(
 
         return NextResponse.json({ ok: true });
     } catch (err: any) {
+        if (isOrderBillingRequiredError(err)) {
+            logger.warn('Order confirmation blocked by billing gate', {
+                requestId,
+                tenantId,
+                orderId,
+                planStatus: err.planStatus,
+            });
+            return errorResponse(ErrorCode.VALIDATION_ERROR, err.statusCode, requestId, err.message);
+        }
+
         logger.error('Failed to update order status', err as Error, { requestId });
         const msg = err.message;
         const isValidation = msg.includes('Cannot regress') || msg.includes('Cannot change status of') || msg.includes('Order not found');

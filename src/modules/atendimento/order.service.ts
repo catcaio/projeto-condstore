@@ -4,6 +4,7 @@ import { orders, simulations, conversations, crmOpportunities, crmQuotes, type O
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from './conversation.service';
 import { messageService } from './message.service';
+import { assertTenantCanOperateOrders } from '@/modules/billing/guards/assertTenantCanOperateOrders';
 import { shipmentService } from '@/modules/logistics/server';
 import { redisClient } from '@/infra/redis.client';
 import { logger } from '@/infra/logger';
@@ -24,6 +25,8 @@ export const orderService = {
     ): Promise<OrderRecord> {
         const db = await getDb();
         const { randomUUID } = await import('crypto');
+
+        await assertTenantCanOperateOrders(tenantId, db);
 
         // 1. Validate Quote
         const [quote] = await db.select()
@@ -214,6 +217,10 @@ export const orderService = {
 
         if (order.status === 'DELIVERED' || order.status === 'CANCELED') {
             throw new Error(`Cannot change status of a ${order.status} order`);
+        }
+
+        if (status === 'CONFIRMED') {
+            await assertTenantCanOperateOrders(tenantId, db);
         }
         
         await db.update(orders)
