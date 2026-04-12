@@ -13,9 +13,14 @@ export type ToolResult = {
 export type FrankRiskLevel = 'LOW_RISK' | 'MEDIUM_RISK' | 'HIGH_RISK';
 
 export type FrankAgentAction =
+    | 'READ_CONVERSATION_CONTEXT'
+    | 'READ_CUSTOMER_CRM_CONTEXT'
     | 'READ_QUOTE_CONTEXT'
     | 'REQUEST_QUOTE_APPROVAL'
+    | 'TRACK_SHIPMENT_STATUS'
     | 'CREATE_ORDER_FROM_ACCEPTED_QUOTE';
+
+export type FrankSubAgent = 'ATENDIMENTO' | 'CRM' | 'FREIGHT' | 'LOGISTICA';
 
 export interface FrankAgentState {
     flowState: string;
@@ -40,18 +45,43 @@ export interface FrankPlannerInput {
     requestedAction: FrankAgentAction;
 }
 
+export interface FrankPlanDecision {
+    action: FrankAgentAction;
+    subAgent: FrankSubAgent;
+    handoff?: string;
+}
+
 const ACTION_RISK_MAP: Record<FrankAgentAction, FrankRiskLevel> = {
+    READ_CONVERSATION_CONTEXT: 'LOW_RISK',
+    READ_CUSTOMER_CRM_CONTEXT: 'LOW_RISK',
     READ_QUOTE_CONTEXT: 'LOW_RISK',
     REQUEST_QUOTE_APPROVAL: 'HIGH_RISK',
+    TRACK_SHIPMENT_STATUS: 'MEDIUM_RISK',
     CREATE_ORDER_FROM_ACCEPTED_QUOTE: 'HIGH_RISK',
 };
 
-export function decideNextAction(input: FrankPlannerInput, state: FrankAgentState): FrankAgentAction {
+const ACTION_SUB_AGENT_MAP: Record<FrankAgentAction, FrankSubAgent> = {
+    READ_CONVERSATION_CONTEXT: 'ATENDIMENTO',
+    READ_CUSTOMER_CRM_CONTEXT: 'CRM',
+    READ_QUOTE_CONTEXT: 'FREIGHT',
+    REQUEST_QUOTE_APPROVAL: 'FREIGHT',
+    TRACK_SHIPMENT_STATUS: 'LOGISTICA',
+    CREATE_ORDER_FROM_ACCEPTED_QUOTE: 'LOGISTICA',
+};
+
+export function decideNextAction(input: FrankPlannerInput, state: FrankAgentState): FrankPlanDecision {
     if (input.requestedAction === 'CREATE_ORDER_FROM_ACCEPTED_QUOTE' && state.quoteStatus !== 'ACCEPTED') {
-        return 'CREATE_ORDER_FROM_ACCEPTED_QUOTE';
+        return {
+            action: 'CREATE_ORDER_FROM_ACCEPTED_QUOTE',
+            subAgent: 'FREIGHT',
+            handoff: 'Aguardando quote aprovada; logística depende de precondição do Freight.',
+        };
     }
 
-    return input.requestedAction;
+    return {
+        action: input.requestedAction,
+        subAgent: ACTION_SUB_AGENT_MAP[input.requestedAction],
+    };
 }
 
 function resolveNextAllowedActions(quoteStatus: string | null): FrankAgentAction[] {
@@ -117,8 +147,8 @@ export async function runFrankAgentTool(params: {
     const start = Date.now();
 
     const memory = buildAgentMemory({ quoteStatus: params.quoteStatus });
-    const plannedAction = decideNextAction({ requestedAction: params.action }, memory);
-    const policy = evaluatePolicy({ action: plannedAction, quoteStatus: params.quoteStatus });
+    const planned = decideNextAction({ requestedAction: params.action }, memory);
+    const policy = evaluatePolicy({ action: planned.action, quoteStatus: params.quoteStatus });
 
     if (!policy.allowed) {
         const blockedMemory = buildAgentMemory({
@@ -135,6 +165,8 @@ export async function runFrankAgentTool(params: {
             nextAllowedActions: policy.nextAllowedActions,
             audit: {
                 riskLevel: policy.riskLevel,
+                subAgent: planned.subAgent,
+                handoff: planned.handoff ?? null,
                 flowState: blockedMemory.flowState,
                 lastActionExecuted: blockedMemory.lastActionExecuted,
                 lastBlockReason: blockedMemory.lastBlockReason,
@@ -143,7 +175,9 @@ export async function runFrankAgentTool(params: {
 
         logger.warn('frank_agent_loop_execution_blocked', {
             requestId: params.requestId,
-            action: plannedAction,
+            action: planned.action,
+            subAgent: planned.subAgent,
+            handoff: planned.handoff ?? null,
             outcome: blockedResult.status,
             reason: blockedResult.errorMessage,
             riskLevel: policy.riskLevel,
@@ -157,7 +191,7 @@ export async function runFrankAgentTool(params: {
         const data = await params.execute();
         const doneMemory = buildAgentMemory({
             quoteStatus: params.quoteStatus,
-            lastActionExecuted: plannedAction,
+            lastActionExecuted: planned.action,
         });
 
         const success: ToolResult = {
@@ -167,6 +201,8 @@ export async function runFrankAgentTool(params: {
             nextAllowedActions: policy.nextAllowedActions,
             audit: {
                 riskLevel: policy.riskLevel,
+                subAgent: planned.subAgent,
+                handoff: planned.handoff ?? null,
                 flowState: doneMemory.flowState,
                 lastActionExecuted: doneMemory.lastActionExecuted,
             },
@@ -174,7 +210,9 @@ export async function runFrankAgentTool(params: {
 
         logger.info('frank_agent_loop_execution', {
             requestId: params.requestId,
-            action: plannedAction,
+            action: planned.action,
+            subAgent: planned.subAgent,
+            handoff: planned.handoff ?? null,
             outcome: success.status,
             riskLevel: policy.riskLevel,
             durationMs: Date.now() - start,
@@ -191,14 +229,18 @@ export async function runFrankAgentTool(params: {
             nextAllowedActions: policy.nextAllowedActions,
             audit: {
                 riskLevel: policy.riskLevel,
+                subAgent: planned.subAgent,
+                handoff: planned.handoff ?? null,
                 flowState: memory.flowState,
-                lastActionExecuted: plannedAction,
+                lastActionExecuted: planned.action,
             },
         };
 
         logger.info('frank_agent_loop_execution', {
             requestId: params.requestId,
-            action: plannedAction,
+            action: planned.action,
+            subAgent: planned.subAgent,
+            handoff: planned.handoff ?? null,
             outcome: failed.status,
             riskLevel: policy.riskLevel,
             durationMs: Date.now() - start,

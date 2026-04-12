@@ -14,6 +14,8 @@ describe('Frank agent loop (minimal)', () => {
         expect(result.status).toBe('BLOCKED_BY_POLICY');
         expect(result.errorCode).toBe('POLICY_BLOCKED');
         expect(result.errorMessage).toContain('cotacao precisa estar aprovada');
+        expect(result.audit?.subAgent).toBe('FREIGHT');
+        expect(result.audit?.handoff).toContain('precondição');
     });
 
     it('executes LOW_RISK action successfully', async () => {
@@ -27,6 +29,7 @@ describe('Frank agent loop (minimal)', () => {
         expect(result.ok).toBe(true);
         expect(result.status).toBe('EXECUTED');
         expect(result.data).toEqual({ quoteId: 'q-1' });
+        expect(result.audit?.subAgent).toBe('FREIGHT');
     });
 
 
