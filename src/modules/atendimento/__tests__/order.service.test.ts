@@ -4,6 +4,8 @@ import * as dbInfra from '@/infra/db';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from '../conversation.service';
 import { redisClient } from '@/infra/redis.client';
+import { shipmentService } from '@/modules/logistics/server';
+import { ORDER_FLOW_MESSAGES } from '../order-flow.contract';
 
 vi.mock('@/infra/db', async () => {
     const actual = await vi.importActual<typeof import('@/infra/db')>('@/infra/db');
@@ -31,6 +33,12 @@ vi.mock('../conversation.service', () => ({
     }
 }));
 
+vi.mock('@/modules/logistics/server', () => ({
+    shipmentService: {
+        createShipmentFromOrder: vi.fn().mockResolvedValue({ id: 'shipment-1' }),
+    }
+}));
+
 vi.mock('../message.service', () => ({
     messageService: {
         processSystemEvent: vi.fn().mockResolvedValue(undefined),
@@ -43,6 +51,7 @@ describe('Order Service Implementation', () => {
         vi.mocked(redisClient.setNx).mockResolvedValue(true);
         vi.mocked(redisClient.del).mockResolvedValue(undefined);
         vi.mocked(redisClient.eval).mockResolvedValue(undefined);
+        vi.mocked(shipmentService.createShipmentFromOrder).mockResolvedValue({ id: 'shipment-1' } as any);
     });
 
     it('should successfully create an order from a given quote and update conversation stage to WON', async () => {
@@ -51,6 +60,7 @@ describe('Order Service Implementation', () => {
             tenantId: 'tenant-1',
             customerId: 'custom-123',
             organizationId: 'org-789',
+            status: 'ACCEPTED',
             bestPrice: '150.00',
             bestCarrier: 'Correios',
             bestService: 'SEDEX',
@@ -103,7 +113,7 @@ describe('Order Service Implementation', () => {
     });
 
     it('should return existing order if one is already created from the same quote (Idempotency)', async () => {
-        const mockQuote = { id: 'quote-456' };
+        const mockQuote = { id: 'quote-456', status: 'ACCEPTED' };
         const existingOrder = { id: 'order-already-exists' };
 
         const mockDb = {
@@ -138,13 +148,13 @@ describe('Order Service Implementation', () => {
                 from: vi.fn().mockReturnThis(),
                 where: vi.fn().mockReturnThis(),
                 limit: vi.fn()
-                    .mockResolvedValueOnce([{ id: 'quote-456' }]) // quote exists
+                    .mockResolvedValueOnce([{ id: 'quote-456', status: 'ACCEPTED' }]) // quote exists
                     .mockResolvedValueOnce([]) // existing order NOT found during lock fallback
             };
             vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
 
             await expect(orderService.createOrderFromQuote('t1', 'c1', 'quote-456', 'op1'))
-                .rejects.toThrow('A cotação está sendo processada no momento.');
+                .rejects.toThrow(ORDER_FLOW_MESSAGES.quoteLockBusy);
             
             // Should NOT try to release lock because it didn't acquire it
             expect(redisClient.eval).not.toHaveBeenCalled();
@@ -160,7 +170,7 @@ describe('Order Service Implementation', () => {
                 from: vi.fn().mockReturnThis(),
                 where: vi.fn().mockReturnThis(),
                 limit: vi.fn()
-                    .mockResolvedValueOnce([{ id: 'quote-456' }]) // quote exists
+                    .mockResolvedValueOnce([{ id: 'quote-456', status: 'ACCEPTED' }]) // quote exists
                     .mockResolvedValueOnce([existingOrder]) // existing order IS found
             };
             vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
@@ -175,7 +185,7 @@ describe('Order Service Implementation', () => {
         it('should handle ER_DUP_ENTRY fallback by returning the newly created concurrent order', async () => {
             vi.mocked(redisClient.setNx).mockResolvedValueOnce(true);
 
-            const mockQuote = { id: 'quote-123' };
+            const mockQuote = { id: 'quote-123', status: 'ACCEPTED' };
             const fallbackOrder = { id: 'order-concurrent' };
 
             const mockDb = {
@@ -218,6 +228,7 @@ describe('Order Service Implementation', () => {
 
             await orderService.updateOrderStatus('tenant-1', 'order-1', 'CONFIRMED');
 
+            expect(shipmentService.createShipmentFromOrder).toHaveBeenCalledWith('tenant-1', 'order-1');
             expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
                 eventType: 'order_confirmed',
                 payload: { orderId: 'order-1', status: 'CONFIRMED' }
@@ -254,6 +265,30 @@ describe('Order Service Implementation', () => {
 
             vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
             await expect(orderService.updateOrderStatus('tenant-1', 'order-1', 'CANCELED')).rejects.toThrow('Cannot change status of a DELIVERED order');
+        });
+
+        it('should reconcile confirmation idempotently when the order is already CONFIRMED', async () => {
+            const existingShipment = { id: 'shipment-existing', orderId: 'order-1' };
+            const mockDb = {
+                update: vi.fn().mockReturnThis(),
+                set: vi.fn().mockReturnThis(),
+                where: vi.fn().mockReturnThis(),
+                select: vi.fn().mockReturnThis(),
+                from: vi.fn().mockReturnThis(),
+                limit: vi.fn().mockResolvedValue([{ id: 'order-1', customerId: 'cust-1', status: 'CONFIRMED', conversationId: 'conv-1' }])
+            };
+
+            vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+            vi.mocked(shipmentService.createShipmentFromOrder).mockResolvedValue(existingShipment as any);
+
+            await orderService.updateOrderStatus('tenant-1', 'order-1', 'CONFIRMED');
+
+            expect(shipmentService.createShipmentFromOrder).toHaveBeenCalledWith('tenant-1', 'order-1');
+            expect(mockDb.update).not.toHaveBeenCalled();
+            expect(publishOperationalEvent).not.toHaveBeenCalled();
+
+            const { messageService } = await import('../message.service');
+            expect(messageService.processSystemEvent).not.toHaveBeenCalled();
         });
     });
 
@@ -306,8 +341,77 @@ describe('Order Service Implementation', () => {
 
         await expect(
             orderService.createOrderFromQuote('tenant-1', 'conv-1', 'quote-2', 'op-1')
-        ).rejects.toThrow('Cannot convert an expired quote');
+        ).rejects.toThrow(ORDER_FLOW_MESSAGES.quoteExpired);
         
         expect(mockDb.set).toHaveBeenCalledWith({ status: 'EXPIRED' });
+    });
+
+    it('should reject conversion when quote is not ACCEPTED yet', async () => {
+        const mockQuote = {
+            id: 'quote-pending',
+            status: 'SENT',
+            conversationId: 'conv-1',
+        };
+
+        const mockDb = {
+            select: vi.fn().mockReturnThis(),
+            from: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockResolvedValue([mockQuote]),
+        };
+
+        vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+        await expect(
+            orderService.createOrderFromQuote('tenant-1', 'conv-1', 'quote-pending', 'op-1')
+        ).rejects.toThrow('Quote must be ACCEPTED before creating an order. Current status: SENT');
+
+        expect(redisClient.setNx).not.toHaveBeenCalled();
+    });
+
+    it('should reject conversion when quote belongs to another conversation', async () => {
+        const mockQuote = {
+            id: 'quote-foreign',
+            status: 'ACCEPTED',
+            conversationId: 'conv-other',
+        };
+
+        const mockDb = {
+            select: vi.fn().mockReturnThis(),
+            from: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockResolvedValue([mockQuote]),
+        };
+
+        vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+        await expect(
+            orderService.createOrderFromQuote('tenant-1', 'conv-123', 'quote-foreign', 'operator-999')
+        ).rejects.toThrow(ORDER_FLOW_MESSAGES.quoteConversationMismatch);
+    });
+
+    it('should return the existing order when quote is already converted', async () => {
+        const existingOrder = { id: 'order-converted', quoteId: 'quote-123' };
+        const mockQuote = {
+            id: 'quote-123',
+            status: 'CONVERTED',
+            conversationId: 'conv-123',
+        };
+
+        const mockDb = {
+            select: vi.fn().mockReturnThis(),
+            from: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            limit: vi.fn()
+                .mockResolvedValueOnce([mockQuote])
+                .mockResolvedValueOnce([existingOrder]),
+        };
+
+        vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+        const order = await orderService.createOrderFromQuote('tenant-1', 'conv-123', 'quote-123', 'operator-999');
+
+        expect(order).toEqual(existingOrder);
+        expect(redisClient.setNx).not.toHaveBeenCalled();
     });
 });

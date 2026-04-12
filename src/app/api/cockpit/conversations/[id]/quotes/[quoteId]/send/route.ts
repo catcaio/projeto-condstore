@@ -41,6 +41,10 @@ export async function POST(
             return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Quote does not belong to this conversation');
         }
 
+        if (['CONVERTED', 'EXPIRED'].includes(quote.status)) {
+            return errorResponse('VALIDATION_ERROR' as any, 400, requestId, `Cannot send quote in ${quote.status} status`);
+        }
+
         const plaintextPhone = decryptString(conversation.phoneEncrypted);
         
         // Format the message
@@ -96,6 +100,16 @@ export async function POST(
         return NextResponse.json({ ok: true, data: conversationMessage });
     } catch (err: any) {
         logger.error('Failed to send freight quote to customer', err as Error, { requestId });
-        return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);
+        const message = err?.message ?? 'Failed to send freight quote to customer';
+        const isValidationError =
+            message.includes('Quote does not belong to this conversation') ||
+            message.includes('Cannot send quote in');
+
+        return errorResponse(
+            isValidationError ? 'VALIDATION_ERROR' as any : 'INTERNAL_ERROR' as any,
+            isValidationError ? 400 : 500,
+            requestId,
+            message
+        );
     }
 }

@@ -182,4 +182,16 @@ describe('Commercial Quote Evolution - Freight Quote Service', () => {
         await service.acceptQuote('t1', 'quote-3');
         expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ status: 'ACCEPTED' }));
     });
+
+    it('should reject sending quotes in terminal invalid states', async () => {
+        vi.spyOn(service, 'getQuoteById')
+            .mockResolvedValueOnce({ id: 'quote-expired', status: 'EXPIRED' } as any)
+            .mockResolvedValueOnce({ id: 'quote-converted', status: 'CONVERTED' } as any);
+
+        await expect(service.sendQuote('t1', 'quote-expired'))
+            .rejects.toThrow('Cannot send quote in EXPIRED status');
+
+        await expect(service.sendQuote('t1', 'quote-converted'))
+            .rejects.toThrow('Cannot send quote in CONVERTED status');
+    });
 });

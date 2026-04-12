@@ -23,9 +23,13 @@ export async function PUT(
             return errorResponse('NOT_FOUND' as any, 404, requestId, 'Conversation not found');
         }
 
-        // Release the conversation, unassign operator, put it back to OPEN
+        const releasedStatus = conversation.status === 'operator_active'
+            ? 'awaiting_human'
+            : conversation.status;
+
+        // Release the conversation, unassign operator, and return it to a valid queue status.
         await conversationService.unassignConversation(tenantId, conversationId, conversation.customerId ?? undefined);
-        await conversationService.updateConversationStatus(tenantId, conversationId, 'OPEN' as any, conversation.customerId ?? undefined);
+        await conversationService.updateConversationStatus(tenantId, conversationId, releasedStatus, conversation.customerId ?? undefined);
         
         logger.info('cockpit_conversation_released', {
             requestId,

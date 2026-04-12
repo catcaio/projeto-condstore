@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
-import { errorResponse } from '@/infra/http/error-response';
+import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
 import { shipmentService } from '@/modules/logistics/server';
+import { classifyShipmentFlowMessage, SHIPMENT_FLOW_MESSAGES, SHIPMENT_STATUS_INPUTS } from '@/modules/logistics/shipment.contract';
 
 export async function GET(
     request: NextRequest,
@@ -22,7 +23,7 @@ export async function GET(
         return NextResponse.json({ ok: true, data: shipment || null });
     } catch (err: any) {
         logger.error('Failed to get shipment', err as Error, { requestId });
-        return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);
+        return errorResponse(ErrorCode.INTERNAL_ERROR, 500, requestId, err.message);
     }
 }
 
@@ -43,26 +44,34 @@ export async function PATCH(
         try {
             body = await request.json();
         } catch {
-            return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Invalid JSON body');
+            return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, SHIPMENT_FLOW_MESSAGES.invalidJsonBody);
         }
         const { status, trackingCode, trackingUrl, shipmentId } = body;
-
-        let targetShipmentId = shipmentId;
-        if (!targetShipmentId) {
-            const shipment = await shipmentService.getShipmentByOrder(tenantId, orderId);
-            if (!shipment) return errorResponse('NOT_FOUND' as any, 404, requestId, 'Shipment not found for this order');
-            targetShipmentId = shipment.id;
+        const shipment = await shipmentService.getShipmentByOrder(tenantId, orderId);
+        if (!shipment) {
+            return errorResponse(ErrorCode.NOT_FOUND, 404, requestId, SHIPMENT_FLOW_MESSAGES.shipmentNotFoundForOrder);
         }
 
-        if (status && !['CREATED', 'SCHEDULED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED'].includes(status)) {
-            return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Invalid shipment status');
+        if (shipmentId && shipment.id !== shipmentId) {
+            return errorResponse(ErrorCode.NOT_FOUND, 404, requestId, SHIPMENT_FLOW_MESSAGES.shipmentNotFoundForOrder);
         }
 
-        await shipmentService.updateShipmentStatus(tenantId, targetShipmentId, status || 'CREATED', trackingCode, trackingUrl);
+        if (status && !SHIPMENT_STATUS_INPUTS.includes(status)) {
+            return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid shipment status');
+        }
+
+        await shipmentService.updateShipmentStatus(tenantId, shipment.id, status || 'CREATED', trackingCode, trackingUrl);
 
         return NextResponse.json({ ok: true });
     } catch (err: any) {
         logger.error('Failed to update shipment', err as Error, { requestId });
-        return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);
+        const message = err?.message ?? 'Failed to update shipment';
+        const contractError = classifyShipmentFlowMessage(message);
+
+        if (contractError) {
+            return errorResponse(contractError.code, contractError.status, requestId, message);
+        }
+
+        return errorResponse(ErrorCode.INTERNAL_ERROR, 500, requestId, message);
     }
 }

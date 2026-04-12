@@ -1,8 +1,8 @@
 import {
     LayoutDashboard, MessageSquare, Users, Package, Truck, Bot,
     BarChart3, Link2, Eye, Brain, Blocks, Shield, UserCheck,
-    FileText, Fingerprint, Settings, Rocket, Workflow, Database,
-    Globe, Sparkles,
+    FileText, Fingerprint, Settings, Workflow, Database,
+    Globe,
 } from 'lucide-react';
 import {
     PageContainer, PageSection, SectionIntro, HeroSection,
@@ -38,7 +38,7 @@ export default function PlataformaPage() {
             />
 
             {/* ─── OPERATION PROOF ─── */}
-            <OperationProof />
+            <OperationProof variant="expanded" />
 
             {/* ─── 2. O QUE É A PLATAFORMA ─── */}
             <PageSection spacing="lg" borderTop>
@@ -69,7 +69,7 @@ export default function PlataformaPage() {
                             {
                                 icon: Brain,
                                 title: 'Inteligência integrada',
-                                description: 'Frank Supremo analisa padrões, sugere ações e interage com clientes — governado por budget e permissões.',
+                                description: 'A camada inteligente analisa padrões, sugere ações e acelera atendimento com handoff humano sob governança de budget e permissões.',
                             },
                             {
                                 icon: Shield,
@@ -188,7 +188,7 @@ export default function PlataformaPage() {
                             icon={Bot}
                             name="Frank Supremo"
                             role="IA operacional"
-                            description="Analisa padrões, sugere ações, interage com clientes via WhatsApp. Governado por budget de tokens e permissões por tenant."
+                            description="Analisa padrões, sugere ações e apoia o atendimento via WhatsApp com supervisão humana, budget de tokens e permissões por tenant."
                             connections="Conecta a Conversas, Clientes, Cockpit"
                         />
                         <ModuleCard
@@ -282,22 +282,22 @@ export default function PlataformaPage() {
                 </PageContainer>
             </PageSection>
 
-            {/* ─── 7. EVOLUÇÃO ─── */}
+            {/* ─── 7. EXTENSIBILIDADE ─── */}
             <PageSection spacing="lg" borderTop>
                 <PageContainer>
                     <SectionIntro
-                        eyebrow="Evolução"
-                        title="A plataforma cresce com a sua operação."
-                        description="O Condstore OS é projetado para evoluir continuamente sem reescrever o que já funciona."
+                        eyebrow="Extensibilidade"
+                        title="A plataforma cresce sem reescrever o core."
+                        description="Contratos por módulo, eventos auditáveis e configuração por tenant permitem expandir a operação preservando controle."
                     />
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         {[
                             { icon: Blocks, title: 'Novos módulos', desc: 'Cada módulo se conecta via contratos bem definidos. Adicionar funcionalidade não quebra o existente.' },
-                            { icon: Workflow, title: 'Automações', desc: 'Regras de negócio configuráveis por tenant que executam ações automáticas baseadas em eventos do sistema.' },
-                            { icon: Sparkles, title: 'IA operacional', desc: 'Frank Supremo evolui com novos modelos, análises e interações — sempre sob governança de budget e permissões.' },
-                            { icon: Database, title: 'Memória de operação', desc: 'O sistema acumula inteligência ao longo do tempo. Padrões, anomalias e benchmarks são aprendidos continuamente.' },
-                            { icon: Globe, title: 'Portal do cliente', desc: 'Visibilidade self-service para o cliente final: tracking, histórico e comunicação direta com a operação.' },
-                            { icon: Rocket, title: 'Marketplace de integrações', desc: 'Conectores para transportadoras, ERPs e marketplaces se somam ao ecossistema sem fricção.' },
+                            { icon: Settings, title: 'Regras por tenant', desc: 'Papéis, transportadoras, margem, webhooks e preferências ficam isolados por operação.' },
+                            { icon: Workflow, title: 'Eventos auditáveis', desc: 'Cada mutação já nasce ligada a um evento rastreável para replay, fila e diagnóstico.' },
+                            { icon: LayoutDashboard, title: 'Cockpit alimentado por domínios', desc: 'Conversas, pedidos, logística e métricas entram na mesma leitura operacional sem retrabalho.' },
+                            { icon: Shield, title: 'Handoff supervisionado', desc: 'A automação acelera, mas gates críticos continuam sob aprovação humana e trilha auditável.' },
+                            { icon: Globe, title: 'Integrações por contrato', desc: 'Transportadoras, canais e APIs entram no ecossistema por interfaces claras em vez de remendos.' },
                         ].map((item) => {
                             const Icon = item.icon;
                             return (

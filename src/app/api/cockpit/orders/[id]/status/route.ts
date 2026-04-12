@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
-import { errorResponse } from '@/infra/http/error-response';
+import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
+import { classifyOrderFlowMessage, ORDER_FLOW_MESSAGES, ORDER_STATUS_INPUTS } from '@/modules/atendimento/order-flow.contract';
 import { orderService } from '@/modules/atendimento/order.service';
 
 export async function PATCH(
@@ -17,12 +18,20 @@ export async function PATCH(
 
     try {
         const { id: orderId } = await context.params;
-        const body = await request.json().catch(() => ({}));
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') {
+            return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, ORDER_FLOW_MESSAGES.invalidJsonBody);
+        }
+
         const { status } = body;
 
-        const validStatuses = ['DRAFT', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELED'];
-        if (!status || !validStatuses.includes(status)) {
-            return errorResponse('VALIDATION_ERROR' as any, 400, requestId, `Invalid order status. Must be one of: ${validStatuses.join(', ')}`);
+        if (!status || !ORDER_STATUS_INPUTS.includes(status)) {
+            return errorResponse(
+                ErrorCode.VALIDATION_ERROR,
+                400,
+                requestId,
+                `Invalid order status. Must be one of: ${ORDER_STATUS_INPUTS.join(', ')}`
+            );
         }
 
         await orderService.updateOrderStatus(tenantId, orderId, status as any);
@@ -30,13 +39,13 @@ export async function PATCH(
         return NextResponse.json({ ok: true });
     } catch (err: any) {
         logger.error('Failed to update order status', err as Error, { requestId });
-        const msg = err.message;
-        const isValidation = msg.includes('Cannot regress') || msg.includes('Cannot change status of') || msg.includes('Order not found');
-        return errorResponse(
-            isValidation ? 'VALIDATION_ERROR' as any : 'INTERNAL_ERROR' as any,
-            isValidation ? 400 : 500,
-            requestId,
-            msg
-        );
+        const message = err?.message ?? 'Failed to update order status';
+        const contractError = classifyOrderFlowMessage(message);
+
+        if (contractError) {
+            return errorResponse(contractError.code, contractError.status, requestId, message);
+        }
+
+        return errorResponse(ErrorCode.INTERNAL_ERROR, 500, requestId, message);
     }
 }

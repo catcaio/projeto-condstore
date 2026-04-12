@@ -262,6 +262,10 @@ export class FreightQuoteService {
         const db = await getDb();
         const quote = await this.getQuoteById(tenantId, quoteId);
         if (!quote) throw new Error('Quote not found');
+
+        if (['CONVERTED', 'EXPIRED'].includes(quote.status)) {
+            throw new Error(`Cannot send quote in ${quote.status} status`);
+        }
         
         await db.update(simulations).set({
             status: 'SENT',

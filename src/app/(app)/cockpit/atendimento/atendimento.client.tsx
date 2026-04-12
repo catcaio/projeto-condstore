@@ -398,13 +398,13 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                 setComposerFeedback(await buildActionErrorFromResponse(
                     res,
                     'Falha ao enviar mensagem',
-                    'Nao foi possivel publicar a mensagem no WhatsApp.'
+                    'Não foi possível publicar a mensagem no WhatsApp.'
                 ));
             }
         } catch {
             setComposerFeedback(buildUnexpectedActionError(
                 'Falha ao enviar mensagem',
-                'Nao foi possivel concluir a requisicao do WhatsApp.'
+                'Não foi possível concluir a requisição do WhatsApp.'
             ));
         } finally {
             setSending(false);
@@ -426,21 +426,21 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                 setCustomerDraftName('');
                 setContextFeedback(buildActionSuccess(
                     'Cliente identificado',
-                    'A conversa agora esta vinculada a um cadastro operacional.'
+                    'A conversa agora está vinculada a um cadastro operacional.'
                 ));
                 await refreshActiveConversation(activeConvId);
             } else {
                 setContextFeedback(await buildActionErrorFromResponse(
                     res,
                     'Falha ao identificar cliente',
-                    'Nao foi possivel vincular a conversa a um cadastro.'
+                    'Não foi possível vincular a conversa a um cadastro.'
                 ));
             }
         } catch (error) {
             console.error(error);
             setContextFeedback(buildUnexpectedActionError(
                 'Falha ao identificar cliente',
-                'Nao foi possivel concluir a requisicao de cadastro.'
+                'Não foi possível concluir a requisição de cadastro.'
             ));
         } finally {
             setCreatingCustomer(false);
@@ -458,7 +458,7 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
             });
             if (approveRes.ok) {
                 setComposerFeedback(buildActionSuccess(
-                    'Sugestao aprovada e enviada',
+                    'Sugestão aprovada e enviada',
                     'A resposta foi publicada no WhatsApp e o contexto foi recarregado.'
                 ));
                 await refreshActiveConversation(activeConvId);
@@ -466,14 +466,14 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
             }
             setComposerFeedback(await buildActionErrorFromResponse(
                 approveRes,
-                'Falha ao aprovar sugestao',
-                'Nao foi possivel aprovar e enviar a sugestao neste momento.'
+                'Falha ao aprovar sugestão',
+                'Não foi possível aprovar e enviar a sugestão neste momento.'
             ));
         } catch (e) {
             console.error('Failed to approve suggestion', e);
             setComposerFeedback(buildUnexpectedActionError(
-                'Falha ao aprovar sugestao',
-                'Nao foi possivel concluir a aprovacao no fluxo supervisionado.'
+                'Falha ao aprovar sugestão',
+                'Não foi possível concluir a aprovação no fluxo supervisionado.'
             ));
         }
         return false;
@@ -625,7 +625,7 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                                 </div>
                                 <div className="mt-3 rounded-lg border border-[hsl(var(--ui-accent-blue)/0.18)] bg-[hsl(var(--ui-accent-blue)/0.08)] px-3 py-3">
                                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--ui-accent-blue-ink))]">
-                                        Proximo passo operacional
+                                        Próximo passo operacional
                                     </p>
                                     <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text))]">
                                         {operationalFlow.nextStepTitle}
@@ -753,7 +753,7 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                             ) : (
                                 <div className="text-sm space-y-3">
                                     <p className="text-[hsl(var(--ui-text-muted))]">
-                                        Cliente ainda nao identificado. Vincule o contato antes de seguir com a operacao.
+                                        Cliente ainda não identificado. Vincule o contato antes de seguir com a operação.
                                     </p>
                                     <label className="block">
                                         <span className="mb-1 block text-xs font-medium text-[hsl(var(--ui-text-muted))]">
@@ -762,7 +762,7 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                                         <input
                                             value={customerDraftName}
                                             onChange={(event) => setCustomerDraftName(event.target.value)}
-                                            placeholder="Ex.: Acme Distribuicao"
+                                            placeholder="Ex.: Acme Distribuição"
                                             className="w-full rounded-md border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] px-3 py-2 text-sm text-[hsl(var(--ui-text))] outline-none focus:border-[hsl(var(--ui-accent-blue))]"
                                         />
                                     </label>

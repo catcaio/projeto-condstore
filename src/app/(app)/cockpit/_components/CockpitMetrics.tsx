@@ -20,6 +20,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { MetricCard, type MetricCardVariant } from './MetricCard';
 import { MetricCardSkeleton } from './MetricCardSkeleton';
 import { safeFetch } from '@/ui/lib/safe-fetch';
+import { COCKPIT_METRICS_REFRESH_MS } from '@/modules/system-status/operational-guardrails';
 
 interface CockpitMetricsData {
   mensagensHoje: number;
@@ -67,7 +68,7 @@ export function CockpitMetrics() {
 
   useEffect(() => {
     fetchMetrics(); // initial load — loading=true by default, shows skeletons
-    const id = setInterval(() => fetchMetrics(false), 30_000);
+    const id = setInterval(() => fetchMetrics(false), COCKPIT_METRICS_REFRESH_MS);
     return () => clearInterval(id);
   }, [fetchMetrics]);
 

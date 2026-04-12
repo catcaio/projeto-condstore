@@ -3,6 +3,7 @@ import { shipmentService } from '../shipment.service';
 import { shipmentRepository } from '../shipment.repository';
 import { shipmentEvents } from '../shipment.events';
 import * as dbInfra from '@/infra/db';
+import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 
 vi.mock('@/infra/db', async () => {
     const actual = await vi.importActual<typeof import('@/infra/db')>('@/infra/db');
@@ -26,6 +27,16 @@ vi.mock('../shipment.events', () => ({
     shipmentEvents: {
         emitShipmentCreated: vi.fn(),
         emitShipmentStatusUpdated: vi.fn(),
+    }
+}));
+
+vi.mock('@/lib/events/operational-event-bus', () => ({
+    publishOperationalEvent: vi.fn(),
+}));
+
+vi.mock('@/modules/atendimento/message.service', () => ({
+    messageService: {
+        processSystemEvent: vi.fn().mockResolvedValue(undefined),
     }
 }));
 
@@ -89,13 +100,26 @@ describe('Shipment Logistics Service', () => {
 
         expect(shipment).toBe(existingShipment);
         expect(shipmentRepository.insertShipment).not.toHaveBeenCalled();
+        expect(shipmentEvents.emitShipmentCreated).not.toHaveBeenCalled();
     });
 
     it('should update tracking details and emit shipment_status_updated', async () => {
         const mockShipment = { id: 'ship-1', orderId: 'order-1', status: 'CREATED' };
+        const mockOrder = { id: 'order-1', status: 'CONFIRMED', customerId: 'cust-1', conversationId: 'conv-1' };
+        const mockDb = {
+            select: vi.fn().mockReturnThis(),
+            from: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockResolvedValue([mockOrder]),
+            update: vi.fn().mockReturnThis(),
+            set: vi.fn().mockReturnThis(),
+        };
         
+        vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
         vi.mocked(shipmentRepository.updateShipment).mockResolvedValue();
-        vi.mocked(shipmentRepository.findShipmentById).mockResolvedValue(mockShipment as any);
+        vi.mocked(shipmentRepository.findShipmentById)
+            .mockResolvedValueOnce(mockShipment as any)
+            .mockResolvedValueOnce({ ...mockShipment, status: 'IN_TRANSIT' } as any);
 
         await shipmentService.updateShipmentStatus('tenant-1', 'ship-1', 'IN_TRANSIT', 'BR999', 'test.com');
 
@@ -107,6 +131,16 @@ describe('Shipment Logistics Service', () => {
 
         expect(shipmentEvents.emitShipmentStatusUpdated).toHaveBeenCalledWith(expect.objectContaining({
             orderId: 'order-1', shipmentId: 'ship-1', status: 'IN_TRANSIT'
+        }));
+
+        expect(mockDb.set).toHaveBeenCalledWith({ status: 'SHIPPED' });
+        expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
+            eventType: 'order_status_updated',
+            payload: expect.objectContaining({
+                orderId: 'order-1',
+                status: 'SHIPPED',
+                sourceShipmentStatus: 'IN_TRANSIT',
+            })
         }));
     });
 
@@ -123,5 +157,31 @@ describe('Shipment Logistics Service', () => {
         await expect(
             shipmentService.createShipmentFromOrder('tenant-1', 'invalid-order')
         ).rejects.toThrow('Order not found');
+    });
+
+    it('should reject regressive shipment transitions', async () => {
+        vi.mocked(shipmentRepository.findShipmentById).mockResolvedValue({
+            id: 'ship-1',
+            orderId: 'order-1',
+            status: 'IN_TRANSIT',
+        } as any);
+
+        await expect(
+            shipmentService.updateShipmentStatus('tenant-1', 'ship-1', 'CREATED')
+        ).rejects.toThrow('Cannot regress shipment status from IN_TRANSIT to CREATED');
+
+        expect(shipmentRepository.updateShipment).not.toHaveBeenCalled();
+    });
+
+    it('should reject changes after shipment is delivered', async () => {
+        vi.mocked(shipmentRepository.findShipmentById).mockResolvedValue({
+            id: 'ship-1',
+            orderId: 'order-1',
+            status: 'DELIVERED',
+        } as any);
+
+        await expect(
+            shipmentService.updateShipmentStatus('tenant-1', 'ship-1', 'IN_TRANSIT')
+        ).rejects.toThrow('Cannot change status of a DELIVERED shipment');
     });
 });

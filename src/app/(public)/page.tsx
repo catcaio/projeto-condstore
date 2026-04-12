@@ -1,15 +1,14 @@
 import {
-    Truck, BarChart3, Bot, MessageSquare, Shield, Zap,
+    Truck, Bot, MessageSquare, Shield, Zap,
     Package, Users, Clock, TrendingUp, Workflow, LayoutDashboard,
-    Target, Inbox, ScanSearch, FileCheck, MapPin,
+    Inbox, ScanSearch, FileCheck, MapPin,
     Gauge, Smartphone,
 } from 'lucide-react';
 import {
     PageContainer, PageSection, SectionIntro, HeroSection,
     FeatureGrid, CTASection, ModuleGrid, ComparisonBand, OperationFlow,
-    FlowSection, TrustBand, FaqSection, ScrollReveal,
+    TrustBand, FaqSection, ScrollReveal, OperationProof,
 } from '@/ui/site';
-import Link from 'next/link';
 
 export const metadata = {
     title: 'Condstore OS — Infraestrutura operacional premium para logística B2B',
@@ -115,7 +114,7 @@ export default function HomePage() {
                 </PageSection>
             </ScrollReveal>
 
-            {/* ━━━ 5. FLUXO INTERATIVO ━━━ */}
+            {/* ━━━ 5. FLUXO SUPERVISIONADO ━━━ */}
             <ScrollReveal>
                 <PageSection spacing="xl" borderTop id="operacao">
                     <PageContainer>
@@ -123,9 +122,9 @@ export default function HomePage() {
                             {/* Left: editorial intro */}
                             <div className="lg:sticky lg:top-32">
                                 <SectionIntro
-                                    eyebrow="O sistema vivo"
-                                    title="Do WhatsApp ao cockpit em um único fluxo."
-                                    description="Cada etapa alimenta a próxima. O contexto nunca se perde. O operador nunca começa do zero."
+                                    eyebrow="Fluxo supervisionado"
+                                    title="Do WhatsApp ao cockpit com gate humano no meio do caminho."
+                                    description="Cada etapa alimenta a próxima, mas aprovação explícita bloqueia avanço indevido. O contexto nunca se perde."
                                     align="left"
                                 />
                                 <div className="mt-8 flex items-center gap-4">
@@ -161,8 +160,8 @@ export default function HomePage() {
                                             },
                                             {
                                                 icon: ScanSearch,
-                                                label: 'Intenção detectada',
-                                                detail: 'Frank Supremo analisa a mensagem e identifica: cotação, pedido, tracking ou suporte.',
+                                                label: 'Intenção assistida',
+                                                detail: 'A camada inteligente apoia o operador e sugere se a demanda é cotação, pedido, tracking ou suporte.',
                                             },
                                             {
                                                 icon: Zap,
@@ -171,8 +170,14 @@ export default function HomePage() {
                                             },
                                             {
                                                 icon: FileCheck,
-                                                label: 'Pedido confirmado',
-                                                detail: 'Pedido registrado com estado, responsável e timeline de eventos.',
+                                                label: 'Aprovação exigida',
+                                                detail: 'Sem aceite explícito do cliente e revisão do operador, o fluxo não avança para pedido nem logística.',
+                                                accent: 'var(--ui-accent-blue)',
+                                            },
+                                            {
+                                                icon: Package,
+                                                label: 'Pedido formalizado',
+                                                detail: 'Pedido registrado com estado, responsável e timeline de eventos depois do gate de aprovação.',
                                                 accent: 'var(--ui-success)',
                                             },
                                             {
@@ -194,7 +199,12 @@ export default function HomePage() {
                 </PageSection>
             </ScrollReveal>
 
-            {/* ━━━ 6. MÓDULOS ━━━ */}
+            {/* ━━━ 6. PROVA OPERACIONAL ━━━ */}
+            <ScrollReveal>
+                <OperationProof variant="compact" />
+            </ScrollReveal>
+
+            {/* ━━━ 7. MÓDULOS ━━━ */}
             <ScrollReveal>
                 <PageSection spacing="lg" borderTop>
                     <PageContainer>
@@ -236,7 +246,7 @@ export default function HomePage() {
                                     icon: Bot,
                                     name: 'Frank Supremo',
                                     tagline: 'IA operacional',
-                                    description: 'Análise de padrões, sugestões de ação e atendimento via WhatsApp.',
+                                    description: 'Análise de padrões, sugestões de ação e apoio ao atendimento via WhatsApp com supervisão humana.',
                                     accentClass: 'text-[hsl(var(--ui-accent-blue))]',
                                 },
                                 {
@@ -259,104 +269,12 @@ export default function HomePage() {
                 </PageSection>
             </ScrollReveal>
 
-            {/* ━━━ 7. RESULTADOS DO CLIENTE ━━━ */}
-            <ScrollReveal>
-                <PageSection spacing="lg" borderTop>
-                    <PageContainer>
-                        <SectionIntro
-                            eyebrow="Resultados"
-                            title="Benefícios que aparecem no caixa."
-                        />
-                        <FeatureGrid
-                            columns={3}
-                            items={[
-                                {
-                                    icon: Zap,
-                                    title: 'Cotação em milissegundos',
-                                    description: 'Multi-transportadora com tabela própria e API. Sem telefonema.',
-                                },
-                                {
-                                    icon: BarChart3,
-                                    title: 'Margem visível por envio',
-                                    description: 'Custo real por transportadora, região e canal. Decisão baseada em dado.',
-                                },
-                                {
-                                    icon: Target,
-                                    title: 'SLA auditável',
-                                    description: 'Prazo prometido vs. real, por rota. Exceções flagradas automaticamente.',
-                                },
-                                {
-                                    icon: MessageSquare,
-                                    title: 'Atendimento com contexto',
-                                    description: 'Pedido, frete, tracking e histórico em uma tela antes de responder.',
-                                },
-                                {
-                                    icon: Shield,
-                                    title: 'Segurança corporativa',
-                                    description: 'Multi-tenant, RBAC, audit trail e detecção de anomalias.',
-                                },
-                                {
-                                    icon: Bot,
-                                    title: 'IA governada',
-                                    description: 'Analisa padrões e sugere ações — o operador tem a palavra final.',
-                                },
-                            ]}
-                        />
-
-                        {/* Customer segments — merged into outcomes */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-                            {[
-                                { title: 'Distribuidores B2B', desc: 'Centenas de envios diários, múltiplas transportadoras, controle de margem.' },
-                                { title: 'Operadores logísticos', desc: 'Coleta, tracking e pós-venda para vários embarcadores em um cockpit.' },
-                                { title: 'E-commerce B2B', desc: 'Venda por WhatsApp com cotação automática e gestão integrada ao frete.' },
-                            ].map((segment) => (
-                                <div key={segment.title} className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-6 transition-all hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-elevated)/0.4)]">
-                                    <h3 className="text-base font-bold text-[hsl(var(--ui-text))] mb-2 tracking-tight">{segment.title}</h3>
-                                    <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">{segment.desc}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </PageContainer>
-                </PageSection>
-            </ScrollReveal>
-
-            {/* ━━━ 8. SEGURANÇA / GOVERNANÇA ━━━ */}
-            <ScrollReveal>
-                <PageSection spacing="lg" borderTop>
-                    <PageContainer>
-                        <SectionIntro
-                            eyebrow="Governança"
-                            title="Segurança que não é checklist — é arquitetura."
-                        />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {[
-                                { icon: Shield, title: 'Multi-tenant isolado', desc: 'Cada empresa em seu próprio contexto. Dados nunca se misturam.' },
-                                { icon: Users, title: 'RBAC nativo', desc: 'Controle granular de acesso por papel: admin, operador, viewer.' },
-                                { icon: FileCheck, title: 'Audit trail', desc: 'Cada ação registrada com timestamp, autor e contexto.' },
-                                { icon: ScanSearch, title: 'Anomaly detection', desc: 'Detecção automática de padrões suspeitos e alertas em tempo real.' },
-                            ].map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <div key={item.title} className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-6 transition-all hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-elevated)/0.4)]">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-danger)/0.08)] mb-4">
-                                            <Icon className="h-5 w-5 text-[hsl(var(--ui-danger))]" />
-                                        </div>
-                                        <h3 className="text-base font-bold text-[hsl(var(--ui-text))] mb-2 tracking-tight">{item.title}</h3>
-                                        <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">{item.desc}</p>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </PageContainer>
-                </PageSection>
-            </ScrollReveal>
-
-            {/* ━━━ 9. FAQ ━━━ */}
+            {/* ━━━ 8. FAQ ━━━ */}
             <ScrollReveal>
                 <FaqSection />
             </ScrollReveal>
 
-            {/* ━━━ 10. CTA FINAL ━━━ */}
+            {/* ━━━ 9. CTA FINAL ━━━ */}
             <CTASection
                 title="Pronto para profissionalizar sua operação?"
                 subtitle="Infraestrutura de verdade para logística de verdade."

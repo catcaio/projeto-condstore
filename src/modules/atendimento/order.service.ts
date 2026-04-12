@@ -1,12 +1,19 @@
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { getDb, withTenantIdNotDeleted, withTenantNotDeleted } from '@/infra/db';
-import { orders, simulations, conversations, crmOpportunities, crmQuotes, type OrderRecord } from '@/drizzle/schema';
+import { orders, simulations, crmOpportunities, crmQuotes, type OrderRecord } from '@/drizzle/schema';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from './conversation.service';
 import { messageService } from './message.service';
 import { shipmentService } from '@/modules/logistics/server';
 import { redisClient } from '@/infra/redis.client';
 import { logger } from '@/infra/logger';
+import {
+    ORDER_FLOW_MESSAGES,
+    orderStatusRegressionMessage,
+    quoteConversionStatusConflictMessage,
+    quoteMustBeAcceptedMessage,
+    terminalOrderStatusChangeMessage,
+} from './order-flow.contract';
 
 export interface OrderListFilter {
     status?: string;
@@ -31,17 +38,40 @@ export const orderService = {
             .where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)))
             .limit(1);
 
-        if (!quote) throw new Error('Quote not found');
+        if (!quote) throw new Error(ORDER_FLOW_MESSAGES.quoteNotFound);
+
+        if (quote.conversationId && quote.conversationId !== conversationId) {
+            throw new Error(ORDER_FLOW_MESSAGES.quoteConversationMismatch);
+        }
+
+        if (quote.status === 'CONVERTED') {
+            const [existingConvertedOrder] = await db.select()
+                .from(orders)
+                .where(withTenantNotDeleted(orders, tenantId, eq(orders.quoteId, quoteId)))
+                .limit(1);
+
+            if (existingConvertedOrder) {
+                return existingConvertedOrder;
+            }
+
+            throw new Error(quoteConversionStatusConflictMessage('CONVERTED'));
+        }
 
         // Check commercial validity
         if (['EXPIRED', 'LOST', 'CANCELED'].includes(quote.status)) {
-            throw new Error(`Cannot convert quote with status: ${quote.status}`);
+            throw new Error(quoteConversionStatusConflictMessage(quote.status));
         }
 
         if (quote.expiresAt && new Date(quote.expiresAt) < new Date()) {
             // Mark it as expired dynamically if past date
-            await db.update(simulations).set({ status: 'EXPIRED' }).where(eq(simulations.id, quoteId));
-            throw new Error('Cannot convert an expired quote');
+            await db.update(simulations)
+                .set({ status: 'EXPIRED' })
+                .where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
+            throw new Error(ORDER_FLOW_MESSAGES.quoteExpired);
+        }
+
+        if (quote.status !== 'ACCEPTED') {
+            throw new Error(quoteMustBeAcceptedMessage(quote.status || 'UNKNOWN'));
         }
 
         // 2. Adquirir Lock Distribuído
@@ -60,7 +90,7 @@ export const orderService = {
                 logger.info(`[OrderService] Ordem pré-existente capturada na recuperação do lock para quote ${quoteId}`);
                 return concurrentOrder;
             }
-            throw new Error('A cotação está sendo processada no momento. Por favor aguarde um instante.');
+            throw new Error(ORDER_FLOW_MESSAGES.quoteLockBusy);
         }
 
         try {
@@ -191,9 +221,14 @@ export const orderService = {
         const db = await getDb();
         const [order] = await db.select().from(orders).where(withTenantIdNotDeleted(orders, tenantId, orderId)).limit(1);
         
-        if (!order) throw new Error('Order not found');
+        if (!order) throw new Error(ORDER_FLOW_MESSAGES.orderNotFound);
 
-        if (order.status === status) return; // Silent discard
+        if (order.status === status) {
+            if (status === 'CONFIRMED') {
+                await shipmentService.createShipmentFromOrder(tenantId, orderId);
+            }
+            return;
+        }
 
         // Prevent illegal backwards transitions
         const ranks: Record<string, number> = {
@@ -208,12 +243,12 @@ export const orderService = {
             const currentRank = ranks[order.status] || 0;
             const newRank = ranks[status] || 0;
             if (newRank <= currentRank) {
-                throw new Error(`Cannot regress order status from ${order.status} to ${status}`);
+                throw new Error(orderStatusRegressionMessage(order.status, status));
             }
         }
 
         if (order.status === 'DELIVERED' || order.status === 'CANCELED') {
-            throw new Error(`Cannot change status of a ${order.status} order`);
+            throw new Error(terminalOrderStatusChangeMessage(order.status));
         }
         
         await db.update(orders)

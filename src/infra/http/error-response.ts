@@ -3,9 +3,12 @@ import { NextResponse } from 'next/server';
 export enum ErrorCode {
   AUTH_REQUIRED = 'AUTH_REQUIRED',
   FORBIDDEN = 'FORBIDDEN',
+  NOT_FOUND = 'NOT_FOUND',
+  CONFLICT = 'CONFLICT',
   LOCK_BUSY = 'LOCK_BUSY',
   TENANT_MISMATCH = 'TENANT_MISMATCH',
   VALIDATION_ERROR = 'VALIDATION_ERROR',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
   UPSTREAM_TWILIO_ERROR = 'UPSTREAM_TWILIO_ERROR',
   DB_ERROR = 'DB_ERROR',
   RATE_LIMITED = 'RATE_LIMITED',
@@ -47,9 +50,11 @@ export function errorResponse(
 export function inferErrorCodeFromStatus(status: number): ErrorCode {
   if (status === 401) return ErrorCode.AUTH_REQUIRED;
   if (status === 403) return ErrorCode.FORBIDDEN;
-  if (status === 409) return ErrorCode.LOCK_BUSY;
+  if (status === 404) return ErrorCode.NOT_FOUND;
+  if (status === 409) return ErrorCode.CONFLICT;
+  if (status === 423) return ErrorCode.LOCK_BUSY;
   if (status === 429) return ErrorCode.RATE_LIMITED;
   if (status >= 400 && status < 500) return ErrorCode.VALIDATION_ERROR;
-  if (status >= 500) return ErrorCode.UNKNOWN;
+  if (status >= 500) return ErrorCode.INTERNAL_ERROR;
   return ErrorCode.UNKNOWN;
 }

@@ -3,6 +3,11 @@
 import { useState, useCallback, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { runGoNoGoChecks, toggleIncidentMode, toggleOutbound, runProcessorNow } from './actions';
+import {
+    DOMINE_DLQ_ATTENTION_DEPTH,
+    DOMINE_PENDING_EVENT_ALERT_MS,
+    DOMINE_PENDING_EVENT_WARNING_MS,
+} from '@/modules/system-status/operational-guardrails';
 
 interface GoNoGoResults {
     internalTokenValid: boolean;
@@ -143,7 +148,7 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
                         actionLabel: 'Run Processor',
                         actionFn: () => runProcessorNow(tenantId)
                     });
-                } else if (stats.domineMetrics.oldestEventAgeMs > 600000) { // 10 min
+                } else if (stats.domineMetrics.oldestEventAgeMs > DOMINE_PENDING_EVENT_ALERT_MS) {
                     alerts.push({
                         id: 'queue-delayed',
                         message: 'Events are queueing up beyond acceptable SLA.',
@@ -152,7 +157,7 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
                     });
                 }
 
-                if (stats.domineMetrics.dlqDepth > 5) {
+                if (stats.domineMetrics.dlqDepth > DOMINE_DLQ_ATTENTION_DEPTH) {
                     alerts.push({
                         id: 'high-dlq',
                         message: 'High volume of failed events in Dead Letter Queue.',
@@ -286,7 +291,7 @@ export function StatusSettingsClient({ tenantId }: { tenantId: string }) {
 
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-sm text-zinc-400 font-medium">Oldest Pending Event</span>
-                            <span className={`text-lg font-black ${stats.domineMetrics.oldestEventAgeMs > 300000 ? 'text-amber-500' : 'text-emerald-400'}`}>
+                            <span className={`text-lg font-black ${stats.domineMetrics.oldestEventAgeMs > DOMINE_PENDING_EVENT_WARNING_MS ? 'text-amber-500' : 'text-emerald-400'}`}>
                                 {stats.domineMetrics.oldestEventAgeMs > 0 ? `${Math.floor(stats.domineMetrics.oldestEventAgeMs / 60000)}m` : '0m'}
                             </span>
                         </div>

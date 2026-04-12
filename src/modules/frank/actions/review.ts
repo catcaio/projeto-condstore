@@ -6,15 +6,44 @@ import { eq, and, desc } from 'drizzle-orm';
 import { getTenantId } from '@/modules/audit/audit.actions';
 import { revalidatePath } from 'next/cache';
 import { v4 as uuidv4 } from 'uuid';
-import { FrankActionType, getActionSchema } from '../action-contracts';
-import { ZodError } from 'zod';
+import { ExplainabilitySchema, FrankActionType, getActionSchema } from '../action-contracts';
 import { withTenantIdNotDeleted } from '@/infra/db';
+import { logger } from '@/infra/logger';
+import { getFrankActionPolicy, resolveFrankActionPolicyBlockReason } from '../action-policy';
 
 export type ActionResponse = {
     success: boolean;
     error?: string;
-    code?: 'UNAUTHORIZED' | 'NOT_FOUND' | 'PAYLOAD_INVALID' | 'STATE_CONFLICT' | 'EXECUTION_FAILED';
+    code?: 'UNAUTHORIZED' | 'NOT_FOUND' | 'PAYLOAD_INVALID' | 'STATE_CONFLICT' | 'EXECUTION_FAILED' | 'POLICY_BLOCKED';
 };
+
+function policyBlockedResponse(params: {
+    tenantId: string;
+    actionId: string;
+    actionType: string;
+    entityType: string;
+    entityId: string;
+    reason: string;
+    recordedRisk?: string;
+    requiredRisk?: string;
+}): ActionResponse {
+    logger.warn('frank_action_policy_blocked', {
+        tenantId: params.tenantId,
+        actionId: params.actionId,
+        actionType: params.actionType,
+        entityType: params.entityType,
+        entityId: params.entityId,
+        recordedRisk: params.recordedRisk,
+        requiredRisk: params.requiredRisk,
+        reason: params.reason,
+    });
+
+    return {
+        success: false,
+        error: params.reason,
+        code: 'POLICY_BLOCKED',
+    };
+}
 
 // ==========================================
 // 1. Fetching Frank Actions
@@ -84,10 +113,50 @@ export async function approveAndExecuteFrankAction(actionId: string, payloadOver
         return { success: false, error: `Não é possível aprovar uma ação no estado '${actionRecord.status}'.`, code: 'STATE_CONFLICT' };
     }
 
+    const actionType = actionRecord.type as FrankActionType;
     // 1. Validate payload against strict Zod Schema
-    const schema = getActionSchema(actionRecord.type as FrankActionType);
+    const schema = getActionSchema(actionType);
     if (!schema) {
-        return { success: false, error: `Contrato Zod inexistente para o tipo: ${actionRecord.type}`, code: 'EXECUTION_FAILED' };
+        return policyBlockedResponse({
+            tenantId,
+            actionId,
+            actionType: actionRecord.type,
+            entityType: actionRecord.entityType,
+            entityId: actionRecord.entityId,
+            reason: `Action "${actionRecord.type}" is not registered in the Frank action contract registry.`,
+        });
+    }
+
+    const parsedExplanation = ExplainabilitySchema.safeParse(actionRecord.explanation);
+    if (!parsedExplanation.success) {
+        return policyBlockedResponse({
+            tenantId,
+            actionId,
+            actionType: actionRecord.type,
+            entityType: actionRecord.entityType,
+            entityId: actionRecord.entityId,
+            reason: 'Frank action explanation is invalid and cannot be evaluated safely.',
+        });
+    }
+
+    const policy = getFrankActionPolicy(actionType);
+    const blockReason = resolveFrankActionPolicyBlockReason({
+        type: actionType,
+        status: actionRecord.status,
+        recordedRisk: parsedExplanation.data.risk,
+    });
+
+    if (blockReason) {
+        return policyBlockedResponse({
+            tenantId,
+            actionId,
+            actionType: actionRecord.type,
+            entityType: actionRecord.entityType,
+            entityId: actionRecord.entityId,
+            reason: blockReason,
+            recordedRisk: parsedExplanation.data.risk,
+            requiredRisk: policy.minimumRisk,
+        });
     }
 
     let validatedPayload;
@@ -103,16 +172,16 @@ export async function approveAndExecuteFrankAction(actionId: string, payloadOver
     // 2. Mark as executing
     await db.update(frankActions)
         .set({ status: 'executing', payload: validatedPayload, updatedAt: new Date() })
-        .where(eq(frankActions.id, actionId));
+        .where(and(eq(frankActions.id, actionId), eq(frankActions.tenantId, tenantId)));
 
     try {
         // 3. ACTUAL EXECUTION (Dynamic Dispatcher)
-        await executeDomainAction(actionRecord.type as FrankActionType, validatedPayload, tenantId);
+        await executeDomainAction(actionType, validatedPayload, tenantId);
 
         // 4. Mark as executed
         await db.update(frankActions)
             .set({ status: 'executed', updatedAt: new Date() })
-            .where(eq(frankActions.id, actionId));
+            .where(and(eq(frankActions.id, actionId), eq(frankActions.tenantId, tenantId)));
 
         // 5. Generate Official Audit Log
         await db.insert(operationalAuditLogs).values({
@@ -134,7 +203,7 @@ export async function approveAndExecuteFrankAction(actionId: string, payloadOver
         // Handle Error + Rollback representation
         await db.update(frankActions)
             .set({ status: 'failed', errorMsg: error.message, updatedAt: new Date() })
-            .where(eq(frankActions.id, actionId));
+            .where(and(eq(frankActions.id, actionId), eq(frankActions.tenantId, tenantId)));
         
         return { success: false, error: `Ação falhou durante execução: ${error.message}`, code: 'EXECUTION_FAILED' };
     }
@@ -183,10 +252,12 @@ async function executeDomainAction(type: FrankActionType, payload: any, tenantId
                     .set({ assignedTo: payload.newOwnerId, updatedAt: new Date() })
                     .where(and(eq(conversations.id, payload.conversationId), eq(conversations.tenantId, tenantId)));
                 break;
-            // Additional actions can be gracefully handled here.
             default:
-                console.info(`Action type ${type} executed successfully (no strict domain wiring yet).`);
-                break;
+                logger.warn('frank_action_execution_missing_handler', {
+                    tenantId,
+                    actionType: type,
+                });
+                throw new Error(`Action "${type}" has no domain handler wired for execution.`);
         }
     } catch (e) {
         console.error(`Error executing domain action ${type}:`, e);

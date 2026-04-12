@@ -28,6 +28,16 @@ interface FreightQuotePanelProps {
     onFlowUpdated?: () => Promise<void> | void;
 }
 
+const QUOTE_STATUS_BADGE_LABELS: Record<string, string> = {
+    DRAFT: 'Rascunho',
+    SENT: 'Enviada',
+    ACCEPTED: 'Aprovada',
+    CONVERTED: 'Convertida',
+    EXPIRED: 'Expirada',
+    LOST: 'Perdida',
+    CANCELED: 'Cancelada',
+};
+
 function getQuoteStatusMeta(status?: string) {
     switch (status) {
         case 'SENT':
@@ -96,13 +106,13 @@ export default function FreightQuotePanel({
             setFeedback(await buildActionErrorFromResponse(
                 res,
                 'Falha operacional',
-                'Nao foi possivel carregar as cotacoes deste atendimento.'
+                'Não foi possível carregar as cotações deste atendimento.'
             ));
         } catch (err) {
             console.error(err);
             setFeedback(buildUnexpectedActionError(
                 'Falha operacional',
-                'Nao foi possivel carregar as cotacoes deste atendimento.'
+                'Não foi possível carregar as cotações deste atendimento.'
             ));
         } finally {
             setLoading(false);
@@ -353,12 +363,14 @@ export default function FreightQuotePanel({
                                         <div className="flex items-start justify-between gap-3 rounded-md border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))] px-3 py-2">
                                             <div className="min-w-0">
                                                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[hsl(var(--ui-text-muted))]">
-                                                    Proximo passo operacional
+                                                    Próximo passo operacional
                                                 </p>
                                                 <p className="mt-1 text-xs font-medium text-[hsl(var(--ui-text))]">{statusMeta.label}</p>
                                                 <p className="mt-1 text-[11px] leading-5 text-[hsl(var(--ui-text-muted))]">{statusMeta.helper}</p>
                                             </div>
-                                            <Badge variant="outline">{q.status || 'DRAFT'}</Badge>
+                                            <Badge variant="outline">
+                                                {QUOTE_STATUS_BADGE_LABELS[q.status || 'DRAFT'] ?? q.status ?? 'DRAFT'}
+                                            </Badge>
                                         </div>
                                         
                                         <div className="flex justify-between items-center mt-3 pt-3 border-t border-[hsl(var(--ui-border))]">

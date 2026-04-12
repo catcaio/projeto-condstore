@@ -34,7 +34,7 @@ interface OrderShipmentPanelProps {
 const ORDER_STATUS_LABELS: Record<string, string> = {
     DRAFT: 'Rascunho operacional',
     CONFIRMED: 'Confirmado',
-    PROCESSING: 'Em separacao',
+    PROCESSING: 'Em separação',
     SHIPPED: 'Em transporte',
     DELIVERED: 'Entregue',
     CANCELED: 'Cancelado',
@@ -44,7 +44,7 @@ const SHIPMENT_STATUS_LABELS: Record<string, string> = {
     CREATED: 'Criado',
     SCHEDULED: 'Agendado',
     PICKED_UP: 'Coletado',
-    IN_TRANSIT: 'Em transito',
+    IN_TRANSIT: 'Em trânsito',
     OUT_FOR_DELIVERY: 'Saiu para entrega',
     DELIVERED: 'Entregue',
     FAILED: 'Falha operacional',
@@ -61,28 +61,28 @@ function shortCode(id: string) {
 function getNextStep(order: OrderOverview | null, shipment: ShipmentDetail | null) {
     if (!order) {
         return {
-            title: 'Pedido ainda nao criado',
-            description: 'Depois da aprovacao do cliente, gere o pedido em DRAFT a partir da cotacao enviada.',
+            title: 'Pedido ainda não criado',
+            description: 'Depois da aprovação do cliente, gere o pedido em DRAFT a partir da cotação enviada.',
         };
     }
 
     if (order.status === 'DRAFT') {
         return {
             title: 'Confirmar pedido',
-            description: 'A confirmacao do pedido libera o shipment e inicia a execucao logistica real.',
+            description: 'A confirmação do pedido libera o shipment e inicia a execução logística real.',
         };
     }
 
     if (!shipment) {
         return {
             title: 'Aguardando shipment',
-            description: 'O shipment nasce a partir da confirmacao. Atualize o painel se ele ainda nao apareceu.',
+            description: 'O shipment nasce a partir da confirmação. Atualize o painel se ele ainda não apareceu.',
         };
     }
 
     if (shipment.status === 'DELIVERED') {
         return {
-            title: 'Shipment concluido',
+            title: 'Shipment concluído',
             description: 'Pedido e entrega fechados no fluxo supervisionado do MVP.',
         };
     }
@@ -119,7 +119,7 @@ export default function OrderShipmentPanel({
                 setLoadFeedback(await buildActionErrorFromResponse(
                     orderRes,
                     'Falha ao carregar pedido',
-                    'Nao foi possivel consultar o pedido vinculado a esta conversa.'
+                    'Não foi possível consultar o pedido vinculado a esta conversa.'
                 ));
                 return;
             }
@@ -140,7 +140,7 @@ export default function OrderShipmentPanel({
                 setLoadFeedback(await buildActionErrorFromResponse(
                     shipRes,
                     'Falha ao carregar shipment',
-                    'Nao foi possivel consultar o shipment deste pedido.'
+                    'Não foi possível consultar o shipment deste pedido.'
                 ));
                 return;
             }
@@ -153,7 +153,7 @@ export default function OrderShipmentPanel({
             setShipment(null);
             setLoadFeedback(buildUnexpectedActionError(
                 'Falha ao carregar painel',
-                'Nao foi possivel consultar pedido e shipment desta conversa.'
+                'Não foi possível consultar pedido e shipment desta conversa.'
             ));
         } finally {
             if (showLoading) {
@@ -184,7 +184,7 @@ export default function OrderShipmentPanel({
             if (res.ok) {
                 setActionFeedback(buildActionSuccess(
                     'Pedido confirmado',
-                    'Pedido confirmado e shipment liberado para a operacao logistica.'
+                    'Pedido confirmado e shipment liberado para a operação logística.'
                 ));
                 await fetchData(false);
                 await Promise.resolve(onFlowUpdated?.());
@@ -192,21 +192,31 @@ export default function OrderShipmentPanel({
                 setActionFeedback(await buildActionErrorFromResponse(
                     res,
                     'Falha ao confirmar pedido',
-                    'Nao foi possivel confirmar o pedido neste momento.'
+                    'Não foi possível confirmar o pedido neste momento.'
                 ));
             }
         } catch (error) {
             console.error(error);
             setActionFeedback(buildUnexpectedActionError(
                 'Falha ao confirmar pedido',
-                'Nao foi possivel concluir a requisicao de confirmacao.'
+                'Não foi possível concluir a requisição de confirmação.'
             ));
         } finally {
             setConfirming(false);
         }
     };
 
-    const nextStep = getNextStep(order, shipment);
+    const nextStep = loadFeedback && !order
+        ? {
+            title: 'Revalidar pedido',
+            description: 'O painel não conseguiu confirmar se já existe um pedido para esta conversa.',
+        }
+        : loadFeedback && order && !shipment
+            ? {
+                title: 'Revalidar shipment',
+                description: 'O painel não conseguiu consultar o shipment deste pedido. Atualize para sincronizar o estado real.',
+            }
+            : getNextStep(order, shipment);
 
     return (
         <div className="flex flex-col border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))]">
@@ -222,7 +232,7 @@ export default function OrderShipmentPanel({
             <div className="p-4 flex flex-col gap-3">
                 <div className="rounded-lg border border-[hsl(var(--ui-accent-blue)/0.18)] bg-[hsl(var(--ui-accent-blue)/0.08)] px-3 py-3">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--ui-accent-blue-ink))]">
-                        Proximo passo operacional
+                        Próximo passo operacional
                     </p>
                     <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text))]">{nextStep.title}</p>
                     <p className="mt-1 text-sm leading-5 text-[hsl(var(--ui-text-muted))]">{nextStep.description}</p>
@@ -237,7 +247,7 @@ export default function OrderShipmentPanel({
                     <div className="rounded-lg border border-dashed border-[hsl(var(--ui-border-strong))] bg-white px-4 py-4">
                         <p className="text-sm font-medium text-[hsl(var(--ui-text))]">Nenhum pedido vinculado a esta conversa.</p>
                         <p className="mt-1 text-sm leading-5 text-[hsl(var(--ui-text-muted))]">
-                            Quando o cliente aprovar a cotacao enviada, gere o pedido em DRAFT neste mesmo fluxo.
+                            Quando o cliente aprovar a cotação enviada, gere o pedido em DRAFT neste mesmo fluxo.
                         </p>
                     </div>
                 ) : (
@@ -279,7 +289,7 @@ export default function OrderShipmentPanel({
                                 </button>
                             ) : (
                                 <p className="mt-4 text-xs leading-5 text-[hsl(var(--ui-text-muted))]">
-                                    Pedido ja confirmado no fluxo operacional. O proximo passo agora e acompanhar a execucao do shipment.
+                                    Pedido já confirmado no fluxo operacional. O próximo passo agora é acompanhar a execução do shipment.
                                 </p>
                             )}
 
@@ -299,8 +309,8 @@ export default function OrderShipmentPanel({
                             {!shipment ? (
                                 <p className="mt-3 text-sm leading-5 text-[hsl(var(--ui-text-muted))]">
                                     {order.status === 'DRAFT'
-                                        ? 'O shipment sera criado automaticamente depois da confirmacao do pedido.'
-                                        : 'Shipment ainda nao encontrado. Atualize o painel para sincronizar o contexto real da operacao.'}
+                                        ? 'O shipment será criado automaticamente depois da confirmação do pedido.'
+                                        : 'Shipment ainda não encontrado. Atualize o painel para sincronizar o contexto real da operação.'}
                                 </p>
                             ) : (
                                 <div className="mt-3 flex flex-col gap-3">
@@ -322,7 +332,7 @@ export default function OrderShipmentPanel({
                                             className="flex items-center justify-between rounded border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))] px-3 py-2 hover:bg-white transition-colors"
                                         >
                                             <div>
-                                                <p className="text-[10px] text-[hsl(var(--ui-text-muted))] uppercase">Codigo de rastreio</p>
+                                                <p className="text-[10px] text-[hsl(var(--ui-text-muted))] uppercase">Código de rastreio</p>
                                                 <p className="mt-1 font-mono text-sm font-semibold text-[hsl(var(--ui-accent-blue))]">
                                                     {shipment.trackingCode}
                                                 </p>
