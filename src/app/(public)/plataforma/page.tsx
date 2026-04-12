@@ -32,8 +32,8 @@ export default function PlataformaPage() {
                 }
                 subtitle="O Condstore OS organiza conversas, clientes, pedidos e logística em uma estrutura operacional única com contexto contínuo."
                 ctas={[
-                    { label: 'Ver como funciona', href: '/como-funciona' },
-                    { label: 'Explorar soluções', href: '/solucoes', variant: 'secondary' },
+                    { label: 'Iniciar operação no MVP', href: '/signup' },
+                    { label: 'Como funciona o MVP', href: '/como-funciona', variant: 'secondary' },
                 ]}
             />
 
@@ -314,11 +314,11 @@ export default function PlataformaPage() {
 
             {/* ─── 8. CTA FINAL ─── */}
             <CTASection
-                title="Entenda como essa estrutura se traduz em soluções aplicadas."
-                subtitle="Veja como cada módulo resolve problemas reais da sua operação."
+                title="Pronto para operar com a plataforma oficial do MVP?"
+                subtitle="Mantenha um caminho único: ativação direta e operação supervisionada."
                 ctas={[
-                    { label: 'Ver como funciona', href: '/como-funciona' },
-                    { label: 'Explorar soluções', href: '/solucoes', variant: 'secondary' },
+                    { label: 'Iniciar operação no MVP', href: '/signup' },
+                    { label: 'Como funciona o MVP', href: '/como-funciona', variant: 'secondary' },
                 ]}
             />
         </>

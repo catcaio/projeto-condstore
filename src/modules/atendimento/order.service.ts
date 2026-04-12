@@ -43,8 +43,29 @@ export const orderService = {
 
         if (quote.expiresAt && new Date(quote.expiresAt) < new Date()) {
             // Mark it as expired dynamically if past date
-            await db.update(simulations).set({ status: 'EXPIRED' }).where(eq(simulations.id, quoteId));
+            await db
+                .update(simulations)
+                .set({ status: 'EXPIRED' })
+                .where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
             throw new Error('Cannot convert an expired quote');
+        }
+
+        if (quote.status === 'CONVERTED') {
+            const [convertedOrder] = await db.select()
+                .from(orders)
+                .where(withTenantNotDeleted(orders, tenantId, eq(orders.quoteId, quoteId)))
+                .limit(1);
+
+            if (convertedOrder) {
+                logger.info(`[OrderService] Ordem existente encontrada para cotacao ja convertida ${quoteId}`);
+                return convertedOrder;
+            }
+
+            throw new Error('Quote already converted');
+        }
+
+        if (quote.status !== 'ACCEPTED') {
+            throw new Error('A cotacao precisa estar aprovada antes de criar o pedido.');
         }
 
         // 2. Adquirir Lock Distribuído

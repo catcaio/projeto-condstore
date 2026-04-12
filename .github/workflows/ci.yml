@@ -14,6 +14,13 @@ jobs:
   quality-gates:
     name: Quality Gates
     runs-on: ubuntu-latest
+    env:
+      # Optional CI secrets (recommended):
+      # - CI_AUTH_SECRET
+      # - CI_PII_ENCRYPTION_KEY (64 hex chars)
+      # Fallbacks below are CI-only and never used by app runtime in production.
+      AUTH_SECRET: ${{ secrets.CI_AUTH_SECRET != '' && secrets.CI_AUTH_SECRET || 'ci-only-auth-secret-quality-gate' }}
+      PII_ENCRYPTION_KEY: ${{ secrets.CI_PII_ENCRYPTION_KEY != '' && secrets.CI_PII_ENCRYPTION_KEY || '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff' }}
 
     steps:
       - name: Checkout Repository
@@ -30,6 +37,9 @@ jobs:
 
       - name: Env Leak Check
         run: node scripts/check-env-leak.mjs
+
+      - name: Critical Secrets Health Check
+        run: npm run lint:secrets-critical
 
       - name: Verify Routes Guardrail
         run: npm run routes:sync

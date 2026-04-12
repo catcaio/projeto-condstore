@@ -50,6 +50,10 @@ Nunca quebrar contrato de dados sem corrigir consumidores
 
 Se houver mudança estrutural, garantir migration gerada, válida e commitada
 
+Nunca expandir schema em módulos frozen (Frank knowledge/RAG, DOMINE Console) sem instrução explícita
+
+Antes de abrir PR com mudança de schema em superfícies de produto, rodar npm run guardrail:mvp-freeze e npm run db:verify
+
 Só concluir quando estrutura, migrations e consumo estiverem alinhados no estado real
 
 Fluxo de execução:

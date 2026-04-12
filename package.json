@@ -11,13 +11,14 @@
     "lint:ops": "node -e \"require('fs').existsSync('infra/systemd/condstore-finops-worker.service') || (console.error('MISSING: infra/systemd/condstore-finops-worker.service'), process.exit(1))\"",
     "lint:env": "node ./scripts/check-env-leak.mjs",
     "lint:pii": "node scripts/verify-no-plaintext-pii.mjs",
+    "lint:secrets-critical": "node scripts/check-critical-secrets.mjs",
     "check:boundaries": "node --import tsx scripts/check-import-boundaries.ts",
     "install:clean": "cmd /c \"if exist node_modules rmdir /s /q node_modules & if exist package-lock.json del /f /q package-lock.json & call scripts\\npm-safe.cmd\"",
     "install:safe": "cmd /c \"call scripts\\npm-safe.cmd\"",
     "postinstall": "node scripts/patch-next-lint.mjs",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "test": "npm run test:ci",
-    "test:ci": "npm run lint:env && npm run lint:pii && cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=threads vitest run --configLoader runner --config vitest.config.mjs",
+    "test:ci": "npm run lint:env && npm run lint:pii && npm run lint:secrets-critical && cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=threads vitest run --configLoader runner --config vitest.config.mjs",
     "test:coverage": "npm run lint:env && npm run lint:pii && cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=forks vitest run --configLoader runner --config vitest.config.mjs --coverage",
     "test:win-stable": "cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=forks vitest run --configLoader runner --config vitest.config.mjs",
     "test:whatsapp": "npm run test:win-stable -- src/modules/atendimento/__tests__ src/app/api/whatsapp/incoming/__tests__ src/server/twilio/__tests__ \"src/app/(app)/cockpit/atendimento/__tests__\" src/app/api/cockpit/conversations src/__tests__/middleware.test.ts src/__tests__/rbac-guards.test.ts",
@@ -42,7 +43,8 @@
     "stripe:listen": "stripe listen --forward-to localhost:3015/api/webhook/stripe",
     "stripe:trigger:checkout": "stripe trigger checkout.session.completed",
     "stripe:trigger:invoice": "stripe trigger invoice.paid",
-    "stripe:trigger:cancel": "stripe trigger customer.subscription.deleted"
+    "stripe:trigger:cancel": "stripe trigger customer.subscription.deleted",
+    "seed:demo-tenant": "node --import tsx scripts/seed-mvp-demo-tenant.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1000.0",

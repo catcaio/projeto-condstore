@@ -3,7 +3,7 @@ import {
     orders, 
     orderItems, 
     orderStatusHistory, 
-    freightSimulations, 
+    simulations,
     customerTimelineEvents,
     freightShipments 
 } from '@/drizzle/schema';
@@ -11,6 +11,7 @@ import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 import { withTenantNotDeleted } from '@/infra/db';
+import { structuredLogger } from '@/infra/log/logger';
 
 export interface CreateOrderParams {
     tenantId: string;
@@ -36,11 +37,11 @@ export async function createOrderFromSimulation(params: CreateOrderParams) {
     // 1. Retrieve the freight simulation to ensure it exists and matches tenant
     const simulationRecs = await db
         .select()
-        .from(freightSimulations)
+        .from(simulations)
         .where(
             and(
-                eq(freightSimulations.tenantId, tenantId),
-                eq(freightSimulations.id, simulationId)
+                eq(simulations.tenantId, tenantId),
+                eq(simulations.id, simulationId)
             )
         )
         .limit(1);
@@ -50,6 +51,16 @@ export async function createOrderFromSimulation(params: CreateOrderParams) {
     }
 
     const simulation = simulationRecs[0];
+
+    if (simulation.status !== 'ACCEPTED') {
+        structuredLogger.warn('pedidos_create_order_from_simulation_blocked_status', {
+            tenantId,
+            simulationId,
+            simulationStatus: simulation.status,
+        });
+        throw new Error(`Simulation ${simulationId} must be ACCEPTED to create an order (current: ${simulation.status})`);
+    }
+
     const orderId = randomUUID();
 
     // 2. Calculate total amount
@@ -133,4 +144,3 @@ export async function createOrderFromSimulation(params: CreateOrderParams) {
         shipmentLink: `/logistica/rastreamento?orderId=${orderId}`, // Typical deep-link pattern
     };
 }
-
