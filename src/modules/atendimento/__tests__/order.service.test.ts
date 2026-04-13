@@ -4,6 +4,7 @@ import * as dbInfra from '@/infra/db';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from '../conversation.service';
 import { redisClient } from '@/infra/redis.client';
+import { shipmentService } from '@/modules/logistics/server';
 
 vi.mock('@/infra/db', async () => {
     const actual = await vi.importActual<typeof import('@/infra/db')>('@/infra/db');
@@ -39,7 +40,7 @@ vi.mock('../message.service', () => ({
 
 vi.mock('@/modules/logistics/server', () => ({
     shipmentService: {
-        createShipmentFromOrder: vi.fn().mockResolvedValue(undefined),
+        createShipmentFromOrder: vi.fn().mockResolvedValue({ id: 'shipment-1' }),
     }
 }));
 
@@ -57,6 +58,7 @@ describe('Order Service Implementation', () => {
             tenantId: 'tenant-1',
             customerId: 'custom-123',
             organizationId: 'org-789',
+            status: 'ACCEPTED',
             bestPrice: '150.00',
             bestCarrier: 'Correios',
             bestService: 'SEDEX',
@@ -67,11 +69,11 @@ describe('Order Service Implementation', () => {
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             limit: vi.fn()
-                .mockResolvedValueOnce([{ planStatus: 'trialing' }]) // tenant billing gate
-                .mockResolvedValueOnce([mockQuote]) // fetch quote phase
-                .mockResolvedValueOnce([]) // idempotency guard
-                .mockResolvedValueOnce([{ id: 'mocked-id', status: 'CREATED' }]) // fetch saved order phase
-                .mockResolvedValueOnce([{ opportunityId: 'opp-123' }]), // fetch crm quote phase
+                .mockResolvedValueOnce([{ planStatus: 'trialing' }])
+                .mockResolvedValueOnce([mockQuote])
+                .mockResolvedValueOnce([])
+                .mockResolvedValueOnce([{ id: 'mocked-id', status: 'CREATED' }])
+                .mockResolvedValueOnce([{ opportunityId: 'opp-123' }]),
             insert: vi.fn().mockReturnThis(),
             values: vi.fn().mockResolvedValue([{ insertId: 'mocked-id' }]),
             update: vi.fn().mockReturnThis(),
@@ -83,21 +85,15 @@ describe('Order Service Implementation', () => {
         const order = await orderService.createOrderFromQuote('tenant-1', 'conv-123', 'quote-456', 'operator-999');
 
         expect(order).toBeDefined();
-        
-        // Assert we called the CRM pipeline update
         expect(conversationService.changeConversationStage).toHaveBeenCalledWith(
             'tenant-1',
             'conv-123',
             'WON',
             'custom-123'
         );
-
-        // Assert CRM Opportunity and Quote got updated to won/converted
         expect(mockDb.update).toHaveBeenCalled();
         expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ stage: 'won', status: 'won' }));
         expect(mockDb.set).toHaveBeenCalledWith(expect.objectContaining({ status: 'accepted' }));
-
-        // Assert we fired an event
         expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
             tenantId: 'tenant-1',
             eventType: 'order_created',
@@ -110,7 +106,7 @@ describe('Order Service Implementation', () => {
     });
 
     it('should return existing order if one is already created from the same quote (Idempotency)', async () => {
-        const mockQuote = { id: 'quote-456' };
+        const mockQuote = { id: 'quote-456', status: 'ACCEPTED' };
         const existingOrder = { id: 'order-already-exists' };
 
         const mockDb = {
@@ -118,10 +114,10 @@ describe('Order Service Implementation', () => {
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockReturnThis(),
             limit: vi.fn()
-                .mockResolvedValueOnce([{ planStatus: 'active' }]) // tenant billing gate
-                .mockResolvedValueOnce([mockQuote]) // found quote
-                .mockResolvedValueOnce([existingOrder]) // idempotency hit
-                .mockResolvedValueOnce([{ opportunityId: 'opp-123' }]), // fetch crm quote phase
+                .mockResolvedValueOnce([{ planStatus: 'active' }])
+                .mockResolvedValueOnce([mockQuote])
+                .mockResolvedValueOnce([existingOrder])
+                .mockResolvedValueOnce([{ opportunityId: 'opp-123' }]),
             insert: vi.fn(),
             update: vi.fn()
         };
@@ -139,28 +135,27 @@ describe('Order Service Implementation', () => {
 
     describe('Concurrency and Lock mechanisms', () => {
         it('should throw Error if quote lock is currently held by another worker', async () => {
-            vi.mocked(redisClient.setNx).mockResolvedValueOnce(false); // lock held
+            vi.mocked(redisClient.setNx).mockResolvedValueOnce(false);
             
             const mockDb = {
                 select: vi.fn().mockReturnThis(),
                 from: vi.fn().mockReturnThis(),
                 where: vi.fn().mockReturnThis(),
                 limit: vi.fn()
-                    .mockResolvedValueOnce([{ planStatus: 'active' }]) // tenant billing gate
-                    .mockResolvedValueOnce([{ id: 'quote-456' }]) // quote exists
-                    .mockResolvedValueOnce([]) // existing order NOT found during lock fallback
+                    .mockResolvedValueOnce([{ planStatus: 'active' }])
+                    .mockResolvedValueOnce([{ id: 'quote-456', status: 'ACCEPTED' }])
+                    .mockResolvedValueOnce([])
             };
             vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
 
             await expect(orderService.createOrderFromQuote('t1', 'c1', 'quote-456', 'op1'))
                 .rejects.toThrow('A cotação está sendo processada no momento.');
             
-            // Should NOT try to release lock because it didn't acquire it
             expect(redisClient.eval).not.toHaveBeenCalled();
         });
 
         it('should return existing order if quote lock is held but order was already created (Double click bypass)', async () => {
-            vi.mocked(redisClient.setNx).mockResolvedValueOnce(false); // lock held
+            vi.mocked(redisClient.setNx).mockResolvedValueOnce(false);
 
             const existingOrder = { id: 'order-already' };
             
@@ -169,23 +164,21 @@ describe('Order Service Implementation', () => {
                 from: vi.fn().mockReturnThis(),
                 where: vi.fn().mockReturnThis(),
                 limit: vi.fn()
-                    .mockResolvedValueOnce([{ planStatus: 'active' }]) // tenant billing gate
-                    .mockResolvedValueOnce([{ id: 'quote-456' }]) // quote exists
-                    .mockResolvedValueOnce([existingOrder]) // existing order IS found
+                    .mockResolvedValueOnce([{ planStatus: 'active' }])
+                    .mockResolvedValueOnce([{ id: 'quote-456', status: 'ACCEPTED' }])
+                    .mockResolvedValueOnce([existingOrder])
             };
             vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
 
             const order = await orderService.createOrderFromQuote('t1', 'c1', 'quote-456', 'op1');
             expect(order).toEqual(existingOrder);
-            
-            // Should NOT try to release lock because it didn't acquire it
             expect(redisClient.eval).not.toHaveBeenCalled();
         });
 
         it('should handle ER_DUP_ENTRY fallback by returning the newly created concurrent order', async () => {
             vi.mocked(redisClient.setNx).mockResolvedValueOnce(true);
 
-            const mockQuote = { id: 'quote-123' };
+            const mockQuote = { id: 'quote-123', status: 'ACCEPTED' };
             const fallbackOrder = { id: 'order-concurrent' };
 
             const mockDb = {
@@ -193,12 +186,12 @@ describe('Order Service Implementation', () => {
                 from: vi.fn().mockReturnThis(),
                 where: vi.fn().mockReturnThis(),
                 limit: vi.fn()
-                    .mockResolvedValueOnce([{ planStatus: 'active' }]) // tenant billing gate
-                    .mockResolvedValueOnce([mockQuote]) // quote
-                    .mockResolvedValueOnce([]) // idempotency guard - none exists
-                    .mockResolvedValueOnce([fallbackOrder]), // fallback after duplicate entry
+                    .mockResolvedValueOnce([{ planStatus: 'active' }])
+                    .mockResolvedValueOnce([mockQuote])
+                    .mockResolvedValueOnce([])
+                    .mockResolvedValueOnce([fallbackOrder]),
                 insert: vi.fn().mockReturnThis(),
-                values: vi.fn().mockRejectedValueOnce({ code: 'ER_DUP_ENTRY', message: 'Duplicate entry' }), // simulate race condition DB constraint
+                values: vi.fn().mockRejectedValueOnce({ code: 'ER_DUP_ENTRY', message: 'Duplicate entry' }),
                 update: vi.fn().mockReturnThis(),
                 set: vi.fn().mockReturnThis(),
             };
@@ -208,9 +201,9 @@ describe('Order Service Implementation', () => {
             const order = await orderService.createOrderFromQuote('t1', 'c1', 'quote-123', 'op1');
             
             expect(order).toEqual(fallbackOrder);
-            expect(mockDb.update).not.toHaveBeenCalled(); // side-effect should be bypassed
-            expect(conversationService.changeConversationStage).not.toHaveBeenCalled(); // side-effect should be bypassed
-            expect(redisClient.eval).toHaveBeenCalled(); // Ensure lock deletion evaluation runs
+            expect(mockDb.update).not.toHaveBeenCalled();
+            expect(conversationService.changeConversationStage).not.toHaveBeenCalled();
+            expect(redisClient.eval).toHaveBeenCalled();
         });
     });
 
@@ -231,6 +224,7 @@ describe('Order Service Implementation', () => {
 
             await orderService.updateOrderStatus('tenant-1', 'order-1', 'CONFIRMED');
 
+            expect(shipmentService.createShipmentFromOrder).toHaveBeenCalledWith('tenant-1', 'order-1');
             expect(publishOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
                 eventType: 'order_confirmed',
                 payload: { orderId: 'order-1', status: 'CONFIRMED' }
@@ -298,7 +292,7 @@ describe('Order Service Implementation', () => {
             where: vi.fn().mockReturnThis(),
             limit: vi.fn()
                 .mockResolvedValueOnce([{ planStatus: 'active' }])
-                .mockResolvedValueOnce([]), // no quotes returned
+                .mockResolvedValueOnce([]),
         };
 
         vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
@@ -327,6 +321,23 @@ describe('Order Service Implementation', () => {
         expect(redisClient.setNx).not.toHaveBeenCalled();
     });
 
+    it('should require quote approval before converting to order', async () => {
+        const mockDb = {
+            select: vi.fn().mockReturnThis(),
+            from: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            limit: vi.fn()
+                .mockResolvedValueOnce([{ planStatus: 'active' }])
+                .mockResolvedValueOnce([{ id: 'quote-1', status: 'SENT' }]),
+        };
+
+        vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+        await expect(
+            orderService.createOrderFromQuote('tenant-1', 'conv-1', 'quote-1', 'op-1')
+        ).rejects.toThrow('A cotacao precisa estar aprovada antes de criar o pedido.');
+    });
+
     it('should prevent conversion if quote status is EXPIRED, CANCELED, or LOST', async () => {
         const statuses = ['EXPIRED', 'CANCELED', 'LOST'];
         for (const status of statuses) {
@@ -337,7 +348,7 @@ describe('Order Service Implementation', () => {
                 where: vi.fn().mockReturnThis(),
                 limit: vi.fn()
                     .mockResolvedValueOnce([{ planStatus: 'active' }])
-                    .mockResolvedValueOnce([mockQuote]), 
+                    .mockResolvedValueOnce([mockQuote]),
             };
             vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
 
@@ -347,9 +358,29 @@ describe('Order Service Implementation', () => {
         }
     });
 
+    it('should return the existing order when the quote is already converted', async () => {
+        const existingOrder = { id: 'order-existing', quoteId: 'quote-3' };
+        const mockDb = {
+            select: vi.fn().mockReturnThis(),
+            from: vi.fn().mockReturnThis(),
+            where: vi.fn().mockReturnThis(),
+            limit: vi.fn()
+                .mockResolvedValueOnce([{ planStatus: 'active' }])
+                .mockResolvedValueOnce([{ id: 'quote-3', status: 'CONVERTED' }])
+                .mockResolvedValueOnce([existingOrder]),
+        };
+
+        vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+        const result = await orderService.createOrderFromQuote('tenant-1', 'conv-1', 'quote-3', 'op-1');
+
+        expect(result).toEqual(existingOrder);
+        expect(redisClient.setNx).not.toHaveBeenCalled();
+    });
+
     it('should dynamically expire a quote and prevent conversion if expiresAt is in the past', async () => {
         const pastDate = new Date(Date.now() - 100000);
-        const mockQuote = { id: 'quote-2', status: 'DRAFT', expiresAt: pastDate };
+        const mockQuote = { id: 'quote-2', status: 'ACCEPTED', expiresAt: pastDate };
         
         const mockDb = {
             select: vi.fn().mockReturnThis(),
@@ -357,7 +388,7 @@ describe('Order Service Implementation', () => {
             where: vi.fn().mockReturnThis(),
             limit: vi.fn()
                 .mockResolvedValueOnce([{ planStatus: 'active' }])
-                .mockResolvedValueOnce([mockQuote]), 
+                .mockResolvedValueOnce([mockQuote]),
             update: vi.fn().mockReturnThis(),
             set: vi.fn().mockReturnThis(),
         };
