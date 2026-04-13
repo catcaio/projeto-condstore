@@ -18,6 +18,8 @@ const EnvSchema = z.object({
   BOOTSTRAP_TOKEN: z.string().min(8).optional(),
   // 64 chars hex = 32 bytes para AES-256-GCM. Obrigatório em prod via boot-check.
   PROVIDER_SECRETS_KEY: z.string().length(64).optional(),
+  // MVP feature flag — set to "true" to activate the /mvp route.
+  NEXT_PUBLIC_ENABLE_MVP: z.enum(['true', 'false']).optional(),
 });
 
 export const env = (() => {

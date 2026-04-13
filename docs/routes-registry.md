@@ -259,6 +259,7 @@
 | /frank | GET | internal | required | frank | live | Módulo canônico do agente com visão geral, intenções, desempenho e logs estruturados |
 | /logistica | GET | internal | required | logistica | live | Central logística canônica com fila, detalhe operacional e contexto integrado |
 | /metricas | GET | internal | required | metricas | live | Módulo canônico de métricas executivas, funil, atendimento e logística |
+| /mvp | GET | public | none | MVP | live | Isolated MVP entry point — gated by NEXT_PUBLIC_ENABLE_MVP=true, returns 404 when flag is off |
 | /operacao | GET | internal | required | operacao | live | Hub operacional canônico para visão transversal da operação |
 | /operacao/inbox | GET | internal | required | console | live | Inbox operacional (migrado de /inbox) |
 | /operacao/fila | GET | internal | required | console | live | Fila de Eventos DOMINE (stub — em breve) |
