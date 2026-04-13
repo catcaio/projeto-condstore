@@ -13,6 +13,7 @@ import {
     type ConversationRecord,
     type ConversationMessageRecord,
     type ConversationStatusType,
+    type MessageDeliveryStatusType,
 } from '@/drizzle/schema';
 
 export interface ConversationListFilter {
@@ -322,13 +323,26 @@ export const conversationRepository = {
             .orderBy(asc(conversationMessages.createdAt), asc(conversationMessages.id));
     },
 
+    async getConversationMessageByProviderMessageId(messageSid: string): Promise<ConversationMessageRecord | undefined> {
+        const normalizedMessageSid = messageSid.trim();
+        if (!normalizedMessageSid) return undefined;
+
+        const db = await getDb();
+        const [message] = await db.select()
+            .from(conversationMessages)
+            .where(eq(conversationMessages.providerMessageId, normalizedMessageSid))
+            .limit(1);
+
+        return message;
+    },
+
     async updateConversationMessageFields(
         tenantId: string,
         messageId: string,
         fields: {
             metadata?: Record<string, any>;
             providerMessageId?: string | null;
-            deliveryStatus?: string | null;
+            deliveryStatus?: MessageDeliveryStatusType | null;
         }
     ): Promise<ConversationMessageRecord | undefined> {
         const db = await getDb();

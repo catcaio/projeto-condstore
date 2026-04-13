@@ -6,6 +6,7 @@ import { makeRequestId } from '@/infra/http/request-trace';
 import { twilioProvider } from '@/providers/twilio.provider';
 import { logger } from '@/infra/logger';
 import { decryptString } from '@/infra/pii/crypto';
+import { whatsappOutboundService } from '@/modules/atendimento/whatsapp-outbound.service';
 
 function extractInboundMessageSid(metadata: Record<string, unknown> | null | undefined): string | null {
     if (!metadata) return null;
@@ -18,7 +19,7 @@ async function resolveRecipientPhone(
     tenantId: string,
     conversationId: string,
     phoneEncrypted: string,
-    requestId: string
+    requestId: string,
 ) {
     try {
         return decryptString(phoneEncrypted);
@@ -49,15 +50,15 @@ async function resolveRecipientPhone(
 
 export async function POST(
     request: NextRequest,
-    context: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> },
 ) {
     const requestId = makeRequestId(request);
-    
+
     const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
+
     const tenantId = auth.session.tenantId;
     const operatorId = (auth.session as any).userId ?? auth.session.sub;
-    let persistedMessageId: string | null = null;
     let activeConversationId: string | null = null;
 
     try {
@@ -69,18 +70,24 @@ export async function POST(
         } catch {
             return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Invalid JSON body');
         }
-        const payloadText = typeof body?.text === 'string' ? body.text : body?.message;
 
+        const payloadText = typeof body?.text === 'string' ? body.text : body?.message;
         if (!payloadText || typeof payloadText !== 'string' || payloadText.trim() === '') {
             return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Text is required and cannot be empty');
         }
 
         const text = payloadText.trim();
-
         const conversation = await conversationService.getConversationById(tenantId, conversationId);
         if (!conversation) {
             return errorResponse(ErrorCode.VALIDATION_ERROR, 404, requestId, 'Conversation not found');
         }
+
+        const plaintextPhone = await resolveRecipientPhone(
+            tenantId,
+            conversationId,
+            conversation.phoneEncrypted,
+            requestId,
+        );
 
         const outboundMetadata = {
             status: 'queued_for_send',
@@ -88,62 +95,36 @@ export async function POST(
             operatorId,
             channel: 'whatsapp',
         };
-        const conversationMessage = await conversationService.processOutboundMessage(
-            tenantId,
-            conversationId,
-            text,
-            'OPERATOR',
-            conversation.customerId || undefined,
-            outboundMetadata,
-            { advanceConversation: false }
-        );
-        persistedMessageId = conversationMessage.id;
-        const plaintextPhone = await resolveRecipientPhone(
-            tenantId,
-            conversationId,
-            conversation.phoneEncrypted,
-            requestId
-        );
 
         logger.info('TWILIO_OUTBOUND_START', {
             requestId,
             tenantId,
             conversationId,
-            conversationMessageId: conversationMessage.id,
             operatorId,
         });
 
-        const sendResult = await twilioProvider.sendMessageDetailed(tenantId, {
+        const trackedSend = await whatsappOutboundService.sendTrackedMessage({
+            tenantId,
+            conversationId,
             to: plaintextPhone,
-            body: text
+            message: text,
+            source: 'OPERATOR',
+            actorType: 'HUMAN',
+            customerId: conversation.customerId || undefined,
+            metadata: outboundMetadata,
         });
+        const conversationMessage = trackedSend.conversationMessage;
 
-        if (!sendResult.ok) {
-            const failedMetadata = {
-                ...outboundMetadata,
-                status: 'send_error',
-                errorCode: sendResult.errorCode,
-                errorMessage: sendResult.message,
-                providerStatusCode: sendResult.providerStatusCode ?? null,
-                failedAt: new Date().toISOString(),
-                retryable: sendResult.retryable ?? false,
-            };
-
-            await conversationService.updateMessageFields(
-                tenantId,
-                conversationMessage.id,
-                { metadata: failedMetadata, deliveryStatus: 'failed' }
-            );
-
-            logger.error('TWILIO_OUTBOUND_ERROR', new Error(sendResult.message), {
+        if (!trackedSend.ok) {
+            logger.error('TWILIO_OUTBOUND_ERROR', new Error(trackedSend.sendResult.message), {
                 requestId,
                 tenantId,
                 conversationId,
                 conversationMessageId: conversationMessage.id,
                 operatorId,
-                errorCode: sendResult.errorCode,
-                providerStatusCode: sendResult.providerStatusCode ?? null,
-                retryable: sendResult.retryable ?? false,
+                errorCode: trackedSend.sendResult.errorCode,
+                providerStatusCode: trackedSend.sendResult.providerStatusCode ?? null,
+                retryable: trackedSend.sendResult.retryable ?? false,
             });
 
             return errorResponse(
@@ -153,39 +134,24 @@ export async function POST(
                 'Failed to send message via Twilio',
                 {
                     conversationMessageId: conversationMessage.id,
-                    twilioErrorCode: sendResult.errorCode,
-                    providerStatusCode: sendResult.providerStatusCode ?? null,
-                }
+                    twilioErrorCode: trackedSend.sendResult.errorCode,
+                    providerStatusCode: trackedSend.sendResult.providerStatusCode ?? null,
+                },
             );
         }
-
-        const deliveredMetadata = {
-            ...outboundMetadata,
-            status: 'sent_ok',
-            twilioSid: sendResult.sid,
-            twilioStatus: sendResult.status,
-            providerStatusCode: sendResult.providerStatusCode,
-            attempts: sendResult.attempts,
-            sentAt: new Date().toISOString(),
-        };
-
-        const updatedMessage = await conversationService.updateMessageFields(
-            tenantId,
-            conversationMessage.id,
-            {
-                metadata: deliveredMetadata,
-                providerMessageId: sendResult.sid,
-                deliveryStatus: sendResult.status
-            }
-        );
 
         if (conversation.status !== 'operator_active') {
             await conversationService.updateConversationStatus(tenantId, conversationId, 'operator_active');
         }
 
         if (conversation.stage === 'NEW_LEAD') {
-            await conversationService.changeConversationStage(tenantId, conversationId, 'IN_ATTENDANCE', conversation.customerId ?? undefined);
-            
+            await conversationService.changeConversationStage(
+                tenantId,
+                conversationId,
+                'IN_ATTENDANCE',
+                conversation.customerId ?? undefined,
+            );
+
             const { publishOperationalEvent } = await import('@/lib/events/operational-event-bus');
             await publishOperationalEvent({
                 tenantId,
@@ -196,8 +162,8 @@ export async function POST(
                 payload: {
                     conversationId,
                     operatorId,
-                    stage: 'IN_ATTENDANCE'
-                }
+                    stage: 'IN_ATTENDANCE',
+                },
             });
         }
 
@@ -206,35 +172,25 @@ export async function POST(
             tenantId,
             conversationId,
             messageId: conversationMessage.id,
+            twilioSid: trackedSend.sendResult.sid,
+            deliveryStatus: trackedSend.normalizedStatus,
         });
 
         return NextResponse.json({
             ok: true,
-            data: updatedMessage ?? conversationMessage,
+            data: trackedSend.updatedMessage ?? conversationMessage,
             twilio: {
-                sid: sendResult.sid,
-                status: sendResult.status,
+                sid: trackedSend.sendResult.sid,
+                status: trackedSend.normalizedStatus,
+                providerStatus: trackedSend.sendResult.status,
             },
         });
     } catch (err: any) {
-        if (persistedMessageId) {
-            await conversationService.updateMessageFields(tenantId, persistedMessageId, {
-                metadata: {
-                    status: 'send_error',
-                    requestId,
-                    operatorId,
-                    failedAt: new Date().toISOString(),
-                    errorMessage: err instanceof Error ? err.message : String(err),
-                },
-                deliveryStatus: 'failed'
-            }).catch(() => undefined);
-        }
         logger.error('Failed to send operator message', err as Error, {
             requestId,
             tenantId,
             operatorId,
             conversationId: activeConversationId,
-            conversationMessageId: persistedMessageId,
         });
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, err.message);
     }
