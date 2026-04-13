@@ -5,8 +5,9 @@ import {
     emitSuggestionEdited,
     emitSuggestionRejected
 } from './suggestion.events';
-import { CreateSuggestionDTO, ApproveSuggestionDTO, FrankSuggestion } from './suggestion.types';
+import { CreateSuggestionDTO, ApproveSuggestionDTO } from './suggestion.types';
 import { logger } from '@/infra/logger';
+import { operationalAuditService } from '@/modules/audit/operational-audit.service';
 
 export class SuggestionService {
     async generateSuggestion(tenantId: string, sessionId: string, dto: CreateSuggestionDTO): Promise<string> {
@@ -60,10 +61,68 @@ export class SuggestionService {
                 approvedBy: dto.operatorId,
                 edited: isEdited
             };
+            const actionType = isEdited ? 'suggestion_edited' : 'suggestion_approved';
+            const currentResponse = dto.finalResponse ?? existing.suggestedResponse;
+            const decisionContext = {
+                conversationId: existing.conversationId,
+                sessionId: existing.sessionId,
+                intent: existing.intent,
+            };
 
             logger.info(`frank_suggestion_${status}`, payload);
+            await operationalAuditService.logActivity({
+                tenantId,
+                entityType: 'suggestion',
+                entityId: id,
+                actorId: dto.operatorId,
+                actionType: `suggestion_${status}`,
+                beforeState: {
+                    status: existing.status,
+                    suggestedResponse: existing.suggestedResponse,
+                },
+                afterState: {
+                    status,
+                    suggestedResponse: dto.finalResponse ?? existing.suggestedResponse,
+                },
+                origin: 'frank',
+                metadata: {
+                    conversationId: existing.conversationId,
+                    sessionId: existing.sessionId,
+                    intent: existing.intent,
+                    decisionContext: {
+                        edited: isEdited,
+                    },
+                },
+            });
             if (isEdited) emitSuggestionEdited(tenantId, payload);
             else emitSuggestionApproved(tenantId, payload);
+
+            await operationalAuditService.logActivity({
+                tenantId,
+                entityType: 'suggestion',
+                entityId: id,
+                actorId: dto.operatorId,
+                actionType,
+                origin: 'frank',
+                beforeState: {
+                    status: existing.status,
+                    suggestedResponse: existing.suggestedResponse,
+                    approvedBy: existing.approvedBy,
+                    approvedAt: existing.approvedAt,
+                },
+                afterState: {
+                    status,
+                    suggestedResponse: currentResponse,
+                    approvedBy: dto.operatorId,
+                },
+                metadata: {
+                    ...decisionContext,
+                    decisionContext: {
+                        action: status,
+                        edited: isEdited,
+                    },
+                },
+            });
         }
 
         return ok;
@@ -87,7 +146,58 @@ export class SuggestionService {
                 rejectedBy: operatorId
             };
             logger.info('frank_suggestion_rejected', payload);
+            await operationalAuditService.logActivity({
+                tenantId,
+                entityType: 'suggestion',
+                entityId: id,
+                actorId: operatorId,
+                actionType: 'suggestion_rejected',
+                beforeState: {
+                    status: existing.status,
+                    suggestedResponse: existing.suggestedResponse,
+                },
+                afterState: {
+                    status: 'rejected',
+                    suggestedResponse: existing.suggestedResponse,
+                },
+                origin: 'frank',
+                metadata: {
+                    conversationId: existing.conversationId,
+                    sessionId: existing.sessionId,
+                    intent: existing.intent,
+                    decisionContext: {
+                        rejected: true,
+                    },
+                },
+            });
             emitSuggestionRejected(tenantId, payload);
+
+            await operationalAuditService.logActivity({
+                tenantId,
+                entityType: 'suggestion',
+                entityId: id,
+                actorId: operatorId,
+                actionType: 'suggestion_rejected',
+                origin: 'frank',
+                beforeState: {
+                    status: existing.status,
+                    suggestedResponse: existing.suggestedResponse,
+                    approvedBy: existing.approvedBy,
+                    approvedAt: existing.approvedAt,
+                },
+                afterState: {
+                    status: 'rejected',
+                    approvedBy: operatorId,
+                },
+                metadata: {
+                    conversationId: existing.conversationId,
+                    sessionId: existing.sessionId,
+                    intent: existing.intent,
+                    decisionContext: {
+                        action: 'rejected',
+                    },
+                },
+            });
         }
 
         return ok;

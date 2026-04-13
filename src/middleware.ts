@@ -4,6 +4,7 @@ import {
     extractInternalRequestCredentials,
     isInternalTokenAuthorizedForPurpose,
 } from './infra/config/internal-token-contract';
+import { getAuthSecretBytes } from './infra/env/critical-runtime';
 import { logEdgeSecurityEvent } from './lib/security/edge-logger';
 
 const SESSION_COOKIE_NAME = 'condstore_session';
@@ -37,15 +38,7 @@ export const config = {
 };
 
 function getAuthSecret(): Uint8Array {
-    const secret = process.env.AUTH_SECRET?.trim();
-    if (!secret) {
-        if (process.env.NODE_ENV === 'production') {
-            // In production we strictly require the secret
-            throw new Error('MISCONFIG_AUTH_SECRET');
-        }
-        return new TextEncoder().encode('dev-only-fallback-secret-do-not-use-in-prod');
-    }
-    return new TextEncoder().encode(secret);
+    return getAuthSecretBytes();
 }
 
 interface MiddlewareSessionClaims {
@@ -55,8 +48,10 @@ interface MiddlewareSessionClaims {
 }
 
 async function verifyMiddlewareSessionToken(token: string): Promise<MiddlewareSessionClaims | null> {
+    const secret = getAuthSecret();
+
     try {
-        const { payload } = await jwtVerify(token, getAuthSecret());
+        const { payload } = await jwtVerify(token, secret);
         const claims = payload as JWTPayload & {
             tenantId?: unknown;
             role?: unknown;
@@ -93,6 +88,17 @@ function forbiddenJsonResponse(message = 'Forbidden'): NextResponse {
 function isPublicTrackingPath(pathname: string): boolean {
     const segments = pathname.split('/').filter(Boolean);
     return segments.length === 2 && segments[0] === 't';
+}
+
+function misconfiguredResponse(pathname: string, code: string): NextResponse {
+    if (pathname.startsWith('/api/')) {
+        return new NextResponse(JSON.stringify({ error: 'Internal Server Error', code }), {
+            status: 500,
+            headers: { 'content-type': 'application/json' },
+        });
+    }
+
+    return new NextResponse('Internal Server Error', { status: 500 });
 }
 
 export async function middleware(req: NextRequest) {
@@ -211,7 +217,15 @@ export async function middleware(req: NextRequest) {
     }
 
     if (cookieToken) {
-        const session = await verifyMiddlewareSessionToken(cookieToken);
+        let session: MiddlewareSessionClaims | null;
+
+        try {
+            session = await verifyMiddlewareSessionToken(cookieToken);
+        } catch (error) {
+            const code = error instanceof Error ? error.message : 'MISCONFIG_AUTH_SECRET';
+            console.error('[middleware] failed fast due to auth secret misconfiguration', { code, pathname, requestId });
+            return misconfiguredResponse(pathname, code);
+        }
 
         if (!session) {
             await logEdgeSecurityEvent({
