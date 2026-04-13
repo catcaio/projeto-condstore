@@ -11,6 +11,7 @@ import { structuredLogger } from '@/infra/log/logger';
 import { hashRateLimitKeyForLog, rateLimiter } from '@/infra/security/rate-limiter';
 import { auditService } from '@/modules/audit/audit.service';
 import { InfrastructureError, getUserMessage } from '@/infra/errors';
+import { getAuthSecretValue, requireDatabaseUrl } from '@/infra/env/critical-runtime';
 import { isDevRuntime } from '@/infra/env/devOnly';
 import { safeCompare } from '@/lib/security/safe-compare';
 
@@ -67,27 +68,31 @@ function logLoginDiagnostic(input: {
     structuredLogger.warn('auth_login_rejected', context);
 }
 
+function validateCriticalLoginEnv(requestId: string): NextResponse | null {
+    try {
+        requireDatabaseUrl();
+        getAuthSecretValue();
+        return null;
+    } catch (error) {
+        const code = error instanceof Error ? error.message : 'AUTH_LOGIN_MISCONFIGURED';
+        logger.error('CRITICAL: auth login runtime misconfiguration', error as Error, {
+            requestId,
+            code,
+        });
+        return NextResponse.json(
+            { success: false, error: 'Internal Server Error', code },
+            { status: 500 },
+        );
+    }
+}
+
 export async function POST(request: NextRequest) {
     const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID?.() ?? `${Date.now()}`;
-    // 5) Validação de Variáveis de Ambiente e Fallback
-    const dbUrl = process.env.DATABASE_URL;
-    const authSecret = process.env.AUTH_SECRET || process.env.JWT_SECRET;
-
-    if (!dbUrl) {
-        if (process.env.NODE_ENV === 'production') {
-            logger.error('CRITICAL: DATABASE_URL is missing in production');
-            return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
-        }
-        process.env.DATABASE_URL = 'mysql://root:root@localhost:3306/condstore_dev';
+    const misconfigured = validateCriticalLoginEnv(requestId);
+    if (misconfigured) {
+        return misconfigured;
     }
 
-    if (!authSecret) {
-        if (process.env.NODE_ENV === 'production') {
-            logger.error('CRITICAL: AUTH_SECRET is missing in production');
-            return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
-        }
-        process.env.AUTH_SECRET = 'dev-only-fallback-secret-do-not-use-in-prod';
-    }
     let loginEmailHash: string | undefined;
 
     try {

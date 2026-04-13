@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { isDevelopmentRuntimeStrict, readTrimmedEnv } from '../env/critical-runtime';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_BYTES = 12;
@@ -20,19 +21,19 @@ function parseConfiguredKey(raw: string): Buffer {
   return decoded;
 }
 
-function getPiiEncryptionKey(): Buffer {
-  const configured = process.env.PII_ENCRYPTION_KEY?.trim();
+export function getPiiEncryptionKey(): Buffer {
+  const configured = readTrimmedEnv('PII_ENCRYPTION_KEY');
   if (configured) {
     return parseConfiguredKey(configured);
   }
 
-  if (process.env.NODE_ENV === 'production') {
+  if (!isDevelopmentRuntimeStrict()) {
     throw new Error('MISSING_PII_ENCRYPTION_KEY');
   }
 
   if (!warnedMissingKey) {
     warnedMissingKey = true;
-    console.warn('[pii] PII_ENCRYPTION_KEY missing in dev/test; using insecure fallback encryption key');
+    console.warn('[pii] PII_ENCRYPTION_KEY missing in NODE_ENV=development; using dev-only fallback encryption key');
   }
 
   // Deterministic dev/test fallback to keep roundtrip behavior stable in local runs.

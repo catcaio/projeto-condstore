@@ -17,10 +17,12 @@ jobs:
     env:
       # Optional CI secrets (recommended):
       # - CI_AUTH_SECRET
+      # - CI_DATABASE_URL
       # - CI_PII_ENCRYPTION_KEY (64 hex chars)
       # Fallbacks below are CI-only and never used by app runtime in production.
-      AUTH_SECRET: ${{ secrets.CI_AUTH_SECRET != '' && secrets.CI_AUTH_SECRET || 'ci-only-auth-secret-quality-gate' }}
-      PII_ENCRYPTION_KEY: ${{ secrets.CI_PII_ENCRYPTION_KEY != '' && secrets.CI_PII_ENCRYPTION_KEY || '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff' }}
+      AUTH_SECRET: ${{ secrets.CI_AUTH_SECRET != '' && secrets.CI_AUTH_SECRET || '5d2c9b7d6571b070c0f8389c7d44ed3b8b7d6a4095d29646d09aa854f17caa6e' }}
+      DATABASE_URL: ${{ secrets.CI_DATABASE_URL != '' && secrets.CI_DATABASE_URL || 'mysql://ci_user:ci_password@127.0.0.1:3306/condstore_ci' }}
+      PII_ENCRYPTION_KEY: ${{ secrets.CI_PII_ENCRYPTION_KEY != '' && secrets.CI_PII_ENCRYPTION_KEY || '6f2d2a4d8f9e6ab34b45d8b0d2e53c4a7b198d4f5566778899aabbccddeeff01' }}
 
     steps:
       - name: Checkout Repository
@@ -103,8 +105,9 @@ jobs:
           CI: "true"
           GITHUB_ACTIONS: "true"
           QA_BOOTSTRAP_TOKEN: ${{ secrets.QA_BOOTSTRAP_TOKEN }}
-          DATABASE_URL: mysql://root:root@localhost:3306/condstore_dev
-          AUTH_SECRET: dev-secret-ci
+          DATABASE_URL: ${{ secrets.CI_DATABASE_URL != '' && secrets.CI_DATABASE_URL || 'mysql://ci_user:ci_password@127.0.0.1:3306/condstore_ci' }}
+          AUTH_SECRET: ${{ secrets.CI_AUTH_SECRET != '' && secrets.CI_AUTH_SECRET || '5d2c9b7d6571b070c0f8389c7d44ed3b8b7d6a4095d29646d09aa854f17caa6e' }}
+          PII_ENCRYPTION_KEY: ${{ secrets.CI_PII_ENCRYPTION_KEY != '' && secrets.CI_PII_ENCRYPTION_KEY || '6f2d2a4d8f9e6ab34b45d8b0d2e53c4a7b198d4f5566778899aabbccddeeff01' }}
         run: |
           npm run start -- -p 3002 &
           echo "Waiting for Next.js to start..."
