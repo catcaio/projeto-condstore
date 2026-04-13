@@ -46,7 +46,7 @@ test.describe('MVP Critical Flow Smoke - mensagem → cotação → aprovação 
                     bestService: 'rodoviario',
                     weight: '7.2',
                     createdAt: '2026-03-30T10:04:00.000Z',
-                    status: quoteStatus === 'NONE' ? 'DRAFT' : quoteStatus,
+                    status: quoteStatus,
                 },
             ];
         };
