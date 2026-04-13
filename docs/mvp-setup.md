@@ -8,7 +8,7 @@ repositório CONDSTORE OS.
 ## O que é o MVP isolado
 
 O diretório `src/mvp/` contém a camada de apresentação e lógica auxiliar do
-MVP — completamente desacoplada do sistema principal. Ele expõe a rota `/mvp`
+MVP — completamente desacoplada do sistema principal. Ele expõe rotas sob `/mvp`
 via Next.js App Router, com layout próprio e sem dependência do shell da
 aplicação principal.
 
@@ -21,10 +21,27 @@ src/mvp/
 ├── app/            # Componentes do fluxo autenticado mínimo
 └── components/     # Componentes compartilhados dentro do MVP
 
-src/app/mvp/        # Rota Next.js (App Router)
-├── layout.tsx      # Layout isolado com MvpShell
-└── page.tsx        # Entrypoint da rota /mvp
+src/app/mvp/              # Rotas Next.js (App Router)
+├── layout.tsx            # Layout isolado com MvpShell
+├── page.tsx              # /mvp — landing pública
+├── como-funciona/
+│   └── page.tsx          # /mvp/como-funciona — fluxo supervisionado
+└── app/
+    └── page.tsx          # /mvp/app — área autenticada (CockpitMini)
 ```
+
+---
+
+## Páginas disponíveis
+
+| Rota | Tipo | Descrição |
+|------|------|-----------|
+| `/mvp` | Pública | Landing com proposta de valor e CTAs |
+| `/mvp/como-funciona` | Pública | Fluxo de 4 etapas do MVP supervisionado |
+| `/mvp/app` | **Autenticada** | CockpitMini — acesso aos módulos operacionais |
+
+A rota `/mvp/app` exige sessão válida. Visitantes não autenticados são
+redirecionados para `/auth/login` pelo Edge middleware.
 
 ---
 
@@ -46,10 +63,12 @@ Com a flag ativa, acesse:
 
 ```
 http://localhost:3000/mvp
+http://localhost:3000/mvp/como-funciona
+http://localhost:3000/mvp/app       (requer login)
 ```
 
-Com a flag inativa (padrão), a rota `/mvp` retorna **404** — sem impacto em
-qualquer outra rota do sistema.
+Com a flag inativa (padrão), todas as rotas `/mvp/*` retornam **404** — sem
+impacto em qualquer outra rota do sistema.
 
 ---
 
@@ -61,8 +80,7 @@ Remova a variável ou defina-a como `false`:
 NEXT_PUBLIC_ENABLE_MVP=false
 ```
 
-O build de produção também respeita a flag. Se não estiver definida ou for
-`false`, a rota não é acessível.
+O build de produção também respeita a flag.
 
 ---
 
@@ -72,8 +90,14 @@ O build de produção também respeita a flag. Se não estiver definida ou for
 # Iniciar servidor com MVP ativo
 NEXT_PUBLIC_ENABLE_MVP=true npm run dev
 
-# Acessar
+# Acessar landing pública
 open http://localhost:3000/mvp
+
+# Acessar "como funciona"
+open http://localhost:3000/mvp/como-funciona
+
+# Acessar área autenticada (requer login prévio)
+open http://localhost:3000/mvp/app
 ```
 
 ---
@@ -88,8 +112,8 @@ Roda apenas os testes dentro de `src/mvp/`:
 npm run test:mvp
 ```
 
-Esses testes são rápidos e cobrem a lógica central do MVP (feature flags, auth
-helpers).
+Esses testes cobrem: feature flags, auth helpers e comportamento do middleware
+para as rotas `/mvp/app/*`.
 
 ### Typecheck isolado
 
@@ -101,8 +125,6 @@ npm run typecheck:mvp
 
 ### Suite completa do sistema
 
-Os testes do MVP também são incluídos na suite completa de CI:
-
 ```bash
 npm run test:ci
 ```
@@ -113,8 +135,8 @@ npm run test:ci
 
 | Aspecto              | Impacto |
 |----------------------|---------|
-| Rotas existentes     | Nenhum — `/mvp` é uma rota nova e isolada |
-| Middleware de auth   | Nenhum — `/mvp` está fora do matcher |
+| Rotas existentes     | Nenhum — rotas `/mvp/*` são novas e isoladas |
+| Middleware de auth   | Mínimo — `/mvp/app/:path*` adicionado ao matcher; `/mvp` e `/mvp/como-funciona` permanecem fora |
 | Build de produção    | Nenhum — MVP desativado por padrão (`404`) |
 | Testes existentes    | Nenhum — `test:mvp` roda apenas `src/mvp/` |
 | Typecheck principal  | Nenhum — `tsconfig.mvp.json` é separado |
@@ -126,10 +148,14 @@ npm run test:ci
 | Arquivo | Descrição |
 |---------|-----------|
 | `src/mvp/config/flags.ts` | Feature flags do MVP |
-| `src/mvp/lib/auth.ts` | Auth helper mínimo |
-| `src/mvp/components/MvpShell.tsx` | Layout shell do MVP |
-| `src/mvp/site/LandingSection.tsx` | Seção pública de landing |
-| `src/mvp/app/CockpitMini.tsx` | Cockpit mínimo autenticado |
+| `src/mvp/lib/auth.ts` | Auth helper mínimo (lê headers do middleware) |
+| `src/mvp/components/MvpShell.tsx` | Layout shell com navegação MVP |
+| `src/mvp/site/LandingSection.tsx` | Landing pública com proposta de valor |
+| `src/mvp/site/ComoFuncionaSection.tsx` | Seção "Como funciona" (4 etapas) |
+| `src/mvp/app/CockpitMini.tsx` | Cockpit mínimo para usuário autenticado |
 | `src/app/mvp/layout.tsx` | Layout da rota `/mvp` |
-| `src/app/mvp/page.tsx` | Página da rota `/mvp` |
+| `src/app/mvp/page.tsx` | Página `/mvp` |
+| `src/app/mvp/como-funciona/page.tsx` | Página `/mvp/como-funciona` |
+| `src/app/mvp/app/page.tsx` | Página `/mvp/app` (autenticada) |
+| `src/mvp/lib/__tests__/mvp-app-middleware.test.ts` | Testes do middleware para `/mvp/app` |
 | `tsconfig.mvp.json` | TypeScript config isolado para MVP |
