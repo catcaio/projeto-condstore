@@ -335,7 +335,7 @@ export async function fireFinOpsAlert(
 
         // Invalidate cockpit FINOPS cache
         if (redisClient.isAvailable()) {
-            await redisClient.set(finopsCacheKey(tenantId), null, 0);
+            await redisClient.del(finopsCacheKey(tenantId));
         }
 
         logger.info('finops_alert_created', {

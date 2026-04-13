@@ -7,6 +7,7 @@ import { messageService } from './message.service';
 import { assertTenantCanOperateOrders } from '@/modules/billing/guards/assertTenantCanOperateOrders';
 import { shipmentService } from '@/modules/logistics/server';
 import { redisClient } from '@/infra/redis.client';
+import { LOCK_TTL } from '@/infra/redis-ttl';
 import { logger } from '@/infra/logger';
 
 export interface OrderListFilter {
@@ -71,7 +72,7 @@ export const orderService = {
         // 2. Adquirir Lock Distribuído
         const lockKey = `lock:quote-to-order:${tenantId}:${quoteId}`;
         const lockToken = randomUUID(); // Token único para ownership do lock
-        const acquired = await redisClient.setNx(lockKey, lockToken, 30); // 30s TTL
+        const acquired = await redisClient.setNx(lockKey, lockToken, LOCK_TTL); // 120s TTL
 
         if (!acquired) {
             logger.warn(`[OrderService] Falha ao adquirir lock para quote ${quoteId}. Possível double click ou concorrência.`, { lockKey });

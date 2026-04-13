@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { orderService } from '../order.service';
+import { LOCK_TTL } from '@/infra/redis-ttl';
 import * as dbInfra from '@/infra/db';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from '../conversation.service';
@@ -85,6 +86,13 @@ describe('Order Service Implementation', () => {
         const order = await orderService.createOrderFromQuote('tenant-1', 'conv-123', 'quote-456', 'operator-999');
 
         expect(order).toBeDefined();
+
+        // Assert lock was acquired with the canonical 120s TTL
+        expect(redisClient.setNx).toHaveBeenCalledWith(
+            expect.stringMatching(/^lock:quote-to-order:/),
+            expect.any(String),
+            LOCK_TTL
+        );
         expect(conversationService.changeConversationStage).toHaveBeenCalledWith(
             'tenant-1',
             'conv-123',
@@ -204,6 +212,64 @@ describe('Order Service Implementation', () => {
             expect(mockDb.update).not.toHaveBeenCalled();
             expect(conversationService.changeConversationStage).not.toHaveBeenCalled();
             expect(redisClient.eval).toHaveBeenCalled();
+        });
+    });
+
+    describe('Lock TTL and release guarantees', () => {
+        it('should acquire the quote-to-order lock with LOCK_TTL (120s)', async () => {
+            const mockQuote = { id: 'quote-lock-ttl', tenantId: 'tenant-1', customerId: 'cust', organizationId: 'org', status: 'ACCEPTED', bestPrice: '50.00', bestCarrier: 'Jadlog', bestService: 'Package' };
+
+            const mockDb = {
+                select: vi.fn().mockReturnThis(),
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockReturnThis(),
+                limit: vi.fn()
+                    .mockResolvedValueOnce([{ planStatus: 'active' }])
+                    .mockResolvedValueOnce([mockQuote])
+                    .mockResolvedValueOnce([])
+                    .mockResolvedValueOnce([{ id: 'new-order' }])
+                    .mockResolvedValueOnce([]),
+                insert: vi.fn().mockReturnThis(),
+                values: vi.fn().mockResolvedValue([]),
+                update: vi.fn().mockReturnThis(),
+                set: vi.fn().mockReturnThis(),
+            };
+            vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+            await orderService.createOrderFromQuote('tenant-1', 'conv-1', 'quote-lock-ttl', 'op-1');
+
+            expect(redisClient.setNx).toHaveBeenCalledWith(
+                'lock:quote-to-order:tenant-1:quote-lock-ttl',
+                expect.any(String),
+                LOCK_TTL
+            );
+            expect(LOCK_TTL).toBe(120);
+        });
+
+        it('should release the lock in finally even when an error is thrown mid-processing', async () => {
+            vi.mocked(redisClient.setNx).mockResolvedValueOnce(true);
+
+            const mockDb = {
+                select: vi.fn().mockReturnThis(),
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockReturnThis(),
+                limit: vi.fn()
+                    .mockResolvedValueOnce([{ planStatus: 'active' }])
+                    .mockResolvedValueOnce([{ id: 'quote-err', status: 'ACCEPTED' }])
+                    .mockResolvedValueOnce([]), // idempotency guard — no existing order
+                insert: vi.fn().mockReturnThis(),
+                values: vi.fn().mockRejectedValueOnce(new Error('DB write failure')),
+                update: vi.fn().mockReturnThis(),
+                set: vi.fn().mockReturnThis(),
+            };
+            vi.mocked(dbInfra.getDb).mockResolvedValue(mockDb as any);
+
+            await expect(
+                orderService.createOrderFromQuote('tenant-1', 'conv-1', 'quote-err', 'op-1')
+            ).rejects.toThrow('DB write failure');
+
+            // Lock must be released via eval even when the operation throws
+            expect(redisClient.eval).toHaveBeenCalledTimes(1);
         });
     });
 
