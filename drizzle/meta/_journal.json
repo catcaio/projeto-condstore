@@ -470,6 +470,13 @@
       "when": 1774075153182,
       "tag": "0078_spooky_gertrude_yorkes",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "5",
+      "when": 1776104076441,
+      "tag": "0079_normal_kingpin",
+      "breakpoints": true
     }
   ]
 }

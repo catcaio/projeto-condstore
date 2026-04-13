@@ -134,6 +134,53 @@ describe('buildFrankAssistMetrics', () => {
         ]);
     });
 
+    it('adds token usage KPIs from frank_token_usage totals and operational usage events', () => {
+        const rows: FrankAssistOperationalEventRow[] = [
+            makeResponseRow(),
+            {
+                tenantId: 'tenant-a',
+                eventType: 'frank_llm_usage_recorded',
+                sessionId: 'session-a',
+                entityId: 'conv-1',
+                payload: {
+                    tokens: 320,
+                    usageSource: 'response_total_tokens',
+                },
+                createdAt: new Date('2026-03-10T10:00:01.000Z'),
+            },
+            {
+                tenantId: 'tenant-a',
+                eventType: 'frank_llm_usage_recorded',
+                sessionId: 'session-a',
+                entityId: 'conv-1',
+                payload: {
+                    tokens: 0,
+                    usageSource: 'missing',
+                },
+                createdAt: new Date('2026-03-10T10:00:02.000Z'),
+            },
+            {
+                tenantId: 'tenant-a',
+                eventType: 'frank_llm_usage_blocked',
+                sessionId: 'session-a',
+                entityId: 'conv-1',
+                payload: {
+                    dailyLimit: 1000,
+                    tokensUsedToday: 1000,
+                },
+                createdAt: new Date('2026-03-10T10:00:03.000Z'),
+            },
+        ];
+
+        const result = buildFrankAssistMetrics(rows, makeFilters(), { totalTokens: 320 });
+
+        expect(result.kpis.llmTokensUsed).toBe(320);
+        expect(result.kpis.llmTrackedCalls).toBe(2);
+        expect(result.kpis.llmUsageMissingCalls).toBe(1);
+        expect(result.kpis.llmBlockedCalls).toBe(1);
+        expect(result.sourceSummary.primarySource).toBe('operational_events + frank_token_usage');
+    });
+
     it('does not expose PII in the response shape', () => {
         const rows: FrankAssistOperationalEventRow[] = [
             makeResponseRow({
@@ -171,6 +218,10 @@ describe('buildFrankAssistMetrics', () => {
             suggestionsEdited: 0,
             suggestionsRejected: 0,
             memoryContextHits: 0,
+            llmTokensUsed: 0,
+            llmTrackedCalls: 0,
+            llmUsageMissingCalls: 0,
+            llmBlockedCalls: 0,
         });
         expect(result.intents).toEqual([]);
         expect(result.tools).toEqual([]);

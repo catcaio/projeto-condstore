@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
+import {
+    FrankDailyLimitExceededError,
+    FrankMissingOpenAiApiKeyError,
+    FrankTokenUsageLockTimeoutError,
+} from '@/modules/frank/frank.errors';
 import { frankService } from '@/modules/frank/server';
 import { applyFrankCockpitRateLimit } from '@/infra/security/frank-rate-limit';
 
@@ -41,6 +46,37 @@ export async function GET(request: NextRequest, { params }: RouteParams): Promis
         return response;
 
     } catch (error: any) {
+        if (error instanceof FrankDailyLimitExceededError) {
+            return errorResponse(
+                ErrorCode.RATE_LIMITED,
+                429,
+                requestId,
+                'Frank atingiu o limite diário de tokens para este tenant.',
+                {
+                    dailyLimit: error.dailyLimit,
+                    usedTokens: error.usedTokens,
+                },
+            );
+        }
+
+        if (error instanceof FrankTokenUsageLockTimeoutError) {
+            return errorResponse(
+                ErrorCode.LOCK_BUSY,
+                423,
+                requestId,
+                'Outro processamento do Frank ainda está consolidando uso de tokens. Tente novamente em instantes.',
+            );
+        }
+
+        if (error instanceof FrankMissingOpenAiApiKeyError) {
+            return errorResponse(
+                ErrorCode.UNKNOWN,
+                503,
+                requestId,
+                error.message,
+            );
+        }
+
         return errorResponse(ErrorCode.UNKNOWN, 500, requestId, 'Failed to process Copilot request', error);
     }
 }
