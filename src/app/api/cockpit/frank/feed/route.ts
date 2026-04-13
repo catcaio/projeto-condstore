@@ -3,11 +3,17 @@ import { ecosystemFeedService } from '@/modules/frank/server';
 import { logger } from '@/infra/logger';
 import { requireAdmin } from '@/infra/auth/guards';
 import { crmRepository } from '@/modules/crm/server';
+import { makeRequestId } from '@/infra/http/request-trace';
+import { applyFrankCockpitRateLimit } from '@/infra/security/frank-rate-limit';
 
 export async function POST(req: NextRequest) {
+    const requestId = makeRequestId(req);
     const auth = await requireAdmin(req);
     if (!auth.ok) return auth.response;
     const tenantId = auth.session.tenantId;
+
+    const rl = await applyFrankCockpitRateLimit({ tenantId, requestId, route: '/api/cockpit/frank/feed' });
+    if (rl.blocked) return rl.response;
 
     try {
 

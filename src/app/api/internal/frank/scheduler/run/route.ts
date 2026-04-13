@@ -7,6 +7,7 @@ import { logger } from '@/infra/logger';
 import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { respondInfraError } from '@/infra/http/infra-error';
 import { getTracedRequestId, withRequestTrace } from '@/infra/http/request-trace';
+import { applyFrankSchedulerRateLimit } from '@/infra/security/frank-rate-limit';
 import { listOverrides } from '@/infra/frank/frank-override-store';
 import { gateEvaluate } from '@/infra/frank/frank-gate';
 import { applyFrankRollbackOverride } from '@/infra/frank/frank-rollback';
@@ -34,6 +35,9 @@ async function handler(request: NextRequest): Promise<NextResponse> {
   const sinceHours = Math.max(1, Number.parseInt(String(body?.sinceHours ?? '24'), 10) || 24);
   const dryRun = body?.dryRun !== false;
   const requestId = getTracedRequestId(request) ?? '';
+
+  const rl = await applyFrankSchedulerRateLimit({ requestId, route: '/api/internal/frank/scheduler/run' });
+  if (rl.blocked) return rl.response;
 
   try {
     const overrides = await listOverrides();
