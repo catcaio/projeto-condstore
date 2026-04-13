@@ -33,7 +33,9 @@ export const config = {
         '/attribution/:path*',
         '/settings/:path*',
         '/api/:path*',
-        '/t/:path*'
+        '/t/:path*',
+        // MVP authenticated sub-surface — public /mvp and /mvp/como-funciona remain outside.
+        '/mvp/app/:path*',
     ],
 };
 
@@ -207,7 +209,8 @@ export async function middleware(req: NextRequest) {
             pathname.startsWith('/dashboard/') ||
             pathname.startsWith('/cockpit/') ||
             pathname.startsWith('/operacao/') ||
-            pathname.startsWith('/inbox/')
+            pathname.startsWith('/inbox/') ||
+            pathname.startsWith('/mvp/app/')
         ) {
             // For UI routes, redirect to login
             const loginUrl = new URL('/auth/login', req.url);

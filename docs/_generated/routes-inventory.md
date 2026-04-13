@@ -326,6 +326,8 @@
 | `/logistica/tabelas-frete/[carrier]` | Page |
 | `/metricas` | Page |
 | `/mvp` | Page |
+| `/mvp/como-funciona` | Page |
+| `/mvp/app` | Page |
 | `/operacao` | Page |
 | `/operacao/fila` | Page |
 | `/operacao/inbox` | Page |
