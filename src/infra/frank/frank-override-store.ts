@@ -6,6 +6,7 @@
  */
 
 import { redisClient } from '@/infra/redis.client';
+import { FRANK_OVERRIDE_TTL } from '@/infra/redis-ttl';
 import { logger } from '@/infra/logger';
 
 const OVERRIDE_KEY_PREFIX = 'frank:tenant:override:';
@@ -75,7 +76,7 @@ export async function setTenantOverride(
       appliedAt: new Date().toISOString(),
     };
 
-    await redisClient.set(key, modelVersionId);
+    await redisClient.set(key, modelVersionId, FRANK_OVERRIDE_TTL);
     logger.info('frank_override_set', {
       tenantId,
       modelVersionId,

@@ -113,21 +113,17 @@ class RedisService {
     }
   }
 
-  async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+  async set<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
     if (this.isAvailable()) {
       try {
         const serialized = JSON.stringify(value);
-        if (ttlSeconds) {
-          await globalCircuitBreaker.execute('redis', () => this.redisInstance!.set(key, serialized, 'EX', ttlSeconds));
-        } else {
-          await globalCircuitBreaker.execute('redis', () => this.redisInstance!.set(key, serialized));
-        }
+        await globalCircuitBreaker.execute('redis', () => this.redisInstance!.set(key, serialized, 'EX', ttlSeconds));
       } catch (e) {
         logger.error('Redis SET error', e as Error, { key });
         // soft fail
       }
     } else {
-      const expiresAt = ttlSeconds ? Date.now() + ttlSeconds * 1000 : null;
+      const expiresAt = Date.now() + ttlSeconds * 1000;
       this.inMemoryCache.set(key, { value, expiresAt });
     }
   }
@@ -151,7 +147,8 @@ class RedisService {
       if (existing !== null) {
         return false;
       }
-      await this.set(key, value, ttlSeconds);
+      const expiresAt = ttlSeconds != null ? Date.now() + ttlSeconds * 1000 : null;
+      this.inMemoryCache.set(key, { value, expiresAt });
       return true;
     }
   }
