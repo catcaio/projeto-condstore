@@ -1,11 +1,13 @@
 import { getMissingCriticalInternalTokenEnvs, isStrictRuntimeEnvironment } from '../config/internal-token-contract';
+import { getAuthSecretValue, isDevelopmentRuntimeStrict, readTrimmedEnv, requireDatabaseUrl } from './critical-runtime';
+import { getPiiEncryptionKey } from '../pii/crypto';
 
 export function requireEnv(key: string, fallback?: string): string {
-    const val = process.env[key];
+    const val = readTrimmedEnv(key);
     if (!val) {
         if (fallback !== undefined) {
-            if (!isStrictRuntimeEnvironment()) {
-                console.warn(`[WARN] Missing env ${key}. Using fallback in non-production environment.`);
+            if (isDevelopmentRuntimeStrict()) {
+                console.warn(`[WARN] Missing env ${key}. Using fallback only because NODE_ENV=development.`);
                 return fallback;
             }
         }
@@ -17,11 +19,12 @@ export function requireEnv(key: string, fallback?: string): string {
 export function assertCriticalEnvSetup() {
     if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') return;
 
-    requireEnv('DATABASE_URL');
+    requireDatabaseUrl();
     requireEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000');
+    getAuthSecretValue();
+    getPiiEncryptionKey();
 
     if (isStrictRuntimeEnvironment()) {
-        requireEnv('AUTH_SECRET');
         const missingInternalTokenEnvs = getMissingCriticalInternalTokenEnvs();
         if (missingInternalTokenEnvs.length > 0) {
             throw new Error(

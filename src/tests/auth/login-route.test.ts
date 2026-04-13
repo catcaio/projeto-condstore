@@ -3,7 +3,6 @@ import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/auth/login/route';
 import { rateLimiter } from '@/infra/security/rate-limiter';
 import { userRepository } from '@/infra/repositories/user.repository';
-import * as passwordUtils from '@/infra/auth/password';
 
 vi.mock('@/infra/db', () => ({
     getDb: vi.fn(),
@@ -34,8 +33,10 @@ vi.mock('@/infra/auth/session', () => ({
 describe('Login API Route Hardening', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.unstubAllEnvs();
+        vi.stubEnv('NODE_ENV', 'test');
         process.env.DATABASE_URL = 'mysql://root:root@localhost:3306/db';
-        process.env.AUTH_SECRET = '1234567890123456';
+        process.env.AUTH_SECRET = 'login-auth-secret-with-32-bytes';
     });
 
     it('should return 429 JSON when rate limited, never HTML', async () => {
@@ -84,10 +85,8 @@ describe('Login API Route Hardening', () => {
         expect(data.error).toBe('Email ou senha inválidos');
     });
 
-    it('should return 500 JSON if critical envs missing (simulated 503/500), never HTML', async () => {
-        // Remove critical variables to trigger the fallback block inside POST
+    it('should return 500 JSON if DATABASE_URL is missing outside development', async () => {
         delete process.env.DATABASE_URL;
-        vi.stubEnv('NODE_ENV', 'production');
 
         const req = new NextRequest('http://localhost:3000/api/auth/login', {
             method: 'POST',
@@ -99,9 +98,10 @@ describe('Login API Route Hardening', () => {
         expect(res.headers.get('content-type')).toContain('application/json');
 
         const data = await res.json();
-        expect(data.success).toBe(false);
-        expect(data.error).toBeDefined();
-
-        vi.stubEnv('NODE_ENV', 'test'); // Restore for next tests
+        expect(data).toEqual({
+            success: false,
+            error: 'Internal Server Error',
+            code: 'MISSING_DATABASE_URL',
+        });
     });
 });
