@@ -347,6 +347,7 @@
 | `/produtos/crm` | Page |
 | `/produtos/domine` | Page |
 | `/produtos/envios` | Page |
+| `/proof` | Page |
 | `/seguranca` | Page |
 | `/settings` | Page |
 | `/showcase` | Page |

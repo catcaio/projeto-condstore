@@ -368,3 +368,4 @@
 | /api/cockpit/governance/playbooks/[playbookId]/apply | GET/POST | internal | requireAdmin | cockpit | live | Added |
 | /api/cockpit/governance/playbooks/metrics | GET/POST | internal | requireAdmin | cockpit | live | Added |
 | /api/cockpit/frank/feed | POST | internal | requireAdmin | cockpit | live | Added |
+| /proof | GET | public | none | PUBLIC | live | Pagina de prova operacional do Condstore OS |
