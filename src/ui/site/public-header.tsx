@@ -38,6 +38,7 @@ const navGroups: NavGroup[] = [
             { label: 'Implantação', href: '/implantacao' },
             { label: 'Casos', href: '/casos' },
             { label: 'Valores', href: '/valores' },
+            { label: 'Contato', href: '/contato' },
         ],
     },
 ];

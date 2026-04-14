@@ -88,7 +88,7 @@ export default function SolucoesPage() {
                 subtitle="Comece com o que precisa agora. Escale quando fizer sentido."
                 ctas={[
                     { label: 'Começar agora', href: '/signup' },
-                    { label: 'Falar com o time', href: '/about', variant: 'secondary' },
+                    { label: 'Falar com o time', href: '/contato', variant: 'secondary' },
                 ]}
             />
         </>

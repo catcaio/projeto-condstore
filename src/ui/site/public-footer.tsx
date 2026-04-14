@@ -19,6 +19,7 @@ const resourceLinks = [
     { label: 'Como funciona', href: '/como-funciona' },
     { label: 'Soluções', href: '/solucoes' },
     { label: 'Casos', href: '/casos' },
+    { label: 'Contato', href: '/contato' },
     { label: 'Documentação', href: '/docs' },
 ];
 

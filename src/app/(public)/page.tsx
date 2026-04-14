@@ -362,7 +362,7 @@ export default function HomePage() {
                 subtitle="Infraestrutura de verdade para logística de verdade."
                 ctas={[
                     { label: 'Começar agora', href: '/signup' },
-                    { label: 'Falar com o time', href: '/about', variant: 'secondary' },
+                    { label: 'Falar com o time', href: '/contato', variant: 'secondary' },
                 ]}
             />
         </>

@@ -31,7 +31,7 @@ export default function SegurancaPage() {
                 subtitle="O Condstore OS foi projetado para operar com controle, rastreabilidade e isolamento de dados desde a fundação."
                 ctas={[
                     { label: 'Explorar a plataforma', href: '/plataforma' },
-                    { label: 'Solicitar demonstração', href: '/about', variant: 'secondary' },
+                    { label: 'Solicitar demonstração', href: '/contato', variant: 'secondary' },
                 ]}
             />
 
@@ -244,7 +244,7 @@ export default function SegurancaPage() {
                 subtitle="Segurança e governança são parte da fundação, não um add-on."
                 ctas={[
                     { label: 'Explorar soluções', href: '/solucoes' },
-                    { label: 'Solicitar demonstração', href: '/about', variant: 'secondary' },
+                    { label: 'Solicitar demonstração', href: '/contato', variant: 'secondary' },
                 ]}
             />
         </>
