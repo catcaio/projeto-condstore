@@ -35,7 +35,10 @@ describe('Accept Quote -> Order Route', () => {
             session: { tenantId: 't1', sub: 'op-123', role: 'admin' },
         } as any);
 
-        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { method: 'POST' });
+        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { 
+            method: 'POST',
+            body: JSON.stringify({ humanApprovalToken: 'test-token' })
+        });
         const context = { params: Promise.resolve({ id: 'conv1', quoteId: 'quote1' }) };
 
         const res = await POST(req as any, context);
@@ -62,7 +65,10 @@ describe('Accept Quote -> Order Route', () => {
             new OrderBillingRequiredError('t1', 'past_due'),
         );
 
-        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { method: 'POST' });
+        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { 
+            method: 'POST',
+            body: JSON.stringify({ humanApprovalToken: 'test-token' })
+        });
         const context = { params: Promise.resolve({ id: 'conv1', quoteId: 'quote1' }) };
 
         const res = await POST(req as any, context);
@@ -87,7 +93,10 @@ describe('Accept Quote -> Order Route', () => {
         } as any);
         vi.mocked(freightQuoteService.getQuoteById).mockResolvedValue({ id: 'quote1', conversationId: 'conv1', status: 'SENT' } as any);
 
-        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { method: 'POST' });
+        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { 
+            method: 'POST',
+            body: JSON.stringify({ humanApprovalToken: 'test-token' })
+        });
         const context = { params: Promise.resolve({ id: 'conv1', quoteId: 'quote1' }) };
 
         const res = await POST(req as any, context);
@@ -107,7 +116,10 @@ describe('Accept Quote -> Order Route', () => {
         } as any);
         vi.mocked(freightQuoteService.getQuoteById).mockResolvedValue({ id: 'quote1', conversationId: 'conv-else' } as any);
 
-        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { method: 'POST' });
+        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { 
+            method: 'POST',
+            body: JSON.stringify({ humanApprovalToken: 'test-token' })
+        });
         const context = { params: Promise.resolve({ id: 'conv1', quoteId: 'quote1' }) };
 
         const res = await POST(req as any, context);
@@ -129,7 +141,10 @@ describe('Accept Quote -> Order Route', () => {
             new Error('A cotacao precisa estar aprovada antes de criar o pedido.')
         );
 
-        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { method: 'POST' });
+        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { 
+            method: 'POST',
+            body: JSON.stringify({ humanApprovalToken: 'test-token' })
+        });
         const context = { params: Promise.resolve({ id: 'conv1', quoteId: 'quote1' }) };
 
         const res = await POST(req as any, context);
@@ -150,7 +165,10 @@ describe('Accept Quote -> Order Route', () => {
             new Error('A cotação está sendo processada no momento. Por favor aguarde um instante.')
         );
 
-        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { method: 'POST' });
+        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', { 
+            method: 'POST',
+            body: JSON.stringify({ humanApprovalToken: 'test-token' })
+        });
         const context = { params: Promise.resolve({ id: 'conv1', quoteId: 'quote1' }) };
 
         const res = await POST(req as any, context);

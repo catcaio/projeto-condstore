@@ -4,6 +4,23 @@ import { runFrankAgentTool } from '../agent-loop';
 describe('Frank agent loop (minimal)', () => {
     it('blocks HIGH_RISK action when quote is not accepted', async () => {
         const result = await runFrankAgentTool({
+            tenantId: 'tenant-1',
+            requestId: 'req-1',
+            action: 'CREATE_ORDER_FROM_ACCEPTED_QUOTE',
+            quoteStatus: 'ACCEPTED',
+            execute: async () => ({ id: 'order-1' }),
+        });
+
+        expect(result.ok).toBe(false);
+        expect(result.status).toBe('BLOCKED_BY_POLICY');
+        expect(result.errorCode).toBe('POLICY_BLOCKED');
+        expect(result.errorMessage).toContain('missing_human_approval_token');
+    });
+
+    it('blocks HIGH_RISK action when quote is not accepted despite token', async () => {
+        const result = await runFrankAgentTool({
+            tenantId: 'tenant-1',
+            humanApprovalToken: 'valid-token',
             requestId: 'req-1',
             action: 'CREATE_ORDER_FROM_ACCEPTED_QUOTE',
             quoteStatus: 'SENT',
@@ -18,8 +35,24 @@ describe('Frank agent loop (minimal)', () => {
         expect(result.audit?.handoff).toContain('precondição');
     });
 
+    it('executes HIGH_RISK action successfully with valid humanApprovalToken', async () => {
+        const result = await runFrankAgentTool({
+            tenantId: 'tenant-1',
+            humanApprovalToken: 'valid-token-123',
+            requestId: 'req-1',
+            action: 'CREATE_ORDER_FROM_ACCEPTED_QUOTE',
+            quoteStatus: 'ACCEPTED',
+            execute: async () => ({ id: 'order-1' }),
+        });
+
+        expect(result.ok).toBe(true);
+        expect(result.status).toBe('EXECUTED');
+        expect(result.data).toEqual({ id: 'order-1' });
+    });
+
     it('executes LOW_RISK action successfully', async () => {
         const result = await runFrankAgentTool({
+            tenantId: 'tenant-1',
             requestId: 'req-2',
             action: 'READ_QUOTE_CONTEXT',
             quoteStatus: 'DRAFT',
@@ -34,6 +67,7 @@ describe('Frank agent loop (minimal)', () => {
 
     it('always returns ToolResult shape on execution failure', async () => {
         const result = await runFrankAgentTool({
+            tenantId: 'tenant-1',
             requestId: 'req-3',
             action: 'REQUEST_QUOTE_APPROVAL',
             quoteStatus: 'SENT',
