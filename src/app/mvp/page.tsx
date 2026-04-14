@@ -1,21 +1,30 @@
 import { notFound } from 'next/navigation';
 import { MVP_FLAGS } from '@/mvp/config/flags';
+import { MvpShell } from '@/mvp/components/MvpShell';
 import { LandingSection } from '@/mvp/site/LandingSection';
 
+export const metadata = {
+  title: 'Início | CONDSTORE OS',
+  description:
+    'Plataforma supervisionada de frete, pedidos e atendimento via WhatsApp para operação logística.',
+  robots: { index: false, follow: false },
+};
+
 /**
- * Entry point for the /mvp route.
+ * Entry point for /mvp.
+ * Gated by NEXT_PUBLIC_ENABLE_MVP=true.
  *
- * Gated by NEXT_PUBLIC_ENABLE_MVP=true. When the flag is off the page
- * returns a 404 so it is completely invisible to end users and search engines.
- *
- * This route is intentionally excluded from the Edge middleware matcher, so
- * it is treated as a public page — no auth headers are injected here.
- * Authenticated sub-surfaces live under /mvp/app once the matcher is extended.
+ * Shell is applied at page level (not layout) because /mvp/app uses a
+ * different shell (AppShell). The root layout is intentionally neutral.
  */
 export default function MvpPage() {
   if (!MVP_FLAGS.enabled) {
     notFound();
   }
 
-  return <LandingSection />;
+  return (
+    <MvpShell>
+      <LandingSection />
+    </MvpShell>
+  );
 }
