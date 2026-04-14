@@ -13,6 +13,10 @@ function isOrderBillingRequiredMessage(message: string) {
 }
 
 function classifyCreateOrderError(message: string) {
+    if (message.includes('missing_human_approval_token')) {
+        return { code: 'FORBIDDEN' as const, status: 403 };
+    }
+
     if (message.includes('A cotação está sendo processada')) {
         return { code: 'LOCK_BUSY' as const, status: 409 };
     }
