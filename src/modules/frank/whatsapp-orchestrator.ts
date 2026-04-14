@@ -41,6 +41,7 @@ import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { twilioProvider } from '@/providers/twilio.provider';
 import { catalogService } from '@/modules/catalog/catalog.service';
 import { formatProductQueryResponse, formatFreightSimulationResponse } from '@/lib/formatters/whatsapp-response';
+import { presenceService } from '@/modules/presence/presence.service';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -1098,12 +1099,13 @@ export async function handleIncomingMessage(
     }
 
     // ─── Conversation Control Gate ───────────────────────────────────────
+    const operatorOnline = await presenceService.isOperatorOnline(tenantId);
     const gateResult: ConversationGateResult = resolveConversationMode({
         intent: intentResult.intent,
         entities: entityResult.entities,
         confidence: intentResult.confidence,
         timestamp: new Date(),
-        operatorOnline: false, // TODO: connect with real presense module
+        operatorOnline,
         entitiesComplete,
         autoResponsesCount,
         messageBody: message,
