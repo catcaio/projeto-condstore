@@ -120,7 +120,10 @@ export default function HomePage() {
                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--ui-text-subtle))]">
                                 CONDSTORE OS • LANDING INSTITUCIONAL
                             </p>
-                            <h1 className="mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-[hsl(var(--ui-text))] md:text-5xl">
+                            <h1
+                                data-testid="public-hero-title"
+                                className="mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-[hsl(var(--ui-text))] md:text-5xl"
+                            >
                                 Operação comercial e logística sob controle, todos os dias.
                             </h1>
                             <p className="mt-5 max-w-3xl text-lg leading-relaxed text-[hsl(var(--ui-text-muted))]">
@@ -129,7 +132,7 @@ export default function HomePage() {
                                 Clareza de estado, decisão rápida e governança prática para quem opera no ritmo real.
                             </p>
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <Link href="/avaliacao" className={primaryCtaClass}>
+                                <Link href="/avaliacao" className={primaryCtaClass} data-testid="public-primary-cta">
                                     Solicitar avaliação operacional
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
