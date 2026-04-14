@@ -1440,7 +1440,7 @@ export async function handleIncomingMessage(
             }, {
                 tenantId,
                 requestId: sessionId ?? crypto.randomUUID(),
-                allowHighRisk: gateResult.mode === 'SUPERVISED',
+                allowHighRisk: gateResult.mode !== 'SUPERVISED' && !isFrankSupervisedOnly(),
             });
 
             if (!toolResult.ok || !toolResult.data) {
