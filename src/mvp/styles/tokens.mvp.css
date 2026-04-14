@@ -1,0 +1,167 @@
+/*
+ * CONDSTORE OS — MVP Design Tokens
+ *
+ * Namespace: --mvp-*
+ * Escopo: exclusivo às superfícies /mvp/* e /auth/*
+ *
+ * Paleta: escura, editorial, operacional.
+ * Sem gradiente azul genérico. Sem aparência de IA ou SaaS template.
+ * Acento: verde salva (operacional) — confiança, precisão, execução.
+ * Neutros: cinzas profundos com temperatura levemente quente.
+ */
+
+/* ─── Valores base (dark-first — cockpit como padrão) ─────────────── */
+:root {
+  /* Superfícies — hierarquia de 5 camadas */
+  --mvp-bg:          220 16% 5%;     /* Canvas base — mais profundo */
+  --mvp-surface-0:   222 14% 7%;     /* Sidebar/nav background */
+  --mvp-surface-1:   222 13% 9%;     /* Card, panel padrão */
+  --mvp-surface-2:   222 12% 12%;    /* Card elevado */
+  --mvp-surface-3:   222 11% 16%;    /* Hover, selected, muted bg */
+
+  /* Bordas */
+  --mvp-border:        222 10% 20%;  /* Borda padrão sutil */
+  --mvp-border-strong: 222 9% 28%;   /* Borda em foco / interação */
+
+  /* Texto — 3 níveis de hierarquia */
+  --mvp-text-1: 210 16% 94%;         /* Primário — alto contraste */
+  --mvp-text-2: 218 12% 72%;         /* Secundário — body */
+  --mvp-text-3: 218 10% 50%;         /* Muted — labels, placeholders */
+
+  /* Acento — verde operacional (nada de azul genérico) */
+  --mvp-accent:        158 68% 40%;  /* Verde salva — principal */
+  --mvp-accent-hover:  158 68% 36%;  /* Hover */
+  --mvp-accent-bg:     158 40% 8%;   /* Fundo de badge info/accent */
+  --mvp-accent-border: 158 40% 14%;  /* Borda de badge info/accent */
+
+  /* Semânticos de status */
+  --mvp-danger:        4   80% 60%;  /* Vermelho para erro/perigo */
+  --mvp-danger-hover:  4   80% 54%;
+  --mvp-danger-bg:     4   60% 8%;
+  --mvp-danger-border: 4   60% 16%;
+
+  --mvp-warning:       38  90% 56%;  /* Âmbar para alerta */
+  --mvp-warning-bg:    38  60% 8%;
+
+  --mvp-success:       142 62% 44%;  /* Verde confirmação */
+  --mvp-success-bg:    142 50% 7%;
+
+  /* Radius */
+  --mvp-radius-xs: 5px;
+  --mvp-radius-sm: 8px;
+  --mvp-radius-md: 12px;
+  --mvp-radius-lg: 16px;
+
+  /* Shadows */
+  --mvp-shadow-sm:  0 1px 3px hsl(220 20% 2% / 0.4),
+                    0 1px 2px hsl(220 20% 2% / 0.3);
+  --mvp-shadow-md:  0 4px 8px hsl(220 20% 2% / 0.5),
+                    0 2px 4px hsl(220 20% 2% / 0.3);
+  --mvp-shadow-lg:  0 8px 24px hsl(220 20% 2% / 0.6),
+                    0 4px 8px hsl(220 20% 2% / 0.4);
+
+  /* Topbar/sidebar measures */
+  --mvp-topbar-h:    52px;
+  --mvp-sidebar-w:   220px;
+  --mvp-sidebar-w-collapsed: 56px;
+
+  /* Transitions */
+  --mvp-t-fast:   100ms ease;
+  --mvp-t-base:   150ms ease;
+  --mvp-t-slow:   250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Semantic color aliases — use these instead of raw CSS keywords */
+  --mvp-color-white: 0 0% 100%;         /* White — for text/bg on dark accents */
+}
+
+/* ─── Utilitário: root surface ───────────────────────────────────── */
+.mvp-root {
+  background-color: hsl(var(--mvp-bg));
+  color: hsl(var(--mvp-text-1));
+  min-height: 100dvh;
+  font-family: var(--font-family-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Skeleton animation ─────────────────────────────────────────── */
+@keyframes mvp-shimmer {
+  from { background-position: 200% center; }
+  to   { background-position: -200% center; }
+}
+
+.mvp-skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--mvp-surface-2)) 25%,
+    hsl(var(--mvp-surface-3)) 50%,
+    hsl(var(--mvp-surface-2)) 75%
+  );
+  background-size: 400% 100%;
+  animation: mvp-shimmer 1.8s ease-in-out infinite;
+}
+
+/* ─── Scroll reveal base ─────────────────────────────────────────── */
+.mvp-sr {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+.mvp-sr.mvp-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ─── Navigation active link indicator ──────────────────────────── */
+.mvp-nav-link {
+  position: relative;
+  transition: color var(--mvp-t-base), background-color var(--mvp-t-base);
+}
+
+.mvp-nav-link[aria-current="page"]::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 60%;
+  border-radius: 9999px;
+  background-color: hsl(var(--mvp-accent));
+}
+
+/* ─── Focus ring global override para superfície MVP ────────────── */
+.mvp-root *:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--mvp-bg)), 0 0 0 4px hsl(var(--mvp-accent) / 0.5);
+}
+
+/* ─── Scrollbar slim para cockpit ────────────────────────────────── */
+.mvp-root ::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.mvp-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.mvp-root ::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--mvp-border-strong));
+  border-radius: 9999px;
+}
+.mvp-root ::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--mvp-text-3));
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .mvp-root *,
+  .mvp-root *::before,
+  .mvp-root *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .mvp-sr {
+    opacity: 1;
+    transform: none;
+  }
+}

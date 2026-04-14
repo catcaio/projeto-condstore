@@ -47,12 +47,18 @@ Execução:
 - Abrir PR com escopo fechado
 - Garantir diff limpo e coerente
 
-8. Critério de DONE (obrigatório)
+8. MVP Freeze (obrigatório)
+- Rodar npm run guardrail:mvp-freeze antes de abrir PR quando a branch tocar superfícies de produto
+- Nunca expandir escopo para superfícies frozen (Frank autônomo, DOMINE Console, knowledge/RAG) sem justificativa explícita
+- Se o guardrail reportar violação → NÃO abrir PR
+
+9. Critério de DONE (obrigatório)
 - Código consistente
 - Testes passando
 - Typecheck ok
 - Migration commitada (se houver)
 - Zero drift
+- guardrail:mvp-freeze sem violação
 - PR refletindo corretamente no GitHub
 - CI sem blockers
 

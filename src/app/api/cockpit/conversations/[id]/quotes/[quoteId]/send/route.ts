@@ -1,37 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { freightQuoteService } from '@/modules/atendimento/freight-quote.service';
-import { simulations } from '@/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
-import { getDb } from '@/infra/db';
-import { conversationService } from '@/modules/atendimento/conversation.service';
 import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
-import { twilioProvider } from '@/providers/twilio.provider';
+import { conversationService } from '@/modules/atendimento/conversation.service';
 import { decryptString } from '@/infra/pii/crypto';
 import { domineIntakeService } from '@/domine/domine-intake.service';
 import { logger } from '@/infra/logger';
+import { whatsappOutboundService } from '@/modules/atendimento/whatsapp-outbound.service';
 
 export async function POST(
     request: NextRequest,
-    context: { params: Promise<{ id: string, quoteId: string }> }
+    context: { params: Promise<{ id: string, quoteId: string }> },
 ) {
     const requestId = makeRequestId(request);
-    
+
     const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
-    const { tenantId, userId: operatorId } = auth.session as any; 
+    const { tenantId, userId: operatorId } = auth.session as any;
 
     try {
         const { id: conversationId, quoteId } = await context.params;
-        
-        // Fetch Conversation
+
         const conversation = await conversationService.getConversationById(tenantId, conversationId);
         if (!conversation) {
             return errorResponse('NOT_FOUND' as any, 404, requestId, 'Conversation not found');
         }
 
-        // Fetch Quote
         const quote = await freightQuoteService.getQuoteById(tenantId, quoteId);
         if (!quote) {
             return errorResponse('NOT_FOUND' as any, 404, requestId, 'Quote not found');
@@ -42,45 +37,60 @@ export async function POST(
         }
 
         const plaintextPhone = decryptString(conversation.phoneEncrypted);
-        
-        // Format the message
-        let carrierName = quote.bestCarrier || 'Transportadora Parceira';
+        const carrierName = quote.bestCarrier || 'Transportadora Parceira';
         const formattedPrice = Number(quote.bestPrice).toFixed(2).replace('.', ',');
-        const deadline = quote.bestService || 'Consultar'; // usually bestService holds the SLA info or we can use generic text
-        
+        const deadline = quote.bestService || 'Consultar';
         const message = `🚚 *Cotação de Frete*\nEncontramos a melhor opção para você via ${carrierName}:\n\nValor: R$ ${formattedPrice}\nEstimativa (dias): ${deadline}\n\nPara seguirmos com o envio, basta confirmar!`;
 
-        // 1. Send via Twilio
-        const sent = await twilioProvider.sendMessage(tenantId, {
-            to: plaintextPhone,
-            body: message
-        });
-
-        if (!sent) {
-            return errorResponse('TWILIO_API_ERROR' as any, 502, requestId, 'Failed to send message via Twilio');
-        }
-
-        // 2. Persist to DB directly through service
-        const conversationMessage = await conversationService.processOutboundMessage(
+        const trackedSend = await whatsappOutboundService.sendTrackedMessage({
             tenantId,
             conversationId,
+            to: plaintextPhone,
             message,
-            'OPERATOR',
-            conversation.customerId || undefined, 
-            {
+            source: 'OPERATOR',
+            actorType: 'HUMAN',
+            customerId: conversation.customerId || undefined,
+            metadata: {
                 status: 'quote_sent',
                 quoteId: quote.id,
                 actorType: 'HUMAN',
-                messageType: 'TEXT'
-            }
-        );
+                messageType: 'TEXT',
+                requestId,
+                operatorId,
+            },
+        });
+
+        if (!trackedSend.ok) {
+            logger.error('QUOTE_SEND_TWILIO_ERROR', new Error(trackedSend.sendResult.message), {
+                requestId,
+                tenantId,
+                conversationId,
+                quoteId,
+                conversationMessageId: trackedSend.conversationMessage.id,
+                errorCode: trackedSend.sendResult.errorCode,
+                providerStatusCode: trackedSend.sendResult.providerStatusCode ?? null,
+            });
+
+            return errorResponse('TWILIO_API_ERROR' as any, 502, requestId, 'Failed to send message via Twilio', {
+                conversationMessageId: trackedSend.conversationMessage.id,
+                twilioErrorCode: trackedSend.sendResult.errorCode,
+                providerStatusCode: trackedSend.sendResult.providerStatusCode ?? null,
+            });
+        }
+
+        await conversationService.markConversationWaitingCustomer(tenantId, conversationId);
+
         if (conversation.stage === 'NEW_LEAD' || conversation.stage === 'IN_ATTENDANCE') {
-            await conversationService.changeConversationStage(tenantId, conversationId, 'QUOTED', conversation.customerId ?? undefined);
+            await conversationService.changeConversationStage(
+                tenantId,
+                conversationId,
+                'QUOTED',
+                conversation.customerId ?? undefined,
+            );
         }
 
         await freightQuoteService.sendQuote(tenantId, quoteId);
 
-        // 3. Emit QUOTE_SENT
         void domineIntakeService.publish({
             tenantId,
             type: 'QUOTE_SENT',
@@ -89,11 +99,22 @@ export async function POST(
                 quoteId: quote.id,
                 conversationId,
                 operatorId,
-                customerId: conversation.customerId
-            }
-        }).catch(e => logger.warn('Failed to emit QUOTE_SENT', { error: e.message }));
+                customerId: conversation.customerId,
+                messageId: trackedSend.conversationMessage.id,
+                sid: trackedSend.sendResult.sid,
+                deliveryStatus: trackedSend.normalizedStatus,
+            },
+        }).catch((error) => logger.warn('Failed to emit QUOTE_SENT', { error: error.message }));
 
-        return NextResponse.json({ ok: true, data: conversationMessage });
+        return NextResponse.json({
+            ok: true,
+            data: trackedSend.updatedMessage ?? trackedSend.conversationMessage,
+            twilio: {
+                sid: trackedSend.sendResult.sid,
+                status: trackedSend.normalizedStatus,
+                providerStatus: trackedSend.sendResult.status,
+            },
+        });
     } catch (err: any) {
         logger.error('Failed to send freight quote to customer', err as Error, { requestId });
         return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);

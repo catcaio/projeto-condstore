@@ -1,3 +1,5 @@
+import { getAuthSecretValue, readTrimmedEnv } from '@/infra/env/critical-runtime';
+
 export interface EdgeSecurityEventInput {
     requestId: string;
     route: string;
@@ -9,9 +11,18 @@ export interface EdgeSecurityEventInput {
 
 export async function hashIp(ip: string | null | undefined): Promise<string | null> {
     if (!ip) return null;
-    // We add a pepper to the hash specifically for IP addresses to make rainbow tables harder
-    // For local edge hashing, if AUTH_SECRET is missing, we use a fallback pepper
-    const pepper = process.env.PII_ENCRYPTION_KEY || process.env.AUTH_SECRET || 'fallback-ip-pepper-condstore';
+    const pepper = readTrimmedEnv('PII_ENCRYPTION_KEY') ?? (() => {
+        try {
+            return getAuthSecretValue();
+        } catch (error) {
+            const code = error instanceof Error ? error.message : 'EDGE_HASH_SECRET_MISSING';
+            console.error('[edge-security] unable to derive IP hash pepper', { code });
+            return null;
+        }
+    })();
+    if (!pepper) {
+        return null;
+    }
     
     // Use Edge-compatible Web Crypto API instead of node:crypto
     const encoder = new TextEncoder();

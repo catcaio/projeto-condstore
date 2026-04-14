@@ -5,8 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { logger } from '@/infra/logger';
 import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
-import { withRequestTrace } from '@/infra/http/request-trace';
+import { withRequestTrace, getTracedRequestId } from '@/infra/http/request-trace';
 import { gateEvaluate, type GateThresholds, type ModelMetrics } from '@/infra/frank/frank-gate';
+import { applyFrankInternalRateLimit } from '@/infra/security/frank-rate-limit';
 
 interface GateDecision {
   ok: true;
@@ -37,6 +38,10 @@ async function handler(request: NextRequest): Promise<NextResponse> {
       { status: 400 },
     );
   }
+
+  const requestId = getTracedRequestId(request) ?? '';
+  const rl = await applyFrankInternalRateLimit({ tenantId, requestId, route: '/api/internal/frank/gate' });
+  if (rl.blocked) return rl.response;
 
   const baseline = request.nextUrl.searchParams.get('baseline')?.trim();
   if (!baseline) {

@@ -14,6 +14,7 @@ export const EcosystemEventTypes = [
     'shipment_created',
     'shipment_delayed',
     'message_received',
+    'message_delivery_failed',
     'quote_generated',
     'note_added',
     'followup_scheduled',

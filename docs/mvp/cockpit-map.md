@@ -18,13 +18,13 @@ O cockpit é a interface unificada onde operadores e gestores executam o dia a d
 - Lista de conversas WhatsApp ativas
 - Mensagens da conversa
 - Histórico do cliente ao lado (empresa, pedidos anteriores)
-- Stage do cliente no pipeline (New / Quoted / Won)
+- Stage do cliente no pipeline (New Lead / In Attendance / Quoted / Won / Lost)
 
 **O que o operador faz:**
 - Responde mensagem diretamente na tela
 - Solicita cotação (simula frete multi-carrier)
 - Atribui conversa a outro operador
-- Muda stage do cliente (New → Quoted → Won)
+- Muda stage do cliente (New Lead → In Attendance → Quoted → Won)
 - Visualiza histórico de todas as interações
 
 **Dados que alimentam:**
@@ -43,7 +43,7 @@ O cockpit é a interface unificada onde operadores e gestores executam o dia a d
 ### 2. CRM / Pipeline
 
 **O que o operador vê:**
-- Kanban visual com colunas: New, Quoted, Won, Lost
+- Kanban visual com colunas: New Lead, In Attendance, Quoted, Won, Lost
 - Cards de conversas agrupadas por stage
 - Métrica: quantos clientes em cada stage
 
@@ -74,7 +74,8 @@ O cockpit é a interface unificada onde operadores e gestores executam o dia a d
 - Opcional: ajusta peso/dimensões
 - Solicita cotação (chama freight engine)
 - Seleciona melhor opção
-- Clica em "Criar pedido" para converter em order
+- Aprova cotação (confirma opção selecionada — status da cotação → ACCEPTED)
+- Clica em "Criar pedido" (somente após aprovação da cotação)
 
 **Dados que alimentam:**
 - `freight_simulations` (resultados de cotação)
@@ -83,7 +84,8 @@ O cockpit é a interface unificada onde operadores e gestores executam o dia a d
 **APIs associadas:**
 - `POST /api/cockpit/conversations/[id]/quotes` (request cotação)
 - `GET /api/cockpit/conversations/[id]/quotes` (retrieve resultados)
-- `POST /api/cockpit/conversations/[id]/quotes/[quoteId]/order` (create order)
+- `POST /api/cockpit/conversations/[id]/quotes/[quoteId]/accept` (aprova cotação)
+- `POST /api/cockpit/conversations/[id]/quotes/[quoteId]/order` (converte cotação ACCEPTED em pedido)
 
 ---
 
@@ -91,7 +93,7 @@ O cockpit é a interface unificada onde operadores e gestores executam o dia a d
 
 **O que o operador vê:**
 - Lista de todos os orders abertos
-- Status de cada um (CREATED, PROCESSING, DELIVERED)
+- Status de cada um (DRAFT, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELED)
 - Itens do pedido (quantidade, descrição)
 - Carrier selecionado
 - Cliente vinculado
@@ -102,9 +104,9 @@ O cockpit é a interface unificada onde operadores e gestores executam o dia a d
 - Métricas: total de pedidos, AVG de valor, taxa de entrega
 
 **O que o operador faz:**
-- Confirma pedido (CREATED → PROCESSING)
+- Confirma pedido (DRAFT → CONFIRMED) — confirmação aciona criação automática do shipment de logística
 - Visualiza timeline de status
-- Consulta tracking do carrier
+- Consulta tracking do carrier (disponível após CONFIRMED, quando shipment é gerado)
 - Abre conversa associada
 
 **Dados que alimentam:**
@@ -231,10 +233,14 @@ O cockpit é a interface unificada onde operadores e gestores executam o dia a d
          ↓
 08:13 - Vê 3 opções: Melhor Envio R$150, Movvi R$145, Braspress R$160
          Seleciona Movvi
+         Aprova cotação (status → ACCEPTED)
          Clica "Criar pedido"
          ↓
-08:14 - Pedido criado, notifica cliente no WhatsApp
-         "Ótimo! Saiu por Movvi. Segue o link de tracking: [URL]"
+08:14 - Pedido criado como DRAFT
+         Operador confirma pedido (DRAFT → CONFIRMED)
+         Sistema gera shipment automaticamente
+         Notifica cliente no WhatsApp:
+         "Ótimo! Movvi confirmada. Link de tracking disponível em breve."
          ↓
 08:15 - Repete com próximas 2 mensagens
          ↓

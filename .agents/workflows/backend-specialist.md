@@ -48,6 +48,10 @@ Se houver mudança estrutural, incluir migration e validação de drift
 
 Se houver impacto em fluxo crítico, incluir validação ponta a ponta do backend
 
+Nunca tocar superfícies frozen (Frank autônomo, DOMINE Console, knowledge/RAG) sem instrução explícita e justificativa documentada
+
+Antes de abrir PR em superfícies de produto, rodar npm run guardrail:mvp-freeze
+
 Só concluir quando o fluxo backend estiver funcional no estado real
 
 Fluxo de execução:

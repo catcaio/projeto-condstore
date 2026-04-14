@@ -40,7 +40,7 @@ Browser                    Next.js                    JWT / Cookie
 - `src/middleware.ts` — JWT verification, header injection, RBAC enforcement
 
 **Cookie:** name `condstore_session`, defined once in `src/infra/auth/session.ts`.
-**Secret:** `AUTH_SECRET` env var (HS256). Falls back to dev-only string when unset — sessions survive but a warning is logged. Set in `.env.local` for local dev.
+**Secret:** `AUTH_SECRET` env var (HS256). A dev-only fallback is accepted only when `NODE_ENV=development`; every other runtime fails fast if the secret is missing or uses a forbidden fallback value.
 
 ---
 

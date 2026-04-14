@@ -6,7 +6,7 @@ Documento técnico interno para navegação arquitetural do estado atual do cód
 
 CONDSTORE OS é uma aplicação Next.js com App Router que combina:
 
-- superfícies web (cockpit, áreas operacionais e páginas públicas),
+- superfícies web (cockpit, áreas operacionais, páginas públicas e hubs didáticos isolados por rota),
 - API routes HTTP,
 - módulos de domínio,
 - infraestrutura transversal (auth, segurança, banco, cache, observabilidade),
@@ -92,6 +92,7 @@ Isolamento por tenant é implementado em múltiplas barreiras:
 | Cockpit | `src/modules/cockpit/**` | Dados agregados para painéis, alertas, filas, métricas e atalhos |
 | Frank | `src/modules/frank/**`, `src/core/ai/**` | Intent/context resolver, sugestões, tools, memória, gateway LLM e governança |
 | DOMINE | `src/modules/domine/**`, `src/domine/**` | Publicação/processamento de eventos com status, retries e DLQ |
+| Tudico (research SDD) | `src/modules/cockpit/tudico/**`, `src/app/api/cockpit/tudico/**`, `src/app/(app)/cockpit/tudico/**` | Curadoria epistemológica com hipótese versionada, paper cards, inconsistências e auditoria de resposta |
 | Billing/FinOps | `src/modules/billing/**`, `src/modules/finops/**` | Plano, Stripe webhook/service e enforcement operacional por plano |
 
 ## 6) Integrações externas reais
@@ -121,6 +122,8 @@ Controles observáveis no código:
 - Flags: `FRANK_RUNTIME_ENABLED` e `FRANK_RUNTIME_MODE`.
 - Modo supervisionado suportado (`SUPERVISED_ONLY`) para geração de sugestão sem envio autônomo indiscriminado.
 - Tool model com guard de execução (`src/modules/frank/tools/tool-guard.ts`).
+- Agent loop mínimo para ações operacionais críticas: `src/modules/frank/agent-loop.ts` (planner + policy + memory + telemetry), integrado de forma compatível no fluxo `Quote -> Order`.
+- Separação de sub-agentes no loop Frank: o planner classifica ação por domínio (`ATENDIMENTO`, `CRM`, `FREIGHT`, `LOGISTICA`) e registra handoff explícito para troubleshooting e governança operacional.
 
 ## 8) Segurança e invariantes arquiteturais
 

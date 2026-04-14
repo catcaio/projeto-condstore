@@ -54,7 +54,7 @@ export const appConfig: AppConfig = {
 
   frank: {
     runtimeEnabled: process.env.FRANK_RUNTIME_ENABLED === 'true',
-    runtimeMode: (process.env.FRANK_RUNTIME_MODE as 'AUTONOMOUS' | 'SUPERVISED_ONLY') || 'AUTONOMOUS',
+    runtimeMode: 'SUPERVISED_ONLY', // MVP Freeze: Enforce SUPERVISED_ONLY, autonomous is frozen
   },
 };
 
@@ -103,6 +103,14 @@ export function validateConfig(): void {
     throw new Error(
       `Invalid ORIGIN_CEP format: ${appConfig.freight.originCep}. ` +
       'Expected 8 digits (e.g., 01001000)'
+    );
+  }
+
+  // MVP Freeze Guardrail: Block autonomous mode forcefully
+  if (appConfig.frank.runtimeMode !== 'SUPERVISED_ONLY') {
+    throw new Error(
+      'MVP Freeze Violation: Frank autonomous mode is strictly forbidden. ' +
+      'runtimeMode must be SUPERVISED_ONLY.'
     );
   }
 }

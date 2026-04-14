@@ -3,6 +3,7 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { frankService } from '@/modules/frank/server';
+import { applyFrankCockpitRateLimit } from '@/infra/security/frank-rate-limit';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
 
     const { id: conversationId } = await params;
     const tenantId = auth.session.tenantId;
+
+    const rl = await applyFrankCockpitRateLimit({ tenantId, conversationId, requestId, route: '/api/cockpit/frank/suggestions/[id]/approve-draft' });
+    if (rl.blocked) return rl.response;
 
     try {
         const payload = await request.json().catch(() => ({}));

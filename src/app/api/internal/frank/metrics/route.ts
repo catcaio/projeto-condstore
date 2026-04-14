@@ -7,7 +7,8 @@ import { frankEvents } from '@/drizzle/schema';
 import { getDb } from '@/infra/db';
 import { logger } from '@/infra/logger';
 import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
-import { withRequestTrace } from '@/infra/http/request-trace';
+import { withRequestTrace, getTracedRequestId } from '@/infra/http/request-trace';
+import { applyFrankInternalRateLimit } from '@/infra/security/frank-rate-limit';
 
 interface MetricsRow {
   model_version_id: string | null;
@@ -27,6 +28,10 @@ async function handler(request: NextRequest): Promise<NextResponse> {
   if (!tenantId) {
     return NextResponse.json({ ok: false, error: 'tenantId is required' }, { status: 400 });
   }
+
+  const requestId = getTracedRequestId(request) ?? '';
+  const rl = await applyFrankInternalRateLimit({ tenantId, requestId, route: '/api/internal/frank/metrics' });
+  if (rl.blocked) return rl.response;
 
   const sinceHours = Math.max(1, Number.parseInt(request.nextUrl.searchParams.get('sinceHours') || '24', 10));
 
