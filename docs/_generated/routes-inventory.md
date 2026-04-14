@@ -327,6 +327,10 @@
 | `/metricas` | Page |
 | `/mvp` | Page |
 | `/mvp/app` | Page |
+| `/mvp/app/freight` | Page |
+| `/mvp/app/inbox` | Page |
+| `/mvp/app/orders` | Page |
+| `/mvp/app/settings` | Page |
 | `/mvp/como-funciona` | Page |
 | `/operacao` | Page |
 | `/operacao/fila` | Page |
