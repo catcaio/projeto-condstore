@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { CondstoreLogo } from '@/ui/components/Logo';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './theme-toggle';
+
 const primaryCta = { label: 'Iniciar operação no MVP', href: '/signup' } as const;
 const secondaryCta = { label: 'Como funciona o MVP', href: '/como-funciona' } as const;
 
@@ -13,6 +14,7 @@ const navLinks = [
     { label: 'Fluxo do MVP', href: '/como-funciona' },
     { label: 'Plataforma', href: '/plataforma' },
     { label: 'Segurança', href: '/seguranca' },
+    { label: 'Contato', href: '/contato' },
 ] as const;
 
 export function PublicHeader() {

@@ -265,7 +265,7 @@ export default function AppPage() {
                 subtitle="O app do ecossistema é parte da implantação do Condstore OS."
                 ctas={[
                     { label: 'Explorar soluções', href: '/solucoes' },
-                    { label: 'Solicitar demonstração', href: '/about', variant: 'secondary' },
+                    { label: 'Solicitar demonstração', href: '/contato', variant: 'secondary' },
                 ]}
             />
         </>

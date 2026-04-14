@@ -33,7 +33,7 @@ export default function CasosPage() {
                 subtitle="Veja como operações utilizam a plataforma para organizar atendimento, pedidos e logística."
                 ctas={[
                     { label: 'Explorar a plataforma', href: '/plataforma' },
-                    { label: 'Solicitar demonstração', href: '/about', variant: 'secondary' },
+                    { label: 'Solicitar demonstração', href: '/contato', variant: 'secondary' },
                 ]}
             />
 
@@ -179,7 +179,7 @@ export default function CasosPage() {
                 subtitle="Cada caso é diferente. Vamos conversar sobre o seu."
                 ctas={[
                     { label: 'Explorar a plataforma', href: '/plataforma' },
-                    { label: 'Solicitar demonstração', href: '/about', variant: 'secondary' },
+                    { label: 'Solicitar demonstração', href: '/contato', variant: 'secondary' },
                 ]}
             />
         </>

@@ -451,7 +451,7 @@ export default function SolucoesPage() {
                 subtitle="Comece com o fluxo completo ou escolha o módulo que resolve o problema mais urgente agora."
                 ctas={[
                     { label: 'Começar agora', href: '/signup' },
-                    { label: 'Falar com o time', href: '/about', variant: 'secondary' },
+                    { label: 'Falar com o time', href: '/contato', variant: 'secondary' },
                 ]}
             />
         </>
