@@ -54,7 +54,7 @@ export const appConfig: AppConfig = {
 
   frank: {
     runtimeEnabled: process.env.FRANK_RUNTIME_ENABLED === 'true',
-    runtimeMode: (process.env.FRANK_RUNTIME_MODE as 'AUTONOMOUS' | 'SUPERVISED_ONLY') || 'AUTONOMOUS',
+    runtimeMode: 'SUPERVISED_ONLY', // MVP Freeze: Enforce SUPERVISED_ONLY, autonomous is frozen
   },
 };
 
