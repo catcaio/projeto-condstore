@@ -13,6 +13,7 @@ export interface FrankToolPolicyContext {
     tenantId: string;
     requestId: string;
     allowHighRisk?: boolean;
+    humanApprovalToken?: string;
 }
 
 export interface FrankToolPolicyInput {
@@ -57,20 +58,39 @@ export function evaluateFrankToolPolicy(
         };
     }
 
-    if (riskLevel === 'HIGH_RISK' && !context.allowHighRisk) {
-        logger.warn('frank_tool_policy_blocked', {
-            tenantId: context.tenantId,
-            requestId: context.requestId,
-            action,
-            riskLevel,
-            reason: 'missing_high_risk_precondition',
-        });
+    if (riskLevel === 'HIGH_RISK') {
+        const hasToken = context.humanApprovalToken && context.humanApprovalToken.trim().length > 0;
+        if (!hasToken) {
+            logger.warn('frank_tool_policy_blocked', {
+                tenantId: context.tenantId,
+                requestId: context.requestId,
+                action,
+                riskLevel,
+                reason: 'missing_human_approval_token',
+            });
 
-        return {
-            allowed: false,
-            riskLevel,
-            reason: 'missing_high_risk_precondition',
-        };
+            return {
+                allowed: false,
+                riskLevel,
+                reason: 'missing_human_approval_token',
+            };
+        }
+
+        if (!context.allowHighRisk) {
+            logger.warn('frank_tool_policy_blocked', {
+                tenantId: context.tenantId,
+                requestId: context.requestId,
+                action,
+                riskLevel,
+                reason: 'missing_high_risk_precondition',
+            });
+
+            return {
+                allowed: false,
+                riskLevel,
+                reason: 'missing_high_risk_precondition',
+            };
+        }
     }
 
     return {

@@ -1,4 +1,5 @@
 import { logger } from '@/infra/logger';
+import { adminAuditLogRepository } from '@/infra/repositories/admin-audit-log.repository';
 
 export type ToolResult = {
     ok: boolean;
@@ -30,6 +31,8 @@ export interface FrankAgentState {
 }
 
 export interface FrankPolicyInput {
+    tenantId?: string;
+    humanApprovalToken?: string;
     action: FrankAgentAction;
     quoteStatus: string | null;
 }
@@ -87,13 +90,25 @@ export function decideNextAction(input: FrankPlannerInput, state: FrankAgentStat
 export function evaluatePolicy(input: FrankPolicyInput): FrankPolicyDecision {
     const riskLevel = ACTION_RISK_MAP[input.action];
 
-    if (riskLevel === 'HIGH_RISK' && input.quoteStatus !== 'ACCEPTED') {
-        return {
-            riskLevel,
-            allowed: false,
-            reason: 'A cotacao precisa estar aprovada antes de criar o pedido.',
-            nextAllowedActions: ['READ_QUOTE_CONTEXT', 'REQUEST_QUOTE_APPROVAL', 'READ_CUSTOMER_CRM_CONTEXT'],
-        };
+    if (riskLevel === 'HIGH_RISK') {
+        const hasToken = input.humanApprovalToken && input.humanApprovalToken.trim().length > 0;
+        if (!hasToken) {
+            return {
+                riskLevel,
+                allowed: false,
+                reason: 'missing_human_approval_token',
+                nextAllowedActions: ['READ_QUOTE_CONTEXT', 'REQUEST_QUOTE_APPROVAL', 'READ_CUSTOMER_CRM_CONTEXT'],
+            };
+        }
+
+        if (input.quoteStatus !== 'ACCEPTED') {
+            return {
+                riskLevel,
+                allowed: false,
+                reason: 'A cotacao precisa estar aprovada antes de criar o pedido.',
+                nextAllowedActions: ['READ_QUOTE_CONTEXT', 'REQUEST_QUOTE_APPROVAL', 'READ_CUSTOMER_CRM_CONTEXT'],
+            };
+        }
     }
 
     return {
@@ -124,6 +139,8 @@ export function buildAgentMemory(params: {
 }
 
 export async function runFrankAgentTool(params: {
+    tenantId: string;
+    humanApprovalToken?: string;
     requestId: string;
     action: FrankAgentAction;
     quoteStatus: string | null;
@@ -133,7 +150,12 @@ export async function runFrankAgentTool(params: {
 
     const memory = buildAgentMemory({ quoteStatus: params.quoteStatus });
     const planned = decideNextAction({ requestedAction: params.action }, memory);
-    const policy = evaluatePolicy({ action: planned.action, quoteStatus: params.quoteStatus });
+    const policy = evaluatePolicy({ 
+        action: planned.action, 
+        quoteStatus: params.quoteStatus,
+        tenantId: params.tenantId,
+        humanApprovalToken: params.humanApprovalToken,
+    });
 
     if (!policy.allowed) {
         const blockedMemory = buildAgentMemory({
@@ -167,6 +189,21 @@ export async function runFrankAgentTool(params: {
             durationMs: Date.now() - start,
         });
 
+        if (policy.riskLevel === 'HIGH_RISK') {
+            await adminAuditLogRepository.log({
+                tenantId: params.tenantId,
+                userId: 'frank-agent',
+                action: `frank_agent_${planned.action}`,
+                metadata: {
+                    riskLevel: policy.riskLevel,
+                    approved: false,
+                    blocked: true,
+                    reason: policy.reason ?? null,
+                    tokenReference: params.humanApprovalToken ?? null,
+                }
+            }).catch(e => logger.error('Failed to write admin audit log', e as Error));
+        }
+
         return blockedResult;
     }
 
@@ -199,6 +236,21 @@ export async function runFrankAgentTool(params: {
             outcome: success.status,
             durationMs: Date.now() - start,
         });
+
+        if (policy.riskLevel === 'HIGH_RISK') {
+            await adminAuditLogRepository.log({
+                tenantId: params.tenantId,
+                userId: 'frank-agent',
+                action: `frank_agent_${planned.action}`,
+                metadata: {
+                    riskLevel: policy.riskLevel,
+                    approved: true,
+                    blocked: false,
+                    reason: null,
+                    tokenReference: params.humanApprovalToken ?? null,
+                }
+            }).catch(e => logger.error('Failed to write admin audit log', e as Error));
+        }
 
         return success;
     } catch (error) {

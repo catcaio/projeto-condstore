@@ -1,5 +1,6 @@
 import { freightService } from '@/modules/freight/freight.service';
 import { logger } from '@/infra/logger';
+import { adminAuditLogRepository } from '@/infra/repositories/admin-audit-log.repository';
 import { createOrderFromQuoteTool, type CreateOrderFromQuoteParams } from './create-order-from-quote.tool';
 import { getOrderStatusTool, type GetOrderStatusParams, type OrderStatusResult } from './read-only/getOrderStatus.tool';
 import { getShipmentStatusTool, type GetShipmentStatusParams, type ShipmentStatusResult } from './read-only/getShipmentStatus.tool';
@@ -105,6 +106,21 @@ export async function runTool<TAction extends FrankToolAction>(
             durationMs,
         });
 
+        if (decision.riskLevel === 'HIGH_RISK') {
+            await adminAuditLogRepository.log({
+                tenantId: context.tenantId,
+                userId: 'frank-agent',
+                action: `frank_tool_${action}`,
+                metadata: {
+                    riskLevel: decision.riskLevel,
+                    approved: decision.allowed,
+                    blocked: !decision.allowed,
+                    reason: decision.reason ?? null,
+                    tokenReference: context.humanApprovalToken ?? null,
+                }
+            }).catch(e => logger.error('Failed to write admin audit log', e as Error));
+        }
+
         return result;
     }
 
@@ -120,6 +136,21 @@ export async function runTool<TAction extends FrankToolAction>(
             result: { ok: true },
             durationMs,
         });
+
+        if (decision.riskLevel === 'HIGH_RISK') {
+            await adminAuditLogRepository.log({
+                tenantId: context.tenantId,
+                userId: 'frank-agent',
+                action: `frank_tool_${action}`,
+                metadata: {
+                    riskLevel: decision.riskLevel,
+                    approved: decision.allowed,
+                    blocked: !decision.allowed,
+                    reason: decision.reason ?? null,
+                    tokenReference: context.humanApprovalToken ?? null,
+                }
+            }).catch(e => logger.error('Failed to write admin audit log', e as Error));
+        }
 
         return {
             ok: true,

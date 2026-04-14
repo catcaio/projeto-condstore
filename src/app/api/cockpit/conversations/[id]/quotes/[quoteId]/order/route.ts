@@ -45,6 +45,17 @@ export async function POST(
     const { tenantId, sub } = auth.session as any;
     const { id: conversationId, quoteId } = await context.params;
 
+    let humanApprovalToken: string | undefined;
+    try {
+        const bodyText = await request.text();
+        if (bodyText) {
+            const body = JSON.parse(bodyText);
+            humanApprovalToken = body.humanApprovalToken;
+        }
+    } catch (e) {
+        // ignore JSON parse error for empty body
+    }
+
     try {
         const quote = await freightQuoteService.getQuoteById(tenantId, quoteId);
 
@@ -57,6 +68,8 @@ export async function POST(
         }
 
         const toolResult = await runFrankAgentTool({
+            tenantId,
+            humanApprovalToken,
             requestId,
             action: 'CREATE_ORDER_FROM_ACCEPTED_QUOTE',
             quoteStatus: quote.status ?? null,
