@@ -12,6 +12,13 @@ export const CACHE_TTL_SHORT = 300;
 export const LOCK_TTL = 120;
 
 /**
+ * Operator presence heartbeat: 90 seconds.
+ * Renewed by the cockpit heartbeat; expires automatically when operator disconnects.
+ * Frank treats expiry as "offline" (fail-safe default).
+ */
+export const PRESENCE_OPERATOR_TTL = 90;
+
+/**
  * Frank model override: 24 hours.
  * Overrides are admin-managed; TTL prevents orphaned keys if explicit
  * clear is never called (e.g. after a failed rollback recovery).
