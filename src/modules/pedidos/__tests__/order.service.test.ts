@@ -37,11 +37,35 @@ vi.mock('@/services/ecosystem-events.service', () => ({
     },
 }));
 
+vi.mock('@/infra/redis.client', () => ({
+    redisClient: {
+        setNx: vi.fn(),
+        del: vi.fn().mockResolvedValue(true),
+    },
+}));
+
 import { createOrderFromSimulation } from '../order.service';
+import { redisClient } from '@/infra/redis.client';
 
 describe('createOrderFromSimulation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(redisClient.setNx).mockResolvedValue(true);
+    });
+
+    it('blocks duplicate execution via Redis lock', async () => {
+        vi.mocked(redisClient.setNx).mockResolvedValueOnce(false);
+
+        await expect(createOrderFromSimulation({
+            tenantId: 'tenant-1',
+            simulationId: 'sim-1',
+            customerId: 'customer-1',
+            organizationId: 'org-1',
+            createdBy: 'user-1',
+            items: [{ name: 'Produto', quantity: 1, unitPrice: 10 }],
+        })).rejects.toThrow('Order creation already in progress for simulation sim-1');
+
+        expect(dbMocks.select).not.toHaveBeenCalled();
     });
 
     it('blocks order creation when simulation is not ACCEPTED', async () => {
