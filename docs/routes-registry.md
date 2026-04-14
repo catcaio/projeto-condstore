@@ -370,4 +370,4 @@
 | /api/cockpit/frank/feed | POST | internal | requireAdmin | cockpit | live | Added |
 | /proof | GET | public | none | PUBLIC | live | Pagina de prova operacional do Condstore OS |
 | /contato | GET | public | none | PUBLIC | live | Página de contato e agendamento de demonstração |
-| /api/contato | POST | public | none | PUBLIC | live | Endpoint de submissão do formulário de contato |
+| /api/public/contato | POST | public | none | PUBLIC | live | Endpoint de submissão do formulário de contato |

@@ -101,7 +101,7 @@ export function ContatoForm() {
 
         setState('loading');
         try {
-            const res = await fetch('/api/contato', {
+            const res = await fetch('/api/public/contato', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(values),
