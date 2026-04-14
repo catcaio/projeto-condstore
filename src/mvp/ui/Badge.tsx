@@ -47,8 +47,8 @@ const variantMap: Record<BadgeVariant, { bg: string; text: string; dot: string }
   },
   accent: {
     bg: 'bg-[hsl(var(--mvp-accent))]',
-    text: 'text-white',
-    dot: 'bg-white',
+    text: 'text-[hsl(var(--mvp-color-white))]',
+    dot: 'bg-[hsl(var(--mvp-color-white))]',
   },
 };
 

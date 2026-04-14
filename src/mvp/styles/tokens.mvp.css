@@ -69,6 +69,9 @@
   --mvp-t-fast:   100ms ease;
   --mvp-t-base:   150ms ease;
   --mvp-t-slow:   250ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Semantic color aliases — use these instead of raw CSS keywords */
+  --mvp-color-white: 0 0% 100%;         /* White — for text/bg on dark accents */
 }
 
 /* ─── Utilitário: root surface ───────────────────────────────────── */
