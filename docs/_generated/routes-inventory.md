@@ -90,6 +90,14 @@
 | `/api/cockpit/saved-views` | API |
 | `/api/cockpit/status` | API |
 | `/api/cockpit/timeline` | API |
+| `/api/cockpit/tudico/audit-response` | API |
+| `/api/cockpit/tudico/claim-conflicts` | API |
+| `/api/cockpit/tudico/hypotheses` | API |
+| `/api/cockpit/tudico/hypotheses/compare` | API |
+| `/api/cockpit/tudico/inconsistencies` | API |
+| `/api/cockpit/tudico/papers` | API |
+| `/api/cockpit/tudico/papers/[id]` | API |
+| `/api/cockpit/tudico/tools` | API |
 | `/api/cron/cleanup` | API |
 | `/api/db/migrate` | API |
 | `/api/debug/tenants` | API |
@@ -225,6 +233,7 @@
 | `/api/whatsapp/incoming` | API |
 | `/api/whatsapp/status` | API |
 | `/app` | Page |
+| `/area-estudo/estrutura-quantica-relacional` | Page |
 | `/attribution` | Page |
 | `/avaliacao` | Page |
 | `/billing` | Page |
@@ -284,6 +293,7 @@
 | `/cockpit/supreme` | Page |
 | `/cockpit/supreme/benchmarks` | Page |
 | `/cockpit/timeline` | Page |
+| `/cockpit/tudico` | Page |
 | `/como-funciona` | Page |
 | `/concept-layer-preview` | Page |
 | `/configuracoes` | Page |
@@ -315,6 +325,13 @@
 | `/logistica/tabelas-frete` | Page |
 | `/logistica/tabelas-frete/[carrier]` | Page |
 | `/metricas` | Page |
+| `/mvp` | Page |
+| `/mvp/app` | Page |
+| `/mvp/app/freight` | Page |
+| `/mvp/app/inbox` | Page |
+| `/mvp/app/orders` | Page |
+| `/mvp/app/settings` | Page |
+| `/mvp/como-funciona` | Page |
 | `/operacao` | Page |
 | `/operacao/fila` | Page |
 | `/operacao/inbox` | Page |

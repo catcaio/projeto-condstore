@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { getAIProviderWithMeta } from './llm-gateway';
 import { aiDecisionLogRepository } from '../../infra/repositories/ai-decision-log.repository';
 import { getContext, appendMessage } from '../../infra/context-cache';
+import { frankTokenUsageService } from '@/modules/frank/services/token-usage.service';
 import type { ContextMessage } from '../../infra/context-cache';
 
 export interface FrankRunInput {
@@ -77,22 +78,46 @@ export class FrankOrchestrator {
     const { provider, meta } = await getAIProviderWithMeta(input.tenantId);
     const startedAt = Date.now();
     try {
-      const response = await provider.chat({
+      const trackedResponse = await frankTokenUsageService.executeTrackedCall({
         tenantId: input.tenantId,
-        system: systemPrompt,
-        user: input.message,
-        responseFormat: 'text',
-        sessionId: input.phoneHash,
-        correlationId: input.providerEventId ?? messageId,
-        route: 'frank-orchestrator.run',
-        metadata: {
-          messageId,
-          providerEventId: input.providerEventId ?? null,
-          hasHistory: Boolean(systemPrompt),
+        model: meta.model,
+        callSite: 'FrankOrchestrator.run',
+        eventContext: {
+          entityId: messageId,
+          sessionId: input.phoneHash ?? null,
+        },
+        execute: async () => {
+          const response = await provider.chat({
+            tenantId: input.tenantId,
+            system: systemPrompt,
+            user: input.message,
+            responseFormat: 'text',
+            sessionId: input.phoneHash,
+            correlationId: input.providerEventId ?? messageId,
+            route: 'frank-orchestrator.run',
+            metadata: {
+              messageId,
+              providerEventId: input.providerEventId ?? null,
+              hasHistory: Boolean(systemPrompt),
+            },
+          });
+
+          const rawUsage = response.raw && typeof response.raw === 'object'
+            ? (response.raw as { usage?: unknown }).usage
+            : undefined;
+
+          return {
+            result: response,
+            usage: rawUsage,
+          };
         },
       });
+      const response = trackedResponse.result;
       const latencyMs = Date.now() - startedAt;
-      const tokenCounts = extractTokenCounts(response.raw);
+      const tokenCounts = {
+        tokensIn: trackedResponse.usage.promptTokens || extractTokenCounts(response.raw).tokensIn,
+        tokensOut: trackedResponse.usage.completionTokens || extractTokenCounts(response.raw).tokensOut,
+      };
 
       void aiDecisionLogRepository.saveDecisionLog({
         tenantId: input.tenantId,

@@ -2,8 +2,8 @@ import { SignJWT, jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { logger } from '../logger';
+import { getAuthSecretBytes } from '../env/critical-runtime';
 import { userRepository } from '../repositories/user.repository';
-import { isDevRuntime, isQaAutomation } from '../env/devOnly';
 
 export const COOKIE_NAME = 'condstore_session';
 const TOKEN_EXPIRY = '8h';
@@ -17,15 +17,7 @@ export interface SessionPayload {
 }
 
 export function getSecret(): Uint8Array {
-    const secret = process.env.AUTH_SECRET;
-    if (!secret) {
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error('AUTH_SECRET is not set in production');
-        }
-        logger.warn('AUTH_SECRET not set, using dev fallback -- sessions will not survive restarts');
-        return new TextEncoder().encode('dev-only-fallback-secret-do-not-use-in-prod');
-    }
-    return new TextEncoder().encode(secret);
+    return getAuthSecretBytes();
 }
 
 export async function createSessionToken(user: {

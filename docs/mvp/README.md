@@ -157,4 +157,5 @@ R: Primeiro verifique `boundaries.md`. Se não está lá como bloqueio explícit
 | Data | Autor | Mudança |
 |---|---|---|
 | 2026-03-29 | arquitetura | Consolidação inicial do MVP |
+| 2026-03-31 | sincronização | Alinhamento de estados do pedido e fluxo supervisionado ao código real (PR 218) |
 

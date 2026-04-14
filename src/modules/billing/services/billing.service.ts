@@ -55,8 +55,8 @@ async function invalidateBillingCaches(tenantId: string): Promise<void> {
     if (!redisClient.isAvailable()) return;
     try {
         await Promise.all([
-            redisClient.set(`tenant:${tenantId}:state`, null, 0),
-            redisClient.set(finopsCacheKey(tenantId), null, 0),
+            redisClient.del(`tenant:${tenantId}:state`),
+            redisClient.del(finopsCacheKey(tenantId)),
         ]);
     } catch (err) {
         logger.warn('billing_cache_invalidation_failed', { tenantId, error: (err as Error).message });

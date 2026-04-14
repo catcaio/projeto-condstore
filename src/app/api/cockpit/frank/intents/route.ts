@@ -3,6 +3,7 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { intentTrainingService } from '@/modules/frank/intents/intent.service';
+import { applyFrankCockpitRateLimit } from '@/infra/security/frank-rate-limit';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
     const requestId = makeRequestId(request);
@@ -10,6 +11,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     if (!auth.ok) return auth.response;
 
     const tenantId = auth.session.tenantId;
+
+    const rl = await applyFrankCockpitRateLimit({ tenantId, requestId, route: '/api/cockpit/frank/intents' });
+    if (rl.blocked) return rl.response;
 
     try {
         const intents = await intentTrainingService.listCapturedIntents(tenantId);

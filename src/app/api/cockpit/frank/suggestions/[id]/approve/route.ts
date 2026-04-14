@@ -9,6 +9,7 @@ import { conversationService } from '@/modules/atendimento/conversation.service'
 import { decryptString } from '@/infra/pii/crypto';
 import { twilioProvider } from '@/providers/twilio.provider';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
+import { applyFrankCockpitRateLimit } from '@/infra/security/frank-rate-limit';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -21,6 +22,9 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
 
     const { id } = await params;
     const tenantId = auth.session.tenantId;
+
+    const rl = await applyFrankCockpitRateLimit({ tenantId, requestId, route: '/api/cockpit/frank/suggestions/[id]/approve' });
+    if (rl.blocked) return rl.response;
 
     try {
         const payload = await request.json().catch(() => ({}));

@@ -5,9 +5,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { logger } from '@/infra/logger';
 import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
-import { withRequestTrace } from '@/infra/http/request-trace';
+import { withRequestTrace, getTracedRequestId } from '@/infra/http/request-trace';
 import { gateEvaluate } from '@/infra/frank/frank-gate';
 import { applyFrankRollbackOverride } from '@/infra/frank/frank-rollback';
+import { applyFrankInternalRateLimit } from '@/infra/security/frank-rate-limit';
 
 interface RollbackBody {
   tenantId?: string;
@@ -49,6 +50,10 @@ async function handler(request: NextRequest): Promise<NextResponse> {
       { status: 400 },
     );
   }
+
+  const requestId = getTracedRequestId(request) ?? '';
+  const rl = await applyFrankInternalRateLimit({ tenantId, requestId, route: '/api/internal/frank/apply-rollback' });
+  if (rl.blocked) return rl.response;
 
   const baseline = body.baseline?.trim();
   if (!baseline) {

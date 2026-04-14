@@ -3,8 +3,40 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
+import { freightQuoteService } from '@/modules/atendimento/freight-quote.service';
 import { orderService } from '@/modules/atendimento/order.service';
 import { isOrderBillingRequiredError } from '@/modules/billing/guards/assertTenantCanOperateOrders';
+import { runFrankAgentTool } from '@/modules/frank/agent-loop';
+
+function isOrderBillingRequiredMessage(message: string) {
+    return message.includes('does not allow order creation or confirmation.');
+}
+
+function classifyCreateOrderError(message: string) {
+    if (message.includes('missing_human_approval_token')) {
+        return { code: 'FORBIDDEN' as const, status: 403 };
+    }
+
+    if (message.includes('A cotação está sendo processada')) {
+        return { code: 'LOCK_BUSY' as const, status: 409 };
+    }
+
+    if (isOrderBillingRequiredMessage(message)) {
+        return { code: ErrorCode.VALIDATION_ERROR, status: 402 };
+    }
+
+    if (
+        message.includes('Quote not found') ||
+        message.includes('Quote does not belong') ||
+        message.includes('Cannot convert') ||
+        message.includes('Quote already converted') ||
+        message.includes('A cotacao precisa estar aprovada')
+    ) {
+        return { code: ErrorCode.VALIDATION_ERROR, status: 400 };
+    }
+
+    return { code: 'INTERNAL_ERROR' as const, status: 500 };
+}
 
 export async function POST(
     request: NextRequest,
@@ -17,15 +49,53 @@ export async function POST(
     const { tenantId, sub } = auth.session as any;
     const { id: conversationId, quoteId } = await context.params;
 
+    let humanApprovalToken: string | undefined;
     try {
-        const newOrder = await orderService.createOrderFromQuote(
-            tenantId,
-            conversationId,
-            quoteId,
-            sub
-        );
+        const bodyText = await request.text();
+        if (bodyText) {
+            const body = JSON.parse(bodyText);
+            humanApprovalToken = body.humanApprovalToken;
+        }
+    } catch (e) {
+        // ignore JSON parse error for empty body
+    }
 
-        return NextResponse.json({ ok: true, data: newOrder });
+    try {
+        const quote = await freightQuoteService.getQuoteById(tenantId, quoteId);
+
+        if (!quote) {
+            return errorResponse('NOT_FOUND' as any, 404, requestId, 'Quote not found');
+        }
+
+        if (quote.conversationId !== conversationId) {
+            return errorResponse('VALIDATION_ERROR' as any, 400, requestId, 'Quote does not belong to this conversation');
+        }
+
+        const toolResult = await runFrankAgentTool({
+            tenantId,
+            humanApprovalToken,
+            requestId,
+            action: 'CREATE_ORDER_FROM_ACCEPTED_QUOTE',
+            quoteStatus: quote.status ?? null,
+            execute: async () => orderService.createOrderFromQuote(
+                tenantId,
+                conversationId,
+                quoteId,
+                sub
+            ),
+        });
+
+        if (!toolResult.ok) {
+            const classification = classifyCreateOrderError(toolResult.errorMessage ?? 'Failed to create order from quote');
+            return errorResponse(
+                classification.code as never,
+                classification.status,
+                requestId,
+                toolResult.errorMessage ?? 'Failed to create order from quote',
+            );
+        }
+
+        return NextResponse.json({ ok: true, data: toolResult.data });
     } catch (err: any) {
         if (isOrderBillingRequiredError(err)) {
             logger.warn('Order creation blocked by billing gate', {
@@ -39,6 +109,8 @@ export async function POST(
         }
 
         logger.error('Failed to create order from quote', err as Error, { requestId });
-        return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);
+        const message = err instanceof Error ? err.message : 'Failed to create order from quote';
+        const classification = classifyCreateOrderError(message);
+        return errorResponse(classification.code as any, classification.status, requestId, message);
     }
 }

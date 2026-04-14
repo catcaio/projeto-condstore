@@ -19,6 +19,8 @@ Links rápidos:
 
 > **Para qualquer pessoa revisando, implementando ou suportando CONDSTORE OS: Comece por [docs/mvp/README.md](docs/mvp/README.md)**
 
+Para demos/pilotos reproduzíveis, use o runbook em [`docs/demo/demo-tenant-runbook.md`](docs/demo/demo-tenant-runbook.md).
+
 ## Capacidades principais (implementadas no código)
 
 - **Atendimento WhatsApp com Twilio**: ingestão webhook, verificação de assinatura, resolução de tenant por número Twilio e políticas de resposta (`ACK_ONLY`, `SUPERVISED_NO_REPLY`, `AUTO_REPLY_ALLOWED`).
@@ -26,7 +28,10 @@ Links rápidos:
 - **Frete multi-transportadora**: motor de cotação com adaptadores (incluindo Melhor Envio e tabelas internas), memória operacional e vínculo de shipment.
 - **Pedidos e logística**: criação/consulta de pedidos, shipment service/repository e integração com dados de frete.
 - **Frank (IA) com governança**: orquestrador, sugestões supervisionadas, tools, memória, intent linker e gateway de provider centralizado.
+- **Frank agent loop (base mínima)**: camada incremental com planner/policy/tool contract (`ToolResult`), memória operacional básica e telemetria estruturada no fluxo de conversão de cotação aprovada para pedido.
+- **Frank sub-agent separation (MVP)**: planner com responsabilidade explícita por sub-agente (`ATENDIMENTO`, `CRM`, `FREIGHT`, `LOGISTICA`) e handoff rastreável em auditoria/log para reduzir acoplamento entre domínios.
 - **Eventos operacionais e DOMINE**: publicação de eventos com sanitização de PII, processamento assíncrono com DLQ e trilha de auditoria.
+- **Tudico Fase 2 (pesquisa epistemológica)**: versionamento de hipóteses, diff entre versões, paper cards, inconsistency board e auditoria epistemológica via tools dedicadas no cockpit.
 
 ## Stack real
 
@@ -70,6 +75,7 @@ docs/                  # estado do produto, runbooks e documentação técnica c
 - Para frete/pedidos/logística: `src/modules/freight/*`, `src/modules/pedidos/*`, `src/modules/logistics/*`.
 - Para multi-tenant e guards: `src/infra/auth/*` e `src/infra/db.ts`.
 - Para eventos: `src/lib/events/operational-event-bus.ts` e `src/modules/domine/*`.
+- Para o hub didático isolado da Área de Estudo: `src/app/(public)/area-estudo/estrutura-quantica-relacional/page.tsx` e `content.ts`.
 
 ## Setup local
 
@@ -116,11 +122,13 @@ Sem `.env.example` versionado, então use como base os pontos abaixo.
 - `npm run dev` — desenvolvimento.
 - `npm run build` / `npm run start` — build e execução de produção.
 - `npm run lint` — lint.
+- `npm run lint:secrets-critical` — falha CI se `AUTH_SECRET` estiver ausente/em fallback dev e se `PII_ENCRYPTION_KEY` faltar fora de `NODE_ENV=development`.
 - `npm run typecheck` — checagem TypeScript.
 - `npm run test:ci` / `npm run test:coverage` — testes.
 - `npm run routes:sync` — inventário/verificação de rotas.
 - `npm run routes:verify-security` — validação de guardas de segurança por rota.
 - `npm run db:verify` — verificação de drift de schema.
+- `npm run seed:demo-tenant` — cria dataset reproduzível de demo/piloto (tenant isolado).
 
 ## Segurança e guardrails
 
@@ -129,6 +137,7 @@ Sem `.env.example` versionado, então use como base os pontos abaixo.
 - **Webhook hardening**: validação de assinatura Twilio/Stripe e idempotência/dedup em webhooks.
 - **Proteção de PII**: criptografia AES-GCM e redação em logs/eventos.
 - **Rate limiting/circuit breaker**: aplicados em pontos críticos (ex.: entrada WhatsApp e integrações externas).
+- **Regra operacional de CI**: `AUTH_SECRET` não pode usar fallback dev e `PII_ENCRYPTION_KEY` é obrigatória fora de `development`.
 
 ## Estado atual do produto (baseado no código)
 
