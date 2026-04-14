@@ -1,68 +1,138 @@
 import type { MvpSession } from '../lib/auth';
+import { PageHeader } from '../ui/PageHeader';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { SectionHeader } from '../ui/SectionHeader';
+import { EmptyState } from '../ui/EmptyState';
 
 interface CockpitMiniProps {
   session: MvpSession;
 }
 
 /**
- * Minimal cockpit view for authenticated MVP users.
- * Shows the tenant context and quick-links to the full operational surfaces.
+ * Minimal cockpit view for authenticated MVP users at /mvp/app.
+ * Shows operational overview with entry points to all MVP surfaces.
+ * Uses core UI components — sets the pattern for future cockpit pages.
  */
 export function CockpitMini({ session }: CockpitMiniProps) {
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-foreground">Cockpit</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Tenant: <span className="font-mono">{session.tenantId}</span>
-          {' · '}
-          Perfil: <span className="font-mono">{session.role}</span>
-        </p>
+    <div className="space-y-6 max-w-5xl">
+      <PageHeader
+        title="Cockpit"
+        subtitle={`Tenant ${session.tenantId} · Perfil ${session.role}`}
+        badge={
+          <Badge variant="success" dot>
+            Supervisionado
+          </Badge>
+        }
+      />
+
+      {/* ── Status cards ─────────────────────────────────────────── */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {STAT_CARDS.map((card) => (
+          <Card key={card.label} elevated>
+            <div className="space-y-2">
+              <p
+                className="text-xs font-medium uppercase tracking-wider"
+                style={{ color: 'hsl(var(--mvp-text-3))' }}
+              >
+                {card.label}
+              </p>
+              <p
+                className="text-2xl font-semibold"
+                style={{ color: 'hsl(var(--mvp-text-1))' }}
+              >
+                {card.value}
+              </p>
+              {card.delta && (
+                <Badge variant={card.deltaPositive ? 'success' : 'warning'}>
+                  {card.delta}
+                </Badge>
+              )}
+            </div>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <a
-          href="/cockpit"
-          className="block rounded-lg border border-border p-4 hover:bg-muted/50 transition-colors"
-        >
-          <span className="font-medium text-sm text-foreground">
-            Cockpit completo
-          </span>
-          <p className="text-xs text-muted-foreground mt-1">
-            Acesse o painel operacional
-          </p>
-        </a>
+      {/* ── Entry points ─────────────────────────────────────────── */}
+      <section className="space-y-3">
+        <SectionHeader
+          label="Superfícies"
+          title="Áreas operacionais"
+          description="Acesse os módulos principais do MVP supervisionado."
+        />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {ENTRY_POINTS.map((entry) => (
+            <a
+              key={entry.href}
+              href={entry.href}
+              className="block p-4 rounded-[var(--mvp-radius-md)] border transition-all duration-150 group"
+              style={{
+                background: 'hsl(var(--mvp-surface-1))',
+                border: '1px solid hsl(var(--mvp-border))',
+              }}
+            >
+              <p
+                className="text-sm font-semibold mb-1 group-hover:text-[hsl(var(--mvp-text-1))]"
+                style={{ color: 'hsl(var(--mvp-text-1))' }}
+              >
+                {entry.label}
+              </p>
+              <p
+                className="text-xs leading-relaxed"
+                style={{ color: 'hsl(var(--mvp-text-3))' }}
+              >
+                {entry.description}
+              </p>
+            </a>
+          ))}
+        </div>
+      </section>
 
-        <a
-          href="/pedidos"
-          className="block rounded-lg border border-border p-4 hover:bg-muted/50 transition-colors"
-        >
-          <span className="font-medium text-sm text-foreground">Pedidos</span>
-          <p className="text-xs text-muted-foreground mt-1">
-            Gerenciar pedidos ativos
-          </p>
-        </a>
-
-        <a
-          href="/conversas"
-          className="block rounded-lg border border-border p-4 hover:bg-muted/50 transition-colors"
-        >
-          <span className="font-medium text-sm text-foreground">Conversas</span>
-          <p className="text-xs text-muted-foreground mt-1">
-            Atendimento via WhatsApp
-          </p>
-        </a>
-
-        <a
-          href="/logistica"
-          className="block rounded-lg border border-border p-4 hover:bg-muted/50 transition-colors"
-        >
-          <span className="font-medium text-sm text-foreground">Logística</span>
-          <p className="text-xs text-muted-foreground mt-1">
-            Rastreio e expedição
-          </p>
-        </a>
-      </div>
+      {/* ── Recent activity placeholder ──────────────────────────── */}
+      <section className="space-y-3">
+        <SectionHeader label="Atividade" title="Eventos recentes" />
+        <EmptyState
+          icon={
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="2" y="3" width="16" height="13" rx="2" />
+              <path d="M2 7h16" />
+            </svg>
+          }
+          title="Nenhum evento recente"
+          description="Os eventos operacionais aparecerão aqui conforme a plataforma for utilizada."
+        />
+      </section>
     </div>
   );
 }
+
+const STAT_CARDS = [
+  { label: 'Pedidos hoje',      value: '—', delta: undefined,      deltaPositive: true  },
+  { label: 'Conversas ativas',  value: '—', delta: undefined,      deltaPositive: true  },
+  { label: 'Cotações pendentes',value: '—', delta: undefined,      deltaPositive: false },
+  { label: 'Erros 24h',         value: '—', delta: undefined,      deltaPositive: false },
+] as const;
+
+const ENTRY_POINTS = [
+  {
+    href:  '/mvp/app/inbox',
+    label: 'Inbox',
+    description: 'Conversas e atendimentos via WhatsApp.',
+  },
+  {
+    href:  '/mvp/app/freight',
+    label: 'Cotações',
+    description: 'Cotações multi-transportadora pendentes de aprovação.',
+  },
+  {
+    href:  '/mvp/app/orders',
+    label: 'Pedidos',
+    description: 'Pedidos aprovados, em transporte e entregues.',
+  },
+  {
+    href:  '/mvp/app/settings',
+    label: 'Configurações',
+    description: 'Tenant, transportadoras, operadores e preferências.',
+  },
+] as const;
