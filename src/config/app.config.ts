@@ -105,4 +105,12 @@ export function validateConfig(): void {
       'Expected 8 digits (e.g., 01001000)'
     );
   }
+
+  // MVP Freeze Guardrail: Block autonomous mode forcefully
+  if (appConfig.frank.runtimeMode !== 'SUPERVISED_ONLY') {
+    throw new Error(
+      'MVP Freeze Violation: Frank autonomous mode is strictly forbidden. ' +
+      'runtimeMode must be SUPERVISED_ONLY.'
+    );
+  }
 }
