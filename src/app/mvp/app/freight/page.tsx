@@ -19,7 +19,8 @@ export default function FreightPage() {
       <PageHeader
         title="Cotações"
         subtitle="Cotações multi-transportadora pendentes de aprovação"
-        badge={<Badge variant="muted">Em breve</Badge>}
+        badge={null}
+
         breadcrumb={[{ href: '/mvp/app', label: 'Cockpit' }, { label: 'Cotações' }]}
       />
       <EmptyState

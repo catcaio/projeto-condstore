@@ -247,7 +247,7 @@ export default function SolucoesPage() {
                                 Começar agora
                             </Link>
                             <Link
-                                href="/casos"
+                                href="/proof"
                                 className="inline-flex items-center justify-center gap-2 rounded-full border text-sm font-bold h-12 px-8 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                                 style={{
                                     borderColor: 'hsl(var(--ui-border))',
@@ -255,7 +255,7 @@ export default function SolucoesPage() {
                                     background: 'transparent',
                                 }}
                             >
-                                Ver casos reais
+                                Ver prova operacional
                                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
                             </Link>
                         </div>
@@ -417,7 +417,7 @@ export default function SolucoesPage() {
                                 'md:items-start lg:items-center md:justify-end'
                             )}>
                                 <Link
-                                    href="/casos"
+                                    href="/proof"
                                     className="inline-flex items-center justify-center rounded-full text-sm font-bold h-12 px-8 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                                     style={{
                                         background: 'hsl(var(--ui-accent-blue))',
@@ -425,7 +425,7 @@ export default function SolucoesPage() {
                                         boxShadow: '0 8px 24px -8px hsl(var(--ui-accent-blue) / 0.25)',
                                     }}
                                 >
-                                    Ver casos reais
+                                    Ver prova operacional
                                 </Link>
                                 <Link
                                     href="/login"

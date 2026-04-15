@@ -5,7 +5,6 @@
 | Detected Path | Type |
 |---|---|
 | `/` | Page |
-| `/about` | Page |
 | `/api/app/events` | API |
 | `/api/auth/email/send-verify` | API |
 | `/api/auth/email/verify` | API |
@@ -236,11 +235,9 @@
 | `/app` | Page |
 | `/area-estudo/estrutura-quantica-relacional` | Page |
 | `/attribution` | Page |
-| `/avaliacao` | Page |
 | `/billing` | Page |
 | `/billing/manage` | Page |
 | `/billing/success` | Page |
-| `/casos` | Page |
 | `/clientes` | Page |
 | `/cockpit` | Page |
 | `/cockpit/acquisition` | Page |
@@ -299,7 +296,6 @@
 | `/concept-layer-preview` | Page |
 | `/configuracoes` | Page |
 | `/contato` | Page |
-| `/conversas` | Page |
 | `/cotacao` | Page |
 | `/cotacao/result` | Page |
 | `/dashboard` | Page |
@@ -315,8 +311,6 @@
 | `/gargalos-logisticos` | Page |
 | `/home` | Page |
 | `/implantacao` | Page |
-| `/inbox` | Page |
-| `/inbox/conversations/[id]` | Page |
 | `/integracoes` | Page |
 | `/login` | Page |
 | `/logistica` | Page |
@@ -336,9 +330,7 @@
 | `/mvp/como-funciona` | Page |
 | `/operacao` | Page |
 | `/operacao/fila` | Page |
-| `/operacao/inbox` | Page |
 | `/painel-logistico` | Page |
-| `/pedidos` | Page |
 | `/planos/crm` | Page |
 | `/planos/domine` | Page |
 | `/planos/envios` | Page |
@@ -365,6 +357,4 @@
 | `/tenant` | Page |
 | `/termos` | Page |
 | `/valores` | Page |
-| `/vendas/clientes` | Page |
 | `/vendas/cotacao` | Page |
-| `/vendas/pedidos` | Page |

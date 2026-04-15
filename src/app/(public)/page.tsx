@@ -132,7 +132,7 @@ export default function HomePage() {
                                 Clareza de estado, decisão rápida e governança prática para quem opera no ritmo real.
                             </p>
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <Link href="/avaliacao" className={primaryCtaClass} data-testid="public-primary-cta">
+                                <Link href="/contato" className={primaryCtaClass} data-testid="public-primary-cta">
                                     Solicitar avaliação operacional
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
@@ -141,7 +141,7 @@ export default function HomePage() {
                                 </Link>
                             </div>
                             <div className="mt-5 flex flex-wrap gap-5">
-                                <Link href="/casos" className={inlineLinkClass}>
+                                <Link href="/proof" className={inlineLinkClass}>
                                     Ver prova operacional
                                 </Link>
                                 <Link href="/login" className={inlineLinkClass}>
@@ -177,8 +177,8 @@ export default function HomePage() {
                     <nav aria-label="Próximos passos do MVP" className="mt-10 grid grid-cols-1 gap-3 md:grid-cols-4">
                         {[
                             { href: '/solucoes', title: 'Solução', description: 'Visão do produto e abordagem do MVP.' },
-                            { href: '/casos', title: 'Prova operacional', description: 'Exemplos de execução no fluxo real.' },
-                            { href: '/avaliacao', title: 'Contato e agendamento', description: 'Avaliação guiada do cenário operacional.' },
+                            { href: '/proof', title: 'Prova operacional', description: 'Exemplos de execução no fluxo real.' },
+                            { href: '/contato', title: 'Contato e agendamento', description: 'Avaliação guiada do cenário operacional.' },
                             { href: '/login', title: 'Login', description: 'Acesso direto ao ambiente da operação.' },
                         ].map((item) => (
                             <Link
@@ -262,7 +262,7 @@ export default function HomePage() {
                             })}
                         </div>
                         <div className="mt-8">
-                            <Link href="/casos" className={inlineLinkClass}>
+                            <Link href="/proof" className={inlineLinkClass}>
                                 Ver casos operacionais
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
@@ -320,7 +320,7 @@ export default function HomePage() {
                             A landing direciona para ação objetiva: entender a solução, validar prova operacional, agendar avaliação e acessar o ambiente.
                         </p>
                         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                            <Link href="/avaliacao" className={primaryCtaClass}>
+                            <Link href="/contato" className={primaryCtaClass}>
                                 Agendar avaliação
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
@@ -332,7 +332,7 @@ export default function HomePage() {
                             <Link href="/solucoes" className={inlineLinkClass}>
                                 Explorar solução
                             </Link>
-                            <Link href="/casos" className={inlineLinkClass}>
+                            <Link href="/proof" className={inlineLinkClass}>
                                 Revisar prova operacional
                             </Link>
                         </div>

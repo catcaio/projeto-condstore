@@ -19,7 +19,8 @@ export default function InboxPage() {
       <PageHeader
         title="Inbox"
         subtitle="Conversas via WhatsApp — atendimento supervisionado"
-        badge={<Badge variant="muted">Em breve</Badge>}
+        badge={null}
+
         breadcrumb={[{ href: '/mvp/app', label: 'Cockpit' }, { label: 'Inbox' }]}
       />
       <EmptyState

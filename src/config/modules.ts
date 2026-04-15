@@ -82,7 +82,7 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         label: 'Conversas',
         group: 'Operacao Comercial',
         icon: MessageSquare,
-        route: '/conversas',
+        route: '/cockpit/atendimento',
         authModule: 'operation',
         requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
@@ -90,11 +90,8 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         navOrder: 20,
         summary: 'Inbox operacional com fila densa, thread ativa e contexto lateral do cliente.',
         routes: [
-            { pattern: '/conversas', title: 'Conversas' },
-            { pattern: '/inbox', title: 'Conversas' },
-            { pattern: '/inbox/conversations', title: 'Fila de Conversas' },
-            { pattern: '/inbox/conversations/:id', title: 'Conversa' },
-            { pattern: '/operacao/inbox', title: 'Conversas' },
+            { pattern: '/cockpit/atendimento', title: 'Atendimento' },
+            { pattern: '/cockpit/atendimento/:id', title: 'Conversa' },
         ],
     },
     {
@@ -111,7 +108,6 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         summary: 'Cliente 360 com relacionamento, pedidos, simulacoes e acoes operacionais.',
         routes: [
             { pattern: '/clientes', title: 'Clientes' },
-            { pattern: '/vendas/clientes', title: 'Clientes' },
         ],
     },
     {
@@ -119,7 +115,7 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         label: 'Pedidos',
         group: 'Operacao Comercial',
         icon: FileText,
-        route: '/pedidos',
+        route: '/cockpit/orders',
         authModule: 'operation',
         requiredRoles: ['admin', 'manager', 'operator'],
         navVisible: true,
@@ -127,8 +123,8 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         navOrder: 30,
         summary: 'Fluxo operacional canonico do pedido com triagem, detalhe, cliente e logistica.',
         routes: [
-            { pattern: '/pedidos', title: 'Pedidos' },
-            { pattern: '/vendas/pedidos', title: 'Pedidos' },
+            { pattern: '/cockpit/orders', title: 'Pedidos' },
+            { pattern: '/cockpit/orders/:id', title: 'Detalhes do Pedido' },
         ],
     },
     {

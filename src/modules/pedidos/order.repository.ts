@@ -1,6 +1,6 @@
 import { db } from '@/db/client';
 import { and, eq, desc, like } from 'drizzle-orm';
-import { orders, orderItems, orderStatusHistory, customers, organizations, freightShipments } from '@/drizzle/schema';
+import { orders, orderItems, orderStatusHistory, customers, organizations, freightShipments, simulations } from '@/drizzle/schema';
 import { activeJoin, withTenantIdNotDeleted, withTenantNotDeleted } from '@/infra/db';
 
 /**
@@ -13,11 +13,13 @@ export async function getOrderAggregate(tenantId: string, orderId: string) {
             customer: customers,
             organization: organizations,
             shipment: freightShipments,
+            simulation: simulations,
         })
         .from(orders)
         .innerJoin(customers, eq(orders.customerId, customers.id))
         .innerJoin(organizations, eq(customers.organizationId, organizations.id))
         .leftJoin(freightShipments, activeJoin(freightShipments, eq(freightShipments.orderId, orders.id)))
+        .leftJoin(simulations, eq(orders.quoteId, simulations.id))
         .where(withTenantIdNotDeleted(orders, tenantId, orderId))
         .limit(1);
 
@@ -25,7 +27,8 @@ export async function getOrderAggregate(tenantId: string, orderId: string) {
         return null;
     }
 
-    const { order, customer, organization, shipment } = orderRecs[0];
+    const { order, customer, organization, shipment, simulation } = orderRecs[0];
+
 
     const items = await db
         .select()
@@ -55,8 +58,10 @@ export async function getOrderAggregate(tenantId: string, orderId: string) {
         customer,
         organization,
         shipment,
+        simulation,
     };
 }
+
 
 export async function getRecentOrdersForCustomer(
     tenantId: string,

@@ -11,8 +11,8 @@ const secondaryCta = { label: 'Como funciona o MVP', href: '/como-funciona' } as
 
 const navLinks = [
     { label: 'Home', href: '/' },
-    { label: 'Fluxo do MVP', href: '/como-funciona' },
-    { label: 'Plataforma', href: '/plataforma' },
+    { label: 'Soluções', href: '/solucoes' },
+    { label: 'Prova Operacional', href: '/proof' },
     { label: 'Segurança', href: '/seguranca' },
     { label: 'Contato', href: '/contato' },
 ] as const;

@@ -20,7 +20,8 @@ export default function SettingsPage() {
       <PageHeader
         title="Configurações"
         subtitle="Tenant, transportadoras, operadores e preferências"
-        badge={<Badge variant="muted">Em breve</Badge>}
+        badge={null}
+
         breadcrumb={[{ href: '/mvp/app', label: 'Cockpit' }, { label: 'Configurações' }]}
       />
 
@@ -43,7 +44,8 @@ export default function SettingsPage() {
                   {section.description}
                 </p>
               </div>
-              <Badge variant="muted">Em breve</Badge>
+              {/* Badge removed */}
+
             </div>
           </Card>
         ))}
