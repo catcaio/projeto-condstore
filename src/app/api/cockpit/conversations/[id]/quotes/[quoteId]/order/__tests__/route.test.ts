@@ -28,7 +28,7 @@ describe('Accept Quote -> Order Route', () => {
         vi.mocked(freightQuoteService.getQuoteById).mockResolvedValue({ id: 'quote1', conversationId: 'conv1', status: 'ACCEPTED' } as any);
     });
 
-    it('resolves operatorId purely using auth.session.sub (no legacy fallback to user.id)', async () => {
+    it('resolves operatorId purely using auth.session.sub (working with Frank loop)', async () => {
         vi.mocked(requireAdmin).mockResolvedValue({
             ok: true,
             requestId: 'req-1',
@@ -61,6 +61,7 @@ describe('Accept Quote -> Order Route', () => {
             requestId: 'req-1',
             session: { tenantId: 't1', sub: 'op-123', role: 'admin' },
         } as any);
+        
         vi.mocked(orderService.createOrderFromQuote).mockRejectedValueOnce(
             new OrderBillingRequiredError('t1', 'past_due'),
         );
