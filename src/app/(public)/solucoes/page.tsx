@@ -4,8 +4,8 @@ import {
 import {
     PageContainer, PageSection, HeroSection, UseCaseGrid,
     SectionIntro, CTASection, TrustBand, OperationProof,
-    Link,
 } from '@/ui/site';
+import Link from 'next/link';
 
 export const metadata = {
     title: 'Soluções — Condstore OS',
