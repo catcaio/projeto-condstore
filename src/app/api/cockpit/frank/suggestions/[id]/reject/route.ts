@@ -4,6 +4,7 @@ import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
 import { z } from 'zod';
+import { applyFrankCockpitRateLimit } from '@/infra/security/frank-rate-limit';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -16,6 +17,9 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
 
     const { id } = await params;
     const tenantId = auth.session.tenantId;
+
+    const rl = await applyFrankCockpitRateLimit({ tenantId, requestId, route: '/api/cockpit/frank/suggestions/[id]/reject' });
+    if (rl.blocked) return rl.response;
 
     try {
         const payload = await request.json().catch(() => ({}));

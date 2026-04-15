@@ -1,0 +1,61 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e8]: C
+        - heading "Condstore Evolution" [level=1] [ref=e9]
+      - paragraph [ref=e10]: Acompanhe a jornada técnica e as melhorias contínuas da nossa plataforma de logística inteligente.
+      - link "Ver Roadmap →" [ref=e12] [cursor=pointer]:
+        - /url: /evolution/roadmap
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e16]: "4"
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - time [ref=e19]: 20 fev 2026
+            - generic [ref=e20]: Concluído
+          - link "Evolution Initialized" [ref=e21] [cursor=pointer]:
+            - /url: /evolution/b4c0ee75-0cff-41d4-b78d-82ddd43d8bd0
+            - heading "Evolution Initialized" [level=2] [ref=e22]
+          - paragraph [ref=e23]: Primeiro relatório automático criado para ativar /evolution.
+          - generic [ref=e25]: core
+      - generic [ref=e26]:
+        - generic [ref=e28]: "3"
+        - generic [ref=e29]:
+          - generic [ref=e30]:
+            - time [ref=e31]: 20 fev 2026
+            - generic [ref=e32]: Concluído
+          - link "Evolution Initialized" [ref=e33] [cursor=pointer]:
+            - /url: /evolution/b6db8d4a-ebe0-478d-be46-7d2db98f8013
+            - heading "Evolution Initialized" [level=2] [ref=e34]
+          - paragraph [ref=e35]: Primeiro relatório automático criado para ativar /evolution.
+          - generic [ref=e37]: core
+      - generic [ref=e38]:
+        - generic [ref=e40]: "2"
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - time [ref=e43]: 20 fev 2026
+            - generic [ref=e44]: Concluído
+          - link "Evolution Initialized" [ref=e45] [cursor=pointer]:
+            - /url: /evolution/7164bc25-0c78-4d50-a62b-f3a056073274
+            - heading "Evolution Initialized" [level=2] [ref=e46]
+          - paragraph [ref=e47]: Primeiro relatório automático criado para ativar /evolution.
+          - generic [ref=e49]: core
+      - generic [ref=e50]:
+        - generic [ref=e52]: "1"
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - time [ref=e55]: 20 fev 2026
+            - generic [ref=e56]: Concluído
+          - link "Evolution Initialized" [ref=e57] [cursor=pointer]:
+            - /url: /evolution/e33086df-d44e-4d3f-8de9-94b8548281e2
+            - heading "Evolution Initialized" [level=2] [ref=e58]
+          - paragraph [ref=e59]: Primeiro relatório automático criado para ativar /evolution.
+          - generic [ref=e61]: core
+  - button "Open Next.js Dev Tools" [ref=e67] [cursor=pointer]:
+    - img [ref=e68]
+  - alert [ref=e71]
+```

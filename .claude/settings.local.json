@@ -3,7 +3,11 @@
     "allow": [
       "Bash(find:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(ls -la /c/repos/projeto-condstore/.claude/worktrees/eager-kare/src/app/*.tsx)",
+      "Bash(npx tsc:*)",
+      "Bash(cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=forks npx vitest run --configLoader runner --config vitest.config.mjs src/mvp/)",
+      "Bash(node_modules/.bin/cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=forks node_modules/.bin/vitest run --configLoader runner --config vitest.config.mjs src/mvp/)"
     ]
   }
 }

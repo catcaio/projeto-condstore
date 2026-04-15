@@ -1,5 +1,10 @@
 import { conversationRepository, type ConversationListFilter } from './conversation.repository';
-import { type ConversationRecord, type ConversationMessageRecord, type ConversationStatusType } from '@/drizzle/schema';
+import {
+    type ConversationRecord,
+    type ConversationMessageRecord,
+    type ConversationStatusType,
+    type MessageDeliveryStatusType,
+} from '@/drizzle/schema';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 
@@ -30,6 +35,10 @@ export const conversationService = {
 
     async getConversationMessages(tenantId: string, conversationId: string): Promise<ConversationMessageRecord[]> {
         return conversationRepository.getConversationMessages(tenantId, conversationId);
+    },
+
+    async getMessageByProviderMessageId(messageSid: string): Promise<ConversationMessageRecord | undefined> {
+        return conversationRepository.getConversationMessageByProviderMessageId(messageSid);
     },
 
     async hasRecentOperatorMessage(tenantId: string, conversationId: string, minutes: number = 15): Promise<boolean> {
@@ -73,7 +82,7 @@ export const conversationService = {
         fields: {
             metadata?: Record<string, any>;
             providerMessageId?: string | null;
-            deliveryStatus?: string | null;
+            deliveryStatus?: MessageDeliveryStatusType | null;
         }
     ): Promise<ConversationMessageRecord | undefined> {
         return conversationRepository.updateConversationMessageFields(tenantId, messageId, fields);

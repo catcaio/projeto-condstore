@@ -1,5 +1,5 @@
 import { getDb, withTenantIdNotDeleted } from '@/infra/db';
-import { simulations, crmQuotes, crmOpportunities } from '@/drizzle/schema';
+import { simulations, crmQuotes, crmOpportunities, conversations } from '@/drizzle/schema';
 import { freightService } from '../freight/freight.service';
 import { domineIntakeService } from '@/domine/domine-intake.service';
 import { eq, and, desc } from 'drizzle-orm';
@@ -99,13 +99,39 @@ export class FreightQuoteService {
             input.customerId || undefined
         );
 
+        let quoteTimeMs: number | null = null;
+        if (typeof (db as { select?: unknown }).select === 'function') {
+            const [conversation] = await db
+                .select({ createdAt: conversations.createdAt })
+                .from(conversations)
+                .where(
+                    and(
+                        eq(conversations.tenantId, input.tenantId),
+                        eq(conversations.id, input.conversationId),
+                    ),
+                )
+                .limit(1);
+
+            quoteTimeMs = conversation?.createdAt
+                ? Math.max(0, Date.now() - new Date(conversation.createdAt).getTime())
+                : null;
+        }
+
         // Emit operational event manually
         await publishOperationalEvent({
             tenantId: input.tenantId,
             eventType: 'quoted',
             eventDomain: 'CONVERSION',
             customerId: input.customerId,
-            payload: { quoteId, conversationId: input.conversationId }
+            payload: { quoteId, conversationId: input.conversationId, quoteTimeMs }
+        });
+
+        await publishOperationalEvent({
+            tenantId: input.tenantId,
+            eventType: 'quote_created',
+            eventDomain: 'CONVERSION',
+            customerId: input.customerId,
+            payload: { quoteId, conversationId: input.conversationId, quoteTimeMs }
         });
 
         // 5. Sync into CRM Opportunities & Quotes

@@ -1,23 +1,5 @@
 import { createHash, createHmac } from 'node:crypto';
-
-const DEV_AUTH_SECRET_FALLBACK = 'dev-only-auth-secret-do-not-use-in-prod';
-let warnedMissingAuthSecret = false;
-
-function getHashingSecret(): string {
-  const configured = process.env.AUTH_SECRET?.trim();
-  if (configured) return configured;
-
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('MISSING_AUTH_SECRET_FOR_PII_HASH');
-  }
-
-  if (!warnedMissingAuthSecret) {
-    warnedMissingAuthSecret = true;
-    console.warn('[pii] AUTH_SECRET missing in dev/test; using insecure fallback for phone hashing');
-  }
-
-  return DEV_AUTH_SECRET_FALLBACK;
-}
+import { getAuthSecretValue } from '../env/critical-runtime';
 
 export function normalizeE164(input: string): string {
   if (typeof input !== 'string') {
@@ -51,7 +33,7 @@ export function deriveTenantPhoneSalt(tenantId: string): string {
     throw new Error('INVALID_TENANT_ID_FOR_PHONE_HASH');
   }
 
-  return createHmac('sha256', getHashingSecret()).update(normalizedTenantId).digest('hex');
+  return createHmac('sha256', getAuthSecretValue()).update(normalizedTenantId).digest('hex');
 }
 
 export function phoneHash(e164: string, tenantSalt: string): string {

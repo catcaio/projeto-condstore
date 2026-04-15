@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Phone, Clock, MoveRight, HelpCircle, TrendingUp, Users, DollarSign, PackageX, CheckCircle } from 'lucide-react';
 import { Badge } from '@/ui/components';
+import { OperationFeedback, type OperationFeedbackState } from '../_components/operation-feedback';
 
 interface ConversationCard {
     id: string;
@@ -37,6 +38,7 @@ export default function PipelineClient() {
     const [metrics, setMetrics] = useState<PipelineMetrics | null>(null);
     const [loading, setLoading] = useState(true);
     const [draggedItem, setDraggedItem] = useState<ConversationCard | null>(null);
+    const [feedback, setFeedback] = useState<OperationFeedbackState | null>(null);
 
     const fetchPipelineData = async () => {
         setLoading(true);
@@ -55,7 +57,11 @@ export default function PipelineClient() {
                 setMetrics(json.data);
             }
         } catch (e) {
-            console.error('Falha ao buscar pipeline data', e);
+            setFeedback({
+                tone: 'error',
+                title: 'Erro de rede ao carregar pipeline',
+                description: 'Tente novamente para sincronizar os dados.',
+            });
         } finally {
             setLoading(false);
         }
@@ -79,12 +85,25 @@ export default function PipelineClient() {
             });
 
             if (!res.ok) {
-                alert('Erro ao mover a conversa no servidor.');
+                setFeedback({
+                    tone: res.status >= 500 ? 'error' : 'warning',
+                    title: res.status >= 500 ? 'Erro de servidor ao mover conversa' : 'Ação inválida para esta conversa',
+                    description: 'A coluna foi restaurada para o estado anterior.',
+                });
                 fetchPipelineData(); // Revert on failure
+                return;
             }
+            setFeedback({
+                tone: 'success',
+                title: 'Etapa atualizada com sucesso',
+            });
             fetchPipelineData(); // Re-fetch to update metrics
         } catch (e) {
-            alert('Falha na requisição.');
+            setFeedback({
+                tone: 'error',
+                title: 'Erro de rede ao mover conversa',
+                description: 'Falha de conexão. Os dados serão recarregados.',
+            });
             fetchPipelineData();
         }
     };
@@ -115,6 +134,7 @@ export default function PipelineClient() {
 
     return (
         <div className="flex h-full flex-col gap-6">
+            <OperationFeedback feedback={feedback} />
             {/* KPI Dashboard */}
             {metrics && (
                 <div className="grid grid-cols-5 gap-4">

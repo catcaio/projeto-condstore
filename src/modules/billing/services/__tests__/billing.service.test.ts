@@ -68,7 +68,7 @@ vi.mock('@/infra/db', () => ({
 vi.mock('@/infra/redis.client', () => ({
     redisClient: {
         isAvailable: vi.fn(() => true),
-        set: vi.fn().mockResolvedValue(undefined),
+        del: vi.fn().mockResolvedValue(undefined),
     },
 }));
 
@@ -186,7 +186,7 @@ describe('upgradeTenantPlan', () => {
         await upgradeTenantPlan('tenant-d', 'plan_pro');
         await new Promise((r) => setTimeout(r, 20));
 
-        expect(redisClient.set).toHaveBeenCalledWith('tenant:tenant-d:state', null, 0);
-        expect(redisClient.set).toHaveBeenCalledWith('cockpit:finops:tenant-d', null, 0);
+        expect(redisClient.del).toHaveBeenCalledWith('tenant:tenant-d:state');
+        expect(redisClient.del).toHaveBeenCalledWith('cockpit:finops:tenant-d');
     });
 });

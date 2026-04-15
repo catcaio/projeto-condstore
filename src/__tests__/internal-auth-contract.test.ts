@@ -95,14 +95,27 @@ describe('internal auth contract', () => {
     process.env.INTERNAL_DIAG_TOKEN = 'diag-secret';
     process.env.INTERNAL_EXPORT_TOKEN = 'export-secret';
     process.env.INTERNAL_JOB_TOKEN = 'job-secret';
+    process.env.PII_ENCRYPTION_KEY = '6f2d2a4d8f9e6ab34b45d8b0d2e53c4a7b198d4f5566778899aabbccddeeff01';
     delete process.env.AUTH_SECRET;
 
     expect(() => assertCriticalEnvSetup()).toThrow(/AUTH_SECRET/);
   });
 
+  it('still requires PII_ENCRYPTION_KEY in strict runtimes', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    process.env.VERCEL_ENV = 'production';
+    process.env.INTERNAL_DIAG_TOKEN = 'diag-secret';
+    process.env.INTERNAL_EXPORT_TOKEN = 'export-secret';
+    process.env.INTERNAL_JOB_TOKEN = 'job-secret';
+    delete process.env.PII_ENCRYPTION_KEY;
+
+    expect(() => assertCriticalEnvSetup()).toThrow(/PII_ENCRYPTION_KEY/);
+  });
+
   it('fails early in strict runtime when critical internal tokens are missing', () => {
     vi.stubEnv('NODE_ENV', 'production');
     process.env.VERCEL_ENV = 'preview';
+    process.env.PII_ENCRYPTION_KEY = '6f2d2a4d8f9e6ab34b45d8b0d2e53c4a7b198d4f5566778899aabbccddeeff01';
 
     expect(() => assertCriticalEnvSetup()).toThrow(
       /INTERNAL_DIAG_TOKEN, INTERNAL_EXPORT_TOKEN, INTERNAL_JOB_TOKEN/,

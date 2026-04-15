@@ -1,6 +1,6 @@
 # Estado Atual do CONDSTORE OS
 
-> **Última Atualização:** 12 de Março de 2026
+> **Última Atualização:** 30 de Março de 2026
 
 Este documento reflete a situação arquitetural e operacional real do sistema **CONDSTORE OS** no momento presente, diferenciando as funcionalidades já em uso daquelas configuradas, mas congeladas.
 
@@ -27,8 +27,10 @@ O sistema hoje atua como um **CRM Operacional e Logístico B2B Assistido**. Toda
 
 ### 4. Transformação (Quote → Order → Shipment)
 - Link direto do CRM com ERP.
-- Qualificando uma Cotação para `WON`, o sistema gera o Pedido (`Order`) no Kanban de Operações (`/cockpit/orders`).
-- Movendo Pedidos para `CONFIRMED`, o Barramento reage e gera o fluxo Logístico Despachado (`Shipment`), habilitando a interface de tracking links para o vendedor reportar ao cliente.
+- No cockpit de atendimento, o operador envia a cotação, registra a aprovação explicitamente e só então cria o Pedido (`Order`).
+- O pedido nasce em `DRAFT` no contexto da conversa e pode ser acompanhado no Kanban de Operações (`/cockpit/orders`).
+- Ao mover o pedido para `CONFIRMED`, o fluxo canônico cria o `Shipment`, habilitando a interface de tracking para acompanhamento logístico.
+- Se o cliente responder após o envio da cotação, a conversa é reaproveitada no mesmo thread operacional, preservando o handoff humano.
 
 ### 5. Fundações (Security & Event Bus)
 - Guardrails e Multi-tenant isolados perfeitamente (RLS application-level via Drizzle e Sessions).

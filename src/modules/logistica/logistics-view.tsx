@@ -10,7 +10,9 @@ import { bulkSyncLogisticsTracking, bulkReportLogisticsException } from './actio
 import { BulkActionPreviewModal, BulkPreviewItem } from '@/ui/foundation/bulk-action-preview-modal';
 import { Truck, MapPin, AlertTriangle, Calculator, FileText, MessageSquare, Zap, RefreshCw } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { safeFetch } from '@/ui/lib/safe-fetch';
+
 
 export function LogisticsView() {
     const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
@@ -22,6 +24,22 @@ export function LogisticsView() {
 
     const [pendingActions, setPendingActions] = useState<any[]>([]);
     const [isLoadingActions, setIsLoadingActions] = useState(false);
+
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        safeFetch('/api/freight/shipments')
+            .then((res: Response) => res.json())
+            .then((json: any) => {
+                if (json.ok) setData(json.data);
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
+
+    // ...
+
 
     // Bulk Action Preview State
     const [previewModalConfig, setPreviewModalConfig] = useState<{
@@ -150,21 +168,22 @@ export function LogisticsView() {
     return (
         <ShellContainer>
             <PageHeader
-                eyebrow="Logistica"
-                title="Central operacional de logistica"
-                description="Fila viva para cotacao, SLA, tracking, excecoes e intervencao humana, conectada a pedido, cliente e conversa."
+
+                eyebrow="Logística"
+                title="Central operacional de logística"
+                description="Fila viva para cotação, SLA, tracking, exceções e intervenção humana."
                 meta={
                     <>
-                        <StatusChip label="fila logistica real" tone="success" />
+                        <StatusChip label="fila logística real" tone="success" />
                         <StatusChip label="sem dados simulados" tone="info" />
                     </>
                 }
                 actions={
                     <>
-                        <Link href="/logistica/simulador">
+                        <Link href="/cockpit/freight-simulator">
                             <Button variant="secondary">Abrir simulador</Button>
                         </Link>
-                        <Link href="/pedidos">
+                        <Link href="/cockpit/orders">
                             <Button>Ir para pedidos</Button>
                         </Link>
                     </>
@@ -173,13 +192,19 @@ export function LogisticsView() {
 
             <div className="min-h-[70vh] flex flex-col mt-4">
                 <UniversalListView
-                    data={[]} // Em breve
+                    data={data}
+                    isLoading={loading}
                     columns={[
-                        { accessorKey: 'id', header: 'Código' },
-                        { accessorKey: 'order', header: 'Pedido' },
+                        { accessorKey: 'id', header: 'ID', cell: (info: any) => info.getValue().split('-')[0] },
+                        { accessorKey: 'trackingCode', header: 'Rastreio' },
                         { accessorKey: 'carrier', header: 'Transportadora' },
                         { accessorKey: 'status', header: 'Status' },
-                        { accessorKey: 'sla', header: 'SLA' },
+                        { 
+                            accessorKey: 'createdAt', 
+                            header: 'Data',
+                            cell: (info: any) => new Date(info.getValue()).toLocaleDateString('pt-BR')
+                        },
+
                         { 
                             id: 'actions', 
                             header: '', 

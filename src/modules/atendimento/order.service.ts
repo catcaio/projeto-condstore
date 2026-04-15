@@ -7,6 +7,7 @@ import { messageService } from './message.service';
 import { assertTenantCanOperateOrders } from '@/modules/billing/guards/assertTenantCanOperateOrders';
 import { shipmentService } from '@/modules/logistics/server';
 import { redisClient } from '@/infra/redis.client';
+import { LOCK_TTL } from '@/infra/redis-ttl';
 import { logger } from '@/infra/logger';
 
 export interface OrderListFilter {
@@ -43,14 +44,35 @@ export const orderService = {
 
         if (quote.expiresAt && new Date(quote.expiresAt) < new Date()) {
             // Mark it as expired dynamically if past date
-            await db.update(simulations).set({ status: 'EXPIRED' }).where(eq(simulations.id, quoteId));
+            await db
+                .update(simulations)
+                .set({ status: 'EXPIRED' })
+                .where(and(eq(simulations.tenantId, tenantId), eq(simulations.id, quoteId)));
             throw new Error('Cannot convert an expired quote');
+        }
+
+        if (quote.status === 'CONVERTED') {
+            const [convertedOrder] = await db.select()
+                .from(orders)
+                .where(withTenantNotDeleted(orders, tenantId, eq(orders.quoteId, quoteId)))
+                .limit(1);
+
+            if (convertedOrder) {
+                logger.info(`[OrderService] Ordem existente encontrada para cotacao ja convertida ${quoteId}`);
+                return convertedOrder;
+            }
+
+            throw new Error('Quote already converted');
+        }
+
+        if (quote.status !== 'ACCEPTED') {
+            throw new Error('A cotacao precisa estar aprovada antes de criar o pedido.');
         }
 
         // 2. Adquirir Lock Distribuído
         const lockKey = `lock:quote-to-order:${tenantId}:${quoteId}`;
         const lockToken = randomUUID(); // Token único para ownership do lock
-        const acquired = await redisClient.setNx(lockKey, lockToken, 30); // 30s TTL
+        const acquired = await redisClient.setNx(lockKey, lockToken, LOCK_TTL); // 120s TTL
 
         if (!acquired) {
             logger.warn(`[OrderService] Falha ao adquirir lock para quote ${quoteId}. Possível double click ou concorrência.`, { lockKey });
