@@ -6,6 +6,7 @@ export { FeatureGrid, type FeatureItem } from './feature-grid';
 export { FlowSection, type FlowStep } from './flow-section';
 export { CTASection } from './cta-section';
 export { ModuleGrid, type ModuleItem } from './module-grid';
+export { UseCaseGrid, type UseCaseItem } from './use-case-grid';
 export { ComparisonBand } from './comparison-band';
 export { PublicHeader } from './public-header';
 export { PublicFooter } from './public-footer';
