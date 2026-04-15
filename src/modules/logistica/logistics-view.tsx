@@ -10,7 +10,9 @@ import { bulkSyncLogisticsTracking, bulkReportLogisticsException } from './actio
 import { BulkActionPreviewModal, BulkPreviewItem } from '@/ui/foundation/bulk-action-preview-modal';
 import { Truck, MapPin, AlertTriangle, Calculator, FileText, MessageSquare, Zap, RefreshCw } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { safeFetch } from '@/ui/lib/safe-fetch';
+
 
 export function LogisticsView() {
     const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
@@ -28,12 +30,13 @@ export function LogisticsView() {
 
     useEffect(() => {
         safeFetch('/api/freight/shipments')
-            .then(res => res.json())
-            .then(json => {
+            .then((res: Response) => res.json())
+            .then((json: any) => {
                 if (json.ok) setData(json.data);
             })
             .finally(() => setLoading(false));
     }, []);
+
 
     // ...
 
