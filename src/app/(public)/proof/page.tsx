@@ -34,7 +34,7 @@ export default function ProofPage() {
                 }
                 subtitle="O Condstore OS opera hoje em ambientes reais — gerenciando pedidos, atendimento e frete de operações B2B no Brasil."
                 ctas={[
-                    { label: 'Falar com o time', href: '/about' },
+                    { label: 'Falar com o time', href: '/contato' },
                     { label: 'Entrar na plataforma', href: '/login', variant: 'secondary' },
                 ]}
             />
@@ -413,7 +413,7 @@ export default function ProofPage() {
                                 { label: 'Ver a plataforma', sub: 'Cockpit OS e módulos', href: '/plataforma', icon: LayoutDashboard },
                                 { label: 'Como funciona', sub: 'Fluxo operacional', href: '/como-funciona', icon: Zap },
                                 { label: 'Soluções', sub: 'Módulos disponíveis', href: '/solucoes', icon: Package },
-                                { label: 'Falar com o time', sub: 'Demonstração guiada', href: '/about', icon: Users },
+                                { label: 'Falar com o time', sub: 'Demonstração guiada', href: '/contato', icon: Users },
                             ].map((item) => {
                                 const Icon = item.icon;
                                 return (
@@ -445,7 +445,7 @@ export default function ProofPage() {
                 title="Quer ver o sistema operando na sua realidade?"
                 subtitle="Operações reais têm contextos únicos. Vamos entender o seu antes de recomendar qualquer coisa."
                 ctas={[
-                    { label: 'Falar com o time', href: '/about' },
+                    { label: 'Falar com o time', href: '/contato' },
                     { label: 'Entrar na plataforma', href: '/login', variant: 'secondary' },
                 ]}
             />

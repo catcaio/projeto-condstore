@@ -19,7 +19,8 @@ export default function OrdersPage() {
       <PageHeader
         title="Pedidos"
         subtitle="Ciclo completo — aprovados, em transporte e entregues"
-        badge={<Badge variant="muted">Em breve</Badge>}
+        badge={null}
+
         breadcrumb={[{ href: '/mvp/app', label: 'Cockpit' }, { label: 'Pedidos' }]}
       />
       <EmptyState

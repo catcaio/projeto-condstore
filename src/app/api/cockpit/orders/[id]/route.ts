@@ -3,7 +3,7 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
-import { orderService } from '@/modules/atendimento/order.service';
+import { getOrderAggregate } from '@/modules/pedidos/order.repository';
 
 export async function GET(
     request: NextRequest,
@@ -18,15 +18,16 @@ export async function GET(
     try {
         const { id } = await context.params;
         
-        const order = await orderService.getOrderById(tenantId, id);
+        const orderData = await getOrderAggregate(tenantId, id);
 
-        if (!order) {
+        if (!orderData) {
             return errorResponse('NOT_FOUND' as any, 404, requestId, 'Order not found');
         }
 
-        return NextResponse.json({ ok: true, data: order });
+        return NextResponse.json({ ok: true, data: orderData });
     } catch (err: any) {
         logger.error('Failed to get order details', err as Error, { requestId });
         return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);
     }
 }
+
