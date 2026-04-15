@@ -189,6 +189,6 @@ export default function SolucoesPage() {
             />
         </>
     );
-    );
 }
+
 
