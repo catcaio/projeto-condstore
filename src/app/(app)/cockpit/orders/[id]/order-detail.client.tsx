@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Truck, Package, Clock, MapPin, User, Calendar } from 'lucide-react';
+import { Truck, User, Calendar } from 'lucide-react';
 import { DynamicFieldsRenderer } from '@/ui/cockpit/custom-fields/dynamic-fields-renderer';
 import { TimelineFeed } from '@/ui/timeline/timeline-feed';
+import { OperationFeedback, type OperationFeedbackState } from '../../_components/operation-feedback';
 
 interface OrderDetail {
     id: string;
@@ -37,6 +38,7 @@ export default function OrderDetailClient({ orderId }: { orderId: string }) {
     const [savingTracking, setSavingTracking] = useState(false);
     const [trackingInput, setTrackingInput] = useState('');
     const [trackingUrlInput, setTrackingUrlInput] = useState('');
+    const [feedback, setFeedback] = useState<OperationFeedbackState | null>(null);
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -86,13 +88,23 @@ export default function OrderDetailClient({ orderId }: { orderId: string }) {
                 })
             });
             if (res.ok) {
-                alert('Rastreio salvo com sucesso!');
+                setFeedback({
+                    tone: 'success',
+                    title: 'Rastreio salvo com sucesso',
+                });
                 setShipment({ ...shipment, trackingCode: trackingInput, trackingUrl: trackingUrlInput });
             } else {
-                alert('Erro ao salvar rastreio.');
+                setFeedback({
+                    tone: res.status >= 500 ? 'error' : 'warning',
+                    title: res.status >= 500 ? 'Erro de servidor ao salvar rastreio' : 'Ação inválida para salvar rastreio',
+                });
             }
         } catch (e) {
-            alert('Falha na requisição.');
+            setFeedback({
+                tone: 'error',
+                title: 'Erro de rede ao salvar rastreio',
+                description: 'Confira sua conexão e tente novamente.',
+            });
         } finally {
             setSavingTracking(false);
         }
@@ -100,6 +112,7 @@ export default function OrderDetailClient({ orderId }: { orderId: string }) {
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
+            <OperationFeedback feedback={feedback} />
             {/* Status & Basic Info */}
             <div className="bg-white p-6 rounded-xl border border-[hsl(var(--ui-border))] shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
