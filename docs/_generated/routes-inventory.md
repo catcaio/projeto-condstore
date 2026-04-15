@@ -90,6 +90,14 @@
 | `/api/cockpit/saved-views` | API |
 | `/api/cockpit/status` | API |
 | `/api/cockpit/timeline` | API |
+| `/api/cockpit/tudico/audit-response` | API |
+| `/api/cockpit/tudico/claim-conflicts` | API |
+| `/api/cockpit/tudico/hypotheses` | API |
+| `/api/cockpit/tudico/hypotheses/compare` | API |
+| `/api/cockpit/tudico/inconsistencies` | API |
+| `/api/cockpit/tudico/papers` | API |
+| `/api/cockpit/tudico/papers/[id]` | API |
+| `/api/cockpit/tudico/tools` | API |
 | `/api/cron/cleanup` | API |
 | `/api/db/migrate` | API |
 | `/api/debug/tenants` | API |
@@ -183,6 +191,7 @@
 | `/api/notifications` | API |
 | `/api/orders/create-from-quote` | API |
 | `/api/painel-logistico` | API |
+| `/api/public/contato` | API |
 | `/api/public/cotacao/intent` | API |
 | `/api/public/cotacao/quotes` | API |
 | `/api/public/delivery/[token]/location` | API |
@@ -225,6 +234,7 @@
 | `/api/whatsapp/incoming` | API |
 | `/api/whatsapp/status` | API |
 | `/app` | Page |
+| `/area-estudo/estrutura-quantica-relacional` | Page |
 | `/attribution` | Page |
 | `/avaliacao` | Page |
 | `/billing` | Page |
@@ -284,9 +294,11 @@
 | `/cockpit/supreme` | Page |
 | `/cockpit/supreme/benchmarks` | Page |
 | `/cockpit/timeline` | Page |
+| `/cockpit/tudico` | Page |
 | `/como-funciona` | Page |
 | `/concept-layer-preview` | Page |
 | `/configuracoes` | Page |
+| `/contato` | Page |
 | `/conversas` | Page |
 | `/cotacao` | Page |
 | `/cotacao/result` | Page |
@@ -315,6 +327,13 @@
 | `/logistica/tabelas-frete` | Page |
 | `/logistica/tabelas-frete/[carrier]` | Page |
 | `/metricas` | Page |
+| `/mvp` | Page |
+| `/mvp/app` | Page |
+| `/mvp/app/freight` | Page |
+| `/mvp/app/inbox` | Page |
+| `/mvp/app/orders` | Page |
+| `/mvp/app/settings` | Page |
+| `/mvp/como-funciona` | Page |
 | `/operacao` | Page |
 | `/operacao/fila` | Page |
 | `/operacao/inbox` | Page |
@@ -330,6 +349,7 @@
 | `/produtos/crm` | Page |
 | `/produtos/domine` | Page |
 | `/produtos/envios` | Page |
+| `/proof` | Page |
 | `/seguranca` | Page |
 | `/settings` | Page |
 | `/showcase` | Page |

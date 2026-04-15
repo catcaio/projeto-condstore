@@ -24,7 +24,7 @@ const plans = [
             'App do ecossistema',
             'Suporte prioritário',
         ],
-        cta: { label: 'Falar sobre Operação', href: '/about' },
+        cta: { label: 'Falar sobre Operação', href: '/contato' },
         featured: false,
     },
     {
@@ -43,7 +43,7 @@ const plans = [
             'Multi-tenant',
             'App com perfis expandidos',
         ],
-        cta: { label: 'Solicitar proposta', href: '/about' },
+        cta: { label: 'Solicitar proposta', href: '/contato' },
         featured: true,
     },
     {
@@ -63,7 +63,7 @@ const plans = [
             'Roadmap compartilhado',
             'App com branding próprio',
         ],
-        cta: { label: 'Falar com o time', href: '/about' },
+        cta: { label: 'Falar com o time', href: '/contato' },
         featured: false,
     },
 ];
@@ -86,8 +86,8 @@ export default function ValoresPage() {
                 }
                 subtitle="Valores personalizados com base no tamanho da sua operação, nível de automação e integrações necessárias."
                 ctas={[
-                    { label: 'Falar sobre implantação', href: '/about' },
-                    { label: 'Solicitar demonstração', href: '/about', variant: 'secondary' },
+                    { label: 'Falar sobre implantação', href: '/contato' },
+                    { label: 'Solicitar demonstração', href: '/contato', variant: 'secondary' },
                 ]}
             />
 
@@ -227,7 +227,7 @@ export default function ValoresPage() {
                 title="Quer entender qual plano faz sentido para a sua operação?"
                 subtitle="Vamos conversar sobre o seu contexto."
                 ctas={[
-                    { label: 'Solicitar demonstração', href: '/about' },
+                    { label: 'Solicitar demonstração', href: '/contato' },
                     { label: 'Explorar soluções', href: '/solucoes', variant: 'secondary' },
                 ]}
             />

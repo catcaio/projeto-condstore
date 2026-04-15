@@ -13,6 +13,7 @@ import {
     type ConversationRecord,
     type ConversationMessageRecord,
     type ConversationStatusType,
+    type MessageDeliveryStatusType,
 } from '@/drizzle/schema';
 
 export interface ConversationListFilter {
@@ -53,7 +54,7 @@ export const conversationRepository = {
                 and(
                     eq(conversations.tenantId, tenantId),
                     eq(conversations.phoneHash, phoneHash),
-                    inArray(conversations.status, ['new', 'triaged', 'awaiting_human', 'operator_active', 'draft_ready', 'approved'])
+                    inArray(conversations.status, ['new', 'triaged', 'awaiting_human', 'operator_active', 'draft_ready', 'approved', 'sent', 'delivered'])
                 )
             )
             .orderBy(desc(conversations.lastMessageAt))
@@ -322,13 +323,26 @@ export const conversationRepository = {
             .orderBy(asc(conversationMessages.createdAt), asc(conversationMessages.id));
     },
 
+    async getConversationMessageByProviderMessageId(messageSid: string): Promise<ConversationMessageRecord | undefined> {
+        const normalizedMessageSid = messageSid.trim();
+        if (!normalizedMessageSid) return undefined;
+
+        const db = await getDb();
+        const [message] = await db.select()
+            .from(conversationMessages)
+            .where(eq(conversationMessages.providerMessageId, normalizedMessageSid))
+            .limit(1);
+
+        return message;
+    },
+
     async updateConversationMessageFields(
         tenantId: string,
         messageId: string,
         fields: {
             metadata?: Record<string, any>;
             providerMessageId?: string | null;
-            deliveryStatus?: string | null;
+            deliveryStatus?: MessageDeliveryStatusType | null;
         }
     ): Promise<ConversationMessageRecord | undefined> {
         const db = await getDb();

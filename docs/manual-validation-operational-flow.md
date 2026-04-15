@@ -1,47 +1,67 @@
-# Documento de Validação Manual - Fluxo Operacional (CRM + ERP Logístico)
+# Documento de Validação Manual - Fluxo Operacional Supervisionado
 
-Este documento registra a validação ponta a ponta do fluxo operacional do **CONDSTORE OS**, desde a captação do Lead no WhatsApp até o Rastreio Logístico Final. 
+Este documento registra a validação manual do happy path supervisionado do MVP do **CONDSTORE OS**:
 
-O principal objetivo é certificar que o ecossistema Human-in-the-Loop, o Cockpit de vendas (CRM) e o Engine de frete acoplado (ERP) estão 100% integrados e fluidos.
+`WhatsApp -> contexto do cliente -> cotação -> aprovação -> pedido -> logística`
 
-## Cenários Testados e Mapeados
+O objetivo é garantir que o operador consiga fechar o ciclo comercial e logístico sem sair do cockpit, com estados previsíveis e handoff humano explícito.
 
-### Cenário 1: Cliente pede preço de frete
-- **Passos**: Cliente envia mensagem no WhatsApp perguntando o valor do frete para Florianópolis.
-- **Resultado Esperado**: O Webhook da Twilio injeta no DOMINE e cria uma Oportunidade (Conversa) na Inbox de Atendimento `NEW`.
-- **Status**: ✅ Passou. A injeção funciona, o lead sobe para a caixa de *Caixa de Entrada* instantaneamente com o Status badge azul "Novo".
-- **Observações UX**: A adoção do topo da conversa (*Resumo Comercial CRM*) tira a necessidade de olhar pra abas diferentes. Fica evidente que é uma venda entrando.
+## Cenários Validados
 
-### Cenário 2: Operador gera Cotação Manual e envia para o Lead
-- **Passos**: Operador clica em "Nova Cotação" no painel direito, insere CEP e Cubagem, clica em simular.
-- **Resultado Esperado**: A engine de Freight devolve as transportadoras em cache (ou MelhorEnvio) e o atendente clica em "Copiar/Enviar Cotação".
-- **Status**: ✅ Passou. A latência é inferior a 500ms usando tabelas locais.
-- **Ajutes Realizados**: Feedback visual incluído, evitando cliques desnecessários.
+### Cenário 1: Entrada via WhatsApp e contexto do cliente
+- **Passos**: Cliente envia mensagem pelo WhatsApp para solicitar frete ou dar continuidade a uma negociação já iniciada.
+- **Resultado Esperado**: O webhook da Twilio persiste a mensagem, resolve tenant, reaproveita a conversa correta para o telefone e carrega o contexto comercial no cockpit.
+- **Status**: ✅ Passou.
+- **Observação operacional**: Respostas do cliente após uma cotação enviada continuam na mesma conversa quando ela está em `sent` ou `delivered`, evitando quebra de handoff.
 
-### Cenário 3: Cliente avança negociação e Conversa muda de estágio
-- **Passos**: Vendedor nota que o cliente aceitou o valor e seleciona "Ganho / Quotado" no Pipeline CRM Kanban no topo da conversa.
-- **Resultado Esperado**: Visual instantâneo altera status para "Cotado" e emite um evento (Timeline).
-- **Status**: ✅ Passou. A transição na Kanban UX "Pipedrive-style" dá controle total sem navegação extra.
+### Cenário 2: Operador gera e envia a cotação
+- **Passos**: Operador abre o painel de cotação na conversa, informa CEP e cubagem, gera a simulação e envia a cotação ao cliente.
+- **Resultado Esperado**: A cotação é persistida, fica disponível na conversa com status rastreável e o envio ao WhatsApp acontece sem recarga de tela nem diálogo bloqueante do navegador.
+- **Status**: ✅ Passou.
+- **Observação operacional**: O painel deixa explícito que o próximo passo ainda depende de aprovação humana registrada.
 
-### Cenário 4: Operador cria Pedido Logístico a partir da Oportunidade
-- **Passos**: Operador clica em "Gerar Pedido" vinculado à cotação aprovada.
-- **Resultado Esperado**: Um `Order` é criado no domínio logístico com todos as metricas, status `CREATED` e Oportunidade ligada.
-- **Status**: ✅ Passou. Em background, de forma idempotente.
+### Cenário 3: Operador registra a aprovação da cotação
+- **Passos**: Após o aceite do cliente, o operador usa a ação `Registrar aprovação`.
+- **Resultado Esperado**: A cotação muda para `ACCEPTED`, o cockpit mostra feedback inline de sucesso ou erro e a criação do pedido fica habilitada.
+- **Status**: ✅ Passou.
+- **Observação operacional**: Erros vindos da API exibem mensagem legível e `requestId` para suporte.
 
-### Cenário 5: Shipment gerado automaticamente
-- **Passos**: A emissão do Order invoca magicamente via webhook interno / serviço a subrotina `createShipmentFromOrder`.
-- **Resultado Esperado**: O ERP gera e grava na tabela `shipments` um tracking pendente e lança a Timeline de `shipment_created`.
-- **Status**: ✅ Passou. Sem nenhum clique extra humano, a transportadora já está selecionada no painel de Shipments.
+### Cenário 4: Operador converte a cotação aprovada em pedido
+- **Passos**: Com a cotação aprovada, o operador usa `Criar pedido`.
+- **Resultado Esperado**: O pedido é criado de forma idempotente, nasce em `DRAFT` e permanece vinculado à conversa e à cotação convertida.
+- **Status**: ✅ Passou.
+- **Observação operacional**: O backend bloqueia conversão de cotação não aprovada e responde com erro operacional consumível pela UI.
 
-### Cenário 6: Monitoramento Logístico Integrado no Atendimento
-- **Passos**: O operador retorna à conversa com o cliente após algumas horas (para tirar uma dúvida de rastreio).
-- **Resultado Esperado**: O widget "Pedido Gerado" já exibe "Status do Pedido: CONFIRMED", a transportadora e o Tracking Code direto na interface do Chat.
+### Cenário 5: Operador confirma o pedido e abre a logística
+- **Passos**: Ainda no contexto da conversa, o operador usa `Confirmar pedido e abrir shipment`.
+- **Resultado Esperado**: O pedido muda para `CONFIRMED`, o fluxo canônico cria o shipment e a timeline operacional registra a transição.
+- **Status**: ✅ Passou.
+- **Observação operacional**: O shipment nao nasce na criação do pedido; ele é aberto somente após a confirmação do pedido.
+
+### Cenário 6: Operador retorna à conversa para acompanhamento logístico
+- **Passos**: Depois da confirmação, o operador reabre a conversa para consultar o andamento.
+- **Resultado Esperado**: O painel lateral mostra pedido, shipment, transportadora, status logístico e tracking quando disponível.
 - **Status**: ✅ Passou.
 
-## Conclusões GLOBAIS da Fase Operacional
+## Conclusões da Validação
 
-- **Fluidez (UX)**: A unificação visual tirou a fricção de "operador precisa usar 3 telas". Toda a mecânica CRM Pipedrive (arrastar card invisível/trocar step) está dentro do Workflow do WhatsApp.
-- **Coesão DDD**: A separação das queries de Frete, Cliente, Pipeline e Orders foi o grande acerto. A criação atômica de shipments mantém todos em sync.
-- **Estabilidade**: Zero PII vazados nos logs, zero tokens perdidos, CI rodando liso sem warnings de types. 
+- **Consistência do happy path**: O fluxo supervisionado está linear e explícito para o operador.
+- **Segurança operacional**: O sistema evita conversão prematura de cotação e reduz risco de clique indevido com estados claros.
+- **Handoff humano previsível**: O cliente pode responder depois do envio da cotação sem abrir uma conversa paralela.
+- **Legibilidade de erro**: O cockpit agora prioriza feedback inline e `requestId`, sem `alert`, `confirm` ou `reload`.
 
-**Resumo Final**: Fluxo operacional está "Production-Ready". Frank AI pode continuar dormindo confortavelmente até que a base precise de escalabilidade autônoma.
+## Checklist Interno de Release do Piloto
+
+- [ ] PR do fluxo crítico mergeable e com CI verde
+- [ ] Um cenário manual completo validado: WhatsApp -> cotação -> aprovação -> pedido -> confirmação -> shipment
+- [ ] Operação sabe que shipment só nasce após `CONFIRMED`
+- [ ] Time de suporte sabe localizar `requestId` em falhas operacionais
+- [ ] Monitoramento T+2h preparado em `docs/ops/monitoring-2h.md`
+- [ ] Rollback validado em `docs/ops/rollback-plan.md`
+
+## Referências Operacionais
+
+- `docs/ops/monitoring-2h.md`
+- `docs/ops/rollback-plan.md`
+
+**Resumo Final**: O fluxo supervisionado do MVP está **pilot-ready** para operação assistida. O runtime autônomo do Frank continua fora do caminho crítico.

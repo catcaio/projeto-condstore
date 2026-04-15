@@ -6,6 +6,7 @@ import { logger } from '@/infra/logger';
 import { sanitizeFrankPayload } from '@/core/ai/frank-event-sanitize';
 import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { makeRequestId } from '@/infra/http/request-trace';
+import { applyFrankInternalRateLimit } from '@/infra/security/frank-rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -263,6 +264,9 @@ export async function GET(request: NextRequest) {
   if (!tenantId) {
     return NextResponse.json({ ok: false, error: 'tenantId is required', requestId }, { status: 400 });
   }
+
+  const rl = await applyFrankInternalRateLimit({ tenantId, requestId, route: '/api/internal/exports/frank-events' });
+  if (rl.blocked) return rl.response;
 
   const fromParsed = parseDateParam(request.nextUrl.searchParams.get('from'), 'from');
   if (fromParsed instanceof NextResponse) return fromParsed;

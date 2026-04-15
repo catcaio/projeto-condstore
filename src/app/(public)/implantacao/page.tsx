@@ -31,7 +31,7 @@ export default function ImplantacaoPage() {
                 }
                 subtitle="Cada operação possui contexto, fluxo e necessidades diferentes. O Condstore OS é implantado de forma estruturada para funcionar desde o primeiro dia."
                 ctas={[
-                    { label: 'Falar sobre implantação', href: '/about' },
+                    { label: 'Falar sobre implantação', href: '/contato' },
                     { label: 'Explorar soluções', href: '/solucoes', variant: 'secondary' },
                 ]}
             />
@@ -221,7 +221,7 @@ export default function ImplantacaoPage() {
                 title="Entenda como implantar o Condstore OS na sua operação."
                 subtitle="Cada operação é diferente. Vamos entender a sua."
                 ctas={[
-                    { label: 'Solicitar demonstração', href: '/about' },
+                    { label: 'Solicitar demonstração', href: '/contato' },
                     { label: 'Explorar soluções', href: '/solucoes', variant: 'secondary' },
                 ]}
             />

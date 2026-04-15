@@ -6,6 +6,11 @@ import { frankContextBuilder } from './frank.context-builder';
 import { randomUUID } from 'crypto';
 import { crmService } from '@/modules/crm/server';
 import { frankSuggestions } from './frank.suggestions';
+import {
+    FrankDailyLimitExceededError,
+    FrankMissingOpenAiApiKeyError,
+    FrankTokenUsageLockTimeoutError,
+} from './frank.errors';
 import { FrankOperationalDraft } from './frank.schema';
 
 export const frankService = {
@@ -28,7 +33,7 @@ export const frankService = {
             const contextPayload = await frankContextBuilder.buildContext(tenantId, conversationId);
 
             // 2. Pass context to LLM Prompter for JSON Parsing
-            const suggestions = await frankSuggestions.generateSuggestions(contextPayload);
+            const suggestions = await frankSuggestions.generateSuggestions(tenantId, contextPayload);
 
             const duration = Date.now() - start;
             logger.info('Frank Passive Copilot success', {
@@ -42,6 +47,14 @@ export const frankService = {
             return suggestions;
 
         } catch (error: any) {
+            if (
+                error instanceof FrankDailyLimitExceededError
+                || error instanceof FrankMissingOpenAiApiKeyError
+                || error instanceof FrankTokenUsageLockTimeoutError
+            ) {
+                throw error;
+            }
+
             logger.error('Failed to generate Frank Copilot context/suggestions', error, {
                 tenantId,
                 conversationId,

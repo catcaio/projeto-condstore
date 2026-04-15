@@ -21,13 +21,15 @@
     ↓
 [F] Simulations retornadas (2-3 opções)
     ↓
-[G] Operador seleciona e converte em pedido
+[F.1] Operador aprova cotação (status → ACCEPTED)
     ↓
-[H] Order criado (CREATED → PROCESSING → DELIVERED)
+[G] Operador converte cotação aprovada em pedido (DRAFT)
     ↓
-[I] Shipment linkado ao pedido
+[H] Operador confirma pedido (DRAFT → CONFIRMED) — aciona shipment
     ↓
-[J] Logística acompanha até entrega
+[I] Shipment criado automaticamente ao confirmar pedido
+    ↓
+[J] Logística acompanha até entrega (PROCESSING → SHIPPED → DELIVERED)
     ↓
 [K] Cockpit mostra status em tempo real
 ```
@@ -78,22 +80,25 @@
 
 ### [G] Conversão em pedido
 
-- **Ação:** clique em "Criar pedido" na simulação selecionada
+- **Ação:** clique em "Criar pedido" após aprovação da cotação (status ACCEPTED)
 - **Módulo:** `src/modules/orders/`
-- **Resultado:** order criado com status CREATED
+- **Resultado:** order criado com status DRAFT
 
 ### [H] Lifecycle do pedido
 
 | Status | Responsável | Trigger |
 |---|---|---|
-| **CREATED** | sistema | ao converter cotação |
-| **PROCESSING** | logística | prep de shipment |
+| **DRAFT** | sistema | ao converter cotação aprovada |
+| **CONFIRMED** | operador | confirmação manual — aciona criação automática do shipment |
+| **PROCESSING** | logística | pós-confirmação, prep de envio |
+| **SHIPPED** | carrier | entregue à transportadora |
 | **DELIVERED** | carrier | tracking finalizado |
+| **CANCELED** | operador | cancelamento manual (estado terminal) |
 
 ### [I] Shipment linkado
 
 - **Módulo:** `src/modules/shipments/`
-- **Responsabilidade:** linkage order → carrier shipment
+- **Responsabilidade:** criado automaticamente quando pedido é confirmado (DRAFT → CONFIRMED)
 - **Resultado:** freight_shipment criado, tracking disponível
 
 ### [J] Logística acompanha
@@ -117,7 +122,7 @@
 | **atendimento** | Orquestração WhatsApp inbound, conversation lifecycle |
 | **customers** | Resolução de identidade, histórico de cliente |
 | **conversas** | UI do inbox WhatsApp |
-| **orders** | Lifecycle de pedido CREATED→DELIVERED |
+| **orders** | Lifecycle de pedido DRAFT→CONFIRMED→SHIPPED→DELIVERED |
 | **freight** | Quote engine, carrier routing, packing |
 | **shipping** | Carrier adapters, ConcurrentQuoteEngine runtime |
 | **shipments** | Persistência de shipments, linkage order→shipment |

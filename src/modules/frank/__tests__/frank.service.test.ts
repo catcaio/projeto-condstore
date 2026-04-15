@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { frankService } from '../frank.service';
 import { frankContextBuilder } from '../frank.context-builder';
+import { FrankDailyLimitExceededError } from '../frank.errors';
 import { frankSuggestions } from '../frank.suggestions';
 import { logger } from '@/infra/logger';
 
@@ -53,7 +54,7 @@ describe('Frank Service Copilot Orchestrator', () => {
         const result = await frankService.generateCopilotSuggestions('tenant1', 'conv-123', 'op-456');
 
         expect(frankContextBuilder.buildContext).toHaveBeenCalledWith('tenant1', 'conv-123');
-        expect(frankSuggestions.generateSuggestions).toHaveBeenCalledWith(mockContext);
+        expect(frankSuggestions.generateSuggestions).toHaveBeenCalledWith('tenant1', mockContext);
         expect(result).toEqual(mockSuggestion);
         expect(logger.info).toHaveBeenCalledWith(
             'Frank Passive Copilot success',
@@ -72,5 +73,21 @@ describe('Frank Service Copilot Orchestrator', () => {
         }));
 
         expect(logger.error).toHaveBeenCalled();
+    });
+
+    it('should rethrow explicit Frank limit errors without masking them', async () => {
+        const limitError = new FrankDailyLimitExceededError('tenant1', 1500, 1000);
+
+        vi.mocked(frankContextBuilder.buildContext).mockResolvedValue({
+            conversation: { id: 'conv-123', stage: 'NEW_LEAD', messages: [] },
+            customer: null,
+            pipeline: { recentQuotes: [], recentOrders: [] },
+            operacional: { ownerId: null, openTasks: [], recentNotes: 0 },
+        });
+        vi.mocked(frankSuggestions.generateSuggestions).mockRejectedValue(limitError);
+
+        await expect(
+            frankService.generateCopilotSuggestions('tenant1', 'conv-123', 'op-456'),
+        ).rejects.toBe(limitError);
     });
 });

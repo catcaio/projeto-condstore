@@ -73,7 +73,7 @@ export default function SolucoesPage() {
                                 icon: LayoutDashboard,
                                 title: 'Centralização da Operação (Cockpit)',
                                 description: 'Tudo que o operador precisa em um único lugar.',
-                                problem: 'Dados espalhados em sistemas diferentes, decisões tomadas sem contexto completo.',
+                                problem: 'Dados espalhados em sistemas differentes, decisões tomadas sem contexto completo.',
                                 how: 'Dashboard unificado com métricas, alertas, filas de ação e diagnóstico em tempo real.',
                                 accentClass: 'text-[hsl(var(--ui-accent-blue))]',
                             },

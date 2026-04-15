@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import useSWR from 'swr';
 import { safeFetch } from '@/ui/lib/safe-fetch';
 import { CockpitOverviewBlock } from './CockpitOverviewBlock';
 import { CockpitFunnelBlock } from './CockpitFunnelBlock';
@@ -13,61 +14,28 @@ interface CockpitDashboardProps {
     tenantId?: string;
 }
 
+const fetcher = (url: string) => safeFetch(url).then(res => res.ok ? res.json() : Promise.reject(new Error('Fetch failed')));
+
 export function CockpitOperationalDashboard({ tenantId }: CockpitDashboardProps) {
     const [groupBy, setGroupBy] = useState<GroupByFilter>('utm_campaign');
     
-    const [metrics, setMetrics] = useState<any>(null);
-    const [funnel, setFunnel] = useState<any>(null);
-    const [freight, setFreight] = useState<any>(null);
-    
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const params = new URLSearchParams();
+    if (groupBy !== 'none') params.set('groupBy', groupBy);
+    if (tenantId) params.set('tenantId', tenantId);
+    const qs = params.toString() ? `?${params.toString()}` : '';
 
-    const fetchAll = useCallback(async (silent = false) => {
-        if (!silent) setLoading(true);
-        setError('');
-        const errors: string[] = [];
-        try {
-            const params = new URLSearchParams();
-            if (groupBy !== 'none') params.set('groupBy', groupBy);
-            if (tenantId) params.set('tenantId', tenantId);
-            const qs = params.toString() ? `?${params.toString()}` : '';
+    const { data: metrics, error: metricsError, isLoading: metricsLoading, mutate: mutateMetrics } = useSWR(`/api/cockpit/metrics${qs}`, fetcher, { refreshInterval: 60000 });
+    const { data: funnel, error: funnelError, isLoading: funnelLoading, mutate: mutateFunnel } = useSWR(`/api/cockpit/metrics/funnel${qs}`, fetcher, { refreshInterval: 60000 });
+    const { data: freight, error: freightError, isLoading: freightLoading, mutate: mutateFreight } = useSWR(`/api/cockpit/metrics/freight${qs}`, fetcher, { refreshInterval: 60000 });
 
-            const [mRes, fRes, frRes] = await Promise.allSettled([
-                safeFetch(`/api/cockpit/metrics${qs}`),
-                safeFetch(`/api/cockpit/metrics/funnel${qs}`),
-                safeFetch(`/api/cockpit/metrics/freight${qs}`)
-            ]);
+    const loading = metricsLoading || funnelLoading || freightLoading;
+    const error = metricsError || funnelError || freightError ? 'Aviso: falha parcial ao carregar dados. Os demais continuam operacionais.' : '';
 
-            if (mRes.status === 'fulfilled' && mRes.value.ok) {
-                try { setMetrics(await mRes.value.json()); } catch { errors.push('métricas'); }
-            } else { errors.push('métricas'); }
-
-            if (fRes.status === 'fulfilled' && fRes.value.ok) {
-                try { setFunnel(await fRes.value.json()); } catch { errors.push('funil'); }
-            } else { errors.push('funil'); }
-
-            if (frRes.status === 'fulfilled' && frRes.value.ok) {
-                try { setFreight(await frRes.value.json()); } catch { errors.push('frete'); }
-            } else { errors.push('frete'); }
-
-            if (errors.length > 0) {
-                setError(`Aviso: falha parcial ao carregar ${errors.join(', ')}. Os demais dados continuam operacionais.`);
-            } else {
-                setError('');
-            }
-        } catch (err: any) {
-            setError(err.message || 'Erro de comunicação');
-        } finally {
-            setLoading(false);
-        }
-    }, [groupBy, tenantId]);
-
-    useEffect(() => {
-        fetchAll();
-        const id = setInterval(() => fetchAll(true), 60_000); // 1-minute auto refresh
-        return () => clearInterval(id);
-    }, [fetchAll]);
+    const fetchAll = useCallback(() => {
+        mutateMetrics();
+        mutateFunnel();
+        mutateFreight();
+    }, [mutateMetrics, mutateFunnel, mutateFreight]);
 
     return (
         <div className="space-y-6">

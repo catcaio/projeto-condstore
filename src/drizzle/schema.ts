@@ -308,6 +308,19 @@ export const frankEvents = mysqlTable('frank_events', {
 export type FrankEventRecord = typeof frankEvents.$inferSelect;
 export type NewFrankEventRecord = typeof frankEvents.$inferInsert;
 
+export const frankTokenUsage = mysqlTable('frank_token_usage', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    date: date('date', { mode: 'string' }).notNull(),
+    tokens: int('tokens').notNull().default(0),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    tenantDateUniqueIdx: uniqueIndex('idx_frank_token_usage_tenant_date').on(table.tenantId, table.date),
+}));
+
+export type FrankTokenUsageRecord = typeof frankTokenUsage.$inferSelect;
+export type NewFrankTokenUsageRecord = typeof frankTokenUsage.$inferInsert;
+
 // --- Frank Playbooks (Internal FAQ/Responses) ---
 
 export const frankPlaybooks = mysqlTable('frank_playbooks', {

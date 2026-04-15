@@ -13,6 +13,9 @@ vi.mock('jose', () => ({
 describe('Middleware', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.unstubAllEnvs();
+        vi.stubEnv('AUTH_SECRET', 'middleware-auth-secret-with-32-bytes');
+        vi.stubEnv('NODE_ENV', 'test');
     });
 
     it('blocks unauthenticated access to /api/ routes with 401', async () => {
@@ -77,5 +80,21 @@ describe('Middleware', () => {
         
         // Let's verify our jose mock was called
         expect(jwtVerify).toHaveBeenCalled();
+    });
+
+    it('fails fast outside development when AUTH_SECRET is missing', async () => {
+        delete process.env.AUTH_SECRET;
+
+        const req = new NextRequest('http://localhost/api/protected');
+        req.cookies.set('condstore_session', 'mock-valid-token');
+
+        const res = await middleware(req);
+
+        expect(res.status).toBe(500);
+        const data = await res.json();
+        expect(data).toEqual({
+            error: 'Internal Server Error',
+            code: 'MISSING_AUTH_SECRET',
+        });
     });
 });

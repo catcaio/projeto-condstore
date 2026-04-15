@@ -17,7 +17,8 @@ import { redisClient } from "@/infra/redis.client";
 import { logger } from '@/infra/logger';
 import { requireAdmin } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
-import { sql } from 'drizzle-orm';
+import { sql, eq, and, gte, or, like } from 'drizzle-orm';
+import { orders, operationalEvents } from '@/drizzle/schema';
 import { buildAttributionBreakdown, isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '@/modules/metrics/attribution-breakdown';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '@/infra/http/error-response';
@@ -34,7 +35,7 @@ interface CockpitMetrics {
   };
 }
 
-const CACHE_TTL_SECONDS = 30;
+const CACHE_TTL_SECONDS = 60;
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const startedAt = Date.now();
@@ -93,7 +94,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // Real DB queries in parallel (tenant-isolated)
-    const [msgMetrics, cotacoesHoje, attributionBreakdownResult] = await Promise.all([
+    const [msgMetrics, cotacoesHoje, attributionBreakdownResult, pedidosResult, errosResult] = await Promise.all([
       messageRepository.getMetricsToday(tenantId),
       simulationRepository.countToday(tenantId),
       groupBy
@@ -120,13 +121,45 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             );
           })()
         : Promise.resolve(null),
+      // pedidosHoje: orders created today for this tenant
+      (async () => {
+        const db = await getDb();
+        const rows = await db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(orders)
+          .where(
+            and(
+              eq(orders.tenantId, tenantId),
+              gte(orders.createdAt, sql`CURDATE()`)
+            )
+          );
+        return rows[0]?.count ?? 0;
+      })(),
+      // erros24h: operational_events with error/failed event types in last 24h
+      (async () => {
+        const db = await getDb();
+        const rows = await db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(operationalEvents)
+          .where(
+            and(
+              eq(operationalEvents.tenantId, tenantId),
+              gte(operationalEvents.createdAt, sql`NOW() - INTERVAL 24 HOUR`),
+              or(
+                like(operationalEvents.eventType, '%FAILED%'),
+                like(operationalEvents.eventType, '%ERROR%')
+              )
+            )
+          );
+        return rows[0]?.count ?? 0;
+      })(),
     ]);
 
     const payload: CockpitMetrics = {
       mensagensHoje: Number(msgMetrics.total ?? 0),
       cotacoesHoje: Number(cotacoesHoje ?? 0),
-      pedidosHoje: 0, // TODO: orders table
-      erros24h: 0,    // TODO: error_log table
+      pedidosHoje: Number(pedidosResult),
+      erros24h: Number(errosResult),
     };
 
     if (groupBy && attributionBreakdownResult) {
@@ -151,7 +184,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return finalize(NextResponse.json(payload, {
       status: 200,
-      headers: { 'Cache-Control': groupBy ? 'no-store, max-age=0' : 'private, max-age=30', 'X-Request-Id': requestId },
+      headers: { 'Cache-Control': groupBy ? 'no-store, max-age=0' : 'private, max-age=60', 'X-Request-Id': requestId },
     }));
   } catch (error) {
     structuredLogger.error('cockpit_metrics_failed', {

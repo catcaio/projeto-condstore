@@ -49,6 +49,27 @@ vi.mock('../../core/ai/llm-gateway', () => ({
     getAIProviderWithMeta: vi.fn(),
 }));
 
+vi.mock('@/modules/frank/services/token-usage.service', () => ({
+    frankTokenUsageService: {
+        executeTrackedCall: vi.fn(async (input: {
+            execute: () => Promise<{ result: unknown; usage?: unknown }>;
+        }) => {
+            const executed = await input.execute();
+            return {
+                result: executed.result,
+                usage: {
+                    totalTokens: 0,
+                    promptTokens: 0,
+                    completionTokens: 0,
+                    usageSource: 'missing',
+                },
+                tokensUsedToday: 0,
+                dailyLimit: 1000,
+            };
+        }),
+    },
+}));
+
 vi.mock('../repositories/ai-decision-log.repository', () => ({
     aiDecisionLogRepository: {
         saveDecisionLog: vi.fn().mockResolvedValue(undefined),

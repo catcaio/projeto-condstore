@@ -1,399 +1,494 @@
-import {
-    LayoutDashboard, MessageSquare, Users, Package, Truck, Bot,
-    BarChart3, Link2, Eye, Brain, Blocks, Shield, UserCheck,
-    FileText, Fingerprint, Settings, Rocket, Workflow, Database,
-    Globe, Sparkles,
-} from 'lucide-react';
-import {
-    PageContainer, PageSection, SectionIntro, HeroSection,
-    FeatureGrid, CTASection, TrustBand, OperationProof,
-} from '@/ui/site';
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import {
+    ArrowRight,
+    Bot,
+    Calculator,
+    Gauge,
+    Inbox,
+    Link2,
+    Package,
+    Shield,
+    Truck,
+    UserCheck,
+    Workflow,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import {
+    PageContainer,
+    PageSection,
+    ScrollReveal,
+    SectionIntro,
+} from '@/ui/site';
 
 export const metadata: Metadata = {
-    title: 'Plataforma — Condstore OS',
-    description: 'Conheça a arquitetura do Condstore OS: como conversas, clientes, pedidos e logística se conectam em uma plataforma operacional única com contexto contínuo.',
+    title: 'Plataforma - Condstore OS',
+    description: 'Visao consolidada do CONDSTORE OS: atendimento, cotacoes, pedidos, operacao e cockpit conectados em um fluxo supervisionado.',
     robots: { index: true, follow: true },
 };
+
+interface ConsolidatedBlock {
+    title: string;
+    summary: string;
+    handoff: string;
+    connectsTo: string;
+    icon: LucideIcon;
+}
+
+interface ArchitectureStage {
+    stage: string;
+    summary: string;
+    items: string[];
+    icon: LucideIcon;
+}
+
+interface ModuleCard {
+    name: string;
+    role: string;
+    description: string;
+    connections: string[];
+    icon: LucideIcon;
+}
+
+interface StructuralPoint {
+    title: string;
+    description: string;
+    icon: LucideIcon;
+}
+
+const heroChecklist = [
+    'Como os modulos se conectam no mesmo ciclo operacional.',
+    'Onde entra a IA e onde a decisao permanece humana.',
+    'Quais paginas ajudam a validar o produto antes da decisao final.',
+] as const;
+
+const consolidatedBlocks: ConsolidatedBlock[] = [
+    {
+        title: 'Atendimento',
+        summary: 'Inbox recebe a demanda por WhatsApp, API ou portal e organiza prioridade da fila.',
+        handoff: 'Encaminha dados completos para cotacao sem recomecar do zero.',
+        connectsTo: 'Cotacoes',
+        icon: Inbox,
+    },
+    {
+        title: 'Cotacoes',
+        summary: 'Simulacao de frete com regra operacional e margem visivel para aprovacao.',
+        handoff: 'Cotacao aprovada vira pedido com o mesmo contexto.',
+        connectsTo: 'Pedidos',
+        icon: Calculator,
+    },
+    {
+        title: 'Pedidos',
+        summary: 'Pedido nasce com estado, responsavel e historico auditavel desde o inicio.',
+        handoff: 'Dispara execucao logistica sem troca de ferramenta.',
+        connectsTo: 'Operacao',
+        icon: Package,
+    },
+    {
+        title: 'Operacao',
+        summary: 'Despacho, acompanhamento e excecoes seguem no mesmo fluxo do pedido.',
+        handoff: 'Atualiza fila e indicadores de execucao continuamente.',
+        connectsTo: 'Cockpit',
+        icon: Truck,
+    },
+    {
+        title: 'Cockpit',
+        summary: 'Centro de controle com SLA, margem, alertas e prioridades em tempo real.',
+        handoff: 'Realimenta atendimento e decisao com dados da operacao.',
+        connectsTo: 'Atendimento',
+        icon: Gauge,
+    },
+];
+
+const architectureStages: ArchitectureStage[] = [
+    {
+        stage: 'Entrada',
+        summary: 'O sistema recebe eventos de canais diferentes na mesma fila operacional.',
+        items: ['WhatsApp', 'API', 'Portal'],
+        icon: Inbox,
+    },
+    {
+        stage: 'Processamento',
+        summary: 'IA organiza contexto e sugere; operador valida antes de avancar.',
+        items: ['Contexto unico', 'IA supervisionada', 'Aprovacao humana'],
+        icon: UserCheck,
+    },
+    {
+        stage: 'Execucao',
+        summary: 'Cotacao, pedido e logistica rodam com estados claros e responsavel definido.',
+        items: ['Cotacao', 'Pedido', 'Fluxo logistico'],
+        icon: Workflow,
+    },
+    {
+        stage: 'Controle',
+        summary: 'Cockpit consolida fila, excecoes e desempenho para decisao imediata.',
+        items: ['Cockpit vivo', 'SLA', 'Margem operacional'],
+        icon: Gauge,
+    },
+];
+
+const moduleCards: ModuleCard[] = [
+    {
+        name: 'Inbox / Atendimento',
+        role: 'Receber, priorizar e responder com contexto operacional.',
+        description: 'Consolida os canais de entrada e evita perda de informacao entre atendimento e execucao.',
+        connections: ['Cotacoes', 'Pedidos', 'Frank'],
+        icon: Inbox,
+    },
+    {
+        name: 'Cotacoes',
+        role: 'Gerar proposta de frete com regra de operacao e margem.',
+        description: 'Transforma demanda em opcao viavel para aprovacao sem depender de planilha paralela.',
+        connections: ['Inbox', 'Pedidos', 'Cockpit'],
+        icon: Calculator,
+    },
+    {
+        name: 'Pedidos',
+        role: 'Formalizar o compromisso operacional e iniciar execucao.',
+        description: 'Cada pedido nasce com responsavel, estado e historico para rastreabilidade total.',
+        connections: ['Cotacoes', 'Operacao', 'Cockpit'],
+        icon: Package,
+    },
+    {
+        name: 'Cockpit',
+        role: 'Central de controle diario da operacao.',
+        description: 'Mostra prioridades, risco, SLA e indicadores que direcionam acao rapida da equipe.',
+        connections: ['Atendimento', 'Pedidos', 'IA (Frank)'],
+        icon: Gauge,
+    },
+    {
+        name: 'IA (Frank)',
+        role: 'Assistente supervisionado para acelerar leitura e sugestao.',
+        description: 'Frank sugere resposta e proximo passo, mas nao aprova cotacao nem pedido sem operador.',
+        connections: ['Inbox', 'Cotacoes', 'Cockpit'],
+        icon: Bot,
+    },
+];
+
+const structuralPoints: StructuralPoint[] = [
+    {
+        title: 'Nao e ferramenta isolada',
+        description: 'Os modulos compartilham estado e historico. O time nao alterna entre sistemas desconectados.',
+        icon: Link2,
+    },
+    {
+        title: 'Infraestrutura operacional',
+        description: 'O produto sustenta rotina diaria, excecao e auditoria no mesmo trilho operacional.',
+        icon: Workflow,
+    },
+    {
+        title: 'Governanca embutida',
+        description: 'Permissao, aprovacao e rastreabilidade sao parte da arquitetura, nao um add-on.',
+        icon: Shield,
+    },
+];
+
+const connectionLinks = [
+    {
+        href: '/proof',
+        title: 'Prova operacional',
+        description: 'Evidencia de uso real do sistema na rotina de operacao.',
+    },
+    {
+        href: '/como-funciona',
+        title: 'Como funciona',
+        description: 'Fluxo supervisionado completo da entrada ao cockpit.',
+    },
+    {
+        href: '/solucoes',
+        title: 'Solucoes',
+        description: 'Recortes praticos para cada momento da sua operacao.',
+    },
+    {
+        href: '/about',
+        title: 'Contato',
+        description: 'Conversa direta com o time para validar escopo e implantacao.',
+    },
+] as const;
 
 export default function PlataformaPage() {
     return (
         <>
-            {/* ─── 1. HERO ─── */}
-            <HeroSection
-                eyebrow="Plataforma operacional"
-                title={
-                    <>
-                        Uma plataforma para conectar{' '}
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--ui-accent-blue))] to-[hsl(211,100%,72%)]">
-                            atendimento, operação e decisão.
-                        </span>
-                    </>
-                }
-                subtitle="O Condstore OS organiza conversas, clientes, pedidos e logística em uma estrutura operacional única com contexto contínuo."
-                ctas={[
-                    { label: 'Ver como funciona', href: '/como-funciona' },
-                    { label: 'Explorar soluções', href: '/solucoes', variant: 'secondary' },
-                ]}
-            />
-
-            {/* ─── OPERATION PROOF ─── */}
-            <OperationProof />
-
-            {/* ─── 2. O QUE É A PLATAFORMA ─── */}
-            <PageSection spacing="lg" borderTop>
+            <PageSection spacing="lg">
                 <PageContainer>
-                    <SectionIntro
-                        eyebrow="Visão geral"
-                        title="Um sistema operacional para logística, não um conjunto de features."
-                        description="O Condstore OS não é um aglomerado de ferramentas. É uma plataforma construída para que cada módulo se comunique, cada dado tenha contexto, e cada operador tenha visibilidade."
-                    />
-                    <FeatureGrid
-                        columns={3}
-                        items={[
-                            {
-                                icon: Link2,
-                                title: 'Contexto contínuo',
-                                description: 'Cada entidade — pedido, cliente, conversa — carrega seu histórico completo. O operador nunca começa do zero.',
-                            },
-                            {
-                                icon: Blocks,
-                                title: 'Módulos conectados',
-                                description: 'Conversas ligam a clientes, clientes ligam a pedidos, pedidos ligam a logística. Tudo via deep links operacionais.',
-                            },
-                            {
-                                icon: Eye,
-                                title: 'Visibilidade operacional',
-                                description: 'Cockpit centraliza métricas, alertas e filas de ação. Cada módulo alimenta o dashboard com dados reais.',
-                            },
-                            {
-                                icon: Brain,
-                                title: 'Inteligência integrada',
-                                description: 'Frank Supremo analisa padrões, sugere ações e interage com clientes — governado por budget e permissões.',
-                            },
-                            {
-                                icon: Shield,
-                                title: 'Governança para escalar',
-                                description: 'Multi-tenant, RBAC, audit trail e configuração por tenant. A plataforma cresce sem perder controle.',
-                            },
-                            {
-                                icon: Workflow,
-                                title: 'Event-driven nativo',
-                                description: 'Cada ação gera um evento auditável. Processamento assíncrono com retry, DLQ e observabilidade completa.',
-                            },
-                        ]}
-                    />
+                    <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8 lg:gap-12 items-start">
+                        <div className="max-w-3xl">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[hsl(var(--ui-text-muted))]">
+                                Plataforma Condstore OS
+                            </span>
+                            <h1 className="mt-6 text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-[hsl(var(--ui-text))] leading-[1.08]">
+                                Uma plataforma unica para conectar atendimento, cotacao, pedidos, operacao e cockpit.
+                            </h1>
+                            <p className="mt-6 text-lg md:text-xl text-[hsl(var(--ui-text-muted))] leading-relaxed max-w-2xl">
+                                Aqui o produto aparece como um sistema continuo. Cada etapa entrega contexto para a seguinte e mantem controle operacional sem prometer autonomia total.
+                            </p>
+                            <div className="mt-8 flex flex-wrap items-center gap-3">
+                                <Link
+                                    href="/como-funciona"
+                                    className="inline-flex h-11 items-center justify-center rounded-full border border-[hsl(var(--ui-border))] px-6 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
+                                >
+                                    Ver fluxo supervisionado
+                                </Link>
+                                <Link
+                                    href="/proof"
+                                    className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-[hsl(var(--ui-text-muted))] transition-colors hover:text-[hsl(var(--ui-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
+                                >
+                                    Ver prova operacional
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                            </div>
+                        </div>
+
+                        <aside className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.35)] p-6 md:p-7">
+                            <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))]">
+                                Leitura rapida
+                            </h2>
+                            <ul className="mt-4 space-y-3 text-sm text-[hsl(var(--ui-text-muted))]">
+                                {heroChecklist.map((item) => (
+                                    <li key={item} className="flex items-start gap-2.5 leading-relaxed">
+                                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--ui-accent-blue))]" />
+                                        <span>{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </aside>
+                    </div>
                 </PageContainer>
             </PageSection>
 
-            {/* ─── 3. VISÃO DO ECOSSISTEMA ─── */}
-            <PageSection spacing="lg" borderTop>
-                <PageContainer narrow>
-                    <SectionIntro
-                        eyebrow="Ecossistema"
-                        title="Tudo gira em torno do cliente."
-                    />
-                    <div className="relative mx-auto max-w-2xl">
-                        {/* Concentric rings diagram */}
-                        <div className="relative flex flex-col items-center gap-4">
-                            {/* Top layer — Intelligence */}
-                            <EcoLayer
-                                label="Inteligência"
-                                items={['Frank Supremo', 'Cockpit OS']}
-                                accent="blue"
-                                size="sm"
-                            />
+            <ScrollReveal>
+                <PageSection spacing="md" borderTop>
+                    <PageContainer>
+                        <SectionIntro
+                            eyebrow="Visao consolidada"
+                            title="Cinco modulos, um ciclo operacional"
+                            description="Atendimento, cotacao, pedidos, operacao e cockpit funcionam conectados. O handoff entre etapas ja nasce no proprio sistema."
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 md:gap-5">
+                            {consolidatedBlocks.map((block) => {
+                                const Icon = block.icon;
+                                return (
+                                    <article
+                                        key={block.title}
+                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5 transition-colors hover:border-[hsl(var(--ui-border))]"
+                                    >
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.65)] text-[hsl(var(--ui-accent-blue))]">
+                                            <Icon className="h-5 w-5" />
+                                        </div>
+                                        <h3 className="mt-4 text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{block.title}</h3>
+                                        <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{block.summary}</p>
+                                        <p className="mt-3 text-xs leading-relaxed text-[hsl(var(--ui-text-subtle))]">{block.handoff}</p>
+                                        <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ui-muted)/0.6)] px-3 py-1 text-[11px] font-semibold text-[hsl(var(--ui-text-subtle))]">
+                                            Conecta com {block.connectsTo}
+                                        </p>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                        <p className="mt-6 text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">
+                            O ciclo fecha no cockpit e retorna para atendimento sem perda de contexto. A operacao ganha velocidade com governanca.
+                        </p>
+                    </PageContainer>
+                </PageSection>
+            </ScrollReveal>
 
-                            {/* Middle layer — Operational modules */}
-                            <EcoLayer
-                                label="Módulos operacionais"
-                                items={['Conversas', 'Pedidos', 'Logística', 'Simulações', 'Métricas']}
-                                accent="blue"
-                                size="md"
-                            />
+            <ScrollReveal>
+                <PageSection spacing="md" borderTop>
+                    <PageContainer>
+                        <SectionIntro
+                            eyebrow="Arquitetura funcional"
+                            title="Entrada, processamento, execucao e controle"
+                            description="A plataforma opera como fluxo continuo, nao como modulos isolados."
+                        />
+                        <div className="rounded-3xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-4 md:p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                                {architectureStages.map((stage) => {
+                                    const Icon = stage.icon;
+                                    return (
+                                        <article
+                                            key={stage.stage}
+                                            className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-page)/0.65)] p-4"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.75)] text-[hsl(var(--ui-accent-blue))]">
+                                                    <Icon className="h-4 w-4" />
+                                                </span>
+                                                <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{stage.stage}</h3>
+                                            </div>
+                                            <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{stage.summary}</p>
+                                            <div className="mt-4 flex flex-wrap gap-2">
+                                                {stage.items.map((item) => (
+                                                    <span
+                                                        key={`${stage.stage}-${item}`}
+                                                        className="inline-flex items-center rounded-full border border-[hsl(var(--ui-border)/0.6)] px-2.5 py-1 text-[11px] font-semibold text-[hsl(var(--ui-text-subtle))]"
+                                                    >
+                                                        {item}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </article>
+                                    );
+                                })}
+                            </div>
+                            <p className="mt-5 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
+                                Cada etapa publica estado para a etapa seguinte e para o cockpit. Esse fluxo evita retrabalho e melhora decisao em tempo real.
+                            </p>
+                        </div>
+                    </PageContainer>
+                </PageSection>
+            </ScrollReveal>
 
-                            {/* Center — Client */}
-                            <div className="flex items-center justify-center w-32 h-32 rounded-full border-2 border-[hsl(var(--ui-accent-blue))] bg-[hsl(var(--ui-accent-blue)/0.08)]">
-                                <div className="text-center">
-                                    <Users className="h-7 w-7 text-[hsl(var(--ui-accent-blue))] mx-auto mb-1" />
-                                    <span className="text-sm font-bold text-[hsl(var(--ui-text))]">Cliente</span>
+            <ScrollReveal>
+                <PageSection spacing="md" borderTop>
+                    <PageContainer>
+                        <SectionIntro
+                            eyebrow="Modulos do sistema"
+                            title="Responsabilidade clara em cada modulo"
+                            description="Cada bloco tem papel definido e conexao explicita com os demais."
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                            {moduleCards.map((module) => {
+                                const Icon = module.icon;
+                                return (
+                                    <article
+                                        key={module.name}
+                                        className="flex flex-col rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5 md:p-6 transition-colors hover:border-[hsl(var(--ui-border))]"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.75)] text-[hsl(var(--ui-accent-blue))]">
+                                                <Icon className="h-5 w-5" />
+                                            </span>
+                                            <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{module.name}</h3>
+                                        </div>
+                                        <p className="mt-4 text-sm font-medium text-[hsl(var(--ui-text))]">{module.role}</p>
+                                        <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{module.description}</p>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {module.connections.map((connection) => (
+                                                <ModulePill key={`${module.name}-${connection}`} label={connection} />
+                                            ))}
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    </PageContainer>
+                </PageSection>
+            </ScrollReveal>
+
+            <ScrollReveal>
+                <PageSection spacing="md" borderTop>
+                    <PageContainer>
+                        <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-8 lg:gap-10 items-start">
+                            <SectionIntro
+                                eyebrow="Diferencial estrutural"
+                                title="Infraestrutura operacional, nao ferramenta avulsa"
+                                description="O valor da plataforma esta na conexao entre modulos, no estado unico e na governanca que suporta escala."
+                                align="left"
+                                className="mb-0"
+                            />
+                            <div className="space-y-4">
+                                {structuralPoints.map((point) => {
+                                    const Icon = point.icon;
+                                    return (
+                                        <article
+                                            key={point.title}
+                                            className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.75)] text-[hsl(var(--ui-accent-blue))]">
+                                                    <Icon className="h-4 w-4" />
+                                                </span>
+                                                <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{point.title}</h3>
+                                            </div>
+                                            <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{point.description}</p>
+                                        </article>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div className="mt-8 rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.25)] p-5 md:p-6">
+                            <div className="flex items-start gap-3">
+                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--ui-success)/0.14)] text-[hsl(var(--ui-success))]">
+                                    <Shield className="h-4 w-4" />
+                                </span>
+                                <div>
+                                    <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))]">
+                                        SUPERVISED_ONLY
+                                    </h3>
+                                    <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
+                                        Frank opera como assistente supervisionado. Ele pode sugerir resposta e proximo passo, mas nao executa aprovacao de cotacao ou pedido sem operador responsavel.
+                                    </p>
                                 </div>
                             </div>
-
-                            {/* Bottom layer — Operational modules (mirror) */}
-                            <EcoLayer
-                                label="Gestão"
-                                items={['Clientes', 'CRM', 'Vendas']}
-                                accent="green"
-                                size="md"
-                            />
-
-                            {/* Base layer — Infrastructure */}
-                            <EcoLayer
-                                label="Infraestrutura"
-                                items={['Tenant', 'Governança', 'Integrações', 'Segurança']}
-                                accent="muted"
-                                size="sm"
-                            />
                         </div>
-                    </div>
-                </PageContainer>
-            </PageSection>
+                    </PageContainer>
+                </PageSection>
+            </ScrollReveal>
 
-            {/* ─── 4. MÓDULOS PRINCIPAIS ─── */}
-            <PageSection spacing="lg" borderTop>
-                <PageContainer>
-                    <SectionIntro
-                        eyebrow="Módulos"
-                        title="Cada módulo tem responsabilidade clara."
-                        description="Juntos, formam o sistema operacional completo. Cada módulo se conecta aos outros por deep links e eventos."
-                    />
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        <ModuleCard
-                            icon={LayoutDashboard}
-                            name="Cockpit"
-                            role="Centro de comando"
-                            description="Dashboard unificado com métricas, alertas, filas de ação e diagnóstico do sistema. O operador vê tudo em uma tela."
-                            connections="Recebe dados de todos os módulos"
+            <ScrollReveal>
+                <PageSection spacing="md" borderTop>
+                    <PageContainer>
+                        <SectionIntro
+                            eyebrow="Conexao"
+                            title="Continue a avaliacao da plataforma"
+                            description="Acesse os recortes que aprofundam prova operacional, fluxo e posicionamento do produto."
                         />
-                        <ModuleCard
-                            icon={MessageSquare}
-                            name="Conversas"
-                            role="Atendimento contextual"
-                            description="Cada conversa carrega o contexto do cliente, pedidos abertos e status logístico. O operador responde com informação, não com adivinhação."
-                            connections="Conecta a Clientes, Pedidos, Frank"
-                        />
-                        <ModuleCard
-                            icon={Users}
-                            name="Clientes"
-                            role="Visão 360"
-                            description="Perfil completo do cliente com histórico de pedidos, conversas, simulações e métricas. CRM operacional, não genérico."
-                            connections="Conecta a Conversas, Pedidos, Logística"
-                        />
-                        <ModuleCard
-                            icon={Package}
-                            name="Pedidos"
-                            role="Pipeline operacional"
-                            description="Do checkout ao ponto de entrega. Cada pedido tem estado definido, responsável atribuído e timeline de eventos."
-                            connections="Conecta a Logística, Clientes, Métricas"
-                        />
-                        <ModuleCard
-                            icon={Truck}
-                            name="Logística"
-                            role="Gateway de frete"
-                            description="Cotação multi-transportadora, despacho, tracking e exceções. Tabelas próprias normalizadas com fallback automático."
-                            connections="Conecta a Pedidos, Métricas, Cockpit"
-                        />
-                        <ModuleCard
-                            icon={Bot}
-                            name="Frank Supremo"
-                            role="IA operacional"
-                            description="Analisa padrões, sugere ações, interage com clientes via WhatsApp. Governado por budget de tokens e permissões por tenant."
-                            connections="Conecta a Conversas, Clientes, Cockpit"
-                        />
-                        <ModuleCard
-                            icon={BarChart3}
-                            name="Métricas"
-                            role="Observabilidade"
-                            description="Dashboard de margem por transportadora, SLA auditável, performance por região e canal. Dados alimentados automaticamente."
-                            connections="Recebe dados de Logística e Pedidos"
-                        />
-                    </div>
-                </PageContainer>
-            </PageSection>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
+                            {connectionLinks.map((item) => (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className="group rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.28)] p-5 transition-colors hover:border-[hsl(var(--ui-border))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
+                                >
+                                    <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{item.title}</h3>
+                                    <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{item.description}</p>
+                                    <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--ui-text-subtle))] transition-colors group-hover:text-[hsl(var(--ui-text))]">
+                                        Acessar
+                                        <ArrowRight className="h-4 w-4" />
+                                    </span>
+                                </Link>
+                            ))}
+                        </div>
+                    </PageContainer>
+                </PageSection>
+            </ScrollReveal>
 
-            {/* ─── TRUST BAND ─── */}
-            <TrustBand />
-
-            {/* ─── 5. CAMADAS TRANSVERSAIS ─── */}
-            <PageSection spacing="lg" borderTop>
-                <PageContainer>
-                    <SectionIntro
-                        eyebrow="Camadas transversais"
-                        title="O que conecta tudo por baixo."
-                        description="Cada módulo opera de forma independente, mas compartilha camadas transversais que garantem consistência, rastreabilidade e inteligência."
-                    />
-                    <FeatureGrid
-                        columns={3}
-                        items={[
-                            {
-                                icon: Link2,
-                                title: 'Deep links operacionais',
-                                description: 'Cada entidade tem uma URL canônica. Qualquer lugar do sistema pode linkar para o pedido, cliente ou conversa específica.',
-                            },
-                            {
-                                icon: Database,
-                                title: 'Contexto contínuo',
-                                description: 'O histórico de cada entidade está sempre disponível. O operador vê timeline, eventos e relações sem sair da tela atual.',
-                            },
-                            {
-                                icon: Eye,
-                                title: 'Observabilidade',
-                                description: 'Logs estruturados, métricas de performance e health checks integrados. O sistema diagnostica a si mesmo.',
-                            },
-                            {
-                                icon: Brain,
-                                title: 'Inteligência integrada',
-                                description: 'IA não é um módulo isolado — ela permeia conversas, sugestões e análises em toda a plataforma.',
-                            },
-                            {
-                                icon: Blocks,
-                                title: 'Escalabilidade modular',
-                                description: 'Novos módulos se conectam ao ecossistema via contratos bem definidos. A plataforma cresce sem reescrever o que existe.',
-                            },
-                            {
-                                icon: Workflow,
-                                title: 'Event sourcing',
-                                description: 'Cada mutação gera um evento imutável. Replay, auditoria e análise histórica são nativos da plataforma.',
-                            },
-                        ]}
-                    />
-                </PageContainer>
-            </PageSection>
-
-            {/* ─── 6. GOVERNANÇA ─── */}
-            <PageSection spacing="lg" borderTop>
-                <PageContainer>
-                    <SectionIntro
-                        eyebrow="Governança"
-                        title="Controle que escala junto com a operação."
-                    />
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {[
-                            { icon: Globe, title: 'Multi-tenant', desc: 'Isolamento completo de dados, configurações e permissões por tenant. Cada operação é independente.' },
-                            { icon: UserCheck, title: 'RBAC', desc: 'Controle de acesso granular por papel. Admin, operador, viewer — cada perfil vê e faz apenas o que deve.' },
-                            { icon: FileText, title: 'Logs e rastreabilidade', desc: 'Audit trail completo. Cada ação, mutação e acesso é registrado com timestamp, IP e ator.' },
-                            { icon: Fingerprint, title: 'Autenticação segura', desc: 'Sessions com rotação, rate limiting por IP/tenant, detecção de anomalias e bloqueio automático.' },
-                            { icon: Settings, title: 'Configuração por tenant', desc: 'Cada tenant define suas transportadoras, regras de margem, webhooks e preferências de IA.' },
-                            { icon: Shield, title: 'Zero-Trust', desc: 'Nenhuma requisição é confiável por padrão. Cada endpoint valida autenticação, permissão e tenant.' },
-                        ].map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <div key={item.title} className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-6 md:p-7">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue))] mb-4">
-                                        <Icon className="h-5 w-5" />
-                                    </div>
-                                    <h3 className="text-base font-bold text-[hsl(var(--ui-text))] mb-2 tracking-tight">{item.title}</h3>
-                                    <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">{item.desc}</p>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </PageContainer>
-            </PageSection>
-
-            {/* ─── 7. EVOLUÇÃO ─── */}
-            <PageSection spacing="lg" borderTop>
-                <PageContainer>
-                    <SectionIntro
-                        eyebrow="Evolução"
-                        title="A plataforma cresce com a sua operação."
-                        description="O Condstore OS é projetado para evoluir continuamente sem reescrever o que já funciona."
-                    />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {[
-                            { icon: Blocks, title: 'Novos módulos', desc: 'Cada módulo se conecta via contratos bem definidos. Adicionar funcionalidade não quebra o existente.' },
-                            { icon: Workflow, title: 'Automações', desc: 'Regras de negócio configuráveis por tenant que executam ações automáticas baseadas em eventos do sistema.' },
-                            { icon: Sparkles, title: 'IA operacional', desc: 'Frank Supremo evolui com novos modelos, análises e interações — sempre sob governança de budget e permissões.' },
-                            { icon: Database, title: 'Memória de operação', desc: 'O sistema acumula inteligência ao longo do tempo. Padrões, anomalias e benchmarks são aprendidos continuamente.' },
-                            { icon: Globe, title: 'Portal do cliente', desc: 'Visibilidade self-service para o cliente final: tracking, histórico e comunicação direta com a operação.' },
-                            { icon: Rocket, title: 'Marketplace de integrações', desc: 'Conectores para transportadoras, ERPs e marketplaces se somam ao ecossistema sem fricção.' },
-                        ].map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <div key={item.title} className="group rounded-2xl border border-[hsl(var(--ui-border)/0.3)] bg-[hsl(var(--ui-surface)/0.2)] p-6 transition-all hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-elevated)/0.4)]">
-                                    <Icon className="h-5 w-5 text-[hsl(var(--ui-accent-blue))] mb-4" />
-                                    <h3 className="text-sm font-bold text-[hsl(var(--ui-text))] mb-2 tracking-tight">{item.title}</h3>
-                                    <p className="text-xs text-[hsl(var(--ui-text-muted))] leading-relaxed">{item.desc}</p>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </PageContainer>
-            </PageSection>
-
-            {/* ─── 8. CTA FINAL ─── */}
-            <CTASection
-                title="Entenda como essa estrutura se traduz em soluções aplicadas."
-                subtitle="Veja como cada módulo resolve problemas reais da sua operação."
-                ctas={[
-                    { label: 'Ver como funciona', href: '/como-funciona' },
-                    { label: 'Explorar soluções', href: '/solucoes', variant: 'secondary' },
-                ]}
-            />
+            <ScrollReveal>
+                <PageSection spacing="md" borderTop>
+                    <PageContainer narrow>
+                        <div className="rounded-3xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.35)] px-6 py-8 md:px-10 md:py-10 text-center">
+                            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[hsl(var(--ui-text))]">
+                                Quer validar essa plataforma na sua operacao?
+                            </h2>
+                            <p className="mt-4 text-sm md:text-base leading-relaxed text-[hsl(var(--ui-text-muted))] max-w-2xl mx-auto">
+                                Podemos mostrar a prova operacional ou discutir seu cenario com implantacao supervisionada.
+                            </p>
+                            <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
+                                <Link
+                                    href="/about"
+                                    className="inline-flex h-11 items-center justify-center rounded-full border border-transparent bg-[hsl(var(--ui-accent-blue))] px-6 text-sm font-semibold text-white transition-colors hover:bg-[hsl(var(--ui-accent-blue-strong))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
+                                >
+                                    Falar com o time
+                                </Link>
+                                <Link
+                                    href="/proof"
+                                    className="inline-flex h-11 items-center justify-center rounded-full border border-[hsl(var(--ui-border))] px-6 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
+                                >
+                                    Ver prova operacional
+                                </Link>
+                            </div>
+                        </div>
+                    </PageContainer>
+                </PageSection>
+            </ScrollReveal>
         </>
     );
 }
 
-/* ─── Helper: Ecosystem layer ring ─── */
-function EcoLayer({ label, items, accent, size }: {
-    label: string;
-    items: string[];
-    accent: 'blue' | 'green' | 'muted';
-    size: 'sm' | 'md';
-}) {
-    const colors = {
-        blue: {
-            border: 'border-[hsl(var(--ui-accent-blue)/0.25)]',
-            bg: 'bg-[hsl(var(--ui-accent-blue)/0.04)]',
-            label: 'text-[hsl(var(--ui-accent-blue))]',
-            pill: 'bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue-ink,var(--ui-accent-blue)))]',
-        },
-        green: {
-            border: 'border-[hsl(var(--ui-success)/0.25)]',
-            bg: 'bg-[hsl(var(--ui-success)/0.04)]',
-            label: 'text-[hsl(var(--ui-success))]',
-            pill: 'bg-[hsl(var(--ui-success)/0.1)] text-[hsl(var(--ui-success-ink,var(--ui-success)))]',
-        },
-        muted: {
-            border: 'border-[hsl(var(--ui-border)/0.4)]',
-            bg: 'bg-[hsl(var(--ui-surface)/0.3)]',
-            label: 'text-[hsl(var(--ui-text-subtle))]',
-            pill: 'bg-[hsl(var(--ui-muted)/0.5)] text-[hsl(var(--ui-text-muted))]',
-        },
-    };
-
-    const c = colors[accent];
-
+function ModulePill({ label }: { label: string }) {
     return (
-        <div className={`w-full rounded-2xl border ${c.border} ${c.bg} ${size === 'sm' ? 'px-5 py-4' : 'px-6 py-5'}`}>
-            <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${c.label} block mb-2.5`}>
-                {label}
-            </span>
-            <div className="flex flex-wrap gap-2">
-                {items.map((item) => (
-                    <span key={item} className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${c.pill}`}>
-                        {item}
-                    </span>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-/* ─── Helper: Module detail card ─── */
-function ModuleCard({ icon: Icon, name, role, description, connections }: {
-    icon: typeof LayoutDashboard;
-    name: string;
-    role: string;
-    description: string;
-    connections: string;
-}) {
-    return (
-        <div className="group flex flex-col gap-3 rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.4)] p-6 md:p-7 transition-all hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-elevated)/0.5)]">
-            <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-accent-blue)/0.1)]">
-                    <Icon className="h-5 w-5 text-[hsl(var(--ui-accent-blue))]" />
-                </div>
-                <div>
-                    <h3 className="text-sm font-bold text-[hsl(var(--ui-text))] tracking-tight">{name}</h3>
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[hsl(var(--ui-accent-blue))]">{role}</span>
-                </div>
-            </div>
-            <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">{description}</p>
-            <span className="text-[11px] text-[hsl(var(--ui-text-subtle))] font-medium mt-auto pt-2 border-t border-[hsl(var(--ui-border)/0.3)]">
-                ↔ {connections}
-            </span>
-        </div>
+        <span className="inline-flex items-center rounded-full border border-[hsl(var(--ui-border)/0.55)] px-2.5 py-1 text-[11px] font-semibold text-[hsl(var(--ui-text-subtle))]">
+            {label}
+        </span>
     );
 }

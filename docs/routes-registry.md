@@ -4,6 +4,7 @@
 |---|---|---|---|---|---|---|
 | / | TBA | public | none | PUBLIC | live | Auto-detected |
 | /about | TBA | public | none | PUBLIC | live | Auto-detected |
+| /area-estudo/estrutura-quantica-relacional | Hub didático da Área de Estudo (Estrutura Quântica-Relacional) | public | none | PUBLIC | live | Rota isolada para conteúdo didático e freeze explícito das frentes paralelas |
 | /api/app/events | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/auth/login | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/auth/logout | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -162,6 +163,15 @@
 | /api/webhook/fallback | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/webhook/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cockpit/conversations | GET | internal | requireAdmin | cockpit | live | List conversations |
+| /api/cockpit/tudico/audit-response | POST | internal | requireAdmin | tudico | live | Executa auditoria epistemológica de resposta com alertas anti-confirmação |
+| /api/cockpit/tudico/claim-conflicts | GET | internal | requireAdmin | tudico | live | Lista inconsistências por claim (inconsistency board) |
+| /api/cockpit/tudico/hypotheses | GET, POST | internal | requireAdmin | tudico | live | Lista e cria versões formais de hipótese |
+| /api/cockpit/tudico/hypotheses/compare | GET | internal | requireAdmin | tudico | live | Diff estruturado entre duas versões de hipótese |
+| /api/cockpit/tudico/inconsistencies | GET, POST | internal | requireAdmin | tudico | live | Lista e abre inconsistências vinculadas a claim/paper |
+| /api/cockpit/tudico/papers | GET | internal | requireAdmin | tudico | live | Lista paper cards estruturados (com seed inicial) |
+| /api/cockpit/tudico/papers/[id] | GET | internal | requireAdmin | tudico | live | Detalha um paper card específico |
+| /api/cockpit/tudico/tools | POST | internal | requireAdmin | tudico | live | Dispatcher das tools Tudico (audit, compare, conflicts, paper cards) |
+| /cockpit/tudico | GET | frontend | requireAdmin | tudico | live | Painel mínimo da Fase 2 com versões, diff, papers e board |
 | /api/cockpit/conversations/[id] | GET | internal | requireAdmin | cockpit | live | Get conversation details |
 | /api/cockpit/conversations/[id]/message | POST | internal | requireAdmin | cockpit | live | Send operator response via Twilio |
 | /api/cockpit/conversations/[id]/customer | POST | internal | requireAdmin | cockpit | live | Create CRM customer from active conversation |
@@ -249,6 +259,13 @@
 | /frank | GET | internal | required | frank | live | Módulo canônico do agente com visão geral, intenções, desempenho e logs estruturados |
 | /logistica | GET | internal | required | logistica | live | Central logística canônica com fila, detalhe operacional e contexto integrado |
 | /metricas | GET | internal | required | metricas | live | Módulo canônico de métricas executivas, funil, atendimento e logística |
+| /mvp | GET | public | none | MVP | live | Isolated MVP entry point — gated by NEXT_PUBLIC_ENABLE_MVP=true, returns 404 when flag is off |
+| /mvp/como-funciona | GET | public | none | MVP | live | "Como funciona" page — 4-step supervised flow explanation |
+| /mvp/app | GET | session | operator/admin | MVP | live | Authenticated CockpitMini — quick-links to operational surfaces |
+| /mvp/app/inbox | GET | session | operator/admin | MVP | live | Inbox stub — WhatsApp conversation management (MVP Task 2) |
+| /mvp/app/freight | GET | session | operator/admin | MVP | live | Freight stub — multi-carrier quotation approval queue (MVP Task 3) |
+| /mvp/app/orders | GET | session | operator/admin | MVP | live | Orders stub — order lifecycle management (MVP Task 4) |
+| /mvp/app/settings | GET | session | operator/admin | MVP | live | Settings stub — tenant, carriers and operator configuration |
 | /operacao | GET | internal | required | operacao | live | Hub operacional canônico para visão transversal da operação |
 | /operacao/inbox | GET | internal | required | console | live | Inbox operacional (migrado de /inbox) |
 | /operacao/fila | GET | internal | required | console | live | Fila de Eventos DOMINE (stub — em breve) |
@@ -351,3 +368,6 @@
 | /api/cockpit/governance/playbooks/[playbookId]/apply | GET/POST | internal | requireAdmin | cockpit | live | Added |
 | /api/cockpit/governance/playbooks/metrics | GET/POST | internal | requireAdmin | cockpit | live | Added |
 | /api/cockpit/frank/feed | POST | internal | requireAdmin | cockpit | live | Added |
+| /proof | GET | public | none | PUBLIC | live | Pagina de prova operacional do Condstore OS |
+| /contato | GET | public | none | PUBLIC | live | Página de contato e agendamento de demonstração |
+| /api/public/contato | POST | public | none | PUBLIC | live | Endpoint de submissão do formulário de contato |

@@ -7,6 +7,7 @@ import {
     updateKnowledgeEntry,
     deleteKnowledgeEntry,
 } from '@/modules/frank/knowledge/knowledge.service';
+import { applyFrankCockpitRateLimit } from '@/infra/security/frank-rate-limit';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -19,6 +20,9 @@ export async function GET(request: NextRequest, { params }: RouteParams): Promis
 
     const { id } = await params;
     const tenantId = auth.session.tenantId;
+
+    const rl = await applyFrankCockpitRateLimit({ tenantId, requestId, route: '/api/cockpit/frank/knowledge/[id]' });
+    if (rl.blocked) return rl.response;
 
     try {
         const entry = await getKnowledgeById(tenantId, id);
@@ -42,6 +46,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams): Promis
     const { id } = await params;
     const tenantId = auth.session.tenantId;
 
+    const rl = await applyFrankCockpitRateLimit({ tenantId, requestId, route: '/api/cockpit/frank/knowledge/[id]' });
+    if (rl.blocked) return rl.response;
+
     try {
         const body = await request.json();
         await updateKnowledgeEntry({ id, tenantId, ...body });
@@ -61,6 +68,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams): Pro
 
     const { id } = await params;
     const tenantId = auth.session.tenantId;
+
+    const rl = await applyFrankCockpitRateLimit({ tenantId, requestId, route: '/api/cockpit/frank/knowledge/[id]' });
+    if (rl.blocked) return rl.response;
 
     try {
         await deleteKnowledgeEntry(tenantId, id);

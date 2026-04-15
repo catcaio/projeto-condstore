@@ -1,370 +1,344 @@
+import Link from 'next/link';
 import {
-    Truck, BarChart3, Bot, MessageSquare, Shield, Zap,
-    Package, Users, Clock, TrendingUp, Workflow, LayoutDashboard,
-    Target, Inbox, ScanSearch, FileCheck, MapPin,
-    Gauge, Smartphone,
+    AlertTriangle,
+    ArrowRight,
+    CheckCircle2,
+    Clock3,
+    FileSearch,
+    Gauge,
+    KanbanSquare,
+    MessageCircle,
+    PackageCheck,
+    Route,
+    UserCheck,
 } from 'lucide-react';
 import {
-    PageContainer, PageSection, SectionIntro, HeroSection,
-    FeatureGrid, CTASection, ModuleGrid, ComparisonBand, OperationFlow,
-    FlowSection, TrustBand, FaqSection, ScrollReveal,
+    FeatureGrid,
+    OperationFlow,
+    PageContainer,
+    PageSection,
+    ScrollReveal,
+    SectionIntro,
 } from '@/ui/site';
-import Link from 'next/link';
 
 export const metadata = {
-    title: 'Condstore OS — Infraestrutura operacional premium para logística B2B',
-    description: 'O sistema operacional que unifica frete, vendas, atendimento e inteligência artificial em uma única plataforma. Elimine planilhas, integrações frágeis e operação manual.',
+    title: 'CONDSTORE OS — Operação comercial e logística com controle real',
+    description: 'Landing institucional oficial do CONDSTORE OS: operação supervisionada via WhatsApp, CRM operacional, frete e pedidos em um fluxo único com governança.',
 };
 
 export const revalidate = 86400;
 
+const primaryCtaClass = 'inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[hsl(var(--ui-text))] px-6 text-sm font-semibold text-[hsl(var(--ui-page))] transition-colors hover:bg-[hsl(var(--ui-text-muted))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]';
+const secondaryCtaClass = 'inline-flex h-12 items-center justify-center rounded-full border border-[hsl(var(--ui-border-strong))] px-6 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]';
+const inlineLinkClass = 'inline-flex items-center gap-1 text-sm font-semibold text-[hsl(var(--ui-text))] underline-offset-4 transition-colors hover:text-[hsl(var(--ui-text-muted))] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]';
+
+const painItems = [
+    {
+        icon: MessageCircle,
+        title: 'Contexto quebrado no atendimento',
+        description: 'A conversa acontece em uma tela e o status operacional está em outra. O time responde sem visão completa.',
+    },
+    {
+        icon: Clock3,
+        title: 'Cotação vira gargalo diário',
+        description: 'Sem trilha única de decisão, a resposta ao cliente atrasa e a janela comercial se fecha.',
+    },
+    {
+        icon: AlertTriangle,
+        title: 'Exceções aparecem tarde',
+        description: 'Pedido e shipment sem leitura contínua de estado geram retrabalho, urgência e ruído com o cliente.',
+    },
+    {
+        icon: FileSearch,
+        title: 'Governança fica reativa',
+        description: 'Sem rastro operacional consolidado, fica difícil auditar decisões e priorizar ação de forma confiável.',
+    },
+];
+
+const operationalSteps = [
+    {
+        icon: MessageCircle,
+        label: 'WhatsApp supervisionado',
+        detail: 'A conversa entra no fluxo com histórico de cliente e prioridade visível para o operador.',
+    },
+    {
+        icon: Route,
+        label: 'Cotação de frete no mesmo contexto',
+        detail: 'A equipe compara opções com critério operacional e mantém a negociação na mesma linha de execução.',
+        accent: 'var(--ui-success)',
+    },
+    {
+        icon: PackageCheck,
+        label: 'Pedido e shipment com dono',
+        detail: 'A aprovação operacional vira pedido com responsável definido e trilha rastreável de ponta a ponta.',
+    },
+    {
+        icon: Gauge,
+        label: 'Cockpit diário de decisão',
+        detail: 'SLA, exceções, fila e próximos passos ficam visiveis para execução e governança contínuas.',
+        accent: 'var(--ui-success)',
+    },
+];
+
+const cockpitCards = [
+    {
+        icon: KanbanSquare,
+        title: 'Fila com prioridade explícita',
+        description: 'O time sabe o que agir primeiro e por que, sem depender de memória ou planilha paralela.',
+    },
+    {
+        icon: AlertTriangle,
+        title: 'Exceção tratada com contexto',
+        description: 'Atraso, risco e bloqueio aparecem no estado certo, com responsável e próximo passo definidos.',
+    },
+    {
+        icon: Gauge,
+        title: 'SLA visível por operação',
+        description: 'Prazos e tempos de resposta ficam claros por fila, responsável e etapa do fluxo.',
+    },
+    {
+        icon: UserCheck,
+        title: 'Decisão com responsabilidade',
+        description: 'Cada aprovação é vinculada a usuário, horário e contexto comercial para auditoria real.',
+    },
+];
+
+const proofItems = [
+    'A operação é supervisionada: o operador mantém a decisão em pontos críticos do fluxo.',
+    'Atendimento, cotação, pedido e shipment compartilham a mesma trilha de execução.',
+    'O cockpit diário prioriza ação rápida com estado visível e responsabilidade definida.',
+    'Governança não é discurso: decisão, contexto e histórico ficam rastreaveis para o time.',
+];
+
 export default function HomePage() {
     return (
         <>
-            {/* ━━━ 1. HERO ━━━ */}
-            <HeroSection
-                eyebrow="Infraestrutura operacional premium"
-                title={
-                    <>
-                        O sistema operacional{' '}
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--ui-accent-blue))] to-[hsl(211,100%,72%)]">
-                            que a sua logística merece.
-                        </span>
-                    </>
-                }
-                subtitle="Frete, vendas, atendimento e IA em uma única plataforma — construída para operações reais no Brasil."
-                ctas={[
-                    { label: 'Começar agora', href: '/signup' },
-                    { label: 'Como funciona', href: '/como-funciona', variant: 'secondary' },
-                ]}
-            />
+            <section className="border-b border-[hsl(var(--ui-border)/0.4)]">
+                <PageContainer className="py-14 md:py-20">
+                    <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--ui-text-subtle))]">
+                                CONDSTORE OS • LANDING INSTITUCIONAL
+                            </p>
+                            <h1
+                                data-testid="public-hero-title"
+                                className="mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-[hsl(var(--ui-text))] md:text-5xl"
+                            >
+                                Operação comercial e logística sob controle, todos os dias.
+                            </h1>
+                            <p className="mt-5 max-w-3xl text-lg leading-relaxed text-[hsl(var(--ui-text-muted))]">
+                                O CONDSTORE OS conecta WhatsApp supervisionado, CRM operacional, frete e pedidos em um fluxo único.
+                                {' '}
+                                Clareza de estado, decisão rápida e governança prática para quem opera no ritmo real.
+                            </p>
+                            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <Link href="/avaliacao" className={primaryCtaClass} data-testid="public-primary-cta">
+                                    Solicitar avaliação operacional
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                                <Link href="/solucoes" className={secondaryCtaClass}>
+                                    Ver solução
+                                </Link>
+                            </div>
+                            <div className="mt-5 flex flex-wrap gap-5">
+                                <Link href="/casos" className={inlineLinkClass}>
+                                    Ver prova operacional
+                                </Link>
+                                <Link href="/login" className={inlineLinkClass}>
+                                    Entrar no sistema
+                                </Link>
+                            </div>
+                        </div>
 
-            {/* ━━━ 2. TRUST BAND ━━━ */}
-            <TrustBand />
+                        <aside className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] p-6">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-subtle))]">
+                                Operação em tempo real
+                            </p>
+                            <h2 className="mt-3 text-lg font-semibold text-[hsl(var(--ui-text))]">
+                                Estado visível para decidir sem fricção.
+                            </h2>
+                            <ul className="mt-5 space-y-3 text-sm text-[hsl(var(--ui-text-muted))]">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-[hsl(var(--ui-success))]" />
+                                    Conversas priorizadas com contexto comercial e operacional.
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-[hsl(var(--ui-success))]" />
+                                    Aprovação antes de pedido e handoff claro para logística.
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-[hsl(var(--ui-success))]" />
+                                    Timeline rastreável com dono, horário e próximo passo.
+                                </li>
+                            </ul>
+                        </aside>
+                    </div>
 
-            {/* ━━━ 3. DOR OPERACIONAL ━━━ */}
+                    <nav aria-label="Próximos passos do MVP" className="mt-10 grid grid-cols-1 gap-3 md:grid-cols-4">
+                        {[
+                            { href: '/solucoes', title: 'Solução', description: 'Visão do produto e abordagem do MVP.' },
+                            { href: '/casos', title: 'Prova operacional', description: 'Exemplos de execução no fluxo real.' },
+                            { href: '/avaliacao', title: 'Contato e agendamento', description: 'Avaliação guiada do cenário operacional.' },
+                            { href: '/login', title: 'Login', description: 'Acesso direto ao ambiente da operação.' },
+                        ].map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className="rounded-xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] p-4 transition-colors hover:bg-[hsl(var(--ui-surface-elevated)/0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
+                            >
+                                <span className="flex items-center justify-between text-sm font-semibold text-[hsl(var(--ui-text))]">
+                                    {item.title}
+                                    <ArrowRight className="h-4 w-4" />
+                                </span>
+                                <span className="mt-2 block text-xs leading-relaxed text-[hsl(var(--ui-text-muted))]">
+                                    {item.description}
+                                </span>
+                            </Link>
+                        ))}
+                    </nav>
+                </PageContainer>
+            </section>
+
             <ScrollReveal>
-                <PageSection spacing="lg" borderTop>
+                <PageSection spacing="md">
                     <PageContainer>
                         <SectionIntro
-                            eyebrow="O problema"
-                            title="A operação logística brasileira ainda opera no escuro."
+                            eyebrow="Proposta de valor"
+                            title="Clareza de operação para reduzir atrito e proteger margem."
+                            description="A landing resume o que importa para decisão: onde a operação perde tempo hoje e como o fluxo supervisionado resolve isso sem promessas vagas."
                         />
-                        <FeatureGrid
-                            columns={4}
-                            items={[
-                                {
-                                    icon: Clock,
-                                    title: 'Cotação lenta',
-                                    description: 'Telefonema, espera, digitação manual. 15 minutos por cotação.',
-                                },
-                                {
-                                    icon: Package,
-                                    title: 'Pedidos invisíveis',
-                                    description: 'WhatsApp → ERP → NF. Ninguém sabe o status real.',
-                                },
-                                {
-                                    icon: MessageSquare,
-                                    title: 'Atendimento cego',
-                                    description: 'Operador responde sem saber se a entrega atrasou.',
-                                },
-                                {
-                                    icon: TrendingUp,
-                                    title: 'Margem invisível',
-                                    description: 'Sem visibilidade de custo por envio, a margem desaparece.',
-                                },
-                            ]}
-                        />
+                        <FeatureGrid columns={4} items={painItems} />
                     </PageContainer>
                 </PageSection>
             </ScrollReveal>
 
-            {/* ━━━ 4. A VIRADA ━━━ */}
             <ScrollReveal>
-                <PageSection spacing="lg" borderTop>
+                <PageSection spacing="md" borderTop id="fluxo-operacional">
                     <PageContainer>
-                        <SectionIntro
-                            eyebrow="A virada"
-                            title="Do caos para controle total."
-                        />
-                        <ComparisonBand
-                            left={{
-                                label: 'Antes',
-                                tone: 'negative',
-                                items: [
-                                    'Cotação manual por telefone',
-                                    'Pedido sem estado definido',
-                                    'Atendimento desconectado da logística',
-                                    'Margem calculada uma vez por mês',
-                                    'Cada ferramenta é um silo',
-                                ],
-                            }}
-                            right={{
-                                label: 'Com o Condstore OS',
-                                tone: 'positive',
-                                items: [
-                                    'Cotação multi-transportadora automática',
-                                    'Pedido rastreado do checkout à entrega',
-                                    'Atendente vê contexto completo',
-                                    'Margem visível por transportadora e região',
-                                    'Uma plataforma, um fluxo operacional',
-                                ],
-                            }}
-                        />
-                    </PageContainer>
-                </PageSection>
-            </ScrollReveal>
-
-            {/* ━━━ 5. FLUXO INTERATIVO ━━━ */}
-            <ScrollReveal>
-                <PageSection spacing="xl" borderTop id="operacao">
-                    <PageContainer>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20 items-start">
-                            {/* Left: editorial intro */}
-                            <div className="lg:sticky lg:top-32">
+                        <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2 lg:gap-16">
+                            <div>
                                 <SectionIntro
-                                    eyebrow="O sistema vivo"
-                                    title="Do WhatsApp ao cockpit em um único fluxo."
-                                    description="Cada etapa alimenta a próxima. O contexto nunca se perde. O operador nunca começa do zero."
+                                    eyebrow="Fluxo operacional resumido"
+                                    title="Uma única jornada: atendimento, frete, pedido e cockpit."
+                                    description="Sem troca de contexto entre áreas. O status de cada etapa alimenta a próxima decisão da equipe."
                                     align="left"
                                 />
-                                <div className="mt-8 flex items-center gap-4">
-                                    <div className="flex -space-x-1.5">
-                                        {['bg-[hsl(var(--ui-accent-blue))]', 'bg-[hsl(var(--ui-success))]', 'bg-[hsl(var(--ui-accent-blue-strong))]'].map((bg, i) => (
-                                            <div key={i} className={`h-8 w-8 rounded-full border-2 border-[hsl(var(--ui-page))] ${bg} flex items-center justify-center`}>
-                                                <span className="text-[9px] font-bold text-white">{['C', 'P', 'L'][i]}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <span className="text-xs text-[hsl(var(--ui-text-subtle))] font-medium">
-                                        Conversas → Pedidos → Logística
-                                    </span>
-                                </div>
+                                <Link href="/solucoes" className={inlineLinkClass}>
+                                    Entender o fluxo completo
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
                             </div>
-
-                            {/* Right: the pipeline */}
-                            <div className="relative">
-                                <div className="absolute -top-8 -bottom-8 -left-4 -right-4 rounded-3xl border border-[hsl(var(--ui-border)/0.2)] bg-[hsl(var(--ui-surface)/0.15)]" />
-                                <div className="relative z-10 p-2 md:p-4">
-                                    <OperationFlow
-                                        steps={[
-                                            {
-                                                icon: Inbox,
-                                                label: 'Nova mensagem recebida',
-                                                detail: 'WhatsApp, portal ou API. O sistema captura e notifica em tempo real.',
-                                            },
-                                            {
-                                                icon: Users,
-                                                label: 'Cliente identificado',
-                                                detail: 'Perfil, histórico de pedidos e conversas anteriores carregados automaticamente.',
-                                                accent: 'var(--ui-success)',
-                                            },
-                                            {
-                                                icon: ScanSearch,
-                                                label: 'Intenção detectada',
-                                                detail: 'Frank Supremo analisa a mensagem e identifica: cotação, pedido, tracking ou suporte.',
-                                            },
-                                            {
-                                                icon: Zap,
-                                                label: 'Simulação criada',
-                                                detail: 'Cotação multi-transportadora gerada em milissegundos com margem calculada.',
-                                            },
-                                            {
-                                                icon: FileCheck,
-                                                label: 'Pedido confirmado',
-                                                detail: 'Pedido registrado com estado, responsável e timeline de eventos.',
-                                                accent: 'var(--ui-success)',
-                                            },
-                                            {
-                                                icon: MapPin,
-                                                label: 'Logística em andamento',
-                                                detail: 'Etiqueta gerada, coleta agendada, tracking ativo. Exceções detectadas.',
-                                            },
-                                            {
-                                                icon: Gauge,
-                                                label: 'Cockpit atualizado',
-                                                detail: 'Métricas, SLA e dashboards alimentados automaticamente. Ciclo fechado.',
-                                            },
-                                        ]}
-                                    />
-                                </div>
+                            <div className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.35)] p-4 md:p-6">
+                                <OperationFlow steps={operationalSteps} />
                             </div>
                         </div>
                     </PageContainer>
                 </PageSection>
             </ScrollReveal>
 
-            {/* ━━━ 6. MÓDULOS ━━━ */}
             <ScrollReveal>
-                <PageSection spacing="lg" borderTop>
+                <PageSection spacing="md" borderTop>
                     <PageContainer>
                         <SectionIntro
-                            eyebrow="Ecossistema"
-                            title="Módulos que trabalham juntos."
+                            eyebrow="Visão do cockpit"
+                            title="Estado operacional visível para ação rápida."
+                            description="Cada bloco do cockpit existe para orientar decisão imediata e reduzir retrabalho no dia a dia."
                         />
-                        <ModuleGrid
-                            modules={[
-                                {
-                                    icon: Truck,
-                                    name: 'Condstore Envios',
-                                    tagline: 'Gateway de frete',
-                                    description: 'Cotação, despacho e tracking multi-transportadora com tabelas próprias.',
-                                    accentClass: 'text-[hsl(var(--ui-accent-blue))]',
-                                },
-                                {
-                                    icon: Users,
-                                    name: 'Condstore CRM',
-                                    tagline: 'Vendas B2B',
-                                    description: 'Visão 360 do cliente conectada a pedidos, conversas e simulações.',
-                                    accentClass: 'text-[hsl(var(--ui-success))]',
-                                },
-                                {
-                                    icon: Workflow,
-                                    name: 'DOMINE',
-                                    tagline: 'Motor de eventos',
-                                    description: 'Processamento assíncrono com DLQ, retry e auditoria completa.',
-                                    accentClass: 'text-[hsl(var(--ui-accent-blue))]',
-                                },
-                                {
-                                    icon: LayoutDashboard,
-                                    name: 'Cockpit OS',
-                                    tagline: 'Centro de comando',
-                                    description: 'Métricas, alertas, filas de ação e diagnóstico em tempo real.',
-                                    accentClass: 'text-[hsl(var(--ui-accent-blue))]',
-                                },
-                                {
-                                    icon: Bot,
-                                    name: 'Frank Supremo',
-                                    tagline: 'IA operacional',
-                                    description: 'Análise de padrões, sugestões de ação e atendimento via WhatsApp.',
-                                    accentClass: 'text-[hsl(var(--ui-accent-blue))]',
-                                },
-                                {
-                                    icon: Shield,
-                                    name: 'Zero-Trust',
-                                    tagline: 'Segurança nativa',
-                                    description: 'Multi-tenant, RBAC, audit trail e detecção de anomalias.',
-                                    accentClass: 'text-[hsl(var(--ui-danger))]',
-                                },
-                                {
-                                    icon: Smartphone,
-                                    name: 'App do Ecossistema',
-                                    tagline: 'Acesso distribuído',
-                                    description: 'Cada perfil acessa o que precisa: gestor, operador, cliente, entregador.',
-                                    accentClass: 'text-[hsl(var(--ui-success))]',
-                                },
-                            ]}
-                        />
-                    </PageContainer>
-                </PageSection>
-            </ScrollReveal>
-
-            {/* ━━━ 7. RESULTADOS DO CLIENTE ━━━ */}
-            <ScrollReveal>
-                <PageSection spacing="lg" borderTop>
-                    <PageContainer>
-                        <SectionIntro
-                            eyebrow="Resultados"
-                            title="Benefícios que aparecem no caixa."
-                        />
-                        <FeatureGrid
-                            columns={3}
-                            items={[
-                                {
-                                    icon: Zap,
-                                    title: 'Cotação em milissegundos',
-                                    description: 'Multi-transportadora com tabela própria e API. Sem telefonema.',
-                                },
-                                {
-                                    icon: BarChart3,
-                                    title: 'Margem visível por envio',
-                                    description: 'Custo real por transportadora, região e canal. Decisão baseada em dado.',
-                                },
-                                {
-                                    icon: Target,
-                                    title: 'SLA auditável',
-                                    description: 'Prazo prometido vs. real, por rota. Exceções flagradas automaticamente.',
-                                },
-                                {
-                                    icon: MessageSquare,
-                                    title: 'Atendimento com contexto',
-                                    description: 'Pedido, frete, tracking e histórico em uma tela antes de responder.',
-                                },
-                                {
-                                    icon: Shield,
-                                    title: 'Segurança corporativa',
-                                    description: 'Multi-tenant, RBAC, audit trail e detecção de anomalias.',
-                                },
-                                {
-                                    icon: Bot,
-                                    title: 'IA governada',
-                                    description: 'Analisa padrões e sugere ações — o operador tem a palavra final.',
-                                },
-                            ]}
-                        />
-
-                        {/* Customer segments — merged into outcomes */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-                            {[
-                                { title: 'Distribuidores B2B', desc: 'Centenas de envios diários, múltiplas transportadoras, controle de margem.' },
-                                { title: 'Operadores logísticos', desc: 'Coleta, tracking e pós-venda para vários embarcadores em um cockpit.' },
-                                { title: 'E-commerce B2B', desc: 'Venda por WhatsApp com cotação automática e gestão integrada ao frete.' },
-                            ].map((segment) => (
-                                <div key={segment.title} className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-6 transition-all hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-elevated)/0.4)]">
-                                    <h3 className="text-base font-bold text-[hsl(var(--ui-text))] mb-2 tracking-tight">{segment.title}</h3>
-                                    <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">{segment.desc}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </PageContainer>
-                </PageSection>
-            </ScrollReveal>
-
-            {/* ━━━ 8. SEGURANÇA / GOVERNANÇA ━━━ */}
-            <ScrollReveal>
-                <PageSection spacing="lg" borderTop>
-                    <PageContainer>
-                        <SectionIntro
-                            eyebrow="Governança"
-                            title="Segurança que não é checklist — é arquitetura."
-                        />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {[
-                                { icon: Shield, title: 'Multi-tenant isolado', desc: 'Cada empresa em seu próprio contexto. Dados nunca se misturam.' },
-                                { icon: Users, title: 'RBAC nativo', desc: 'Controle granular de acesso por papel: admin, operador, viewer.' },
-                                { icon: FileCheck, title: 'Audit trail', desc: 'Cada ação registrada com timestamp, autor e contexto.' },
-                                { icon: ScanSearch, title: 'Anomaly detection', desc: 'Detecção automática de padrões suspeitos e alertas em tempo real.' },
-                            ].map((item) => {
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+                            {cockpitCards.map((item) => {
                                 const Icon = item.icon;
                                 return (
-                                    <div key={item.title} className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-6 transition-all hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-elevated)/0.4)]">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-danger)/0.08)] mb-4">
-                                            <Icon className="h-5 w-5 text-[hsl(var(--ui-danger))]" />
+                                    <article
+                                        key={item.title}
+                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.35)] p-6"
+                                    >
+                                        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-muted)/0.7)]">
+                                            <Icon className="h-5 w-5 text-[hsl(var(--ui-text))]" />
                                         </div>
-                                        <h3 className="text-base font-bold text-[hsl(var(--ui-text))] mb-2 tracking-tight">{item.title}</h3>
-                                        <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">{item.desc}</p>
-                                    </div>
+                                        <h3 className="text-base font-semibold text-[hsl(var(--ui-text))]">{item.title}</h3>
+                                        <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{item.description}</p>
+                                    </article>
                                 );
                             })}
                         </div>
+                        <div className="mt-8">
+                            <Link href="/casos" className={inlineLinkClass}>
+                                Ver casos operacionais
+                                <ArrowRight className="h-4 w-4" />
+                            </Link>
+                        </div>
                     </PageContainer>
                 </PageSection>
             </ScrollReveal>
 
-            {/* ━━━ 9. FAQ ━━━ */}
             <ScrollReveal>
-                <FaqSection />
+                <PageSection spacing="md" borderTop>
+                    <PageContainer>
+                        <SectionIntro
+                            eyebrow="Prova operacional"
+                            title="Credibilidade baseada em execução, não em promessa."
+                            description="A proposta institucional do CONDSTORE OS reforça operação supervisionada, governança e continuidade entre equipes."
+                        />
+                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                            <article className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.35)] p-6">
+                                <h3 className="text-base font-semibold text-[hsl(var(--ui-text))]">Evidências de operação real</h3>
+                                <ul className="mt-4 space-y-3 text-sm text-[hsl(var(--ui-text-muted))]">
+                                    {proofItems.map((item) => (
+                                        <li key={item} className="flex items-start gap-2">
+                                            <CheckCircle2 className="mt-0.5 h-4 w-4 text-[hsl(var(--ui-success))]" />
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </article>
+                            <article className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.35)] p-6">
+                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-subtle))]">
+                                    Governança e escala
+                                </p>
+                                <h3 className="mt-2 text-base font-semibold text-[hsl(var(--ui-text))]">
+                                    Cada decisão com rastreabilidade e responsabilidade.
+                                </h3>
+                                <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
+                                    A interface institucional e o produto compartilham a mesma narrativa: operação em tempo real, clareza de estado e execução confiável.
+                                </p>
+                            </article>
+                        </div>
+                    </PageContainer>
+                </PageSection>
             </ScrollReveal>
 
-            {/* ━━━ 10. CTA FINAL ━━━ */}
-            <CTASection
-                title="Pronto para profissionalizar sua operação?"
-                subtitle="Infraestrutura de verdade para logística de verdade."
-                ctas={[
-                    { label: 'Começar agora', href: '/signup' },
-                    { label: 'Falar com o time', href: '/about', variant: 'secondary' },
-                ]}
-            />
+            <section className="border-y border-[hsl(var(--ui-border)/0.4)] py-14 md:py-20">
+                <PageContainer narrow>
+                    <div className="text-center">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--ui-text-subtle))]">
+                            Próxima decisão
+                        </p>
+                        <h2 className="mt-4 text-3xl font-semibold tracking-tight text-[hsl(var(--ui-text))] md:text-4xl">
+                            Avalie seu cenário e avance para o próximo passo certo.
+                        </h2>
+                        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--ui-text-muted))]">
+                            A landing direciona para ação objetiva: entender a solução, validar prova operacional, agendar avaliação e acessar o ambiente.
+                        </p>
+                        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                            <Link href="/avaliacao" className={primaryCtaClass}>
+                                Agendar avaliação
+                                <ArrowRight className="h-4 w-4" />
+                            </Link>
+                            <Link href="/login" className={secondaryCtaClass}>
+                                Entrar no sistema
+                            </Link>
+                        </div>
+                        <div className="mt-5 flex flex-wrap items-center justify-center gap-5">
+                            <Link href="/solucoes" className={inlineLinkClass}>
+                                Explorar solução
+                            </Link>
+                            <Link href="/casos" className={inlineLinkClass}>
+                                Revisar prova operacional
+                            </Link>
+                        </div>
+                    </div>
+                </PageContainer>
+            </section>
         </>
     );
 }

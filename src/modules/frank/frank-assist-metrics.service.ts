@@ -1,6 +1,8 @@
 import { and, eq, gte, lte } from 'drizzle-orm';
-import { operationalEvents } from '@/drizzle/schema';
+import { frankTokenUsage, operationalEvents } from '@/drizzle/schema';
 import { getDb } from '@/infra/db';
+import { tenantRepository } from '@/infra/repositories/tenant.repository';
+import { getLocalDateKey } from '@/infra/time/window';
 
 export type FrankAssistOutcomeFilter = 'all' | 'success' | 'fallback' | 'handoff';
 export type FrankAssistGranularity = 'day' | 'week';
@@ -85,6 +87,10 @@ export interface FrankAssistMetricsData {
         suggestionsEdited: number;
         suggestionsRejected: number;
         memoryContextHits: number;
+        llmTokensUsed: number;
+        llmTrackedCalls: number;
+        llmUsageMissingCalls: number;
+        llmBlockedCalls: number;
     };
     intents: RankedMetricRow[];
     tools: ToolMetricRow[];
@@ -92,7 +98,7 @@ export interface FrankAssistMetricsData {
     volume: VolumeMetricRow[];
     sessions: SessionMetricRow[];
     sourceSummary: {
-        primarySource: 'operational_events';
+        primarySource: string;
         eventsUsed: string[];
         availableFields: string[];
         notes: string[];
@@ -125,6 +131,35 @@ function toLatencyMs(value: unknown): number {
     }
 
     return 0;
+}
+
+function countFrankLlmUsageEvents(rows: FrankAssistOperationalEventRow[]): {
+    trackedCalls: number;
+    usageMissingCalls: number;
+    blockedCalls: number;
+} {
+    let trackedCalls = 0;
+    let usageMissingCalls = 0;
+    let blockedCalls = 0;
+
+    for (const row of rows) {
+        if (row.eventType === 'frank_llm_usage_recorded') {
+            trackedCalls += 1;
+            if (row.payload.usageSource === 'missing') {
+                usageMissingCalls += 1;
+            }
+        }
+
+        if (row.eventType === 'frank_llm_usage_blocked') {
+            blockedCalls += 1;
+        }
+    }
+
+    return {
+        trackedCalls,
+        usageMissingCalls,
+        blockedCalls,
+    };
 }
 
 function normalizeSearchTerm(value?: string | null): string | null {
@@ -321,8 +356,15 @@ function buildRankedRows(
 export function buildFrankAssistMetrics(
     rows: FrankAssistOperationalEventRow[],
     filters: FrankAssistMetricsFilters,
+    llmUsageTotals: { totalTokens: number } = { totalTokens: 0 },
 ): FrankAssistMetricsData {
-    const responseEvents = rows
+    const scopedRows = rows.filter((row) => {
+        return row.tenantId === filters.tenantId
+            && row.createdAt >= filters.from
+            && row.createdAt <= filters.to;
+    });
+
+    const responseEvents = scopedRows
         .map(toFrankAssistResponseEvent)
         .filter((event): event is FrankAssistResponseEvent => event !== null)
         .filter((event) => matchesAssistFilters(event, filters))
@@ -331,6 +373,7 @@ export function buildFrankAssistMetrics(
     const totalInteractions = responseEvents.length;
     const totalHandoffs = responseEvents.filter((event) => event.outcome === 'fallback').length;
     const totalLatency = responseEvents.reduce((sum, event) => sum + event.latencyMs, 0);
+    const llmUsageEvents = countFrankLlmUsageEvents(scopedRows);
     const uniqueSessions = new Set(
         responseEvents
             .map((event) => event.sessionId)
@@ -426,12 +469,16 @@ export function buildFrankAssistMetrics(
                     ? 0
                     : Math.round(totalLatency / totalInteractions),
             uniqueSessions,
-            knowledgeUsed: rows.filter(r => r.eventType === 'frank_knowledge_used').length,
-            suggestionsGenerated: rows.filter(r => r.eventType === 'frank_suggestion_generated').length,
-            suggestionsApproved: rows.filter(r => r.eventType === 'frank_suggestion_approved').length,
-            suggestionsEdited: rows.filter(r => r.eventType === 'frank_suggestion_edited').length,
-            suggestionsRejected: rows.filter(r => r.eventType === 'frank_suggestion_rejected').length,
-            memoryContextHits: rows.filter(r => r.eventType === 'frank_memory_context_loaded').length,
+            knowledgeUsed: scopedRows.filter(r => r.eventType === 'frank_knowledge_used').length,
+            suggestionsGenerated: scopedRows.filter(r => r.eventType === 'frank_suggestion_generated').length,
+            suggestionsApproved: scopedRows.filter(r => r.eventType === 'frank_suggestion_approved').length,
+            suggestionsEdited: scopedRows.filter(r => r.eventType === 'frank_suggestion_edited').length,
+            suggestionsRejected: scopedRows.filter(r => r.eventType === 'frank_suggestion_rejected').length,
+            memoryContextHits: scopedRows.filter(r => r.eventType === 'frank_memory_context_loaded').length,
+            llmTokensUsed: llmUsageTotals.totalTokens,
+            llmTrackedCalls: llmUsageEvents.trackedCalls,
+            llmUsageMissingCalls: llmUsageEvents.usageMissingCalls,
+            llmBlockedCalls: llmUsageEvents.blockedCalls,
         },
         intents: buildRankedRows(intentCounts.entries(), totalInteractions),
         tools,
@@ -439,8 +486,8 @@ export function buildFrankAssistMetrics(
         volume: buildVolumeSeries(responseEvents, filters, granularity),
         sessions,
         sourceSummary: {
-            primarySource: 'operational_events',
-            eventsUsed: ['frank_assist_response'],
+            primarySource: 'operational_events + frank_token_usage',
+            eventsUsed: ['frank_assist_response', 'frank_llm_usage_recorded', 'frank_llm_usage_blocked'],
             availableFields: [
                 'tenantId',
                 'sessionId',
@@ -449,12 +496,15 @@ export function buildFrankAssistMetrics(
                 'outcome',
                 'fallbackReason',
                 'latencyMs',
+                'tokens',
+                'usageSource',
                 'timestamp',
             ],
             notes: [
                 'customer_timeline_events nao foi necessario para estas agregacoes.',
                 'frank_session_state nao e exibido nem acoplado ao painel.',
                 'handoffs sao derivados de frank_assist_response com outcome=fallback para evitar dupla contagem.',
+                'totais de tokens vem da tabela frank_token_usage; anomalias de usage e bloqueios diarios vem de operational_events.',
             ],
         },
     };
@@ -472,6 +522,8 @@ export async function getFrankAssistMetrics(
         'frank_suggestion_edited',
         'frank_suggestion_rejected',
         'frank_memory_context_loaded',
+        'frank_llm_usage_recorded',
+        'frank_llm_usage_blocked',
     ];
 
     const rows = await db
@@ -495,6 +547,23 @@ export async function getFrankAssistMetrics(
 
     // Filter to only relevant event types in application layer
     const filteredRows = rows.filter(r => eventsToQuery.includes(r.eventType));
+    const tenant = await tenantRepository.getTenantById(filters.tenantId);
+    const fromDayKey = getLocalDateKey(filters.from, tenant?.timezone ?? 'America/Sao_Paulo');
+    const toDayKey = getLocalDateKey(filters.to, tenant?.timezone ?? 'America/Sao_Paulo');
+    const usageRows = await db
+        .select({
+            tokens: frankTokenUsage.tokens,
+        })
+        .from(frankTokenUsage)
+        .where(
+            and(
+                eq(frankTokenUsage.tenantId, filters.tenantId),
+                gte(frankTokenUsage.date, fromDayKey),
+                lte(frankTokenUsage.date, toDayKey),
+            ),
+        );
 
-    return buildFrankAssistMetrics(filteredRows, filters);
+    const totalTokens = usageRows.reduce((sum, row) => sum + (row.tokens ?? 0), 0);
+
+    return buildFrankAssistMetrics(filteredRows, filters, { totalTokens });
 }
