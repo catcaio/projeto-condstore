@@ -69,9 +69,9 @@ export const COCKPIT_TILES: CockpitTile[] = [
     },
     {
         id: 'inbox',
-        label: 'Inbox',
-        description: 'Atendimentos do Copilot e interações',
-        href: '/inbox',
+        label: 'Atendimento',
+        description: 'Inbox operacional e interacoes via WhatsApp',
+        href: '/cockpit/atendimento',
         iconName: 'MessageSquareText',
         salaId: 'operations',
         required: { roles: ['admin', 'manager', 'operator'] },
