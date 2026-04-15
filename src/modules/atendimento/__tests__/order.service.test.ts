@@ -399,7 +399,7 @@ describe('Order Service Implementation', () => {
 
         await expect(
             orderService.createOrderFromQuote('tenant-1', 'conv-1', 'quote-1', 'op-1')
-        ).rejects.toThrow('Cannot convert quote with status: SENT');
+        ).rejects.toThrow('A cotacao precisa estar aprovada antes de criar o pedido.');
     });
 
     it('should prevent conversion if quote status is EXPIRED, CANCELED, or LOST', async () => {
