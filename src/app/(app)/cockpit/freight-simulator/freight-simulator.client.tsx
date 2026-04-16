@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { parseFreightSimulatorQueryState } from '@/modules/navigation';
+import { mockOrders } from '@/modules/pedidos';
 import { safeFetch } from '@/ui/lib/safe-fetch';
-
 import { Truck, Package, Plus, Trash2, Calculator, MapPin, Weight, Box } from 'lucide-react';
 
 interface VolumeRow {
@@ -75,23 +75,10 @@ export function FreightSimulatorClient() {
         () => parseFreightSimulatorQueryState(searchParams),
         [querySignature, searchParams]
     );
-    const [contextualOrder, setContextualOrder] = useState<any>(null);
-
-    useEffect(() => {
-        if (routeContext.orderId) {
-            safeFetch(`/api/cockpit/orders/${routeContext.orderId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.ok) {
-                        setContextualOrder(data.data);
-                    } else {
-                        setContextualOrder(null);
-                    }
-                })
-                .catch(() => setContextualOrder(null));
-        }
-    }, [routeContext.orderId]);
-
+    const contextualOrder = useMemo(
+        () => (routeContext.orderId ? mockOrders.find((order) => order.id === routeContext.orderId) : undefined),
+        [routeContext.orderId]
+    );
     const [cep, setCep] = useState('');
     const [city, setCity] = useState('');
     const [uf, setUf] = useState('');
@@ -112,15 +99,13 @@ export function FreightSimulatorClient() {
             return;
         }
 
-        if (contextualOrder.simulation?.cep) {
-            setCep(contextualOrder.simulation.cep);
-        }
-        
-        setInsuranceValue(contextualOrder.order.totalAmount || contextualOrder.order.price || '');
+        const destination = parseCityState(contextualOrder.customer.city);
+        setCity(destination.city);
+        setUf(destination.stateAbbr);
+        setInsuranceValue(parseMoneyInput(contextualOrder.total));
         setResult(null);
         setError('');
     }, [contextualOrder]);
-
 
     const addRow = () => setVolumes(v => [...v, { id: uid(), length: 0, width: 0, height: 0, qty: 1 }]);
     const removeRow = (id: string) => setVolumes(v => v.filter(r => r.id !== id));
@@ -237,27 +222,25 @@ export function FreightSimulatorClient() {
                                 Contexto do pedido
                             </p>
                             <h2 className="mt-2 text-lg font-semibold text-[hsl(var(--ui-text))]">
-                                Pedido #{contextualOrder.order.id.split('-')[0]} • {contextualOrder.organization?.tradeName || contextualOrder.organization?.legalName || 'Cliente'}
+                                Pedido #{contextualOrder.id} • {contextualOrder.customer.company}
                             </h2>
                             <p className="mt-1 text-sm text-[hsl(var(--ui-text-muted))]">
-                                Destino {contextualOrder.simulation?.cep || 'Não informado'} • canal {contextualOrder.order.channel} • status {contextualOrder.order.status}
+                                Destino {contextualOrder.customer.city} • canal {contextualOrder.channel} • owner {contextualOrder.owner}
                             </p>
-
                         </div>
                         <div className="flex flex-wrap gap-2">
                             <Link
-                                href={`/cockpit/orders?id=${contextualOrder.order.id}`}
+                                href={`/pedidos?pedido=${contextualOrder.id}`}
                                 className="rounded-lg border border-[hsl(var(--ui-border))] px-3 py-2 text-sm font-medium text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-page))]"
                             >
                                 Abrir pedido
                             </Link>
                             <Link
-                                href={`/cockpit/deliveries?orderId=${contextualOrder.order.id}`}
+                                href={`/logistica?pedido=${contextualOrder.id}`}
                                 className="rounded-lg border border-[hsl(var(--ui-border))] px-3 py-2 text-sm font-medium text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-page))]"
                             >
-                                Ir para rastreio
+                                Ir para logística
                             </Link>
-
                         </div>
                     </div>
                 </section>
