@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
+import { getDbSslConfig } from "@/infra/db-config";
 
 // Prevent multiple pools in development due to HMR
 const globalForDb = globalThis as unknown as {
@@ -23,7 +24,7 @@ export function getDb() {
       connectionLimit: 10,
       multipleStatements: false,
       timezone: "Z",
-      ssl: { rejectUnauthorized: true },
+      ssl: getDbSslConfig(),
     });
   }
   return drizzle(globalForDb.pool, { mode: "default" });

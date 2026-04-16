@@ -100,11 +100,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       groupBy
         ? (async () => {
             const db = await getDb();
+            // attribution breakdown comes from attribution_clicks table, not public_events
             return db.execute(
               groupBy === 'utm_campaign'
                 ? sql`
                     SELECT COALESCE(NULLIF(utm_campaign, ''), '(none)') AS bucket, COUNT(*) AS count
-                    FROM public_events
+                    FROM attribution_clicks
                     WHERE tenant_id = ${tenantId}
                       AND created_at >= NOW() - INTERVAL 7 DAY
                     GROUP BY COALESCE(NULLIF(utm_campaign, ''), '(none)')
@@ -112,14 +113,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
                   `
                 : sql`
                     SELECT COALESCE(NULLIF(utm_source, ''), '(none)') AS bucket, COUNT(*) AS count
-                    FROM public_events
+                    FROM attribution_clicks
                     WHERE tenant_id = ${tenantId}
                       AND created_at >= NOW() - INTERVAL 7 DAY
                     GROUP BY COALESCE(NULLIF(utm_source, ''), '(none)')
                     ORDER BY count DESC, bucket ASC
                   `,
             );
-          })()
+          })().catch(err => {
+            logger.error('Failed to load attribution breakdown', err as Error, { tenantId, groupBy });
+            return null;
+          })
         : Promise.resolve(null),
       // pedidosHoje: orders created today for this tenant
       (async () => {

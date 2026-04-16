@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
         const conversationId = searchParams.get('conversationId') || undefined;
         
         const orders = await orderService.listOrders(tenantId, { limit, offset, conversationId });
-
+        logger.info(`Listed orders for tenant`, { tenantId, count: orders.length, requestId });
         return NextResponse.json({ ok: true, data: orders });
     } catch (err: any) {
         logger.error('Failed to list orders', err as Error, { requestId });
