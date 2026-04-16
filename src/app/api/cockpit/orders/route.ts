@@ -16,9 +16,11 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const limitParam = Number(searchParams.get('limit')) || 200;
         const limit = Math.min(limitParam, 500);
+        const offsetParam = Number(searchParams.get('offset')) || 0;
+        const offset = Math.max(offsetParam, 0);
         const conversationId = searchParams.get('conversationId') || undefined;
         
-        const orders = await orderService.listOrders(tenantId, { limit, conversationId });
+        const orders = await orderService.listOrders(tenantId, { limit, offset, conversationId });
         logger.info(`Listed orders for tenant`, { tenantId, count: orders.length, requestId });
         return NextResponse.json({ ok: true, data: orders });
     } catch (err: any) {

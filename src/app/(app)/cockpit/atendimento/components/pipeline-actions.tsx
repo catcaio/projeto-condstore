@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { OperationFeedback, type OperationFeedbackState } from '../../_components/operation-feedback';
 
 interface PipelineActionsProps {
     conversationId: string;
@@ -20,6 +21,7 @@ const STAGES = [
 
 export default function PipelineActions({ conversationId, currentStage, onStageChanged }: PipelineActionsProps) {
     const [loadingStage, setLoadingStage] = useState<string | null>(null);
+    const [feedback, setFeedback] = useState<OperationFeedbackState | null>(null);
 
     const handleStageChange = async (newStage: string) => {
         if (newStage === currentStage || loadingStage) return;
@@ -33,38 +35,50 @@ export default function PipelineActions({ conversationId, currentStage, onStageC
             });
             if (res.ok) {
                 onStageChanged();
+                setFeedback({
+                    tone: 'success',
+                    title: 'Estágio atualizado',
+                });
             } else {
-                alert('Erro ao alterar o estágio.');
+                setFeedback({
+                    tone: res.status >= 500 ? 'error' : 'warning',
+                    title: res.status >= 500 ? 'Erro de servidor ao alterar estágio' : 'Ação inválida para este estágio',
+                });
             }
         } catch (err) {
-            alert('Falha na requisição.');
+            setFeedback({
+                tone: 'error',
+                title: 'Erro de rede ao alterar estágio',
+                description: 'Confira sua conexão e tente novamente.',
+            });
         } finally {
             setLoadingStage(null);
         }
     };
 
     return (
-        <div className="flex flex-wrap gap-2 text-xs">
-            {STAGES.map(stage => {
-                const isActive = stage.id === (currentStage || 'NEW');
-                const isUpdating = loadingStage === stage.id;
-                
-                return (
-                    <button
-                        key={stage.id}
-                        onClick={() => handleStageChange(stage.id)}
-                        disabled={!!loadingStage}
-                        className={`px-2 py-1 rounded-md flex items-center gap-1 transition-colors font-medium border ${
-                            isActive 
-                                ? `border-${stage.color.split(' ')[1].split('-')[1]}-400 ring-1 ring-${stage.color.split(' ')[1].split('-')[1]}-300 ${stage.color}`
-                                : `border-transparent ${stage.color} opacity-60 hover:opacity-100`
-                        } disabled:opacity-50`}
-                    >
-                        {isUpdating && <Loader2 className="w-3 h-3 animate-spin inline-block" />}
-                        {stage.label}
-                    </button>
-                );
-            })}
+        <div className="space-y-2">
+            <div className="flex flex-wrap gap-2 text-xs">
+                {STAGES.map(stage => {
+                    const isActive = stage.id === (currentStage || 'NEW');
+                    const isUpdating = loadingStage === stage.id;
+                    
+                    return (
+                        <button
+                            key={stage.id}
+                            onClick={() => handleStageChange(stage.id)}
+                            disabled={!!loadingStage}
+                            className={`px-2 py-1 rounded-md flex items-center gap-1 transition-colors font-medium border ${
+                                isActive ? `${stage.color} ring-1 ring-black/10 border-black/20` : `border-transparent ${stage.color} opacity-60 hover:opacity-100`
+                            } disabled:opacity-50`}
+                        >
+                            {isUpdating && <Loader2 className="w-3 h-3 animate-spin inline-block" />}
+                            {stage.label}
+                        </button>
+                    );
+                })}
+            </div>
+            <OperationFeedback feedback={feedback} />
         </div>
     );
 }

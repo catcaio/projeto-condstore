@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Package, Truck, MoveRight, HelpCircle, Clock } from 'lucide-react';
 import { Badge } from '@/ui/components';
+import { OperationFeedback, type OperationFeedbackState } from '../_components/operation-feedback';
 
 interface OrderCard {
     id: string;
@@ -26,26 +27,60 @@ const COLUMNS = [
 export default function OrdersClient() {
     const [orders, setOrders] = useState<OrderCard[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
     const [draggedItem, setDraggedItem] = useState<OrderCard | null>(null);
+    const [feedback, setFeedback] = useState<OperationFeedbackState | null>(null);
+    const pageSize = 50;
 
-    const fetchOrders = async () => {
-        setLoading(true);
+    const fetchOrdersPage = async (nextOffset = 0, append = false) => {
+        if (append) {
+            setLoadingMore(true);
+        } else {
+            setLoading(true);
+        }
+
         try {
-            const res = await fetch('/api/cockpit/orders?limit=200');
-            if (res.ok) {
-                const json = await res.json();
-                setOrders(json.data || []);
+            const res = await fetch(`/api/cockpit/orders?limit=${pageSize}&offset=${nextOffset}`);
+            if (!res.ok) {
+                const tone = res.status >= 500 ? 'error' : 'warning';
+                setFeedback({
+                    tone,
+                    title: res.status >= 500 ? 'Erro de servidor ao carregar pedidos' : 'Ação inválida ao carregar pedidos',
+                    description: 'Tente novamente. Se persistir, acione o suporte operacional.',
+                });
+                return;
             }
+
+            const json = await res.json();
+            const incoming = (json.data || []) as OrderCard[];
+            setOrders((prev) => (append ? [...prev, ...incoming] : incoming));
+            setOffset(nextOffset + incoming.length);
+            setHasMore(incoming.length === pageSize);
         } catch (e) {
-            console.error('Falha ao buscar pedidos', e);
+            setFeedback({
+                tone: 'error',
+                title: 'Erro de rede ao carregar pedidos',
+                description: 'Verifique sua conexão e tente novamente.',
+            });
         } finally {
-            setLoading(false);
+            if (append) {
+                setLoadingMore(false);
+            } else {
+                setLoading(false);
+            }
         }
     };
 
     useEffect(() => {
-        fetchOrders();
+        fetchOrdersPage(0, false);
     }, []);
+
+    const loadMore = () => {
+        if (loadingMore || !hasMore) return;
+        fetchOrdersPage(offset, true);
+    };
 
     const updateStatus = async (orderId: string, newStatus: string) => {
         // Optimistic UI Update
@@ -61,12 +96,25 @@ export default function OrdersClient() {
             });
 
             if (!res.ok) {
-                alert('Erro ao mover a ordem no servidor.');
-                fetchOrders(); // Revert on failure
+                setFeedback({
+                    tone: res.status >= 500 ? 'error' : 'warning',
+                    title: res.status >= 500 ? 'Erro de servidor ao mover pedido' : 'Ação inválida para este pedido',
+                    description: 'Os dados foram recarregados para manter consistência.',
+                });
+                fetchOrdersPage(0, false); // Revert on failure
+                return;
             }
+            setFeedback({
+                tone: 'success',
+                title: 'Status do pedido atualizado',
+            });
         } catch (e) {
-            alert('Falha na requisição.');
-            fetchOrders();
+            setFeedback({
+                tone: 'error',
+                title: 'Erro de rede ao atualizar pedido',
+                description: 'A operação não foi concluída. Tentando recarregar os dados.',
+            });
+            fetchOrdersPage(0, false);
         }
     };
 
@@ -94,7 +142,12 @@ export default function OrdersClient() {
     }
 
     return (
-        <div className="flex h-full gap-4 overflow-x-auto pb-4">
+        <div className="flex h-full flex-col gap-4">
+            <OperationFeedback feedback={feedback} />
+            <div className="text-xs text-[hsl(var(--ui-text-muted))]">
+                Exibindo os pedidos mais recentes em lotes de {pageSize}.
+            </div>
+            <div className="flex flex-1 gap-4 overflow-x-auto pb-2">
             {COLUMNS.map(col => {
                 const columnItems = orders.filter(o => (o.status || 'DRAFT') === col.id);
                 
@@ -158,6 +211,17 @@ export default function OrdersClient() {
                     </div>
                 );
             })}
+            </div>
+            <div className="flex justify-center">
+                <button
+                    type="button"
+                    onClick={loadMore}
+                    disabled={!hasMore || loadingMore}
+                    className="rounded-md border border-[hsl(var(--ui-border))] bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    {loadingMore ? 'Carregando mais pedidos...' : hasMore ? 'Carregar mais pedidos' : 'Todos os pedidos carregados'}
+                </button>
+            </div>
         </div>
     );
 }

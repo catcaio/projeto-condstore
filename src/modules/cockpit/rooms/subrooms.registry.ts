@@ -26,22 +26,10 @@ export const subrooms: SubRoomDef[] = [
     { id: 'shipments', roomId: 'logistica', label: 'Shipments', description: 'Acompanhamento de envios logísticos', route: '/cockpit/orders?tab=shipments', actionLabel: 'Ver Shipments' },
     { id: 'rastreamento', roomId: 'logistica', label: 'Rastreamento', description: 'Status de rastreio de pacotes', route: '/cockpit/logistica/rastreamento', actionLabel: 'Rastrear' },
 
-    // MVP freeze: preservar estes atalhos apenas como fronteira de compatibilidade; não ampliar Frank sem opt-in explícito.
-    { id: 'playbooks', roomId: 'frank', label: 'Playbooks', description: 'Construa fluxos e réguas de negociação ativas', route: '/cockpit/frank/playbooks', actionLabel: 'Configurar' },
-    { id: 'knowledge', roomId: 'frank', label: 'Knowledge Base', description: 'Injetar pdfs e treinar inteligência primária', route: '/cockpit/frank/knowledge', actionLabel: 'Treinar Base' },
-    { id: 'sugestoes', roomId: 'frank', label: 'Sugestões', description: 'Supervisão de respostas em modo guiado', route: '/cockpit/frank/suggestions', actionLabel: 'Revisar Sugestões' },
-    { id: 'intents', roomId: 'frank', label: 'Treinamento de Intents', description: 'Treine a intenção a partir de conversas', route: '/cockpit/frank/intents', actionLabel: 'Validar Intents' },
-    { id: 'frank-metricas', roomId: 'frank', label: 'Métricas Frank', description: 'Insights operacionais do assessor de AI', route: '/cockpit/frank', actionLabel: 'Ver Métricas' },
-
     // Inteligência
     { id: 'inteligencia-metricas', roomId: 'inteligencia', label: 'Dashboard', description: 'Métricas globais da operação e faturamento', route: '/cockpit/metricas', actionLabel: 'Ver Dashboard' },
     { id: 'performance', roomId: 'inteligencia', label: 'Performance', description: 'Tempo médio de resolução', route: '/cockpit/performance', actionLabel: 'Analisar Tempo' },
     { id: 'conversoes-intel', roomId: 'inteligencia', label: 'Afunilamento Gráfico', description: 'Evolução e KPIs de aquisição/conversão', route: '/cockpit/conversoes', actionLabel: 'Ver Gráficos' },
-
-    // Governança
-    { id: 'logs', roomId: 'governanca', label: 'Logs do Sistema', description: 'Auditoria térmica e tracing de requisições', route: '/sistema/logs', actionLabel: 'Auditar Logs' },
-    { id: 'auditoria', roomId: 'governanca', label: 'Auditoria', description: 'Rastreio de autorizações por tenant-id', route: '/sistema/security', actionLabel: 'Abrir Painel' },
-    { id: 'eventos', roomId: 'governanca', label: 'Eventos', description: 'Falhas e reprocessamento DLQ', route: '/sistema/dlq', actionLabel: 'Ver Dead Letter' },
 
     // Configurações
     { id: 'pipeline', roomId: 'configuracoes', label: 'Pipeline de Vendas', description: 'Configurar estágios do CRM', route: '/cockpit/configuracoes/pipeline', actionLabel: 'Configurar' },
