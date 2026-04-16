@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import mysql from "mysql2/promise";
 import { requireInternalToken } from '@/infra/auth/tenant-route-guard';
 import { logger } from '@/infra/logger';
+import { getDbSslConfig } from "@/infra/db-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -257,7 +258,7 @@ async function handler(request: NextRequest) {
 
         const connection = await mysql.createConnection({
             uri: dbUrl,
-            ssl: { rejectUnauthorized: true }
+            ssl: getDbSslConfig()
         });
 
         const applied: string[] = [];

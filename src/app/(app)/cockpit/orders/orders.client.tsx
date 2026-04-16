@@ -7,7 +7,7 @@ import { Badge } from '@/ui/components';
 
 interface OrderCard {
     id: string;
-    status: 'CREATED' | 'CONFIRMED' | 'SCHEDULED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED';
+    status: 'DRAFT' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
     carrier?: string;
     service?: string;
     price?: string;
@@ -15,11 +15,12 @@ interface OrderCard {
 }
 
 const COLUMNS = [
-    { id: 'CREATED', title: 'Criados', color: 'border-l-4 border-gray-400' },
+    { id: 'DRAFT', title: 'Rascunho', color: 'border-l-4 border-gray-400' },
     { id: 'CONFIRMED', title: 'Confirmados', color: 'border-l-4 border-blue-400' },
-    { id: 'SCHEDULED', title: 'Agendados', color: 'border-l-4 border-purple-400' },
-    { id: 'IN_TRANSIT', title: 'Em Trânsito', color: 'border-l-4 border-orange-400' },
+    { id: 'PROCESSING', title: 'Em Processamento', color: 'border-l-4 border-purple-400' },
+    { id: 'SHIPPED', title: 'Enviados / Em Trânsito', color: 'border-l-4 border-orange-400' },
     { id: 'DELIVERED', title: 'Entregues', color: 'border-l-4 border-green-500' },
+    { id: 'CANCELED', title: 'Cancelados', color: 'border-l-4 border-red-500' },
 ];
 
 export default function OrdersClient() {
@@ -95,7 +96,7 @@ export default function OrdersClient() {
     return (
         <div className="flex h-full gap-4 overflow-x-auto pb-4">
             {COLUMNS.map(col => {
-                const columnItems = orders.filter(o => (o.status || 'CREATED') === col.id);
+                const columnItems = orders.filter(o => (o.status || 'DRAFT') === col.id);
                 
                 return (
                     <div 

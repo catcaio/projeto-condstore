@@ -5,6 +5,8 @@ import mysql from 'mysql2/promise';
 import { logger } from './logger';
 import { InfrastructureError, ErrorCode } from './errors';
 
+import { getDbSslConfig } from './db-config';
+
 // Prevent multiple pools in development due to HMR
 const globalForDb = globalThis as unknown as {
     conn: mysql.Pool | undefined;
@@ -49,7 +51,7 @@ export async function getDb() {
             connectionLimit: 10,
             multipleStatements: false,
             timezone: 'Z',
-            ssl: { rejectUnauthorized: true },
+            ssl: getDbSslConfig(),
         });
     }
     // Return drizzle instance using the singleton pool
