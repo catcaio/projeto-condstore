@@ -128,6 +128,8 @@ export async function POST(request: NextRequest) {
             await db.update(invites).set({ usedAt: new Date() }).where(eq(invites.id, invite.id));
         }
 
+        let isProvisioningNewTenant = false;
+
         // 2b. Try domain-based tenant resolution
         if (!tenantId) {
             const emailDomain = normalizedEmail.split('@')[1];
@@ -149,6 +151,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (!tenantId) {
+            isProvisioningNewTenant = true;
             // ZERO-TOUCH PROVISIONING
             // If the user has no invite and isn't mapped to a domain, create a new workspace for them
             tenantId = crypto.randomUUID();
@@ -173,7 +176,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 2c. Validate privileged role access
-        if (PRIVILEGED_ROLES.has(resolvedRole) && !inviteToken && !isAdminAllowlisted(normalizedEmail)) {
+        if (!isProvisioningNewTenant && PRIVILEGED_ROLES.has(resolvedRole) && !inviteToken && !isAdminAllowlisted(normalizedEmail)) {
             return NextResponse.json(
                 { success: false, error: 'Gerente e Administrador requerem token de convite' },
                 { status: 403 }
