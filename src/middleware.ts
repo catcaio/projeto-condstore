@@ -94,13 +94,13 @@ function isPublicTrackingPath(pathname: string): boolean {
 
 function misconfiguredResponse(pathname: string, code: string): NextResponse {
     if (pathname.startsWith('/api/')) {
-        return new NextResponse(JSON.stringify({ error: 'Internal Server Error', code }), {
+        return new NextResponse(JSON.stringify({ error: 'Sistema em manutenção ou misconfigurado.', code }), {
             status: 500,
             headers: { 'content-type': 'application/json' },
         });
     }
 
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return new NextResponse('Sistema em manutenção ou misconfigurado.', { status: 500 });
 }
 
 export async function middleware(req: NextRequest) {
