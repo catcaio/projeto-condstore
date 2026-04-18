@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { userRepository } from '@/infra/repositories/user.repository';
 import { verifyPassword } from '@/infra/auth/password';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
+import { getEnvMisconfigurationResponse } from '@/infra/env/require-env';
 import { logger } from '@/infra/logger';
 import { structuredLogger } from '@/infra/log/logger';
 import { hashRateLimitKeyForLog, rateLimiter } from '@/infra/security/rate-limiter';
@@ -68,27 +69,11 @@ function logLoginDiagnostic(input: {
     structuredLogger.warn('auth_login_rejected', context);
 }
 
-function validateCriticalLoginEnv(requestId: string): NextResponse | null {
-    try {
-        requireDatabaseUrl();
-        getAuthSecretValue();
-        return null;
-    } catch (error) {
-        const code = error instanceof Error ? error.message : 'AUTH_LOGIN_MISCONFIGURED';
-        logger.error('CRITICAL: auth login runtime misconfiguration', error as Error, {
-            requestId,
-            code,
-        });
-        return NextResponse.json(
-            { success: false, error: 'Internal Server Error', code },
-            { status: 500 },
-        );
-    }
-}
+// Local validation removed in favor of centralized getEnvMisconfigurationResponse
 
 export async function POST(request: NextRequest) {
     const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID?.() ?? `${Date.now()}`;
-    const misconfigured = validateCriticalLoginEnv(requestId);
+    const misconfigured = getEnvMisconfigurationResponse(requestId);
     if (misconfigured) {
         return misconfigured;
     }

@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 
 import crypto from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { getEnvMisconfigurationResponse } from '@/infra/env/require-env';
 import { z } from 'zod';
 import { getDb } from '@/infra/db';
 import { users, invites, tenantSignupPolicies, tenants, tenantBudgets } from '@/drizzle/schema';
@@ -34,6 +35,8 @@ function isAdminAllowlisted(email: string): boolean {
 
 export async function POST(request: NextRequest) {
     const requestId = crypto.randomUUID?.() ?? `${Date.now()}`;
+    const misconfigured = getEnvMisconfigurationResponse(requestId);
+    if (misconfigured) return misconfigured;
 
     // ── Rate limit (IP-based, 5 per 60s) ─────────────────────────────
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown';

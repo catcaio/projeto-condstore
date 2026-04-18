@@ -98,9 +98,14 @@ export function SignupForm() {
             });
 
             const data = await res.json().catch(() => null);
+            const reqId = res.headers.get('x-request-id') || 'desconhecido';
 
             if (!res.ok || !data?.success) {
-                setError(data?.error || `Erro ${res.status}`);
+                if (!data) {
+                    setError(`Falha no servidor (não-JSON) Status ${res.status}. ID: ${reqId}`);
+                } else {
+                    setError(data.error || `Erro ${res.status}`);
+                }
                 return;
             }
 
@@ -111,8 +116,8 @@ export function SignupForm() {
             } else {
                 window.location.href = '/home';
             }
-        } catch {
-            setError('Erro de conexão. Tente novamente.');
+        } catch (err: any) {
+            setError(`Erro de conexão: ${err.message}. Tente novamente.`);
         } finally {
             setLoading(false);
         }

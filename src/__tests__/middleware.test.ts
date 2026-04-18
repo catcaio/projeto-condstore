@@ -93,7 +93,7 @@ describe('Middleware', () => {
         expect(res.status).toBe(500);
         const data = await res.json();
         expect(data).toEqual({
-            error: 'Internal Server Error',
+            error: 'Sistema em manutenção ou misconfigurado.',
             code: 'MISSING_AUTH_SECRET',
         });
     });
