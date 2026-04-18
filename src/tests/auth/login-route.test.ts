@@ -91,6 +91,7 @@ describe('Login API Route Hardening', () => {
     });
 
     it('should return 500 JSON if DATABASE_URL is missing outside development', async () => {
+        vi.stubEnv('STRICT_TEST', 'true');
         delete process.env.DATABASE_URL;
 
         const req = new NextRequest('http://localhost:3000/api/auth/login', {

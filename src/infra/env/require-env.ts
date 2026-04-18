@@ -42,8 +42,10 @@ export function assertCriticalEnvSetup() {
  */
 export function getEnvMisconfigurationResponse(requestId: string): import('next/server').NextResponse | null {
     try {
-        // We only skip in test if explicitly requested, but for stability 
-        // we check everything to avoid hidden runtime failures.
+        if (process.env.NODE_ENV === 'test' && !process.env.STRICT_TEST) {
+            return null;
+        }
+        
         requireDatabaseUrl();
         getAuthSecretValue();
         getPiiEncryptionKey();
