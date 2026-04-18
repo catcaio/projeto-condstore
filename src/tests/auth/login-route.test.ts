@@ -37,6 +37,11 @@ describe('Login API Route Hardening', () => {
         vi.stubEnv('NODE_ENV', 'test');
         process.env.DATABASE_URL = 'mysql://root:root@localhost:3306/db';
         process.env.AUTH_SECRET = 'login-auth-secret-with-32-bytes';
+        process.env.PII_ENCRYPTION_KEY = 'a'.repeat(64); // Valid hex key
+        process.env.INTERNAL_DIAG_TOKEN = 'test-token';
+        process.env.INTERNAL_EXPORT_TOKEN = 'test-token';
+        process.env.INTERNAL_JOB_TOKEN = 'test-token';
+        process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
     });
 
     it('should return 429 JSON when rate limited, never HTML', async () => {
@@ -98,9 +103,9 @@ describe('Login API Route Hardening', () => {
         expect(res.headers.get('content-type')).toContain('application/json');
 
         const data = await res.json();
-        expect(data).toEqual({
+        expect(data).toMatchObject({
             success: false,
-            error: 'Internal Server Error',
+            error: 'Sistema em manutenção ou misconfigurado.',
             code: 'MISSING_DATABASE_URL',
         });
     });

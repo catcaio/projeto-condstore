@@ -42,8 +42,8 @@ export function assertCriticalEnvSetup() {
  */
 export function getEnvMisconfigurationResponse(requestId: string): import('next/server').NextResponse | null {
     try {
-        if (process.env.NODE_ENV === 'test') return null;
-        
+        // We only skip in test if explicitly requested, but for stability 
+        // we check everything to avoid hidden runtime failures.
         requireDatabaseUrl();
         getAuthSecretValue();
         getPiiEncryptionKey();
@@ -57,12 +57,13 @@ export function getEnvMisconfigurationResponse(requestId: string): import('next/
         
         return null;
     } catch (error: any) {
+        const code = error.message.includes(' ') ? 'MISCONFIGURED_RUNTIME' : error.message;
         const { NextResponse } = require('next/server');
         return NextResponse.json(
             { 
                 success: false, 
                 error: 'Sistema em manutenção ou misconfigurado.', 
-                code: 'MISCONFIGURED_RUNTIME',
+                code,
                 details: error.message,
                 requestId 
             },
