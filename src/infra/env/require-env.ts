@@ -35,3 +35,38 @@ export function assertCriticalEnvSetup() {
 
     console.info('✅ Critical Environment Variables Verified.');
 }
+
+/**
+ * Validates critical environment variables for API routes.
+ * Returns a JSON NextResponse if misconfigured, or null if OK.
+ */
+export function getEnvMisconfigurationResponse(requestId: string): import('next/server').NextResponse | null {
+    try {
+        if (process.env.NODE_ENV === 'test') return null;
+        
+        requireDatabaseUrl();
+        getAuthSecretValue();
+        getPiiEncryptionKey();
+        
+        if (isStrictRuntimeEnvironment()) {
+            const missing = getMissingCriticalInternalTokenEnvs();
+            if (missing.length > 0) {
+                throw new Error(`Missing internal tokens: ${missing.join(', ')}`);
+            }
+        }
+        
+        return null;
+    } catch (error: any) {
+        const { NextResponse } = require('next/server');
+        return NextResponse.json(
+            { 
+                success: false, 
+                error: 'Sistema em manutenção ou misconfigurado.', 
+                code: 'MISCONFIGURED_RUNTIME',
+                details: error.message,
+                requestId 
+            },
+            { status: 500 }
+        );
+    }
+}

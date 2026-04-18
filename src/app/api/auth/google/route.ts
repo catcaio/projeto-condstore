@@ -1,8 +1,13 @@
 export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
+import { getEnvMisconfigurationResponse } from '@/infra/env/require-env';
 
 export async function GET() {
+    const requestId = `google-${Date.now()}`;
+    const misconfigured = getEnvMisconfigurationResponse(requestId);
+    if (misconfigured) return misconfigured;
+
     const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
     const REDIRECT_URI_BASE = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 

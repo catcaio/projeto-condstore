@@ -19,7 +19,14 @@ export function getDbSslConfig(): DbSslConfig | undefined {
     }
 
     // Default secure configuration for production/staging
-    return {
+    const config: DbSslConfig = {
         rejectUnauthorized: true,
     };
+
+    const ca = process.env.DATABASE_CA;
+    if (ca) {
+        config.ca = ca;
+    }
+
+    return config;
 }
