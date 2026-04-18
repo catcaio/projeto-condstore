@@ -26,7 +26,8 @@ function GoogleIcon({ className }: { className?: string }) {
     );
 }
 
-const PRIVILEGED_ROLES = new Set(['manager', 'admin']);
+// Roles that require an invite in normal flows (kept here for reference if needed, but UI is simplified)
+// const PRIVILEGED_ROLES = new Set(['manager', 'admin']);
 
 export function SignupForm() {
     const searchParams = useSearchParams();
@@ -38,14 +39,13 @@ export function SignupForm() {
     const [email, setEmail] = useState(prefillEmail);
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [role, setRole] = useState('');
+    const [role, setRole] = useState('admin');
     const [inviteToken, setInviteToken] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    const needsInvite = PRIVILEGED_ROLES.has(role);
     const isGoogleFlow = googleProvider;
 
     function handleGoogleSignup() {
@@ -248,47 +248,6 @@ export function SignupForm() {
                                 </>
                             )}
 
-                            {/* Role selector */}
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-[hsl(var(--ui-text))]">
-                                    Você é:
-                                </label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {ROLE_OPTIONS.map((opt) => (
-                                        <button
-                                            key={opt.value}
-                                            type="button"
-                                            onClick={() => setRole(opt.value)}
-                                            id={`role-${opt.value}`}
-                                            className={`rounded-xl border px-3 py-2.5 text-left transition-all ${role === opt.value
-                                                ? 'border-[hsl(var(--ui-accent-blue))] bg-[hsl(var(--ui-accent-blue)/0.08)] ring-1 ring-[hsl(var(--ui-accent-blue)/0.3)]'
-                                                : 'border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] hover:border-[hsl(var(--ui-accent-blue)/0.4)]'
-                                                }`}
-                                        >
-                                            <p className="text-sm font-medium text-[hsl(var(--ui-text))]">
-                                                {opt.label}
-                                            </p>
-                                            <p className="text-[11px] text-[hsl(var(--ui-text-muted))]">
-                                                {opt.description}
-                                            </p>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Invite token for privileged roles */}
-                            {needsInvite && (
-                                <TextField
-                                    id="signup-invite-token"
-                                    label="Token de convite"
-                                    type="text"
-                                    value={inviteToken}
-                                    onChange={(e) => setInviteToken(e.target.value)}
-                                    required
-                                    placeholder="Cole o token recebido por email"
-                                />
-                            )}
-
                             {error ? (
                                 <div className="flex items-start gap-2 rounded-xl border border-[hsl(var(--ui-danger)/0.2)] bg-[hsl(var(--ui-danger)/0.08)] px-3 py-2.5 text-sm text-[hsl(var(--ui-danger-ink))]">
                                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -298,7 +257,7 @@ export function SignupForm() {
 
                             <Button
                                 type="submit"
-                                disabled={loading || !role}
+                                disabled={loading}
                                 className="w-full"
                                 size="lg"
                                 id="signup-submit-btn"
