@@ -29,6 +29,7 @@
 - `list_paper_cards`
 - `get_paper_card`
 - `list_claim_conflicts`
+- `validate_statistical_signal` (MPV-56: validação estatística com p-value e intervalo de confiança)
 
 Todas expostas via `POST /api/cockpit/tudico/tools`.
 

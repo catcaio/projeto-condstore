@@ -92,3 +92,27 @@ export type EpistemicAuditResult = {
   }>;
   score: number;
 };
+
+export const statisticalValidationInputSchema = z.object({
+  controlSuccesses: z.number().int().nonnegative(),
+  controlTotal: z.number().int().positive(),
+  treatmentSuccesses: z.number().int().nonnegative(),
+  treatmentTotal: z.number().int().positive(),
+  confidenceLevel: z.number().min(0.8).max(0.999).default(0.95),
+  alternative: z.enum(['two-sided', 'greater', 'less']).default('two-sided'),
+});
+
+export type StatisticalValidationResult = {
+  controlRate: number;
+  treatmentRate: number;
+  absoluteDelta: number;
+  relativeLift: number | null;
+  zScore: number;
+  pValue: number;
+  confidenceLevel: number;
+  confidenceInterval: {
+    lower: number;
+    upper: number;
+  };
+  isSignificant: boolean;
+};

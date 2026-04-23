@@ -14,6 +14,7 @@ const toolSchema = z.object({
     'list_paper_cards',
     'get_paper_card',
     'list_claim_conflicts',
+    'validate_statistical_signal',
   ]),
   input: z.record(z.string(), z.unknown()).default({}),
 });

@@ -8,10 +8,12 @@ import {
   inconsistencyItemSchema,
   logInconsistencySchema,
   paperCardSchema,
+  statisticalValidationInputSchema,
   type EpistemicAuditResult,
   type HypothesisVersion,
   type InconsistencyItem,
   type PaperCard,
+  type StatisticalValidationResult,
 } from './tudico.types';
 
 function tokenize(text: string): string[] {
@@ -88,6 +90,95 @@ function runEpistemicAudit(responseText: string, claimIds: string[]): EpistemicA
 
   const score = Math.max(0, 100 - alerts.length * 20);
   return { claimIds, alerts, score };
+}
+
+function normalCdf(value: number): number {
+  const sign = value < 0 ? -1 : 1;
+  const x = Math.abs(value) / Math.SQRT2;
+  const t = 1 / (1 + 0.3275911 * x);
+  const a1 = 0.254829592;
+  const a2 = -0.284496736;
+  const a3 = 1.421413741;
+  const a4 = -1.453152027;
+  const a5 = 1.061405429;
+  const y = 1 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x));
+  const erf = sign * y;
+  return (1 + erf) / 2;
+}
+
+function inverseNormalCdf(probability: number): number {
+  // Peter John Acklam approximation.
+  const a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.38357751867269e+02, -3.066479806614716e+01, 2.506628277459239e+00];
+  const b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01];
+  const c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00];
+  const d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00];
+
+  const pLow = 0.02425;
+  const pHigh = 1 - pLow;
+  if (probability <= 0 || probability >= 1) throw new Error('Probability must be between 0 and 1');
+
+  if (probability < pLow) {
+    const q = Math.sqrt(-2 * Math.log(probability));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+  if (probability > pHigh) {
+    const q = Math.sqrt(-2 * Math.log(1 - probability));
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+
+  const q = probability - 0.5;
+  const r = q * q;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+}
+
+function runStatisticalValidation(payload: unknown): StatisticalValidationResult {
+  const parsed = statisticalValidationInputSchema.parse(payload);
+  const {
+    controlSuccesses,
+    controlTotal,
+    treatmentSuccesses,
+    treatmentTotal,
+    confidenceLevel,
+    alternative,
+  } = parsed;
+
+  if (controlSuccesses > controlTotal) throw new Error('controlSuccesses cannot be greater than controlTotal');
+  if (treatmentSuccesses > treatmentTotal) throw new Error('treatmentSuccesses cannot be greater than treatmentTotal');
+
+  const controlRate = controlSuccesses / controlTotal;
+  const treatmentRate = treatmentSuccesses / treatmentTotal;
+  const absoluteDelta = treatmentRate - controlRate;
+  const relativeLift = controlRate === 0 ? null : absoluteDelta / controlRate;
+
+  const pooled = (controlSuccesses + treatmentSuccesses) / (controlTotal + treatmentTotal);
+  const pooledVariance = pooled * (1 - pooled) * (1 / controlTotal + 1 / treatmentTotal);
+  const zScore = pooledVariance === 0 ? 0 : absoluteDelta / Math.sqrt(pooledVariance);
+
+  let pValue = 1;
+  if (alternative === 'two-sided') pValue = 2 * (1 - normalCdf(Math.abs(zScore)));
+  if (alternative === 'greater') pValue = 1 - normalCdf(zScore);
+  if (alternative === 'less') pValue = normalCdf(zScore);
+
+  const alpha = 1 - confidenceLevel;
+  const zCritical = inverseNormalCdf(1 - alpha / 2);
+  const unpooledVariance = (controlRate * (1 - controlRate)) / controlTotal + (treatmentRate * (1 - treatmentRate)) / treatmentTotal;
+  const margin = zCritical * Math.sqrt(unpooledVariance);
+  const confidenceInterval = {
+    lower: absoluteDelta - margin,
+    upper: absoluteDelta + margin,
+  };
+
+  return {
+    controlRate,
+    treatmentRate,
+    absoluteDelta,
+    relativeLift,
+    zScore,
+    pValue,
+    confidenceLevel,
+    confidenceInterval,
+    isSignificant: pValue < alpha,
+  };
 }
 
 export class TudicoRuntimeService {
@@ -208,10 +299,21 @@ export class TudicoRuntimeService {
     return runEpistemicAudit(parsed.responseText, parsed.claimIds);
   }
 
+  async validateStatisticalSignal(payload: unknown): Promise<StatisticalValidationResult> {
+    return runStatisticalValidation(payload);
+  }
+
   async executeTool(
     tenantId: string,
     actorId: string,
-    tool: 'audit_response' | 'log_inconsistency' | 'compare_hypothesis_versions' | 'list_paper_cards' | 'get_paper_card' | 'list_claim_conflicts',
+    tool:
+      | 'audit_response'
+      | 'log_inconsistency'
+      | 'compare_hypothesis_versions'
+      | 'list_paper_cards'
+      | 'get_paper_card'
+      | 'list_claim_conflicts'
+      | 'validate_statistical_signal',
     input: Record<string, unknown>,
   ): Promise<unknown> {
     switch (tool) {
@@ -227,6 +329,8 @@ export class TudicoRuntimeService {
         return this.getPaperCard(tenantId, actorId, String(input.paperId));
       case 'list_claim_conflicts':
         return this.listClaimConflicts(tenantId, input.claimId ? String(input.claimId) : undefined);
+      case 'validate_statistical_signal':
+        return this.validateStatisticalSignal(input);
       default:
         throw new Error(`Unsupported tool: ${tool}`);
     }

@@ -14,3 +14,37 @@ describe('tudicoRuntimeService.auditResponse', () => {
     expect(result.score).toBeLessThan(100);
   });
 });
+
+describe('tudicoRuntimeService.validateStatisticalSignal', () => {
+  it('returns significant result when treatment outperforms control', async () => {
+    const result = await tudicoRuntimeService.validateStatisticalSignal({
+      controlSuccesses: 120,
+      controlTotal: 500,
+      treatmentSuccesses: 170,
+      treatmentTotal: 500,
+      confidenceLevel: 0.95,
+      alternative: 'two-sided',
+    });
+
+    expect(result.treatmentRate).toBeGreaterThan(result.controlRate);
+    expect(result.pValue).toBeLessThan(0.05);
+    expect(result.isSignificant).toBe(true);
+    expect(result.confidenceInterval.lower).toBeGreaterThan(0);
+  });
+
+  it('returns non-significant result when samples are close', async () => {
+    const result = await tudicoRuntimeService.validateStatisticalSignal({
+      controlSuccesses: 240,
+      controlTotal: 1000,
+      treatmentSuccesses: 250,
+      treatmentTotal: 1000,
+      confidenceLevel: 0.95,
+      alternative: 'two-sided',
+    });
+
+    expect(result.pValue).toBeGreaterThan(0.05);
+    expect(result.isSignificant).toBe(false);
+    expect(result.confidenceInterval.lower).toBeLessThan(0);
+    expect(result.confidenceInterval.upper).toBeGreaterThan(0);
+  });
+});
