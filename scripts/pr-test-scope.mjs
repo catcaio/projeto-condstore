@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import {
   broadCoveragePrefixes,
   buildPrefixes,
@@ -10,26 +9,7 @@ import {
   scopeRules,
   supportSeamEscalations,
 } from './mvp-freeze-config.mjs';
-
-function runGit(args) {
-  return execFileSync('git', args, { encoding: 'utf8' }).trim();
-}
-
-function collectChangedFiles(baseRef) {
-  const buckets = [
-    runGit(['diff', '--name-only', '--diff-filter=ACMR', `${baseRef}...HEAD`]),
-    runGit(['diff', '--name-only', '--diff-filter=ACMR']),
-    runGit(['diff', '--cached', '--name-only', '--diff-filter=ACMR']),
-    runGit(['ls-files', '--others', '--exclude-standard']),
-  ];
-
-  return [...new Set(
-    buckets
-      .flatMap((output) => output.split(/\r?\n/))
-      .map((file) => file.trim())
-      .filter(Boolean),
-  )];
-}
+import { collectChangedFiles } from './git-diff-utils.mjs';
 
 function matchesAnyPrefix(file, prefixes) {
   return (prefixes ?? []).some((prefix) => file === prefix || file.startsWith(prefix));
@@ -61,7 +41,8 @@ function parseExplicitFiles(argv) {
 
 const baseRef = process.env.MVP_FREEZE_BASE || 'origin/main';
 const explicitFiles = parseExplicitFiles(process.argv.slice(2));
-const changedFiles = explicitFiles.length > 0 ? explicitFiles : collectChangedFiles(baseRef);
+const changedDiff = collectChangedFiles(baseRef);
+const changedFiles = explicitFiles.length > 0 ? explicitFiles : changedDiff.files;
 const commandSet = new Set(['npm run guardrail:mvp-freeze']);
 const matchedRules = [];
 const supportSeamMatches = [];
@@ -123,14 +104,15 @@ if (changedFiles.some((file) => matchesAnyPrefix(file, broadCoveragePrefixes))) 
 }
 
 if (changedFiles.length === 0) {
-  console.log(`[scope:pr-tests] Nenhuma mudança detectada contra ${baseRef}.`);
+  const baseLabel = changedDiff.baseRef ?? `${baseRef} (indisponível)`;
+  console.log(`[scope:pr-tests] Nenhuma mudança detectada contra ${baseLabel}.`);
   process.exit(0);
 }
 
 if (explicitFiles.length > 0) {
   console.log('[scope:pr-tests] Avaliando arquivos informados via --files.');
 } else {
-  console.log(`[scope:pr-tests] Base: ${baseRef}`);
+  console.log(`[scope:pr-tests] Base: ${changedDiff.baseRef ?? `${baseRef} (indisponível)`}`);
 }
 console.log('[scope:pr-tests] Arquivos alterados:');
 for (const file of changedFiles) {
