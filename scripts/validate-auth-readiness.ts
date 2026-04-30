@@ -1,7 +1,6 @@
 import { getDb } from '../src/infra/db';
 import { tenants, users } from '../src/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { verifyPassword } from '../src/infra/auth/password';
 
 async function validate() {
   console.log('=> Starting Auth Readiness Validation...');
@@ -45,8 +44,11 @@ async function validate() {
     // 2. Tenant & Admin check
     try {
       const [tenant] = await db.select().from(tenants).where(eq(tenants.id, targetTenantId)).limit(1);
-      if (!tenant) throw new Error(`Tenant ${targetTenantId} not found`);
-      console.log('✅ Base tenant exists.');
+      if (!tenant) {
+        console.warn(`⚠️  Tenant ${targetTenantId} not found`);
+      } else {
+        console.log(`✅ Base tenant ${targetTenantId} exists.`);
+      }
 
       const [admin] = await db.select().from(users).where(eq(users.email, expectedAdminEmail)).limit(1);
       if (!admin) {
@@ -58,10 +60,10 @@ async function validate() {
       console.warn(`⚠️  Database query failed. (If CI, might be expected: ${e.message})`);
     }
 
-    // 3. Mock logic to ensure core modules load
+    // 3. Crypto & Module check
     try {
-      // Just check if the crypto module for password hashing works
-      const testHash = '$scrypt$N=16384,r=8,p=1$ZGVmYXVsdHNhbHQ$e6b9...';
+      const { getPiiEncryptionKey } = await import('../src/infra/pii/crypto');
+      getPiiEncryptionKey();
       console.log('✅ Auth crypto service dependencies loaded.');
     } catch (e: any) {
       console.warn(`⚠️  Auth service module load failed: ${e.message}`);
