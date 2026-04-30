@@ -9,6 +9,7 @@ const commands = [
   { name: 'Cockpit Smoke', cmd: 'npm', args: ['run', 'cockpit:smoke'] },
   { name: 'Pilot Readiness', cmd: 'npm', args: ['run', 'pilot:readiness'] },
   { name: 'Auth Readiness', cmd: 'npm', args: ['run', 'auth:readiness'] },
+  { name: 'Email Readiness', cmd: 'npm', args: ['run', 'email:readiness'] },
 ];
 
 async function checkProductionLogin() {
