@@ -153,7 +153,7 @@ export function LoginForm({ buildLabel, googleEnabled = false }: LoginFormProps)
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                                 autoComplete="email"
-                                placeholder="admin@condstore.local"
+                                placeholder="demo@condstore.io"
                             />
 
                             <TextField
