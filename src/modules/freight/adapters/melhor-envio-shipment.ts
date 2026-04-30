@@ -51,7 +51,11 @@ export interface CreateShipmentResult {
     status: string;
 }
 
-const ME_API_URL = 'https://sandbox.melhorenvio.com.br/api/v2/me/cart';
+const ME_BASE_URL = process.env.MELHOR_ENVIO_API_URL
+    ? `${process.env.MELHOR_ENVIO_API_URL}`
+    : 'https://melhorenvio.com.br/api/v2';
+
+const ME_API_URL = `${ME_BASE_URL}/me/cart`;
 
 export async function createShipmentFromQuote(input: CreateShipmentInput): Promise<CreateShipmentResult> {
     const token = process.env.MELHOR_ENVIO_TOKEN;
@@ -169,7 +173,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         const data: any = await res.json();
 
         // Checkout the cart immediately to generate the label
-        const checkoutRes = await fetch('https://sandbox.melhorenvio.com.br/api/v2/me/shipment/checkout', {
+        const checkoutRes = await fetch(`${ME_BASE_URL}/me/shipment/checkout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -188,7 +192,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         }
 
         // Fetch the created order to get the tracking code
-        const printRes = await fetch('https://sandbox.melhorenvio.com.br/api/v2/me/shipment/print', {
+        const printRes = await fetch(`${ME_BASE_URL}/me/shipment/print`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -231,7 +235,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         return {
             shipmentId,
             trackingCode,
-            trackingUrl: `https://sandbox.melhorenvio.com.br/rastreio/${trackingCode}`,
+            trackingUrl: `${ME_BASE_URL.replace('/api/v2', '')}/rastreio/${trackingCode}`,
             price: data.price ? parseFloat(data.price) : input.quotePrice,
             status: data.status || 'pending',
         };

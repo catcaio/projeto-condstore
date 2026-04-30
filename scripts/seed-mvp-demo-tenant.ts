@@ -540,7 +540,7 @@ async function upsertCommercialFlow(connection: mysql.Connection, tenantId: stri
         subtotal = VALUES(subtotal),
         created_at = VALUES(created_at)`,
       [
-        `item-${order.id}`,
+        `it-${order.id.slice(0, 33)}`,
         tenantId,
         order.id,
         `SKU-${order.id.slice(0, 8).toUpperCase()}`,
@@ -641,7 +641,15 @@ async function main(): Promise<void> {
   const tenantId = process.env.DEMO_TENANT_ID || DEFAULT_TENANT_ID;
   const adminPassword = process.env.DEMO_ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD;
 
-  const connection = await mysql.createConnection({ uri: databaseUrl });
+  const url = new URL(databaseUrl);
+  // Removendo params que o mysql2 puro não entende via URI (como ssl JSON)
+  url.search = '';
+  const cleanUrl = url.toString();
+
+  const connection = await mysql.createConnection({
+    uri: cleanUrl,
+    ssl: { rejectUnauthorized: true }
+  });
 
   try {
     log('info', 'seed.start', { tenantId });
@@ -675,6 +683,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(() => {
+main().catch((err) => {
+  console.error('Seed execution failed:', err);
   process.exit(1);
 });
