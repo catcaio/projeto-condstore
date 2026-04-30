@@ -47,7 +47,12 @@
     "stripe:trigger:cancel": "stripe trigger customer.subscription.deleted",
     "seed:demo-tenant": "node --import tsx scripts/seed-mvp-demo-tenant.ts",
     "tenant:readiness": "node --env-file=.env.local --import tsx scripts/validate-first-tenant-readiness.ts",
-    "freight:readiness": "node --env-file=.env.local --import tsx scripts/validate-freight-readiness.ts"
+    "freight:readiness": "node --env-file=.env.local --import tsx scripts/validate-freight-readiness.ts",
+    "whatsapp:readiness": "node --env-file=.env.local --import tsx scripts/validate-whatsapp-readiness.ts",
+    "billing:readiness": "node --env-file=.env.local --import tsx scripts/validate-billing-readiness.ts",
+    "tracking:readiness": "node --env-file=.env.local --import tsx scripts/validate-tracking-readiness.ts",
+    "cockpit:smoke": "node --env-file=.env.local --import tsx scripts/validate-cockpit-smoke.ts",
+    "pilot:readiness": "node --env-file=.env.local --import tsx scripts/validate-pilot-launch-readiness.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1000.0",
