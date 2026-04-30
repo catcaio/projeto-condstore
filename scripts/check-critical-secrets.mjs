@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+
 
 /**
  * CI health check for critical env vars.
