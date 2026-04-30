@@ -17,7 +17,7 @@ export function requireEnv(key: string, fallback?: string): string {
 }
 
 export function assertCriticalEnvSetup() {
-    if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') return;
+    if (process.env.NODE_ENV === 'test') return;
 
     try {
         requireDatabaseUrl();
@@ -38,9 +38,11 @@ export function assertCriticalEnvSetup() {
     } catch (err: any) {
         // Log instead of throwing to avoid killing the whole process if a route-level check is available
         console.error(`[CRITICAL] Environment verification failed: ${err.message}`);
-        // We still throw if we are in a strict environment and not in a request context
-        if (process.env.NODE_ENV === 'production') {
-            // In production, we want to know about this in logs but maybe let routes handle the specific 500
+        
+        // We still throw if we are in a strict environment (production/staging)
+        // to prevent bad deployments from succeeding.
+        if (isStrictRuntimeEnvironment()) {
+            throw err;
         }
     }
 }
