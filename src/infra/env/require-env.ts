@@ -80,14 +80,6 @@ export function getEnvMisconfigurationResponse(requestId: string): any | null {
             requestId 
         });
 
-        const body = JSON.stringify({ 
-            success: false, 
-            error: 'Sistema em manutenção ou misconfigurado.', 
-            code,
-            details: error.message,
-            requestId 
-        });
-
         return new Response(body, {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
