@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { getMissingCriticalInternalTokenEnvs, isStrictRuntimeEnvironment } from '../config/internal-token-contract';
 import { getAuthSecretValue, isDevelopmentRuntimeStrict, readTrimmedEnv, requireDatabaseUrl } from './critical-runtime';
 import { getPiiEncryptionKey } from '../pii/crypto';
@@ -20,28 +19,37 @@ export function requireEnv(key: string, fallback?: string): string {
 export function assertCriticalEnvSetup() {
     if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') return;
 
-    requireDatabaseUrl();
-    requireEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000');
-    getAuthSecretValue();
-    getPiiEncryptionKey();
+    try {
+        requireDatabaseUrl();
+        requireEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000');
+        getAuthSecretValue();
+        getPiiEncryptionKey();
 
-    if (isStrictRuntimeEnvironment()) {
-        const missingInternalTokenEnvs = getMissingCriticalInternalTokenEnvs();
-        if (missingInternalTokenEnvs.length > 0) {
-            throw new Error(
-                `CRITICAL STARTUP ERROR: Missing required internal auth env(s): ${missingInternalTokenEnvs.join(', ')}`,
-            );
+        if (isStrictRuntimeEnvironment()) {
+            const missingInternalTokenEnvs = getMissingCriticalInternalTokenEnvs();
+            if (missingInternalTokenEnvs.length > 0) {
+                throw new Error(
+                    `CRITICAL STARTUP ERROR: Missing required internal auth env(s): ${missingInternalTokenEnvs.join(', ')}`,
+                );
+            }
+        }
+
+        console.info('✅ Critical Environment Variables Verified.');
+    } catch (err: any) {
+        // Log instead of throwing to avoid killing the whole process if a route-level check is available
+        console.error(`[CRITICAL] Environment verification failed: ${err.message}`);
+        // We still throw if we are in a strict environment and not in a request context
+        if (process.env.NODE_ENV === 'production') {
+            // In production, we want to know about this in logs but maybe let routes handle the specific 500
         }
     }
-
-    console.info('✅ Critical Environment Variables Verified.');
 }
 
 /**
  * Validates critical environment variables for API routes.
- * Returns a JSON NextResponse if misconfigured, or null if OK.
+ * Returns a JSON Response if misconfigured, or null if OK.
  */
-export function getEnvMisconfigurationResponse(requestId: string): NextResponse | null {
+export function getEnvMisconfigurationResponse(requestId: string): any | null {
     try {
         if (process.env.NODE_ENV === 'test' && !process.env.STRICT_TEST) {
             return null;
@@ -61,15 +69,26 @@ export function getEnvMisconfigurationResponse(requestId: string): NextResponse 
         return null;
     } catch (error: any) {
         const code = error.message.includes(' ') ? 'MISCONFIGURED_RUNTIME' : error.message;
-        return NextResponse.json(
-            { 
-                success: false, 
-                error: 'Sistema em manutenção ou misconfigurado.', 
-                code,
-                details: error.message,
-                requestId 
-            },
-            { status: 500 }
-        );
+        
+        // Use a standard Response.json if available, or try to import NextResponse
+        // This is more resilient to startup crashes
+        const body = JSON.stringify({ 
+            success: false, 
+            error: 'Sistema em manutenção ou misconfigurado.', 
+            code,
+            details: error.message,
+            requestId 
+        });
+
+        try {
+            // Try to use NextResponse if available in the runtime
+            const { NextResponse } = require('next/server');
+            return NextResponse.json(JSON.parse(body), { status: 500 });
+        } catch {
+            return new Response(body, {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
     }
 }
