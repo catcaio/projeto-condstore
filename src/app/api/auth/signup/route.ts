@@ -12,6 +12,7 @@ import { isRole } from '@/infra/auth/roles';
 import { structuredLogger } from '@/infra/log/logger';
 import { eq, and, isNull } from 'drizzle-orm';
 import { rateLimiter, hashRateLimitKeyForLog } from '@/infra/security/rate-limiter';
+import { emailService } from '@/modules/email/email.service';
 
 const signupSchema = z.object({
     name: z.string().min(1, 'Nome obrigatório').max(255),
@@ -232,36 +233,11 @@ export async function POST(request: NextRequest) {
         const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
         const verifyUrl = `${baseUrl}/api/auth/email/verify?token=${emailVerifyToken}`;
 
-        if (process.env.NODE_ENV !== 'production') {
-            structuredLogger.info('email_verify_link_dev', {
-                eventType: 'email_verify',
-                userId,
-                verifyUrl,
-            });
-            structuredLogger.debug('email_verify_link_dev_hint', { eventType: 'email_verify', userId, urlPrefix: verifyUrl.slice(0, 50) + '…' });
-        } else if (process.env.RESEND_API_KEY) {
-            try {
-                await fetch('https://api.resend.com/emails', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        from: process.env.EMAIL_FROM || 'noreply@condstore.com',
-                        to: normalizedEmail,
-                        subject: 'Verifique seu email — CondStore OS',
-                        html: `<p>Olá ${name},</p><p>Clique no link abaixo para verificar seu email:</p><p><a href="${verifyUrl}">Verificar email</a></p><p>Este link expira em 24 horas.</p>`,
-                    }),
-                });
-            } catch (err) {
-                structuredLogger.error('email_verify_send_failed', {
-                    eventType: 'email_verify',
-                    userId,
-                    error: err,
-                });
-            }
-        }
+        await emailService.sendEmail({
+            to: normalizedEmail,
+            subject: 'Verifique seu email — CondStore OS',
+            html: `<p>Olá ${name},</p><p>Clique no link abaixo para verificar seu email:</p><p><a href="${verifyUrl}">Verificar email</a></p><p>Este link expira em 24 horas.</p>`,
+        });
 
         // ── 5. Create session ─────────────────────────────────────────────
         const token = await createSessionToken({

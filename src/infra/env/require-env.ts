@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { getMissingCriticalInternalTokenEnvs, isStrictRuntimeEnvironment } from '../config/internal-token-contract';
 import { getAuthSecretValue, isDevelopmentRuntimeStrict, readTrimmedEnv, requireDatabaseUrl } from './critical-runtime';
 import { getPiiEncryptionKey } from '../pii/crypto';
@@ -40,7 +41,7 @@ export function assertCriticalEnvSetup() {
  * Validates critical environment variables for API routes.
  * Returns a JSON NextResponse if misconfigured, or null if OK.
  */
-export function getEnvMisconfigurationResponse(requestId: string): import('next/server').NextResponse | null {
+export function getEnvMisconfigurationResponse(requestId: string): NextResponse | null {
     try {
         if (process.env.NODE_ENV === 'test' && !process.env.STRICT_TEST) {
             return null;
@@ -60,7 +61,6 @@ export function getEnvMisconfigurationResponse(requestId: string): import('next/
         return null;
     } catch (error: any) {
         const code = error.message.includes(' ') ? 'MISCONFIGURED_RUNTIME' : error.message;
-        const { NextResponse } = require('next/server');
         return NextResponse.json(
             { 
                 success: false, 
