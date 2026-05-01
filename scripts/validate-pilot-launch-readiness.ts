@@ -6,6 +6,8 @@ async function validate() {
   console.log('====================================================\n');
 
   const commands = [
+    { name: 'Auth Readiness', cmd: 'npm run auth:readiness' },
+    { name: 'Email Readiness', cmd: 'npm run email:readiness' },
     { name: 'Tenant Readiness', cmd: 'npm run tenant:readiness' },
     { name: 'Freight Readiness', cmd: 'npm run freight:readiness' },
     { name: 'WhatsApp Readiness', cmd: 'npm run whatsapp:readiness' },
