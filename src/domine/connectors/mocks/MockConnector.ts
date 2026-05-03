@@ -1,3 +1,4 @@
+import { logger } from "../../../infra/logger";
 import { ConnectorAdapter, ConnectorContext } from "../ConnectorAdapter";
 import { ConnectorCapability } from "../ConnectorCapability";
 
@@ -7,7 +8,9 @@ export class MockConnector implements ConnectorAdapter {
     capabilities = [ConnectorCapability.OMS, ConnectorCapability.FISCAL];
 
     async initialize(context: ConnectorContext): Promise<void> {
-        console.log(`[MockConnector] Initialized for tenant: ${context.tenantId} with idempotency key: ${context.idempotencyKey}`);
+        logger.info("[MockConnector] Initialized", {
+            source: context.source,
+        });
     }
 
     async healthCheck(context: ConnectorContext): Promise<boolean> {
@@ -15,6 +18,9 @@ export class MockConnector implements ConnectorAdapter {
     }
 
     async sync(context: ConnectorContext): Promise<void> {
-        console.log(`[MockConnector] Sync triggered at ${context.occurredAt} from source: ${context.source}`);
+        logger.info("[MockConnector] Sync triggered", {
+            occurredAt: context.occurredAt,
+            source: context.source,
+        });
     }
 }
