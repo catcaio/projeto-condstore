@@ -1,6 +1,7 @@
 import { StatusChip } from '@/ui/foundation';
 import type { ClientRecord, ClientStatus, CrmStage } from '../types';
 import { MessageCircle, CalendarPlus } from 'lucide-react';
+import { scheduleClientFollowUp } from '../actions/schedule-followup';
 
 function getStatusTone(status: ClientStatus) {
     if (status === 'vip') {
@@ -82,7 +83,19 @@ export function ClientItem({
                                 <button title="WhatsApp Ágil" className="flex h-6 w-6 items-center justify-center rounded text-emerald-600 hover:bg-emerald-50 dark:text-emerald-500 dark:hover:bg-emerald-950/30 transition-colors" onClick={() => window.open(`https://wa.me/5511999999999?text=Olar,%20${client.contact}`, '_blank')}>
                                     <MessageCircle className="h-3.5 w-3.5" />
                                 </button>
-                                <button title="Agendar Follow-up" className="flex h-6 w-6 items-center justify-center rounded text-blue-600 hover:bg-blue-50 dark:text-blue-500 dark:hover:bg-blue-950/30 transition-colors" onClick={() => console.warn('[TODO] Novo Evento not wired')}>
+                                <button
+                                    title="Agendar Follow-up"
+                                    className="flex h-6 w-6 items-center justify-center rounded text-blue-600 hover:bg-blue-50 dark:text-blue-500 dark:hover:bg-blue-950/30 transition-colors"
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const res = await scheduleClientFollowUp(client.id);
+                                        if (res.success) {
+                                            alert('Follow-up agendado com sucesso!');
+                                        } else {
+                                            alert(res.error || 'Erro ao agendar follow-up');
+                                        }
+                                    }}
+                                >
                                     <CalendarPlus className="h-3.5 w-3.5" />
                                 </button>
                             </div>
