@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import Script from "next/script";
 import { AppShell } from "@/ui/shell/app-shell";
 import { ApplicationTracker } from "@/ui/lib/app-tracker-client";
 import { RouteGuard } from "@/ui/components/route-guard";
@@ -35,7 +36,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      <Script id="app-theme-init">{themeScript}</Script>
       <AppShell role={role} tenantId={tenantId}>
         <ApplicationTracker />
         <SessionProvider value={{ tenantId, role: role as any, userId, hasActivePlan }}>
