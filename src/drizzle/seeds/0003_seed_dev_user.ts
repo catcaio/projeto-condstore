@@ -10,7 +10,7 @@
 
 import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'node:crypto';
 import { users } from '../schema';
 import { hashPassword } from '../../infra/auth/password';
 
@@ -28,10 +28,14 @@ async function seed() {
     const db = drizzle(connection, { mode: 'default' });
 
     const email = 'admin@lojacond.com';
-    const password = 'senha123';
+    const isGenerated = !process.env.SEED_DEV_PASSWORD;
+    const password = process.env.SEED_DEV_PASSWORD || randomBytes(16).toString('hex');
     const tenantId = 'lojacond-default';
 
     console.log('Seeding dev admin user...');
+    if (isGenerated) {
+        console.log('⚠️ No SEED_DEV_PASSWORD provided. Generating a random one.');
+    }
 
     try {
         const passwordHash = hashPassword(password);
