@@ -33,6 +33,8 @@ export function ConversationsView() {
         selectedConversationId,
         loadConversationThread,
         sendReply,
+        assignConversation,
+        escalateConversation
     } = useConversations();
 
     const ownerOptions = useMemo(
@@ -230,6 +232,8 @@ export function ConversationsView() {
                         onPriorityFilterChange={setPriorityFilter}
                         onOwnerFilterChange={setOwnerFilter}
                         onSelectConversation={handleSelectConversation}
+                        onAssignConversation={assignConversation}
+                        onEscalateConversation={escalateConversation}
                         rowSelection={rowSelection}
                         onRowSelectionChange={setRowSelection}
                     />

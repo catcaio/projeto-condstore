@@ -46,13 +46,17 @@ export function ConversationItem({
     selected,
     onSelect,
     isSelected,
-    onSelectChange
+    onSelectChange,
+    onAssign,
+    onEscalate
 }: {
     conversation: ConversationRecord;
     selected: boolean;
     onSelect: () => void;
     isSelected?: boolean;
     onSelectChange?: (checked: boolean) => void;
+    onAssign?: () => void;
+    onEscalate?: () => void;
 }) {
     return (
         <button
@@ -77,10 +81,10 @@ export function ConversationItem({
                         <div className="flex items-center gap-2">
                             <p className="truncate text-sm font-semibold text-[hsl(var(--ui-text))]">{conversation.customerName}</p>
                             <div className="hidden group-hover:flex gap-1 z-20 bg-[hsl(var(--ui-page))] shadow-sm rounded-md border border-[hsl(var(--ui-border))] p-0.5" onClick={e => e.stopPropagation()}>
-                                <button title="Assumir Conversa" className="flex h-6 w-6 items-center justify-center rounded text-blue-600 hover:bg-blue-50 dark:text-blue-500 dark:hover:bg-blue-950/30 transition-colors" onClick={() => console.warn('[TODO] Assumir Conversa not wired for:', conversation.id)}>
+                                <button title="Assumir Conversa" className="flex h-6 w-6 items-center justify-center rounded text-blue-600 hover:bg-blue-50 dark:text-blue-500 dark:hover:bg-blue-950/30 transition-colors" onClick={() => onAssign?.()}>
                                     <UserPlus className="h-3.5 w-3.5" />
                                 </button>
-                                <button title="Escalonar" className="flex h-6 w-6 items-center justify-center rounded text-rose-600 hover:bg-rose-50 dark:text-rose-500 dark:hover:bg-rose-950/30 transition-colors" onClick={() => console.warn('[TODO] Escalonar Conversa not wired for:', conversation.id)}>
+                                <button title="Escalonar" className="flex h-6 w-6 items-center justify-center rounded text-rose-600 hover:bg-rose-50 dark:text-rose-500 dark:hover:bg-rose-950/30 transition-colors" onClick={() => onEscalate?.()}>
                                     <XCircle className="h-3.5 w-3.5" />
                                 </button>
                             </div>

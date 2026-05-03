@@ -48,6 +48,8 @@ export function ConversationList({
     onPriorityFilterChange,
     onOwnerFilterChange,
     onSelectConversation,
+    onAssignConversation,
+    onEscalateConversation,
     rowSelection,
     onRowSelectionChange,
 }: {
@@ -64,6 +66,8 @@ export function ConversationList({
     onPriorityFilterChange: (value: PriorityFilter) => void;
     onOwnerFilterChange: (value: string) => void;
     onSelectConversation: (conversationId: string) => void;
+    onAssignConversation?: (conversationId: string) => void;
+    onEscalateConversation?: (conversationId: string) => void;
     rowSelection?: Record<string, boolean>;
     onRowSelectionChange?: (rowSelection: Record<string, boolean>) => void;
 }) {
@@ -141,6 +145,8 @@ export function ConversationList({
                                         onRowSelectionChange({ ...rowSelection, [conversation.id]: checked });
                                     }
                                 }}
+                                onAssign={() => onAssignConversation?.(conversation.id)}
+                                onEscalate={() => onEscalateConversation?.(conversation.id)}
                             />
                         ))}
                     </div>
