@@ -242,6 +242,21 @@ export function useConversations() {
         setSelectedConversationId,
         loadConversationThread,
         sendReply,
+        assignConversation: async (id: string) => {
+            try {
+                const res = await fetch(`/api/cockpit/conversations/${id}/assign`, { method: "PUT" });
+                if (!res.ok) throw new Error("Falha ao assumir.");
+                await mutateList();
+                return { ok: true };
+            } catch (err) {
+                return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido" };
+            }
+        },
+        escalateConversation: async (id: string) => {
+            console.info("[cockpit] escalar click", { conversationId: id });
+            // TODO: Wire to API when available
+            return { ok: true };
+        },
         refetch: mutateList,
     };
 }
