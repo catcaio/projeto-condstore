@@ -14,14 +14,14 @@ import { structuredLogger } from '@/infra/log/logger';
 import { eq, and, isNull } from 'drizzle-orm';
 import { rateLimiter, hashRateLimitKeyForLog } from '@/infra/security/rate-limiter';
 import { emailService } from '@/modules/email/email.service';
+import { provisionNewTenant, resolveTenantByPolicy } from '@/modules/auth/provisioning';
 
 const signupSchema = z.object({
     name: z.string().min(1, 'Nome obrigatório').max(255),
     email: z.string().email('Email inválido'),
-    password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres').optional(),
+    password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres'),
     roleRequested: z.enum(['viewer', 'operator', 'manager', 'admin']),
     inviteToken: z.string().optional(),
-    provider: z.enum(['email', 'google']).optional().default('email'),
 });
 
 const PRIVILEGED_ROLES = new Set(['manager', 'admin']);
@@ -72,15 +72,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { name, email, password, roleRequested, inviteToken, provider } = validation.data;
+        const { name, email, password, roleRequested, inviteToken } = validation.data;
         const normalizedEmail = email.trim().toLowerCase();
-
-        if (provider === 'email' && !password) {
-            return NextResponse.json(
-                { success: false, error: 'Senha obrigatória para cadastro por email' },
-                { status: 400 }
-            );
-        }
+        const provider = 'email'; // Forçado server-side no signup manual
 
         const db = await getDb();
 
@@ -144,47 +138,15 @@ export async function POST(request: NextRequest) {
 
         // 2b. Try domain-based tenant resolution
         if (!tenantId) {
-            const emailDomain = normalizedEmail.split('@')[1];
-            if (emailDomain) {
-                const policies = await db.select().from(tenantSignupPolicies);
-                for (const policy of policies) {
-                    const domains = (policy.allowedDomains as string[]) || [];
-                    if (domains.includes(emailDomain)) {
-                        tenantId = policy.tenantId;
-                        break;
-                    }
-                    const emails = (policy.allowedEmails as string[]) || [];
-                    if (emails.includes(normalizedEmail)) {
-                        tenantId = policy.tenantId;
-                        break;
-                    }
-                }
-            }
+            tenantId = await resolveTenantByPolicy(normalizedEmail);
         }
 
         if (!tenantId) {
             isProvisioningNewTenant = true;
             // ZERO-TOUCH PROVISIONING
-            // If the user has no invite and isn't mapped to a domain, create a new workspace for them
-            tenantId = crypto.randomUUID();
-            resolvedRole = 'admin'; // They own their new workspace
-
-            await db.insert(tenants).values({
-                id: tenantId,
-                name: `Loja de ${name}`,
-                twilioNumber: `PENDING-${tenantId.substring(0, 8)}`, // Placeholder
-            });
-
-            await db.insert(tenantBudgets).values({
-                tenantId: tenantId,
-                monthlyTokenLimit: 100000,
-            });
-
-            structuredLogger.info('tenant_provisioned', {
-                eventType: 'provisioning',
-                tenantId,
-                userId: email,
-            });
+            const provisioned = await provisionNewTenant(name, normalizedEmail);
+            tenantId = provisioned.tenantId;
+            resolvedRole = provisioned.role;
         }
 
         // 2c. Validate privileged role access
@@ -278,7 +240,7 @@ export async function POST(request: NextRequest) {
             error,
         });
         return NextResponse.json(
-            { success: false, error: 'Erro interno. Tente novamente.', devMsg: error instanceof Error ? error.message : String(error) },
+            { success: false, error: 'Erro interno. Tente novamente.' },
             { status: 500 }
         );
     }
