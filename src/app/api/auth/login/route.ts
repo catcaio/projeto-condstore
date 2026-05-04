@@ -73,7 +73,7 @@ function logLoginDiagnostic(input: {
 
 export async function POST(request: NextRequest) {
     const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID?.() ?? `${Date.now()}`;
-    const misconfigured = getEnvMisconfigurationResponse(requestId);
+    const misconfigured = getEnvMisconfigurationResponse(requestId, 'auth');
     if (misconfigured) {
         return misconfigured;
     }

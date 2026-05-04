@@ -9,6 +9,7 @@ import { users, invites, tenantSignupPolicies, tenants, tenantBudgets } from '@/
 import { hashPassword } from '@/infra/auth/password';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { isRole } from '@/infra/auth/roles';
+import { getPublicAppUrl } from '@/infra/env/critical-runtime';
 import { structuredLogger } from '@/infra/log/logger';
 import { eq, and, isNull } from 'drizzle-orm';
 import { rateLimiter, hashRateLimitKeyForLog } from '@/infra/security/rate-limiter';
@@ -36,7 +37,7 @@ function isAdminAllowlisted(email: string): boolean {
 
 export async function POST(request: NextRequest) {
     const requestId = crypto.randomUUID?.() ?? `${Date.now()}`;
-    const misconfigured = getEnvMisconfigurationResponse(requestId);
+    const misconfigured = getEnvMisconfigurationResponse(requestId, 'auth');
     if (misconfigured) return misconfigured;
 
     // ── Rate limit (IP-based, 5 per 60s) ─────────────────────────────
@@ -86,6 +87,13 @@ export async function POST(request: NextRequest) {
         // ── 1. Check if user already exists ───────────────────────────────
         const existing = await db.select().from(users).where(eq(users.email, normalizedEmail));
         if (existing.length > 0) {
+            const user = existing[0];
+            if (user.authProvider === 'google') {
+                return NextResponse.json(
+                    { success: false, error: 'Este email está vinculado a uma conta Google. Faça login com o Google.' },
+                    { status: 409 }
+                );
+            }
             return NextResponse.json(
                 { success: false, error: 'Já existe uma conta com este email' },
                 { status: 409 }
@@ -230,7 +238,7 @@ export async function POST(request: NextRequest) {
         });
 
         // ── 4. Send email verification ────────────────────────────────────
-        const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+        const baseUrl = getPublicAppUrl();
         const verifyUrl = `${baseUrl}/api/auth/email/verify?token=${emailVerifyToken}`;
 
         await emailService.sendEmail({

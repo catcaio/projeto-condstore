@@ -2,14 +2,15 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { getEnvMisconfigurationResponse } from '@/infra/env/require-env';
+import { getPublicAppUrl } from '@/infra/env/critical-runtime';
 
 export async function GET() {
     const requestId = `google-${Date.now()}`;
-    const misconfigured = getEnvMisconfigurationResponse(requestId);
+    const misconfigured = getEnvMisconfigurationResponse(requestId, 'auth');
     if (misconfigured) return misconfigured;
 
     const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-    const REDIRECT_URI_BASE = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    const REDIRECT_URI_BASE = getPublicAppUrl();
 
     if (!GOOGLE_CLIENT_ID) {
         return NextResponse.redirect(`${REDIRECT_URI_BASE}/login?error=google_not_configured`);

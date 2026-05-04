@@ -36,29 +36,29 @@ describe('Middleware', () => {
         expect(res.headers.get('location')).toBeNull();
     });
 
-    it('redirects unauthenticated access to non-public nested /t/* routes to /auth/login', async () => {
+    it('redirects unauthenticated access to non-public nested /t/* routes to /login', async () => {
         const req = new NextRequest('http://localhost/t/dashboard/history');
         const res = await middleware(req);
 
         expect(res.status).toBe(307);
-        expect(res.headers.get('location')).toContain('/auth/login?callbackUrl=');
+        expect(res.headers.get('location')).toContain('/login?callbackUrl=');
         expect(res.headers.get('location')).toContain('%2Ft%2Fdashboard%2Fhistory');
     });
 
-    it('redirects unauthenticated access to /dashboard/ routes to /auth/login', async () => {
+    it('redirects unauthenticated access to /dashboard/ routes to /login', async () => {
         const req = new NextRequest('http://localhost/dashboard/overview');
         const res = await middleware(req);
         
         expect(res.status).toBe(307);
-        expect(res.headers.get('location')).toContain('/auth/login?callbackUrl=');
+        expect(res.headers.get('location')).toContain('/login?callbackUrl=');
     });
 
-    it('redirects unauthenticated access to /cockpit/ routes to /auth/login', async () => {
+    it('redirects unauthenticated access to /cockpit/ routes to /login', async () => {
         const req = new NextRequest('http://localhost/cockpit/orders');
         const res = await middleware(req);
         
         expect(res.status).toBe(307);
-        expect(res.headers.get('location')).toContain('/auth/login?callbackUrl=');
+        expect(res.headers.get('location')).toContain('/login?callbackUrl=');
     });
 
     it('allows access to /api/ routes with valid session cookie and injects headers', async () => {

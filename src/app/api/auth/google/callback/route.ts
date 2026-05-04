@@ -6,6 +6,7 @@ import { users } from '@/drizzle/schema';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { structuredLogger } from '@/infra/log/logger';
 import { eq } from 'drizzle-orm';
+import { getAuthSecretBytes, getPublicAppUrl } from '@/infra/env/critical-runtime';
 
 interface GoogleTokenResponse {
     access_token: string;
@@ -24,7 +25,7 @@ interface GoogleUserInfo {
 export async function GET(request: NextRequest) {
     const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
     const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-    const REDIRECT_URI_BASE = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    const REDIRECT_URI_BASE = getPublicAppUrl();
 
     const code = request.nextUrl.searchParams.get('code');
     const baseUrl = REDIRECT_URI_BASE;

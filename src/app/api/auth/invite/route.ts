@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { getDb } from '@/infra/db';
 import { users, invites } from '@/drizzle/schema';
 import { getServerSessionUser } from '@/infra/auth/session';
+import { getPublicAppUrl } from '@/infra/env/critical-runtime';
 import { structuredLogger } from '@/infra/log/logger';
 import { eq, and, isNull } from 'drizzle-orm';
 import { withAuditLog } from '@/lib/http/with-audit-log';
@@ -109,7 +110,7 @@ export const POST = withAuditLog(
                 });
 
                 // 4. Send Email (Mocked for Dev, Integrated with Resend in Prod)
-                const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+                const baseUrl = getPublicAppUrl();
                 const inviteUrl = `${baseUrl}/register?invite=${token}`;
 
                 if (process.env.NODE_ENV !== 'production') {

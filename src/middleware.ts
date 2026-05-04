@@ -36,6 +36,8 @@ export const config = {
         '/t/:path*',
         // MVP authenticated sub-surface — public /mvp and /mvp/como-funciona remain outside.
         '/mvp/app/:path*',
+        '/login',
+        '/signup',
     ],
 };
 
@@ -213,7 +215,7 @@ export async function middleware(req: NextRequest) {
             pathname.startsWith('/mvp/app/')
         ) {
             // For UI routes, redirect to login
-            const loginUrl = new URL('/auth/login', req.url);
+            const loginUrl = new URL('/login', req.url);
             loginUrl.searchParams.set('callbackUrl', encodeURI(pathname));
             return NextResponse.redirect(loginUrl);
         }
@@ -240,7 +242,7 @@ export async function middleware(req: NextRequest) {
             if (pathname.startsWith('/api/')) {
                 return unauthorizedJsonResponse('Invalid or expired authentication token');
             } else {
-                const loginUrl = new URL('/auth/login', req.url);
+                const loginUrl = new URL('/login', req.url);
                 loginUrl.searchParams.set('callbackUrl', encodeURI(pathname));
                 return NextResponse.redirect(loginUrl);
             }
@@ -266,6 +268,10 @@ export async function middleware(req: NextRequest) {
                 });
                 return forbiddenJsonResponse('Tenant mismatch: Forbidden cross-tenant access');
             }
+        }
+
+        if (pathname === '/login' || pathname === '/signup') {
+            return NextResponse.redirect(new URL('/cockpit', req.url));
         }
     }
 

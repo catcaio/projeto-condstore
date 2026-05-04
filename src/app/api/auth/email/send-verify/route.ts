@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getDb } from '@/infra/db';
 import { users } from '@/drizzle/schema';
+import { getPublicAppUrl } from '@/infra/env/critical-runtime';
 import { structuredLogger } from '@/infra/log/logger';
 import { eq } from 'drizzle-orm';
 
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
         const emailVerifyToken = crypto.randomBytes(32).toString('hex');
         await db.update(users).set({ emailVerifyToken }).where(eq(users.id, user.id));
 
-        const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+        const baseUrl = getPublicAppUrl();
         const verifyUrl = `${baseUrl}/api/auth/email/verify?token=${emailVerifyToken}`;
 
         if (process.env.NODE_ENV !== 'production') {

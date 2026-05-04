@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
 import { users } from '@/drizzle/schema';
 import { structuredLogger } from '@/infra/log/logger';
+import { getPublicAppUrl } from '@/infra/env/critical-runtime';
 import { eq, and, isNotNull } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (user.emailVerifiedAt) {
-            const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+            const baseUrl = getPublicAppUrl();
             return NextResponse.redirect(`${baseUrl}/login?verified=true`);
         }
 
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
             tenantId: user.tenantId,
         });
 
-        const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+        const baseUrl = getPublicAppUrl();
         return NextResponse.redirect(`${baseUrl}/login?verified=true`);
     } catch (error) {
         structuredLogger.error('email_verify_error', {

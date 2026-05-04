@@ -82,7 +82,7 @@ export function LoginForm({ buildLabel, googleEnabled = false }: LoginFormProps)
                 });
             }
 
-            window.location.href = '/dashboard';
+            window.location.href = '/cockpit';
         } catch {
             setError('Erro de conexão. Tente novamente.');
         } finally {
