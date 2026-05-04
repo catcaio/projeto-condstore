@@ -1,12 +1,13 @@
 import crypto from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
-import { users } from '@/drizzle/schema';
+import { users, tenantSignupPolicies } from '@/drizzle/schema';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { structuredLogger } from '@/infra/log/logger';
 import { eq } from 'drizzle-orm';
 import { getPublicAppUrl } from '@/infra/env/critical-runtime';
 import { provisionNewTenant, resolveTenantByPolicy } from '@/modules/auth/provisioning';
+import { sha256Hex } from '@/infra/attribution/hash';
 
 interface GoogleTokenResponse {
     access_token: string;
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
                     eventType: 'auth_security',
                     existingProvider: user.authProvider,
                     attemptedProvider: 'google',
-                    email: normalizedEmail,
+                    userEmailHash: sha256Hex(normalizedEmail),
                 });
                 return NextResponse.redirect(`${baseUrl}/login?error=account_exists_different_provider`);
             }
@@ -142,7 +143,24 @@ export async function GET(request: NextRequest) {
             let tenantId = await resolveTenantByPolicy(normalizedEmail);
             let role: 'admin' | 'operator' | 'manager' | 'viewer' = 'operator';
 
-            if (!tenantId) {
+            if (tenantId) {
+                // Resolved via domain/email policy. We MUST check selfSignupEnabled.
+                // Google callback doesn't have an invite token, so this is a self-signup attempt
+                // into an existing tenant.
+                const policyQuery = await db.select().from(tenantSignupPolicies).where(eq(tenantSignupPolicies.tenantId, tenantId));
+                const policy = policyQuery[0];
+                
+                if (policy && policy.selfSignupEnabled === false) {
+                    structuredLogger.warn('google_oauth_signup_not_allowed', {
+                        eventType: 'auth_security',
+                        tenantId,
+                        userEmailHash: sha256Hex(normalizedEmail),
+                    });
+                    const response = NextResponse.redirect(`${baseUrl}/login?error=signup_not_allowed`);
+                    response.cookies.delete('google_oauth_state');
+                    return response;
+                }
+            } else {
                 const provisioned = await provisionNewTenant(googleUser.name || 'Usuário Google', normalizedEmail);
                 tenantId = provisioned.tenantId;
                 role = provisioned.role;

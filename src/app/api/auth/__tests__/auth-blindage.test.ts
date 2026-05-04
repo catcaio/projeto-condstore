@@ -234,5 +234,26 @@ describe('Auth Blindage (Security Hardening)', () => {
             expect(res.headers.get('location')).toContain('/cockpit');
             expect(mockDb.insert).toHaveBeenCalledWith(users);
         });
+
+        it('should reject if selfSignupEnabled is false for resolved tenant', async () => {
+            const req = new NextRequest('http://localhost/api/auth/google/callback?code=abc&state=valid');
+            req.cookies.set('google_oauth_state', 'valid');
+
+            (global.fetch as any).mockImplementation((url: string) => {
+                if (url.includes('token')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ access_token: 'at' }) });
+                if (url.includes('userinfo')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ email: 'new@example.com', email_verified: true, sub: 'google-sub', name: 'New User' }) });
+                return Promise.reject('Not found');
+            });
+
+            // Mock resolveTenantByPolicy resolving to a tenant
+            const resolveTenantByPolicyMock = await import('@/modules/auth/provisioning');
+            (resolveTenantByPolicyMock.resolveTenantByPolicy as any).mockResolvedValueOnce('tenant-123');
+
+            mockQuery.then.mockImplementationOnce((resolve: any) => resolve([])); // Existing user check -> none
+            mockQuery.then.mockImplementationOnce((resolve: any) => resolve([{ tenantId: 'tenant-123', selfSignupEnabled: false }])); // Policy check -> disabled
+
+            const res = await googleCallbackGet(req);
+            expect(res.headers.get('location')).toContain('error=signup_not_allowed');
+        });
     });
 });

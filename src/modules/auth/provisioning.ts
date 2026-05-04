@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { getDb } from '@/infra/db';
 import { tenants, tenantBudgets, users, tenantSignupPolicies } from '@/drizzle/schema';
 import { structuredLogger } from '@/infra/log/logger';
+import { sha256Hex } from '@/infra/attribution/hash';
 
 interface ProvisioningResult {
     tenantId: string;
@@ -31,7 +32,7 @@ export async function provisionNewTenant(name: string, email: string): Promise<P
     structuredLogger.info('tenant_provisioned', {
         eventType: 'provisioning',
         tenantId,
-        userId: email,
+        userEmailHash: sha256Hex(email),
     });
 
     return { tenantId, role };
