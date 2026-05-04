@@ -477,6 +477,13 @@
       "when": 1776104076441,
       "tag": "0079_normal_kingpin",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "5",
+      "when": 1777925496962,
+      "tag": "0080_tiresome_cyclops",
+      "breakpoints": true
     }
   ]
 }

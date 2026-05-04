@@ -1,11 +1,13 @@
-export const runtime = 'nodejs';
-
+import crypto from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/infra/db';
-import { users } from '@/drizzle/schema';
+import { users, tenantSignupPolicies } from '@/drizzle/schema';
 import { createSessionToken, COOKIE_NAME } from '@/infra/auth/session';
 import { structuredLogger } from '@/infra/log/logger';
 import { eq } from 'drizzle-orm';
+import { getPublicAppUrl } from '@/infra/env/critical-runtime';
+import { provisionNewTenant, resolveTenantByPolicy } from '@/modules/auth/provisioning';
+import { sha256Hex } from '@/infra/attribution/hash';
 
 interface GoogleTokenResponse {
     access_token: string;
@@ -24,10 +26,24 @@ interface GoogleUserInfo {
 export async function GET(request: NextRequest) {
     const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
     const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-    const REDIRECT_URI_BASE = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    const REDIRECT_URI_BASE = getPublicAppUrl();
+    const baseUrl = REDIRECT_URI_BASE;
 
     const code = request.nextUrl.searchParams.get('code');
-    const baseUrl = REDIRECT_URI_BASE;
+    const stateFromQuery = request.nextUrl.searchParams.get('state');
+    const stateFromCookie = request.cookies.get('google_oauth_state')?.value;
+
+    // ── 1. Validate state (CSRF protection) ───────────────────────────
+    if (!stateFromQuery || !stateFromCookie || stateFromQuery !== stateFromCookie) {
+        structuredLogger.warn('google_oauth_invalid_state', {
+            eventType: 'auth_security',
+            hasQuery: !!stateFromQuery,
+            hasCookie: !!stateFromCookie,
+        });
+        const response = NextResponse.redirect(`${baseUrl}/login?error=google_invalid_state`);
+        response.cookies.delete('google_oauth_state');
+        return response;
+    }
 
     if (!code) {
         return NextResponse.redirect(`${baseUrl}/login?error=google_no_code`);
@@ -38,7 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // ── 1. Exchange code for tokens ───────────────────────────────
+        // ── 2. Exchange code for tokens ───────────────────────────────
         const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -61,7 +77,7 @@ export async function GET(request: NextRequest) {
 
         const tokenData = await tokenRes.json() as GoogleTokenResponse;
 
-        // ── 2. Get user info ──────────────────────────────────────────
+        // ── 3. Get user info ──────────────────────────────────────────
         const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { Authorization: `Bearer ${tokenData.access_token}` },
         });
@@ -80,66 +96,134 @@ export async function GET(request: NextRequest) {
         }
 
         const normalizedEmail = googleUser.email.toLowerCase().trim();
-
-        // ── 3. Find existing user ─────────────────────────────────────
         const db = await getDb();
+
+        // ── 4. Find existing user ─────────────────────────────────────
         const existingUsers = await db
             .select()
             .from(users)
-            .where(eq(users.email, normalizedEmail))
-            ;
+            .where(eq(users.email, normalizedEmail));
 
-        const existingUser = existingUsers[0];
+        let user = existingUsers[0];
 
-        if (existingUser) {
+        if (user) {
             // Conta já existe → verificar hijack. Apenas permitir se já for google.
-            if (existingUser.authProvider !== 'google') {
+            if (user.authProvider !== 'google') {
                 structuredLogger.warn('google_oauth_account_takeover_blocked', {
                     eventType: 'auth_security',
-                    existingProvider: existingUser.authProvider,
+                    existingProvider: user.authProvider,
                     attemptedProvider: 'google',
+                    userEmailHash: sha256Hex(normalizedEmail),
                 });
                 return NextResponse.redirect(`${baseUrl}/login?error=account_exists_different_provider`);
             }
 
-            const token = await createSessionToken({
-                id: existingUser.id,
-                email: existingUser.email,
-                tenantId: existingUser.tenantId,
-                role: existingUser.role,
-                sessionVersion: existingUser.sessionVersion,
+            // Validar providerId (Google sub)
+            if (user.providerId && user.providerId !== googleUser.sub) {
+                structuredLogger.error('google_oauth_provider_id_mismatch', {
+                    eventType: 'auth_security',
+                    userId: user.id,
+                    existingSub: user.providerId,
+                    receivedSub: googleUser.sub,
+                });
+                return NextResponse.redirect(`${baseUrl}/login?error=google_provider_id_mismatch`);
+            }
+
+            // Se providerId estiver vazio (legado ou transição), atualiza agora
+            if (!user.providerId) {
+                await db.update(users).set({ providerId: googleUser.sub }).where(eq(users.id, user.id));
+                structuredLogger.info('google_oauth_provider_id_updated', {
+                    userId: user.id,
+                });
+            }
+        } else {
+            // ── 5. New user → create safely server-side ─────────────────
+            
+            // Resolve tenant (domain check or new provisioning)
+            let tenantId = await resolveTenantByPolicy(normalizedEmail);
+            let role: 'admin' | 'operator' | 'manager' | 'viewer' = 'operator';
+
+            if (tenantId) {
+                // Resolved via domain/email policy. We MUST check selfSignupEnabled.
+                // Google callback doesn't have an invite token, so this is a self-signup attempt
+                // into an existing tenant.
+                const policyQuery = await db.select().from(tenantSignupPolicies).where(eq(tenantSignupPolicies.tenantId, tenantId));
+                const policy = policyQuery[0];
+                
+                if (policy && policy.selfSignupEnabled === false) {
+                    structuredLogger.warn('google_oauth_signup_not_allowed', {
+                        eventType: 'auth_security',
+                        tenantId,
+                        userEmailHash: sha256Hex(normalizedEmail),
+                    });
+                    const response = NextResponse.redirect(`${baseUrl}/login?error=signup_not_allowed`);
+                    response.cookies.delete('google_oauth_state');
+                    return response;
+                }
+            } else {
+                const provisioned = await provisionNewTenant(googleUser.name || 'Usuário Google', normalizedEmail);
+                tenantId = provisioned.tenantId;
+                role = provisioned.role;
+            }
+
+            const userId = crypto.randomUUID();
+            await db.insert(users).values({
+                id: userId,
+                email: normalizedEmail,
+                name: googleUser.name,
+                authProvider: 'google',
+                providerId: googleUser.sub,
+                tenantId,
+                role,
+                emailVerifiedAt: new Date(),
+                sessionVersion: 1,
             });
 
-            structuredLogger.info('google_login_success', {
+            structuredLogger.info('google_oauth_user_created', {
                 eventType: 'auth_google',
-                userId: existingUser.id,
-                tenantId: existingUser.tenantId,
+                userId,
+                tenantId,
             });
 
-            const response = NextResponse.redirect(`${baseUrl}/cockpit`);
-            response.cookies.set(COOKIE_NAME, token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                path: '/',
-                maxAge: 8 * 60 * 60,
-            });
-            return response;
+            // Fetch newly created user for session
+            const newUsers = await db.select().from(users).where(eq(users.id, userId));
+            user = newUsers[0];
         }
 
-        // ── 4. New user → redirect to signup with Google context ──────
-        const signupParams = new URLSearchParams({
-            provider: 'google',
-            email: normalizedEmail,
-            name: googleUser.name || '',
+        // ── 6. Create session ─────────────────────────────────────────
+        const sessionToken = await createSessionToken({
+            id: user.id,
+            email: user.email,
+            tenantId: user.tenantId,
+            role: user.role as any,
+            sessionVersion: user.sessionVersion,
         });
 
-        return NextResponse.redirect(`${baseUrl}/signup?${signupParams.toString()}`);
+        structuredLogger.info('google_login_success', {
+            eventType: 'auth_google',
+            userId: user.id,
+            tenantId: user.tenantId,
+        });
+
+        const response = NextResponse.redirect(`${baseUrl}/cockpit`);
+        response.cookies.delete('google_oauth_state');
+        response.cookies.set(COOKIE_NAME, sessionToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 8 * 60 * 60,
+        });
+
+        return response;
     } catch (error) {
         structuredLogger.error('google_oauth_error', {
             eventType: 'auth_google',
             error,
         });
-        return NextResponse.redirect(`${baseUrl}/login?error=google_internal`);
+        const response = NextResponse.redirect(`${baseUrl}/login?error=google_internal`);
+        response.cookies.delete('google_oauth_state');
+        return response;
     }
 }
+

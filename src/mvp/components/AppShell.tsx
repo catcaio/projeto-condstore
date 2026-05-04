@@ -178,7 +178,7 @@ export function AppShell({ children, tenantName }: AppShellProps) {
           style={{ borderTop: '1px solid hsl(var(--mvp-border))' }}
         >
           <a
-            href="/auth/login"
+            href="/login"
             className="flex items-center gap-3 px-3 py-2 rounded-[var(--mvp-radius-sm)] text-sm transition-all duration-150 w-full"
             style={{ color: 'hsl(var(--mvp-text-3))' }}
           >

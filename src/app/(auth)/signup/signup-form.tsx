@@ -114,7 +114,7 @@ export function SignupForm() {
             if (data.emailVerifyRequired) {
                 // Stay on page showing verify message
             } else {
-                window.location.href = '/home';
+                window.location.href = '/cockpit';
             }
         } catch (err: any) {
             setError(`Erro de conexão: ${err.message}. Tente novamente.`);

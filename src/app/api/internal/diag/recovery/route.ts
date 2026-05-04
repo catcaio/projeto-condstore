@@ -11,6 +11,7 @@ import { redisClient } from '@/infra/redis.client';
 import { sql } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
+import { getEnvMisconfigurationResponse } from '@/infra/env/require-env';
 
 interface RecoveryDiagPayload {
     db_connection_ok: boolean;
@@ -24,7 +25,7 @@ interface RecoveryDiagPayload {
 function checkBackupEnvs(): boolean {
     const required = [
         'DATABASE_URL',
-        'NEXTAUTH_SECRET',
+        'AUTH_SECRET',
     ];
     const redisPresent = Boolean(
         process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL
@@ -54,6 +55,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const startedAt = Date.now();
     const requestId = makeRequestId(request);
     const route = '/api/internal/diag/recovery';
+
+    const misconfigured = getEnvMisconfigurationResponse(requestId, 'internal');
+    if (misconfigured) return misconfigured;
 
     const authResult = requireInternalToken(request, { purpose: ['diag'] });
     if (!authResult.ok) return authResult.response;

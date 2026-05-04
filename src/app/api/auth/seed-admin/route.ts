@@ -129,7 +129,7 @@ export const GET = withAuditLog(
 
                 const response = NextResponse.json({
                     success: true,
-                    message: 'Admin user created successfully. Session cookie set — redirect to /home.',
+                    message: 'Admin user created successfully. Session cookie set — redirect to /cockpit.',
                     tenantId,
                 });
 
@@ -166,7 +166,7 @@ export const GET = withAuditLog(
 
                 const response = NextResponse.json({
                     success: true,
-                    message: 'Admin password reset and session created. Redirect to /home.',
+                    message: 'Admin password reset and session created. Redirect to /cockpit.',
                     tenantId: updatedUser[0].tenantId,
                 });
 

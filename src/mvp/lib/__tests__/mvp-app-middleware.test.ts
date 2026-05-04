@@ -1,7 +1,7 @@
 /**
  * Tests for the /mvp/app route middleware behaviour.
  *
- * Verifies that unauthenticated visitors are redirected to /auth/login and
+ * Verifies that unauthenticated visitors are redirected to /login and
  * that authenticated visitors pass through with the session headers injected.
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
@@ -23,13 +23,13 @@ describe('/mvp/app middleware', () => {
     vi.stubEnv('NODE_ENV', 'test');
   });
 
-  it('redirects unauthenticated access to /mvp/app/ to /auth/login', async () => {
+  it('redirects unauthenticated access to /mvp/app/ to /login', async () => {
     const { middleware } = await import('../../../middleware');
     const req = new NextRequest('http://localhost/mvp/app/');
     const res = await middleware(req);
 
     expect(res.status).toBe(307);
-    expect(res.headers.get('location')).toContain('/auth/login');
+    expect(res.headers.get('location')).toContain('/login');
     expect(res.headers.get('location')).toContain('callbackUrl');
   });
 

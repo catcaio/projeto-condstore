@@ -121,7 +121,7 @@ export function ComoFuncionaSection() {
         </h2>
         <div className="flex flex-col sm:flex-row gap-3">
           <Link
-            href="/auth/login"
+            href="/login"
             className="inline-flex items-center justify-center h-11 px-6 rounded-[var(--mvp-radius-sm)] text-sm font-medium transition-all duration-150"
             style={{
               background: 'hsl(var(--mvp-accent))',

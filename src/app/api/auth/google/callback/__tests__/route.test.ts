@@ -39,7 +39,8 @@ describe('Google OAuth Callback', () => {
             })
         });
 
-        const req = new NextRequest('http://localhost:3000/api/auth/google/callback?code=test-code');
+        const req = new NextRequest('http://localhost:3000/api/auth/google/callback?code=test-code&state=test-state');
+        req.cookies.set('google_oauth_state', 'test-state');
         const res = await GET(req);
 
         expect(res.status).toBe(307);

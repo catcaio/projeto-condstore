@@ -450,6 +450,10 @@ export const users = mysqlTable('users', {
     emailVerifyToken: varchar('email_verify_token', { length: 128 }),
     emailVerifiedAt: timestamp('email_verified_at'),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => {
+    return {
+        providerIdUnique: uniqueIndex('idx_users_provider_id_unique').on(table.authProvider, table.providerId),
+    };
 });
 
 export type UserRecord = typeof users.$inferSelect;

@@ -66,3 +66,13 @@ export function requireDatabaseUrl(): string {
 
   return databaseUrl;
 }
+
+export function getPublicAppUrl(fallback = 'http://localhost:3000'): string {
+  const configured = readTrimmedEnv('NEXT_PUBLIC_APP_URL');
+  if (configured) return configured;
+
+  const vercelUrl = readTrimmedEnv('VERCEL_URL');
+  if (vercelUrl) return `https://${vercelUrl}`;
+
+  return fallback;
+}

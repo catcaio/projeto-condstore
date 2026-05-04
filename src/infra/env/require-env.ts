@@ -16,31 +16,30 @@ export function requireEnv(key: string, fallback?: string): string {
     return val;
 }
 
+export function assertAuthEnv() {
+    requireDatabaseUrl();
+    getAuthSecretValue();
+    getPiiEncryptionKey();
+}
+
+export function assertInternalEnv() {
+    if (isStrictRuntimeEnvironment()) {
+        const missing = getMissingCriticalInternalTokenEnvs();
+        if (missing.length > 0) {
+            throw new Error(`Missing internal tokens: ${missing.join(', ')}`);
+        }
+    }
+}
+
 export function assertCriticalEnvSetup() {
     if (process.env.NODE_ENV === 'test') return;
 
     try {
-        requireDatabaseUrl();
-        requireEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000');
-        getAuthSecretValue();
-        getPiiEncryptionKey();
-
-        if (isStrictRuntimeEnvironment()) {
-            const missingInternalTokenEnvs = getMissingCriticalInternalTokenEnvs();
-            if (missingInternalTokenEnvs.length > 0) {
-                throw new Error(
-                    `CRITICAL STARTUP ERROR: Missing required internal auth env(s): ${missingInternalTokenEnvs.join(', ')}`,
-                );
-            }
-        }
-
+        assertAuthEnv();
+        assertInternalEnv();
         console.info('✅ Critical Environment Variables Verified.');
     } catch (err: any) {
-        // Log instead of throwing to avoid killing the whole process if a route-level check is available
         console.error(`[CRITICAL] Environment verification failed: ${err.message}`);
-        
-        // We still throw if we are in a strict environment (production/staging)
-        // to prevent bad deployments from succeeding.
         if (isStrictRuntimeEnvironment()) {
             throw err;
         }
@@ -51,34 +50,30 @@ export function assertCriticalEnvSetup() {
  * Validates critical environment variables for API routes.
  * Returns a JSON Response if misconfigured, or null if OK.
  */
-export function getEnvMisconfigurationResponse(requestId: string): any | null {
+export function getEnvMisconfigurationResponse(requestId: string, scope: 'auth' | 'internal' | 'all' = 'all'): any | null {
     try {
         if (process.env.NODE_ENV === 'test' && !process.env.STRICT_TEST) {
             return null;
         }
         
-        requireDatabaseUrl();
-        getAuthSecretValue();
-        getPiiEncryptionKey();
-        
-        if (isStrictRuntimeEnvironment()) {
-            const missing = getMissingCriticalInternalTokenEnvs();
-            if (missing.length > 0) {
-                throw new Error(`Missing internal tokens: ${missing.join(', ')}`);
-            }
+        if (scope === 'auth' || scope === 'all') {
+            assertAuthEnv();
+        }
+
+        if (scope === 'internal' || scope === 'all') {
+            assertInternalEnv();
         }
         
         return null;
     } catch (error: any) {
         const code = error.message.includes(' ') ? 'MISCONFIGURED_RUNTIME' : error.message;
         
-        // Use a standard Response.json if available, or try to import NextResponse
-        // This is more resilient to startup crashes
+        console.error('[ENV_MISCONFIG]', { requestId, scope, error: error.message });
+
         const body = JSON.stringify({ 
             success: false, 
             error: 'Sistema em manutenção ou misconfigurado.', 
             code,
-            details: error.message,
             requestId 
         });
 
