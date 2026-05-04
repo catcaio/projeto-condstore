@@ -17,6 +17,7 @@ import { PanelLeftClose, Kanban, List, CheckCircle2, UserPlus, FileArchive, Mess
 import { SharedKanbanBoard, KanbanColumn, KanbanCard, DropdownStatusSelector } from '@/ui/foundation';
 import { updateClientOpportunityStage } from './actions/update-stage';
 import { bulkAdvanceClientStage, bulkAssignClientOwner, bulkArchiveClients } from './actions/bulk';
+import { scheduleClientFollowUp } from './actions/schedule-followup';
 import { getOperationalHistoryAction, addOperationalNoteAction } from '@/modules/audit/audit.actions';
 import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank';
 import { ActionPlayground } from '@/ui/frank/action-playground';
@@ -410,9 +411,14 @@ export function ClientsView({ clients }: ClientsViewProps) {
                                                                 variant="ghost" 
                                                                 size="icon" 
                                                                 className="h-6 w-6 rounded text-blue-600 hover:bg-blue-50 dark:text-blue-500 dark:hover:bg-blue-950/30" 
-                                                                onClick={(e) => { 
+                                                                onClick={async (e) => {
                                                                     e.stopPropagation(); 
-                                                                    console.warn('[TODO] Follow-up scheduling not wired yet for client:', client.id); 
+                                                                    const res = await scheduleClientFollowUp(client.id);
+                                                                    if (res.success) {
+                                                                        alert('Follow-up agendado com sucesso!');
+                                                                    } else {
+                                                                        alert(res.error || 'Erro ao agendar follow-up');
+                                                                    }
                                                                 }}
                                                             >
                                                                 <CalendarPlus className="h-3.5 w-3.5" />
