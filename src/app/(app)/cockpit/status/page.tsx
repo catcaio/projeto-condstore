@@ -12,7 +12,7 @@ export default async function StatusPage({ params }: { params: { tenantId?: stri
     const session = await getServerSessionUser();
 
     if (!session || session.role !== 'admin' || !session.tenantId) {
-        redirect('/auth/login');
+        redirect('/login');
     }
 
     return (

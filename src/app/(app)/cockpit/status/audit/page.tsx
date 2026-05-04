@@ -9,7 +9,7 @@ export const metadata = {
 export default async function AuditPage() {
     const session = await getServerSessionUser();
     if (!session || session.role !== 'admin' || !session.tenantId) {
-        redirect('/auth/login');
+        redirect('/login');
     }
 
     return (

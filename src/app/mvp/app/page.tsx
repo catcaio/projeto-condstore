@@ -26,7 +26,7 @@ export default async function MvpAppPage() {
   const session = getMvpSessionFromHeaders(headersList);
 
   if (!session) {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   return <CockpitMini session={session} />;

@@ -94,7 +94,7 @@ export function MvpShell({ children }: MvpShellProps) {
 
         {/* CTA */}
         <Link
-          href="/auth/login"
+          href="/login"
           className="inline-flex items-center h-8 px-4 rounded-[var(--mvp-radius-sm)] text-sm font-medium transition-all duration-150 focus-visible:outline-none"
           style={{
             background: 'hsl(var(--mvp-accent))',
@@ -130,7 +130,7 @@ export function MvpShell({ children }: MvpShellProps) {
         <nav className="flex items-center gap-4" aria-label="Links do rodapé">
           {[
             { href: '/mvp/como-funciona', label: 'Como funciona' },
-            { href: '/auth/login', label: 'Entrar' },
+            { href: '/login', label: 'Entrar' },
             { href: '/privacidade', label: 'Privacidade' },
           ].map(({ href, label }) => (
             <Link

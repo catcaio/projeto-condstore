@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export default async function PrivacyCockpitPage() {
     const session = await getServerSessionUser();
     if (!session || !session.tenantId || session.role !== 'admin') {
-        redirect('/auth/login');
+        redirect('/login');
     }
     const tenantId = session.tenantId;
 

@@ -13,7 +13,7 @@ export default async function SistemaHealthPage() {
     const session = await getServerSessionUser();
 
     if (!session || session.role !== 'admin' || !session.tenantId) {
-        redirect('/auth/login');
+        redirect('/login');
     }
 
     return (

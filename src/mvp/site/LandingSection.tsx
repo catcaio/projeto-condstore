@@ -33,7 +33,7 @@ export function LandingSection() {
         </div>
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Link
-            href="/auth/login"
+            href="/login"
             className="inline-flex items-center justify-center h-11 px-6 rounded-[var(--mvp-radius-sm)] text-sm font-medium transition-all duration-150"
             style={{
               background: 'hsl(var(--mvp-accent))',
@@ -137,7 +137,7 @@ export function LandingSection() {
             </p>
           </div>
           <Link
-            href="/auth/login"
+            href="/login"
             className="inline-flex items-center justify-center h-9 px-5 rounded-[var(--mvp-radius-sm)] text-sm font-medium shrink-0 transition-all duration-150"
             style={{
               background: 'hsl(var(--mvp-surface-3))',

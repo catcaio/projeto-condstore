@@ -29,7 +29,7 @@ export default async function MvpAppLayout({ children }: { children: ReactNode }
 
   // Defensive — middleware should prevent unauthenticated access.
   if (!session) {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   return (
