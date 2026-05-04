@@ -1,3 +1,5 @@
+import Script from "next/script";
+
 const THEME_BOOTSTRAP_SCRIPT = `
 (() => {
   try {
@@ -15,5 +17,5 @@ const THEME_BOOTSTRAP_SCRIPT = `
 `;
 
 export function ThemeScript() {
-  return <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />;
+  return <Script id="root-theme-init">{THEME_BOOTSTRAP_SCRIPT}</Script>;
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import Script from "next/script";
 import { ApplicationTracker } from "@/ui/lib/app-tracker-client";
 import { User, LogOut, MapPin } from "lucide-react";
 import "@/styles/tokens.css";
@@ -24,7 +25,7 @@ export default async function FieldLayout({ children }: { children: ReactNode })
 
     return (
         <>
-            <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+            <Script id="tech-theme-init">{themeScript}</Script>
             <div className="os-root min-h-screen bg-[hsl(var(--ui-bg))] text-[hsl(var(--ui-text))] flex flex-col">
                 {/* Field execution small header */}
                 <header className="h-14 border-b border-[hsl(var(--ui-border))] px-4 flex items-center justify-between bg-[hsl(var(--ui-surface))] sticky top-0 z-10 w-full shrink-0">
