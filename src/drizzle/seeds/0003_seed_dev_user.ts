@@ -32,9 +32,17 @@ async function seed() {
     const password = process.env.SEED_DEV_PASSWORD || randomBytes(16).toString('hex');
     const tenantId = 'lojacond-default';
 
+    const canPrintSeedPassword =
+        process.env.PRINT_SEED_PASSWORD === 'true' &&
+        process.env.NODE_ENV !== 'production' &&
+        process.env.CI !== 'true';
+
     console.log('Seeding dev admin user...');
     if (isGenerated) {
         console.log('⚠️ No SEED_DEV_PASSWORD provided. Generating a random one.');
+        console.log('💡 Use SEED_DEV_PASSWORD for a deterministic login.');
+    } else {
+        console.log('💡 Using provided SEED_DEV_PASSWORD from environment.');
     }
 
     try {
@@ -50,7 +58,11 @@ async function seed() {
 
         console.log('Dev admin user created successfully');
         console.log(`  Email: ${email}`);
-        console.log(`  Password: ${password}`);
+        if (canPrintSeedPassword) {
+            console.log(`  Password: ${password}`);
+        } else {
+            console.log(`  Password: [HIDDEN]`);
+        }
         console.log(`  Tenant: ${tenantId}`);
         console.log(`  Role: admin`);
     } catch (error: unknown) {
