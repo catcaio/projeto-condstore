@@ -32,7 +32,7 @@ class RedisService {
       try {
         this.redisInstance = new Redis(process.env.REDIS_URL, {
           lazyConnect: true,
-          connectTimeout: 5000,
+          connectTimeout: 2000,
           maxRetriesPerRequest: 1
         });
         this.redisInstance.on('error', (err: Error) => {
