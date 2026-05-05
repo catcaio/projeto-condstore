@@ -184,6 +184,7 @@ ai-eval/
 .env
 *.env
 *.env.*
+!.env.example
 *.pem
 id_ed25519*
 id_rsa*
