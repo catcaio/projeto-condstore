@@ -6,10 +6,24 @@ import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * QA Session Bootstrap — DEVELOPMENT / CI ONLY.
+ *
+ * This endpoint MUST NOT run in Production or Preview environments.
+ * `blockInProduction: true` causes requireInternalAuth to return 403 immediately
+ * when VERCEL_ENV=production|preview or NODE_ENV=production, regardless of whether
+ * QA_BOOTSTRAP_TOKEN is present and valid. No Set-Cookie is emitted in those runtimes.
+ *
+ * MANUAL_RAFA: remove QA_BOOTSTRAP_TOKEN from Vercel Production env if still present —
+ * its existence is harmless after this fix but represents unnecessary exposure.
+ */
 export async function POST(request: NextRequest) {
-    // Unified guard: blocks production, accepts QA token or internal token or admin session
+    // Security: block this route in Production and Preview unconditionally.
+    // blockInProduction delegates to isStrictRuntimeEnvironment() which covers
+    // VERCEL_ENV=production|preview, NODE_ENV=production, and APP_ENV=staging.
     const authResult = await requireInternalAuth(request, {
         purpose: ['qa_bootstrap'],
+        blockInProduction: true,
     });
 
     if (!authResult.ok) {

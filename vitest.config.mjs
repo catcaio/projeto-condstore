@@ -34,6 +34,9 @@ export default defineConfig({
     pool: process.env.VITEST_POOL === "threads" ? "threads" : "forks",
     threads: false,
     watch: false,
+    // Injects test-only env vars (e.g. PII_ENCRYPTION_KEY) before any test module is imported.
+    // See src/test/setup-env.ts — contains ONLY fake, non-secret test values.
+    setupFiles: ["./src/test/setup-env.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "lcov"],
