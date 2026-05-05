@@ -92,32 +92,28 @@ describe('security rate-limiter redis failure hardening', () => {
     expect(JSON.stringify(logContext)).not.toContain('admin');
   });
 
-  it('fails closed in production for critical scopes (auth.login) when redis is unavailable', async () => {
+  it('uses restrictive memory fallback for auth.login when redis is unavailable', async () => {
     const limiter = new RateLimiter();
-    const now = Date.now();
-
     const result = await limiter.limit('auth.login', '1.2.3.4:admin', {
-      max: 5,
+      max: 10,
       windowSec: 60,
     });
 
-    expect(result).toEqual({
-      allowed: false,
-      remaining: 0,
-      resetAt: now + 60_000,
-      limit: 5,
-    });
-    expect(mockStructuredLogger.error).toHaveBeenCalledWith(
-      'rate_limiter_redis_failure_fail_closed',
+    expect(result.allowed).toBe(true);
+    expect(result.limit).toBe(5); // 50% of 10
+    expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
+      'rate_limiter_degraded_mode_local_fallback',
       expect.objectContaining({
         eventType: 'rate_limiter',
         scope: 'auth.login',
-        rateLimitMode: 'fail_closed',
+        rateLimitMode: 'degraded_fallback_memory',
+        restrictiveMax: 5,
+        originalMax: 10,
       }),
     );
   });
 
-  it('uses memory fallback for public_safe scopes when redis is unavailable', async () => {
+  it('uses restrictive memory fallback for public_safe scopes when redis is unavailable', async () => {
     const limiter = new RateLimiter();
 
     const result = await limiter.limit('cotacao_quotes', '1.2.3.4:user@example.com', {
@@ -126,21 +122,17 @@ describe('security rate-limiter redis failure hardening', () => {
     });
 
     expect(result.allowed).toBe(true);
-    expect(result.remaining).toBeGreaterThan(0);
+    expect(result.limit).toBe(15); // 50% of 30
     expect(mockStructuredLogger.warn).toHaveBeenCalledWith(
-      'rate_limiter_fallback_local_used',
+      'rate_limiter_degraded_mode_local_fallback',
       expect.objectContaining({
         eventType: 'rate_limiter',
         scope: 'cotacao_quotes',
-        rateLimitMode: 'failopen_memory',
+        rateLimitMode: 'degraded_fallback_memory',
         sensitivity: 'failopen_memory',
+        restrictiveMax: 15,
+        originalMax: 30,
       }),
-    );
-
-    // Should NOT call fail_open log anymore
-    expect(mockStructuredLogger.warn).not.toHaveBeenCalledWith(
-      'rate_limiter_fallback_active',
-      expect.anything(),
     );
   });
 

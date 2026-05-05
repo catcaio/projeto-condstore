@@ -29,7 +29,7 @@ const FALLBACK_MEMORY_SCOPES = new Set([
   'cotacao_intent', 'cotacao_quotes', 'public_events'
 ]);
 
-
+const AUTH_MEMORY_SCOPES = new Set(['auth.login', 'auth.signup']);
 
 interface MemoryBucket {
   count: number;
@@ -289,24 +289,34 @@ export class RateLimiter {
   ): Promise<RateLimitDecision> {
     const keyHash = hashRateLimitKeyInternal(key);
     const errorName = error instanceof Error ? error.name : undefined;
-    const sensitivity: RouteSensitivity = FALLBACK_MEMORY_SCOPES.has(scope)
+    const sensitivity: RouteSensitivity = (FALLBACK_MEMORY_SCOPES.has(scope) || AUTH_MEMORY_SCOPES.has(scope))
       ? 'failopen_memory'
       : 'critical';
 
-    // Fallback memory scopes (auth_login, public endpoints): use in-memory fallback even in production
+    // Fallback memory scopes (auth_login, signup, public endpoints): use in-memory fallback with restrictive limits
     if (sensitivity === 'failopen_memory') {
       fallbackMetrics.count += 1;
       fallbackMetrics.lastSeenAt = now;
-      structuredLogger.warn('rate_limiter_fallback_local_used', {
+      
+      // Restrictive limits for fallback mode: 50% of original max, minimum 2
+      const restrictiveOptions = {
+        ...options,
+        max: Math.max(2, Math.floor(options.max * 0.5))
+      };
+
+      structuredLogger.warn('rate_limiter_degraded_mode_local_fallback', {
         eventType: 'rate_limiter',
         scope,
         keyHash,
         reason,
-        rateLimitMode: 'failopen_memory',
+        rateLimitMode: 'degraded_fallback_memory',
+        originalMax: options.max,
+        restrictiveMax: restrictiveOptions.max,
         sensitivity,
         ...(errorName ? { errorName } : {}),
       });
-      return this.limitWithMemory(scope, key, options, now);
+      
+      return this.limitWithMemory(scope, key, restrictiveOptions, now);
     }
 
     if (isMemoryFallbackEnabled()) {
