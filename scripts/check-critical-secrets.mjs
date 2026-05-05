@@ -10,6 +10,13 @@
  */
 
 import { pathToFileURL } from 'node:url';
+import fs from 'node:fs';
+import dotenv from 'dotenv';
+
+// Load .env.local if it exists (local development)
+if (fs.existsSync('.env.local')) {
+  dotenv.config({ path: '.env.local' });
+}
 
 const AUTH_SECRET_MIN_BYTES = 32;
 const PII_KEY_BYTES = 32;
