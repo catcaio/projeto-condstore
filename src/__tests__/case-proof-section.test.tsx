@@ -114,12 +114,12 @@ describe('CaseProofSection', () => {
                   trackPage="landing"
                   trackSection="case_proof"
                 >
-                  <ForwardRef(Button2)
+                  <ForwardRef(Button)
                     className="font-semibold text-[hsl(var(--ui-accent-blue))] hover:text-[hsl(var(--ui-accent-blue-strong))] hover:bg-[hsl(var(--ui-accent-blue)/0.1)]"
                     variant="ghost"
                   >
                     Ver como funciona →
-                  </ForwardRef(Button2)>
+                  </ForwardRef(Button)>
                 </TrackedLink>
               </div>
             </div>
