@@ -637,18 +637,32 @@ async function validateDataset(connection: mysql.Connection, tenantId: string): 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL || DEFAULT_DATABASE_URL;
   const tenantId = process.env.DEMO_TENANT_ID || DEFAULT_TENANT_ID;
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+  const vercelEnv = process.env.VERCEL_ENV;
+  const isProductionOrPreview = vercelEnv === 'production' || vercelEnv === 'preview';
   
+  // Strict check: if not local/localhost, we don't allow generated passwords without explicit flag
+  const isLocalDb = databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1');
+
   let adminPassword = process.env.DEMO_ADMIN_PASSWORD;
   let isGenerated = false;
 
   if (!adminPassword) {
-    const isLocalOrDev = !process.env.VERCEL_ENV || process.env.VERCEL_ENV === 'development';
+    // We only generate passwords if:
+    // 1. Not in CI
+    // 2. Not in Vercel Production/Preview
+    // 3. Database is Local OR explicit permission was given (not recommended)
+    const canGenerate = !isCI && !isProductionOrPreview && isLocalDb;
     
-    if (isLocalOrDev) {
+    if (canGenerate) {
       adminPassword = crypto.randomBytes(12).toString('base64').replace(/[/+=]/g, '');
       isGenerated = true;
     } else {
-      throw new Error('DEMO_ADMIN_PASSWORD environment variable is required in production/preview environments.');
+      const reason = isCI ? 'CI environment detected' : 
+                     isProductionOrPreview ? `Vercel ${vercelEnv} environment detected` :
+                     !isLocalDb ? 'Non-local database detected' : 'Unknown environment';
+      
+      throw new Error(`DEMO_ADMIN_PASSWORD environment variable is required. Geração automática bloqueada: ${reason}.`);
     }
   }
 
@@ -676,10 +690,13 @@ async function main(): Promise<void> {
 
     await validateDataset(connection, tenantId);
 
+    // Only show generated password in local dev if PRINT_SEED_PASSWORD is true AND not in CI
+    const showGenerated = isGenerated && process.env.PRINT_SEED_PASSWORD === 'true' && !isCI;
+
     log('info', 'seed.completed', {
       tenantId,
       adminEmail: DEFAULT_ADMIN_EMAIL,
-      adminPassword: isGenerated ? `(GENERATED: ${adminPassword})` : '(FROM_ENV)',
+      adminPassword: showGenerated ? adminPassword : (isGenerated ? '(GENERATED_BUT_HIDDEN)' : '(FROM_ENV)'),
       notes: 'Execução idempotente; pode rodar antes de cada demo/piloto.',
     });
   } catch (error) {
