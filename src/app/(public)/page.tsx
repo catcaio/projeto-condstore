@@ -118,34 +118,34 @@ export default function HomePage() {
                     <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
                         <div>
                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--ui-text-subtle))]">
-                                CONDSTORE OS • LANDING INSTITUCIONAL
+                                CONDSTORE OS • HOME CANÔNICA
                             </p>
                             <h1
                                 data-testid="public-hero-title"
                                 className="mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-[hsl(var(--ui-text))] md:text-5xl"
                             >
-                                Operação comercial e logística sob controle, todos os dias.
+                                Do WhatsApp ao cockpit: atendimento, frete, pedido e logística no mesmo fluxo.
                             </h1>
                             <p className="mt-5 max-w-3xl text-lg leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                                O CONDSTORE OS conecta WhatsApp supervisionado, CRM operacional, frete e pedidos em um fluxo único.
+                                O CONDSTORE OS conecta atendimento supervisionado pelo WhatsApp, cotação de frete, pedido e logística em um fluxo único.
                                 {' '}
-                                Clareza de estado, decisão rápida e governança prática para quem opera no ritmo real.
+                                Frank atua como copiloto supervisionado enquanto o cockpit mantém estado, prioridade e decisão visíveis para o gestor.
                             </p>
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
                                 <Link href="/contato" className={primaryCtaClass} data-testid="public-primary-cta">
                                     Solicitar avaliação operacional
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
-                                <Link href="/solucoes" className={secondaryCtaClass}>
-                                    Ver solução
+                                <Link href="/login" className={secondaryCtaClass}>
+                                    Entrar no sistema
                                 </Link>
                             </div>
                             <div className="mt-5 flex flex-wrap gap-5">
                                 <Link href="/proof" className={inlineLinkClass}>
                                     Ver prova operacional
                                 </Link>
-                                <Link href="/login" className={inlineLinkClass}>
-                                    Entrar no sistema
+                                <Link href="/solucoes" className={inlineLinkClass}>
+                                    Entender o fluxo operacional
                                 </Link>
                             </div>
                         </div>
@@ -321,7 +321,7 @@ export default function HomePage() {
                         </p>
                         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                             <Link href="/contato" className={primaryCtaClass}>
-                                Agendar avaliação
+                                Solicitar avaliação operacional
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                             <Link href="/login" className={secondaryCtaClass}>
