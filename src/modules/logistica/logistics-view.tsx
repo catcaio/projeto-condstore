@@ -93,8 +93,8 @@ export function LogisticsView() {
         return res;
     };
 
-    const handleBulkActionPreview = (actionType: 'update' | 'exception') => {
-        const selectedIds = Object.keys(rowSelection).filter(k => rowSelection[k]);
+    const handleBulkActionPreview = (actionType: 'update' | 'exception', explicitIds?: string[]) => {
+        const selectedIds = explicitIds || Object.keys(rowSelection).filter(k => rowSelection[k]);
         if (selectedIds.length === 0) return;
 
         const previewItems: BulkPreviewItem[] = selectedIds.map(id => {
@@ -208,12 +208,20 @@ export function LogisticsView() {
                         { 
                             id: 'actions', 
                             header: '', 
-                            cell: () => (
+                            cell: ({ row }: any) => (
                                 <div className="flex items-center gap-1 justify-end" onClick={e => e.stopPropagation()}>
-                                    <Button title="Cotar Frete" variant="ghost" size="icon" className="h-7 w-7 rounded text-[hsl(var(--ui-text-muted))] hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-500 dark:hover:bg-blue-950/30 transition-colors" onClick={() => console.warn('[TODO] Cotar Frete not wired')}>
-                                        <Calculator className="h-4 w-4" />
-                                    </Button>
-                                    <Button title="Atualizar Tracking" variant="ghost" size="icon" className="h-7 w-7 rounded text-[hsl(var(--ui-text-muted))] hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-500 dark:hover:bg-emerald-950/30 transition-colors" onClick={() => console.warn('[TODO] Atualizar Tracking not wired')}>
+                                    <Link href={`/cockpit/freight-simulator?pedido=${row.original.order.id}`}>
+                                        <Button title="Cotar Frete" variant="ghost" size="icon" className="h-7 w-7 rounded text-[hsl(var(--ui-text-muted))] hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-500 dark:hover:bg-blue-950/30 transition-colors">
+                                            <Calculator className="h-4 w-4" />
+                                        </Button>
+                                    </Link>
+                                    <Button
+                                        title="Atualizar Tracking"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 rounded text-[hsl(var(--ui-text-muted))] hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-500 dark:hover:bg-emerald-950/30 transition-colors"
+                                        onClick={() => handleBulkActionPreview('update', [row.original.id])}
+                                    >
                                         <MapPin className="h-4 w-4" />
                                     </Button>
                                 </div>
