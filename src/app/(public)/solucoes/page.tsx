@@ -51,7 +51,7 @@ export default function SolucoesPage() {
                                 description: 'Obtenha cotações instantâneas de múltiplas transportadoras em segundos.',
                                 problem: 'Processo manual lento, erros frequentes em cotações, falta de comparação.',
                                 how: 'API conectada diretamente às transportadoras, cotação multi-transportadora em milissegundos.',
-                                link: { label: 'Explorar plataforma', href: '/plataforma' },
+                                link: { label: 'Explorar produto', href: '/produto' },
                                 accentClass: 'text-[hsl(var(--ui-success))]',
                             },
                             {
@@ -117,14 +117,14 @@ export default function SolucoesPage() {
                     />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Link
-                            href="/plataforma"
+                            href="/produto"
                             className="group flex flex-col gap-4 rounded-2xl border border-[hsl(var(--ui-border)/0.5)] bg-[hsl(var(--ui-surface)/0.5)] p-6 md:p-8 transition-all hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-elevated)/0.5)]"
                         >
                             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue))]">
                                 <LayoutDashboard className="h-5 w-5" />
                             </div>
                             <h3 className="text-base font-bold text-[hsl(var(--ui-text))] tracking-tight">
-                                Plataforma
+                                Produto
                             </h3>
                             <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">
                                 Entenda a arquitetura que conecta tudo.

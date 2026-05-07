@@ -5,12 +5,12 @@ import {
     Bot,
     FileCheck,
     Gauge,
-    Inbox,
+    MessageCircle,
+    Route,
     ScanSearch,
     Shield,
     Truck,
     UserCheck,
-    Users,
     Workflow,
     Zap,
 } from 'lucide-react';
@@ -24,8 +24,8 @@ import {
 } from '@/ui/site';
 
 export const metadata: Metadata = {
-    title: 'Como funciona — Condstore OS',
-    description: 'Fluxo operacional completo do CONDSTORE OS: entrada, contexto, cotacao, pedido, execucao e cockpit com operacao supervisionada.',
+    title: 'Como funciona — CONDSTORE OS',
+    description: 'Entenda o fluxo operacional: do WhatsApp ao cockpit, com cotação de frete, pedidos e logística em um sistema único supervisionado.',
 };
 
 interface StageCard {
@@ -44,48 +44,48 @@ interface CapabilityCard {
 
 const overviewStages: StageCard[] = [
     {
-        title: 'Entrada',
-        summary: 'Lead recebido em canal operacional',
-        detail: 'WhatsApp, portal ou API iniciam o fluxo com rastreabilidade desde o primeiro contato.',
-        icon: Inbox,
+        title: 'Atendimento',
+        summary: 'WhatsApp centralizado com contexto',
+        detail: 'Conversas são organizadas em uma fila única, preservando o histórico e a intenção do cliente.',
+        icon: MessageCircle,
     },
     {
-        title: 'Processamento',
-        summary: 'Contexto e intencao organizados',
-        detail: 'Cliente, historico e classificacao da demanda sao preparados para reduzir retrabalho.',
-        icon: ScanSearch,
+        title: 'Cotação de Frete',
+        summary: 'Cálculo multicarrier ágil',
+        detail: 'A equipe compara opções de frete com critérios operacionais e comerciais sem sair do fluxo.',
+        icon: Route,
     },
     {
-        title: 'Operacao',
-        summary: 'Cotacao, pedido e execucao conectados',
-        detail: 'A operacao segue com estados claros, responsavel definido e transicao entre etapas sem perda de dados.',
-        icon: Workflow,
+        title: 'Pedido e Logística',
+        summary: 'Transição fluida para execução',
+        detail: 'Aprovação vira pedido com responsável definido, rastro de decisão e acompanhamento de entrega.',
+        icon: Truck,
     },
     {
-        title: 'Saida',
-        summary: 'Cockpit atualizado em tempo real',
-        detail: 'Fila, SLA, margem e excecoes refletem o andamento real para decisao imediata.',
+        title: 'Cockpit',
+        summary: 'Visibilidade real da operação',
+        detail: 'Gestores e operadores acompanham SLAs, exceções e prioridades em um painel vivo.',
         icon: Gauge,
     },
 ];
 
 const frankCapabilities: CapabilityCard[] = [
     {
-        title: 'Onde a IA atua',
+        title: 'Onde o Frank atua',
         points: [
-            'Classifica intencao e organiza contexto de conversa.',
-            'Sugere resposta, cotacao e proximo passo operacional.',
-            'Sinaliza risco, atraso e inconsistencias para priorizacao.',
+            'Atua como copiloto supervisionado do operador.',
+            'Classifica intenções e organiza o contexto inicial.',
+            'Sinaliza riscos, atrasos e inconsistências para priorização.',
         ],
         icon: Bot,
         accentClass: 'text-[hsl(var(--ui-accent-blue))] bg-[hsl(var(--ui-accent-blue)/0.1)]',
     },
     {
-        title: 'Onde a IA nao atua',
+        title: 'Onde o Frank não atua',
         points: [
-            'Nao aprova pedido sozinha.',
-            'Nao executa acao critica sem validacao humana.',
-            'Nao substitui governanca, SLA e responsabilidade do operador.',
+            'Nunca toma decisões autônomas ou fala sozinho com o cliente.',
+            'Não aprova cotações ou pedidos sem validação humana.',
+            'Não substitui a responsabilidade final da equipe de operação.',
         ],
         icon: Shield,
         accentClass: 'text-[hsl(var(--ui-danger))] bg-[hsl(var(--ui-danger)/0.08)]',
@@ -95,20 +95,20 @@ const frankCapabilities: CapabilityCard[] = [
 const operatorCards: StageCard[] = [
     {
         title: 'Controle de prioridade',
-        summary: 'Fila com contexto pronto para decisao',
-        detail: 'O operador atua por excecao com visibilidade de historico, risco e impacto comercial.',
+        summary: 'Decisão humana com dados prontos',
+        detail: 'O operador atua por exceção com visibilidade de histórico, risco e impacto comercial.',
         icon: UserCheck,
     },
     {
-        title: 'Velocidade com criterio',
-        summary: 'Menos troca de tela e menos retrabalho',
-        detail: 'As sugestoes encurtam o ciclo, mas a aprovacao final continua na operacao.',
+        title: 'Velocidade com critério',
+        summary: 'Menos troca de tela e mais execução',
+        detail: 'O sistema encurta o ciclo de resposta, mas a aprovação crítica permanece na operação.',
         icon: Zap,
     },
     {
-        title: 'Escala com confiabilidade',
-        summary: 'Mais volume sem perder governanca',
-        detail: 'Padroes e guardrails permitem crescimento com qualidade operacional previsivel.',
+        title: 'Governança real',
+        summary: 'Histórico rastreável por tenant',
+        detail: 'Cada ação é vinculada a um responsável, garantindo auditoria e continuidade operacional.',
         icon: Workflow,
     },
 ];
@@ -117,22 +117,22 @@ const productConnections = [
     {
         href: '/proof',
         title: 'Prova operacional',
-        description: 'Veja evidencia de operacao real e maturidade de execucao.',
+        description: 'Veja evidências de operação real e maturidade de execução.',
     },
     {
-        href: '/plataforma',
-        title: 'Plataforma',
-        description: 'Entenda os modulos que sustentam o fluxo operacional.',
+        href: '/produto',
+        title: 'Produto',
+        description: 'Entenda os módulos que sustentam o fluxo operacional.',
     },
     {
         href: '/solucoes',
-        title: 'Solucoes',
-        description: 'Escolha o recorte ideal para sua operacao atual.',
+        title: 'Soluções',
+        description: 'Escolha o recorte ideal para sua operação atual.',
     },
     {
-        href: '/about',
+        href: '/contato',
         title: 'Contato',
-        description: 'Converse com o time sobre escopo e implantacao supervisionada.',
+        description: 'Converse com o time sobre escopo e implantação supervisionada.',
     },
 ] as const;
 
@@ -144,13 +144,13 @@ export default function ComoFuncionaPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-10 lg:gap-14 items-start">
                         <div className="max-w-3xl">
                             <span className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[hsl(var(--ui-text-muted))]">
-                                Fluxo operacional completo
+                                Fluxo operacional CONDSTORE OS
                             </span>
                             <h1 className="mt-6 text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-[hsl(var(--ui-text))] leading-[1.08]">
-                                Como o CONDSTORE OS conecta entrada, execucao e cockpit sem perder contexto.
+                                Do WhatsApp ao Cockpit: como conectamos sua operação de ponta a ponta.
                             </h1>
                             <p className="mt-6 text-lg md:text-xl text-[hsl(var(--ui-text-muted))] leading-relaxed max-w-2xl">
-                                A operacao avanca em etapas claras, com IA supervisionada e decisao final no operador. O objetivo e reduzir friccao sem abrir mao de controle.
+                                O CONDSTORE OS conecta atendimento, cotação, pedidos e logística em um fluxo único. IA supervisionada auxilia o operador, garantindo controle real e decisão humana.
                             </p>
                             <div className="mt-8 flex flex-wrap items-center gap-3">
                                 <Link
@@ -160,10 +160,10 @@ export default function ComoFuncionaPage() {
                                     Ver prova operacional
                                 </Link>
                                 <Link
-                                    href="/plataforma"
+                                    href="/produto"
                                     className="inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--ui-text-muted))] transition-colors hover:text-[hsl(var(--ui-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))] rounded-full px-3 py-2"
                                 >
-                                    Explorar arquitetura
+                                    Explorar produto
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
                             </div>
@@ -171,10 +171,10 @@ export default function ComoFuncionaPage() {
 
                         <aside className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.35)] p-6 md:p-7">
                             <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))]">
-                                Estrutura de leitura
+                                Fases da operação
                             </h2>
                             <ol className="mt-4 space-y-3 text-sm text-[hsl(var(--ui-text-muted))]">
-                                {['Entrada', 'Processamento', 'Operacao', 'Saida'].map((item, index) => (
+                                {['Atendimento (WhatsApp)', 'Cotação de Frete', 'Pedido', 'Logística', 'Cockpit'].map((item, index) => (
                                     <li key={item} className="flex items-center gap-3">
                                         <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[hsl(var(--ui-border)/0.6)] bg-[hsl(var(--ui-page))] text-xs font-bold text-[hsl(var(--ui-text))]">
                                             {index + 1}
@@ -184,7 +184,7 @@ export default function ComoFuncionaPage() {
                                 ))}
                             </ol>
                             <p className="mt-5 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                                Cada etapa alimenta a proxima. Nenhum time precisa recomecar do zero quando o fluxo muda de canal ou de modulo.
+                                Cada etapa alimenta a próxima. O gestor tem visão clara do estado de cada negociação e entrega em tempo real.
                             </p>
                         </aside>
                     </div>
@@ -195,9 +195,9 @@ export default function ComoFuncionaPage() {
                 <PageSection spacing="lg" borderTop>
                     <PageContainer>
                         <SectionIntro
-                            eyebrow="Visao geral do sistema"
-                            title="Entrada -> processamento -> operacao -> saida"
-                            description="Um resumo do caminho operacional para leitura rapida antes do fluxo detalhado."
+                            eyebrow="Visão geral"
+                            title="O sistema operacional da sua logística comercial"
+                            description="Entenda os pilares que garantem visibilidade e controle sem inflar a operação."
                         />
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 md:gap-6">
                             {overviewStages.map((stage) => {
@@ -233,14 +233,14 @@ export default function ComoFuncionaPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-10 lg:gap-14">
                             <div className="lg:sticky lg:top-28 h-fit">
                                 <SectionIntro
-                                    eyebrow="Fluxo detalhado"
-                                    title="Seis etapas para fechar o ciclo operacional"
-                                    description="Do lead ao cockpit, cada transicao preserva contexto e define o proximo passo com clareza."
+                                    eyebrow="Fluxo operacional"
+                                    title="A jornada do pedido sem quebra de contexto"
+                                    description="Da primeira mensagem ao acompanhamento no cockpit, a informação flui de forma estruturada."
                                     align="left"
                                     className="mb-8"
                                 />
                                 <p className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                                    O fluxo abaixo representa o core do MVP supervisionado: a IA sugere e organiza; o operador valida e executa a decisao final.
+                                    O fluxo supervisionado garante que a IA sugira e organize, enquanto o operador valida e executa a decisão final em pontos críticos.
                                 </p>
                             </div>
 
@@ -248,36 +248,31 @@ export default function ComoFuncionaPage() {
                                 <OperationFlow
                                     steps={[
                                         {
-                                            icon: Inbox,
-                                            label: 'Entrada de lead (WhatsApp, portal ou API)',
-                                            detail: 'A demanda entra com identificacao de canal e segue para consolidacao de contexto.',
+                                            icon: MessageCircle,
+                                            label: 'Atendimento e Contexto',
+                                            detail: 'Conversas via WhatsApp entram no sistema com histórico e intenção classificados.',
                                         },
                                         {
-                                            icon: Users,
-                                            label: 'Organizacao de contexto (cliente + historico)',
-                                            detail: 'Perfil, conversas e pedidos anteriores sao conectados para preparar a decisao.',
+                                            icon: Route,
+                                            label: 'Cotação de Frete Supervisionada',
+                                            detail: 'O operador compara opções multicarrier no mesmo contexto da conversa.',
                                             accent: 'var(--ui-success)',
                                         },
                                         {
-                                            icon: Zap,
-                                            label: 'Geracao de cotacao',
-                                            detail: 'A simulacao e montada com regras operacionais e encaminhada para avaliacao humana.',
-                                        },
-                                        {
                                             icon: FileCheck,
-                                            label: 'Criacao de pedido',
-                                            detail: 'Com aprovacao do operador, o pedido nasce com estado inicial e responsavel definido.',
+                                            label: 'Aprovação e Pedido',
+                                            detail: 'A cotação aprovada vira pedido com estado visível e responsável definido.',
                                             accent: 'var(--ui-success)',
                                         },
                                         {
                                             icon: Truck,
-                                            label: 'Execucao operacional',
-                                            detail: 'Despacho, acompanhamento e excecoes acontecem no mesmo fluxo, sem quebra de contexto.',
+                                            label: 'Logística e Execução',
+                                            detail: 'Shipments são gerados e acompanhados, com tratamento de exceções centralizado.',
                                         },
                                         {
                                             icon: Gauge,
-                                            label: 'Atualizacao do cockpit',
-                                            detail: 'SLA, margem, status e alertas retornam para visibilidade diaria de operacao.',
+                                            label: 'Cockpit e Governança',
+                                            detail: 'SLA, prazos e métricas operacionais alimentam a decisão diária da gestão.',
                                         },
                                     ]}
                                 />
@@ -291,9 +286,9 @@ export default function ComoFuncionaPage() {
                 <PageSection spacing="lg" borderTop>
                     <PageContainer>
                         <SectionIntro
-                            eyebrow="Papel da IA (Frank)"
-                            title="Assistencia supervisionada com fronteira clara"
-                            description="Frank acelera leitura e sugestao. A execucao critica permanece sob controle do operador."
+                            eyebrow="Copiloto Supervisionado"
+                            title="IA Frank: Assistência sem perda de controle"
+                            description="O Frank acelera a leitura e sugere próximos passos, mas a execução crítica é sempre humana."
                         />
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {frankCapabilities.map((card) => {
@@ -323,7 +318,7 @@ export default function ComoFuncionaPage() {
                         </div>
                         <div className="mt-6 rounded-2xl border border-[hsl(var(--ui-warning)/0.45)] bg-[hsl(var(--ui-warning)/0.08)] p-5 md:p-6">
                             <p className="text-sm md:text-base font-semibold text-[hsl(var(--ui-text))]">
-                                Sugestao nao e execucao automatica. Aprovacao humana e parte obrigatoria do fluxo supervisionado.
+                                A CONDSTORE OS prioriza a segurança: o Frank não executa ações críticas ou financeiras sem aprovação explícita.
                             </p>
                         </div>
                     </PageContainer>
@@ -334,9 +329,9 @@ export default function ComoFuncionaPage() {
                 <PageSection spacing="lg" borderTop>
                     <PageContainer>
                         <SectionIntro
-                            eyebrow="Papel do operador"
-                            title="Mais capacidade operacional sem perder decisao"
-                            description="O sistema amplia velocidade e contexto da equipe, mantendo governanca nas escolhas criticas."
+                            eyebrow="Operação e Decisão"
+                            title="Capacidade ampliada com governança"
+                            description="Reduza o retrabalho e dê visibilidade ao que realmente importa no dia a dia da operação."
                         />
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             {operatorCards.map((card) => {
@@ -364,9 +359,9 @@ export default function ComoFuncionaPage() {
                 <PageSection spacing="md" borderTop>
                     <PageContainer>
                         <SectionIntro
-                            eyebrow="Conexao com produto"
-                            title="Aprofunde por modulo"
-                            description="Use os atalhos abaixo para seguir no recorte que faz sentido para sua avaliacao."
+                            eyebrow="Próximos passos"
+                            title="Aprofunde seu conhecimento"
+                            description="Escolha por onde quer continuar explorando o ecossistema do CONDSTORE OS."
                         />
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
                             {productConnections.map((item) => (
@@ -393,23 +388,23 @@ export default function ComoFuncionaPage() {
                     <PageContainer narrow>
                         <div className="rounded-3xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] px-6 py-8 md:px-10 md:py-10 text-center">
                             <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[hsl(var(--ui-text))]">
-                                Quer validar esse fluxo na sua operacao?
+                                Pronto para profissionalizar sua operação?
                             </h2>
                             <p className="mt-4 text-sm md:text-base leading-relaxed text-[hsl(var(--ui-text-muted))] max-w-2xl mx-auto">
-                                Podemos mostrar a prova operacional ou discutir seu cenario com escopo supervisionado.
+                                Agende uma conversa para entender como o fluxo supervisionado se aplica ao seu cenário logístico.
                             </p>
                             <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
                                 <Link
-                                    href="/proof"
-                                    className="inline-flex h-11 items-center justify-center rounded-full border border-[hsl(var(--ui-border))] px-6 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
+                                    href="/contato"
+                                    className="inline-flex h-11 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-6 text-sm font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))]"
                                 >
-                                    Ver prova operacional
+                                    Solicitar avaliação operacional
                                 </Link>
                                 <Link
-                                    href="/about"
-                                    className="inline-flex h-11 items-center justify-center rounded-full border border-transparent px-6 text-sm font-semibold text-[hsl(var(--ui-text-muted))] transition-colors hover:text-[hsl(var(--ui-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
+                                    href="/proof"
+                                    className="inline-flex h-11 items-center justify-center rounded-full border border-[hsl(var(--ui-border))] px-6 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))]"
                                 >
-                                    Falar com o time
+                                    Ver prova operacional
                                 </Link>
                             </div>
                         </div>
