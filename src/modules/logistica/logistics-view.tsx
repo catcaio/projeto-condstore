@@ -9,10 +9,26 @@ import { ActionPlayground } from '@/ui/frank/action-playground';
 import { bulkSyncLogisticsTracking, bulkReportLogisticsException } from './actions/bulk';
 import { BulkActionPreviewModal, BulkPreviewItem } from '@/ui/foundation/bulk-action-preview-modal';
 import { Truck, MapPin, AlertTriangle, Calculator, FileText, MessageSquare, Zap, RefreshCw } from 'lucide-react';
-import type { ColumnDef } from '@tanstack/react-table';
 import { useState, useEffect } from 'react';
 import { safeFetch } from '@/ui/lib/safe-fetch';
 
+type LogisticsRow = {
+    id: string;
+    simulationId?: string | null;
+    trackingCode?: string | null;
+    carrier?: string | null;
+    service?: string | null;
+    status?: string | null;
+    createdAt?: string | null;
+};
+
+function getFreightSimulatorHref(row: LogisticsRow) {
+    if (row.simulationId) {
+        return `/cockpit/freight-simulator?simulation=${encodeURIComponent(row.simulationId)}`;
+    }
+
+    return '/cockpit/freight-simulator';
+}
 
 export function LogisticsView() {
     const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
@@ -25,7 +41,7 @@ export function LogisticsView() {
     const [pendingActions, setPendingActions] = useState<any[]>([]);
     const [isLoadingActions, setIsLoadingActions] = useState(false);
 
-    const [data, setData] = useState<any[]>([]);
+    const [data, setData] = useState<LogisticsRow[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -208,9 +224,9 @@ export function LogisticsView() {
                         { 
                             id: 'actions', 
                             header: '', 
-                            cell: ({ row }: any) => (
+                            cell: ({ row }: { row: { original: LogisticsRow } }) => (
                                 <div className="flex items-center gap-1 justify-end" onClick={e => e.stopPropagation()}>
-                                    <Link href={`/cockpit/freight-simulator?pedido=${row.original.order.id}`}>
+                                    <Link href={getFreightSimulatorHref(row.original)}>
                                         <Button title="Cotar Frete" variant="ghost" size="icon" className="h-7 w-7 rounded text-[hsl(var(--ui-text-muted))] hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-500 dark:hover:bg-blue-950/30 transition-colors">
                                             <Calculator className="h-4 w-4" />
                                         </Button>
@@ -219,7 +235,7 @@ export function LogisticsView() {
                                         title="Atualizar Tracking"
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 rounded text-[hsl(var(--ui-text-muted))] hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-500 dark:hover:bg-emerald-950/30 transition-colors"
+                                        className="h-7 w-7 rounded text-[hsl(var(--ui-text-muted))] hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-500 dark:hover:bg-blue-950/30 transition-colors"
                                         onClick={() => handleBulkActionPreview('update', [row.original.id])}
                                     >
                                         <MapPin className="h-4 w-4" />
