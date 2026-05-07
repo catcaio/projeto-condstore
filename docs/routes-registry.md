@@ -311,6 +311,7 @@
 | /supreme | TBA | public | none | PUBLIC | live | Auto-detected |
 | /t/[token] | TBA | public | none | PUBLIC | live | Auto-detected |
 | /como-funciona | TBA | public | none | PUBLIC | live | Added manually to fix CI |
+| /produto | Página de Produto Canônica | public | none | PUBLIC | live | Added manually to fix CI |
 | /solucoes | TBA | public | none | PUBLIC | live | Added manually to fix CI |
 | /implantacao | TBA | public | none | PUBLIC | live | Implantação page |
 | /valores | TBA | public | none | PUBLIC | live | Valores/pricing page |
