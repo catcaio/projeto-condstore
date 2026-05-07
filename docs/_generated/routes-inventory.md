@@ -338,6 +338,7 @@
 | `/plataforma/cockpit` | Page |
 | `/pricing` | Page |
 | `/privacidade` | Page |
+| `/produto` | Page |
 | `/produtos/crm` | Page |
 | `/produtos/domine` | Page |
 | `/produtos/envios` | Page |
