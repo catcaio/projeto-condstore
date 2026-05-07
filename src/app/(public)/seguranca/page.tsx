@@ -10,8 +10,8 @@ import {
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Segurança — Condstore OS',
-    description: 'Conheça a arquitetura de segurança do Condstore OS: multi-tenant, RBAC, rastreabilidade, observabilidade e proteção de dados.',
+    title: 'Segurança e LGPD — Condstore OS',
+    description: 'Conheça a arquitetura de segurança e governança do Condstore OS: multi-tenant, rastro de decisões, humano no loop e conformidade LGPD.',
 };
 
 export default function SegurancaPage() {
@@ -28,10 +28,10 @@ export default function SegurancaPage() {
                         </span>
                     </>
                 }
-                subtitle="O Condstore OS foi projetado para operar com controle, rastreabilidade e isolamento de dados desde a fundação."
+                subtitle="Isolamento por tenant, rastro imutável de decisões e conformidade LGPD. O Condstore OS protege sua operação do WhatsApp ao cockpit."
                 ctas={[
-                    { label: 'Explorar a plataforma', href: '/plataforma' },
-                    { label: 'Solicitar demonstração', href: '/contato', variant: 'secondary' },
+                    { label: 'Solicitar avaliação operacional', href: '/piloto' },
+                    { label: 'Entrar no sistema', href: '/login', variant: 'secondary' },
                 ]}
             />
 
@@ -182,18 +182,20 @@ export default function SegurancaPage() {
                 </PageContainer>
             </PageSection>
 
-            {/* ─── 6. PROTEÇÃO DE DADOS ─── */}
+            {/* ─── 6. CONFORMIDADE LGPD E GOVERNANÇA ─── */}
             <PageSection spacing="lg" borderTop>
                 <PageContainer>
                     <SectionIntro
-                        eyebrow="Proteção de dados"
-                        title="Dados protegidos por design."
+                        eyebrow="Conformidade LGPD"
+                        title="Governança e proteção de dados pessoais."
+                        description="Tratamos dados pessoais com rigor técnico e jurídico, garantindo transparência e controle para os titulares e para sua empresa."
                     />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {[
-                            { icon: Database, title: 'Separação por tenant', desc: 'Cada operação tem seus dados isolados. Consultas nunca cruzam fronteiras de tenant.' },
-                            { icon: Fingerprint, title: 'Controle de acesso', desc: 'RBAC + validação de sessão + rate limiting por IP e tenant em cada requisição.' },
-                            { icon: FileText, title: 'Logs estruturados', desc: 'Acesso a dados sensíveis é registrado. Audit trail disponível para compliance.' },
+                            { icon: Database, title: 'Isolamento por Tenant', desc: 'Cada operação tem seus dados isolados. Consultas nunca cruzam fronteiras de tenant.' },
+                            { icon: UserCheck, title: 'Humano no Loop', desc: 'Decisões críticas e sensíveis sempre exigem validação humana. Sem automação cega.' },
+                            { icon: Fingerprint, title: 'Controle de Acesso', desc: 'RBAC + validação de sessão + rate limiting por IP e tenant em cada requisição.' },
+                            { icon: FileText, title: 'Logs de Responsabilidade', desc: 'Acesso a dados e mutações são registrados com responsabilidade. Audit trail para compliance.' },
                         ].map((item) => {
                             const Icon = item.icon;
                             return (
@@ -240,11 +242,11 @@ export default function SegurancaPage() {
 
             {/* ─── 8. CTA FINAL ─── */}
             <CTASection
-                title="Conheça a plataforma por dentro."
-                subtitle="Segurança e governança são parte da fundação, não um add-on."
+                title="Sua operação com segurança real."
+                subtitle="Isolamento, rastro de decisão e conformidade LGPD são a fundação do Condstore OS."
                 ctas={[
-                    { label: 'Explorar soluções', href: '/solucoes' },
-                    { label: 'Solicitar demonstração', href: '/contato', variant: 'secondary' },
+                    { label: 'Solicitar avaliação operacional', href: '/piloto' },
+                    { label: 'Entrar no sistema', href: '/login', variant: 'secondary' },
                 ]}
             />
         </>

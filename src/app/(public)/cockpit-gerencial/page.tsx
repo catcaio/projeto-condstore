@@ -147,7 +147,7 @@ function BottomCTA() {
                     Tenha visibilidade operacional, reduza o tempo de resposta e proteja sua margem com o cockpit operacional do CONDSTORE OS.
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
-                    <TrackedLink href="/contato" trackPage="cockpit_publico" trackSection="footer" trackElement="cta_footer">
+                    <TrackedLink href="/piloto" trackPage="cockpit_publico" trackSection="footer" trackElement="cta_footer">
                         <Button className="h-14 px-8 rounded-full font-bold text-lg bg-[#00A859] hover:bg-[#008f4c] text-white shadow-xl shadow-[#00A859]/20 group">
                             Solicitar Avaliação Operacional
                             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

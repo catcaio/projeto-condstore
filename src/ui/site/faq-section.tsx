@@ -9,28 +9,44 @@ import { SectionIntro } from './section-intro';
 
 const faqs = [
     {
-        question: 'O Condstore OS integra com meu ERP atual?',
-        answer: 'Sim. O Condstore OS não substitui seu ERP — ele complementa. Conectamos via webhook e API REST para sincronizar pedidos, notas e status de entrega. Se seu ERP tem API, integramos.',
+        question: 'O CONDSTORE OS é um ERP?',
+        answer: 'Não. O CONDSTORE OS é um sistema operacional especializado em logística comercial e atendimento. Ele não substitui seu ERP, mas se integra a ele para potencializar o atendimento via WhatsApp, cotações de frete e gestão de pedidos.',
     },
     {
-        question: 'Quanto tempo leva a implantação?',
-        answer: 'A operação básica roda em dias. Criamos o tenant, importamos suas tabelas de frete, configuramos transportadoras e WhatsApp. Em projetos com integrações customizadas, o prazo pode chegar a 2-3 semanas.',
+        question: 'O sistema emite Nota Fiscal (NF-e)?',
+        answer: 'Nesta fase do MVP, o CONDSTORE OS não realiza emissão fiscal direta. Nós nos conectamos ao seu ERP ou emissor atual para garantir que o fluxo de pedido e logística seja fluido e integrado.',
     },
     {
-        question: 'Como funciona a segurança dos dados?',
-        answer: 'Arquitetura multi-tenant com isolamento por tenant. RBAC nativo, audit trail completo, encriptação de dados sensíveis (AES-256-GCM), hashing de PII, e detecção de anomalias. Zero-trust por padrão.',
+        question: 'Integra com marketplaces?',
+        answer: 'Sim, via ERP ou integrações diretas pontuais. O foco do CONDSTORE OS é centralizar a operação que hoje acontece de forma fragmentada, permitindo que pedidos de diferentes origens sigam o mesmo fluxo de cotação e logística.',
     },
     {
-        question: 'O WhatsApp é realmente integrado?',
-        answer: 'Sim. Usamos a API oficial do WhatsApp Business via Twilio. O Frank Supremo processa mensagens, identifica intenções, gera cotações e cria pedidos — tudo automaticamente, com contexto de sessão.',
+        question: 'O CONDSTORE OS é omnichannel?',
+        answer: 'Focamos no canal de maior conversão e complexidade operacional hoje: o WhatsApp. Embora tenhamos planos para outros canais, nossa entrega atual é a melhor experiência de WhatsApp CRM integrada à logística do mercado.',
     },
     {
-        question: 'Posso usar junto com meu sistema atual?',
-        answer: 'Totalmente. O Condstore OS opera como camada de inteligência sobre sua operação. Você pode adotar módulos gradualmente: começar pelo frete, depois adicionar CRM, atendimento e IA.',
+        question: 'A IA Frank responde sozinha ao cliente?',
+        answer: 'Nunca. O Frank atua como um copiloto supervisionado. Ele organiza o contexto, sugere respostas e classifica intenções, mas a decisão final e o envio da mensagem são sempre validados por um operador humano.',
     },
     {
-        question: 'Como funciona o multi-tenant?',
-        answer: 'Cada empresa opera em um tenant isolado com seus próprios dados, usuários, configurações e chaves de API. Um único login permite alternar entre contas — ideal para operadores logísticos que gerenciam múltiplos embarcadores.',
+        question: 'Como funciona o piloto operacional?',
+        answer: 'O piloto é uma fase de avaliação assistida onde configuramos seu tenant, conectamos seus canais e transportadoras, e acompanhamos a operação real por um período determinado para validar ganhos de eficiência.',
+    },
+    {
+        question: 'Como funciona a cotação de frete?',
+        answer: 'O sistema consulta tabelas de diversas transportadoras e Correios em tempo real. O operador visualiza as opções com margem aplicada e pode enviar a melhor cotação diretamente no chat do WhatsApp com um clique.',
+    },
+    {
+        question: 'Como entram os pedidos e a logística?',
+        answer: 'Quando uma cotação é aprovada no atendimento, ela é convertida em um pedido. A partir daí, o fluxo segue para a logística, onde são gerados os shipments e o rastreamento é iniciado automaticamente.',
+    },
+    {
+        question: 'Como o gestor acompanha o time?',
+        answer: 'Através do Cockpit Gerencial. O gestor visualiza em tempo real a fila de atendimento, SLAs de resposta, gargalos logísticos e métricas de conversão, tudo com rastro total de quem executou cada ação.',
+    },
+    {
+        question: 'Como funciona a segurança e o isolamento de dados?',
+        answer: 'Utilizamos arquitetura multi-tenant rigorosa. Cada empresa opera em um ambiente isolado (tenant), com criptografia de ponta a ponta para dados sensíveis e audit trail completo de todas as operações.',
     },
 ];
 

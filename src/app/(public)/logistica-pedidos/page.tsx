@@ -40,9 +40,9 @@ function HeroLogistica() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-md">
-                    <TrackedLink href="/contato" trackPage="logistica_publica" trackSection="hero" trackElement="hero_cta">
+                    <TrackedLink href="/piloto" trackPage="logistica_publica" trackSection="hero" trackElement="hero_cta">
                         <Button className="w-full h-14 rounded-full font-bold text-lg bg-[#0A2540] hover:bg-[#112F4E] text-white shadow-xl shadow-[#0A2540]/20">
-                            Falar com Especialista
+                            Solicitar Avaliação Operacional
                         </Button>
                     </TrackedLink>
                     <TrackedLink href="/como-funciona" trackPage="logistica_publica" trackSection="hero" trackElement="hero_secondary">
@@ -169,7 +169,7 @@ function BottomCTA() {
                     Reduza o retrabalho e tenha controle total sobre seus envios e pedidos hoje mesmo.
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
-                    <TrackedLink href="/contato" trackPage="logistica_publica" trackSection="footer" trackElement="footer_cta">
+                    <TrackedLink href="/piloto" trackPage="logistica_publica" trackSection="footer" trackElement="footer_cta">
                         <Button className="h-14 px-8 rounded-full font-bold text-lg bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/20 group">
                             Solicitar Avaliação Operacional
                             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

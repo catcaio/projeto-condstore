@@ -132,7 +132,7 @@ export default function HomePage() {
                                 Frank atua como copiloto supervisionado enquanto o cockpit mantém estado, prioridade e decisão visíveis para o gestor.
                             </p>
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <Link href="/contato" className={primaryCtaClass} data-testid="public-primary-cta">
+                                <Link href="/piloto" className={primaryCtaClass} data-testid="public-primary-cta">
                                     Solicitar avaliação operacional
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
@@ -324,7 +324,7 @@ export default function HomePage() {
                             Do atendimento ao cockpit, o CONDSTORE OS profissionaliza sua operação logística comercial com controle e governança.
                         </p>
                         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                            <Link href="/contato" className={primaryCtaClass}>
+                            <Link href="/piloto" className={primaryCtaClass}>
                                 Solicitar avaliação operacional
                                 <ArrowRight className="h-4 w-4" />
                             </Link>

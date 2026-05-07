@@ -305,6 +305,7 @@
 | `/evolution` | Page |
 | `/evolution/[id]` | Page |
 | `/evolution/roadmap` | Page |
+| `/faq` | Page |
 | `/financeiro/frete` | Page |
 | `/financeiro/margem` | Page |
 | `/frank` | Page |
@@ -335,6 +336,7 @@
 | `/operacao` | Page |
 | `/operacao/fila` | Page |
 | `/painel-logistico` | Page |
+| `/piloto` | Page |
 | `/planos/crm` | Page |
 | `/planos/domine` | Page |
 | `/planos/envios` | Page |

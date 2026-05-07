@@ -406,7 +406,7 @@ export default function ComoFuncionaPage() {
                             </p>
                             <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
                                 <Link
-                                    href="/contato"
+                                    href="/piloto"
                                     className="inline-flex h-11 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-6 text-sm font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))]"
                                 >
                                     Solicitar avaliação operacional

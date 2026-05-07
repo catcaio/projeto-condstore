@@ -39,7 +39,7 @@ function HeroCRM() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-md">
-                    <TrackedLink href="/contato" trackPage="crm_whatsapp" trackSection="hero" trackElement="hero_cta">
+                    <TrackedLink href="/piloto" trackPage="crm_whatsapp" trackSection="hero" trackElement="hero_cta">
                         <Button className="w-full h-14 rounded-full font-bold text-lg bg-[#00A859] hover:bg-[#008f4c] text-white shadow-xl shadow-[#00A859]/20">
                             Solicitar Avaliação
                         </Button>
@@ -172,9 +172,9 @@ function BottomCTA() {
                 <CheckCircle2 className="w-16 h-16 text-[#00A859] mx-auto mb-8" />
                 <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">Centralize seu atendimento operacional hoje</h2>
                 <div className="flex flex-col sm:flex-row justify-center gap-4 mt-12">
-                    <TrackedLink href="/contato" trackPage="crm_whatsapp" trackSection="footer" trackElement="footer_cta">
+                    <TrackedLink href="/piloto" trackPage="crm_whatsapp" trackSection="footer" trackElement="footer_cta">
                         <Button className="h-14 px-8 rounded-full font-bold text-lg bg-[#00A859] hover:bg-[#008f4c] text-white shadow-xl shadow-[#00A859]/20 group">
-                            Solicitar Demonstração
+                            Solicitar Avaliação Operacional
                             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </Button>
                     </TrackedLink>

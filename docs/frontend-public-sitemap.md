@@ -20,8 +20,9 @@ Este documento funciona como o registry canônico das páginas públicas do COND
 | `/logistica` e `/cotacao` | MVP | Foco em frete multicarrier e conversão em pedido. | LIN-PR5 |
 | `/cockpit` e `/roi` | MVP | Visão gerencial, dashboards, painéis. | LIN-PR6 |
 | `/ia-frank` | MVP | Copiloto supervisionado. | LIN-PR7 |
-| `/seguranca` e `/lgpd` | MVP | Isolamento por tenant, criptografia PII. | LIN-PR8 |
-| `/piloto` e `/demo` | MVP | CTA principal com tracking. | LIN-PR9 |
+| `/seguranca` e `/lgpd` | MVP | Isolamento por tenant, criptografia PII. | LIN-PR5 |
+| `/piloto` e `/demo` | MVP | CTA principal com tracking. | LIN-PR5 |
+| `/faq` | MVP | Perguntas frequentes. | LIN-PR5 |
 
 ## Plano de Execução (Próximos PRs)
 - **LIN-PR2**: Implementar Home canônica (layout e copy base).

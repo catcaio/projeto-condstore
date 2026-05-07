@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { CondstoreLogo } from '@/ui/components/Logo';
 
-const primaryCta = { label: 'Iniciar operação no MVP', href: '/signup' } as const;
-const secondaryCta = { label: 'Como funciona o MVP', href: '/como-funciona' } as const;
+const primaryCta = { label: 'Avaliação Operacional', href: '/piloto' } as const;
+const secondaryCta = { label: 'Entrar no sistema', href: '/login' } as const;
 
 const mvpLinks = [
     { label: 'Home', href: '/' },
@@ -14,10 +14,10 @@ const mvpLinks = [
 ];
 
 const companyLinks = [
+    { label: 'Piloto Operacional', href: '/piloto' },
+    { label: 'FAQ', href: '/faq' },
     { label: 'Contato', href: '/contato' },
     { label: 'Entrar', href: '/login' },
-    { label: 'Privacidade', href: '/privacidade' },
-    { label: 'Termos', href: '/termos' },
 ];
 
 export function PublicFooter() {
