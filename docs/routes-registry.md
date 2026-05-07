@@ -348,10 +348,13 @@
 | /planos/domine | TBA | public | none | PUBLIC | live | Auto-detected |
 | /planos/envios | TBA | public | none | PUBLIC | live | Auto-detected |
 | /plataforma | TBA | public | none | PUBLIC | live | Auto-detected |
+| /plataforma/cockpit | Redirecionado | public | none | PUBLIC | live | Redirecionado para /cockpit-gerencial |
 | /pricing | Pricing redirect | public | none | PUBLIC | live | Canonical redirect to /planos/envios preserving query string |
 | /privacidade | TBA | public | none | PUBLIC | live | Política de Privacidade |
 | /produto | Página de Produto Canônica | public | none | PUBLIC | live | Added manually to fix CI |
+| /produtos/crm | Redirecionado | public | none | PUBLIC | live | Redirecionado para /crm-whatsapp |
 | /produtos/domine | TBA | public | none | PUBLIC | live | Auto-detected |
+| /produtos/envios | Redirecionado | public | none | PUBLIC | live | Redirecionado para /logistica-pedidos |
 | /proof | GET | public | none | PUBLIC | live | Pagina de prova operacional do Condstore OS |
 | /seguranca | TBA | public | none | PUBLIC | live | Security and governance page |
 | /settings | TBA | public | none | PUBLIC | live | Auto-detected |
