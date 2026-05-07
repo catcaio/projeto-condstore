@@ -176,10 +176,10 @@ export default function HomePage() {
 
                     <nav aria-label="Próximos passos do MVP" className="mt-10 grid grid-cols-1 gap-3 md:grid-cols-4">
                         {[
-                            { href: '/solucoes', title: 'Solução', description: 'Visão do produto e abordagem do MVP.' },
-                            { href: '/proof', title: 'Prova operacional', description: 'Exemplos de execução no fluxo real.' },
-                            { href: '/contato', title: 'Contato e agendamento', description: 'Avaliação guiada do cenário operacional.' },
-                            { href: '/login', title: 'Login', description: 'Acesso direto ao ambiente da operação.' },
+                            { href: '/crm-whatsapp', title: 'Atendimento CRM', description: 'Centralização de WhatsApp e contexto.' },
+                            { href: '/logistica-pedidos', title: 'Logística e Pedidos', description: 'Cotação, pedidos e execução real.' },
+                            { href: '/cockpit-gerencial', title: 'Cockpit Gerencial', description: 'Métricas, SLA e visibilidade operacional.' },
+                            { href: '/ia-frank', title: 'IA Frank', description: 'Assistência supervisionada no fluxo.' },
                         ].map((item) => (
                             <Link
                                 key={item.href}
@@ -205,7 +205,7 @@ export default function HomePage() {
                         <SectionIntro
                             eyebrow="Proposta de valor"
                             title="Clareza de operação para reduzir atrito e proteger margem."
-                            description="A landing resume o que importa para decisão: onde a operação perde tempo hoje e como o fluxo supervisionado resolve isso sem promessas vagas."
+                            description="O CONDSTORE OS resolve o caos entre o atendimento e a logística sem promessas vagas de autonomia total."
                         />
                         <FeatureGrid columns={4} items={painItems} />
                     </PageContainer>
@@ -223,8 +223,8 @@ export default function HomePage() {
                                     description="Sem troca de contexto entre áreas. O status de cada etapa alimenta a próxima decisão da equipe."
                                     align="left"
                                 />
-                                <Link href="/solucoes" className={inlineLinkClass}>
-                                    Entender o fluxo completo
+                                <Link href="/como-funciona" className={inlineLinkClass}>
+                                    Ver como funciona detalhado
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
                             </div>
@@ -262,8 +262,8 @@ export default function HomePage() {
                             })}
                         </div>
                         <div className="mt-8">
-                            <Link href="/proof" className={inlineLinkClass}>
-                                Ver casos operacionais
+                            <Link href="/cockpit-gerencial" className={inlineLinkClass}>
+                                Explorar cockpit e métricas
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
@@ -293,14 +293,18 @@ export default function HomePage() {
                             </article>
                             <article className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.35)] p-6">
                                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-subtle))]">
-                                    Governança e escala
+                                    IA Frank Supervisionada
                                 </p>
                                 <h3 className="mt-2 text-base font-semibold text-[hsl(var(--ui-text))]">
-                                    Cada decisão com rastreabilidade e responsabilidade.
+                                    O copiloto que entende seu fluxo.
                                 </h3>
                                 <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                                    A interface institucional e o produto compartilham a mesma narrativa: operação em tempo real, clareza de estado e execução confiável.
+                                    Frank organiza o contexto e sinaliza riscos para que o operador decida com velocidade. Sem automação cega, com assistência real.
                                 </p>
+                                <Link href="/ia-frank" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--ui-accent-blue))]">
+                                    Conhecer o Frank
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
                             </article>
                         </div>
                     </PageContainer>
@@ -317,7 +321,7 @@ export default function HomePage() {
                             Avalie seu cenário e avance para o próximo passo certo.
                         </h2>
                         <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                            A landing direciona para ação objetiva: entender a solução, validar prova operacional, agendar avaliação e acessar o ambiente.
+                            Do atendimento ao cockpit, o CONDSTORE OS profissionaliza sua operação logística comercial com controle e governança.
                         </p>
                         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                             <Link href="/contato" className={primaryCtaClass}>
@@ -326,14 +330,6 @@ export default function HomePage() {
                             </Link>
                             <Link href="/login" className={secondaryCtaClass}>
                                 Entrar no sistema
-                            </Link>
-                        </div>
-                        <div className="mt-5 flex flex-wrap items-center justify-center gap-5">
-                            <Link href="/solucoes" className={inlineLinkClass}>
-                                Explorar solução
-                            </Link>
-                            <Link href="/proof" className={inlineLinkClass}>
-                                Revisar prova operacional
                             </Link>
                         </div>
                     </div>

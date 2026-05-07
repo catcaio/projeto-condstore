@@ -6,9 +6,10 @@ const secondaryCta = { label: 'Como funciona o MVP', href: '/como-funciona' } as
 
 const mvpLinks = [
     { label: 'Home', href: '/' },
-    { label: 'Produto', href: '/produto' },
-    { label: 'Como funciona', href: '/como-funciona' },
-    { label: 'Soluções', href: '/solucoes' },
+    { label: 'CRM WhatsApp', href: '/crm-whatsapp' },
+    { label: 'Logística e Pedidos', href: '/logistica-pedidos' },
+    { label: 'Cockpit e Métricas', href: '/cockpit-gerencial' },
+    { label: 'IA Frank Supervisionada', href: '/ia-frank' },
     { label: 'Prova Operacional', href: '/proof' },
 ];
 
@@ -30,7 +31,7 @@ export function PublicFooter() {
                             <CondstoreLogo size="sm" hideSubtitle />
                         </Link>
                         <p className="mt-4 text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed max-w-xs">
-                            Site oficial do MVP do CONDSTORE OS: operação supervisionada via WhatsApp, aprovação antes do pedido e cockpit vivo de execução.
+                            Site oficial do MVP do CONDSTORE OS: operação supervisionada via WhatsApp, cotação, pedidos e cockpit vivo de execução.
                         </p>
                         <div className="mt-6 flex flex-col gap-3">
                             <Link

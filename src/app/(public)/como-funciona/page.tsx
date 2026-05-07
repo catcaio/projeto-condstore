@@ -33,6 +33,7 @@ interface StageCard {
     summary: string;
     detail: string;
     icon: LucideIcon;
+    href: string;
 }
 
 interface CapabilityCard {
@@ -48,24 +49,28 @@ const overviewStages: StageCard[] = [
         summary: 'WhatsApp centralizado com contexto',
         detail: 'Conversas são organizadas em uma fila única, preservando o histórico e a intenção do cliente.',
         icon: MessageCircle,
+        href: '/crm-whatsapp',
     },
     {
         title: 'Cotação de Frete',
         summary: 'Cálculo multicarrier ágil',
         detail: 'A equipe compara opções de frete com critérios operacionais e comerciais sem sair do fluxo.',
         icon: Route,
+        href: '/logistica-pedidos',
     },
     {
         title: 'Pedido e Logística',
         summary: 'Transição fluida para execução',
         detail: 'Aprovação vira pedido com responsável definido, rastro de decisão e acompanhamento de entrega.',
         icon: Truck,
+        href: '/logistica-pedidos',
     },
     {
         title: 'Cockpit',
         summary: 'Visibilidade real da operação',
         detail: 'Gestores e operadores acompanham SLAs, exceções e prioridades em um painel vivo.',
         icon: Gauge,
+        href: '/cockpit-gerencial',
     },
 ];
 
@@ -98,18 +103,21 @@ const operatorCards: StageCard[] = [
         summary: 'Decisão humana com dados prontos',
         detail: 'O operador atua por exceção com visibilidade de histórico, risco e impacto comercial.',
         icon: UserCheck,
+        href: '/cockpit-gerencial',
     },
     {
         title: 'Velocidade com critério',
         summary: 'Menos troca de tela e mais execução',
         detail: 'O sistema encurta o ciclo de resposta, mas a aprovação crítica permanece na operação.',
         icon: Zap,
+        href: '/crm-whatsapp',
     },
     {
         title: 'Governança real',
         summary: 'Histórico rastreável por tenant',
         detail: 'Cada ação é vinculada a um responsável, garantindo auditoria e continuidade operacional.',
         icon: Workflow,
+        href: '/cockpit-gerencial',
     },
 ];
 
@@ -125,14 +133,14 @@ const productConnections = [
         description: 'Entenda os módulos que sustentam o fluxo operacional.',
     },
     {
-        href: '/solucoes',
-        title: 'Soluções',
-        description: 'Escolha o recorte ideal para sua operação atual.',
+        href: '/crm-whatsapp',
+        title: 'CRM WhatsApp',
+        description: 'Detalhamento do atendimento centralizado.',
     },
     {
-        href: '/contato',
-        title: 'Contato',
-        description: 'Converse com o time sobre escopo e implantação supervisionada.',
+        href: '/logistica-pedidos',
+        title: 'Logística',
+        description: 'Foco em frete, pedidos e shipments.',
     },
 ] as const;
 
@@ -203,14 +211,15 @@ export default function ComoFuncionaPage() {
                             {overviewStages.map((stage) => {
                                 const Icon = stage.icon;
                                 return (
-                                    <article
+                                    <Link
                                         key={stage.title}
-                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.28)] p-5 md:p-6 transition-colors hover:border-[hsl(var(--ui-border))]"
+                                        href={stage.href}
+                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.28)] p-5 md:p-6 transition-colors hover:border-[hsl(var(--ui-border))] group"
                                     >
                                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.55)] text-[hsl(var(--ui-accent-blue))]">
                                             <Icon className="h-5 w-5" />
                                         </div>
-                                        <h3 className="mt-4 text-lg font-bold tracking-tight text-[hsl(var(--ui-text))]">
+                                        <h3 className="mt-4 text-lg font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">
                                             {stage.title}
                                         </h3>
                                         <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text-muted))]">
@@ -219,7 +228,7 @@ export default function ComoFuncionaPage() {
                                         <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-subtle))]">
                                             {stage.detail}
                                         </p>
-                                    </article>
+                                    </Link>
                                 );
                             })}
                         </div>
@@ -319,6 +328,7 @@ export default function ComoFuncionaPage() {
                         <div className="mt-6 rounded-2xl border border-[hsl(var(--ui-warning)/0.45)] bg-[hsl(var(--ui-warning)/0.08)] p-5 md:p-6">
                             <p className="text-sm md:text-base font-semibold text-[hsl(var(--ui-text))]">
                                 A CONDSTORE OS prioriza a segurança: o Frank não executa ações críticas ou financeiras sem aprovação explícita.
+                                <Link href="/ia-frank" className="ml-2 underline hover:text-[hsl(var(--ui-accent-blue))]">Conheça o Frank</Link>
                             </p>
                         </div>
                     </PageContainer>
@@ -337,17 +347,18 @@ export default function ComoFuncionaPage() {
                             {operatorCards.map((card) => {
                                 const Icon = card.icon;
                                 return (
-                                    <article
+                                    <Link
                                         key={card.title}
-                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.28)] p-6"
+                                        href={card.href}
+                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.28)] p-6 transition-colors hover:border-[hsl(var(--ui-border))] group"
                                     >
                                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.6)] text-[hsl(var(--ui-accent-blue))]">
                                             <Icon className="h-5 w-5" />
                                         </div>
-                                        <h3 className="mt-4 text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{card.title}</h3>
+                                        <h3 className="mt-4 text-base font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">{card.title}</h3>
                                         <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text-muted))]">{card.summary}</p>
                                         <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-subtle))]">{card.detail}</p>
-                                    </article>
+                                    </Link>
                                 );
                             })}
                         </div>

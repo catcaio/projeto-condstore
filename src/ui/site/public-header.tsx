@@ -11,8 +11,10 @@ const secondaryCta = { label: 'Como funciona o MVP', href: '/como-funciona' } as
 
 const navLinks = [
     { label: 'Home', href: '/' },
-    { label: 'Produto', href: '/produto' },
-    { label: 'Soluções', href: '/solucoes' },
+    { label: 'CRM', href: '/crm-whatsapp' },
+    { label: 'Logística', href: '/logistica-pedidos' },
+    { label: 'Cockpit', href: '/cockpit-gerencial' },
+    { label: 'IA Frank', href: '/ia-frank' },
     { label: 'Prova Operacional', href: '/proof' },
     { label: 'Contato', href: '/contato' },
 ] as const;
@@ -29,12 +31,12 @@ export function PublicHeader() {
                         <CondstoreLogo size="sm" hideSubtitle />
                     </Link>
 
-                    <nav className="hidden md:flex items-center gap-6">
+                    <nav className="hidden md:flex items-center gap-5">
                         {navLinks.map((link) => (
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className="text-[13px] font-semibold text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors"
+                                className="text-[12px] font-semibold text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors"
                             >
                                 {link.label}
                             </Link>
@@ -47,13 +49,13 @@ export function PublicHeader() {
                     <ThemeToggle />
                     <Link
                         href={secondaryCta.href}
-                        className="text-[13px] font-semibold text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors px-3 py-2"
+                        className="text-[12px] font-semibold text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors px-2 py-2"
                     >
                         {secondaryCta.label}
                     </Link>
                     <Link
                         href={primaryCta.href}
-                        className="inline-flex h-9 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-5 text-[13px] font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))] shadow-sm shadow-[hsl(var(--ui-accent-blue)/0.2)]"
+                        className="inline-flex h-9 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-4 text-[12px] font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))] shadow-sm shadow-[hsl(var(--ui-accent-blue)/0.2)]"
                     >
                         {primaryCta.label}
                     </Link>
