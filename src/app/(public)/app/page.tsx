@@ -31,7 +31,7 @@ const profiles = [
     {
         icon: Users,
         role: 'Cliente',
-        desc: 'Acompanhamento de pedido, status em tempo real e comunicação direta.',
+        desc: 'Acompanhamento de pedido, status unificado e comunicação direta.',
         capabilities: ['Status do pedido', 'Histórico', 'Confirmação', 'Comunicação'],
     },
     {
@@ -153,7 +153,7 @@ export default function AppPage() {
                             <OperationFlow
                                 steps={[
                                     { icon: CheckCircle2, label: 'Pedido confirmado', detail: 'Notificação recebida no app.' },
-                                    { icon: Eye, label: 'Andamento visível', detail: 'Status atualizado em tempo real.' },
+                                    { icon: Eye, label: 'Andamento visível', detail: 'Status atualizado em fluxo contínuo.' },
                                     { icon: Bell, label: 'Notificações', detail: 'Mudanças de status comunicadas.', accent: 'var(--ui-success)' },
                                     { icon: MessageSquare, label: 'Menos contato', detail: 'Cliente informado — reduz ansiedade.' },
                                 ]}

@@ -48,7 +48,7 @@ export default function DocsPage() {
                     </div>
                     <h2 className="text-xl font-bold tracking-tight text-[hsl(var(--ui-text))] mb-2">Webhooks</h2>
                     <p className="flex-grow text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">
-                        Inscreva-se em eventos de mudança de status (`DELIVERY.COMPLETED`) para atualizar seu banco de dados em tempo real.
+                        Inscreva-se em eventos de mudança de status (`DELIVERY.COMPLETED`) para atualizar seu banco de dados em fluxo integrado.
                     </p>
                     <Link href="#" className="mt-8 text-sm font-semibold text-[hsl(var(--ui-success))] hover:underline flex items-center gap-1">
                         Assinar Eventos <span aria-hidden="true">→</span>

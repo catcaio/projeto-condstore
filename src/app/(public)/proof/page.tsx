@@ -57,7 +57,7 @@ export default function ProofPage() {
                                         { label: 'Conversa organizada e cliente identificado', done: true },
                                         { label: 'Cotação multi-transportadora gerada', done: true },
                                         { label: 'Pedido registrado com estado e responsável', done: true },
-                                        { label: 'Cockpit atualizado em tempo real', done: true },
+                                        { label: 'Cockpit atualizado em fluxo integrado', done: true },
                                     ].map((item) => (
                                         <div key={item.label} className="flex items-center gap-3">
                                             <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-[hsl(var(--ui-success))]" />

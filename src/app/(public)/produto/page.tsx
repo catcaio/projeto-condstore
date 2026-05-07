@@ -34,6 +34,7 @@ interface ConsolidatedBlock {
     handoff: string;
     connectsTo: string;
     icon: LucideIcon;
+    href: string;
 }
 
 interface ArchitectureStage {
@@ -49,6 +50,7 @@ interface ModuleCard {
     description: string;
     connections: string[];
     icon: LucideIcon;
+    href: string;
 }
 
 interface StructuralPoint {
@@ -70,6 +72,7 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
         handoff: 'Contexto preservado para a fase de cotação.',
         connectsTo: 'Cotações',
         icon: MessageCircle,
+        href: '/crm-whatsapp',
     },
     {
         title: 'Cotações',
@@ -77,6 +80,7 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
         handoff: 'Cotação aprovada vira pedido automaticamente.',
         connectsTo: 'Pedidos',
         icon: Calculator,
+        href: '/logistica-pedidos',
     },
     {
         title: 'Pedidos',
@@ -84,6 +88,7 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
         handoff: 'Dispara a execução logística e shipments.',
         connectsTo: 'Logística',
         icon: Package,
+        href: '/logistica-pedidos',
     },
     {
         title: 'Logística',
@@ -91,13 +96,15 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
         handoff: 'Alimenta o cockpit com dados de execução.',
         connectsTo: 'Cockpit',
         icon: Truck,
+        href: '/logistica-pedidos',
     },
     {
         title: 'Cockpit',
-        summary: 'Centro de controle com SLA, exceções e alertas em tempo real.',
+        summary: 'Centro de controle com SLA, exceções e alertas operacionais.',
         handoff: 'Gera visibilidade para novas decisões.',
         connectsTo: 'Gestão',
         icon: Gauge,
+        href: '/cockpit-gerencial',
     },
 ];
 
@@ -135,13 +142,15 @@ const moduleCards: ModuleCard[] = [
         description: 'Evita a perda de informação entre o atendimento e a execução logística.',
         connections: ['WhatsApp', 'Cotações', 'Frank'],
         icon: MessageCircle,
+        href: '/crm-whatsapp',
     },
     {
-        name: 'Motor de Cotações',
+        name: 'Logística e Cotação',
         role: 'Comparar fretes com regras de margem e operação.',
         description: 'Transforma a demanda em opção viável sem depender de planilhas paralelas.',
         connections: ['Inbox', 'Pedidos', 'Transportadoras'],
         icon: Calculator,
+        href: '/logistica-pedidos',
     },
     {
         name: 'Gestão de Pedidos',
@@ -149,6 +158,7 @@ const moduleCards: ModuleCard[] = [
         description: 'Cada pedido nasce com rastro total desde a primeira mensagem do cliente.',
         connections: ['Cotações', 'Logística', 'Cockpit'],
         icon: Package,
+        href: '/logistica-pedidos',
     },
     {
         name: 'Cockpit Diário',
@@ -156,6 +166,7 @@ const moduleCards: ModuleCard[] = [
         description: 'Painel que destaca o que precisa de ação imediata para proteger o SLA.',
         connections: ['Atendimento', 'Pedidos', 'Métricas'],
         icon: Gauge,
+        href: '/cockpit-gerencial',
     },
     {
         name: 'IA Frank',
@@ -163,6 +174,7 @@ const moduleCards: ModuleCard[] = [
         description: 'Frank sugere respostas e organiza dados, mas não decide sozinho.',
         connections: ['Sugestões', 'Alertas', 'Priorização'],
         icon: Bot,
+        href: '/ia-frank',
     },
 ];
 
@@ -246,20 +258,21 @@ export default function ProdutoPage() {
                             {consolidatedBlocks.map((block) => {
                                 const Icon = block.icon;
                                 return (
-                                    <article
+                                    <Link
                                         key={block.title}
-                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5 transition-colors hover:border-[hsl(var(--ui-border))]"
+                                        href={block.href}
+                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5 transition-colors hover:border-[hsl(var(--ui-border))] group"
                                     >
                                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.65)] text-[hsl(var(--ui-accent-blue))]">
                                             <Icon className="h-5 w-5" />
                                         </div>
-                                        <h3 className="mt-4 text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{block.title}</h3>
+                                        <h3 className="mt-4 text-base font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">{block.title}</h3>
                                         <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{block.summary}</p>
                                         <p className="mt-3 text-xs leading-relaxed text-[hsl(var(--ui-text-subtle))]">{block.handoff}</p>
                                         <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ui-muted)/0.6)] px-3 py-1 text-[11px] font-semibold text-[hsl(var(--ui-text-subtle))]">
                                             Alimenta {block.connectsTo}
                                         </p>
-                                    </article>
+                                    </Link>
                                 );
                             })}
                         </div>
@@ -272,7 +285,7 @@ export default function ProdutoPage() {
                     <PageContainer>
                         <SectionIntro
                             eyebrow="Arquitetura do Produto"
-                            title="Visibilidade e controle em tempo real"
+                            title="Visibilidade e controle operacional"
                             description="O CONDSTORE OS opera como um fluxo contínuo, onde cada decisão gera dados para o cockpit."
                         />
                         <div className="rounded-3xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-4 md:p-6">
@@ -322,15 +335,16 @@ export default function ProdutoPage() {
                             {moduleCards.map((module) => {
                                 const Icon = module.icon;
                                 return (
-                                    <article
+                                    <Link
                                         key={module.name}
-                                        className="flex flex-col rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5 md:p-6 transition-colors hover:border-[hsl(var(--ui-border))]"
+                                        href={module.href}
+                                        className="flex flex-col rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5 md:p-6 transition-colors hover:border-[hsl(var(--ui-border))] group"
                                     >
                                         <div className="flex items-center gap-3">
                                             <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.75)] text-[hsl(var(--ui-accent-blue))]">
                                                 <Icon className="h-5 w-5" />
                                             </span>
-                                            <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{module.name}</h3>
+                                            <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">{module.name}</h3>
                                         </div>
                                         <p className="mt-4 text-sm font-medium text-[hsl(var(--ui-text))]">{module.role}</p>
                                         <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{module.description}</p>
@@ -341,7 +355,7 @@ export default function ProdutoPage() {
                                                 </span>
                                             ))}
                                         </div>
-                                    </article>
+                                    </Link>
                                 );
                             })}
                         </div>
@@ -392,6 +406,10 @@ export default function ProdutoPage() {
                                     <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
                                         Frank (nossa IA) atua como copiloto supervisionado. Ele sugere e organiza, mas nunca aprova ou executa ações críticas sem a validação de um operador humano.
                                     </p>
+                                    <Link href="/ia-frank" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--ui-accent-blue))]">
+                                        Saiba mais sobre o Frank
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Link>
                                 </div>
                             </div>
                         </div>

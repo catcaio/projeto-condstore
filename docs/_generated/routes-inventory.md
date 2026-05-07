@@ -240,6 +240,7 @@
 | `/billing/success` | Page |
 | `/clientes` | Page |
 | `/cockpit` | Page |
+| `/cockpit-gerencial` | Page |
 | `/cockpit/acquisition` | Page |
 | `/cockpit/acquisition/activation` | Page |
 | `/cockpit/acquisition/drilldown` | Page |
@@ -298,6 +299,7 @@
 | `/contato` | Page |
 | `/cotacao` | Page |
 | `/cotacao/result` | Page |
+| `/crm-whatsapp` | Page |
 | `/dashboard` | Page |
 | `/docs` | Page |
 | `/evolution` | Page |
@@ -310,10 +312,12 @@
 | `/freight/simulations/[id]` | Page |
 | `/gargalos-logisticos` | Page |
 | `/home` | Page |
+| `/ia-frank` | Page |
 | `/implantacao` | Page |
 | `/integracoes` | Page |
 | `/login` | Page |
 | `/logistica` | Page |
+| `/logistica-pedidos` | Page |
 | `/logistica/envios` | Page |
 | `/logistica/insights` | Page |
 | `/logistica/rastreamento` | Page |
@@ -335,13 +339,10 @@
 | `/planos/domine` | Page |
 | `/planos/envios` | Page |
 | `/plataforma` | Page |
-| `/plataforma/cockpit` | Page |
 | `/pricing` | Page |
 | `/privacidade` | Page |
 | `/produto` | Page |
-| `/produtos/crm` | Page |
 | `/produtos/domine` | Page |
-| `/produtos/envios` | Page |
 | `/proof` | Page |
 | `/seguranca` | Page |
 | `/settings` | Page |
