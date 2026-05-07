@@ -6,9 +6,10 @@ const secondaryCta = { label: 'Como funciona o MVP', href: '/como-funciona' } as
 
 const mvpLinks = [
     { label: 'Home', href: '/' },
+    { label: 'Produto', href: '/produto' },
+    { label: 'Como funciona', href: '/como-funciona' },
     { label: 'Soluções', href: '/solucoes' },
     { label: 'Prova Operacional', href: '/proof' },
-    { label: 'Segurança', href: '/seguranca' },
 ];
 
 const companyLinks = [

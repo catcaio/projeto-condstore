@@ -33,20 +33,20 @@ function HeroDomine() {
                 </div>
 
                 <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white max-w-4xl leading-[1.1] mb-8">
-                    Automação autônoma que resolve problemas antes do cliente notar
+                    Automação supervisionada que organiza sua operação
                 </h1>
 
                 <p className="text-xl text-blue-100/70 max-w-2xl font-light mb-12">
-                    De Webhooks resilientes a mensagens de WhatsApp ativas. O motor DOMINE intercepta atrasos logísticos e atua ativamente para reduzir chargebacks.
+                    De Webhooks resilientes a assistentes que organizam o atendimento. O motor DOMINE intercepta eventos logísticos e traz visibilidade para a decisão humana.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-md">
-                    <TrackedLink href="/login" passHref trackPage="produtos_domine" trackSection="hero" trackElement="hero_cta" legacyBehavior>
+                    <TrackedLink href="/login" trackPage="produtos_domine" trackSection="hero" trackElement="hero_cta">
                         <Button className="w-full h-14 rounded-full font-bold text-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/20">
                             Falar com um Arquiteto
                         </Button>
                     </TrackedLink>
-                    <TrackedLink href="/planos/domine" passHref trackPage="produtos_domine" trackSection="hero" trackElement="hero_secondary" legacyBehavior>
+                    <TrackedLink href="/planos/domine" trackPage="produtos_domine" trackSection="hero" trackElement="hero_secondary">
                         <Button variant="secondary" className="w-full h-14 rounded-full font-bold text-lg border-2 border-white/10 text-white hover:bg-white/5 bg-transparent">
                             Ver Infraestrutura
                         </Button>
@@ -92,8 +92,8 @@ function TechnicalHighlights() {
                         <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
                             <Bot className="w-6 h-6 text-green-400" />
                         </div>
-                        <h3 className="text-xl font-bold text-white">Agentes WhatsApp</h3>
-                        <p className="text-blue-100/70 text-sm">Assistentes autônomos que notificam clientes ativamente sobre atrasos (Correios) e resolvem Dúvidas Frequentes.</p>
+                        <h3 className="text-xl font-bold text-white">Agentes de Assistência</h3>
+                        <p className="text-blue-100/70 text-sm">Assistentes que organizam o contexto de atendimento e notificam o operador sobre atrasos e exceções logísticas.</p>
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
@@ -122,7 +122,7 @@ function BottomCTA() {
                 <Network className="w-16 h-16 text-indigo-500 mx-auto mb-8" />
                 <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">Pronto para dar superpoderes ao seu Hub?</h2>
                 <div className="flex flex-col sm:flex-row justify-center gap-4 mt-12">
-                    <TrackedLink href="/signup" passHref trackPage="produtos_domine" trackSection="footer" trackElement="footer_cta" legacyBehavior>
+                    <TrackedLink href="/signup" trackPage="produtos_domine" trackSection="footer" trackElement="footer_cta">
                         <Button className="h-14 px-8 rounded-full font-bold text-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/20 group">
                             Agendar Avaliação Técnica
                             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

@@ -4,8 +4,8 @@ import { Button } from '@/ui/components/button';
 import { RoiCalculator } from '@/ui/components/roi-calculator';
 
 export const metadata = {
-    title: 'Condstore Envios | Automação e Gateway de Fretes',
-    description: 'Economize até 80% no frete integrando as maiores transportadoras. Tudo no automático.',
+    title: 'CONDSTORE Envios | Gateway de Fretes Multicarrier',
+    description: 'Centralize cotações de frete e integre as maiores transportadoras em um fluxo operacional único.',
 };
 
 export default function EnviosProductPage() {
@@ -31,20 +31,20 @@ function HeroEnvios() {
                 </div>
 
                 <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[#0A2540] max-w-4xl leading-[1.1] mb-8">
-                    Fretes até 80% mais baratos sem reduzir a velocidade
+                    Cotação de frete ágil e integrada à sua operação
                 </h1>
 
                 <p className="text-xl text-[#425466] max-w-2xl font-light mb-12">
-                    Nós conectamos seu e-commerce com os Correios e transportadoras privadas instantaneamente. Simulações em 50ms, etiquetas automáticas.
+                    Conectamos sua operação aos Correios e transportadoras privadas. Simulações rápidas e integradas ao fluxo de pedido e cockpit operacional.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-md">
-                    <TrackedLink href="/login" passHref trackPage="produtos_envios" trackSection="hero" trackElement="hero_cta" legacyBehavior>
+                    <TrackedLink href="/login" trackPage="produtos_envios" trackSection="hero" trackElement="hero_cta">
                         <Button className="w-full h-14 rounded-full font-bold text-lg bg-[#0A2540] hover:bg-[#112F4E] text-white shadow-xl shadow-[#0A2540]/20">
                             Criar Conta Grátis
                         </Button>
                     </TrackedLink>
-                    <TrackedLink href="/planos/envios" passHref trackPage="produtos_envios" trackSection="hero" trackElement="hero_secondary" legacyBehavior>
+                    <TrackedLink href="/planos/envios" trackPage="produtos_envios" trackSection="hero" trackElement="hero_secondary">
                         <Button variant="secondary" className="w-full h-14 rounded-full font-bold text-lg border-2 border-gray-200 text-[#425466] hover:bg-gray-50 bg-white">
                             Ver Preços
                         </Button>
@@ -117,7 +117,7 @@ function BottomCTA() {
                     Integre sua loja virtual hoje. Leva apenas 3 minutos. Não pedimos cartão de crédito.
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
-                    <TrackedLink href="/login" passHref trackPage="produtos_envios" trackSection="footer" trackElement="footer_cta" legacyBehavior>
+                    <TrackedLink href="/login" trackPage="produtos_envios" trackSection="footer" trackElement="footer_cta">
                         <Button className="h-14 px-8 rounded-full font-bold text-lg bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/20 group">
                             Criar Conta Grátis
                             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
