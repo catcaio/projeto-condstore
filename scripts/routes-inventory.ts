@@ -5,6 +5,12 @@ import path from 'path';
 const APP_DIR = path.join(process.cwd(), 'src', 'app');
 const OUTPUT_FILE = path.join(process.cwd(), 'docs', '_generated', 'routes-inventory.md');
 
+const LEGACY_REDIRECT_ROUTES = new Set([
+    '/plataforma/cockpit',
+    '/produtos/crm',
+    '/produtos/envios',
+]);
+
 // Helper to recursively find routes
 function findRoutes(dir: string, baseRoute: string = ''): string[] {
     let routes: string[] = [];
@@ -30,7 +36,9 @@ function findRoutes(dir: string, baseRoute: string = ''): string[] {
             if (file === 'page.tsx' || file === 'page.ts' || file === 'route.ts') {
                 // If it's the root page/route, keep '/'
                 const finalRoute = baseRoute === '' ? '/' : baseRoute;
-                routes.push(finalRoute);
+                if (!LEGACY_REDIRECT_ROUTES.has(finalRoute)) {
+                    routes.push(finalRoute);
+                }
             }
         }
     }
