@@ -196,7 +196,7 @@ export default function IAFrankPage() {
                         <div className="rounded-3xl bg-[hsl(var(--ui-accent-blue))] px-8 py-12 text-center text-white">
                             <h2 className="text-3xl font-extrabold md:text-4xl">Pronto para ter um copiloto na sua operação?</h2>
                             <p className="mx-auto mt-4 max-w-2xl text-lg text-white/80">
-                                Agende uma demonstração e veja como o Frank auxilia o atendimento e a logística em tempo real.
+                                Agende uma demonstração e veja como o Frank auxilia o atendimento e a logística em fluxo integrado.
                             </p>
                             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                                 <Link

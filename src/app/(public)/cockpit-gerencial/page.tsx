@@ -6,7 +6,7 @@ import { CockpitShowcase, DragPulseEffect } from './cockpit.client';
 
 export const metadata: Metadata = {
     title: 'Cockpit Operacional e Métricas | CONDSTORE OS',
-    description: 'Acompanhe SLAs, exceções e métricas operacionais em tempo real. Visibilidade total para o gestor decidir com segurança.',
+    description: 'Acompanhe SLAs, exceções e métricas operacionais. Visibilidade operacional para o gestor decidir com segurança.',
 };
 
 export default function CockpitLandingPage() {
@@ -27,7 +27,7 @@ function CockpitHero() {
 
             <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full border border-green-200 bg-white/50 backdrop-blur text-green-800 text-sm font-medium mb-10 shadow-sm">
                 <Gauge className="w-4 h-4 text-green-600" />
-                Operação em Tempo Real
+                Operação em Fluxo Integrado
             </div>
 
             <h1 className="text-5xl md:text-7xl font-extrabold tracking-[-0.04em] text-[#0A2540] text-center max-w-5xl leading-[1.1] mb-8 px-6">
@@ -144,7 +144,7 @@ function BottomCTA() {
             <div className="max-w-4xl mx-auto px-6">
                 <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">Construa o centro de comando da sua operação</h2>
                 <p className="text-xl text-gray-300 font-light mb-12">
-                    Tenha visibilidade total, reduza o tempo de resposta e proteja sua margem com o cockpit operacional do CONDSTORE OS.
+                    Tenha visibilidade operacional, reduza o tempo de resposta e proteja sua margem com o cockpit operacional do CONDSTORE OS.
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <TrackedLink href="/contato" trackPage="cockpit_publico" trackSection="footer" trackElement="cta_footer">

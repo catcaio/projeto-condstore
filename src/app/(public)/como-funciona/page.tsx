@@ -192,7 +192,7 @@ export default function ComoFuncionaPage() {
                                 ))}
                             </ol>
                             <p className="mt-5 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                                Cada etapa alimenta a próxima. O gestor tem visão clara do estado de cada negociação e entrega em tempo real.
+                                Cada etapa alimenta a próxima. O gestor tem visão clara do estado de cada negociação e entrega em fluxo contínuo.
                             </p>
                         </aside>
                     </div>

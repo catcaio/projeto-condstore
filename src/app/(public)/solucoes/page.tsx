@@ -57,9 +57,9 @@ export default function SolucoesPage() {
                             {
                                 icon: Package,
                                 title: 'Gestão Completa de Pedidos',
-                                description: 'Acompanhe pedidos do início ao fim com visibilidade total.',
+                                description: 'Acompanhe pedidos do início ao fim com visibilidade operacional.',
                                 problem: 'Pedidos perdidos no processo, sem tracking adequado, clientes desinformados.',
-                                how: 'Sistema integrado conecta cotação a pedido, tracking em tempo real, notificações automáticas.',
+                                how: 'Sistema integrado conecta cotação a pedido, tracking unificado, notificações automáticas.',
                                 accentClass: 'text-[hsl(var(--ui-accent-blue))]',
                             },
                             {
@@ -75,7 +75,7 @@ export default function SolucoesPage() {
                                 title: 'Centralização da Operação (Cockpit)',
                                 description: 'Tudo que o operador precisa em um único lugar.',
                                 problem: 'Dados espalhados em sistemas diferentes, decisões tomadas sem contexto completo.',
-                                how: 'Dashboard unificado com métricas, alertas, filas de ação e diagnóstico em tempo real.',
+                                how: 'Dashboard unificado com métricas, alertas, filas de ação e diagnóstico operacional.',
                                 accentClass: 'text-[hsl(var(--ui-accent-blue))]',
                             },
                         ]}
@@ -89,7 +89,7 @@ export default function SolucoesPage() {
                     <SectionIntro
                         eyebrow="Integração"
                         title="Soluções que trabalham juntas."
-                        description="Não são ferramentas isoladas. Cada caso de uso se conecta aos outros, compartilhando contexto e dados em tempo real. Uma ação em atendimento impacta pedidos e logística automaticamente."
+                        description="Não são ferramentas isoladas. Cada caso de uso se conecta aos outros, compartilhando contexto e dados operacionais. Uma ação em atendimento impacta pedidos e logística automaticamente."
                     />
                 </PageContainer>
             </PageSection>

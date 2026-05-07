@@ -152,7 +152,7 @@ export default function HomePage() {
 
                         <aside className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] p-6">
                             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-subtle))]">
-                                Operação em tempo real
+                                Operação em fluxo integrado
                             </p>
                             <h2 className="mt-3 text-lg font-semibold text-[hsl(var(--ui-text))]">
                                 Estado visível para decidir sem fricção.

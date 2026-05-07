@@ -100,7 +100,7 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
     },
     {
         title: 'Cockpit',
-        summary: 'Centro de controle com SLA, exceções e alertas em tempo real.',
+        summary: 'Centro de controle com SLA, exceções e alertas operacionais.',
         handoff: 'Gera visibilidade para novas decisões.',
         connectsTo: 'Gestão',
         icon: Gauge,
@@ -285,7 +285,7 @@ export default function ProdutoPage() {
                     <PageContainer>
                         <SectionIntro
                             eyebrow="Arquitetura do Produto"
-                            title="Visibilidade e controle em tempo real"
+                            title="Visibilidade e controle operacional"
                             description="O CONDSTORE OS opera como um fluxo contínuo, onde cada decisão gera dados para o cockpit."
                         />
                         <div className="rounded-3xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-4 md:p-6">

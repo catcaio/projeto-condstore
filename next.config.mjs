@@ -1,6 +1,25 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
+  async redirects() {
+    return [
+      {
+        source: '/produtos/crm',
+        destination: '/crm-whatsapp',
+        permanent: true,
+      },
+      {
+        source: '/produtos/envios',
+        destination: '/logistica-pedidos',
+        permanent: true,
+      },
+      {
+        source: '/plataforma/cockpit',
+        destination: '/cockpit-gerencial',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     const csp = [
       "default-src 'self'",

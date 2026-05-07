@@ -93,7 +93,7 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
     },
     {
         title: 'Cockpit',
-        summary: 'Centro de controle com SLA, margem, alertas e prioridades em tempo real.',
+        summary: 'Centro de controle com SLA, margem, alertas e prioridades operacionais.',
         handoff: 'Realimenta atendimento e decisao com dados da operacao.',
         connectsTo: 'Atendimento',
         icon: Gauge,
@@ -331,7 +331,7 @@ export default function PlataformaPage() {
                                 })}
                             </div>
                             <p className="mt-5 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                                Cada etapa publica estado para a etapa seguinte e para o cockpit. Esse fluxo evita retrabalho e melhora decisao em tempo real.
+                                Cada etapa publica estado para a etapa seguinte e para o cockpit. Esse fluxo evita retrabalho e melhora decisão operacional.
                             </p>
                         </div>
                     </PageContainer>

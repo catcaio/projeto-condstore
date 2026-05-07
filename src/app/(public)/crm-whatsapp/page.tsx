@@ -81,7 +81,7 @@ function FeatureHighlights() {
                             <Users className="w-6 h-6 text-blue-600" />
                         </div>
                         <h3 className="text-xl font-bold text-[#0A2540]">Handoff Sem Ruído</h3>
-                        <p className="text-[#425466] text-sm">Transforme uma conversa em cotação de frete instantaneamente, preservando todo o contexto comercial.</p>
+                        <p className="text-[#425466] text-sm">Transforme uma conversa em cotação de frete de forma ágil, preservando todo o contexto comercial.</p>
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">

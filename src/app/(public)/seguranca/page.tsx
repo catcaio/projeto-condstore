@@ -175,7 +175,7 @@ export default function SegurancaPage() {
                             {
                                 icon: Activity,
                                 title: 'Estado da operação',
-                                description: 'Health checks, circuit breakers e diagnóstico em tempo real via cockpit.',
+                                description: 'Health checks, circuit breakers e diagnóstico operacional via cockpit.',
                             },
                         ]}
                     />

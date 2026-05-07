@@ -84,7 +84,7 @@ function FeatureHighlights() {
                             <Calculator className="w-6 h-6 text-blue-600" />
                         </div>
                         <h3 className="text-2xl font-bold text-[#0A2540]">Cotação Multicarrier</h3>
-                        <p className="text-[#425466]">Compare fretes dos Correios e transportadoras privadas instantaneamente, com regras de margem e critérios operacionais definidos.</p>
+                        <p className="text-[#425466]">Compare fretes dos Correios e transportadoras privadas de forma integrada, com regras de margem e critérios operacionais definidos.</p>
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center">
@@ -98,7 +98,7 @@ function FeatureHighlights() {
                             <ShieldCheck className="w-6 h-6 text-purple-600" />
                         </div>
                         <h3 className="text-2xl font-bold text-[#0A2540]">Shipments Rastreados</h3>
-                        <p className="text-[#425466]">Acompanhamento em tempo real do status de entrega. Exceções e atrasos são sinalizados automaticamente no seu cockpit.</p>
+                        <p className="text-[#425466]">Acompanhamento do status de entrega. Exceções e atrasos são sinalizados automaticamente no seu cockpit conforme as atualizações dos canais.</p>
                     </div>
                 </div>
             </div>
