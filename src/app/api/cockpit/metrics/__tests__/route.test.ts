@@ -54,6 +54,9 @@ describe('GET /api/cockpit/metrics', () => {
             select: vi.fn().mockReturnThis(),
             from: vi.fn().mockReturnThis(),
             where: vi.fn().mockResolvedValue([{ count: 42 }]),
+            execute: vi.fn().mockResolvedValue([
+                [{ avgFirstResponseSec: 60, avgFirstQuoteSec: 120 }]
+            ]),
         };
         vi.mocked(getDb).mockResolvedValue(mockDb as any);
     });
