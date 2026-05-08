@@ -179,4 +179,28 @@ describe('Accept Quote -> Order Route', () => {
         expect(body.ok).toBe(false);
         expect(body.error.message).toContain('A cotação está sendo processada');
     });
+
+    it('enforces tenant isolation — cannot create order from another tenant quote', async () => {
+        vi.mocked(requireAdmin).mockResolvedValue({
+            ok: true,
+            requestId: 'req-isolation',
+            session: { tenantId: 'attacker-tenant', sub: 'attacker-user', role: 'admin' },
+        } as any);
+
+        // Mock getQuoteById to return null because the quote does not belong to 'attacker-tenant'
+        vi.mocked(freightQuoteService.getQuoteById).mockResolvedValueOnce(null);
+
+        const req = new Request('http://localhost:3000/api/cockpit/conversations/conv1/quotes/quote1/order', {
+            method: 'POST',
+            body: JSON.stringify({ humanApprovalToken: 'attacker-token' })
+        });
+        const context = { params: Promise.resolve({ id: 'conv1', quoteId: 'quote1' }) };
+
+        const res = await POST(req as any, context);
+        const body = await res.json();
+
+        expect(res.status).toBe(404);
+        expect(body.error.message).toBe('Quote not found');
+        expect(orderService.createOrderFromQuote).not.toHaveBeenCalled();
+    });
 });
