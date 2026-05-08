@@ -12,8 +12,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-    title: 'Prova operacional — Condstore OS',
-    description: 'Veja o Condstore OS em operação real: inbox, cotações e pedidos gerenciados por uma plataforma que já funciona no dia a dia de operações B2B.',
+    title: 'Prova operacional — CONDSTORE OS',
+    description: 'Veja o CONDSTORE OS em operação real: inbox, cotações e pedidos gerenciados por uma plataforma que já funciona no dia a dia de operações B2B.',
 };
 
 export const revalidate = 86400;
@@ -32,7 +32,7 @@ export default function ProofPage() {
                         </span>
                     </>
                 }
-                subtitle="O Condstore OS opera hoje em ambientes reais — gerenciando pedidos, atendimento e frete de operações B2B no Brasil."
+                subtitle="O CONDSTORE OS opera hoje em ambientes reais — gerenciando pedidos, atendimento e frete de operações B2B no Brasil."
                 ctas={[
                     { label: 'Falar com o time', href: '/contato' },
                     { label: 'Entrar na plataforma', href: '/login', variant: 'secondary' },
@@ -283,7 +283,7 @@ export default function ProofPage() {
                                         O fluxo cobre cotação de frete, gestão de pedidos e atendimento via WhatsApp — tudo no mesmo ambiente operacional.
                                     </p>
                                     <p className="text-base text-[hsl(var(--ui-text-muted))] leading-relaxed">
-                                        O Condstore OS nasceu para resolver os problemas reais dessa operação: cotações manuais, pedidos sem estado definido e atendimento desconectado da logística.
+                                        O CONDSTORE OS nasceu para resolver os problemas reais dessa operação: cotações manuais, pedidos sem estado definido e atendimento desconectado da logística.
                                         O sistema entrou em produção e passou a gerir o ciclo completo.
                                     </p>
                                 </div>
@@ -339,7 +339,7 @@ export default function ProofPage() {
                         <SectionIntro
                             eyebrow="Governança"
                             title="Controle que não abre mão da supervisão."
-                            description="O Condstore OS opera em modo supervisionado. A IA sugere, o operador decide. Cada ação é registrada."
+                            description="O CONDSTORE OS opera em modo supervisionado. A IA sugere, o operador decide. Cada ação é registrada."
                         />
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                             {[

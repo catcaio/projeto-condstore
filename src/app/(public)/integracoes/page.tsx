@@ -5,7 +5,7 @@ import { TrackedLink, SectionTracker } from '@/ui/lib/track-client';
 import { InteractiveIntegrationsGrid } from './integracoes.client';
 
 export const metadata: Metadata = {
-    title: 'Integrações B2B Enterprise | Condstore OS',
+    title: 'Integrações B2B Enterprise | CONDSTORE OS',
     description: 'Conecte as APIs do seu Banco e Transportadoras diretamente ao WMS. Sem intermediários, sem margens ocultas.',
 };
 
@@ -35,7 +35,7 @@ function HeroIntegracoes() {
             </h1>
 
             <p className="text-xl md:text-2xl text-[#425466] text-center max-w-3xl font-light px-6 mb-12 leading-relaxed">
-                As plataformas genéricas (como Melhor Envio ou Kangu) lucram em cima do seu frete. O **Condstore OS** conecta você *diretamente* às APIs dos Grandes Bancos e Transportadoras Brasileiras. **Use seu próprio contrato. Proteja sua margem B2B.**
+                As plataformas genéricas (como Melhor Envio ou Kangu) lucram em cima do seu frete. O **CONDSTORE OS** conecta você *diretamente* às APIs dos Grandes Bancos e Transportadoras Brasileiras. **Use seu próprio contrato. Proteja sua margem B2B.**
             </p>
         </section>
     );
@@ -86,7 +86,7 @@ function DirectAPIFeature() {
                 <div className="bg-[#112F4E] p-8 rounded-3xl border border-gray-700 shadow-2xl">
                     <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-700">
                         <Server className="text-gray-400 w-6 h-6" />
-                        <h3 className="text-white font-mono text-lg">Condstore API Matrix</h3>
+                        <h3 className="text-white font-mono text-lg">CONDSTORE API Matrix</h3>
                     </div>
                     <div className="space-y-4 font-mono text-sm opacity-90">
                         <div className="flex justify-between items-center bg-gray-900/50 p-3 rounded-lg border border-gray-700">

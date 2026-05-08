@@ -20,7 +20,7 @@ const planDetails: Record<string, PlanDetail> = {
         sections: [
             {
                 title: 'Visão geral do plano',
-                content: 'Ideal para operações que estão saindo do improviso. Organiza atendimento, contexto e execução com as ferramentas essenciais do Condstore OS. Indicado para distribuidores com até 100 envios/dia e equipes de até 10 operadores.',
+                content: 'Ideal para operações que estão saindo do improviso. Organiza atendimento, contexto e execução com as ferramentas essenciais do CONDSTORE OS. Indicado para distribuidores com até 100 envios/dia e equipes de até 10 operadores.',
             },
             {
                 title: 'Implantação',

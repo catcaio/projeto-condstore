@@ -10,8 +10,8 @@ import {
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Segurança e LGPD — Condstore OS',
-    description: 'Conheça a arquitetura de segurança e governança do Condstore OS: multi-tenant, rastro de decisões, humano no loop e conformidade LGPD.',
+    title: 'Segurança e LGPD — CONDSTORE OS',
+    description: 'Conheça a arquitetura de segurança e governança do CONDSTORE OS: multi-tenant, rastro de decisões, humano no loop e conformidade LGPD.',
 };
 
 export default function SegurancaPage() {
@@ -28,7 +28,7 @@ export default function SegurancaPage() {
                         </span>
                     </>
                 }
-                subtitle="Isolamento por tenant, rastro imutável de decisões e conformidade LGPD. O Condstore OS protege sua operação do WhatsApp ao cockpit."
+                subtitle="Isolamento por tenant, rastro imutável de decisões e conformidade LGPD. O CONDSTORE OS protege sua operação do WhatsApp ao cockpit."
                 ctas={[
                     { label: 'Solicitar avaliação operacional', href: '/piloto' },
                     { label: 'Entrar no sistema', href: '/login', variant: 'secondary' },
@@ -243,7 +243,7 @@ export default function SegurancaPage() {
             {/* ─── 8. CTA FINAL ─── */}
             <CTASection
                 title="Sua operação com segurança real."
-                subtitle="Isolamento, rastro de decisão e conformidade LGPD são a fundação do Condstore OS."
+                subtitle="Isolamento, rastro de decisão e conformidade LGPD são a fundação do CONDSTORE OS."
                 ctas={[
                     { label: 'Solicitar avaliação operacional', href: '/piloto' },
                     { label: 'Entrar no sistema', href: '/login', variant: 'secondary' },

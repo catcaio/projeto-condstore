@@ -2,8 +2,8 @@ import { PageContainer } from '@/ui/site/page-container';
 import { PageSection } from '@/ui/site/page-section';
 
 export const metadata = {
-    title: 'Termos de Uso — Condstore OS',
-    description: 'Termos de uso e condições de serviço do Condstore OS.',
+    title: 'Termos de Uso — CONDSTORE OS',
+    description: 'Termos de uso e condições de serviço do CONDSTORE OS.',
 };
 
 export default function TermosPage() {
@@ -21,13 +21,13 @@ export default function TermosPage() {
 
                     <h2 className="text-lg font-bold text-[hsl(var(--ui-text))] mt-8">1. Aceitação</h2>
                     <p>
-                        Ao utilizar o Condstore OS, você concorda com estes termos. Se não concordar, não utilize a plataforma.
+                        Ao utilizar o CONDSTORE OS, você concorda com estes termos. Se não concordar, não utilize a plataforma.
                         Estes termos se aplicam a todos os usuários, incluindo administradores, operadores e clientes finais.
                     </p>
 
                     <h2 className="text-lg font-bold text-[hsl(var(--ui-text))] mt-8">2. Serviço</h2>
                     <p>
-                        O Condstore OS é uma plataforma SaaS B2B de infraestrutura operacional para logística. Oferecemos
+                        O CONDSTORE OS é uma plataforma SaaS B2B de infraestrutura operacional para logística. Oferecemos
                         gestão de frete, CRM, atendimento via WhatsApp, inteligência artificial e dashboards operacionais
                         em ambiente multi-tenant.
                     </p>
@@ -54,7 +54,7 @@ export default function TermosPage() {
 
                     <h2 className="text-lg font-bold text-[hsl(var(--ui-text))] mt-8">6. Propriedade intelectual</h2>
                     <p>
-                        Todo o código, design e conteúdo do Condstore OS são propriedade da CONDSTORE TECNOLOGIA LTDA.
+                        Todo o código, design e conteúdo do CONDSTORE OS são propriedade da CONDSTORE TECNOLOGIA LTDA.
                         Os dados inseridos pelo cliente permanecem de propriedade do cliente.
                     </p>
 

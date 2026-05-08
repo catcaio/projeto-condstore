@@ -11,8 +11,8 @@ import {
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Implantação — Condstore OS',
-    description: 'Saiba como o Condstore OS é implantado: diagnóstico operacional, configuração da plataforma, integrações, ativação e evolução contínua.',
+    title: 'Implantação — CONDSTORE OS',
+    description: 'Saiba como o CONDSTORE OS é implantado: diagnóstico operacional, configuração da plataforma, integrações, ativação e evolução contínua.',
 };
 
 export default function ImplantacaoPage() {
@@ -29,7 +29,7 @@ export default function ImplantacaoPage() {
                         </span>
                     </>
                 }
-                subtitle="Cada operação possui contexto, fluxo e necessidades diferentes. O Condstore OS é implantado de forma estruturada para funcionar desde o primeiro dia."
+                subtitle="Cada operação possui contexto, fluxo e necessidades diferentes. O CONDSTORE OS é implantado de forma estruturada para funcionar desde o primeiro dia."
                 ctas={[
                     { label: 'Falar sobre implantação', href: '/contato' },
                     { label: 'Explorar soluções', href: '/solucoes', variant: 'secondary' },
@@ -218,7 +218,7 @@ export default function ImplantacaoPage() {
 
             {/* ─── 7. CTA FINAL ─── */}
             <CTASection
-                title="Entenda como implantar o Condstore OS na sua operação."
+                title="Entenda como implantar o CONDSTORE OS na sua operação."
                 subtitle="Cada operação é diferente. Vamos entender a sua."
                 ctas={[
                     { label: 'Solicitar demonstração', href: '/contato' },

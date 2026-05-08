@@ -3,7 +3,7 @@ import { TrackedLink, SectionTracker } from '@/ui/lib/track-client';
 import { Button } from '@/ui/components/button';
 
 export const metadata = {
-    title: 'Condstore DOMINE | IA & Motor de Eventos',
+    title: 'CONDSTORE DOMINE | IA & Motor de Eventos',
     description: 'Automatize o Caos. Agentes de IA e Webhooks dedicados para escalar sua operação sem contratar mais pessoas.',
 };
 

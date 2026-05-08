@@ -22,7 +22,7 @@ import {
 } from '@/ui/site';
 
 export const metadata: Metadata = {
-    title: 'Plataforma - Condstore OS',
+    title: 'Plataforma - CONDSTORE OS',
     description: 'Visao consolidada do CONDSTORE OS: atendimento, cotacoes, pedidos, operacao e cockpit conectados em um fluxo supervisionado.',
     robots: { index: true, follow: true },
 };
@@ -157,9 +157,9 @@ const moduleCards: ModuleCard[] = [
         icon: Gauge,
     },
     {
-        name: 'IA (Frank)',
-        role: 'Assistente supervisionado para acelerar leitura e sugestao.',
-        description: 'Frank sugere resposta e proximo passo, mas nao aprova cotacao nem pedido sem operador.',
+        name: 'IA Frank Supervisionada',
+        role: 'Copiloto supervisionado para acelerar leitura e sugestao.',
+        description: 'O Frank sugere resposta e proximo passo, mas nao aprova cotacao nem pedido sem operador.',
         connections: ['Inbox', 'Cotacoes', 'Cockpit'],
         icon: Bot,
     },
@@ -200,7 +200,7 @@ const connectionLinks = [
         description: 'Recortes praticos para cada momento da sua operacao.',
     },
     {
-        href: '/about',
+        href: '/contato',
         title: 'Contato',
         description: 'Conversa direta com o time para validar escopo e implantacao.',
     },
@@ -214,7 +214,7 @@ export default function PlataformaPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8 lg:gap-12 items-start">
                         <div className="max-w-3xl">
                             <span className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[hsl(var(--ui-text-muted))]">
-                                Plataforma Condstore OS
+                                Plataforma CONDSTORE OS
                             </span>
                             <h1 className="mt-6 text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-[hsl(var(--ui-text))] leading-[1.08]">
                                 Uma plataforma unica para conectar atendimento, cotacao, pedidos, operacao e cockpit.
@@ -413,10 +413,10 @@ export default function PlataformaPage() {
                                 </span>
                                 <div>
                                     <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))]">
-                                        SUPERVISED_ONLY
+                                        COPILOTO_SUPERVISIONADO
                                     </h3>
                                     <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                                        Frank opera como assistente supervisionado. Ele pode sugerir resposta e proximo passo, mas nao executa aprovacao de cotacao ou pedido sem operador responsavel.
+                                        O Frank opera como copiloto supervisionado. Ele pode sugerir resposta e proximo passo, mas nao executa aprovacao de cotacao ou pedido sem operador responsavel.
                                     </p>
                                 </div>
                             </div>
@@ -465,7 +465,7 @@ export default function PlataformaPage() {
                             </p>
                             <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
                                 <Link
-                                    href="/about"
+                                    href="/contato"
                                     className="inline-flex h-11 items-center justify-center rounded-full border border-transparent bg-[hsl(var(--ui-accent-blue))] px-6 text-sm font-semibold text-white transition-colors hover:bg-[hsl(var(--ui-accent-blue-strong))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
                                 >
                                     Falar com o time

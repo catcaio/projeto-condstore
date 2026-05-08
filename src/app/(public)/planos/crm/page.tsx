@@ -11,7 +11,7 @@ export default function PricingCRMPage() {
         <div className="flex flex-col items-center w-full os-root bg-[#F4F7FA] overflow-hidden">
             <CRMPricingHero />
             <PricingTable
-                title="Tudo sobre as funcionalidades de cada plano do Condstore CRM"
+                title="Tudo sobre as funcionalidades de cada plano do CONDSTORE CRM"
                 planos={planosCRM}
                 features={featuresCRM}
             />

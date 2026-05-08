@@ -11,7 +11,7 @@ import {
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'App do Ecossistema — Condstore OS',
+    title: 'App do Ecossistema — CONDSTORE OS',
     description: 'O app que conecta cada pessoa ao pedaço certo da operação. Do gestor ao entregador, do cliente ao operador.',
 };
 
@@ -262,7 +262,7 @@ export default function AppPage() {
             {/* ─── 8. CTA FINAL ─── */}
             <CTASection
                 title="Leve a operação até quem precisa agir, acompanhar ou decidir."
-                subtitle="O app do ecossistema é parte da implantação do Condstore OS."
+                subtitle="O app do ecossistema é parte da implantação do CONDSTORE OS."
                 ctas={[
                     { label: 'Explorar soluções', href: '/solucoes' },
                     { label: 'Solicitar demonstração', href: '/contato', variant: 'secondary' },

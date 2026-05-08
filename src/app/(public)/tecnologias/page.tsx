@@ -31,7 +31,7 @@ function TechHero() {
                 </h1>
 
                 <p className="text-xl leading-relaxed font-light max-w-3xl mx-auto text-gray-400">
-                    O varejo não avisa quando terá picos de tráfego. Construímos o Condstore OS em cima do Next.js Edge Runtime e TiDB Serverless: persistência escalável e computação de baixa latência (P99 50ms).
+                    O varejo não avisa quando terá picos de tráfego. Construímos o CONDSTORE OS em cima do Next.js Edge Runtime e TiDB Serverless: persistência escalável e computação de baixa latência (P99 50ms).
                 </p>
             </div>
         </section>

@@ -70,7 +70,7 @@ export function CockpitShowcase() {
                         <div className="w-3 h-3 rounded-full bg-green-400"></div>
                     </div>
                     <div className="text-sm font-semibold text-gray-400 flex items-center gap-2">
-                        <LayoutDashboard className="w-4 h-4" /> Condstore OS
+                        <LayoutDashboard className="w-4 h-4" /> CONDSTORE OS
                     </div>
                     <div className="flex items-center gap-4 text-gray-400">
                         <Bell className="w-4 h-4" />

@@ -2,8 +2,8 @@ import { PageContainer } from '@/ui/site/page-container';
 import { PageSection } from '@/ui/site/page-section';
 
 export const metadata = {
-    title: 'Política de Privacidade — Condstore OS',
-    description: 'Política de privacidade e proteção de dados do Condstore OS.',
+    title: 'Política de Privacidade — CONDSTORE OS',
+    description: 'Política de privacidade e proteção de dados do CONDSTORE OS.',
 };
 
 export default function PrivacidadePage() {
