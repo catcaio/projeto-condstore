@@ -18,7 +18,7 @@ import { logger } from '@/infra/logger';
 import { requireAdmin } from '@/infra/auth/guards';
 import { getDb } from '@/infra/db';
 import { sql, eq, and, gte, or, like } from 'drizzle-orm';
-import { orders, operationalEvents } from '@/drizzle/schema';
+import { orders, operationalEvents, simulations, conversationMessages } from '@/drizzle/schema';
 import { buildAttributionBreakdown, isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '@/modules/metrics/attribution-breakdown';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '@/infra/http/error-response';
@@ -29,6 +29,10 @@ interface CockpitMetrics {
   cotacoesHoje: number;
   pedidosHoje: number;
   erros24h: number;
+  tempoMedioRespostaMin: number | null;
+  tempoMedioCotacaoMin: number | null;
+  handoffsHoje: number;
+  conversaoCotacaoPedido: number | null;
   attribution_breakdown_7d?: {
     groupBy: 'utm_source' | 'utm_campaign';
     buckets: Array<{ key: string; count: number }>;
@@ -94,7 +98,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // Real DB queries in parallel (tenant-isolated)
-    const [msgMetrics, cotacoesHoje, attributionBreakdownResult, pedidosResult, errosResult] = await Promise.all([
+    const [
+      msgMetrics,
+      cotacoesHoje,
+      attributionBreakdownResult,
+      pedidosResult,
+      errosResult,
+      handoffsResult,
+      timingsResult,
+      conversion7dResult
+    ] = await Promise.all([
       messageRepository.getMetricsToday(tenantId),
       simulationRepository.countToday(tenantId),
       groupBy
@@ -157,6 +170,70 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           );
         return rows[0]?.count ?? 0;
       })(),
+      // handoffsHoje
+      (async () => {
+        const db = await getDb();
+        const rows = await db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(operationalEvents)
+          .where(
+            and(
+              eq(operationalEvents.tenantId, tenantId),
+              gte(operationalEvents.createdAt, sql`CURDATE()`),
+              eq(operationalEvents.eventType, 'frank_assist_handoff')
+            )
+          );
+        return rows[0]?.count ?? 0;
+      })(),
+      // timings (avg response and quote time)
+      (async () => {
+        const db = await getDb();
+        const sevenDaysAgo = sql`DATE_SUB(NOW(), INTERVAL 7 DAY)`;
+        const result = await db.execute(sql`
+          WITH FirstInbound AS (
+              SELECT conversation_id, MIN(created_at) as first_in
+              FROM conversation_messages
+              WHERE tenant_id = ${tenantId}
+                AND direction = 'inbound'
+                AND created_at >= ${sevenDaysAgo}
+              GROUP BY conversation_id
+          ),
+          FirstOutboundHuman AS (
+              SELECT conversation_id, MIN(created_at) as first_out_human
+              FROM conversation_messages
+              WHERE tenant_id = ${tenantId}
+                AND direction = 'outbound'
+                AND source = 'OPERATOR'
+                AND created_at >= ${sevenDaysAgo}
+              GROUP BY conversation_id
+          ),
+          FirstQuote AS (
+              SELECT conversation_id, MIN(created_at) as first_quote
+              FROM simulations
+              WHERE tenant_id = ${tenantId}
+                AND created_at >= ${sevenDaysAgo}
+              GROUP BY conversation_id
+          )
+          SELECT
+              AVG(TIMESTAMPDIFF(SECOND, i.first_in, h.first_out_human)) as avgFirstResponseSec,
+              AVG(TIMESTAMPDIFF(SECOND, i.first_in, q.first_quote)) as avgFirstQuoteSec
+          FROM FirstInbound i
+          LEFT JOIN FirstOutboundHuman h ON i.conversation_id = h.conversation_id AND h.first_out_human > i.first_in
+          LEFT JOIN FirstQuote q ON i.conversation_id = q.conversation_id AND q.first_quote > i.first_in
+        `);
+        const rows = unwrapRows<{ avgFirstResponseSec: number | string | null; avgFirstQuoteSec: number | string | null }>(result);
+        return rows[0] || { avgFirstResponseSec: null, avgFirstQuoteSec: null };
+      })(),
+      // conversionQuoteToOrder (7 days)
+      (async () => {
+        const db = await getDb();
+        const sevenDaysAgo = sql`DATE_SUB(NOW(), INTERVAL 7 DAY)`;
+        const [q] = await db.select({ count: sql<number>`COUNT(*)` }).from(simulations).where(and(eq(simulations.tenantId, tenantId), gte(simulations.createdAt, sevenDaysAgo)));
+        const [o] = await db.select({ count: sql<number>`COUNT(*)` }).from(orders).where(and(eq(orders.tenantId, tenantId), gte(orders.createdAt, sevenDaysAgo)));
+        const quotes = Number(q?.count ?? 0);
+        const ordersCount = Number(o?.count ?? 0);
+        return quotes > 0 ? (ordersCount / quotes) * 100 : 0;
+      })(),
     ]);
 
     const payload: CockpitMetrics = {
@@ -164,6 +241,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       cotacoesHoje: Number(cotacoesHoje ?? 0),
       pedidosHoje: Number(pedidosResult),
       erros24h: Number(errosResult),
+      tempoMedioRespostaMin: timingsResult.avgFirstResponseSec !== null ? Number(timingsResult.avgFirstResponseSec) / 60 : null,
+      tempoMedioCotacaoMin: timingsResult.avgFirstQuoteSec !== null ? Number(timingsResult.avgFirstQuoteSec) / 60 : null,
+      handoffsHoje: Number(handoffsResult),
+      conversaoCotacaoPedido: Number(conversion7dResult),
     };
 
     if (groupBy && attributionBreakdownResult) {
