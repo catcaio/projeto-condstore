@@ -310,6 +310,7 @@
 | /evolution | TBA | public | none | PUBLIC | live | Auto-detected |
 | /evolution/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
 | /evolution/roadmap | TBA | public | none | PUBLIC | live | Auto-detected |
+| /faq | FAQ | public | none | PUBLIC | live | FAQ Page |
 | /financeiro/frete | GET | internal | required | console | live | Custos de Frete (stub — em breve) |
 | /financeiro/margem | GET | internal | required | console | live | Margem operacional (stub — em breve) |
 | /frank | GET | internal | required | frank | live | Módulo canônico do agente com visão geral, intenções, desempenho e logs estruturados |
@@ -344,6 +345,7 @@
 | /operacao/inbox | GET | internal | required | console | live | Inbox operacional (migrado de /inbox) |
 | /painel-logistico | TBA | public | none | PUBLIC | live | Auto-detected |
 | /pedidos | GET | internal | required | pedidos | live | Fluxo operacional canônico de pedidos com triagem, detalhe e contexto logístico |
+| /piloto | Piloto Operacional | public | none | PUBLIC | live | Pilot evaluation page |
 | /planos/crm | TBA | public | none | PUBLIC | live | Auto-detected |
 | /planos/domine | TBA | public | none | PUBLIC | live | Auto-detected |
 | /planos/envios | TBA | public | none | PUBLIC | live | Auto-detected |

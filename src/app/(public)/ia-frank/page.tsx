@@ -90,10 +90,10 @@ export default function IAFrankPage() {
                             </p>
                             <div className="mt-8 flex flex-wrap gap-4">
                                 <Link
-                                    href="/contato"
+                                    href="/piloto"
                                     className="inline-flex h-12 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-8 text-sm font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))]"
                                 >
-                                    Solicitar demonstração
+                                    Solicitar avaliação operacional
                                 </Link>
                                 <Link
                                     href="/como-funciona"
@@ -200,7 +200,7 @@ export default function IAFrankPage() {
                             </p>
                             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                                 <Link
-                                    href="/contato"
+                                    href="/piloto"
                                     className="inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-sm font-bold text-[hsl(var(--ui-accent-blue))] transition-transform hover:scale-105"
                                 >
                                     Solicitar avaliação operacional

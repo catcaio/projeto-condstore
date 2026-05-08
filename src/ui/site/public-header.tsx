@@ -6,17 +6,17 @@ import { CondstoreLogo } from '@/ui/components/Logo';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './theme-toggle';
 
-const primaryCta = { label: 'Iniciar operação no MVP', href: '/signup' } as const;
-const secondaryCta = { label: 'Como funciona o MVP', href: '/como-funciona' } as const;
+const primaryCta = { label: 'Avaliação Operacional', href: '/piloto' } as const;
+const secondaryCta = { label: 'Entrar', href: '/login' } as const;
 
 const navLinks = [
     { label: 'Home', href: '/' },
+    { label: 'Produto', href: '/produto' },
     { label: 'CRM', href: '/crm-whatsapp' },
     { label: 'Logística', href: '/logistica-pedidos' },
     { label: 'Cockpit', href: '/cockpit-gerencial' },
     { label: 'IA Frank', href: '/ia-frank' },
-    { label: 'Prova Operacional', href: '/proof' },
-    { label: 'Contato', href: '/contato' },
+    { label: 'FAQ', href: '/faq' },
 ] as const;
 
 export function PublicHeader() {
