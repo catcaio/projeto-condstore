@@ -119,6 +119,8 @@ Executar com operador do cliente presente (ou com conta de teste):
 - [ ] **Passo 8:** Confirmar que status do pedido é CREATED
 - [ ] **Passo 9:** Confirmar que cliente aparece no módulo de Clientes
 
+Para o primeiro piloto, siga também o checklist detalhado de evidências em `docs/pilots/pilot-01-operational-checklist.md`.
+
 **Resultado esperado:** fluxo completo sem erro em menos de 5 minutos.
 
 Se qualquer passo falhar → não avançar para treinamento. Resolver primeiro.

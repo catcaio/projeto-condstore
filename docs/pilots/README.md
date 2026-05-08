@@ -37,6 +37,9 @@ Objetivo: sair da demo para piloto real com um processo simples, visível e repe
 6. `docs/roi/README.md`
    Usar a partir do início do piloto para registrar baseline, scorecard e revisão semanal.
 
+7. `pilot-01-operational-checklist.md`
+   Executar o checklist operacional supervisionado durante a operação do primeiro piloto para garantir o fluxo happy-path e coletar evidências.
+
 ---
 
 ## Regras de operação
