@@ -66,7 +66,17 @@ export const orderService = {
         }
 
         if (quote.status !== 'ACCEPTED') {
-            throw new Error('A cotacao precisa estar aprovada antes de criar o pedido.');
+            const reason = quote.status === 'CONVERTED'
+                ? 'já foi convertida em pedido'
+                : `precisa estar aprovada (status atual: ${quote.status})`;
+
+            logger.warn(`[OrderService] Bloqueio de criação de pedido: cotação ${quoteId} ${reason}`, {
+                tenantId,
+                quoteId,
+                status: quote.status
+            });
+
+            throw new Error(`A cotação ${reason}.`);
         }
 
         // 2. Adquirir Lock Distribuído

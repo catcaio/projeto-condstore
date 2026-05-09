@@ -97,4 +97,48 @@ describe('createOrderFromSimulation', () => {
 
         expect(dbMocks.transaction).not.toHaveBeenCalled();
     });
+
+    it('creates order when simulation is ACCEPTED', async () => {
+        dbMocks.limit.mockResolvedValueOnce([{
+            id: 'sim-1',
+            status: 'ACCEPTED',
+            tenantId: 'tenant-1'
+        }]);
+
+        dbMocks.transaction.mockImplementation(async (cb) => {
+            const tx = {
+                insert: vi.fn().mockReturnValue({ values: vi.fn() }),
+                update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
+            };
+            return cb(tx);
+        });
+
+        const result = await createOrderFromSimulation({
+            tenantId: 'tenant-1',
+            simulationId: 'sim-1',
+            customerId: 'customer-1',
+            organizationId: 'org-1',
+            createdBy: 'user-1',
+            items: [{ name: 'Produto', quantity: 2, unitPrice: 50 }],
+        });
+
+        expect(result).toHaveProperty('orderId');
+        expect(result.status).toBe('created');
+        expect(dbMocks.transaction).toHaveBeenCalled();
+    });
+
+    it('throws error when simulation is not found', async () => {
+        dbMocks.limit.mockResolvedValueOnce([]);
+
+        await expect(createOrderFromSimulation({
+            tenantId: 'tenant-1',
+            simulationId: 'missing-sim',
+            customerId: 'customer-1',
+            organizationId: 'org-1',
+            createdBy: 'user-1',
+            items: [{ name: 'Produto', quantity: 1, unitPrice: 10 }],
+        })).rejects.toThrow('Simulation missing-sim not found for tenant tenant-1');
+
+        expect(dbMocks.transaction).not.toHaveBeenCalled();
+    });
 });
