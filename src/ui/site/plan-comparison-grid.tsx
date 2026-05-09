@@ -119,7 +119,7 @@ export function PlanComparisonGrid() {
                 {/* CTA below comparison */}
                 <div className="mt-10 flex justify-center">
                     <Link
-                        href="/about"
+                        href="/contato"
                         className="inline-flex items-center justify-center gap-2 rounded-full bg-[hsl(var(--ui-accent-blue))] text-white text-sm font-bold h-12 px-8 hover:bg-[hsl(var(--ui-accent-blue-strong))] shadow-sm shadow-[hsl(var(--ui-accent-blue)/0.2)] transition-all"
                     >
                         Solicitar proposta — Crescimento

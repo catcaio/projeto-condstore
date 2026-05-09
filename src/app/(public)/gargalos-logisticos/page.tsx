@@ -99,7 +99,7 @@ function SolutionSection() {
         <section className="py-24 bg-[#0A2540] text-center mt-12">
             <div className="mx-auto max-w-4xl px-6">
                 <ShieldCheck className="w-16 h-16 text-blue-400 mx-auto mb-8" />
-                <h2 className="text-4xl font-extrabold text-white mb-6">Como o Condstore OS anula esse risco?</h2>
+                <h2 className="text-4xl font-extrabold text-white mb-6">Como o CONDSTORE OS anula esse risco?</h2>
                 <p className="text-xl text-blue-100/70 mb-10 max-w-2xl mx-auto font-light">
                     Não consertamos as estradas do Brasil. Nós construímos o software que blinda você delas.
                     Roteirização autônoma, failover dinâmico de transportadoras e rastreio de ponta-a-ponta acoplado ao seu SAC.
@@ -107,7 +107,7 @@ function SolutionSection() {
                 <div className="flex justify-center gap-4">
                     <TrackedLink href="/produtos/envios" passHref trackPage="gargalos_logisticos" trackSection="solution" trackElement="cta_solution" legacyBehavior>
                         <Button className="h-14 px-8 rounded-full font-bold text-lg bg-blue-600 hover:bg-blue-500 text-white">
-                            Conheça o Hub Condstore
+                            Conheça o Hub CONDSTORE
                         </Button>
                     </TrackedLink>
                 </div>

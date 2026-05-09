@@ -8,8 +8,8 @@ import {
 import Link from 'next/link';
 
 export const metadata = {
-    title: 'Soluções — Condstore OS',
-    description: 'Descubra como o Condstore OS resolve problemas reais: atendimento estruturado, cotação automatizada, gestão de pedidos, operação logística integrada e cockpit centralizado.',
+    title: 'Soluções — CONDSTORE OS',
+    description: 'Descubra como o CONDSTORE OS resolve problemas reais: atendimento estruturado, cotação automatizada, gestão de pedidos, operação logística integrada e cockpit centralizado.',
 };
 
 export default function SolucoesPage() {
@@ -19,7 +19,7 @@ export default function SolucoesPage() {
             <HeroSection
                 eyebrow="Soluções"
                 title="Problemas reais, soluções práticas."
-                subtitle="O Condstore OS traduz o sistema em aplicações que resolvem desafios operacionais concretos, facilitando a identificação e aumentando a conversão."
+                subtitle="O CONDSTORE OS traduz o sistema em aplicações que resolvem desafios operacionais concretos, facilitando a identificação e aumentando a conversão."
                 ctas={[
                     { label: 'Ver prova operacional', href: '/proof' },
                     { label: 'Falar com o time', href: '/contato', variant: 'secondary' },

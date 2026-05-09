@@ -215,7 +215,7 @@ export default function ValoresPage() {
                             Valores são definidos em conversa, não em checkout.
                         </h3>
                         <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed max-w-2xl mx-auto">
-                            O Condstore OS não é um produto de prateleira. Cada implantação é dimensionada para o
+                            O CONDSTORE OS não é um produto de prateleira. Cada implantação é dimensionada para o
                             contexto da sua operação — volume, integrações, equipe e maturidade logística.
                         </p>
                     </div>

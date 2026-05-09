@@ -169,9 +169,9 @@ const moduleCards: ModuleCard[] = [
         href: '/cockpit-gerencial',
     },
     {
-        name: 'IA Frank',
+        name: 'IA Frank Supervisionada',
         role: 'Copiloto supervisionado para acelerar o time.',
-        description: 'Frank sugere respostas e organiza dados, mas não decide sozinho.',
+        description: 'O Frank sugere respostas e organiza dados, mas não decide sozinho.',
         connections: ['Sugestões', 'Alertas', 'Priorização'],
         icon: Bot,
         href: '/ia-frank',

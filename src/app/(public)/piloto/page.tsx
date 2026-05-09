@@ -18,8 +18,8 @@ import {
 import { TrackedLink } from '@/ui/lib/track-client';
 
 export const metadata: Metadata = {
-    title: 'Piloto Operacional — Condstore OS',
-    description: 'Solicite uma avaliação operacional e inicie seu piloto assistido no Condstore OS.',
+    title: 'Piloto Operacional — CONDSTORE OS',
+    description: 'Solicite uma avaliação operacional e inicie seu piloto assistido no CONDSTORE OS.',
 };
 
 export default function PilotoPage() {
@@ -35,7 +35,7 @@ export default function PilotoPage() {
                         </span>
                     </>
                 }
-                subtitle="O piloto operacional é a forma mais segura de testar o Condstore OS com seus próprios dados, canais e equipe."
+                subtitle="O piloto operacional é a forma mais segura de testar o CONDSTORE OS com seus próprios dados, canais e equipe."
                 ctas={[
                     { label: 'Solicitar avaliação agora', href: '/contato' },
                 ]}

@@ -39,8 +39,8 @@ export function RoiCalculator() {
         <div id="simular-roi" className="w-full max-w-4xl mx-auto mb-20 bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border)/0.5)] rounded-[var(--radius-card)] p-8 shadow-[var(--shadow-soft)] relative">
             <SectionTracker page="pricing" section="roi" />
             <div className="text-center mb-10">
-                <h2 className="text-2xl md:text-3xl font-bold text-[hsl(var(--ui-text))] mb-2">Descubra quanto você pode recuperar com automação</h2>
-                <p className="text-[hsl(var(--ui-text-muted))]">Simule em 15 segundos</p>
+                <h2 className="text-2xl md:text-3xl font-bold text-[hsl(var(--ui-text))] mb-2">Simulação de Eficiência Operacional</h2>
+                <p className="text-[hsl(var(--ui-text-muted))]">Estimativa baseada em volume e tempo de resposta. Resultados variam por operação.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -98,7 +98,7 @@ export function RoiCalculator() {
                 </div>
 
                 <div className="flex flex-col items-center justify-center bg-[hsl(var(--ui-surface-elevated))] rounded-[var(--radius-card)] p-8 border border-[hsl(var(--ui-border)/0.5)]">
-                    <p className="text-sm font-semibold text-[hsl(var(--ui-text-muted))] mb-4 text-center uppercase tracking-wider">Você pode recuperar até</p>
+                    <p className="text-sm font-semibold text-[hsl(var(--ui-text-muted))] mb-4 text-center uppercase tracking-wider">Potencial de Recuperação Estimado</p>
                     <div className="text-4xl lg:text-5xl font-extrabold text-[hsl(var(--ui-accent-blue))] mb-8 text-center tracking-tight">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(totalRecuperado)}
                         <span className="text-xl font-medium text-[hsl(var(--ui-text-muted))] ml-1">/mês</span>
@@ -106,18 +106,18 @@ export function RoiCalculator() {
 
                     <div className="w-full space-y-4 mb-8">
                         <div className="flex justify-between text-sm py-2 border-b border-[hsl(var(--ui-border)/0.5)]">
-                            <span className="text-[hsl(var(--ui-text-muted))]">Economia operacional:</span>
+                            <span className="text-[hsl(var(--ui-text-muted))]">Estimativa de economia:</span>
                             <span className="font-semibold text-[hsl(var(--ui-success))]">+{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(economiaOperacional)}</span>
                         </div>
                         <div className="flex justify-between text-sm py-2">
-                            <span className="text-[hsl(var(--ui-text-muted))]">Aumento de conversão:</span>
+                            <span className="text-[hsl(var(--ui-text-muted))]">Melhoria de conversão:</span>
                             <span className="font-semibold text-[hsl(var(--ui-success))]">+{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(aumentoConversao)}</span>
                         </div>
                     </div>
 
-                    <TrackedLink href="/login" passHref trackPage="pricing" trackSection="roi" trackElement="roi_primary" className="w-full mt-auto" legacyBehavior>
+                    <TrackedLink href="/piloto" passHref trackPage="pricing" trackSection="roi" trackElement="roi_primary" className="w-full mt-auto" legacyBehavior>
                         <Button variant="primary" size="lg" className="w-full shadow-[var(--shadow-soft)] font-bold text-base">
-                            Testar grátis agora
+                            Solicitar Avaliação Operacional
                         </Button>
                     </TrackedLink>
                 </div>
