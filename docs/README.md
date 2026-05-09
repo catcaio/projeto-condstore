@@ -116,10 +116,11 @@ Processo operacional para captar, qualificar, fechar e acompanhar os primeiros p
 
 ---
 
-## Operações
+## Operações (Release Pilot-Ready)
 
 | Arquivo | Descrição |
 |---|---|
+| [docs/pilot-ready-internal-checklist.md](./pilot-ready-internal-checklist.md) | **Checklist Go/No-Go Release Interna** |
 | [docs/ops/golive-scope.md](./ops/golive-scope.md) | Escopo do Lote 1 (go-live) |
 | [docs/ops/golive-flags.md](./ops/golive-flags.md) | Feature flags de go-live |
 | [docs/ops/monitoring-2h.md](./ops/monitoring-2h.md) | Checklist de monitoramento — primeiras 2h |
