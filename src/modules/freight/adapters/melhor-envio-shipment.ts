@@ -64,8 +64,8 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         throw new Error('MELHOR_ENVIO_TOKEN not configured');
     }
 
-    const fromName = process.env.MELHOR_ENVIO_FROM_NAME || 'LojaCond';
-    const fromEmail = process.env.MELHOR_ENVIO_FROM_EMAIL || 'contato@lojacond.com.br';
+    const fromName = process.env.MELHOR_ENVIO_FROM_NAME || 'CONDSTORE OS';
+    const fromEmail = process.env.MELHOR_ENVIO_FROM_EMAIL || 'contato@condstore.com.br';
     const fromPhone = process.env.MELHOR_ENVIO_FROM_PHONE || '48999999999';
     const fromDocument = process.env.MELHOR_ENVIO_FROM_DOCUMENT;
     const fromCompanyDocument = process.env.MELHOR_ENVIO_FROM_COMPANY_DOCUMENT;

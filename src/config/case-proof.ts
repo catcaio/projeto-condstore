@@ -1,5 +1,5 @@
 export const caseProofData = {
-    tenantName: 'LojaCond (Tenant Piloto)',
+    tenantName: 'CONDSTORE OS (Tenant Piloto)',
     kpis: [
         { label: 'Cotações processadas', value: '+1.2k' },
         { label: 'Tempo médio', value: '< 2s' },

@@ -196,3 +196,16 @@ id_rsa*
 .vercel
 coverage
 out
+
+# Temporary artifacts
+*-out.txt
+*-errors.txt
+typecheck_errors.txt
+ci_log.txt
+out.txt
+log.txt
+tmp_logs.txt
+vercel_logs.txt
+vercel_stream.txt
+checks.txt
+
