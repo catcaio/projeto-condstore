@@ -89,14 +89,6 @@
 | /api/cockpit/status | TBA | internal | required | cockpit | live | Returns system health status for Cockpit dashboard |
 | /api/cockpit/system-status | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cockpit/timeline | GET/POST | internal | required | cockpit | live | Added |
-| /api/cockpit/tudico/audit-response | POST | internal | requireAdmin | tudico | live | Executa auditoria epistemológica de resposta com alertas anti-confirmação |
-| /api/cockpit/tudico/claim-conflicts | GET | internal | requireAdmin | tudico | live | Lista inconsistências por claim (inconsistency board) |
-| /api/cockpit/tudico/hypotheses | GET, POST | internal | requireAdmin | tudico | live | Lista e cria versões formais de hipótese |
-| /api/cockpit/tudico/hypotheses/compare | GET | internal | requireAdmin | tudico | live | Diff estruturado entre duas versões de hipótese |
-| /api/cockpit/tudico/inconsistencies | GET, POST | internal | requireAdmin | tudico | live | Lista e abre inconsistências vinculadas a claim/paper |
-| /api/cockpit/tudico/papers | GET | internal | requireAdmin | tudico | live | Lista paper cards estruturados (com seed inicial) |
-| /api/cockpit/tudico/papers/[id] | GET | internal | requireAdmin | tudico | live | Detalha um paper card específico |
-| /api/cockpit/tudico/tools | POST | internal | requireAdmin | tudico | live | Dispatcher das tools Tudico (audit, compare, conflicts, paper cards) |
 | /api/cron/cleanup | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/db/migrate | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/debug/tenants | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -296,7 +288,6 @@
 | /cockpit/supreme/benchmarks | GET | internal | required | cockpit | live | Benchmark comparisions between tenant and anonymous segment peer percentiles |
 | /cockpit/system-status | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/timeline | GET/POST | internal | required | cockpit | live | Added |
-| /cockpit/tudico | GET | frontend | requireAdmin | tudico | live | Painel mínimo da Fase 2 com versões, diff, papers e board |
 | /como-funciona | TBA | public | none | PUBLIC | live | Added manually to fix CI |
 | /concept-layer-preview | TBA | public | none | PUBLIC | live | Auto-detected |
 | /configuracoes | GET | internal | required | configuracoes | live | Governança canônica de usuários, permissões, integrações, AI provider e auditoria |

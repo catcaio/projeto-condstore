@@ -92,7 +92,6 @@ Isolamento por tenant é implementado em múltiplas barreiras:
 | Cockpit | `src/modules/cockpit/**` | Dados agregados para painéis, alertas, filas, métricas e atalhos |
 | Frank | `src/modules/frank/**`, `src/core/ai/**` | Intent/context resolver, sugestões, tools, memória, gateway LLM e governança |
 | DOMINE | `src/modules/domine/**`, `src/domine/**` | Publicação/processamento de eventos com status, retries e DLQ |
-| Tudico (research SDD) | `src/modules/cockpit/tudico/**`, `src/app/api/cockpit/tudico/**`, `src/app/(app)/cockpit/tudico/**` | Curadoria epistemológica com hipótese versionada, paper cards, inconsistências e auditoria de resposta |
 | Billing/FinOps | `src/modules/billing/**`, `src/modules/finops/**` | Plano, Stripe webhook/service e enforcement operacional por plano |
 
 ## 6) Integrações externas reais
