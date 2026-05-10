@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { getDb } from './src/infra/db';
+import { getDb } from '../../src/infra/db';
 import { sql } from 'drizzle-orm';
 import * as fs from 'fs';
 

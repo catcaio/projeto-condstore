@@ -1,7 +1,7 @@
-import { getDb } from './src/infra/db';
-import { messages } from './src/drizzle/schema';
-import { hashPhoneForTenant } from './src/infra/pii/phone';
-import { encryptString } from './src/infra/pii/crypto';
+import { getDb } from '../../src/infra/db';
+import { messages } from '../../src/drizzle/schema';
+import { hashPhoneForTenant } from '../../src/infra/pii/phone';
+import { encryptString } from '../../src/infra/pii/crypto';
 import * as dotenv from 'dotenv';
 import { sql } from 'drizzle-orm';
 

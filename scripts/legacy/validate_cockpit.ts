@@ -1,8 +1,8 @@
-import { getDb } from './src/infra/db';
+import { getDb } from '../../src/infra/db';
 import { sql, eq, and, gte, or, like } from 'drizzle-orm';
-import { orders, operationalEvents } from './src/drizzle/schema';
-import { messageRepository } from './src/infra/repositories/message.repository';
-import { simulationRepository } from './src/infra/repositories/simulation.repository';
+import { orders, operationalEvents } from '../../src/drizzle/schema';
+import { messageRepository } from '../../src/infra/repositories/message.repository';
+import { simulationRepository } from '../../src/infra/repositories/simulation.repository';
 
 async function validateCockpitMetrics(tenantId: string) {
   console.log(`Validating cockpit metrics for tenant: ${tenantId}`);
