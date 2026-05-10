@@ -2,7 +2,7 @@ import { BookOpen, Key, Link2, Terminal } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata = {
-    title: 'Desenvolvedores | LojaCond',
+    title: 'Desenvolvedores | CONDSTORE OS',
     description: 'Integração de frete e rastreio para engenheiros de software.',
 };
 
@@ -19,7 +19,7 @@ export default function DocsPage() {
                     Integração <span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--ui-accent-blue))] to-[hsl(var(--ui-accent-blue-strong))]">Zero-Friction.</span>
                 </h1>
                 <p className="text-xl text-[hsl(var(--ui-text-muted))] font-light leading-relaxed">
-                    Nossa API foi desenhada por engenheiros, para engenheiros. Se sua stack roda na borda, no servidor ou serverless, você implementa a LojaCond em um final de semana.
+                    Nossa API foi desenhada por engenheiros, para engenheiros. Se sua stack roda na borda, no servidor ou serverless, você implementa a CONDSTORE OS em um final de semana.
                 </p>
             </div>
 

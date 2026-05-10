@@ -212,7 +212,7 @@ function SystemEmptyState({
                 </div>
                 <h3 className="text-lg font-medium text-[hsl(var(--ui-text))]">Configuracao Operacional Pendente</h3>
                 <p className="mx-auto mt-2 max-w-sm text-sm text-[hsl(var(--ui-text-muted))]">
-                    Este modulo ainda nao possui mapeamento direto para a operacao viva Lojacond.
+                    Este modulo ainda nao possui mapeamento direto para a operacao viva CONDSTORE OS.
                 </p>
                 <div className="mt-6">
                     <Link href={ctaHref}>
@@ -278,7 +278,7 @@ function ConfiguracoesFoundation() {
             <PageHeader
                 eyebrow="Configuracoes"
                 title="Workspace e Integracoes"
-                description="Controle de acesso e modulos da Lojacond."
+                description="Controle de acesso e modulos da CONDSTORE OS."
             />
             <div className="mt-8 flex h-[40vh] flex-col items-center justify-center rounded-2xl border border-dashed border-[hsl(var(--ui-border-strong))] bg-[hsl(var(--ui-page))] text-center">
                 <div className="mb-4 rounded-full bg-[hsl(var(--ui-surface))] p-4">
@@ -286,7 +286,7 @@ function ConfiguracoesFoundation() {
                 </div>
                 <h3 className="text-lg font-medium text-[hsl(var(--ui-text))]">Acesso Tecnico Requerido</h3>
                 <p className="mx-auto mt-2 max-w-sm text-sm text-[hsl(var(--ui-text-muted))]">
-                    A governanca de perfil de operador Lojacond e gerenciada externamente no momento.
+                    A governanca de perfil de operador CONDSTORE OS e gerenciada externamente no momento.
                 </p>
                 <div className="mt-6 flex justify-center gap-3">
                     <Link href="/">

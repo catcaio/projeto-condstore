@@ -24,7 +24,7 @@ export function useFrankContext(): FrankContext {
         if (path.startsWith('/cockpit')) {
             module = 'cockpit';
             moduleName = 'Visão Geral (Dashboard)';
-            readableContext = 'Você está no Dashboard principal do Cockpit Lojacond. Aqui você tem uma visão geral da operação.';
+            readableContext = 'Você está no Dashboard principal do Cockpit CONDSTORE OS. Aqui você tem uma visão geral da operação.';
         } else if (path.startsWith('/conversas')) {
             module = 'conversas';
             moduleName = 'Conversas';

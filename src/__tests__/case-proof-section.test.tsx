@@ -44,7 +44,7 @@ describe('CaseProofSection', () => {
               <p
                 className="text-[hsl(var(--ui-text-muted))] mb-12 font-medium"
               >
-                LojaCond (Tenant Piloto)
+                CONDSTORE OS (Tenant Piloto)
                  — automação de frete + WhatsApp
               </p>
               <div

@@ -1,6 +1,6 @@
-import { getDb } from './src/infra/db';
+import { getDb } from '../../src/infra/db';
 import { sql } from 'drizzle-orm';
-import { messageRepository } from './src/infra/repositories/message.repository';
+import { messageRepository } from '../../src/infra/repositories/message.repository';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });

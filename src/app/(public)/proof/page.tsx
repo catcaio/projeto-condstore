@@ -273,13 +273,13 @@ export default function ProofPage() {
                             <div>
                                 <SectionIntro
                                     eyebrow="Caso real"
-                                    title="Operação LojaCond."
+                                    title="Operação CONDSTORE OS."
                                     description="A plataforma foi construída a partir de uma operação real — não de uma hipótese de produto."
                                     align="left"
                                 />
                                 <div className="mt-2 flex flex-col gap-6">
                                     <p className="text-base text-[hsl(var(--ui-text-muted))] leading-relaxed">
-                                        A LojaCond opera como distribuidora B2B atendendo condomínios e administradoras em São Paulo.
+                                        A CONDSTORE OS opera como distribuidora B2B atendendo condomínios e administradoras em São Paulo.
                                         O fluxo cobre cotação de frete, gestão de pedidos e atendimento via WhatsApp — tudo no mesmo ambiente operacional.
                                     </p>
                                     <p className="text-base text-[hsl(var(--ui-text-muted))] leading-relaxed">

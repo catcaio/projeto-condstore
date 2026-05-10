@@ -10,25 +10,25 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
     title: {
-        template: '%s | LojaCond',
-        default: 'LojaCond - Automatize o frete da sua loja',
+        template: '%s | CONDSTORE OS',
+        default: 'CONDSTORE OS - Automatize o frete da sua loja',
     },
     description: 'Cotações inteligentes, múltiplas transportadoras e automação via WhatsApp em minutos.',
-    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://lojacond.com.br'),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://condstore.io'),
     alternates: {
         canonical: '/',
     },
     openGraph: {
-        title: 'LojaCond - Automatize o frete da sua loja',
+        title: 'CONDSTORE OS - Automatize o frete da sua loja',
         description: 'Plataforma completa de automação e gestão de fretes.',
         url: '/',
-        siteName: 'LojaCond',
+        siteName: 'CONDSTORE OS',
         locale: 'pt_BR',
         type: 'website',
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'LojaCond',
+        title: 'CONDSTORE OS',
         description: 'Cotações inteligentes, automação e logística ágil.',
     },
     icons: {

@@ -1,5 +1,0 @@
-Quality Gates	fail	1m33s	https://github.com/catcaio/projeto-condstore/actions/runs/23362285739/job/67968298888	
-Dependency Audit	pass	28s	https://github.com/catcaio/projeto-condstore/actions/runs/23362285725/job/67968298853	
-Lint & Release Check	pass	36s	https://github.com/catcaio/projeto-condstore/actions/runs/23362285725/job/67968298836	
-Vercel	pass	0	https://vercel.com/rafael-s-projects-f32fc2d1/projeto-condstore/C4VUen5G1LvyftPYajxDW12qskRx	Deployment has completed
-Vercel Preview Comments	pass	0	https://vercel.com/github	
