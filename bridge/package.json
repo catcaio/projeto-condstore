@@ -1,0 +1,18 @@
+{
+  "name": "linear-antigravity-bridge",
+  "version": "1.0.0",
+  "description": "Ponte local funcional para receber webhooks do Linear e acionar Auditoria Antigravity",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "axios": "^1.16.0",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "author": "Antigravity",
+  "license": "MIT"
+}
