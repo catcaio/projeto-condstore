@@ -7,4 +7,5 @@
 
 export { frankService } from './frank.service';
 export { ecosystemFeedService } from './services/ecosystem-feed.service';
+export { frankTokenUsageService } from './services/token-usage.service';
 export type { EcosystemFeedItem, ImpactCategory, SuggestedAction } from './services/ecosystem-feed.service';

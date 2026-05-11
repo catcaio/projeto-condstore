@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { getAIProviderWithMeta } from './llm-gateway';
 import { aiDecisionLogRepository } from '../../infra/repositories/ai-decision-log.repository';
 import { getContext, appendMessage } from '../../infra/context-cache';
-import { frankTokenUsageService } from '@/modules/frank/services/token-usage.service';
+import { frankTokenUsageService } from '@/modules/frank/server';
 import type { ContextMessage } from '../../infra/context-cache';
 
 export interface FrankRunInput {
