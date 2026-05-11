@@ -31,7 +31,6 @@ Para demos/pilotos reproduzíveis, use o runbook em [`docs/demo/demo-tenant-runb
 - **Frank agent loop (base mínima)**: camada incremental com planner/policy/tool contract (`ToolResult`), memória operacional básica e telemetria estruturada no fluxo de conversão de cotação aprovada para pedido.
 - **Frank sub-agent separation (MVP)**: planner com responsabilidade explícita por sub-agente (`ATENDIMENTO`, `CRM`, `FREIGHT`, `LOGISTICA`) e handoff rastreável em auditoria/log para reduzir acoplamento entre domínios.
 - **Eventos operacionais e DOMINE**: publicação de eventos com sanitização de PII, processamento assíncrono com DLQ e trilha de auditoria.
-- **Tudico Fase 2 (pesquisa epistemológica)**: versionamento de hipóteses, diff entre versões, paper cards, inconsistency board e auditoria epistemológica via tools dedicadas no cockpit.
 
 ## Stack real
 
