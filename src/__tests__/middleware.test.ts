@@ -29,7 +29,7 @@ describe('Middleware', () => {
     });
 
     it('allows unauthenticated access to public /t/[token] routes', async () => {
-        const req = new NextRequest('http://localhost/t/dashboard');
+        const req = new NextRequest('http://localhost/t/cockpit');
         const res = await middleware(req);
 
         expect(res.status).toBe(200);
@@ -37,16 +37,16 @@ describe('Middleware', () => {
     });
 
     it('redirects unauthenticated access to non-public nested /t/* routes to /login', async () => {
-        const req = new NextRequest('http://localhost/t/dashboard/history');
+        const req = new NextRequest('http://localhost/t/cockpit/history');
         const res = await middleware(req);
 
         expect(res.status).toBe(307);
         expect(res.headers.get('location')).toContain('/login?callbackUrl=');
-        expect(res.headers.get('location')).toContain('%2Ft%2Fdashboard%2Fhistory');
+        expect(res.headers.get('location')).toContain('%2Ft%2Fcockpit%2Fhistory');
     });
 
-    it('redirects unauthenticated access to /dashboard/ routes to /login', async () => {
-        const req = new NextRequest('http://localhost/dashboard/overview');
+    it('redirects unauthenticated access to /operacao/ routes to /login', async () => {
+        const req = new NextRequest('http://localhost/operacao/overview');
         const res = await middleware(req);
         
         expect(res.status).toBe(307);

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowUpRight, MessageSquare, PackageSearch, Truck, Users } from 'lucide-react';
 import { Button } from '@/ui/components';
 import {
+    AlertBlock,
     ContentGrid,
     EntitySummaryCard,
     EventList,
@@ -166,6 +167,14 @@ async function CockpitFoundation() {
                     </>
                 }
             />
+
+            {cockpitData.meta.source !== 'real' ? (
+                <AlertBlock
+                    tone="critical"
+                    title="Modo Fallback Ativo (Diagnostico)"
+                    description={`source=fallback | fallbackReason=${cockpitData.meta.fallbackReason ?? 'none'} | partialBlocks=[${cockpitData.meta.partialBlocks.join(', ')}]`}
+                />
+            ) : null}
 
             <ModuleNav
                 items={[

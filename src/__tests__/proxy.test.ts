@@ -162,7 +162,7 @@ describe("Global Edge Middleware Enforcement", () => {
 
     describe("RULE 2 & 3: Session Check & Tenant Authorization", () => {
         it("should block /api/cockpit/* if session is missing", async () => {
-            const req = makeRequest("/api/cockpit/dashboard", {});
+            const req = makeRequest("/api/cockpit/timeline", {});
             const res = await middleware(req);
             expect(res.status).toBe(401);
             expect(await res.json()).toEqual({ error: "Missing authentication token" });
@@ -213,7 +213,7 @@ describe("Global Edge Middleware Enforcement", () => {
 
         it("should block /api/cockpit/* if session JWT is invalid", async () => {
             (jose.jwtVerify as any).mockRejectedValue(new Error("Invalid token"));
-            const req = makeRequest("/api/cockpit/dashboard", {}, { condstore_session: "bad-token" });
+            const req = makeRequest("/api/cockpit/timeline", {}, { condstore_session: "bad-token" });
             const res = await middleware(req);
             expect(res.status).toBe(401);
         });
@@ -222,7 +222,7 @@ describe("Global Edge Middleware Enforcement", () => {
             (jose.jwtVerify as any).mockResolvedValue({
                 payload: { sub: "usr_1", tenantId: "tnt_2", role: "admin" }
             });
-            const req = makeRequest("/api/cockpit/dashboard", {}, { condstore_session: "good-token" });
+            const req = makeRequest("/api/cockpit/timeline", {}, { condstore_session: "good-token" });
 
             const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
                 const h = args?.request?.headers as Headers;

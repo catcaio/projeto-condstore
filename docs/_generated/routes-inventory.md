@@ -291,7 +291,6 @@
 | `/cotacao` | Page |
 | `/cotacao/result` | Page |
 | `/crm-whatsapp` | Page |
-| `/dashboard` | Page |
 | `/docs` | Page |
 | `/evolution` | Page |
 | `/evolution/[id]` | Page |

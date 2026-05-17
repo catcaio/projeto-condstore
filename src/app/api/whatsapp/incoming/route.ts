@@ -60,15 +60,13 @@ export async function POST(request: Request) {
         }
 
         // --- 1. Security: Twilio Signature Validation ---
-        const twilioUrl = process.env.APP_URL ? `${process.env.APP_URL}/api/whatsapp/incoming` : `https://${request.headers.get('host')}/api/whatsapp/incoming`;
-        
         const params = new URLSearchParams(rawBody);
         const payload: Record<string, string> = {};
         params.forEach((value, key) => { payload[key] = value; });
 
         structuredLogger.info('webhook_incoming_total', { eventType: 'whatsapp', requestId });
 
-        if (!verifyTwilioSignature(request, rawBody, payload, twilioUrl)) {
+        if (!verifyTwilioSignature(request, rawBody, payload)) {
              structuredLogger.warn('webhook_invalid_signature_total', { eventType: 'whatsapp', requestId, route });
              structuredLogger.warn('whatsapp_incoming_invalid_signature', { requestId, route });
              return finish(twimlEmpty(requestId));
