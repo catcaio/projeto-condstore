@@ -49,7 +49,7 @@ O Next.js App Router usa **route groups** `(nome)` para agrupar páginas sob lay
 | **Configurações** | `/configuracoes` | `modules/config` + `modules/auth` | Governança |
 | **Operação** | `/operacao` | `modules/cockpit` | Governança |
 | **Attribution** | `/attribution` | `modules/analytics` | — |
-| **Dashboard** | `/dashboard` | `modules/cockpit` (redirect to `/cockpit`) | — |
+| **Dashboard** | `/dashboard` | legado removido; usar `/cockpit` | — |
 | **Home** | `/home` | `modules/cockpit` (redirect to `/cockpit`) | — |
 | **Financeiro** | `/financeiro` | `modules/finops` | Legacy |
 | **Freight** | `/freight` | `modules/freight` | — |
@@ -91,6 +91,9 @@ O cockpit contém 37 subdiretórios incluindo áreas legacy:
 
 > [!NOTE]
 > Sub-pages marcadas como "Legacy" têm `navVisible: false` em `config/modules.ts`. Continuam acessíveis via URL direta mas não aparecem na navegação principal.
+
+> [!IMPORTANT]
+> `/cockpit` é a rota canônica do operador. `/dashboard` não deve ser usado em documentação operacional ativa.
 
 ---
 

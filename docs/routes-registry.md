@@ -296,7 +296,7 @@
 | /cotacao | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cotacao/result | TBA | public | none | PUBLIC | live | Auto-detected |
 | /crm-whatsapp | CRM e WhatsApp | public | none | PUBLIC | live | Landing page de CRM e WhatsApp |
-| /dashboard | GET | internal | required | cockpit | live | Alias legado redirecionado para o cockpit canônico |
+| /dashboard | GET | internal | required | cockpit | deprecated | Legado removido das instruções operacionais; usar /cockpit |
 | /docs | TBA | public | none | PUBLIC | live | Auto-detected |
 | /evolution | TBA | public | none | PUBLIC | live | Auto-detected |
 | /evolution/[id] | TBA | public | none | PUBLIC | live | Auto-detected |

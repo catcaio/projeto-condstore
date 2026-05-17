@@ -1,6 +1,8 @@
-# Checklist Operacional — Piloto 01 (Supervisionado)
+# Checklist Operacional — Piloto 01 (Validação Controlada Supervisionada)
 
-Este checklist detalha os passos operacionais necessários para a execução do Piloto 01 do **CONDSTORE OS**. O foco é a validação do fluxo "Happy Path" com supervisão humana direta (Human-in-the-Loop), garantindo que cada transição de estado seja validada antes de avançar.
+Este checklist detalha a validação operacional controlada do Piloto 01 do **CONDSTORE OS**. O foco é provar o fluxo "Happy Path" com supervisão humana direta (Human-in-the-Loop), garantindo que cada transição de estado seja validada antes de avançar.
+
+**Status:** validação operacional controlada concluída em tenant controlado. Este documento **não** declara piloto real de cliente concluído nem mini-case pós-piloto.
 
 ---
 
@@ -75,7 +77,7 @@ Este checklist detalha os passos operacionais necessários para a execução do 
 
 ---
 
-## EVIDÊNCIAS ESPERADAS (Placeholder para Execução)
+## Evidências capturadas
 
 *Nota: Evidências capturadas da base operacional e logs estruturados em 17/05/2026 para o tenant demo-mvp-tenant.*
 
@@ -91,7 +93,9 @@ Este checklist detalha os passos operacionais necessários para a execução do 
 
 ---
 
-## MINI-CASE: Template Before/After
+## Mini-case preliminar: before/after de validação controlada
+
+Este bloco é um modelo preliminar baseado em validação controlada. O mini-case público ou comercial só pode ser produzido após piloto real supervisionado com métricas reais do cliente.
 
 **Empresa:** Tenant Demo MVP Condstore
 **Data:** 17/05/2026

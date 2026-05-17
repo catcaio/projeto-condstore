@@ -54,6 +54,7 @@ Após o acionamento do Kill Switch:
 5. Registrar incidente no `Audit Log`.
 
 ---
-**Status**: READY_FOR_PILOT_06
-**Versão**: 1.0.0
-**Data**: 2026-05-10
+**Status**: READY_FOR_PILOT_REAL_SUPERVISIONADO
+**Escopo do status**: plano pronto para iniciar piloto real controlado. Não declara piloto real concluído.
+**Versão**: 1.1.0
+**Data**: 2026-05-17
