@@ -23,7 +23,7 @@ describe('FinOpsStatusUI', () => {
     it('renders locked state correctly with correct CTA', () => {
         const html = renderToStaticMarkup(<FinOpsStatusUI status="locked" />);
         expect(html).toContain('Hard Limit');
-        expect(html).toContain('href="/dashboard"');
+        expect(html).toContain('href="/cockpit"');
         expect(html).toContain('Regularizar agora');
     });
 

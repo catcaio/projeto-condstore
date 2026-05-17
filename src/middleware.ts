@@ -13,7 +13,7 @@ const SESSION_COOKIE_NAME = 'condstore_session';
 export const config = {
     matcher: [
         '/cockpit/:path*',
-        '/dashboard/:path*',
+
         '/operacao/:path*',
         '/conversas/:path*',
         '/clientes/:path*',
@@ -208,7 +208,7 @@ export async function middleware(req: NextRequest) {
             return unauthorizedJsonResponse('Missing authentication token');
         } else if (
             isTrackingPath ||
-            pathname.startsWith('/dashboard/') ||
+
             pathname.startsWith('/cockpit/') ||
             pathname.startsWith('/operacao/') ||
             pathname.startsWith('/inbox/') ||

@@ -38,10 +38,6 @@ export async function POST(request: NextRequest) {
         const providerStatus = payload.MessageStatus?.trim();
         const providerErrorCode = payload.ErrorCode?.trim() || null;
         const providerErrorMessage = payload.ErrorMessage?.trim() || payload.ChannelStatusMessage?.trim() || null;
-        const twilioUrl = process.env.APP_URL
-            ? `${process.env.APP_URL}/api/whatsapp/status`
-            : `https://${request.headers.get('host')}/api/whatsapp/status`;
-
         structuredLogger.info('whatsapp_status_webhook_received', {
             route: '/api/whatsapp/status',
             messageSid: messageSid ?? null,
@@ -49,7 +45,7 @@ export async function POST(request: NextRequest) {
             hasProviderError: Boolean(providerErrorCode || providerErrorMessage),
         });
 
-        if (process.env.NODE_ENV === 'production' && !verifyTwilioSignature(request, rawBody, payload, twilioUrl)) {
+        if (process.env.NODE_ENV === 'production' && !verifyTwilioSignature(request, rawBody, payload)) {
             logger.warn('twilio_status_callback_invalid_signature', { route: '/api/whatsapp/status' });
             return xmlAck(401);
         }

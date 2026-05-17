@@ -56,7 +56,6 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         summary: 'Visao executiva, alertas e pulso operacional do tenant.',
         routes: [
             { pattern: '/cockpit', title: 'Cockpit' },
-            { pattern: '/dashboard', title: 'Cockpit' },
             { pattern: '/home', title: 'Cockpit' },
         ],
     },
