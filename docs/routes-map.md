@@ -36,11 +36,11 @@ This document defines the canonical route architecture for the Condstore OS publ
 | `/settings/security` | Key management, IP whitelisting, Rate Limits | Super Admin | `securityService` |
 | `/settings/knowledge` | RAG & Vector DB collections management | Super Admin | `knowledgeService` |
 
-## 🔵 Tenant Dashboard (Future)
+## 🔵 Dashboard legado
 
 | Route | Objective | Auth | Data Source |
 |---|---|---|---|
-| `/dashboard` | Tenant-specific operational overview (Placeholder) | Tenant User | TBD |
+| `/dashboard` | Legado removido; não usar em instruções operacionais | N/A | N/A |
 
 ---
 *Note: Any routes not listed above within `/cockpit/` are considered orphans and will be redirected to their canonical counterparts.*

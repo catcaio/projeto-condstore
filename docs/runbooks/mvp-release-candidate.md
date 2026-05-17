@@ -4,7 +4,7 @@ Este documento descreve o processo de validação final para o lançamento do MV
 
 ## 1. O que é o Release Candidate Gate?
 
-É o portal de validação operacional agregada. Ele garante que Frete, WhatsApp, Stripe, Rastreamento, Interface Cockpit, E-mail e Autenticação estão operacionais, respondem nos contratos esperados e não acionam erros fatais silenciosos no runtime da Vercel.
+É o portal de validação operacional agregada. Ele verifica que Frete, WhatsApp, Stripe, Rastreamento, Interface Cockpit, E-mail e Autenticação respondem nos contratos esperados e não acionam erros fatais silenciosos no runtime da Vercel.
 
 O script principal reside em `scripts/validate-mvp-release-candidate.ts`.
 
@@ -33,7 +33,7 @@ O gate executa sequencialmente:
 
 ## 4. Critérios de Aceite
 
-O sistema é considerado `MVP_RELEASE_CANDIDATE_OK` somente se:
+O sistema é considerado tecnicamente `MVP_RELEASE_CANDIDATE_OK` somente se:
 - Todos os scripts de `readiness` passarem (exit code 0).
 - A API de login responder JSON estruturado (mesmo que erro 401/500 JSON).
 - Não houver crash de runtime (HTML 500) em rotas críticas.
@@ -47,4 +47,4 @@ Se a pipeline acusar falha na subida para PR ou na checagem local:
 2.  Não tente contornar erros de servidor mudando a stack; trate os erros e garanta retornos serializáveis em JSON para consumo adequado na UI.
 3.  Verifique se os itens manuais (SMTP, OAuth, Stripe, Twilio) foram configurados diretamente nas variáveis de ambiente da Vercel.
 
-O sistema só pode ser entregue ao Operador de fato se todas as frentes validarem com sucesso.
+O sistema só pode iniciar piloto real supervisionado se todas as frentes validarem com sucesso e se o operador humano confirmar o plano de execução, kill switch e coleta de métricas. Este gate não declara piloto real concluído nem resultado comercial validado.

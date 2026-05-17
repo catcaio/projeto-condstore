@@ -6,8 +6,8 @@
 
 | Rota Atual | Tipo | Módulo | Destino |
 |---|---|---|---|
-| `/cockpit` | page | cockpit root | `/dashboard` |
-| `/cockpit/overview` | page | dashboard | `/dashboard` |
+| `/cockpit` | page | cockpit root | canônico |
+| `/cockpit/overview` | page | legacy overview | não orientar operador; usar `/cockpit` |
 | `/cockpit/status` | page | sistema | `/sistema/health` |
 | `/cockpit/status/audit` | page | sistema | `/sistema/logs` |
 | `/cockpit/security` | page | sistema | `/sistema/security` |
@@ -16,7 +16,7 @@
 | `/cockpit/acquisition` | page | vendas | `/vendas/cotacao` |
 | `/cockpit/acquisition/activation` | page | vendas | `/vendas/cotacao/activation` (futuro) |
 | `/cockpit/acquisition/drilldown` | page | vendas | `/vendas/cotacao/drilldown` (futuro) |
-| `/cockpit/metrics` | page | dashboard | `/dashboard` (merge) |
+| `/cockpit/metrics` | page | métricas | manter como subrota de `/cockpit` |
 | `/cockpit/actions` | page | operação | `/operacao/actions` (futuro) |
 | `/cockpit/audit` | page | sistema | `/sistema/logs` (merge) |
 | `/cockpit/carrier-tables` | page | logística | `/logistica/carrier-tables` (futuro) |
@@ -68,7 +68,7 @@ As rotas a mover nesta entrega:
 | `/cockpit/freight-simulator` | `/logistica/simulador` | Sim — copiar page+client |
 | `/cockpit/shipments` | `/logistica/envios` | ✅ já existe |
 | `/cockpit/freight-insights` | `/logistica/insights` | ✅ já existe |
-| `/cockpit` (root) | `/dashboard` | Sim — criar stub/redirect |
+| `/cockpit` (root) | canônico | Não migrar para `/dashboard`; manter como rota operacional ativa |
 | `/inbox` | `/operacao/inbox` | Sim — copiar page+client |
 | `/cockpit/domine/dlq` | `/sistema/dlq` | Sim — copiar page+client |
 | `/cockpit/security` | `/sistema/security` | Sim — copiar page+client |

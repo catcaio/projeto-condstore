@@ -57,9 +57,10 @@ Este documento consolida a avaliação final para a transição do sistema para 
 
 ## Decisão Final
 
-**Status:** [X] GO  /  [ ] NO-GO  /  [ ] GO COM RESSALVAS
+**Status:** [ ] GO  /  [ ] NO-GO  /  [X] GO COM RESSALVAS
 
 **Ressalvas (se houver):**
-- _Nenhuma ressalva impeditiva identificada até o momento._
+- Vitest em modo `threads` pode apresentar instabilidade não bloqueante em Windows VM; usar `npm run test:win-stable` como trilho local estável.
+- Este checklist declara readiness para iniciar piloto real supervisionado, não piloto real concluído.
 
-**Assinatura:** Jules (Automated Validation) **Data:** 2026-05-09
+**Assinatura:** Codex Release Audit **Data:** 2026-05-17

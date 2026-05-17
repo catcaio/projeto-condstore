@@ -8,7 +8,7 @@ O repositório concentra uma aplicação Next.js (App Router) com:
 
 ## MVP CONDSTORE OS — Documentação oficial
 
-**Lote 1 (MVP) em produção.** Para definições completas do que é o MVP, o que faz, o que não faz e como funciona, consulte [Documentação do MVP](docs/mvp/README.md).
+**Lote 1 (MVP) consolidado para piloto real supervisionado.** O estado atual é técnico-operacional: o sistema está preparado para iniciar piloto controlado com operador humano, mas ainda não declara piloto real concluído nem mini-case de cliente. Para definições completas do que é o MVP, o que faz, o que não faz e como funciona, consulte [Documentação do MVP](docs/mvp/README.md).
 
 Links rápidos:
 - **[O que é o MVP?](docs/mvp/mvp-definition.md)** — Definição, ICP, proposta de valor
@@ -20,6 +20,14 @@ Links rápidos:
 > **Para qualquer pessoa revisando, implementando ou suportando CONDSTORE OS: Comece por [docs/mvp/README.md](docs/mvp/README.md)**
 
 Para demos/pilotos reproduzíveis, use o runbook em [`docs/demo/demo-tenant-runbook.md`](docs/demo/demo-tenant-runbook.md).
+
+## Estado de readiness
+
+- **MVP tecnicamente pronto:** main validada por gates de engenharia, com ressalva não bloqueante conhecida de Vitest threads em Windows VM; usar `npm run test:win-stable` como trilho local estável.
+- **Validação operacional controlada:** Piloto 01 teve happy path validado com evidências sanitizadas em tenant controlado; isso não equivale a piloto real de cliente concluído.
+- **Piloto real supervisionado:** próximo ciclo exige operador humano, kill switch operacional e registro de métricas reais.
+- **Pós-piloto / mini-case:** só pode ser declarado após conversas, cotações, aceites, pedidos, tempos e falhas reais serem consolidados.
+- **Rota canônica:** operadores devem usar `/cockpit`; `/dashboard` é legado e não deve aparecer em instruções operacionais ativas.
 
 ## Capacidades principais (implementadas no código)
 
