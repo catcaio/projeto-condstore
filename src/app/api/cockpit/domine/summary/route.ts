@@ -12,7 +12,8 @@ async function handler(request: NextRequest) {
     if (!auth.ok) return auth.response;
     const { tenantId } = auth.session;
 
-    if (!isDomineEnabled(tenantId)) {
+    const enabled = await isDomineEnabled(tenantId);
+    if (!enabled) {
         logger.warn('domine_not_enabled', { requestId, tenantId, route: '/api/cockpit/domine/summary' });
         return errorResponse(ErrorCode.FORBIDDEN, 404, requestId, "Domine not enabled for this tenant");
     }

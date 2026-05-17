@@ -6,13 +6,15 @@ import { FreightRequest, FreightOption, FreightStrategy } from './freight.types'
 import { CarrierAdapter, QuoteInput, NormalizedQuote } from '../shipping/carriers/types';
 import { ConcurrentQuoteEngine } from '../shipping/quote-engine/ConcurrentQuoteEngine';
 import { getTableAdaptersForDestination } from './table-driven-adapter';
+import { loadOperationalSettings } from '../../core/freight/operational-settings';
+import { BusinessError, ErrorCode } from '../../infra/errors';
 
 export class MelhorEnvioAdapter implements CarrierAdapter {
     id = 'melhorenvio';
     name = 'Melhor Envio';
     private tenantId: string;
 
-    constructor(tenantId: string = 'LOJACOND') {
+    constructor(tenantId: string) {
         this.tenantId = tenantId;
     }
 
@@ -83,6 +85,10 @@ export class UnifiedQuoteEngine {
     }
 
     async getQuotes(request: FreightRequest): Promise<FreightOption[]> {
+        if (!request.tenantId || typeof request.tenantId !== 'string' || request.tenantId.trim() === '') {
+            throw new BusinessError(ErrorCode.VALIDATION_ERROR, 'tenantId is required and must be a valid string');
+        }
+
         const unitWeight = request.unitWeight || appConfig.freight.defaultUnitWeight;
         const totalWeight = unitWeight * request.quantity;
 
@@ -93,9 +99,11 @@ export class UnifiedQuoteEngine {
             request.dimensions?.length ?? 0,
         );
 
+        const settings = await loadOperationalSettings(request.tenantId);
+
         const routingResult = selectCarrierStrategy({
-            tenantId: request.tenantId || 'LOJACOND',
-            originCep: '88131640', // default, overridden by operational settings upstream
+            tenantId: request.tenantId,
+            originCep: settings.defaultOriginCep,
             destinationCep: request.destinationCep || request.cepDestino || '',
             totalWeight,
             cubedWeight: totalWeight, // simplified — real cubed weight calculated downstream
@@ -114,11 +122,11 @@ export class UnifiedQuoteEngine {
 
         // Route based on carrier router strategy
         if (routingResult.strategy === 'melhor_envio' || strategy === FreightStrategy.MELHORENVIO_ONLY || strategy === FreightStrategy.BOTH) {
-            adapters.push(new MelhorEnvioAdapter(request.tenantId || 'LOJACOND'));
+            adapters.push(new MelhorEnvioAdapter(request.tenantId));
         }
 
         // Table-driven carriers: ALWAYS try DB-backed adapters as complement
-        const tenantId = request.tenantId || 'LOJACOND';
+        const tenantId = request.tenantId;
         try {
             const tableAdapters = await getTableAdaptersForDestination(tenantId, request.destinationCep);
             if (tableAdapters.length > 0) {
@@ -143,7 +151,7 @@ export class UnifiedQuoteEngine {
         }
 
         const quoteInput: QuoteInput = {
-            originCep: '', // Not used by the downstream adapters in this context
+            originCep: settings.defaultOriginCep,
             destinationCep: request.destinationCep,
             weightInKg: totalWeight,
             widthCm: request.dimensions?.width,
@@ -153,7 +161,7 @@ export class UnifiedQuoteEngine {
         };
 
         const result = await ConcurrentQuoteEngine.run({
-            tenantId: request.tenantId || 'system',
+            tenantId: request.tenantId,
             intentId: request.requestId || 'unknown',
             input: quoteInput,
             adapters,

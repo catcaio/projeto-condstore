@@ -36,7 +36,8 @@ export class DomineIntakeService {
         const { tenantId, type, source, payload, idempotencyKey } = parsed.data;
 
         // ── 2. LOJACOND guard ────────────────────────────────────────────
-        if (!isDomineEnabled(tenantId)) {
+        const domineEnabled = await isDomineEnabled(tenantId);
+        if (!domineEnabled) {
             structuredLogger.warn('domine_intake_rejected', {
                 tenantId,
                 reason: 'tenant_not_enabled',

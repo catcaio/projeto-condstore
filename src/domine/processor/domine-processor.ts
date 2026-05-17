@@ -82,7 +82,8 @@ export async function loop(
     max: number = 50,
     maxDurationMs: number = 25_000,
 ): Promise<ProcessorStats> {
-    if (!isDomineEnabled(tenantId)) {
+    const enabled = await isDomineEnabled(tenantId);
+    if (!enabled) {
         throw new Error(`Domine is not enabled for tenant ${tenantId}`);
     }
 
