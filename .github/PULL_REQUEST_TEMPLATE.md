@@ -1,17 +1,44 @@
-## Description
+## Tipo de mudança
 
-<!-- Briefly describe the change. -->
+- [ ] feat — nova feature de produto (MVP Core)
+- [ ] fix — correção de bug
+- [ ] chore — infraestrutura, CI, governança (sem impacto em runtime)
+- [ ] docs — apenas documentação
+- [ ] refactor — refatoração sem mudança de comportamento
+- [ ] test — apenas testes
+- [ ] hotfix — correção crítica em produção
+
+## Escopo Real
+
+<!-- Descreva APENAS o que o diff realmente altera. Não inclua claims de mudanças que não estão no diff. -->
+
+**O que muda:**
+
+**O que NÃO muda:**
+
+**Superfícies tocadas:** (runtime / docs / ci / governance / frozen — se frozen, justificar)
+
+## Motivação / Contexto
+
+<!-- Por que essa mudança é necessária? Qual problema resolve? -->
 
 ## Checklist
 
-- [ ] All local gates pass (`tools/gates/gates.ps1` or `tools/gates/gates.sh`)
-- [ ] New routes are registered in `docs/routes-registry.md`
-- [ ] `docs/surface-map.md` is updated if surface classification changed
-- [ ] No auth changes were made without corresponding tests
-- [ ] No secrets are hardcoded in code, YAML, or logs
-- [ ] PII is not exposed in logs, events, or public API responses
-- [ ] `npm run routes:verify` passes
+- [ ] Gates locais passando (`npm run typecheck`, `npm run lint`, `npm run test:ci`)
+- [ ] Diff revisado: sem overclaim, sem arquivos não relacionados
+- [ ] Se runtime: `npm run routes:verify-security` passou
+- [ ] Se superfície de produto: `npm run guardrail:mvp-freeze` passou
+- [ ] Sem secrets hardcoded em código, YAML ou logs
+- [ ] PII não exposta em logs, eventos ou respostas de API públicas
+- [ ] Auth, tenant isolation e guards preservados (ou impacto explicitado abaixo)
+- [ ] Testes adicionados/atualizados se comportamento mudou
+- [ ] CODEOWNERS revisado se paths protegidos foram alterados
 
-## Related Issues / PRs
+## Issues fechadas
 
-<!-- Link related issues or PRs here. -->
+<!-- Closes #NNN -->
+
+## Evidência / Resultado dos Gates
+
+<!-- Cole saída dos gates críticos ou link para CI run -->
+

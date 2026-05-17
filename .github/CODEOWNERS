@@ -1,19 +1,54 @@
 # CONDSTORE OS — Code Ownership Rules
-# Changes to these paths require explicit review.
+# Changes to these paths require explicit review from the listed owner(s).
 
-# Security & Auth
+# ─────────────────────────────────────────────
+# Security, Auth & Tenant Isolation
+# ─────────────────────────────────────────────
 src/proxy.ts                          @catcaio
 src/infra/auth/                       @catcaio
 src/infra/security/                   @catcaio
+src/middleware.ts                     @catcaio
 
+# ─────────────────────────────────────────────
 # Internal API Surface (Zero-Trust boundary)
+# ─────────────────────────────────────────────
 src/app/api/internal/                 @catcaio
+src/app/api/whatsapp/                 @catcaio
 
+# ─────────────────────────────────────────────
 # CI/CD & Scripts
+# ─────────────────────────────────────────────
 scripts/                              @catcaio
 .github/workflows/                    @catcaio
+tools/gates/                          @catcaio
 
-# Governance Docs
+# ─────────────────────────────────────────────
+# Repository Governance
+# ─────────────────────────────────────────────
+.github/CODEOWNERS                    @catcaio
+.github/PULL_REQUEST_TEMPLATE.md      @catcaio
+.github/instructions/                 @catcaio
+AGENTS.md                             @catcaio
+CLAUDE.md                             @catcaio
+
+# ─────────────────────────────────────────────
+# Agent Rules & Workflows
+# ─────────────────────────────────────────────
+.agents/rules/                        @catcaio
+.agents/workflows/                    @catcaio
+
+# ─────────────────────────────────────────────
+# Governance & Architecture Docs
+# ─────────────────────────────────────────────
+docs/governance/                      @catcaio
 docs/surface-map.md                   @catcaio
 docs/routes-registry.md               @catcaio
 docs/routes-map.md                    @catcaio
+docs/mvp-freeze-plan.md               @catcaio
+docs/pr-test-scope.md                 @catcaio
+
+# ─────────────────────────────────────────────
+# Core Config
+# ─────────────────────────────────────────────
+vitest.config.mjs                     @catcaio
+next.config.ts                        @catcaio
