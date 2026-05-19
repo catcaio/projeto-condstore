@@ -13,14 +13,17 @@ export class MelhorEnvioAdapter implements CarrierAdapter {
     id = 'melhorenvio';
     name = 'Melhor Envio';
     private tenantId: string;
+    private originCep: string;
 
-    constructor(tenantId: string) {
+    constructor(tenantId: string, originCep: string) {
         this.tenantId = tenantId;
+        this.originCep = originCep;
     }
 
     async getQuotes(input: QuoteInput): Promise<NormalizedQuote[]> {
         const meQuotes = await melhorEnvioProvider.calculateShipping({
             tenantId: this.tenantId,
+            originCep: this.originCep,
             destinationCep: input.destinationCep,
             totalWeight: input.weightInKg,
             quantity: 1,
@@ -129,7 +132,7 @@ export class UnifiedQuoteEngine {
 
         // Route based on carrier router strategy
         if (routingResult.strategy === 'melhor_envio' || strategy === FreightStrategy.MELHORENVIO_ONLY || strategy === FreightStrategy.BOTH) {
-            adapters.push(new MelhorEnvioAdapter(request.tenantId));
+            adapters.push(new MelhorEnvioAdapter(request.tenantId, originCep));
         }
 
         // Table-driven carriers: ALWAYS try DB-backed adapters as complement

@@ -3,7 +3,6 @@
  * Handles all Melhor Envio API interactions with retry logic and error handling.
  */
 
-import { appConfig } from '../config/app.config';
 import { melhorEnvioConfig, melhorEnvioEndpoints } from '../config/melhorenvio.config';
 import { ErrorCode, ProviderError } from '../infra/errors';
 import { logger } from '../infra/logger';
@@ -12,6 +11,7 @@ import { structuredLogger } from '../infra/log/logger';
 
 export interface ShippingQuoteRequest {
   tenantId: string;
+  originCep: string;
   destinationCep: string;
   totalWeight: number; // kg
   quantity: number;
@@ -92,6 +92,16 @@ class MelhorEnvioProvider {
    * Build API payload from request.
    */
   private buildPayload(request: ShippingQuoteRequest): object {
+    const originCep = request.originCep.trim();
+    if (!originCep) {
+      throw new ProviderError(
+        ErrorCode.VALIDATION_ERROR,
+        `originCep is required for tenant ${request.tenantId}`,
+        { tenantId: request.tenantId },
+        false
+      );
+    }
+
     const dimensions = request.dimensions || {
       width: 11,
       height: 11,
@@ -100,7 +110,7 @@ class MelhorEnvioProvider {
 
     return {
       from: {
-        postal_code: appConfig.freight.originCep,
+        postal_code: originCep,
       },
       to: {
         postal_code: request.destinationCep,

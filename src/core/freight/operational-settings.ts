@@ -7,7 +7,6 @@
  * Cache: 60s TTL per tenant. Invalidated by invalidateSettingsCache().
  */
 
-import { appConfig } from '../../config/app.config';
 import { getDb } from '../../infra/db';
 import { freightOperationalSettings } from '../../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
@@ -25,7 +24,8 @@ export const DEFAULTS = {
     absorb_weight_only: true,
 
     // Simulator
-    default_origin_cep: appConfig.freight.originCep,
+    // Tenant origin must come from tenant-scoped settings, never from a silent global fallback.
+    default_origin_cep: '',
     default_cubage_factor: 300,
     default_unit_weight_kg: 0.3,
 
