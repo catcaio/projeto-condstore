@@ -73,7 +73,7 @@ export async function processOnce(tenantId: string): Promise<'completed' | 'fail
 /**
  * Pull-based processing loop.
  *
- * @param tenantId  - must be LOJACOND for now
+ * @param tenantId  - tenant to process when DOMINE is enabled
  * @param max       - max events to process in this invocation (default 50)
  * @param maxDurationMs - max wall-clock time for the loop (default 25s)
  */

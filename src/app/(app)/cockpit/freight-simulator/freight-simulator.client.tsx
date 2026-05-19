@@ -185,7 +185,6 @@ export function FreightSimulatorClient() {
                         width: volumes[0]?.width || 11,
                         height: volumes[0]?.height || 2,
                     },
-                    originCep: '88131640', // Base CondStore Origin
                     recipient: {
                         name: 'Cliente Final',
                         phone: '48999999999',

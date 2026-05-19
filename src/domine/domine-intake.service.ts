@@ -21,7 +21,7 @@ export interface IntakeResult {
 /**
  * Unified Domine Intake Service.
  *
- * Validates input, enforces tenant guard (LOJACOND only for v1),
+ * Validates input, enforces tenant enablement via configuration,
  * persists event via the events repository, and logs without PII.
  */
 export class DomineIntakeService {
@@ -35,7 +35,7 @@ export class DomineIntakeService {
 
         const { tenantId, type, source, payload, idempotencyKey } = parsed.data;
 
-        // ── 2. LOJACOND guard ────────────────────────────────────────────
+        // ── 2. Tenant enablement guard ───────────────────────────────────
         const domineEnabled = await isDomineEnabled(tenantId);
         if (!domineEnabled) {
             structuredLogger.warn('domine_intake_rejected', {

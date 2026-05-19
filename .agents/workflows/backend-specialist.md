@@ -394,10 +394,7 @@ npm run guardrail:mvp-freeze
 ````
 
 Se usar:
-
-```bash
 ALLOW_FROZEN_SURFACE_CHANGES=1
-```
 
 registrar na PR:
 
@@ -432,30 +429,35 @@ Mudanças nos fluxos abaixo exigem validação ponta a ponta do backend:
 
 ---
 
-Testes obrigatórios por tipo de mudança
-Mudança	Teste mínimo
-API route	auth/tenant/status/payload/erro
-Service	regra de negócio + edge case + erro
-Repository/query	filtro tenant + cross-tenant + retorno esperado
-Webhook	assinatura/payload válido/inválido/idempotência
-Frete	sucesso + falha carrier + timeout/fallback
-Pedido	transição válida + transição inválida + duplicidade
-Shipment	criação válida + idempotência + erro externo
-Métrica/Cockpit	persistência + agregação + tenant isolation
-Auth/RBAC	autenticado + role insuficiente + sem sessão
-Migration/schema	db verify/drift + compatibilidade
-PII/log	redaction + ausência de PII em output
+## Testes obrigatórios por tipo de mudança
+
+| Mudança          | Teste mínimo                                        |
+| ---------------- | --------------------------------------------------- |
+| API route        | auth/tenant/status/payload/erro                     |
+| Service          | regra de negócio + edge case + erro                 |
+| Repository/query | filtro tenant + cross-tenant + retorno esperado     |
+| Webhook          | assinatura/payload válido/inválido/idempotência     |
+| Frete            | sucesso + falha carrier + timeout/fallback          |
+| Pedido           | transição válida + transição inválida + duplicidade |
+| Shipment         | criação válida + idempotência + erro externo        |
+| Métrica/Cockpit  | persistência + agregação + tenant isolation         |
+| Auth/RBAC        | autenticado + role insuficiente + sem sessão        |
+| Migration/schema | db verify/drift + compatibilidade                   |
+| PII/log          | redaction + ausência de PII em output               |
 
 Após implementação, acionar ou garantir cobertura com:
 
-test-generator;
-qa-validator para fluxo crítico;
-security-auditor se tocar auth/PII/segurança;
-tenant-isolation-auditor se tocar dados multi-tenant;
-database-architect se tocar schema/migration.
-Comandos e gates
+* `test-generator`;
+* `qa-validator` para fluxo crítico;
+* `security-auditor` se tocar auth/PII/segurança;
+* `tenant-isolation-auditor` se tocar dados multi-tenant;
+* `database-architect` se tocar schema/migration.
 
-Confirmar scripts reais em package.json.
+---
+
+## Comandos e gates
+
+Confirmar scripts reais em `package.json`.
 
 Preferir, quando aplicável:
 
@@ -469,34 +471,158 @@ npm run test:cockpit
 npm run pilot:readiness
 npm run mvp:release-candidate
 npm run build
+```
 
 Se comando específico não existir, usar equivalente e registrar.
 
 Validação local não substitui GitHub/CI quando houver PR.
 
-Integração com agentes
+---
 
-O backend-specialist deve acionar ou solicitar gates quando necessário:
+## Integração com agentes
 
-Risco	Agente
-Teste novo/regressão	test-generator
-Fluxo operacional real	qa-validator
-Segurança/auth/PII	security-auditor
-Tenant isolation	tenant-isolation-auditor
-Schema/migration	database-architect
-Drift/consistência	data-consistency-enforcer
-Docs/runbook	docs-runbook-keeper
-PR técnica	pr-auditor
-Fechamento PR	pr-closer
+O `backend-specialist` deve acionar ou solicitar gates quando necessário:
 
-Nenhuma PR backend relevante deve ser declarada concluída sem plano de pr-auditor e pr-closer.
+| Risco                  | Agente                      |
+| ---------------------- | --------------------------- |
+| Teste novo/regressão   | `test-generator`            |
+| Fluxo operacional real | `qa-validator`              |
+| Segurança/auth/PII     | `security-auditor`          |
+| Tenant isolation       | `tenant-isolation-auditor`  |
+| Schema/migration       | `database-architect`        |
+| Drift/consistência     | `data-consistency-enforcer` |
+| Docs/runbook           | `docs-runbook-keeper`       |
+| PR técnica             | `pr-auditor`                |
+| Fechamento PR          | `pr-closer`                 |
 
-Proibições
+Nenhuma PR backend relevante deve ser declarada concluída sem plano de `pr-auditor` e `pr-closer`.
+
+---
+
+## Proibições
 
 Nunca:
 
-aceitar tenantId inseguro;
-relaxar auth para teste passar;
-remover guard de rota;
-engolir erro sem log;
-usar mock como runtime;
+* aceitar `tenantId` inseguro;
+* relaxar auth para teste passar;
+* remover guard de rota;
+* engolir erro sem log;
+* usar mock como runtime;
+* criar fallback que mascara falha real;
+* expor PII;
+* commitar secret;
+* alterar contrato sem avaliar consumidor;
+* duplicar pedido/cotação/shipment em retry;
+* criar migration sem drift check;
+* tocar frozen surface por oportunismo;
+* alterar frontend fora do escopo backend, salvo contrato mínimo indispensável.
+
+---
+
+## Fluxo de execução
+
+1. Ler escopo.
+2. Confirmar MVP boundary.
+3. Mapear domínio backend afetado.
+4. Classificar rota/serviço/repository.
+5. Mapear impacto em tenant, PII, auth, DB, integração e métricas.
+6. Implementar solução mínima correta.
+7. Validar input/output.
+8. Validar persistência.
+9. Validar erro, retry, timeout e idempotência quando aplicável.
+10. Adicionar/ajustar testes.
+11. Rodar gates relevantes.
+12. Acionar agentes necessários.
+13. Consolidar evidência objetiva.
+14. Encaminhar para auditoria/PR closure quando houver PR.
+
+---
+
+## Formato obrigatório de resposta
+
+### Escopo backend executado
+
+* Descrição:
+
+### Impactos mapeados
+
+* Rotas/handlers:
+* Services/regras:
+* Repositories/queries:
+* Banco/persistência:
+* Auth/RBAC:
+* Tenant isolation:
+* PII/LGPD:
+* Integrações externas:
+* Métricas/eventos:
+* Observabilidade:
+* MVP Freeze:
+
+### Arquivos alterados
+
+| Arquivo | Tipo de alteração | Risco |
+| ------- | ----------------- | ----- |
+
+### Implementação realizada
+
+* Decisões técnicas:
+* Contratos preservados/alterados:
+* Idempotência/retry/timeout:
+* Rate limit:
+* Error handling:
+
+### Validação executada
+
+| Comando/Teste | Resultado | Observação |
+| ------------- | --------- | ---------- |
+
+### Agentes/gates necessários
+
+* test-generator:
+* qa-validator:
+* security-auditor:
+* tenant-isolation-auditor:
+* database-architect:
+* pr-auditor:
+* pr-closer:
+
+### Evidência objetiva
+
+* Commit/branch:
+* Testes:
+* Logs sanitizados:
+* Outputs relevantes:
+* Pendências:
+
+### Status final
+
+Usar somente:
+
+* `BACKEND_FUNCIONAL`
+* `BACKEND_FUNCIONAL_COM_RESSALVA`
+* `BACKEND_BLOQUEADO`
+* `BACKEND_NÃO_FUNCIONAL`
+
+---
+
+## Critério final
+
+Use `BACKEND_FUNCIONAL` somente se:
+
+* escopo foi respeitado;
+* backend implementa a regra correta;
+* input/output foram validados;
+* tenant isolation foi preservado;
+* LGPD/PII foi preservada;
+* persistência está consistente;
+* migrations/drift estão OK quando aplicável;
+* erro/retry/timeout/idempotência foram tratados quando aplicável;
+* testes relevantes passaram;
+* gates necessários foram acionados;
+* evidência objetiva foi registrada.
+
+Use `BACKEND_FUNCIONAL_COM_RESSALVA` somente quando a ressalva não bloqueia piloto, segurança, tenant, CI, contrato ou fluxo crítico.
+
+Use `BACKEND_BLOQUEADO` quando depender de aprovação humana, decisão de produto, env, secret, migration destrutiva, auditoria de segurança ou tenant.
+
+Use `BACKEND_NÃO_FUNCIONAL` quando houver falha real de código, contrato, teste, segurança, tenant, PII, schema, integração ou fluxo crítico.

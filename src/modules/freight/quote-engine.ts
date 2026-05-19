@@ -100,10 +100,17 @@ export class UnifiedQuoteEngine {
         );
 
         const settings = await loadOperationalSettings(request.tenantId);
+        const originCep = settings.defaultOriginCep?.trim();
+        if (!originCep) {
+            throw new BusinessError(
+                ErrorCode.VALIDATION_ERROR,
+                `originCep is required for tenant ${request.tenantId}`,
+            );
+        }
 
         const routingResult = selectCarrierStrategy({
             tenantId: request.tenantId,
-            originCep: settings.defaultOriginCep,
+            originCep,
             destinationCep: request.destinationCep || request.cepDestino || '',
             totalWeight,
             cubedWeight: totalWeight, // simplified — real cubed weight calculated downstream
@@ -151,7 +158,7 @@ export class UnifiedQuoteEngine {
         }
 
         const quoteInput: QuoteInput = {
-            originCep: settings.defaultOriginCep,
+            originCep,
             destinationCep: request.destinationCep,
             weightInKg: totalWeight,
             widthCm: request.dimensions?.width,

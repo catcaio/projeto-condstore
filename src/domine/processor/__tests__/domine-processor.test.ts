@@ -5,6 +5,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 let _events: any[] = [];
 let _dlqEntries: any[] = [];
 let _lockCallCount = 0;
+const TEST_TENANT = 'TEST_TENANT';
+
+vi.mock('../../tenant', () => ({
+    isDomineEnabled: vi.fn(async (tenantId: string) => tenantId === TEST_TENANT),
+}));
 
 function resetState() {
     _events = [];
@@ -78,22 +83,22 @@ describe('DomineProcessor - processOnce', () => {
     beforeEach(() => resetState());
 
     it('returns empty when no events are available', async () => {
-        const result = await processOnce('LOJACOND');
+        const result = await processOnce(TEST_TENANT);
         expect(result).toBe('empty');
     });
 
     it('processes a queued event and marks it complete', async () => {
-        _events.push({ id: 'evt-1', tenantId: 'LOJACOND', type: 'FINOPS_EVENT', source: 'cockpit', status: 'queued', payloadJson: {} });
+        _events.push({ id: 'evt-1', tenantId: TEST_TENANT, type: 'FINOPS_EVENT', source: 'cockpit', status: 'queued', payloadJson: {} });
 
-        const result = await processOnce('LOJACOND');
+        const result = await processOnce(TEST_TENANT);
         expect(result).toBe('completed');
         expect(_events[0].status).toBe('completed');
     });
 
     it('marks event as failed when handler returns failure', async () => {
-        _events.push({ id: 'evt-2', tenantId: 'LOJACOND', type: 'TEST', source: 'cockpit', status: 'queued', payloadJson: { shouldFail: true }, retryCount: 0 });
+        _events.push({ id: 'evt-2', tenantId: TEST_TENANT, type: 'TEST', source: 'cockpit', status: 'queued', payloadJson: { shouldFail: true }, retryCount: 0 });
 
-        const result = await processOnce('LOJACOND');
+        const result = await processOnce(TEST_TENANT);
         expect(result).toBe('failed');
         expect(_events[0].status).toBe('failed');
     });
@@ -104,26 +109,26 @@ describe('DomineProcessor - loop', () => {
 
     it('processes multiple events in a single loop', async () => {
         _events.push(
-            { id: 'e1', tenantId: 'LOJACOND', type: 'A', source: 'cockpit', status: 'queued', payloadJson: {} },
-            { id: 'e2', tenantId: 'LOJACOND', type: 'B', source: 'cockpit', status: 'queued', payloadJson: {} },
-            { id: 'e3', tenantId: 'LOJACOND', type: 'C', source: 'cockpit', status: 'queued', payloadJson: {} },
+            { id: 'e1', tenantId: TEST_TENANT, type: 'A', source: 'cockpit', status: 'queued', payloadJson: {} },
+            { id: 'e2', tenantId: TEST_TENANT, type: 'B', source: 'cockpit', status: 'queued', payloadJson: {} },
+            { id: 'e3', tenantId: TEST_TENANT, type: 'C', source: 'cockpit', status: 'queued', payloadJson: {} },
         );
 
-        const stats = await loop('LOJACOND', 10, 10_000);
+        const stats = await loop(TEST_TENANT, 10, 10_000);
         expect(stats.processed).toBe(3);
         expect(stats.iterations).toBeGreaterThanOrEqual(3);
     });
 
-    it('rejects non-LOJACOND tenant', async () => {
+    it('rejects tenants without domine enabled', async () => {
         await expect(loop('OTHER', 10, 10_000)).rejects.toThrow('not enabled');
     });
 
     it('respects max event limit', async () => {
         for (let i = 0; i < 10; i++) {
-            _events.push({ id: `e${i}`, tenantId: 'LOJACOND', type: 'A', source: 'cockpit', status: 'queued', payloadJson: {} });
+            _events.push({ id: `e${i}`, tenantId: TEST_TENANT, type: 'A', source: 'cockpit', status: 'queued', payloadJson: {} });
         }
 
-        const stats = await loop('LOJACOND', 3, 10_000);
+        const stats = await loop(TEST_TENANT, 3, 10_000);
         expect(stats.processed).toBe(3);
     });
 });
@@ -132,12 +137,12 @@ describe('DomineProcessor - lock concurrency', () => {
     beforeEach(() => resetState());
 
     it('two concurrent processOnce calls do not process the same event twice', async () => {
-        _events.push({ id: 'evt-shared', tenantId: 'LOJACOND', type: 'X', source: 'cockpit', status: 'queued', payloadJson: {} });
+        _events.push({ id: 'evt-shared', tenantId: TEST_TENANT, type: 'X', source: 'cockpit', status: 'queued', payloadJson: {} });
 
         // Simulate two concurrent calls
         const [r1, r2] = await Promise.all([
-            processOnce('LOJACOND'),
-            processOnce('LOJACOND'),
+            processOnce(TEST_TENANT),
+            processOnce(TEST_TENANT),
         ]);
 
         // One should complete, the other should find empty (already locked)
@@ -153,7 +158,7 @@ describe('DomineProcessor - reaper', () => {
     it('recovers stale processing events via reaper in loop', async () => {
         _events.push({
             id: 'stale-1',
-            tenantId: 'LOJACOND',
+            tenantId: TEST_TENANT,
             type: 'A',
             source: 'cockpit',
             status: 'processing',
@@ -162,10 +167,10 @@ describe('DomineProcessor - reaper', () => {
         });
 
         // After reap, this should become 'failed' and then be picked up
-        const stats = await loop('LOJACOND', 10, 10_000);
+        const stats = await loop(TEST_TENANT, 10, 10_000);
         // Reaper should have been called
         const { domineEventsRepository: repo } = await import('@/infra/repositories/domine-events.repository');
-        expect(vi.mocked(repo.reapStaleProcessing)).toHaveBeenCalledWith('LOJACOND', 5);
+        expect(vi.mocked(repo.reapStaleProcessing)).toHaveBeenCalledWith(TEST_TENANT, 5);
     });
 });
 
@@ -175,7 +180,7 @@ describe('DomineProcessor - backoff + DLQ', () => {
     it('moves event to DLQ after max retries', async () => {
         _events.push({
             id: 'fail-loop',
-            tenantId: 'LOJACOND',
+            tenantId: TEST_TENANT,
             type: 'FAIL',
             source: 'cockpit',
             status: 'queued',
@@ -183,7 +188,7 @@ describe('DomineProcessor - backoff + DLQ', () => {
             retryCount: 3, // will become 4 → DLQ
         });
 
-        await processOnce('LOJACOND');
+        await processOnce(TEST_TENANT);
         expect(_events[0].status).toBe('dead_letter');
         expect(_dlqEntries.length).toBe(1);
     });
