@@ -14,7 +14,7 @@ vi.mock('@/infra/auth/guards', () => ({
 }));
 
 vi.mock('../domine/tenant', () => ({
-  isDomineEnabled: vi.fn().mockReturnValue(false),
+  isDomineEnabled: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock('@/infra/logger', () => ({

@@ -5,7 +5,7 @@ describe("Domine Models", () => {
     it("should validate a correct Order", () => {
         const validOrder = {
             id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-            tenantId: "LOJACOND",
+            tenantId: "TEST_TENANT",
             customerId: "c47ac10b-58cc-4372-a567-0e02b2c3d471".replace('c', 'e'),
             items: [
                 {
@@ -31,7 +31,7 @@ describe("Domine Models", () => {
     it("should reject an invalid Order with missing fields", () => {
         const invalidOrder = {
             id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-            tenantId: "LOJACOND",
+            tenantId: "TEST_TENANT",
             // missing customerId
             items: [],
             totalAmount: 100.0,

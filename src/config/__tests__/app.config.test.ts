@@ -12,6 +12,13 @@ describe('app.config', () => {
         process.env = originalEnv;
     });
 
+    it('does not inject 01001000 when ORIGIN_CEP is not set', async () => {
+        delete process.env.ORIGIN_CEP;
+        const configModule = await import('../app.config');
+
+        expect(configModule.appConfig.freight.originCep).toBe('');
+    });
+
     it('throws error when runtimeMode is not SUPERVISED_ONLY', async () => {
         process.env.ORIGIN_CEP = '01001000';
         process.env.MELHORENVIO_TOKEN = 'token';

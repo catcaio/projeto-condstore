@@ -3,7 +3,7 @@ import { Order, InventorySnapshot, Shipment } from "../../models";
 export const mockOrdersFixtures: Order[] = [
     {
         id: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-        tenantId: "LOJACOND",
+        tenantId: "TEST_TENANT",
         customerId: "e47ac10b-58cc-4372-a567-0e02b2c3d471",
         items: [
             {
@@ -23,7 +23,7 @@ export const mockOrdersFixtures: Order[] = [
 export const mockInventoryFixtures: InventorySnapshot[] = [
     {
         id: "e47ac10b-58cc-4372-a567-0e02b2c3d474",
-        tenantId: "LOJACOND",
+        tenantId: "TEST_TENANT",
         productId: "e47ac10b-58cc-4372-a567-0e02b2c3d473",
         quantityAvailable: 150,
         quantityReserved: 10,
@@ -34,7 +34,7 @@ export const mockInventoryFixtures: InventorySnapshot[] = [
 export const mockShipmentFixtures: Shipment[] = [
     {
         id: "e47ac10b-58cc-4372-a567-0e02b2c3d475",
-        tenantId: "LOJACOND",
+        tenantId: "TEST_TENANT",
         orderId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         carrier: "Correios",
         trackingCode: "BR123456789XP",

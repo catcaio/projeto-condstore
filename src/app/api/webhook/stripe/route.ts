@@ -48,6 +48,64 @@ import { verifyStripeSignature } from '../../../../lib/security/webhook-verifier
 import { registerWebhookEvent } from '../../../../lib/security/webhook-dedupe';
 import { withDistributedLock } from '../../../../lib/infra/locks';
 
+async function resolveTenantId(event: any): Promise<string | null> {
+    if (!event || !event.data || !event.data.object) return null;
+    const obj = event.data.object as Record<string, any>;
+
+    // 1. Try checkout metadata or client_reference_id
+    const tenantId = obj.metadata?.tenantId ?? obj.client_reference_id ?? null;
+    if (tenantId && typeof tenantId === 'string' && tenantId.trim() !== '') {
+        return tenantId;
+    }
+
+    // 2. Try to get Stripe subscription ID or customer ID
+    const stripeSubscriptionId: string | null =
+        (typeof obj.subscription === 'string' ? obj.subscription : null) ??
+        (typeof obj.subscription?.id === 'string' ? obj.subscription.id : null) ??
+        (event.type.startsWith('customer.subscription.') && typeof obj.id === 'string' ? obj.id : null) ??
+        (typeof obj.parent?.subscription_details?.subscription === 'string' ? obj.parent.subscription_details.subscription : null);
+
+    const stripeCustomerId: string | null =
+        (typeof obj.customer === 'string' ? obj.customer : null) ??
+        (typeof obj.customer?.id === 'string' ? obj.customer.id : null);
+
+    if (stripeSubscriptionId || stripeCustomerId) {
+        try {
+            const { getDb } = await import('../../../../infra/db');
+            const { tenantSubscriptions } = await import('../../../../drizzle/schema');
+            const { eq } = await import('drizzle-orm');
+
+            const db = await getDb();
+            if (stripeSubscriptionId) {
+                const rows = await db
+                    .select()
+                    .from(tenantSubscriptions)
+                    .where(eq(tenantSubscriptions.stripeSubscriptionId, stripeSubscriptionId));
+                if (rows[0]?.tenantId) {
+                    return rows[0].tenantId;
+                }
+            }
+            if (stripeCustomerId) {
+                const rows = await db
+                    .select()
+                    .from(tenantSubscriptions)
+                    .where(eq(tenantSubscriptions.stripeCustomerId, stripeCustomerId));
+                if (rows[0]?.tenantId) {
+                    return rows[0].tenantId;
+                }
+            }
+        } catch (dbErr) {
+            structuredLogger.error('stripe_webhook_resolve_tenant_db_error', {
+                error: (dbErr as Error).message,
+                stripeSubscriptionId,
+                stripeCustomerId,
+            });
+        }
+    }
+
+    return null;
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
     const rawBody = await request.text();
 
@@ -78,11 +136,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Wrap execution in distributed lock to prevent concurrent races across container replicas
     return await withDistributedLock(`lock:webhook:stripe:${event.id}`, 60, async () => {
+        const resolvedTenantId = await resolveTenantId(event) || 'system';
 
         // ── Dispatch to in-memory event bus ────────────────────────────────────
         publishEvent({
             id: crypto.randomUUID(),
-            tenantId: null, // Precise tenant mapping is done inside the worker handlers
+            tenantId: resolvedTenantId, // Precise tenant mapping is done inside the worker handlers
             type: 'WEBHOOK_RECEIVED',
             source: 'stripe_webhook',
             payload: { stripeEvent: event },
@@ -94,7 +153,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         try {
             const { domineIntakeService } = await import('../../../../domine/domine-intake.service');
             await domineIntakeService.publish({
-                tenantId: 'LOJACOND',
+                tenantId: resolvedTenantId,
                 type: 'WEBHOOK_RECEIVED',
                 source: 'webhook',
                 payload: {

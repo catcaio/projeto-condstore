@@ -1,12 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockPublish = vi.fn();
+const mockIsDomineEnabled = vi.fn(async (tenantId: string) => tenantId === 'TEST_TENANT');
+
 vi.mock('@/infra/repositories/domine-events.repository', () => ({
     domineEventsRepository: { publish: (...args: any[]) => mockPublish(...args) },
 }));
 
 vi.mock('@/infra/log/logger', () => ({
     structuredLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock('../tenant', () => ({
+    isDomineEnabled: (...args: any[]) => mockIsDomineEnabled(...args),
 }));
 
 import { DomineIntakeService, DomineIntakeError } from '../domine-intake.service';
@@ -28,23 +34,23 @@ describe('DomineIntakeService', () => {
     });
 
     it('rejects missing type', async () => {
-        await expect(svc.publish({ tenantId: 'LOJACOND', type: '', source: 'cockpit', payload: {} }))
+        await expect(svc.publish({ tenantId: 'TEST_TENANT', type: '', source: 'cockpit', payload: {} }))
             .rejects.toThrow(DomineIntakeError);
     });
 
     it('rejects invalid source', async () => {
-        await expect(svc.publish({ tenantId: 'LOJACOND', type: 'WEBHOOK_RECEIVED', source: 'invalid_source' as any, payload: {} }))
+        await expect(svc.publish({ tenantId: 'TEST_TENANT', type: 'WEBHOOK_RECEIVED', source: 'invalid_source' as any, payload: {} }))
             .rejects.toThrow(DomineIntakeError);
     });
 
-    // ── LOJACOND Guard ────────────────────────────────────────────────
+    // ── Tenant enablement guard ───────────────────────────────────────
 
-    it('rejects non-LOJACOND tenant', async () => {
+    it('rejects tenants without domine enabled', async () => {
         await expect(svc.publish({ tenantId: 'OTHER_TENANT', type: 'FINOPS_EVENT', source: 'cockpit', payload: {} }))
             .rejects.toThrow('not enabled');
     });
 
-    it('rejects non-LOJACOND with correct error code', async () => {
+    it('rejects disabled tenants with correct error code', async () => {
         try {
             await svc.publish({ tenantId: 'OTHER_TENANT', type: 'FINOPS_EVENT', source: 'cockpit', payload: {} });
         } catch (e: any) {
@@ -55,9 +61,9 @@ describe('DomineIntakeService', () => {
 
     // ── Happy path ───────────────────────────────────────────────────
 
-    it('publishes for LOJACOND tenant and returns result', async () => {
+    it('publishes for enabled tenant and returns result', async () => {
         const result = await svc.publish({
-            tenantId: 'LOJACOND',
+            tenantId: 'TEST_TENANT',
             type: 'FREIGHT_QUOTE_REQUESTED',
             source: 'cockpit',
             payload: { foo: 'bar' },
@@ -66,7 +72,7 @@ describe('DomineIntakeService', () => {
 
         expect(result).toEqual({ id: 'evt-1', inserted: true });
         expect(mockPublish).toHaveBeenCalledWith(expect.objectContaining({
-            tenantId: 'LOJACOND',
+            tenantId: 'TEST_TENANT',
             type: 'FREIGHT_QUOTE_REQUESTED',
             source: 'cockpit',
             idempotencyKey: 'idem-123',
@@ -75,7 +81,7 @@ describe('DomineIntakeService', () => {
 
     it('auto-generates idempotencyKey when omitted', async () => {
         await svc.publish({
-            tenantId: 'LOJACOND',
+            tenantId: 'TEST_TENANT',
             type: 'WEBHOOK_RECEIVED',
             source: 'webhook',
             payload: {},
@@ -92,7 +98,7 @@ describe('DomineIntakeService', () => {
         mockPublish.mockResolvedValue({ id: 'evt-1', inserted: false });
 
         const result = await svc.publish({
-            tenantId: 'LOJACOND',
+            tenantId: 'TEST_TENANT',
             type: 'FINOPS_EVENT',
             source: 'internal',
             idempotencyKey: 'dup-key',
@@ -108,7 +114,7 @@ describe('DomineIntakeService', () => {
         const { structuredLogger } = await import('@/infra/log/logger');
 
         await svc.publish({
-            tenantId: 'LOJACOND',
+            tenantId: 'TEST_TENANT',
             type: 'FINOPS_EVENT',
             source: 'cockpit',
             payload: { email: 'secret@pii.com', cpf: '12345678900' },

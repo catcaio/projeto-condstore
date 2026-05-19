@@ -13,11 +13,10 @@ import { withDistributedLock } from '@/lib/http/with-distributed-lock';
 import { jobLock } from '@/lib/infra/lock-keys';
 
 const domineProcessSchema = z.object({
+    tenantId: z.string().min(1).optional(),
     max: z.number().int().positive().optional(),
     maxDurationMs: z.number().int().positive().optional()
 }).catchall(z.any());
-
-const TENANT_ID = 'LOJACOND';
 
 export const POST = withReplayProtection(withIdempotency(withAuditLog(
     { action: 'domine_process_job', scope: 'jobs', actorType: 'internal' },
@@ -30,23 +29,29 @@ export const POST = withReplayProtection(withIdempotency(withAuditLog(
             if (!tokenGuard.ok) return tokenGuard.response;
 
             try {
+                const tenantId = body.tenantId ?? req.nextUrl.searchParams.get('tenantId') ?? '';
+                if (!tenantId.trim()) {
+                    return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'tenantId is required');
+                }
+
                 const max = Number(body.max) || 50;
                 const maxDurationMs = Number(body.maxDurationMs) || 25_000;
 
                 structuredLogger.info('domine_process_job_started', {
                     requestId,
-                    tenantId: TENANT_ID,
+                    tenantId,
                     max,
                     maxDurationMs,
                 });
 
-                const stats = await loop(TENANT_ID, max, maxDurationMs);
+                const stats = await loop(tenantId, max, maxDurationMs);
 
-                return NextResponse.json({ ok: true, tenantId: TENANT_ID, stats });
+                return NextResponse.json({ ok: true, tenantId, stats });
             } catch (err: any) {
+                const tenantId = body.tenantId ?? req.nextUrl.searchParams.get('tenantId') ?? undefined;
                 structuredLogger.error('domine_process_job_error', {
                     requestId,
-                    tenantId: TENANT_ID,
+                    tenantId,
                     error: err.message,
                 });
                 return errorResponse(ErrorCode.UNKNOWN, 500, requestId, err.message);

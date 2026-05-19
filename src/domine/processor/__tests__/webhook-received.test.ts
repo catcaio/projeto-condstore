@@ -3,12 +3,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ── Mocks ──────────────────────────────────────────────────────────
 
 const mockPublish = vi.fn();
+const TEST_TENANT = 'TEST_TENANT';
+
 vi.mock('@/infra/repositories/domine-events.repository', () => ({
     domineEventsRepository: { publish: (...args: any[]) => mockPublish(...args) },
 }));
 
 vi.mock('@/infra/log/logger', () => ({
     structuredLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock('@/domine/tenant', () => ({
+    isDomineEnabled: vi.fn(async (tenantId: string) => tenantId === TEST_TENANT),
 }));
 
 import { webhookReceivedHandler } from '../handlers/webhook-received.handler';
@@ -21,7 +27,7 @@ describe('WebhookReceivedHandler', () => {
     it('handles stripe source successfully', async () => {
         const result = await webhookReceivedHandler.handle({
             id: 'evt-1',
-            tenantId: 'LOJACOND',
+            tenantId: TEST_TENANT,
             type: 'WEBHOOK_RECEIVED',
             source: 'webhook',
             payloadJson: {
@@ -37,7 +43,7 @@ describe('WebhookReceivedHandler', () => {
     it('handles twilio source successfully', async () => {
         const result = await webhookReceivedHandler.handle({
             id: 'evt-2',
-            tenantId: 'LOJACOND',
+            tenantId: TEST_TENANT,
             type: 'WEBHOOK_RECEIVED',
             source: 'webhook',
             payloadJson: {
@@ -54,7 +60,7 @@ describe('WebhookReceivedHandler', () => {
     it('handles unknown source gracefully', async () => {
         const result = await webhookReceivedHandler.handle({
             id: 'evt-3',
-            tenantId: 'LOJACOND',
+            tenantId: TEST_TENANT,
             type: 'WEBHOOK_RECEIVED',
             source: 'webhook',
             payloadJson: {
@@ -71,7 +77,7 @@ describe('WebhookReceivedHandler', () => {
         // Force an error by making payloadJson throw on access (edge case)
         const result = await webhookReceivedHandler.handle({
             id: 'evt-err',
-            tenantId: 'LOJACOND',
+            tenantId: TEST_TENANT,
             type: 'WEBHOOK_RECEIVED',
             source: 'webhook',
             payloadJson: null,
@@ -93,7 +99,7 @@ describe('Webhook Domine Intake Integration', () => {
         const svc = new DomineIntakeService();
 
         await svc.publish({
-            tenantId: 'LOJACOND',
+            tenantId: TEST_TENANT,
             type: 'WEBHOOK_RECEIVED',
             source: 'webhook',
             payload: { source: 'stripe', providerEventId: 'evt_stripe_1' },
@@ -107,7 +113,7 @@ describe('Webhook Domine Intake Integration', () => {
         // Second call with same key returns inserted:false
         mockPublish.mockResolvedValueOnce({ id: 'evt-1', inserted: false });
         const r2 = await svc.publish({
-            tenantId: 'LOJACOND',
+            tenantId: TEST_TENANT,
             type: 'WEBHOOK_RECEIVED',
             source: 'webhook',
             payload: { source: 'stripe', providerEventId: 'evt_stripe_1' },
@@ -127,7 +133,7 @@ describe('Webhook Domine Intake Integration', () => {
         // We verify the error is thrown (webhook route handles with try/catch)
         await expect(
             svc.publish({
-                tenantId: 'LOJACOND',
+                tenantId: TEST_TENANT,
                 type: 'WEBHOOK_RECEIVED',
                 source: 'webhook',
                 payload: { source: 'stripe', providerEventId: 'fail-1' },

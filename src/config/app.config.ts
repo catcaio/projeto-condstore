@@ -31,6 +31,10 @@ function getEnv(key: string, defaultValue?: string): string {
   return value || defaultValue!;
 }
 
+function getOptionalEnv(key: string): string {
+  return process.env[key] ?? '';
+}
+
 function getEnvNumber(key: string, defaultValue: number): number {
   const value = process.env[key];
   return value ? parseInt(value, 10) : defaultValue;
@@ -47,7 +51,8 @@ export const appConfig: AppConfig = {
   },
 
   freight: {
-    originCep: getEnv('ORIGIN_CEP', '01001000'),
+    // No silent operational fallback here. Local/dev must set ORIGIN_CEP explicitly when needed.
+    originCep: getOptionalEnv('ORIGIN_CEP'),
     defaultUnitWeight: getEnvNumber('DEFAULT_UNIT_WEIGHT_KG', 0.3),
     maxOptionsToReturn: getEnvNumber('MAX_FREIGHT_OPTIONS', 3),
   },
