@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { ChevronRight, Menu, X, LogOut, Loader2 } from 'lucide-react';
+import { Menu, X, LogOut, Loader2 } from 'lucide-react';
 import { getPrimaryNavigationGroups, type ModuleConfig } from '@/config/modules';
+import { isModuleAuthorized } from '@/config/rbac';
 
 function NavLink({ item, pathname }: { item: ModuleConfig; pathname: string }) {
     const Icon = item.icon;
@@ -43,7 +44,12 @@ export function AppNav({ role, tenantId }: { role: string; tenantId: string | nu
     const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const navGroups = getPrimaryNavigationGroups();
+    const navGroups = getPrimaryNavigationGroups()
+        .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => isModuleAuthorized(item, role, true).authorized),
+        }))
+        .filter((group) => group.items.length > 0);
 
     const handleLogout = async () => {
         setIsLoggingOut(true);
@@ -57,7 +63,7 @@ export function AppNav({ role, tenantId }: { role: string; tenantId: string | nu
     };
 
     const navContent = (
-        <nav className="flex flex-col gap-8 h-full">
+        <nav className="flex h-full w-full flex-col gap-8 md:items-center">
             {navGroups.map((group) => (
                 <div key={group.key} className="flex flex-col items-center w-full">
                     <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))] md:hidden w-full">
@@ -71,8 +77,7 @@ export function AppNav({ role, tenantId }: { role: string; tenantId: string | nu
                 </div>
             ))}
 
-            <div className="mt-auto pt-6 border-t border-[hsl(var(--ui-border))] flex flex-col gap-3">
-            <div className="mt-auto pt-6 border-t md:border-none border-[hsl(var(--ui-border))] flex flex-col gap-3 items-center w-full">
+            <div className="mt-auto flex w-full flex-col items-center gap-3 border-t border-[hsl(var(--ui-border))] pt-6 md:border-none">
                 <div className="px-3 md:hidden w-full">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--ui-text-subtle))]">
                         Sessão
@@ -98,13 +103,12 @@ export function AppNav({ role, tenantId }: { role: string; tenantId: string | nu
                     </div>
                 </button>
             </div>
-            </div>
         </nav>
     );
 
     return (
         <>
-            <div className="hidden md:block">
+            <div className="hidden h-full w-full md:block">
                 {navContent}
             </div>
 

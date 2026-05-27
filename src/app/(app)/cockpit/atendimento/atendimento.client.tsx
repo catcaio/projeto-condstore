@@ -270,6 +270,8 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
     const [loadingMsgs, setLoadingMsgs] = useState(false);
     const [sending, setSending] = useState(false);
     const [creatingCustomer, setCreatingCustomer] = useState(false);
+    const [listError, setListError] = useState<string | null>(null);
+    const [messagesError, setMessagesError] = useState<string | null>(null);
 
     // UI state
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -297,9 +299,16 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
             if (res.ok) {
                 const json = await res.json();
                 setConversations(json.data || []);
+                setListError(null);
+            } else {
+                const requestId = res.headers.get('x-request-id') ?? 'request-id-unavailable';
+                setListError(`Falha ao carregar conversas. requestId=${requestId}`);
             }
         } catch (e: any) {
-            if (e.name !== 'AbortError') console.error(e);
+            if (e.name !== 'AbortError') {
+                console.error(e);
+                setListError('Falha de rede ao carregar conversas.');
+            }
         } finally {
             setLoadingList(false);
         }
@@ -317,9 +326,16 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                 const json = await res.json();
                 setMessages(json.data.messages || []);
                 setActiveConvDetails(json.data.conversation);
+                setMessagesError(null);
+            } else {
+                const requestId = res.headers.get('x-request-id') ?? 'request-id-unavailable';
+                setMessagesError(`Falha ao carregar conversa. requestId=${requestId}`);
             }
         } catch (e: any) {
-            if (e.name !== 'AbortError') console.error(e);
+            if (e.name !== 'AbortError') {
+                console.error(e);
+                setMessagesError('Falha de rede ao carregar conversa.');
+            }
         } finally {
             if (abortControllers.current.msgs === controller) {
                 if (!silent) setLoadingMsgs(false);
@@ -487,7 +503,7 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
     const operationalFlow = getOperationalFlow(activeConvDetails);
 
     return (
-        <div className="flex bg-[hsl(var(--ui-bg-subtle))] overflow-hidden absolute inset-0">
+        <div className="relative flex h-full min-h-0 overflow-hidden bg-[hsl(var(--ui-bg-subtle))]">
             {/* Left Sidebar - Chat List */}
             <div className={`
                 border-r border-[hsl(var(--ui-border))] bg-white flex-col shrink-0 z-20 shadow-sm
@@ -510,6 +526,11 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                 <div className="flex-1 overflow-y-auto">
                     {loadingList ? (
                         <div className="p-4 text-center text-sm text-[hsl(var(--ui-text-muted))]">Carregando...</div>
+                    ) : listError ? (
+                        <div className="p-6 text-sm text-[hsl(var(--ui-danger-ink))]">
+                            <p className="font-semibold">Erro rastreavel</p>
+                            <p className="mt-1 leading-5">{listError}</p>
+                        </div>
                     ) : conversations.length === 0 ? (
                         <div className="p-8 text-center text-sm text-[hsl(var(--ui-text-muted))] flex flex-col items-center">
                             <Check className="w-8 h-8 mb-2 opacity-20" />
@@ -638,7 +659,11 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                         </div>
                         
                         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-gradient-to-b from-gray-50/50 to-white">
-                            {loadingMsgs && messages.length === 0 ? (
+                            {messagesError ? (
+                                <div className="rounded-lg border border-[hsl(var(--ui-danger)/0.2)] bg-[hsl(var(--ui-danger)/0.08)] p-4 text-sm text-[hsl(var(--ui-danger-ink))]">
+                                    {messagesError}
+                                </div>
+                            ) : loadingMsgs && messages.length === 0 ? (
                                 <div className="text-center text-sm text-[hsl(var(--ui-text-muted))]">Carregando mensagens...</div>
                             ) : messages.map(msg => {
                                 const isInbound = msg.direction === 'INBOUND';

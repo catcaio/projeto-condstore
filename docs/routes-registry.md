@@ -279,6 +279,7 @@
 | /cockpit/rate-limit | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/rooms/[room] | GET/POST | internal | required | cockpit | live | Added |
 | /cockpit/security | GET | internal | required | cockpit | live | Security Cockpit Dashboard |
+| /cockpit/settings | GET | internal | required | cockpit | deprecated | Redirect legado para /configuracoes |
 | /cockpit/settings/knowledge | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/settings/security | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/shipments | GET | internal | requireAdmin | frete | live | Shipment monitoring panel and label generation log |
@@ -350,7 +351,7 @@
 | /produtos/envios | Redirecionado | public | none | PUBLIC | live | Redirecionado para /logistica-pedidos |
 | /proof | GET | public | none | PUBLIC | live | Pagina de prova operacional do Condstore OS |
 | /seguranca | TBA | public | none | PUBLIC | live | Security and governance page |
-| /settings | TBA | public | none | PUBLIC | live | Auto-detected |
+| /settings | GET | internal | required | configuracoes | deprecated | Redirect legado para /configuracoes |
 | /showcase | GET | public | none | PUBLIC | live | Product showcase overview page |
 | /signup | GET | public | none | auth | live | User registration page with role selection |
 | /sistema/dlq | GET | internal | requireAdmin | console | live | Dead Letter Queue (migrado de /cockpit/domine/dlq) |
