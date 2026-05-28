@@ -1,20 +1,16 @@
 import Link from 'next/link';
-import { ArrowUpRight, MessageSquare, PackageSearch, Truck, Users } from 'lucide-react';
+import { headers } from 'next/headers';
+import { PackageSearch } from 'lucide-react';
 import { Button } from '@/ui/components';
 import {
     AlertBlock,
     ContentGrid,
     EntitySummaryCard,
-    EventList,
-    FilterBar,
     InfoPanel,
-    KPIStrip,
     ModuleNav,
     PageHeader,
-    SearchInput,
     SectionHeader,
     ShellContainer,
-    SimpleDataTable,
     StatusChip,
     SurfacePanel,
 } from '@/ui/foundation';
@@ -34,6 +30,7 @@ import { OrdersView } from '@/modules/pedidos';
 import { loadClientsHydrated } from '@/modules/clientes/customer.loader';
 import { loadOrdersHydrated } from '@/modules/pedidos/server';
 import { getServerSessionUser } from '@/infra/auth/session';
+import { getEnvironmentInfo, getIntegrationsStatus, getTenantBasics } from '@/app/(app)/settings/queries';
 
 export type WorkspaceFoundationModuleId =
     | 'cockpit'
@@ -47,9 +44,46 @@ export type WorkspaceFoundationModuleId =
     | 'tenant'
     | 'configuracoes';
 
+type WorkspaceRuntimeContext = {
+    tenantId: string;
+    role: string;
+    requestId: string;
+};
+
+async function getWorkspaceRuntimeContext(): Promise<WorkspaceRuntimeContext | null> {
+    const [session, headerList] = await Promise.all([
+        getServerSessionUser(),
+        headers(),
+    ]);
+
+    const tenantId = session?.tenantId ?? headerList.get('x-auth-tenant-id');
+
+    if (!tenantId) {
+        return null;
+    }
+
+    return {
+        tenantId,
+        role: session?.role ?? headerList.get('x-auth-role') ?? 'viewer',
+        requestId: headerList.get('x-request-id') ?? 'request-id-unavailable',
+    };
+}
+
 export async function WorkspaceFoundationPage({ moduleId }: { moduleId: WorkspaceFoundationModuleId }) {
-    const session = await getServerSessionUser();
-    const tenantId = session?.tenantId || '550e8400-e29b-41d4-a716-446655440000'; // Fallback to seed for local dev if no session
+    const context = await getWorkspaceRuntimeContext();
+
+    if (!context) {
+        return (
+            <WorkspaceDiagnosticState
+                eyebrow="Auth"
+                title="Sessao operacional nao encontrada"
+                description="A area autenticada precisa de tenant resolvido pela sessao. Nenhum tenantId foi inferido de fallback ou seed."
+                requestId="request-id-unavailable"
+                ctaLabel="Ir para login"
+                ctaHref="/login"
+            />
+        );
+    }
 
     if (moduleId === 'cockpit') {
         return <CockpitFoundation />;
@@ -61,12 +95,38 @@ export async function WorkspaceFoundationPage({ moduleId }: { moduleId: Workspac
         return <ConversationsView />;
     }
     if (moduleId === 'clientes') {
-        const clients = await loadClientsHydrated(tenantId);
-        return <ClientsView clients={clients} />;
+        try {
+            const clients = await loadClientsHydrated(context.tenantId);
+            return <ClientsView clients={clients} />;
+        } catch {
+            return (
+                <WorkspaceDiagnosticState
+                    eyebrow="Clientes"
+                    title="Clientes indisponiveis"
+                    description="A leitura do CRM falhou. A falha nao foi mascarada com placeholder; use o requestId para rastrear o erro nos logs."
+                    requestId={context.requestId}
+                    ctaLabel="Voltar ao Cockpit"
+                    ctaHref="/cockpit"
+                />
+            );
+        }
     }
     if (moduleId === 'pedidos') {
-        const orders = await loadOrdersHydrated(tenantId);
-        return <OrdersView orders={orders} />;
+        try {
+            const orders = await loadOrdersHydrated(context.tenantId);
+            return <OrdersView orders={orders} />;
+        } catch {
+            return (
+                <WorkspaceDiagnosticState
+                    eyebrow="Pedidos"
+                    title="Pedidos indisponiveis"
+                    description="A leitura de pedidos falhou. A tela permanece bloqueada com requestId em vez de exibir dados ficticios."
+                    requestId={context.requestId}
+                    ctaLabel="Voltar ao Cockpit"
+                    ctaHref="/cockpit"
+                />
+            );
+        }
     }
     if (moduleId === 'logistica') {
         return <LogisticsView />;
@@ -78,38 +138,9 @@ export async function WorkspaceFoundationPage({ moduleId }: { moduleId: Workspac
         return <MetricasFoundation />;
     }
     if (moduleId === 'tenant') {
-        return <TenantFoundation />;
+        return <TenantFoundation context={context} />;
     }
-    return <ConfiguracoesFoundation />;
-}
-
-function QuickLink({
-    href,
-    icon,
-    title,
-    description,
-}: {
-    href: string;
-    icon: React.ReactNode;
-    title: string;
-    description: string;
-}) {
-    return (
-        <Link href={href} className="block rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] p-4 transition-colors hover:border-[hsl(var(--ui-border-strong))] hover:bg-[hsl(var(--ui-surface))]">
-            <div className="flex items-start gap-3">
-                <div className="mt-0.5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] p-2 text-[hsl(var(--ui-text-muted))]">
-                    {icon}
-                </div>
-                <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-[hsl(var(--ui-text))]">{title}</p>
-                        <ArrowUpRight className="h-3.5 w-3.5 text-[hsl(var(--ui-text-subtle))]" />
-                    </div>
-                    <p className="mt-1 text-sm leading-6 text-[hsl(var(--ui-text-muted))]">{description}</p>
-                </div>
-            </div>
-        </Link>
-    );
+    return <ConfiguracoesFoundation context={context} />;
 }
 
 function InfoLine({ label, value }: { label: string; value: string }) {
@@ -117,16 +148,6 @@ function InfoLine({ label, value }: { label: string; value: string }) {
         <div className="rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] px-4 py-3">
             <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-subtle))]">{label}</p>
             <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text))]">{value}</p>
-        </div>
-    );
-}
-
-function StackCard({ title, subtitle, detail }: { title: string; subtitle: string; detail: string }) {
-    return (
-        <div className="rounded-[1.25rem] border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] p-4">
-            <p className="text-sm font-semibold text-[hsl(var(--ui-text))]">{title}</p>
-            <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-subtle))]">{subtitle}</p>
-            <p className="mt-3 text-sm leading-6 text-[hsl(var(--ui-text-muted))]">{detail}</p>
         </div>
     );
 }
@@ -199,29 +220,31 @@ async function CockpitFoundation() {
     );
 }
 
-function SystemEmptyState({
+function WorkspaceDiagnosticState({
     eyebrow,
     title,
     description,
+    requestId,
     ctaLabel,
     ctaHref,
 }: {
     eyebrow: string;
     title: string;
     description: string;
+    requestId: string;
     ctaLabel: string;
     ctaHref: string;
 }) {
     return (
         <ShellContainer>
             <PageHeader eyebrow={eyebrow} title={title} description={description} />
-            <div className="mt-8 flex h-[40vh] flex-col items-center justify-center rounded-2xl border border-dashed border-[hsl(var(--ui-border-strong))] bg-[hsl(var(--ui-page))] text-center">
+            <div className="mt-8 flex min-h-[24rem] flex-col items-center justify-center rounded-2xl border border-dashed border-[hsl(var(--ui-border-strong))] bg-[hsl(var(--ui-page))] px-6 text-center">
                 <div className="mb-4 rounded-full bg-[hsl(var(--ui-surface))] p-4">
                     <PackageSearch className="h-8 w-8 text-[hsl(var(--ui-text-muted))]" />
                 </div>
-                <h3 className="text-lg font-medium text-[hsl(var(--ui-text))]">Configuracao Operacional Pendente</h3>
+                <h3 className="text-lg font-medium text-[hsl(var(--ui-text))]">Estado operacional rastreavel</h3>
                 <p className="mx-auto mt-2 max-w-sm text-sm text-[hsl(var(--ui-text-muted))]">
-                    Este modulo ainda nao possui mapeamento direto para a operacao viva CONDSTORE OS.
+                    requestId={requestId}
                 </p>
                 <div className="mt-6">
                     <Link href={ctaHref}>
@@ -233,79 +256,238 @@ function SystemEmptyState({
     );
 }
 
-function OperacaoFoundation() {
+function SystemChecklistState({
+    eyebrow,
+    title,
+    description,
+    ctaLabel,
+    ctaHref,
+    items,
+}: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    ctaLabel: string;
+    ctaHref: string;
+    items: string[];
+}) {
     return (
-        <SystemEmptyState
-            eyebrow="Operacao"
-            title="SLA e Capacidade Operacional"
-            description="Visao gerencial de alocacao e performance do turno."
-            ctaLabel="Abrir fila de atendimento"
-            ctaHref="/conversas"
-        />
+        <ShellContainer>
+            <PageHeader eyebrow={eyebrow} title={title} description={description} />
+            <SurfacePanel>
+                <SectionHeader
+                    title="Checklist operacional"
+                    description="Estado honesto para piloto: nao ha dado ficticio; a tela mostra o que falta conectar ou verificar."
+                    actions={
+                        <Link href={ctaHref}>
+                            <Button>{ctaLabel}</Button>
+                        </Link>
+                    }
+                />
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                    {items.map((item) => (
+                        <div key={item} className="rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] px-4 py-3 text-sm text-[hsl(var(--ui-text-muted))]">
+                            {item}
+                        </div>
+                    ))}
+                </div>
+            </SurfacePanel>
+        </ShellContainer>
+    );
+}
+
+async function OperacaoFoundation() {
+    const cockpitData = await getCockpitData();
+
+    return (
+        <ShellContainer>
+            <PageHeader
+                eyebrow="Operacao"
+                title="Status operacional supervisionado"
+                description="Leitura de filas, infraestrutura e proximos passos para o turno do piloto."
+                meta={
+                    <>
+                        <StatusChip
+                            label={cockpitData.meta.source === 'real' ? 'dados reais' : 'fallback diagnostico'}
+                            tone={cockpitData.meta.source === 'real' ? 'success' : 'warning'}
+                        />
+                        <StatusChip label={`filas ${cockpitData.queue.length}`} tone="info" />
+                    </>
+                }
+            />
+            {cockpitData.meta.source !== 'real' ? (
+                <AlertBlock
+                    tone="warning"
+                    title="Diagnostico pendente"
+                    description={`source=${cockpitData.meta.source}; fallbackReason=${cockpitData.meta.fallbackReason ?? 'none'}`}
+                />
+            ) : null}
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
+                <ActionQueue items={cockpitData.queue} />
+                <SystemStatusPanel items={cockpitData.systemStatus} />
+            </div>
+            <InfoPanel title="Proximos passos operacionais">
+                <InfoLine label="Twilio" value="Validar inbound/outbound no status do cockpit antes do piloto." />
+                <InfoLine label="Banco e Redis" value="Conferir status infra e requestId em qualquer degradacao." />
+                <InfoLine label="Melhor Envio" value="Usar cotacao supervisionada; pendencias devem aparecer como checklist, nao como sucesso falso." />
+            </InfoPanel>
+        </ShellContainer>
     );
 }
 
 function FrankFoundation() {
     return (
-        <SystemEmptyState
+        <SystemChecklistState
             eyebrow="Frank"
             title="Dashboard de Inteligencia"
             description="O painel analitico do Frank sera ativado no estagio de maturidade."
             ctaLabel="Voltar ao Cockpit"
-            ctaHref="/"
+            ctaHref="/cockpit"
+            items={[
+                'Frank permanece supervisionado: sem acao autonoma irreversivel.',
+                'Acoes operacionais continuam exigindo gate humano.',
+            ]}
         />
     );
 }
 
-function MetricasFoundation() {
+async function MetricasFoundation() {
+    const cockpitData = await getCockpitData();
+
     return (
-        <SystemEmptyState
-            eyebrow="Metricas"
-            title="Atribuicao e Desempenho"
-            description="Leitura executiva do funil comercial."
-            ctaLabel="Ver atribuicao legada"
-            ctaHref="/attribution"
-        />
+        <ShellContainer>
+            <PageHeader
+                eyebrow="Metricas"
+                title="Metricas minimas do piloto"
+                description="Tempo de resposta, pedidos, cotacoes e excecoes lidos a partir do cockpit operacional."
+                meta={
+                    <>
+                        <StatusChip
+                            label={cockpitData.meta.source === 'real' ? 'dados reais' : 'fallback diagnostico'}
+                            tone={cockpitData.meta.source === 'real' ? 'success' : 'warning'}
+                        />
+                        <StatusChip label={`partial ${cockpitData.meta.partialBlocks.length}`} tone={cockpitData.meta.partialBlocks.length > 0 ? 'warning' : 'success'} />
+                    </>
+                }
+            />
+            {cockpitData.meta.source !== 'real' ? (
+                <AlertBlock
+                    tone="warning"
+                    title="Origem de dados incompleta"
+                    description={`source=${cockpitData.meta.source}; fallbackReason=${cockpitData.meta.fallbackReason ?? 'none'}; partialBlocks=[${cockpitData.meta.partialBlocks.join(', ')}]`}
+                />
+            ) : null}
+            <OperationalKpiStrip items={cockpitData.metrics} />
+            <ContentGrid
+                main={<OperationalEventFeed events={cockpitData.events} />}
+                side={
+                    <InfoPanel title="Checklist de leitura">
+                        <InfoLine label="Tempo de resposta" value="Derivado da fila de conversas e mensagens recentes." />
+                        <InfoLine label="Cotacao -> pedido" value="Conferir cotacoes, pedidos em processamento e eventos recentes." />
+                        <InfoLine label="Handoffs" value="Conversas sem resposta aparecem na fila de acao." />
+                    </InfoPanel>
+                }
+            />
+        </ShellContainer>
     );
 }
 
-function TenantFoundation() {
-    return (
-        <SystemEmptyState
-            eyebrow="Tenant"
-            title="Governanca Operacional"
-            description="Configuracoes de infraestrutura e tenant abstracts."
-            ctaLabel="Voltar ao Cockpit"
-            ctaHref="/"
-        />
-    );
+async function TenantFoundation({ context }: { context: WorkspaceRuntimeContext }) {
+    try {
+        const tenant = await getTenantBasics(context.tenantId);
+        const env = getEnvironmentInfo();
+
+        return (
+            <ShellContainer>
+                <PageHeader
+                    eyebrow="Tenant"
+                    title="Tenant e workspace"
+                    description="Identidade do tenant, plano e ambiente resolvidos pela sessao autenticada."
+                    meta={<StatusChip label={tenant ? 'tenant encontrado' : 'tenant pendente'} tone={tenant ? 'success' : 'warning'} />}
+                />
+                <EntitySummaryCard
+                    title={tenant?.name ?? 'Tenant nao localizado'}
+                    subtitle={context.tenantId}
+                    status={{ label: tenant?.planStatus ?? 'pendente', tone: tenant ? 'info' : 'warning' }}
+                    fields={[
+                        { label: 'Role atual', value: context.role },
+                        { label: 'Plano', value: tenant?.plan ?? 'nao configurado' },
+                        { label: 'Ambiente', value: env.env },
+                        { label: 'Dominio', value: env.domain },
+                    ]}
+                />
+            </ShellContainer>
+        );
+    } catch {
+        return (
+            <WorkspaceDiagnosticState
+                eyebrow="Tenant"
+                title="Tenant indisponivel"
+                description="A consulta do tenant falhou. A tela manteve estado rastreavel sem inferir dados."
+                requestId={context.requestId}
+                ctaLabel="Voltar ao Cockpit"
+                ctaHref="/cockpit"
+            />
+        );
+    }
 }
 
-function ConfiguracoesFoundation() {
+async function ConfiguracoesFoundation({ context }: { context: WorkspaceRuntimeContext }) {
+    const environment = getEnvironmentInfo();
+    const [tenantResult, integrationsResult] = await Promise.allSettled([
+        getTenantBasics(context.tenantId),
+        getIntegrationsStatus(context.tenantId),
+    ]);
+    const tenant = tenantResult.status === 'fulfilled' ? tenantResult.value : null;
+    const integrations = integrationsResult.status === 'fulfilled' ? integrationsResult.value : null;
+
     return (
         <ShellContainer>
             <PageHeader
                 eyebrow="Configuracoes"
-                title="Workspace e Integracoes"
-                description="Controle de acesso e modulos da CONDSTORE OS."
+                title="Workspace, ambiente e integracoes"
+                description="Painel operacional da configuracao minima do piloto. Falhas aparecem como pendencia rastreavel."
+                meta={
+                    <>
+                        <StatusChip label={tenant ? 'workspace real' : 'workspace pendente'} tone={tenant ? 'success' : 'warning'} />
+                        <StatusChip label={integrations ? 'integracoes lidas' : 'integracoes pendentes'} tone={integrations ? 'info' : 'warning'} />
+                    </>
+                }
             />
-            <div className="mt-8 flex h-[40vh] flex-col items-center justify-center rounded-2xl border border-dashed border-[hsl(var(--ui-border-strong))] bg-[hsl(var(--ui-page))] text-center">
-                <div className="mb-4 rounded-full bg-[hsl(var(--ui-surface))] p-4">
-                    <Users className="h-8 w-8 text-[hsl(var(--ui-text-muted))]" />
-                </div>
-                <h3 className="text-lg font-medium text-[hsl(var(--ui-text))]">Acesso Tecnico Requerido</h3>
-                <p className="mx-auto mt-2 max-w-sm text-sm text-[hsl(var(--ui-text-muted))]">
-                    A governanca de perfil de operador CONDSTORE OS e gerenciada externamente no momento.
-                </p>
-                <div className="mt-6 flex justify-center gap-3">
-                    <Link href="/">
-                        <Button variant="secondary">Voltar ao Cockpit</Button>
-                    </Link>
-                    <Link href="/settings">
-                        <Button>Configuracoes avancadas</Button>
-                    </Link>
-                </div>
-            </div>
+            <ContentGrid
+                main={
+                    <>
+                        <EntitySummaryCard
+                            title={tenant?.name ?? 'Workspace pendente'}
+                            subtitle={context.tenantId}
+                            status={{ label: tenant?.planStatus ?? 'pendente', tone: tenant ? 'info' : 'warning' }}
+                            fields={[
+                                { label: 'Plano', value: tenant?.plan ?? 'nao configurado' },
+                                { label: 'Role atual', value: context.role },
+                                { label: 'Criado em', value: tenant?.createdAt ? tenant.createdAt.toISOString() : 'indisponivel' },
+                                { label: 'RequestId', value: context.requestId },
+                            ]}
+                        />
+                        <SurfacePanel>
+                            <SectionHeader title="Integracoes essenciais" description="Status operacional lido quando disponivel; pendencias nao sao tratadas como sucesso." />
+                            <div className="mt-5 grid gap-3 md:grid-cols-2">
+                                <InfoLine label="Stripe" value={integrations?.stripe ?? 'pendente'} />
+                                <InfoLine label="WhatsApp/Twilio" value={integrations?.whatsapp ? 'configurado' : 'pendente'} />
+                                <InfoLine label="AI providers" value={integrations ? String(integrations.aiProviders) : 'pendente'} />
+                                <InfoLine label="Banco e Redis" value={integrations ? `${integrations.dbOk ? 'db ok' : 'db pendente'} / ${integrations.redisOk ? 'redis ok' : 'redis pendente'}` : 'pendente'} />
+                            </div>
+                        </SurfacePanel>
+                    </>
+                }
+                side={
+                    <InfoPanel title="Ambiente">
+                        <InfoLine label="Dominio" value={environment.domain} />
+                        <InfoLine label="Ambiente" value={environment.env} />
+                        <InfoLine label="SHA" value={environment.gitSha?.slice(0, 12) || 'local'} />
+                        <InfoLine label="Node" value={environment.nodeEnv ?? 'nao informado'} />
+                    </InfoPanel>
+                }
+            />
         </ShellContainer>
     );
 }

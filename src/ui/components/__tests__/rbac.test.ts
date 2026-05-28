@@ -50,6 +50,12 @@ describe('RBAC & Guardrails', () => {
             expect(authorized).toBe(false);
             expect(reason).toBe('plan');
         });
+
+        it('should authorize super_admin regardless of module role or plan gates', () => {
+            const { authorized, reason } = isModuleAuthorized(mockModule, 'super_admin', false);
+            expect(authorized).toBe(true);
+            expect(reason).toBe('ok');
+        });
     });
 
     describe('Sidebar RBAC Logic Validation', () => {

@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { SettingsPage } from '@/ui/settings';
+import { PageHeader, ShellContainer } from '@/ui/foundation';
 import AtendimentoClient from './atendimento.client';
 import Link from 'next/link';
 
@@ -17,14 +17,16 @@ export default async function AtendimentoPage() {
     }
 
     return (
-        <SettingsPage
-            title="Atendimento"
-            description="Caixa de entrada para atendimento humano aos clientes via WhatsApp"
-            headerAction={<Link href="/cockpit" className="text-xs text-[hsl(var(--ui-accent-blue))] font-medium hover:underline flex items-center gap-1">&larr; Voltar ao Launcher</Link>}
-        >
-            <div className="bg-[hsl(var(--ui-bg-subtle))] border border-[hsl(var(--ui-border))] rounded-xl overflow-hidden shadow-sm pt-0 h-[700px]">
+        <ShellContainer className="min-h-0 flex-1">
+            <PageHeader
+                eyebrow="Atendimento"
+                title="Caixa de entrada supervisionada"
+                description="Atendimento humano via WhatsApp com lista de conversas, painel principal e contexto operacional."
+                actions={<Link href="/cockpit" className="text-xs font-medium text-[hsl(var(--ui-accent-blue))] hover:underline">Voltar ao Cockpit</Link>}
+            />
+            <div className="relative min-h-[42rem] flex-1 overflow-hidden rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))] shadow-sm md:h-[calc(100dvh-15rem)]">
                 <AtendimentoClient tenantId={tenantId} />
             </div>
-        </SettingsPage>
+        </ShellContainer>
     );
 }

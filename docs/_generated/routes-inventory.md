@@ -276,6 +276,7 @@
 | `/cockpit/rate-limit` | Page |
 | `/cockpit/rooms/[room]` | Page |
 | `/cockpit/security` | Page |
+| `/cockpit/settings` | Page |
 | `/cockpit/settings/knowledge` | Page |
 | `/cockpit/settings/security` | Page |
 | `/cockpit/shipments` | Page |
@@ -291,6 +292,7 @@
 | `/cotacao` | Page |
 | `/cotacao/result` | Page |
 | `/crm-whatsapp` | Page |
+| `/dashboard` | Page |
 | `/docs` | Page |
 | `/evolution` | Page |
 | `/evolution/[id]` | Page |

@@ -2,7 +2,7 @@
 // Import this in Server Components (pages, layouts) for entitlement checks.
 // For client-side hooks/context, import from entitlements.tsx.
 
-export type Role = 'admin' | 'operator' | 'manager' | 'viewer';
+export type Role = 'super_admin' | 'admin' | 'operator' | 'manager' | 'viewer';
 export type Entitlement = 'plan:active' | 'rbac:admin_only' | 'rbac:viewer_or_higher';
 export type Module = 'cockpit' | 'acquisition' | 'audit' | 'frete' | 'settings' | 'dispatch' | 'admin' | 'operation';
 
@@ -16,6 +16,7 @@ export function isSuperAdmin(role?: string | null): boolean {
 }
 
 export function canAccess(module: Module, ctx: UserContextData): boolean {
+    if (ctx.role === 'super_admin') return true;
     if (ctx.role === 'admin') return true;
 
     switch (module) {
