@@ -57,21 +57,8 @@ export async function getCockpitData(): Promise<CockpitDataBundle> {
                 tenantId: rawData.context.tenantId,
             },
         };
-    } catch {
-        return {
-            metrics: cockpitMetrics,
-            alerts: cockpitAlerts,
-            events: cockpitEvents,
-            queue: cockpitActionQueue,
-            systemStatus: cockpitSystemStatus,
-            shortcuts: cockpitShortcuts,
-            meta: {
-                source: 'fallback',
-                generatedAt: new Date().toISOString(),
-                partialBlocks: ['cockpit_data'],
-                fallbackReason: 'cockpit_data_query_failed',
-                tenantId: context.tenantId,
-            },
-        };
+    } catch (error) {
+        // Return a diagnostic error state instead of mocking
+        throw error;
     }
 }

@@ -86,7 +86,7 @@ export async function WorkspaceFoundationPage({ moduleId }: { moduleId: Workspac
     }
 
     if (moduleId === 'cockpit') {
-        return <CockpitFoundation />;
+        return <CockpitFoundation context={context} />;
     }
     if (moduleId === 'operacao') {
         return <OperacaoFoundation />;
@@ -152,72 +152,85 @@ function InfoLine({ label, value }: { label: string; value: string }) {
     );
 }
 
-async function CockpitFoundation() {
-    const cockpitData = await getCockpitData();
-    const cockpitConversationShortcut = cockpitData.shortcuts.find((shortcut) => shortcut.id === 'open-conversations');
-    const cockpitSimulationShortcut = cockpitData.shortcuts.find((shortcut) => shortcut.id === 'new-simulation');
-    const hasPartialFallback = cockpitData.meta.partialBlocks.length > 0;
+async function CockpitFoundation({ context }: { context: WorkspaceRuntimeContext }) {
+    try {
+        const cockpitData = await getCockpitData();
+        const cockpitConversationShortcut = cockpitData.shortcuts.find((shortcut) => shortcut.id === 'open-conversations');
+        const cockpitSimulationShortcut = cockpitData.shortcuts.find((shortcut) => shortcut.id === 'new-simulation');
+        const hasPartialFallback = cockpitData.meta.partialBlocks.length > 0;
 
-    return (
-        <ShellContainer>
-            <PageHeader
-                eyebrow="Cockpit"
-                title="Cockpit operacional vivo"
-                description="Centro de comando da operacao com leitura imediata de estado, gargalos, eventos e proximas acoes. Sem BI decorativo e sem esconder a fila real atras de graficos genericos."
-                meta={
-                    <>
-                        <StatusChip label="operacao viva" tone="success" />
-                        <StatusChip label="alertas acionaveis" tone="warning" />
-                        <StatusChip
-                            label={cockpitData.meta.source === 'real' ? 'dados operacionais reais' : 'fallback temporario'}
-                            tone={cockpitData.meta.source === 'real' ? 'info' : 'critical'}
-                        />
-                        {hasPartialFallback ? (
-                            <StatusChip label={`fallback parcial ${cockpitData.meta.partialBlocks.length}`} tone="warning" />
-                        ) : null}
-                    </>
-                }
-                actions={
-                    <>
-                        <Link href={cockpitConversationShortcut?.href ?? '/conversas'}>
-                            <Button variant="secondary">Abrir conversas</Button>
-                        </Link>
-                        <Link href={cockpitSimulationShortcut?.href ?? '/logistica/simulador'}>
-                            <Button>Nova simulacao</Button>
-                        </Link>
-                    </>
-                }
-            />
-
-            {cockpitData.meta.source !== 'real' ? (
-                <AlertBlock
-                    tone="critical"
-                    title="Modo Fallback Ativo (Diagnostico)"
-                    description={`source=fallback | fallbackReason=${cockpitData.meta.fallbackReason ?? 'none'} | partialBlocks=[${cockpitData.meta.partialBlocks.join(', ')}]`}
+        return (
+            <ShellContainer>
+                <PageHeader
+                    eyebrow="Cockpit"
+                    title="Cockpit operacional vivo"
+                    description="Centro de comando da operacao com leitura imediata de estado, gargalos, eventos e proximas acoes. Sem BI decorativo e sem esconder a fila real atras de graficos genericos."
+                    meta={
+                        <>
+                            <StatusChip label="operacao viva" tone="success" />
+                            <StatusChip label="alertas acionaveis" tone="warning" />
+                            <StatusChip
+                                label={cockpitData.meta.source === 'real' ? 'dados operacionais reais' : 'fallback temporario'}
+                                tone={cockpitData.meta.source === 'real' ? 'info' : 'critical'}
+                            />
+                            {hasPartialFallback ? (
+                                <StatusChip label={`fallback parcial ${cockpitData.meta.partialBlocks.length}`} tone="warning" />
+                            ) : null}
+                        </>
+                    }
+                    actions={
+                        <>
+                            <Link href={cockpitConversationShortcut?.href ?? '/conversas'}>
+                                <Button variant="secondary">Abrir conversas</Button>
+                            </Link>
+                            <Link href={cockpitSimulationShortcut?.href ?? '/logistica/simulador'}>
+                                <Button>Nova simulacao</Button>
+                            </Link>
+                        </>
+                    }
                 />
-            ) : null}
 
-            <ModuleNav
-                items={[
-                    { label: 'KPI strip', current: true, detail: 'Pulso rapido da operacao' },
-                    { label: 'Alertas', detail: 'Problemas acionaveis agora' },
-                    { label: 'Feed', detail: 'Quase tempo real' },
-                    { label: 'Filas e saude', detail: 'Acao e status de plataforma' },
-                ]}
+                {cockpitData.meta.source !== 'real' ? (
+                    <AlertBlock
+                        tone="critical"
+                        title="Modo Fallback Ativo (Diagnostico)"
+                        description={`source=fallback | fallbackReason=${cockpitData.meta.fallbackReason ?? 'none'} | partialBlocks=[${cockpitData.meta.partialBlocks.join(', ')}]`}
+                    />
+                ) : null}
+
+                <ModuleNav
+                    items={[
+                        { label: 'KPI strip', current: true, detail: 'Pulso rapido da operacao' },
+                        { label: 'Alertas', detail: 'Problemas acionaveis agora' },
+                        { label: 'Feed', detail: 'Quase tempo real' },
+                        { label: 'Filas e saude', detail: 'Acao e status de plataforma' },
+                    ]}
+                />
+
+                <OperationalKpiStrip items={cockpitData.metrics} />
+                <CockpitAlertsPanel alerts={cockpitData.alerts} />
+
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+                    <OperationalEventFeed events={cockpitData.events} />
+                    <ActionQueue items={cockpitData.queue} />
+                </div>
+
+                <SystemStatusPanel items={cockpitData.systemStatus} />
+                <CockpitActionGrid shortcuts={cockpitData.shortcuts} />
+            </ShellContainer>
+        );
+    } catch (error) {
+        return (
+            <WorkspaceDiagnosticState
+                eyebrow="Cockpit"
+                title="Cockpit indisponivel"
+                description="A leitura dos dados operacionais falhou de forma critica. O requestId abaixo deve ser usado para analise de logs."
+                requestId={context.requestId}
+                ctaLabel="Tentar novamente"
+                ctaHref="/cockpit"
             />
-
-            <OperationalKpiStrip items={cockpitData.metrics} />
-            <CockpitAlertsPanel alerts={cockpitData.alerts} />
-
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-                <OperationalEventFeed events={cockpitData.events} />
-                <ActionQueue items={cockpitData.queue} />
-            </div>
-
-            <SystemStatusPanel items={cockpitData.systemStatus} />
-            <CockpitActionGrid shortcuts={cockpitData.shortcuts} />
-        </ShellContainer>
-    );
+        );
+    }
 }
 
 function WorkspaceDiagnosticState({
