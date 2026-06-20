@@ -32,6 +32,7 @@ export async function getIntegrationsStatus(tenantId: string) {
     }
 
     const whatsappConfigured = !!process.env.TWILIO_ACCOUNT_SID;
+    const melhorEnvioConfigured = !!process.env.MELHOR_ENVIO_TOKEN;
 
     const aiProviders = await db.select({ count: sql<number>`count(*)` })
         .from(tenantAiProviders)
@@ -51,6 +52,7 @@ export async function getIntegrationsStatus(tenantId: string) {
     return {
         stripe: stripeStatus,
         whatsapp: whatsappConfigured,
+        melhorEnvio: melhorEnvioConfigured,
         aiProviders: aiEnabledCount,
         dbOk,
         redisOk: !!redisOk,
@@ -67,6 +69,7 @@ export async function getTenantBasics(tenantId: string) {
         createdAt: tenants.createdAt,
         plan: tenants.plan,
         planStatus: tenants.planStatus,
+        updatedAt: tenants.createdAt, // Since there is no updatedAt column on tenants, let's map it safely to createdAt to fit dynamic card requirements
     }).from(tenants).where(eq(tenants.id, tenantId));
 
     const tenant = tResult[0];

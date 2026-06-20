@@ -381,10 +381,11 @@ async function MetricasFoundation() {
             <ContentGrid
                 main={<OperationalEventFeed events={cockpitData.events} />}
                 side={
-                    <InfoPanel title="Checklist de leitura">
-                        <InfoLine label="Tempo de resposta" value="Derivado da fila de conversas e mensagens recentes." />
-                        <InfoLine label="Cotacao -> pedido" value="Conferir cotacoes, pedidos em processamento e eventos recentes." />
-                        <InfoLine label="Handoffs" value="Conversas sem resposta aparecem na fila de acao." />
+                    <InfoPanel title="Turno do Piloto">
+                        <InfoLine label="Conversas Ativas" value={`${cockpitData.derived?.metricsSnapshot?.activeConversationCount ?? 0} no WhatsApp`} />
+                        <InfoLine label="Fila sem Resposta" value={`${cockpitData.derived?.metricsSnapshot?.unansweredConversationCount ?? 0} aguardando humano`} />
+                        <InfoLine label="Pedidos na Esteira" value={`${cockpitData.derived?.metricsSnapshot?.processingOrderCount ?? 0} em processamento`} />
+                        <InfoLine label="Exceções 24h" value={`${cockpitData.derived?.metricsSnapshot?.errorsAndExceptions ?? 0} registradas`} />
                     </InfoPanel>
                 }
             />
@@ -414,6 +415,8 @@ async function TenantFoundation({ context }: { context: WorkspaceRuntimeContext 
                         { label: 'Plano', value: tenant?.plan ?? 'nao configurado' },
                         { label: 'Ambiente', value: env.env },
                         { label: 'Dominio', value: env.domain },
+                        { label: 'Timezone', value: 'America/Sao_Paulo (America/Sao_Paulo)' },
+                        { label: 'Ultima atualizacao', value: tenant?.updatedAt ? tenant.updatedAt.toLocaleDateString('pt-BR') : 'indisponivel' },
                     ]}
                 />
             </ShellContainer>
@@ -471,10 +474,11 @@ async function ConfiguracoesFoundation({ context }: { context: WorkspaceRuntimeC
                         <SurfacePanel>
                             <SectionHeader title="Integracoes essenciais" description="Status operacional lido quando disponivel; pendencias nao sao tratadas como sucesso." />
                             <div className="mt-5 grid gap-3 md:grid-cols-2">
-                                <InfoLine label="Stripe" value={integrations?.stripe ?? 'pendente'} />
-                                <InfoLine label="WhatsApp/Twilio" value={integrations?.whatsapp ? 'configurado' : 'pendente'} />
-                                <InfoLine label="AI providers" value={integrations ? String(integrations.aiProviders) : 'pendente'} />
-                                <InfoLine label="Banco e Redis" value={integrations ? `${integrations.dbOk ? 'db ok' : 'db pendente'} / ${integrations.redisOk ? 'redis ok' : 'redis pendente'}` : 'pendente'} />
+                                <InfoLine label="Stripe" value={integrations?.stripe === 'not_configured' ? 'Não configurado' : integrations?.stripe === 'active' ? 'Ativo' : integrations?.stripe || 'pendente'} />
+                                <InfoLine label="WhatsApp/Twilio" value={integrations?.whatsapp ? 'Configurado (Operando)' : 'Pendente'} />
+                                <InfoLine label="Melhor Envio" value={integrations?.melhorEnvio ? 'Configurado (Integrado)' : 'Pendente'} />
+                                <InfoLine label="AI providers" value={integrations ? `${integrations.aiProviders} provider(s) habilitado(s)` : 'pendente'} />
+                                <InfoLine label="Banco e Redis" value={integrations ? `${integrations.dbOk ? 'DB Ok' : 'DB Inacessível'} / ${integrations.redisOk ? 'Redis Ok' : 'Redis Off'}` : 'pendente'} />
                             </div>
                         </SurfacePanel>
                     </>

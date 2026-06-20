@@ -215,6 +215,7 @@ export interface CockpitDataBundle {
     queue: CockpitActionQueueItem[];
     systemStatus: SystemStatusItem[];
     shortcuts: CockpitShortcut[];
+    derived: CockpitDerivedState;
     meta: {
         source: 'real' | 'fallback';
         generatedAt: string;
