@@ -429,7 +429,6 @@ async function TenantFoundation({ context }: { context: WorkspaceRuntimeContext 
                         { label: 'Ambiente', value: env.env },
                         { label: 'Dominio', value: env.domain },
                         { label: 'Timezone', value: 'America/Sao_Paulo (America/Sao_Paulo)' },
-                        { label: 'Ultima atualizacao', value: tenant?.updatedAt ? tenant.updatedAt.toLocaleDateString('pt-BR') : 'indisponivel' },
                     ]}
                 />
             </ShellContainer>

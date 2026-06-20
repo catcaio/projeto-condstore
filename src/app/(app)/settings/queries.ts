@@ -69,7 +69,6 @@ export async function getTenantBasics(tenantId: string) {
         createdAt: tenants.createdAt,
         plan: tenants.plan,
         planStatus: tenants.planStatus,
-        updatedAt: tenants.createdAt, // Since there is no updatedAt column on tenants, let's map it safely to createdAt to fit dynamic card requirements
     }).from(tenants).where(eq(tenants.id, tenantId));
 
     const tenant = tResult[0];

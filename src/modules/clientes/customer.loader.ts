@@ -97,7 +97,7 @@ export async function loadClientsHydrated(tenantId: string): Promise<ClientRecor
             contact: mainContact ? `${mainContact.name} • ${mainContact.role || 'Contato'}` : 'Sem contato',
             email: mainContact?.emailEncrypted ? decryptString(mainContact.emailEncrypted) : '',
             phone: mainContact?.phoneEncrypted ? decryptString(mainContact.phoneEncrypted) : '',
-            city: myOrders[0]?.service || 'São Paulo (Região)', // Address/City isn't on organizations/customers. Let's use service region or standard default
+            city: 'Não informado',
             segment: customer.segment || 'Geral',
             status: (customer.status as ClientStatus) || 'ativo',
             activityBucket: (customer.activityBucket as ClientActivityBucket) || 'recente',
