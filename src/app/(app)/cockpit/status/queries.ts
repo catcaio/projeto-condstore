@@ -1,5 +1,5 @@
 import { getDb } from '../../../../infra/db';
-import { tenantDocuments, tenantDocumentVersions, tenantKnowledgeQueries, messages, webhookEvents, tenantCollections } from '../../../../drizzle/schema';
+import { tenantDocuments, tenantDocumentVersions, tenantKnowledgeQueries, messages, webhookEvents, tenantCollections, tenantAiProviders } from '../../../../drizzle/schema';
 import { eq, count, and, desc, sql } from 'drizzle-orm';
 import { redisClient } from '../../../../infra/redis.client';
 import { planEnforcementService } from '@/modules/finops';
@@ -27,39 +27,48 @@ export async function getSystemStatus(tenantId: string, role: string): Promise<S
     const finopsData = await planEnforcementService.getPlanStatus(tenantId);
 
     // 2. IA
-    const aiProviderEnabled = true; // MVP assumption or fetch from tenant_ai_providers
+    const aiProviders = await db.select({ count: sql<number>`count(*)` })
+        .from(tenantAiProviders)
+        .where(and(eq(tenantAiProviders.tenantId, tenantId), eq(tenantAiProviders.isEnabled, 1)));
+    const aiProviderEnabled = Number(aiProviders[0]?.count || 0) > 0;
     const vectorNativeEnabled = process.env.ENABLE_VECTOR_NATIVE === 'true';
 
     const [lastAsk] = await db.select({ date: tenantKnowledgeQueries.createdAt })
         .from(tenantKnowledgeQueries)
         .where(eq(tenantKnowledgeQueries.tenantId, tenantId))
         .orderBy(desc(tenantKnowledgeQueries.createdAt))
-        ;
+        .limit(1)
+        .catch(() => []);
 
     const [lastEmbed] = await db.select({ date: tenantDocumentVersions.createdAt })
         .from(tenantDocumentVersions)
         .where(and(eq(tenantDocumentVersions.tenantId, tenantId), eq(tenantDocumentVersions.status, 'ready_indexed')))
         .orderBy(desc(tenantDocumentVersions.createdAt))
-        ;
+        .limit(1)
+        .catch(() => []);
 
     // 3. Knowledge
     const [{ docsTotal }] = await db.select({ docsTotal: count() })
         .from(tenantDocuments)
-        .where(eq(tenantDocuments.tenantId, tenantId));
+        .where(eq(tenantDocuments.tenantId, tenantId))
+        .catch(() => [{ docsTotal: 0 }]);
 
     const [{ readyTotal }] = await db.select({ readyTotal: count() })
         .from(tenantDocumentVersions)
-        .where(and(eq(tenantDocumentVersions.tenantId, tenantId), eq(tenantDocumentVersions.status, 'ready_indexed')));
+        .where(and(eq(tenantDocumentVersions.tenantId, tenantId), eq(tenantDocumentVersions.status, 'ready_indexed')))
+        .catch(() => [{ readyTotal: 0 }]);
 
     const [{ failedTotal }] = await db.select({ failedTotal: count() })
         .from(tenantDocumentVersions)
-        .where(and(eq(tenantDocumentVersions.tenantId, tenantId), eq(tenantDocumentVersions.status, 'failed')));
+        .where(and(eq(tenantDocumentVersions.tenantId, tenantId), eq(tenantDocumentVersions.status, 'failed')))
+        .catch(() => [{ failedTotal: 0 }]);
 
     const [lastSync] = await db.select({ date: tenantCollections.lastSyncAt })
         .from(tenantCollections)
         .where(eq(tenantCollections.tenantId, tenantId))
         .orderBy(desc(tenantCollections.lastSyncAt))
-        ;
+        .limit(1)
+        .catch(() => []);
 
     // Redis stream queue depth (best effort)
     let ingestQueueDepth: number | string = 'unknown';
@@ -77,20 +86,20 @@ export async function getSystemStatus(tenantId: string, role: string): Promise<S
     }
 
     // 4. WhatsApp
-    const twilioConfigured = true; // Mock assumption for MVP
+    const twilioConfigured = !!process.env.TWILIO_ACCOUNT_SID;
 
     const [lastInbound] = await db.select({ date: messages.createdAt })
         .from(messages)
         .where(and(eq(messages.tenantId, tenantId), eq(messages.direction, 'inbound' as any)))
         .orderBy(desc(messages.createdAt))
-        
+        .limit(1)
         .catch(() => [{ date: null }]);
 
     const [lastOutbound] = await db.select({ date: messages.createdAt })
         .from(messages)
         .where(and(eq(messages.tenantId, tenantId), eq(messages.direction, 'outbound' as any)))
         .orderBy(desc(messages.createdAt))
-        
+        .limit(1)
         .catch(() => [{ date: null }]);
 
     const outboundBlockedByFinops = finopsData.state === 'locked' || finopsData.state === 'degraded';

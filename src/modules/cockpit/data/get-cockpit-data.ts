@@ -12,8 +12,35 @@ import { getCockpitMetrics } from './get-cockpit-metrics';
 import { getCockpitQueues } from './get-cockpit-queues';
 import { getCockpitShortcuts } from './get-cockpit-shortcuts';
 import { getSystemStatusItems } from './get-system-status';
-import type { CockpitDataBundle } from './shared';
+import type { CockpitDataBundle, CockpitDerivedState } from './shared';
 import { loadCockpitRawData, resolveCockpitRequestContext } from './shared';
+
+const emptyDerived: CockpitDerivedState = {
+    metricsSnapshot: {
+        activeConversationCount: 0,
+        unansweredConversationCount: 0,
+        processingOrderCount: 0,
+        pendingOrdersCount: 0,
+        simulationsToday: 0,
+        pendingFreightCount: 0,
+        errorsAndExceptions: 0,
+        activeIncidentCount: 0,
+        failedDomineEventsCount: 0,
+        failedWebhookEventsCount: 0,
+        criticalSystemCount: 0,
+    },
+    routeHints: {
+        conversationsHref: '/conversas',
+        ordersHref: '/pedidos',
+        logisticsHref: '/logistica',
+        exceptionsHref: '/logistica',
+        simulatorHref: '/logistica/simulador',
+        metricsHref: '/metricas',
+    },
+    unansweredConversations: [],
+    pendingOrders: [],
+    pendingFreight: [],
+};
 
 export async function getCockpitData(): Promise<CockpitDataBundle> {
     const context = await resolveCockpitRequestContext();
@@ -26,6 +53,7 @@ export async function getCockpitData(): Promise<CockpitDataBundle> {
             queue: cockpitActionQueue,
             systemStatus: cockpitSystemStatus,
             shortcuts: cockpitShortcuts,
+            derived: emptyDerived,
             meta: {
                 source: 'fallback',
                 generatedAt: new Date().toISOString(),
@@ -50,6 +78,7 @@ export async function getCockpitData(): Promise<CockpitDataBundle> {
             queue: getCockpitQueues(rawData),
             systemStatus,
             shortcuts: getCockpitShortcuts(rawData),
+            derived: rawData.derived,
             meta: {
                 source: 'real',
                 generatedAt: rawData.generatedAt,
@@ -57,8 +86,22 @@ export async function getCockpitData(): Promise<CockpitDataBundle> {
                 tenantId: rawData.context.tenantId,
             },
         };
-    } catch (error) {
-        // Return a diagnostic error state instead of mocking
-        throw error;
+    } catch {
+        return {
+            metrics: cockpitMetrics,
+            alerts: cockpitAlerts,
+            events: cockpitEvents,
+            queue: cockpitActionQueue,
+            systemStatus: cockpitSystemStatus,
+            shortcuts: cockpitShortcuts,
+            derived: emptyDerived,
+            meta: {
+                source: 'fallback',
+                generatedAt: new Date().toISOString(),
+                partialBlocks: ['cockpit_data'],
+                fallbackReason: 'cockpit_data_query_failed',
+                tenantId: context.tenantId,
+            },
+        };
     }
 }
