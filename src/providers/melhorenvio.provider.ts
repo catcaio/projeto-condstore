@@ -8,6 +8,7 @@ import { ErrorCode, ProviderError } from '../infra/errors';
 import { logger } from '../infra/logger';
 import { circuitBreaker } from '../infra/security/circuit-breaker';
 import { structuredLogger } from '../infra/log/logger';
+import { secretResolver } from '../infra/security/secret-resolver';
 
 export interface ShippingQuoteRequest {
   tenantId: string;
@@ -159,7 +160,21 @@ class MelhorEnvioProvider {
     body?: object,
     maxRetries: number = melhorEnvioConfig.maxRetries
   ): Promise<T> {
-    const url = `${melhorEnvioConfig.apiUrl}${endpoint}`;
+    const apiUrl = await secretResolver.getValue(
+      tenantId,
+      'melhorenvio',
+      'MELHOR_ENVIO_API_URL',
+      'MELHOR_ENVIO_API_URL'
+    ).catch(() => melhorEnvioConfig.apiUrl);
+
+    const token = await secretResolver.getValue(
+      tenantId,
+      'melhorenvio',
+      'MELHOR_ENVIO_TOKEN',
+      'MELHOR_ENVIO_TOKEN'
+    );
+
+    const url = `${apiUrl}${endpoint}`;
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -169,7 +184,7 @@ class MelhorEnvioProvider {
         const response = await fetch(url, {
           method,
           headers: {
-            Authorization: `Bearer ${melhorEnvioConfig.token}`,
+            Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
             'User-Agent': 'CondStore/1.0',

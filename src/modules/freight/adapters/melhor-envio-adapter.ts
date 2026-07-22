@@ -3,13 +3,18 @@
  *
  * Calls the Melhor Envio shipping API to get quotes for light packages.
  * Returns normalized quote format compatible with the freight engine.
+ *
+ * Credentials are resolved per-tenant via secretResolver (AES-256-GCM encrypted at rest).
+ * Falls back to process.env for backward compatibility during migration.
  */
 
 import { logger } from '../../../infra/logger';
+import { secretResolver } from '../../../infra/security/secret-resolver';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface MelhorEnvioQuoteRequest {
+    tenantId: string;
     originCep: string;
     destinationCep: string;
     weight: number;    // kg
@@ -31,17 +36,33 @@ export interface MelhorEnvioQuote {
 
 // ─── API call ───────────────────────────────────────────────────────────────
 
-const ME_API_URL = process.env.MELHOR_ENVIO_API_URL
-    ? `${process.env.MELHOR_ENVIO_API_URL}/me/shipment/calculate`
-    : 'https://melhorenvio.com.br/api/v2/me/shipment/calculate';
+const ME_API_URL_DEFAULT = 'https://melhorenvio.com.br/api/v2/me/shipment/calculate';
 
 export async function getQuotesFromMelhorEnvio(request: MelhorEnvioQuoteRequest): Promise<MelhorEnvioQuote[]> {
-    const token = process.env.MELHOR_ENVIO_TOKEN;
-
-    if (!token) {
-        logger.warn('melhor_envio_adapter: MELHOR_ENVIO_TOKEN not configured');
+    // Resolve token per-tenant (encrypted in DB, falls back to .env)
+    let token: string;
+    try {
+        token = await secretResolver.getValue(request.tenantId, 'melhorenvio', 'MELHOR_ENVIO_TOKEN', 'MELHOR_ENVIO_TOKEN');
+    } catch {
+        logger.warn('melhor_envio_adapter: MELHOR_ENVIO_TOKEN not configured for tenant', {
+            tenantId: request.tenantId
+        });
         return [];
     }
+
+    if (!token) {
+        logger.warn('melhor_envio_adapter: MELHOR_ENVIO_TOKEN resolved as empty for tenant', {
+            tenantId: request.tenantId
+        });
+        return [];
+    }
+
+    // Resolve API URL per-tenant (non-sensitive, with safe fallback)
+    const apiUrl = await secretResolver.getValue(
+        request.tenantId, 'melhorenvio', 'MELHOR_ENVIO_API_URL', 'MELHOR_ENVIO_API_URL'
+    ).catch(() => process.env.MELHOR_ENVIO_API_URL || 'https://melhorenvio.com.br/api/v2');
+
+    const ME_API_URL = `${apiUrl}/me/shipment/calculate`;
 
     try {
         const payload = {

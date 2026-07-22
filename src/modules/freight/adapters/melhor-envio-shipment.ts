@@ -8,6 +8,7 @@ import { logger } from '../../../infra/logger';
 import { getDb } from '../../../infra/db';
 import { freightShipments } from '../../../drizzle/schema';
 import { randomUUID } from 'crypto';
+import { secretResolver } from '../../../infra/security/secret-resolver';
 
 export interface RecipientData {
     name: string;
@@ -51,31 +52,32 @@ export interface CreateShipmentResult {
     status: string;
 }
 
-const ME_BASE_URL = process.env.MELHOR_ENVIO_API_URL
-    ? `${process.env.MELHOR_ENVIO_API_URL}`
-    : 'https://melhorenvio.com.br/api/v2';
-
-const ME_API_URL = `${ME_BASE_URL}/me/cart`;
-
 export async function createShipmentFromQuote(input: CreateShipmentInput): Promise<CreateShipmentResult> {
-    const token = process.env.MELHOR_ENVIO_TOKEN;
+    const token = await secretResolver.getValue(input.tenantId, 'melhorenvio', 'MELHOR_ENVIO_TOKEN', 'MELHOR_ENVIO_TOKEN');
 
     if (!token) {
         throw new Error('MELHOR_ENVIO_TOKEN not configured');
     }
 
-    const fromName = process.env.MELHOR_ENVIO_FROM_NAME || 'CONDSTORE OS';
-    const fromEmail = process.env.MELHOR_ENVIO_FROM_EMAIL || 'contato@condstore.com.br';
-    const fromPhone = process.env.MELHOR_ENVIO_FROM_PHONE || '48999999999';
-    const fromDocument = process.env.MELHOR_ENVIO_FROM_DOCUMENT;
-    const fromCompanyDocument = process.env.MELHOR_ENVIO_FROM_COMPANY_DOCUMENT;
-    const fromPostalCode = process.env.MELHOR_ENVIO_FROM_POSTAL_CODE;
-    const fromAddress = process.env.MELHOR_ENVIO_FROM_ADDRESS;
-    const fromNumber = process.env.MELHOR_ENVIO_FROM_NUMBER;
-    const fromComplement = process.env.MELHOR_ENVIO_FROM_COMPLEMENT || '';
-    const fromDistrict = process.env.MELHOR_ENVIO_FROM_DISTRICT;
-    const fromCity = process.env.MELHOR_ENVIO_FROM_CITY;
-    const fromState = process.env.MELHOR_ENVIO_FROM_STATE;
+    const apiUrl = await secretResolver.getValue(input.tenantId, 'melhorenvio', 'MELHOR_ENVIO_API_URL', 'MELHOR_ENVIO_API_URL')
+        .catch(() => 'https://melhorenvio.com.br/api/v2');
+    const ME_API_URL = `${apiUrl}/me/cart`;
+
+    const getSafeVal = async (key: string, def: string = '') => 
+        secretResolver.getValue(input.tenantId, 'melhorenvio', key, key).catch(() => def);
+
+    const fromName = await getSafeVal('MELHOR_ENVIO_FROM_NAME', 'CONDSTORE OS');
+    const fromEmail = await getSafeVal('MELHOR_ENVIO_FROM_EMAIL', 'contato@condstore.com.br');
+    const fromPhone = await getSafeVal('MELHOR_ENVIO_FROM_PHONE', '48999999999');
+    const fromDocument = await getSafeVal('MELHOR_ENVIO_FROM_DOCUMENT');
+    const fromCompanyDocument = await getSafeVal('MELHOR_ENVIO_FROM_COMPANY_DOCUMENT');
+    const fromPostalCode = await getSafeVal('MELHOR_ENVIO_FROM_POSTAL_CODE');
+    const fromAddress = await getSafeVal('MELHOR_ENVIO_FROM_ADDRESS');
+    const fromNumber = await getSafeVal('MELHOR_ENVIO_FROM_NUMBER');
+    const fromComplement = await getSafeVal('MELHOR_ENVIO_FROM_COMPLEMENT');
+    const fromDistrict = await getSafeVal('MELHOR_ENVIO_FROM_DISTRICT');
+    const fromCity = await getSafeVal('MELHOR_ENVIO_FROM_CITY');
+    const fromState = await getSafeVal('MELHOR_ENVIO_FROM_STATE');
 
     if (!fromPostalCode || !fromAddress || !fromNumber || !fromDistrict || !fromCity || !fromState) {
         throw new Error('Missing required ME sender address fields in environment variables.');
@@ -173,7 +175,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         const data: any = await res.json();
 
         // Checkout the cart immediately to generate the label
-        const checkoutRes = await fetch(`${ME_BASE_URL}/me/shipment/checkout`, {
+        const checkoutRes = await fetch(`${apiUrl}/me/shipment/checkout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -192,7 +194,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         }
 
         // Fetch the created order to get the tracking code
-        const printRes = await fetch(`${ME_BASE_URL}/me/shipment/print`, {
+        const printRes = await fetch(`${apiUrl}/me/shipment/print`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -235,7 +237,7 @@ export async function createShipmentFromQuote(input: CreateShipmentInput): Promi
         return {
             shipmentId,
             trackingCode,
-            trackingUrl: `${ME_BASE_URL.replace('/api/v2', '')}/rastreio/${trackingCode}`,
+            trackingUrl: `${apiUrl.replace('/api/v2', '')}/rastreio/${trackingCode}`,
             price: data.price ? parseFloat(data.price) : input.quotePrice,
             status: data.status || 'pending',
         };
