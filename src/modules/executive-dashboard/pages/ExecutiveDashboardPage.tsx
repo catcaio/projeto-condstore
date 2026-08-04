@@ -19,6 +19,7 @@ export const ExecutiveDashboardPage: React.FC = () => {
     sidebarOpen,
     setSidebarOpen,
     isProcessing,
+    errorMessage,
     files,
     handleFilesSelected,
     handleRemoveFile,
@@ -94,6 +95,7 @@ export const ExecutiveDashboardPage: React.FC = () => {
               onRemoveFile={handleRemoveFile}
               onProcessDashboard={handleProcessDashboard}
               isProcessing={isProcessing}
+              errorMessage={errorMessage}
             />
           )}
 

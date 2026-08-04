@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import {
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   FileSpreadsheet,
   FileText,
@@ -11,10 +12,11 @@ import {
   Sparkles,
   Trash2,
   UploadCloud,
+  XCircle,
 } from 'lucide-react';
-import { FileUploadState, ReportType } from '../types';
-import { formatFileSize, formatDate } from '../utils/formatters';
-import { detectReportTypeFromFileName, getReportTypeLabel } from '../utils/report-detector';
+import { FileUploadState } from '../types';
+import { formatFileSize } from '../utils/formatters';
+import { getReportTypeLabel } from '../utils/report-detector';
 
 interface FileUploadAreaProps {
   files: FileUploadState[];
@@ -22,6 +24,7 @@ interface FileUploadAreaProps {
   onRemoveFile: (id: string) => void;
   onProcessDashboard: () => void;
   isProcessing: boolean;
+  errorMessage?: string | null;
 }
 
 export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
@@ -30,6 +33,7 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
   onRemoveFile,
   onProcessDashboard,
   isProcessing,
+  errorMessage,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -61,11 +65,19 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
   };
 
   // Check required types present
-  const hasEvolucao = files.some((f) => f.identifiedType === 'EVOLUCAO_NEGOCIO');
-  const hasPublicacoes = files.some((f) => f.identifiedType === 'DESEMPENHO_PUBLICACOES');
-  const hasProdutos = files.some((f) => f.identifiedType === 'DESEMPENHO_PRODUTO');
+  const evolucaoFiles = files.filter((f) => f.identifiedType === 'EVOLUCAO_NEGOCIO');
+  const publicacoesFiles = files.filter((f) => f.identifiedType === 'DESEMPENHO_PUBLICACOES');
+  const produtosFiles = files.filter((f) => f.identifiedType === 'DESEMPENHO_PRODUTO');
+  const invalidFiles = files.filter((f) => f.identifiedType === 'DESCONHECIDO');
 
-  const allThreeReady = hasEvolucao && hasPublicacoes && hasProdutos;
+  const hasEvolucao = evolucaoFiles.length > 0;
+  const hasPublicacoes = publicacoesFiles.length > 0;
+  const hasProdutos = produtosFiles.length > 0;
+
+  const hasDuplicates =
+    evolucaoFiles.length > 1 || publicacoesFiles.length > 1 || produtosFiles.length > 1;
+
+  const allThreeReady = hasEvolucao && hasPublicacoes && hasProdutos && !hasDuplicates && invalidFiles.length === 0;
 
   return (
     <section className="space-y-6 rounded-2xl border border-slate-800 bg-slate-900/80 p-6 backdrop-blur-md shadow-xl">
@@ -77,18 +89,38 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
           <div>
             <h2 className="text-lg font-bold text-white">Importar Relatórios Mercado Livre</h2>
             <p className="text-xs text-slate-400">
-              Selecione ou arraste os 3 arquivos Excel (.xlsx) exportados do painel do Mercado Livre
+              Selecione ou arraste exatamente os 3 arquivos `.xlsx` oficiais exportados do Mercado Livre
             </p>
           </div>
         </div>
       </div>
+
+      {/* General Error Alert if any */}
+      {errorMessage && (
+        <div className="flex items-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300">
+          <XCircle className="h-5 w-5 shrink-0 text-rose-400" />
+          <span className="font-semibold">{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Duplicate warning alert */}
+      {hasDuplicates && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-300">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" />
+          <span>
+            <strong>Atenção para Duplicidade:</strong> Foram detectados múltiplos arquivos do mesmo tipo de relatório. Por favor, mantenha apenas 1 arquivo de cada tipo.
+          </span>
+        </div>
+      )}
 
       {/* Mandatory Reports Requirements Box */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div
           className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-xs transition-all ${
             hasEvolucao
-              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+              ? evolucaoFiles.length > 1
+                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
               : 'border-slate-800 bg-slate-950/70 text-slate-400'
           }`}
         >
@@ -106,7 +138,9 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
         <div
           className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-xs transition-all ${
             hasPublicacoes
-              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+              ? publicacoesFiles.length > 1
+                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
               : 'border-slate-800 bg-slate-950/70 text-slate-400'
           }`}
         >
@@ -124,7 +158,9 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
         <div
           className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-xs transition-all ${
             hasProdutos
-              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+              ? produtosFiles.length > 1
+                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
               : 'border-slate-800 bg-slate-950/70 text-slate-400'
           }`}
         >
@@ -177,85 +213,125 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
       </div>
 
       {/* Loaded Files List */}
-      {files.length > 0 && (
+      {files.length > 0 ? (
         <div className="space-y-3 pt-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Arquivos Carregados ({files.length})
+            Arquivos Selecionados ({files.length})
           </h3>
 
           <div className="space-y-2">
-            {files.map((fileState) => (
-              <div
-                key={fileState.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950 p-3.5 transition-all"
-              >
-                <div className="flex items-center gap-3 min-w-[200px]">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    <CheckCircle2 className="h-5 w-5" />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-white text-xs truncate max-w-xs">
-                        {fileState.fileName}
-                      </span>
-                      <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
-                        ✔ Carregado
-                      </span>
+            {files.map((fileState) => {
+              const isInvalid = fileState.identifiedType === 'DESCONHECIDO';
+              return (
+                <div
+                  key={fileState.id}
+                  className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 transition-all ${
+                    isInvalid
+                      ? 'border-rose-500/40 bg-rose-500/10'
+                      : 'border-slate-800 bg-slate-950'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-[200px]">
+                    <div
+                      className={`flex h-9 w-9 items-center justify-center rounded-lg border ${
+                        isInvalid
+                          ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                          : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                      }`}
+                    >
+                      {isInvalid ? (
+                        <AlertCircle className="h-5 w-5" />
+                      ) : (
+                        <CheckCircle2 className="h-5 w-5" />
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
-                      <span>Tamanho: {formatFileSize(fileState.fileSize)}</span>
-                      <span>•</span>
-                      <span>Data: {fileState.uploadDate}</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-white text-xs truncate max-w-xs">
+                          {fileState.fileName}
+                        </span>
+                        {isInvalid ? (
+                          <span className="rounded bg-rose-500/20 px-2 py-0.5 text-[10px] font-bold text-rose-300 border border-rose-500/30">
+                            Inválido / Não Permitido
+                          </span>
+                        ) : (
+                          <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
+                            ✔ Carregado
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
+                        <span>Tamanho: {formatFileSize(fileState.fileSize)}</span>
+                        <span>•</span>
+                        <span>Data: {fileState.uploadDate}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <span className="block text-xs font-semibold text-blue-400">
-                      {getReportTypeLabel(fileState.identifiedType)}
-                    </span>
-                    <span className="text-[10px] text-slate-400">Tipo Identificado</span>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <span
+                        className={`block text-xs font-semibold ${
+                          isInvalid ? 'text-rose-400' : 'text-blue-400'
+                        }`}
+                      >
+                        {getReportTypeLabel(fileState.identifiedType)}
+                      </span>
+                      <span className="text-[10px] text-slate-400">Tipo Identificado</span>
+                    </div>
+
+                    <button
+                      onClick={() => onRemoveFile(fileState.id)}
+                      className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-rose-400 transition-colors"
+                      title="Remover arquivo"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-
-                  <button
-                    onClick={() => onRemoveFile(fileState.id)}
-                    className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-rose-400 transition-colors"
-                    title="Remover arquivo"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+        </div>
+      ) : (
+        /* Empty State */
+        <div className="rounded-xl border border-slate-800/80 bg-slate-950/40 p-6 text-center text-xs text-slate-400">
+          <FileText className="h-6 w-6 text-slate-600 mx-auto mb-2" />
+          <p className="font-semibold text-slate-300">Nenhum arquivo selecionado</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Adicione os 3 relatórios exportados do Mercado Livre para habilitar o processamento.
+          </p>
         </div>
       )}
 
       {/* Bottom Action Button */}
-      <div className="flex items-center justify-between border-t border-slate-800 pt-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-4">
         <div className="text-xs text-slate-400">
           {allThreeReady ? (
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
               <CheckCircle2 className="h-4 w-4" />
-              Todos os 3 relatórios obrigatórios foram selecionados e identificados!
+              Os 3 relatórios obrigatórios foram validados e estão prontos!
+            </span>
+          ) : invalidFiles.length > 0 ? (
+            <span className="text-rose-400 font-semibold">
+              Remova os arquivos não identificados/inválidos para prosseguir.
             </span>
           ) : (
             <span className="text-amber-400 font-medium">
-              Selecione os 3 relatórios para habilitar a atualização completa do dashboard.
+              Selecione os 3 relatórios oficiais (`Evolução`, `Publicações` e `Produtos`) para habilitar o dashboard.
             </span>
           )}
         </div>
 
         <button
           onClick={onProcessDashboard}
-          disabled={isProcessing}
+          disabled={!allThreeReady || isProcessing}
           className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-lg transition-all ${
-            allThreeReady
+            allThreeReady && !isProcessing
               ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-600/30'
-              : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
           }`}
         >
           <Sparkles className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />

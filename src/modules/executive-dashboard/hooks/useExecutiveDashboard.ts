@@ -26,6 +26,7 @@ export function useExecutiveDashboard() {
   const [activeView, setActiveView] = useState<'dashboard' | 'import' | 'history' | 'channels'>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // File upload state
   const [files, setFiles] = useState<FileUploadState[]>([]);
@@ -63,6 +64,7 @@ export function useExecutiveDashboard() {
 
   // Handle files selection
   const handleFilesSelected = useCallback((selectedFiles: File[]) => {
+    setErrorMessage(null);
     const newStates: FileUploadState[] = selectedFiles.map((file) => {
       const type = detectReportTypeFromFileName(file.name);
       return {
@@ -77,19 +79,20 @@ export function useExecutiveDashboard() {
     });
 
     setFiles((prev) => {
-      // Avoid duplicate filenames
       const filteredPrev = prev.filter((p) => !newStates.some((n) => n.fileName === p.fileName));
       return [...filteredPrev, ...newStates];
     });
   }, []);
 
   const handleRemoveFile = useCallback((id: string) => {
+    setErrorMessage(null);
     setFiles((prev) => prev.filter((f) => f.id !== id));
   }, []);
 
   // Process all uploaded excel files
   const handleProcessDashboard = useCallback(async () => {
     setIsProcessing(true);
+    setErrorMessage(null);
     try {
       let evol: EvolucaoNegocioRow[] = [];
       let pub: DesempenhoPublicacoesRow[] = [];
@@ -98,6 +101,11 @@ export function useExecutiveDashboard() {
       for (const fState of files) {
         if (fState.file && fState.identifiedType !== 'DESCONHECIDO') {
           const res = await parseReportFile(fState.file, fState.identifiedType);
+          if (res.error) {
+            setErrorMessage(res.error);
+            setIsProcessing(false);
+            return;
+          }
           if (res.evolucaoRows) evol = res.evolucaoRows;
           if (res.publicacoesRows) pub = res.publicacoesRows;
           if (res.produtosRows) prod = res.produtosRows;
@@ -122,6 +130,7 @@ export function useExecutiveDashboard() {
       setActiveView('dashboard');
     } catch (err) {
       console.error('Erro ao processar relatórios Excel:', err);
+      setErrorMessage('Ocorreu um erro ao ler um dos arquivos Excel. Verifique a formatação do arquivo.');
     } finally {
       setIsProcessing(false);
     }
@@ -167,6 +176,7 @@ export function useExecutiveDashboard() {
     sidebarOpen,
     setSidebarOpen,
     isProcessing,
+    errorMessage,
     files,
     handleFilesSelected,
     handleRemoveFile,
