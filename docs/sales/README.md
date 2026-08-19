@@ -46,3 +46,4 @@ Use sempre nesta ordem:
 - Travar objeccoes: `objection-handling.md`
 - Converter para piloto: `closing-script.md`
 - Cobrar resposta sem enrolacao: `follow-up.md`
+- Home publica / marketing: `public-home-landing-page.md`
