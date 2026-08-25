@@ -15,23 +15,38 @@ export interface ParsedReportsResult {
 }
 
 /**
- * Dynamic import for SheetJS (xlsx) to guarantee minimal bundle size
+ * Dynamic import for read-excel-file to guarantee minimal bundle size
  * and zero impact on initial page load for the CONDSTORE core application.
  */
 export async function readExcelFileToJSON(file: File): Promise<Record<string, unknown>[]> {
-  const XLSX = await import('xlsx');
-  const arrayBuffer = await file.arrayBuffer();
-  const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
-  const firstSheetName = workbook.SheetNames[0];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const readXlsxFileModule: any = await import('read-excel-file/browser');
+  const readXlsxFile = readXlsxFileModule.default || readXlsxFileModule;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: any[] = await readXlsxFile(file, { dateFormat: 'yyyy-mm-dd' });
 
-  if (!firstSheetName) {
+  if (!rows || rows.length < 2) {
     return [];
   }
 
-  const worksheet = workbook.Sheets[firstSheetName];
-  const jsonRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
-    defval: '',
-  });
+  const headers = rows[0].map((h: unknown) => String(h ?? '').trim());
+  const jsonRows: Record<string, unknown>[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.every((val: unknown) => val === null || val === undefined || val === '')) {
+      continue;
+    }
+
+    const rowObj: Record<string, unknown> = {};
+    headers.forEach((header: string, colIdx: number) => {
+      if (header) {
+        rowObj[header] = row[colIdx] ?? '';
+      }
+    });
+
+    jsonRows.push(rowObj);
+  }
 
   return jsonRows;
 }
