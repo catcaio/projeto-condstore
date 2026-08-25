@@ -302,6 +302,7 @@
 | /evolution | TBA | public | none | PUBLIC | live | Auto-detected |
 | /evolution/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
 | /evolution/roadmap | TBA | public | none | PUBLIC | live | Auto-detected |
+| /executive-dashboard | Executive Dashboard | public | none | PUBLIC | live | Added |
 | /faq | FAQ | public | none | PUBLIC | live | FAQ Page |
 | /financeiro/frete | GET | internal | required | console | live | Custos de Frete (stub — em breve) |
 | /financeiro/margem | GET | internal | required | console | live | Margem operacional (stub — em breve) |
