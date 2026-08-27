@@ -297,6 +297,7 @@
 | `/evolution` | Page |
 | `/evolution/[id]` | Page |
 | `/evolution/roadmap` | Page |
+| `/executive-dashboard` | Page |
 | `/faq` | Page |
 | `/financeiro/frete` | Page |
 | `/financeiro/margem` | Page |
