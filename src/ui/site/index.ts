@@ -18,3 +18,4 @@ export { OperationProof } from './operation-proof';
 export { FaqSection } from './faq-section';
 export { ScrollReveal } from './scroll-reveal';
 export { MvpCoreFlowSection } from './mvp-core-flow-section';
+export { AgilizapInteractiveFlow } from './agilizap-interactive-flow';

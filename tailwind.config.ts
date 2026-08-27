@@ -8,12 +8,23 @@ const config: Config = {
     ],
     theme: {
         extend: {
+            fontFamily: {
+                headline: ['Space Grotesk', 'system-ui', 'sans-serif'],
+                body: ['Inter', 'system-ui', 'sans-serif'],
+                mono: ['IBM Plex Mono', 'monospace'],
+            },
             backgroundImage: {
                 'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
                 'gradient-conic':
                     'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
             },
             colors: {
+                agilizap: {
+                    ink: '#0B0E13',
+                    paper: '#F5F6F8',
+                    accent: '#3E5CFF',
+                    status: '#17C964',
+                },
                 border: 'hsl(var(--border))',
                 input: 'hsl(var(--input))',
                 ring: 'hsl(var(--ring))',
