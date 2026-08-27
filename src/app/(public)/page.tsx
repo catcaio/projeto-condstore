@@ -1,340 +1,151 @@
 import Link from 'next/link';
 import {
-    AlertTriangle,
     ArrowRight,
-    CheckCircle2,
-    Clock3,
-    FileSearch,
-    Gauge,
-    KanbanSquare,
+    Check,
+    LockKeyhole,
     MessageCircle,
-    PackageCheck,
-    Route,
-    UserCheck,
+    Package,
+    Send,
+    ShieldCheck,
+    Sparkles,
+    Truck,
 } from 'lucide-react';
-import {
-    FeatureGrid,
-    OperationFlow,
-    PageContainer,
-    PageSection,
-    ScrollReveal,
-    SectionIntro,
-} from '@/ui/site';
+import { AgilizapFlowSignature } from '@/ui/site/agilizap-flow-signature';
 
 export const metadata = {
-    title: 'CONDSTORE OS — Operação comercial e logística com controle real',
-    description: 'Landing institucional oficial do CONDSTORE OS: operação supervisionada via WhatsApp, CRM operacional, frete e pedidos em um fluxo único com governança.',
+    title: 'AGILIZAP — Um fluxo comercial contínuo',
+    description:
+        'AGILIZAP transforma contatos, negociações e operações fragmentadas em um fluxo comercial contínuo.',
 };
 
-export const revalidate = 86400;
+const steps = [
+    ['01', 'Canal', 'O contato entra.', 'WhatsApp, e-mail, marketplace ou entrada manual começam a mesma jornada.', MessageCircle],
+    ['02', 'Identidade', 'O cliente é reconhecido.', 'O contexto acompanha a pessoa mesmo quando o canal ou a conversa muda.', ShieldCheck],
+    ['03', 'Negociação', 'A conversa continua.', 'A negociação sobrevive à troca de canal e à reabertura da conversa.', Send],
+    ['04', 'Proposta', 'Cada versão permanece.', 'v1, v2, v3: a proposta pode ser revisada sem apagar o contexto anterior.', Package],
+    ['05', 'Execução', 'A operação avança.', 'Pedido, frete, transportadora e rastreio seguem a mesma linha de contexto.', Truck],
+] as const;
 
-const primaryCtaClass = 'inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[hsl(var(--ui-text))] px-6 text-sm font-semibold text-[hsl(var(--ui-page))] transition-colors hover:bg-[hsl(var(--ui-text-muted))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]';
-const secondaryCtaClass = 'inline-flex h-12 items-center justify-center rounded-full border border-[hsl(var(--ui-border-strong))] px-6 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]';
-const inlineLinkClass = 'inline-flex items-center gap-1 text-sm font-semibold text-[hsl(var(--ui-text))] underline-offset-4 transition-colors hover:text-[hsl(var(--ui-text-muted))] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]';
-
-const painItems = [
-    {
-        icon: MessageCircle,
-        title: 'Contexto quebrado no atendimento',
-        description: 'A conversa acontece em uma tela e o status operacional está em outra. O time responde sem visão completa.',
-    },
-    {
-        icon: Clock3,
-        title: 'Cotação vira gargalo diário',
-        description: 'Sem trilha única de decisão, a resposta ao cliente atrasa e a janela comercial se fecha.',
-    },
-    {
-        icon: AlertTriangle,
-        title: 'Exceções aparecem tarde',
-        description: 'Pedido e shipment sem leitura contínua de estado geram retrabalho, urgência e ruído com o cliente.',
-    },
-    {
-        icon: FileSearch,
-        title: 'Governança fica reativa',
-        description: 'Sem rastro operacional consolidado, fica difícil auditar decisões e priorizar ação de forma confiável.',
-    },
-];
-
-const operationalSteps = [
-    {
-        icon: MessageCircle,
-        label: 'WhatsApp supervisionado',
-        detail: 'A conversa entra no fluxo com histórico de cliente e prioridade visível para o operador.',
-    },
-    {
-        icon: Route,
-        label: 'Cotação de frete no mesmo contexto',
-        detail: 'A equipe compara opções com critério operacional e mantém a negociação na mesma linha de execução.',
-        accent: 'var(--ui-success)',
-    },
-    {
-        icon: PackageCheck,
-        label: 'Pedido e shipment com dono',
-        detail: 'A aprovação operacional vira pedido com responsável definido e trilha rastreável de ponta a ponta.',
-    },
-    {
-        icon: Gauge,
-        label: 'Cockpit diário de decisão',
-        detail: 'SLA, exceções, fila e próximos passos ficam visiveis para execução e governança contínuas.',
-        accent: 'var(--ui-success)',
-    },
-];
-
-const cockpitCards = [
-    {
-        icon: KanbanSquare,
-        title: 'Fila com prioridade explícita',
-        description: 'O time sabe o que agir primeiro e por que, sem depender de memória ou planilha paralela.',
-    },
-    {
-        icon: AlertTriangle,
-        title: 'Exceção tratada com contexto',
-        description: 'Atraso, risco e bloqueio aparecem no estado certo, com responsável e próximo passo definidos.',
-    },
-    {
-        icon: Gauge,
-        title: 'SLA visível por operação',
-        description: 'Prazos e tempos de resposta ficam claros por fila, responsável e etapa do fluxo.',
-    },
-    {
-        icon: UserCheck,
-        title: 'Decisão com responsabilidade',
-        description: 'Cada aprovação é vinculada a usuário, horário e contexto comercial para auditoria real.',
-    },
-];
-
-const proofItems = [
-    'A operação é supervisionada: o operador mantém a decisão em pontos críticos do fluxo.',
-    'Atendimento, cotação, pedido e shipment compartilham a mesma trilha de execução.',
-    'O cockpit diário prioriza ação rápida com estado visível e responsabilidade definida.',
-    'Governança não é discurso: decisão, contexto e histórico ficam rastreaveis para o time.',
-];
+function SectionLabel({ children }: { children: React.ReactNode }) {
+    return <p className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--ag-muted)]">{children}</p>;
+}
 
 export default function HomePage() {
     return (
-        <>
-            <section className="border-b border-[hsl(var(--ui-border)/0.4)]">
-                <PageContainer className="py-14 md:py-20">
-                    <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+        <div className="bg-[var(--ag-paper)] text-[var(--ag-ink)]">
+            <section className="relative overflow-hidden border-b border-black/[0.08] bg-[var(--ag-ink)] text-white">
+                <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.5)_1px,transparent_1px)] [background-size:48px_48px]" />
+                <div className="relative mx-auto max-w-7xl px-5 pb-20 pt-20 sm:px-8 lg:pb-28 lg:pt-28">
+                    <div className="grid items-center gap-14 lg:grid-cols-[0.88fr_1.12fr]">
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--ui-text-subtle))]">
-                                CONDSTORE OS • HOME CANÔNICA
-                            </p>
-                            <h1
-                                data-testid="public-hero-title"
-                                className="mt-4 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-[hsl(var(--ui-text))] md:text-5xl"
-                            >
-                                Do WhatsApp ao cockpit: atendimento, frete, pedido e logística no mesmo fluxo.
+                            <SectionLabel>Operação comercial contínua</SectionLabel>
+                            <h1 data-testid="public-hero-title" className="mt-5 max-w-3xl font-[family-name:var(--font-space)] text-5xl font-medium leading-[0.98] tracking-[-0.055em] sm:text-6xl lg:text-[72px]">
+                                O contexto continua. A operação também.
                             </h1>
-                            <p className="mt-5 max-w-3xl text-lg leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                                O CONDSTORE OS conecta atendimento supervisionado pelo WhatsApp, cotação de frete, pedido e logística em um fluxo único.
-                                {' '}
-                                Frank atua como copiloto supervisionado enquanto o cockpit mantém estado, prioridade e decisão visíveis para o gestor.
+                            <p className="mt-7 max-w-xl text-lg leading-8 text-white/65 sm:text-xl">
+                                AGILIZAP transforma contatos, negociações e operações fragmentadas em um fluxo comercial contínuo.
                             </p>
-                            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <Link href="/piloto" className={primaryCtaClass} data-testid="public-primary-cta">
-                                    Solicitar avaliação operacional
-                                    <ArrowRight className="h-4 w-4" />
+                            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                                <Link href="/piloto" data-testid="public-primary-cta" className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[var(--ag-accent)] px-6 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                                    Conhecer o AGILIZAP <ArrowRight className="h-4 w-4" />
                                 </Link>
-                                <Link href="/login" className={secondaryCtaClass}>
-                                    Entrar no sistema
-                                </Link>
-                            </div>
-                            <div className="mt-5 flex flex-wrap gap-5">
-                                <Link href="/proof" className={inlineLinkClass}>
-                                    Ver prova operacional
-                                </Link>
-                                <Link href="/solucoes" className={inlineLinkClass}>
-                                    Entender o fluxo operacional
-                                </Link>
+                                <a href="#como-funciona" className="inline-flex h-12 items-center justify-center rounded-md border border-white/20 px-6 text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                                    Ver o fluxo
+                                </a>
                             </div>
                         </div>
-
-                        <aside className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] p-6">
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-subtle))]">
-                                Operação em fluxo integrado
-                            </p>
-                            <h2 className="mt-3 text-lg font-semibold text-[hsl(var(--ui-text))]">
-                                Estado visível para decidir sem fricção.
-                            </h2>
-                            <ul className="mt-5 space-y-3 text-sm text-[hsl(var(--ui-text-muted))]">
-                                <li className="flex items-start gap-2">
-                                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-[hsl(var(--ui-success))]" />
-                                    Conversas priorizadas com contexto comercial e operacional.
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-[hsl(var(--ui-success))]" />
-                                    Aprovação antes de pedido e handoff claro para logística.
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-[hsl(var(--ui-success))]" />
-                                    Timeline rastreável com dono, horário e próximo passo.
-                                </li>
-                            </ul>
-                        </aside>
+                        <AgilizapFlowSignature />
                     </div>
+                </div>
+            </section>
 
-                    <nav aria-label="Próximos passos do MVP" className="mt-10 grid grid-cols-1 gap-3 md:grid-cols-4">
-                        {[
-                            { href: '/crm-whatsapp', title: 'Atendimento CRM', description: 'Centralização de WhatsApp e contexto.' },
-                            { href: '/logistica-pedidos', title: 'Logística e Pedidos', description: 'Cotação, pedidos e execução real.' },
-                            { href: '/cockpit-gerencial', title: 'Cockpit Gerencial', description: 'Métricas, SLA e visibilidade operacional.' },
-                            { href: '/ia-frank', title: 'IA Frank', description: 'Assistência supervisionada no fluxo.' },
-                        ].map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className="rounded-xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] p-4 transition-colors hover:bg-[hsl(var(--ui-surface-elevated)/0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
-                            >
-                                <span className="flex items-center justify-between text-sm font-semibold text-[hsl(var(--ui-text))]">
-                                    {item.title}
-                                    <ArrowRight className="h-4 w-4" />
-                                </span>
-                                <span className="mt-2 block text-xs leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                                    {item.description}
-                                </span>
-                            </Link>
+            <section id="produto" className="border-b border-black/[0.08]">
+                <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
+                    <div className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:gap-24">
+                        <div>
+                            <SectionLabel>O problema</SectionLabel>
+                            <h2 className="mt-4 max-w-md font-[family-name:var(--font-space)] text-4xl font-medium leading-tight tracking-[-0.04em] sm:text-5xl">O trabalho não quebra. O contexto quebra.</h2>
+                        </div>
+                        <div className="grid gap-px overflow-hidden rounded-lg border border-black/[0.08] bg-black/[0.08] sm:grid-cols-2">
+                            {[
+                                ['01', 'Canais separados', 'Uma conversa começa no WhatsApp, outra chega por e-mail. O histórico não deveria desaparecer com a troca de canal.'],
+                                ['02', 'Negociação sem continuidade', 'Reabrir uma conversa não deveria significar reconstruir o que já foi combinado.'],
+                                ['03', 'Propostas que perdem contexto', 'Revisar uma proposta precisa preservar o que mudou — e o que já estava decidido.'],
+                                ['04', 'Operação desconectada', 'Pedido, frete, transportadora e rastreio são etapas da mesma operação, não mundos separados.'],
+                            ].map(([number, title, description]) => (
+                                <article key={number} className="bg-[var(--ag-paper)] p-7 sm:p-8">
+                                    <span className="font-mono text-[11px] text-[var(--ag-muted)]">{number}</span>
+                                    <h3 className="mt-8 text-lg font-semibold tracking-tight">{title}</h3>
+                                    <p className="mt-3 text-sm leading-6 text-[var(--ag-muted)]">{description}</p>
+                                </article>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="como-funciona" className="bg-white">
+                <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
+                    <div className="max-w-2xl">
+                        <SectionLabel>Como funciona</SectionLabel>
+                        <h2 className="mt-4 font-[family-name:var(--font-space)] text-4xl font-medium leading-tight tracking-[-0.04em] sm:text-5xl">Uma cadeia causal. Não uma coleção de módulos.</h2>
+                    </div>
+                    <div className="mt-16 divide-y divide-black/[0.08] border-y border-black/[0.08]">
+                        {steps.map(([number, label, title, description, Icon]) => (
+                            <article key={number} className="grid gap-5 py-7 sm:grid-cols-[72px_180px_1fr] sm:items-center">
+                                <span className="font-mono text-xs text-[var(--ag-muted)]">{number}</span>
+                                <div className="flex items-center gap-3"><Icon className="h-4 w-4 text-[var(--ag-accent)]" aria-hidden="true" /><span className="font-mono text-xs uppercase tracking-[0.12em]">{label}</span></div>
+                                <div className="sm:border-l sm:border-black/[0.08] sm:pl-8"><h3 className="font-[family-name:var(--font-space)] text-xl font-medium tracking-tight">{title}</h3><p className="mt-1 text-sm leading-6 text-[var(--ag-muted)]">{description}</p></div>
+                            </article>
                         ))}
-                    </nav>
-                </PageContainer>
+                    </div>
+                </div>
             </section>
 
-            <ScrollReveal>
-                <PageSection spacing="md">
-                    <PageContainer>
-                        <SectionIntro
-                            eyebrow="Proposta de valor"
-                            title="Clareza de operação para reduzir atrito e proteger margem."
-                            description="O CONDSTORE OS resolve o caos entre o atendimento e a logística sem promessas vagas de autonomia total."
-                        />
-                        <FeatureGrid columns={4} items={painItems} />
-                    </PageContainer>
-                </PageSection>
-            </ScrollReveal>
-
-            <ScrollReveal>
-                <PageSection spacing="md" borderTop id="fluxo-operacional">
-                    <PageContainer>
-                        <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2 lg:gap-16">
-                            <div>
-                                <SectionIntro
-                                    eyebrow="Fluxo operacional resumido"
-                                    title="Uma única jornada: atendimento, frete, pedido e cockpit."
-                                    description="Sem troca de contexto entre áreas. O status de cada etapa alimenta a próxima decisão da equipe."
-                                    align="left"
-                                />
-                                <Link href="/como-funciona" className={inlineLinkClass}>
-                                    Ver como funciona detalhado
-                                    <ArrowRight className="h-4 w-4" />
-                                </Link>
+            <section id="frank" className="border-y border-black/[0.08] bg-[var(--ag-paper)]">
+                <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
+                    <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+                        <div>
+                            <SectionLabel>Frank AI</SectionLabel>
+                            <h2 className="mt-4 font-[family-name:var(--font-space)] text-4xl font-medium leading-tight tracking-[-0.04em] sm:text-5xl">IA dentro do contexto. Humanos no comando.</h2>
+                            <p className="mt-6 max-w-xl text-base leading-7 text-[var(--ag-muted)]">Frank atua sobre o contexto comercial e operacional que o AGILIZAP construiu. Ele pode apoiar o trabalho, mas ações de risco exigem aprovação humana.</p>
+                        </div>
+                        <div className="rounded-lg border border-black/[0.1] bg-white p-6 shadow-[0_18px_60px_rgba(11,14,19,0.06)] sm:p-8">
+                            <div className="flex items-center justify-between border-b border-black/[0.08] pb-5">
+                                <div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-md bg-[var(--ag-accent)] text-white"><Sparkles className="h-4 w-4" /></div><div><p className="text-sm font-semibold">Frank</p><p className="font-mono text-[10px] uppercase tracking-wider text-[var(--ag-muted)]">assistência contextual</p></div></div>
+                                <span className="rounded-full border border-[#17C964]/30 px-2.5 py-1 font-mono text-[10px] text-[#159e50]">aguardando aprovação</span>
                             </div>
-                            <div className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.35)] p-4 md:p-6">
-                                <OperationFlow steps={operationalSteps} />
+                            <div className="space-y-4 py-7">
+                                <div className="rounded-md bg-[var(--ag-paper)] p-4"><p className="font-mono text-[10px] uppercase tracking-wider text-[var(--ag-muted)]">contexto</p><p className="mt-2 text-sm leading-6">Cliente retomou a negociação. Proposta v2 está registrada e o frete precisa ser considerado.</p></div>
+                                <div className="rounded-md border border-[var(--ag-accent)]/20 bg-[var(--ag-accent)]/[0.04] p-4"><p className="font-mono text-[10px] uppercase tracking-wider text-[var(--ag-accent)]">ação sugerida</p><p className="mt-2 text-sm leading-6">Revisar a proposta mantendo o histórico e apresentar o próximo passo ao operador.</p></div>
                             </div>
-                        </div>
-                    </PageContainer>
-                </PageSection>
-            </ScrollReveal>
-
-            <ScrollReveal>
-                <PageSection spacing="md" borderTop>
-                    <PageContainer>
-                        <SectionIntro
-                            eyebrow="Visão do cockpit"
-                            title="Estado operacional visível para ação rápida."
-                            description="Cada bloco do cockpit existe para orientar decisão imediata e reduzir retrabalho no dia a dia."
-                        />
-                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
-                            {cockpitCards.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <article
-                                        key={item.title}
-                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.35)] p-6"
-                                    >
-                                        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-muted)/0.7)]">
-                                            <Icon className="h-5 w-5 text-[hsl(var(--ui-text))]" />
-                                        </div>
-                                        <h3 className="text-base font-semibold text-[hsl(var(--ui-text))]">{item.title}</h3>
-                                        <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{item.description}</p>
-                                    </article>
-                                );
-                            })}
-                        </div>
-                        <div className="mt-8">
-                            <Link href="/cockpit-gerencial" className={inlineLinkClass}>
-                                Explorar cockpit e métricas
-                                <ArrowRight className="h-4 w-4" />
-                            </Link>
-                        </div>
-                    </PageContainer>
-                </PageSection>
-            </ScrollReveal>
-
-            <ScrollReveal>
-                <PageSection spacing="md" borderTop>
-                    <PageContainer>
-                        <SectionIntro
-                            eyebrow="Prova operacional"
-                            title="Credibilidade baseada em execução, não em promessa."
-                            description="A proposta institucional do CONDSTORE OS reforça operação supervisionada, governança e continuidade entre equipes."
-                        />
-                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-                            <article className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.35)] p-6">
-                                <h3 className="text-base font-semibold text-[hsl(var(--ui-text))]">Evidências de operação real</h3>
-                                <ul className="mt-4 space-y-3 text-sm text-[hsl(var(--ui-text-muted))]">
-                                    {proofItems.map((item) => (
-                                        <li key={item} className="flex items-start gap-2">
-                                            <CheckCircle2 className="mt-0.5 h-4 w-4 text-[hsl(var(--ui-success))]" />
-                                            {item}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </article>
-                            <article className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.35)] p-6">
-                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-subtle))]">
-                                    IA Frank Supervisionada
-                                </p>
-                                <h3 className="mt-2 text-base font-semibold text-[hsl(var(--ui-text))]">
-                                    O copiloto que entende seu fluxo.
-                                </h3>
-                                <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                                    Frank organiza o contexto e sinaliza riscos para que o operador decida com velocidade. Sem automação cega, com assistência real.
-                                </p>
-                                <Link href="/ia-frank" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--ui-accent-blue))]">
-                                    Conhecer o Frank
-                                    <ArrowRight className="h-4 w-4" />
-                                </Link>
-                            </article>
-                        </div>
-                    </PageContainer>
-                </PageSection>
-            </ScrollReveal>
-
-            <section className="border-y border-[hsl(var(--ui-border)/0.4)] py-14 md:py-20">
-                <PageContainer narrow>
-                    <div className="text-center">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--ui-text-subtle))]">
-                            Próxima decisão
-                        </p>
-                        <h2 className="mt-4 text-3xl font-semibold tracking-tight text-[hsl(var(--ui-text))] md:text-4xl">
-                            Avalie seu cenário e avance para o próximo passo certo.
-                        </h2>
-                        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--ui-text-muted))]">
-                            Do atendimento ao cockpit, o CONDSTORE OS profissionaliza sua operação logística comercial com controle e governança.
-                        </p>
-                        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                            <Link href="/piloto" className={primaryCtaClass}>
-                                Solicitar avaliação operacional
-                                <ArrowRight className="h-4 w-4" />
-                            </Link>
-                            <Link href="/login" className={secondaryCtaClass}>
-                                Entrar no sistema
-                            </Link>
+                            <div className="flex items-center gap-2 border-t border-black/[0.08] pt-5 text-xs text-[var(--ag-muted)]"><LockKeyhole className="h-3.5 w-3.5" />Ações de risco só avançam com aprovação humana.</div>
                         </div>
                     </div>
-                </PageContainer>
+                </div>
             </section>
-        </>
+
+            <section id="tecnologia" className="bg-[var(--ag-ink)] text-white">
+                <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-28">
+                    <div className="grid gap-12 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
+                        <div><SectionLabel>Arquitetura SaaS</SectionLabel><h2 className="mt-4 font-[family-name:var(--font-space)] text-4xl font-medium leading-tight tracking-[-0.04em] sm:text-5xl">Cada empresa tem seu próprio ambiente.</h2></div>
+                        <div className="grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-2">
+                            <div className="bg-[var(--ag-ink)] p-7 sm:p-8"><LockKeyhole className="h-5 w-5 text-[var(--ag-accent)]" /><h3 className="mt-7 text-lg font-semibold">Isolamento por empresa</h3><p className="mt-3 text-sm leading-6 text-white/55">O modelo multi-tenant mantém cada operação em seu próprio ambiente lógico, desde a concepção.</p></div>
+                            <div className="bg-[var(--ag-ink)] p-7 sm:p-8"><ShieldCheck className="h-5 w-5 text-[var(--ag-accent)]" /><h3 className="mt-7 text-lg font-semibold">Controle como princípio</h3><p className="mt-3 text-sm leading-6 text-white/55">Continuidade não significa autonomia cega: o fluxo mantém contexto, responsabilidade e aprovação humana.</p></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="bg-[var(--ag-paper)]">
+                <div className="mx-auto max-w-4xl px-5 py-24 text-center sm:px-8 lg:py-32">
+                    <SectionLabel>Comece pelo fluxo</SectionLabel>
+                    <h2 className="mt-4 font-[family-name:var(--font-space)] text-4xl font-medium leading-tight tracking-[-0.045em] sm:text-6xl">Menos contexto perdido. Mais operação contínua.</h2>
+                    <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-[var(--ag-muted)]">Veja como o AGILIZAP pode organizar a jornada entre contato, negociação, proposta, pedido e logística.</p>
+                    <Link href="/piloto" className="mt-9 inline-flex h-12 items-center gap-2 rounded-md bg-[var(--ag-accent)] px-6 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ag-ink)]">Conhecer o AGILIZAP <ArrowRight className="h-4 w-4" /></Link>
+                    <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--ag-muted)]"><span className="inline-flex items-center gap-2"><Check className="h-3.5 w-3.5" />fluxo contínuo</span><span className="inline-flex items-center gap-2"><Check className="h-3.5 w-3.5" />contexto preservado</span><span className="inline-flex items-center gap-2"><Check className="h-3.5 w-3.5" />aprovação humana</span></div>
+                </div>
+            </section>
+        </div>
     );
 }
