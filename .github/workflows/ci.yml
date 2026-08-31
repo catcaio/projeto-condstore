@@ -70,6 +70,8 @@ jobs:
             coverage/lcov-report
 
       - name: Build project
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: npm run build
 
       - name: Verify Schema Drift
