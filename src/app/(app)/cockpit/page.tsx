@@ -23,19 +23,23 @@ export default async function CockpitPage(props: { searchParams: Promise<{ [key:
     const tenantId = actAsSuperAdmin ? inspectTenantId : sessionTenantId;
 
     if (!tenantId) {
-        return <div>Tenant ID não encontrado.</div>;
+        return (
+            <div className="p-6 text-xs font-semibold text-[hsl(var(--ui-text-muted))] bg-[hsl(var(--ui-page))] min-h-screen flex items-center justify-center">
+                Sessão/Tenant ID não encontrado.
+            </div>
+        );
     }
 
     return (
-        <div className="flex-1 overflow-auto bg-gray-50/50 p-6">
+        <div className="flex-1 overflow-auto bg-[hsl(var(--ui-page))] p-4 sm:p-6 lg:p-8 min-h-screen text-[hsl(var(--ui-text))]">
             <div className="mx-auto max-w-7xl space-y-8">
                 <CockpitOperationalDashboard tenantId={tenantId} />
-                
-                <div className="pt-8 mt-8 border-t border-gray-200">
-                    <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4">
-                        Salas de Operação
+
+                <div className="pt-8 mt-8 border-t border-[hsl(var(--ui-border)/0.5)]">
+                    <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-[hsl(var(--ui-text-subtle))] mb-4">
+                        Salas de Operação Especializadas
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
                         {rooms.map((room) => (
                             <RoomCard key={room.id} {...room} />
                         ))}
