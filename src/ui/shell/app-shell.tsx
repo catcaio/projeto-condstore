@@ -20,8 +20,8 @@ export function AppShell({
     return (
         <div className="os-root h-dvh max-w-full overflow-hidden bg-[hsl(var(--ui-bg))] text-[hsl(var(--ui-text))]">
             <div className="grid h-full min-h-0 max-w-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden md:grid-cols-[4.5rem_minmax(0,1fr)] md:grid-rows-1">
-                <aside className="z-30 min-w-0 shrink-0 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] md:h-dvh md:border-b-0 md:border-r">
-                    <div className="flex min-h-0 flex-col items-center px-3 py-3 md:h-full md:px-0 md:py-4">
+                <aside className="group/sidebar relative z-30 min-w-0 shrink-0 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] md:h-dvh md:border-b-0 md:border-r">
+                    <div className="flex min-h-0 flex-col items-center px-3 py-3 md:absolute md:inset-y-0 md:left-0 md:z-40 md:w-[4.5rem] md:overflow-hidden md:bg-[hsl(var(--ui-page))] md:px-0 md:py-4 md:transition-[width,box-shadow] md:duration-200 md:ease-out md:group-hover/sidebar:w-64 md:group-hover/sidebar:shadow-[18px_0_45px_-28px_rgba(15,23,42,0.45)]">
                         <div className="mb-3 flex items-center justify-center md:mb-6">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] shadow-sm">
                                 <CondstoreLogo size="sm" hideText />
