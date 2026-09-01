@@ -19,12 +19,16 @@ export { FaqSection } from './faq-section';
 export { ScrollReveal } from './scroll-reveal';
 export { MvpCoreFlowSection } from './mvp-core-flow-section';
 
-// New Strategic Marketing Components for CONDSTORE OS Home Page
+// Strategic Mobile-First Visual Components for CONDSTORE OS
+export { OperationalThread } from './operational-thread';
 export { InteractiveHero } from './interactive-hero';
 export { ContextBreakdownSection } from './context-breakdown-section';
 export { ContinuousFlowTransformation } from './continuous-flow-transformation';
 export { FiveMomentsSection } from './five-moments-section';
+export { ExpandedPlatformScopeSection } from './expanded-platform-scope-section';
+export { IntegrationsSection } from './integrations-section';
 export { OperationEvolutionSection } from './operation-evolution-section';
 export { HumanCentricSection } from './human-centric-section';
 export { BrandDifferentiationSection } from './brand-differentiation-section';
+export { BrazilOperationalRealismSection } from './brazil-operational-realism-section';
 export { ICPSection } from './icp-section';
