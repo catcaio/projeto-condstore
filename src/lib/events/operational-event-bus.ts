@@ -9,7 +9,6 @@
  *  - Returns void; errors are logged and swallowed to never block callers
  */
 
-import { sql } from 'drizzle-orm';
 import { structuredLogger } from '@/infra/log/logger';
 import { isValidEventDomain, type EventDomain } from './event-domains';
 import { operationalEvents } from '@/drizzle/schema';
@@ -33,6 +32,19 @@ export class OperationalEventValidationError extends Error {
         super(message);
         this.name = 'OperationalEventValidationError';
     }
+}
+
+// ── Event Bus Listeners ───────────────────────────────────────────────────────
+
+type OperationalEventListener = (input: PublishOperationalEventInput) => void;
+const listeners: OperationalEventListener[] = [];
+
+export function subscribeOperationalEvent(listener: OperationalEventListener): () => void {
+    listeners.push(listener);
+    return () => {
+        const idx = listeners.indexOf(listener);
+        if (idx !== -1) listeners.splice(idx, 1);
+    };
 }
 
 // ── Validation ────────────────────────────────────────────────────────────────
@@ -86,32 +98,43 @@ export async function publishOperationalEvent(
     try {
         validateInput(input);
 
+        // Notify in-memory subscribers (e.g. Frank Observer real-time telemetry)
+        for (const listener of listeners) {
+            try {
+                listener(input);
+            } catch (listenerErr) {
+                structuredLogger.warn('operational_event_listener_failed', {
+                    error: listenerErr instanceof Error ? listenerErr.message : String(listenerErr),
+                });
+            }
+        }
+
         const db = await getDb();
-        const id = crypto.randomUUID();
+        if (db) {
+            const id = crypto.randomUUID();
+            const safePayload = input.payload ? sanitizePayload(input.payload) : {};
 
-        // Sanitize payload — strip PII fields before persistence
-        const safePayload = input.payload ? sanitizePayload(input.payload) : {};
+            await db.insert(operationalEvents).values({
+                id,
+                tenantId: input.tenantId,
+                eventType: input.eventType,
+                eventDomain: input.eventDomain,
+                entityId: input.entityId ?? null,
+                customerId: input.customerId ?? null,
+                sessionId: input.sessionId ?? null,
+                attributionId: input.attributionId ?? null,
+                payload: safePayload,
+                createdAt: new Date(),
+            });
 
-        await db.insert(operationalEvents).values({
-            id,
-            tenantId: input.tenantId,
-            eventType: input.eventType,
-            eventDomain: input.eventDomain,
-            entityId: input.entityId ?? null,
-            customerId: input.customerId ?? null,
-            sessionId: input.sessionId ?? null,
-            attributionId: input.attributionId ?? null,
-            payload: safePayload,
-            createdAt: new Date(),
-        });
-
-        structuredLogger.info('operational_event_published', {
-            eventType: 'operational_event_published',
-            tenantId: input.tenantId,
-            domain: input.eventDomain,
-            type: input.eventType,
-            id,
-        });
+            structuredLogger.info('operational_event_published', {
+                eventType: 'operational_event_published',
+                tenantId: input.tenantId,
+                domain: input.eventDomain,
+                type: input.eventType,
+                id,
+            });
+        }
     } catch (err) {
         if (err instanceof OperationalEventValidationError) {
             structuredLogger.warn('operational_event_validation_error', {
@@ -127,6 +150,5 @@ export async function publishOperationalEvent(
                 type: input.eventType,
             });
         }
-        // Never re-throw — integration is always fire-and-forget
     }
 }

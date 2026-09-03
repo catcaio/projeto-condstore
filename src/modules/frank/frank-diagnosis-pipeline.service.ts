@@ -1,5 +1,8 @@
 import { frankExecutionStateService } from './frank-execution-state.service';
 import { CONDSTORE_SYSTEM_KNOWLEDGE } from './frank-system-knowledge';
+import { getDb } from '@/infra/db';
+import { operationalEvents, adminAuditLog } from '@/drizzle/schema';
+import { eq, and, gte, desc } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 
 export interface SignalData {
@@ -9,15 +12,24 @@ export interface SignalData {
     severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     summary: string;
     evidence: Record<string, unknown>;
+    requestId?: string;
+    traceId?: string;
 }
 
 export type InvestigationClassification = 'OBSERVATION' | 'EVIDENCE' | 'INFERENCE' | 'HYPOTHESIS' | 'CONFIRMED_CAUSE';
 
+export interface EvidenceItem {
+    source: 'event_bus' | 'structured_log' | 'metric' | 'database_state' | 'deploy_commit' | 'trace_id';
+    detail: unknown;
+    timestamp: Date;
+}
+
 export interface InvestigationEvidenceChain {
     observation: string;
-    evidencesCollected: Array<{ source: string; detail: unknown; timestamp: Date }>;
+    evidencesCollected: EvidenceItem[];
     inferences: string[];
     causalHypothesis: string;
+    confirmedCause?: string | null;
     classification: InvestigationClassification;
 }
 
@@ -39,9 +51,112 @@ export interface TechnicalIssueDraft {
 
 export class FrankDiagnosisPipelineService {
     /**
-     * Runs the DETECT → CORRELATE → INVESTIGATE → CLASSIFY → DIAGNOSE → PROPOSE pipeline.
+     * Collects multi-dimensional evidence across operational logs, database state, metrics, trace IDs, and recent GitHub commits.
      */
-    async diagnoseAndPrepareIssue(signal: SignalData, executionId?: string): Promise<TechnicalIssueDraft> {
+    async collectMultiDimensionalEvidence(signal: SignalData): Promise<EvidenceItem[]> {
+        const items: EvidenceItem[] = [];
+        const now = new Date();
+
+        // 1. Signal Event Bus Evidence
+        items.push({
+            source: 'event_bus',
+            detail: { signalType: signal.signalType, domain: signal.domain, evidence: signal.evidence },
+            timestamp: now,
+        });
+
+        // 2. Trace / Request ID Evidence
+        if (signal.requestId || signal.traceId || signal.evidence.requestId) {
+            items.push({
+                source: 'trace_id',
+                detail: { requestId: signal.requestId || signal.evidence.requestId, traceId: signal.traceId },
+                timestamp: now,
+            });
+        }
+
+        // 3. Database State & Operational Audit Logs
+        try {
+            const db = await getDb();
+            if (db) {
+                const since = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes back
+                const logs = await db.select().from(adminAuditLog)
+                    .where(and(eq(adminAuditLog.tenantId, signal.tenantId), gte(adminAuditLog.createdAt, since)))
+                    .orderBy(desc(adminAuditLog.createdAt))
+                    .limit(5);
+
+                if (logs.length > 0) {
+                    items.push({
+                        source: 'structured_log',
+                        detail: logs.map(l => ({ action: l.action, actor: l.userId, createdAt: l.createdAt })),
+                        timestamp: now,
+                    });
+                }
+            }
+        } catch {
+            // DB logging error ignored in evidence collection fallback
+        }
+
+        // 4. Metric Context
+        if (typeof signal.evidence.latencyMs === 'number' || typeof signal.evidence.errorRate === 'number') {
+            items.push({
+                source: 'metric',
+                detail: { latencyMs: signal.evidence.latencyMs, errorRate: signal.evidence.errorRate },
+                timestamp: now,
+            });
+        }
+
+        // 5. Deploy / Commit Context
+        try {
+            const githubToken = process.env.GITHUB_TOKEN;
+            const headers: Record<string, string> = { Accept: 'application/vnd.github.v3+json' };
+            if (githubToken) headers.Authorization = `Bearer ${githubToken}`;
+
+            const res = await fetch('https://api.github.com/repos/catcaio/projeto-condstore/commits?per_page=3', {
+                headers,
+                next: { revalidate: 300 }
+            });
+
+            if (res.ok) {
+                const commits = await res.json();
+                if (Array.isArray(commits) && commits.length > 0) {
+                    items.push({
+                        source: 'deploy_commit',
+                        detail: commits.map(c => ({
+                            sha: c.sha?.substring(0, 7),
+                            message: c.commit?.message,
+                            author: c.commit?.author?.name,
+                            date: c.commit?.author?.date
+                        })),
+                        timestamp: now,
+                    });
+                }
+            }
+        } catch {
+            // GitHub fetch fallback
+        }
+
+        return items;
+    }
+
+    /**
+     * Classifies the investigation state with zero false-certainty (HYPOTHESIS vs CONFIRMED_CAUSE).
+     */
+    classifyInvestigation(evidence: EvidenceItem[], hasEmpiricalProof: boolean = false): InvestigationClassification {
+        if (hasEmpiricalProof) {
+            return 'CONFIRMED_CAUSE';
+        }
+        if (evidence.length >= 2) {
+            return 'HYPOTHESIS';
+        }
+        if (evidence.length === 1) {
+            return 'EVIDENCE';
+        }
+        return 'OBSERVATION';
+    }
+
+    /**
+     * Runs the DETECT → CORRELATE → COLLECT EVIDENCE → INVESTIGATE → CLASSIFY → DIAGNOSE → CONFIDENCE → PROPOSE pipeline.
+     */
+    async diagnoseAndPrepareIssue(signal: SignalData, executionId?: string, empiricalProof?: { confirmedCause: string }): Promise<TechnicalIssueDraft> {
         logger.info('Frank Diagnosis Pipeline started', { tenantId: signal.tenantId, signalType: signal.signalType });
 
         // 1. Correlate with system domain knowledge
@@ -52,25 +167,32 @@ export class FrankDiagnosisPipelineService {
             businessRules: []
         };
 
-        // 2. Formulate Evidence Chain (Observation -> Evidence -> Inference -> Hypothesis)
+        // 2. Collect Multi-dimensional Evidence
+        const evidencesCollected = await this.collectMultiDimensionalEvidence(signal);
+
+        // 3. Classify Investigation (Never present hypothesis as confirmed cause without empirical proof)
+        const classification = this.classifyInvestigation(evidencesCollected, !!empiricalProof?.confirmedCause);
+
+        const inferences = [
+            `Anomalia correlacionada ao domínio [${domainKnowledge.domain}]`,
+            `Rotas/endpoints investigados: ${domainKnowledge.routes.join(', ')}`,
+            `Tabelas de banco sob análise: ${domainKnowledge.tables.join(', ') || 'Nenhuma table mapeada'}`,
+        ];
+
+        const causalHypothesis = empiricalProof?.confirmedCause
+            ? `Causa Confirmada: ${empiricalProof.confirmedCause}`
+            : `Hipótese Causal: Anomalia [${signal.signalType}] em serviços de [${domainKnowledge.domain}]. Causa potencial em interações de ${domainKnowledge.routes.join(', ')}.`;
+
         const evidenceChain: InvestigationEvidenceChain = {
             observation: signal.summary,
-            evidencesCollected: [
-                {
-                    source: `operational_event_bus:${signal.signalType}`,
-                    detail: signal.evidence,
-                    timestamp: new Date()
-                }
-            ],
-            inferences: [
-                `Anomalia correlacionada ao domínio [${domainKnowledge.domain}]`,
-                `Componentes afetados: ${domainKnowledge.routes.join(', ')}`
-            ],
-            causalHypothesis: `Hypothesis: ${signal.summary}. Potential root cause in services interacting with ${domainKnowledge.routes.join(', ')}.`,
-            classification: 'HYPOTHESIS' // Rigorously distinct from CONFIRMED_CAUSE
+            evidencesCollected,
+            inferences,
+            causalHypothesis,
+            confirmedCause: empiricalProof?.confirmedCause || null,
+            classification, // Rigorously distinct: 'HYPOTHESIS' unless empiricalProof is explicitly provided
         };
 
-        // 3. Draft Technical Issue for Factory Software
+        // 4. Draft Technical Issue for Factory Software
         const priorityMap: Record<string, 'P0' | 'P1' | 'P2' | 'P3'> = {
             CRITICAL: 'P0',
             HIGH: 'P1',
@@ -86,8 +208,8 @@ export class FrankDiagnosisPipelineService {
             affectedComponents: domainKnowledge.routes,
             evidenceChain,
             causalHypothesis: evidenceChain.causalHypothesis,
-            confidence: signal.severity === 'CRITICAL' ? 'HIGH' : 'MEDIUM',
-            architecturalContext: `Arquitetura CONDSTORE OS. Tabelas envolvidas: ${domainKnowledge.tables.join(', ')}.`,
+            confidence: empiricalProof?.confirmedCause ? 'HIGH' : signal.severity === 'CRITICAL' ? 'MEDIUM' : 'LOW',
+            architecturalContext: `Arquitetura CONDSTORE OS. Domínio: ${domainKnowledge.domain}. Tabelas envolvidas: ${domainKnowledge.tables.join(', ') || 'N/A'}.`,
             acceptanceCriteria: [
                 `Corrigir causa raiz associada ao evento ${signal.signalType}`,
                 `Validar funcionamento sem regressões em ${domainKnowledge.routes[0] || 'rotas afetadas'}`,
@@ -101,11 +223,11 @@ export class FrankDiagnosisPipelineService {
             status: 'AWAITING_HUMAN_APPROVAL'
         };
 
-        // 4. Update execution checkpoint if executionId is present
+        // 5. Update execution checkpoint if executionId is present
         if (executionId) {
             const run = await frankExecutionStateService.getExecutionWithSteps(signal.tenantId, executionId);
             if (run) {
-                const step = await frankExecutionStateService.addStep({
+                await frankExecutionStateService.addStep({
                     executionRunId: run.run.id,
                     tenantId: signal.tenantId,
                     stepNumber: 2,
@@ -129,11 +251,11 @@ export class FrankDiagnosisPipelineService {
     }
 
     /**
-     * Approves an issue draft by Human Gate and marks it ready for Factory execution.
+     * Approves an issue draft by Human Gate, dispatches to Factory / GitHub, and marks execution RUNNING.
      */
-    async approveIssueForFactory(tenantId: string, executionId: string, approvedBy: string): Promise<boolean> {
+    async approveIssueForFactory(tenantId: string, executionId: string, approvedBy: string): Promise<{ success: boolean; githubIssueUrl?: string }> {
         const executionData = await frankExecutionStateService.getExecutionWithSteps(tenantId, executionId);
-        if (!executionData) return false;
+        if (!executionData) return { success: false };
 
         const awaitingStep = executionData.steps.find(s => s.status === 'AWAITING_APPROVAL' || s.requiresHumanApproval);
         if (awaitingStep) {
@@ -141,14 +263,56 @@ export class FrankDiagnosisPipelineService {
             await frankExecutionStateService.updateStepCheckpoint(tenantId, awaitingStep.id, 'COMPLETED', { approvedForFactory: true });
         }
 
+        // Optional GitHub Issue creation if token present
+        let githubIssueUrl: string | undefined;
+        try {
+            const githubToken = process.env.GITHUB_TOKEN;
+            if (githubToken) {
+                const issueDraft = (executionData.run.resultJson as any)?.issueDraft as TechnicalIssueDraft;
+                const res = await fetch('https://api.github.com/repos/catcaio/projeto-condstore/issues', {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${githubToken}`,
+                        Accept: 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: issueDraft?.title || executionData.run.title,
+                        body: `## Technical Issue Draft (Frank Supremo Supervision)
+**Execution ID:** \`${executionId}\`
+**Tenant ID:** \`${tenantId}\`
+**Priority:** ${issueDraft?.suggestedPriority || 'P2'}
+**Impact:** ${issueDraft?.impact || 'Operational degradation'}
+**Affected Components:** ${(issueDraft?.affectedComponents || []).join(', ')}
+
+### Hypothesis / Confirmed Cause
+${issueDraft?.causalHypothesis || 'N/A'}
+
+### Acceptance Criteria
+${(issueDraft?.acceptanceCriteria || []).map(c => `- [ ] ${c}`).join('\n')}
+`,
+                        labels: ['bug', 'frank-supremo', 'factory']
+                    })
+                });
+
+                if (res.ok) {
+                    const created = await res.json();
+                    githubIssueUrl = created.html_url;
+                }
+            }
+        } catch {
+            // Non-blocking GitHub dispatch fallback
+        }
+
         await frankExecutionStateService.updateRunStatus(
             executionData.run.id,
             'RUNNING',
-            'Issue Aprovada - Aguardando Execução pela Factory'
+            'Issue Aprovada - Aguardando Execução pela Factory',
+            { githubIssueUrl }
         );
 
-        logger.info('Frank Issue Draft approved for Factory dispatch', { tenantId, executionId, approvedBy });
-        return true;
+        logger.info('Frank Issue Draft approved for Factory dispatch', { tenantId, executionId, approvedBy, githubIssueUrl });
+        return { success: true, githubIssueUrl };
     }
 }
 

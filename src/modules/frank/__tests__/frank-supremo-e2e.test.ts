@@ -35,7 +35,7 @@ describe('Frank Supremo - End-to-End Operational Lifecycle', () => {
 
         // 3. HUMAN GATE (Human Supervisor approves issue for Factory)
         const approved = await frankDiagnosisPipelineService.approveIssueForFactory(tenantId, executionId, 'user_gestor_ops');
-        expect(approved).toBe(true);
+        expect(approved.success).toBe(true);
 
         execution = await frankExecutionStateService.getExecutionWithSteps(tenantId, executionId);
         expect(execution?.run.status).toBe('RUNNING');

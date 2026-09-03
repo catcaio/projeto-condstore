@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Bot, RefreshCcw, TrendingUp, Wrench, ArrowRightLeft, TimerReset, Sparkles, Check, Pencil, X } from 'lucide-react';
+import { ArrowLeft, Bot, RefreshCcw, TrendingUp, ArrowRightLeft, TimerReset, Sparkles, Check, Pencil, X, ShieldAlert, Activity, ShieldCheck, Cpu } from 'lucide-react';
 import { SettingsPage, SettingsSection } from '@/ui/settings';
 import { Card } from '@/ui/components/card';
 import { Badge } from '@/ui/components/badge';
@@ -41,6 +41,30 @@ interface SessionMetricRow {
     label: string;
     interactions: number;
     lastInteractionAt: string;
+}
+
+interface SupervisorData {
+    status: string;
+    health: {
+        active: boolean;
+        lastObservationAt: string | null;
+        lastEvent: string | null;
+        lastExecutionId: string | null;
+        lastFailure: string | null;
+        failuresCount: number;
+        totalSignalsObserved: number;
+        activeIncidentsCount: number;
+        nextCycleAt: string | null;
+    };
+    activeExecutions: Array<{
+        id: string;
+        executionId: string;
+        title: string;
+        status: string;
+        autonomyLevel: string;
+        currentStep: string | null;
+        createdAt: string;
+    }>;
 }
 
 interface FrankAssistMetricsData {
@@ -216,14 +240,6 @@ function LoadingSkeleton() {
                 ))}
             </div>
             <div className="h-64 animate-pulse rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))]" />
-            <div className="grid gap-6 xl:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, index) => (
-                    <div
-                        key={index}
-                        className="h-64 animate-pulse rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))]"
-                    />
-                ))}
-            </div>
         </div>
     );
 }
@@ -240,6 +256,7 @@ function ErrorState(props: { message: string }) {
 export function FrankAssistCockpitClient() {
     const searchParams = useSearchParams();
     const [data, setData] = useState<FrankAssistMetricsData | null>(null);
+    const [supervisor, setSupervisor] = useState<SupervisorData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -250,16 +267,26 @@ export function FrankAssistCockpitClient() {
         setError(null);
 
         try {
-            const response = await fetch(`/api/cockpit/metrics/frank?${queryString}`, {
-                cache: 'no-store',
-            });
-            const json = await response.json();
+            const [metricsRes, supervisorRes] = await Promise.all([
+                fetch(`/api/cockpit/metrics/frank?${queryString}`, { cache: 'no-store' }),
+                fetch(`/api/cockpit/frank/supervisor`, { cache: 'no-store' })
+            ]);
 
-            if (!response.ok || !json?.ok || !json?.data) {
-                throw new Error('Nao foi possivel carregar as metricas do Frank assistente.');
+            const json = await metricsRes.json();
+            if (metricsRes.ok && json?.ok && json?.data) {
+                setData(json.data);
             }
 
-            setData(json.data);
+            if (supervisorRes.ok) {
+                const supJson = await supervisorRes.json();
+                if (supJson?.success) {
+                    setSupervisor({
+                        status: supJson.status,
+                        health: supJson.health,
+                        activeExecutions: supJson.activeExecutions || [],
+                    });
+                }
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erro inesperado ao carregar dados.');
         } finally {
@@ -288,12 +315,12 @@ export function FrankAssistCockpitClient() {
         </div>
     );
 
-    const isEmpty = !loading && !error && data?.kpis.totalInteractions === 0;
+    const isEmpty = !loading && !error && data?.kpis.totalInteractions === 0 && (!supervisor || supervisor.activeExecutions.length === 0);
 
     return (
         <SettingsPage
-            title="Frank Assistente"
-            description="Observabilidade operacional do atendimento assistido, com foco em handoffs, tools read-only e qualidade de resposta."
+            title="Frank Supremo — Supervisor Operacional"
+            description="Observabilidade contínua do supervisor operacional ativo (Fase 2): investigações duráveis, Human Gate e telemetria do sistema."
             headerAction={headerAction}
             className="max-w-6xl"
         >
@@ -304,7 +331,7 @@ export function FrankAssistCockpitClient() {
                     outcome: 'all',
                 }}
                 storageKey="condstore.savedViews.frank-assist"
-                searchPlaceholder="Buscar por intencao, tool ou motivo de fallback..."
+                searchPlaceholder="Buscar por intenção, tool ou motivo de fallback..."
                 fastFilters={(filters, updateFilter) => (
                     <div className="flex flex-wrap items-center gap-2">
                         <select
@@ -316,69 +343,52 @@ export function FrankAssistCockpitClient() {
                             <option value="30d" className="bg-[hsl(var(--ui-surface))]">30 dias</option>
                             <option value="90d" className="bg-[hsl(var(--ui-surface))]">90 dias</option>
                         </select>
-                        <select
-                            className="h-10 rounded-md border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] px-3 text-sm text-[hsl(var(--ui-text))]"
-                            value={filters.outcome || 'all'}
-                            onChange={(event) => updateFilter('outcome', event.target.value)}
-                        >
-                            <option value="all" className="bg-[hsl(var(--ui-surface))]">Todos os outcomes</option>
-                            <option value="success" className="bg-[hsl(var(--ui-surface))]">Success</option>
-                            <option value="fallback" className="bg-[hsl(var(--ui-surface))]">Fallback</option>
-                            <option value="handoff" className="bg-[hsl(var(--ui-surface))]">Handoff</option>
-                        </select>
                     </div>
-                )}
-                drawerContent={(localFilters, setLocalFilters) => (
-                    <>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-[hsl(var(--ui-text))]">Tenant</label>
-                            <input
-                                disabled
-                                className="h-10 w-full rounded-md border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))] px-3 text-sm text-[hsl(var(--ui-text-muted))]"
-                                value={data?.tenantId ?? 'Tenant atual'}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-[hsl(var(--ui-text))]">Intenção</label>
-                            <input
-                                className="h-10 w-full rounded-md border border-[hsl(var(--ui-border))] bg-transparent px-3 text-sm text-[hsl(var(--ui-text))]"
-                                placeholder="Ex.: ORDER_STATUS"
-                                value={localFilters.intent || ''}
-                                onChange={(event) => setLocalFilters({ ...localFilters, intent: event.target.value })}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-[hsl(var(--ui-text))]">Data inicial</label>
-                                <input
-                                    type="date"
-                                    className="h-10 w-full rounded-md border border-[hsl(var(--ui-border))] bg-transparent px-3 text-sm text-[hsl(var(--ui-text))]"
-                                    value={localFilters.dateStart || ''}
-                                    onChange={(event) => setLocalFilters({ ...localFilters, dateStart: event.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-[hsl(var(--ui-text))]">Data final</label>
-                                <input
-                                    type="date"
-                                    className="h-10 w-full rounded-md border border-[hsl(var(--ui-border))] bg-transparent px-3 text-sm text-[hsl(var(--ui-text))]"
-                                    value={localFilters.dateEnd || ''}
-                                    onChange={(event) => setLocalFilters({ ...localFilters, dateEnd: event.target.value })}
-                                />
-                            </div>
-                        </div>
-                    </>
                 )}
             />
 
             {loading && !data ? <LoadingSkeleton /> : null}
             {!loading && error ? <ErrorState message={error} /> : null}
+
+            {/* Frank Supervisor Operational Runtime Health */}
+            {supervisor ? (
+                <SettingsSection
+                    title="Frank Supremo Runtime Status (Fase 2)"
+                    description="Estado observacional contínuo do supervisor em tempo real."
+                >
+                    <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">
+                        <MetricCard
+                            title="Estado do Supervisor"
+                            value={supervisor.status || 'ACTIVE'}
+                            helper={supervisor.health?.lastEvent ? `Último evento: ${supervisor.health.lastEvent}` : 'Observer monitorando telemetria'}
+                            icon={<ShieldCheck className="h-5 w-5 text-emerald-500" />}
+                        />
+                        <MetricCard
+                            title="Sinais Observados"
+                            value={String(supervisor.health?.totalSignalsObserved || 0)}
+                            helper="Telemetria e anomalias capturadas pelo Observer."
+                            icon={<Activity className="h-5 w-5 text-indigo-500" />}
+                        />
+                        <MetricCard
+                            title="Incidentes Ativos"
+                            value={String(supervisor.health?.activeIncidentsCount || 0)}
+                            helper="Casos correlacionados em investigação."
+                            icon={<ShieldAlert className="h-5 w-5 text-amber-500" />}
+                        />
+                        <MetricCard
+                            title="Execuções Ativas"
+                            value={String(supervisor.activeExecutions?.length || 0)}
+                            helper="Workflow durável com Human Gate pendente."
+                            icon={<Cpu className="h-5 w-5 text-blue-500" />}
+                        />
+                    </div>
+                </SettingsSection>
+            ) : null}
+
             {isEmpty ? (
                 <EmptyState
-                    title="Ainda nao ha dados suficientes do Frank assistente"
-                    description="Assim que o atendimento assistido gerar interacoes em operational_events, este painel vai exibir volume, handoffs, tools e motivos de fallback por tenant."
+                    title="Ainda não há dados suficientes do Frank assistente"
+                    description="Assim que o atendimento assistido gerar interações em operational_events, este painel vai exibir volume, handoffs, tools e motivos de fallback por tenant."
                 />
             ) : null}
 
@@ -454,110 +464,6 @@ export function FrankAssistCockpitClient() {
                     >
                         <VolumeChart data={data.volume} />
                     </SettingsSection>
-
-                    <div className="grid gap-6 xl:grid-cols-3">
-                        <SettingsSection
-                            title="Intenções mais frequentes"
-                            description="Quais perguntas chegam com mais recorrencia ao assistente."
-                        >
-                            <MetricTable
-                                title="Top intenções"
-                                description="Distribuicao por intent resolvida."
-                                headers={['Intent', 'Volume', 'Share']}
-                                rows={data.intents.map((item) => [
-                                    <Badge key={`${item.key}-badge`} variant="muted">{item.key}</Badge>,
-                                    <span key={`${item.key}-count`}>{item.count}</span>,
-                                    <span key={`${item.key}-share`}>{formatPercent(item.share)}</span>,
-                                ])}
-                                emptyLabel="Nenhuma intencao agregada no periodo atual."
-                            />
-                        </SettingsSection>
-
-                        <SettingsSection
-                            title="Tools read-only"
-                            description="Quais consultas o Frank mais aciona e qual taxa de sucesso cada uma sustenta."
-                        >
-                            <MetricTable
-                                title="Uso e sucesso por tool"
-                                description="Somente tools de consulta em assistant mode."
-                                headers={['Tool', 'Volume', 'Sucesso', 'Fallback']}
-                                rows={data.tools.map((tool) => [
-                                    <div key={`${tool.toolUsed}-tool`} className="space-y-1">
-                                        <div className="font-medium">{tool.toolUsed}</div>
-                                        <div className="text-xs text-[hsl(var(--ui-text-muted))]">
-                                            Taxa de sucesso {formatPercent(tool.successRate)}
-                                        </div>
-                                    </div>,
-                                    <span key={`${tool.toolUsed}-total`}>{tool.total}</span>,
-                                    <span key={`${tool.toolUsed}-success`}>{tool.successCount}</span>,
-                                    <span key={`${tool.toolUsed}-fallback`}>{tool.fallbackCount}</span>,
-                                ])}
-                                emptyLabel="Nenhuma tool foi usada no recorte filtrado."
-                            />
-                        </SettingsSection>
-
-                        <SettingsSection
-                            title="Motivos de fallback"
-                            description="Onde o Frank deixa de responder com confianca suficiente."
-                        >
-                            <MetricTable
-                                title="Fallback reasons"
-                                description="Motivos agregados sem PII."
-                                headers={['Razao', 'Volume', 'Share']}
-                                rows={data.fallbackReasons.map((reason) => [
-                                    <Badge key={`${reason.key}-badge`} variant="default">{reason.key}</Badge>,
-                                    <span key={`${reason.key}-count`}>{reason.count}</span>,
-                                    <span key={`${reason.key}-share`}>{formatPercent(reason.share)}</span>,
-                                ])}
-                                emptyLabel="Nenhum motivo de fallback agregado no periodo."
-                            />
-                        </SettingsSection>
-                    </div>
-
-                    <div className="grid gap-6 xl:grid-cols-2">
-                        <SettingsSection
-                            title="Sessoes com mais interacoes"
-                            description="Ranking anonimo para identificar concentracao operacional sem expor telefone ou hash."
-                        >
-                            <MetricTable
-                                title="Sessoes anonimizadas"
-                                description="Top sessoes por volume assistido."
-                                headers={['Sessao', 'Interacoes', 'Ultima atividade']}
-                                rows={data.sessions.map((session) => [
-                                    <span key={`${session.label}-label`} className="font-medium">{session.label}</span>,
-                                    <span key={`${session.label}-count`}>{session.interactions}</span>,
-                                    <span key={`${session.label}-date`}>{formatDateTime(session.lastInteractionAt)}</span>,
-                                ])}
-                                emptyLabel="Nenhuma sessao suficiente para ranking neste recorte."
-                            />
-                        </SettingsSection>
-
-                        <SettingsSection
-                            title="Fonte e privacidade"
-                            description="Contrato operacional usado pelo painel."
-                        >
-                            <div className="space-y-4 p-4">
-                                <div className="rounded-lg border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg-subtle))] p-4">
-                                    <div className="text-sm font-semibold text-[hsl(var(--ui-text))]">
-                                        Fonte primaria: {data.sourceSummary.primarySource}
-                                    </div>
-                                    <div className="mt-1 text-xs text-[hsl(var(--ui-text-muted))]">
-                                        Tenant atual: {data.tenantId}
-                                    </div>
-                                </div>
-                                <ul className="space-y-2 text-sm text-[hsl(var(--ui-text-muted))]">
-                                    {data.sourceSummary.notes.map((note) => (
-                                        <li key={note} className="rounded-lg border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-bg))] px-3 py-2">
-                                            {note}
-                                        </li>
-                                    ))}
-                                </ul>
-                                <div className="text-xs text-[hsl(var(--ui-text-muted))]">
-                                    Gerado em {formatDateTime(data.generatedAt)}.
-                                </div>
-                            </div>
-                        </SettingsSection>
-                    </div>
                 </>
             ) : null}
         </SettingsPage>
