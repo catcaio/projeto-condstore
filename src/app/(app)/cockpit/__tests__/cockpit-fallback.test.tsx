@@ -11,6 +11,14 @@ vi.mock('next/headers', () => ({
     ])
 }));
 
+vi.mock('next/navigation', () => ({
+    useRouter: () => ({
+        push: vi.fn(),
+        replace: vi.fn(),
+        prefetch: vi.fn(),
+    }),
+}));
+
 vi.mock('@/infra/auth/session', () => ({
     getServerSessionUser: async () => ({
         id: 'test-user',

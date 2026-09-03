@@ -20,7 +20,7 @@ import {
     Filter,
 } from 'lucide-react';
 import { Button } from '@/ui/components';
-import { StatusChip } from '@/ui/foundation';
+import { CommandPalette, StatusChip } from '@/ui/foundation';
 import type { CockpitDataBundle } from '../data/shared';
 
 export interface CockpitWorkspaceShellProps {
@@ -32,6 +32,7 @@ export interface CockpitWorkspaceShellProps {
 export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWorkspaceShellProps) {
     const [selectedTab, setSelectedTab] = useState<'all' | 'conversations' | 'freight' | 'orders'>('all');
     const [activeItemId, setActiveItemId] = useState<string | null>(null);
+    const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
     const metrics = data.derived?.metricsSnapshot ?? {
         activeConversationCount: 0,
@@ -70,6 +71,7 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
 
     return (
         <div className="min-h-screen bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))] flex flex-col font-sans">
+            <CommandPalette />
             {/* Top Operational Header */}
             <header className="sticky top-0 z-30 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))/0.95] backdrop-blur px-4 sm:px-6 py-3">
                 <div className="mx-auto max-w-7xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -94,11 +96,15 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
                     </div>
 
                     <div className="flex items-center gap-2.5 self-end sm:self-auto">
-                        <div className="hidden md:flex items-center gap-2 bg-[hsl(var(--ui-page))] border border-[hsl(var(--ui-border))] rounded-lg px-3 py-1.5 text-xs text-[hsl(var(--ui-text-subtle))] w-64 shadow-inner">
+                        <button
+                            type="button"
+                            onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+                            className="hidden md:flex items-center gap-2 bg-[hsl(var(--ui-page))] border border-[hsl(var(--ui-border))] rounded-lg px-3 py-1.5 text-xs text-[hsl(var(--ui-text-subtle))] w-64 shadow-inner hover:text-[hsl(var(--ui-text))] text-left transition-colors cursor-pointer"
+                        >
                             <Search className="h-3.5 w-3.5" />
                             <span>Buscar conversa, pedido ou cotação...</span>
                             <kbd className="ml-auto font-mono text-[10px] bg-[hsl(var(--ui-surface))] border rounded px-1">⌘K</kbd>
-                        </div>
+                        </button>
 
                         {onRefresh && (
                             <button
@@ -173,9 +179,27 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
                 <section className="lg:col-span-8 space-y-4">
                     {/* Filter Tabs & Queue Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[hsl(var(--ui-surface))] p-3 rounded-xl border border-[hsl(var(--ui-border))] shadow-sm">
-                        <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+                        {/* Mobile Queue Selector Dropdown */}
+                        <div className="sm:hidden w-full">
+                            <label htmlFor="mobile-queue-select" className="sr-only">Filtrar fila operacional</label>
+                            <select
+                                id="mobile-queue-select"
+                                value={selectedTab}
+                                onChange={(e) => setSelectedTab(e.target.value as any)}
+                                className="w-full text-xs font-semibold bg-[hsl(var(--ui-page))] border border-[hsl(var(--ui-border))] rounded-lg p-2 text-[hsl(var(--ui-text))]"
+                            >
+                                <option value="all">Todas as Filas ({queueItems.length})</option>
+                                <option value="conversations">Conversas & WhatsApp</option>
+                                <option value="freight">Cotações de Frete</option>
+                                <option value="orders">Esteira de Pedidos</option>
+                            </select>
+                        </div>
+
+                        {/* Desktop Filter Tabs */}
+                        <div className="hidden sm:flex items-center gap-1 overflow-x-auto">
                             <button
                                 onClick={() => setSelectedTab('all')}
+                                aria-label="Mostrar todas as filas"
                                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                                     selectedTab === 'all'
                                         ? 'bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))] border border-[hsl(var(--ui-border))] shadow-xs'
@@ -186,6 +210,7 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
                             </button>
                             <button
                                 onClick={() => setSelectedTab('conversations')}
+                                aria-label="Filtrar por conversas e WhatsApp"
                                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                                     selectedTab === 'conversations'
                                         ? 'bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))] border border-[hsl(var(--ui-border))] shadow-xs'
@@ -196,6 +221,7 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
                             </button>
                             <button
                                 onClick={() => setSelectedTab('freight')}
+                                aria-label="Filtrar por cotações de frete"
                                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                                     selectedTab === 'freight'
                                         ? 'bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))] border border-[hsl(var(--ui-border))] shadow-xs'
@@ -206,6 +232,7 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
                             </button>
                             <button
                                 onClick={() => setSelectedTab('orders')}
+                                aria-label="Filtrar por esteira de pedidos"
                                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                                     selectedTab === 'orders'
                                         ? 'bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))] border border-[hsl(var(--ui-border))] shadow-xs'
@@ -282,7 +309,10 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
                                     return (
                                         <div
                                             key={item.id}
-                                            onClick={() => setActiveItemId(item.id)}
+                                            onClick={() => {
+                                                setActiveItemId(item.id);
+                                                setIsMobileDrawerOpen(true);
+                                            }}
                                             className={`p-4 transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                                                 isSelected
                                                     ? 'bg-[hsl(var(--ui-page))] border-l-4 border-l-[hsl(var(--ui-accent-blue-ink))]'
@@ -331,6 +361,54 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
                         )}
                     </div>
                 </section>
+
+                {/* Mobile Drawer Backdrop and Overlay */}
+                {isMobileDrawerOpen && activeItem && (
+                    <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end bg-black/50 backdrop-blur-sm">
+                        <div className="bg-[hsl(var(--ui-surface))] rounded-t-2xl border-t border-[hsl(var(--ui-border))] p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+                            <div className="flex items-center justify-between border-b border-[hsl(var(--ui-border))] pb-3">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--ui-text-subtle))] flex items-center gap-1.5">
+                                    <UserCheck className="h-3.5 w-3.5 text-[hsl(var(--ui-accent-blue-ink))]" />
+                                    Contexto Persistente (Mobile)
+                                </h3>
+                                <button
+                                    onClick={() => setIsMobileDrawerOpen(false)}
+                                    className="p-1 text-[hsl(var(--ui-text-subtle))] hover:text-[hsl(var(--ui-text))] rounded"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <span className="text-[10px] uppercase font-mono text-[hsl(var(--ui-text-subtle))]">
+                                        Fila & Identificação
+                                    </span>
+                                    <p className="text-sm font-bold text-[hsl(var(--ui-text))]">{activeItem.entity}</p>
+                                    <p className="text-xs text-[hsl(var(--ui-text-subtle))]">{activeItem.queue}</p>
+                                </div>
+
+                                <div className="p-3 bg-[hsl(var(--ui-page))] rounded-lg border border-[hsl(var(--ui-border))] space-y-2 text-xs">
+                                    <div className="flex justify-between">
+                                        <span className="text-[hsl(var(--ui-text-subtle))]">Ponto de Bloqueio:</span>
+                                        <span className="font-semibold text-[hsl(var(--ui-text))]">{activeItem.waitingFor}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-[hsl(var(--ui-text-subtle))]">Tempo em Fila:</span>
+                                        <span className="font-mono text-[hsl(var(--ui-text))]">{activeItem.age}</span>
+                                    </div>
+                                </div>
+
+                                <Link href={activeItem.href} className="block">
+                                    <Button className="w-full justify-center">
+                                        Acessar Contexto Completo
+                                        <ChevronRight className="h-4 w-4 ml-1" />
+                                    </Button>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Right Area: Context Panel / Item Focus (4 Cols) */}
                 <aside className="lg:col-span-4 space-y-4">
