@@ -1,8 +1,7 @@
-import { rooms } from '@/modules/cockpit';
-import { RoomCard } from '@/ui/cockpit/room-card';
 import { headers } from 'next/headers';
 import { isSuperAdmin } from '@/ui/auth/entitlements-logic';
-import { CockpitOperationalDashboard } from './_components/CockpitOperationalDashboard';
+import { getCockpitData } from '@/modules/cockpit/data/get-cockpit-data';
+import { CockpitWorkspaceShell } from '@/modules/cockpit/workspace/workspace-shell';
 
 export const metadata = {
     title: 'Cockpit Operacional — CONDSTORE OS',
@@ -10,7 +9,9 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function CockpitPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+export default async function CockpitPage(props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
     const searchParams = await props.searchParams;
     const inspectTenantId = typeof searchParams.tenantId === 'string' ? searchParams.tenantId : undefined;
 
@@ -30,22 +31,7 @@ export default async function CockpitPage(props: { searchParams: Promise<{ [key:
         );
     }
 
-    return (
-        <div className="flex-1 overflow-auto bg-[hsl(var(--ui-page))] p-4 sm:p-6 lg:p-8 min-h-screen text-[hsl(var(--ui-text))]">
-            <div className="mx-auto max-w-7xl space-y-8">
-                <CockpitOperationalDashboard tenantId={tenantId} />
+    const cockpitData = await getCockpitData();
 
-                <div className="pt-8 mt-8 border-t border-[hsl(var(--ui-border)/0.5)]">
-                    <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-[hsl(var(--ui-text-subtle))] mb-4">
-                        Salas de Operação Especializadas
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
-                        {rooms.map((room) => (
-                            <RoomCard key={room.id} {...room} />
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+    return <CockpitWorkspaceShell data={cockpitData} />;
 }
