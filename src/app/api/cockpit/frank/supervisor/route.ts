@@ -59,7 +59,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         if (action === 'APPROVE_STEP') {
-            await frankExecutionStateService.approveStep(payload.stepId, auth.session.sub || 'human_gate');
+            const { frankHumanGatePolicyEngine } = await import('@/modules/frank/frank-human-gate-policy');
+            const policyResult = frankHumanGatePolicyEngine.evaluate({
+                userId: auth.session.sub,
+                tenantId,
+                actionType: payload.actionType || 'APPROVE_STEP',
+                riskClass: payload.riskClass || 'GUARDED',
+                requiresHumanApproval: true,
+                approvalToken: payload.approvalToken,
+            });
+
+            if (!policyResult.allowed) {
+                return errorResponse(ErrorCode.FORBIDDEN, 403, requestId, policyResult.reason);
+            }
+
+            await frankExecutionStateService.approveStep(tenantId, payload.stepId, auth.session.sub || 'human_gate');
             const res = NextResponse.json({ success: true, message: 'Step approved by Human Gate' }, { status: 200 });
             attachRequestIdHeader(res, requestId);
             return res;

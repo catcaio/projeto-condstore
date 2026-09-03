@@ -11,13 +11,23 @@ export interface SignalData {
     evidence: Record<string, unknown>;
 }
 
+export type InvestigationClassification = 'OBSERVATION' | 'EVIDENCE' | 'INFERENCE' | 'HYPOTHESIS' | 'CONFIRMED_CAUSE';
+
+export interface InvestigationEvidenceChain {
+    observation: string;
+    evidencesCollected: Array<{ source: string; detail: unknown; timestamp: Date }>;
+    inferences: string[];
+    causalHypothesis: string;
+    classification: InvestigationClassification;
+}
+
 export interface TechnicalIssueDraft {
     title: string;
     suggestedPriority: 'P0' | 'P1' | 'P2' | 'P3';
     summary: string;
     impact: string;
     affectedComponents: string[];
-    evidence: Record<string, unknown>;
+    evidenceChain: InvestigationEvidenceChain;
     causalHypothesis: string;
     confidence: 'LOW' | 'MEDIUM' | 'HIGH';
     architecturalContext: string;
@@ -42,8 +52,23 @@ export class FrankDiagnosisPipelineService {
             businessRules: []
         };
 
-        // 2. Formulate Causal Hypothesis
-        const causalHypothesis = `Hypothesis: ${signal.summary}. Potential root cause in services interacting with ${domainKnowledge.routes.join(', ')}.`;
+        // 2. Formulate Evidence Chain (Observation -> Evidence -> Inference -> Hypothesis)
+        const evidenceChain: InvestigationEvidenceChain = {
+            observation: signal.summary,
+            evidencesCollected: [
+                {
+                    source: `operational_event_bus:${signal.signalType}`,
+                    detail: signal.evidence,
+                    timestamp: new Date()
+                }
+            ],
+            inferences: [
+                `Anomalia correlacionada ao domínio [${domainKnowledge.domain}]`,
+                `Componentes afetados: ${domainKnowledge.routes.join(', ')}`
+            ],
+            causalHypothesis: `Hypothesis: ${signal.summary}. Potential root cause in services interacting with ${domainKnowledge.routes.join(', ')}.`,
+            classification: 'HYPOTHESIS' // Rigorously distinct from CONFIRMED_CAUSE
+        };
 
         // 3. Draft Technical Issue for Factory Software
         const priorityMap: Record<string, 'P0' | 'P1' | 'P2' | 'P3'> = {
@@ -59,8 +84,8 @@ export class FrankDiagnosisPipelineService {
             summary: signal.summary,
             impact: `Possível degradação operacional no domínio ${domainKnowledge.domain}.`,
             affectedComponents: domainKnowledge.routes,
-            evidence: signal.evidence,
-            causalHypothesis,
+            evidenceChain,
+            causalHypothesis: evidenceChain.causalHypothesis,
             confidence: signal.severity === 'CRITICAL' ? 'HIGH' : 'MEDIUM',
             architecturalContext: `Arquitetura CONDSTORE OS. Tabelas envolvidas: ${domainKnowledge.tables.join(', ')}.`,
             acceptanceCriteria: [
@@ -112,8 +137,8 @@ export class FrankDiagnosisPipelineService {
 
         const awaitingStep = executionData.steps.find(s => s.status === 'AWAITING_APPROVAL' || s.requiresHumanApproval);
         if (awaitingStep) {
-            await frankExecutionStateService.approveStep(awaitingStep.id, approvedBy);
-            await frankExecutionStateService.updateStepCheckpoint(awaitingStep.id, 'COMPLETED', { approvedForFactory: true });
+            await frankExecutionStateService.approveStep(tenantId, awaitingStep.id, approvedBy);
+            await frankExecutionStateService.updateStepCheckpoint(tenantId, awaitingStep.id, 'COMPLETED', { approvedForFactory: true });
         }
 
         await frankExecutionStateService.updateRunStatus(

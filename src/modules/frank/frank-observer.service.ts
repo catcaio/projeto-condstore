@@ -12,13 +12,32 @@ export interface SignalObservation {
     severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     summary: string;
     evidence: Record<string, unknown>;
+    correlationKey?: string;
 }
+
+const activeIncidentRuns = new Map<string, string>(); // correlationKey -> executionId
 
 export class FrankObserverService {
     /**
-     * Captures an operational anomaly or telemetry event and streams it into the Frank execution state pipeline.
+     * Captures an operational anomaly or telemetry event and streams it into the Frank execution state pipeline with deduplication.
      */
     async observeSignal(signal: SignalObservation): Promise<string> {
+        const correlationKey = signal.correlationKey || `${signal.tenantId}:${signal.signalType}`;
+
+        // Deduplication check: return existing execution if already active
+        if (activeIncidentRuns.has(correlationKey)) {
+            const existingExecutionId = activeIncidentRuns.get(correlationKey)!;
+            const existingRunData = await frankExecutionStateService.getExecutionWithSteps(signal.tenantId, existingExecutionId);
+
+            if (existingRunData && ['PENDING', 'RUNNING', 'PAUSED_HUMAN_APPROVAL'].includes(existingRunData.run.status)) {
+                logger.info('Frank Observer deduplicated signal into active run', { correlationKey, existingExecutionId });
+                return existingExecutionId;
+            }
+
+            // Remove terminal or stale run from active map
+            activeIncidentRuns.delete(correlationKey);
+        }
+
         logger.info('Frank Observer captured signal', {
             tenantId: signal.tenantId,
             signalType: signal.signalType,
@@ -68,6 +87,7 @@ export class FrankObserverService {
             inputPayload: signal.evidence
         });
 
+        activeIncidentRuns.set(correlationKey, run.executionId);
         return run.executionId;
     }
 

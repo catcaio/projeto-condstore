@@ -3,11 +3,12 @@ import { frankObserverService } from '../frank-observer.service';
 import { frankDiagnosisPipelineService } from '../frank-diagnosis-pipeline.service';
 import { frankFactorySupervisionService } from '../frank-factory-supervision.service';
 import { frankExecutionStateService } from '../frank-execution-state.service';
+import { frankPostDeployService } from '../frank-post-deploy.service';
 
 describe('Frank Supremo - End-to-End Operational Lifecycle', () => {
     const tenantId = 'tenant_e2e_supremo';
 
-    it('should complete the full operational loop: DETECT → DIAGNOSE → HUMAN GATE → FACTORY SUPERVISION', async () => {
+    it('should complete the full operational loop: DETECT → DIAGNOSE → HUMAN GATE → FACTORY SUPERVISION → POST-DEPLOY VERIFICATION', async () => {
         // 1. DETECT (Observer captures critical signal)
         const signal = {
             tenantId,
@@ -15,16 +16,18 @@ describe('Frank Supremo - End-to-End Operational Lifecycle', () => {
             domain: 'frete',
             severity: 'CRITICAL' as const,
             summary: 'Queda acentuada na conversão de cotação para pedido em SP',
-            evidence: { conversionRate: 0.05, periodDays: 7 }
+            evidence: { conversionRate: 0.05, periodDays: 7 },
+            correlationKey: 'corr_quote_drop_e2e'
         };
 
         const executionId = await frankObserverService.observeSignal(signal);
         expect(executionId).toBeDefined();
 
-        // 2. DIAGNOSE (Frank correlates and prepares technical issue draft)
+        // 2. DIAGNOSE (Frank correlates and prepares technical issue draft with evidence chain)
         const issueDraft = await frankDiagnosisPipelineService.diagnoseAndPrepareIssue(signal, executionId);
         expect(issueDraft.suggestedPriority).toBe('P0');
         expect(issueDraft.status).toBe('AWAITING_HUMAN_APPROVAL');
+        expect(issueDraft.evidenceChain.classification).toBe('HYPOTHESIS');
 
         // Verify run is paused at Human Gate
         let execution = await frankExecutionStateService.getExecutionWithSteps(tenantId, executionId);
@@ -50,13 +53,16 @@ describe('Frank Supremo - End-to-End Operational Lifecycle', () => {
         expect(prReview.recommendation).toBe('APPROVE_AND_MERGE');
         expect(prReview.ciPassed).toBe(true);
 
-        // Finalize Execution Run
-        await frankExecutionStateService.updateRunStatus(
-            execution!.run.id,
-            'COMPLETED',
-            'Fluxo encerrado e monitoramento ativo pós-deploy',
-            { prNumber: 108, success: true }
-        );
+        // 5. POST-DEPLOY OBSERVATION (Frank verifies metrics after deployment)
+        const postDeployResult = await frankPostDeployService.verifyPostDeploy({
+            tenantId,
+            executionId,
+            signalType: 'quote_to_order_conversion_drop',
+            currentValue: 0.02, // Conversion drop below threshold = resolved
+            expectedThreshold: 0.05
+        });
+
+        expect(postDeployResult.resolved).toBe(true);
 
         const finalExecution = await frankExecutionStateService.getExecutionWithSteps(tenantId, executionId);
         expect(finalExecution?.run.status).toBe('COMPLETED');

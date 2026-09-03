@@ -68,7 +68,24 @@ export interface CreateStepParams {
 const memoryRuns = new Map<string, FrankExecutionRunRecord>();
 const memorySteps = new Map<string, FrankExecutionStepRecord>();
 
+const VALID_RUN_TRANSITIONS: Record<ExecutionRunStatus, ExecutionRunStatus[]> = {
+    PENDING: ['RUNNING', 'PAUSED_HUMAN_APPROVAL', 'CANCELLED', 'FAILED'],
+    RUNNING: ['PAUSED_HUMAN_APPROVAL', 'COMPLETED', 'FAILED', 'CANCELLED'],
+    PAUSED_HUMAN_APPROVAL: ['RUNNING', 'CANCELLED', 'FAILED'],
+    COMPLETED: [], // Terminal state
+    FAILED: ['RUNNING'], // Retry allowed
+    CANCELLED: [] // Terminal state
+};
+
 export class FrankExecutionStateService {
+    /**
+     * Validates if a state transition is permitted.
+     */
+    isValidTransition(currentStatus: ExecutionRunStatus, newStatus: ExecutionRunStatus): boolean {
+        if (currentStatus === newStatus) return true;
+        const allowed = VALID_RUN_TRANSITIONS[currentStatus] || [];
+        return allowed.includes(newStatus);
+    }
     private async getDbSafe() {
         if (!process.env.DATABASE_URL) return null;
         try {
@@ -160,6 +177,7 @@ export class FrankExecutionStateService {
     }
 
     async updateStepCheckpoint(
+        tenantId: string,
         stepId: string,
         status: ExecutionStepStatus,
         outputPayload?: Record<string, unknown>,
@@ -180,41 +198,68 @@ export class FrankExecutionStateService {
         if (db) {
             try {
                 const { frankExecutionSteps } = await import('@/drizzle/schema');
-                const { eq } = await import('drizzle-orm');
-                await db.update(frankExecutionSteps).set(updateData as any).where(eq(frankExecutionSteps.id, stepId));
+                const { eq, and } = await import('drizzle-orm');
+                await db.update(frankExecutionSteps).set(updateData as any).where(
+                    and(eq(frankExecutionSteps.id, stepId), eq(frankExecutionSteps.tenantId, tenantId))
+                );
                 return;
-            } catch {}
+            } catch (err: any) {
+                logger.error('Failed to update step checkpoint in DB', err as Error, { tenantId, stepId });
+                throw err;
+            }
         }
 
         const step = memorySteps.get(stepId);
-        if (step) {
+        if (step && step.tenantId === tenantId) {
             Object.assign(step, updateData);
+        } else if (step && step.tenantId !== tenantId) {
+            throw new Error('Cross-tenant step access denied');
         }
     }
 
-    async approveStep(stepId: string, approvedBy: string): Promise<void> {
+    async approveStep(tenantId: string, stepId: string, approvedBy: string): Promise<void> {
         const approvedAt = new Date();
         const db = await this.getDbSafe();
 
         if (db) {
             try {
                 const { frankExecutionSteps } = await import('@/drizzle/schema');
-                const { eq } = await import('drizzle-orm');
+                const { eq, and } = await import('drizzle-orm');
                 await db.update(frankExecutionSteps).set({
                     status: 'PENDING',
                     approvedBy,
                     approvedAt,
-                }).where(eq(frankExecutionSteps.id, stepId));
+                }).where(and(eq(frankExecutionSteps.id, stepId), eq(frankExecutionSteps.tenantId, tenantId)));
                 return;
-            } catch {}
+            } catch (err: any) {
+                logger.error('Failed to approve step in DB', err as Error, { tenantId, stepId });
+                throw err;
+            }
         }
 
         const step = memorySteps.get(stepId);
-        if (step) {
+        if (step && step.tenantId === tenantId) {
             step.status = 'PENDING';
             step.approvedBy = approvedBy;
             step.approvedAt = approvedAt;
+        } else if (step && step.tenantId !== tenantId) {
+            throw new Error('Cross-tenant step access denied');
         }
+    }
+
+    async updateRunStatusWithTenantCheck(
+        tenantId: string,
+        runId: string,
+        status: ExecutionRunStatus,
+        currentStep?: string,
+        resultJson?: Record<string, unknown>,
+        errorMsg?: string
+    ): Promise<void> {
+        const executionData = await this.getExecutionWithSteps(tenantId, runId);
+        if (!executionData) {
+            throw new Error('Cross-tenant access denied or execution run not found');
+        }
+        await this.updateRunStatus(runId, status, currentStep, resultJson, errorMsg);
     }
 
     async updateRunStatus(
@@ -224,6 +269,11 @@ export class FrankExecutionStateService {
         resultJson?: Record<string, unknown>,
         errorMsg?: string
     ): Promise<void> {
+        const existingRun = Array.from(memoryRuns.values()).find(r => r.id === runId);
+        if (existingRun && !this.isValidTransition(existingRun.status, status)) {
+            throw new Error(`Invalid state transition from ${existingRun.status} to ${status}`);
+        }
+
         const db = await this.getDbSafe();
         const updateData: Partial<FrankExecutionRunRecord> = {
             status,

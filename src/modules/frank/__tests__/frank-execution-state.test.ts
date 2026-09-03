@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { frankExecutionStateService } from '../frank-execution-state.service';
 import { CONDSTORE_SYSTEM_KNOWLEDGE, getSystemKnowledgeContext } from '../frank-system-knowledge';
 
@@ -14,7 +14,7 @@ describe('Frank Execution State & Knowledge Layer', () => {
         expect(context).toContain('orders');
     });
 
-    it('should create an execution run and add steps', async () => {
+    it('should create an execution run and add steps following valid state transitions', async () => {
         const run = await frankExecutionStateService.createRun({
             tenantId,
             title: 'Investigação de Falha de Cotação',
@@ -40,12 +40,32 @@ describe('Frank Execution State & Knowledge Layer', () => {
         expect(step.stepNumber).toBe(1);
         expect(step.status).toBe('PENDING');
 
-        await frankExecutionStateService.updateStepCheckpoint(step.id, 'COMPLETED', { result: 'Nenhum erro de tabela' });
+        await frankExecutionStateService.updateStepCheckpoint(tenantId, step.id, 'COMPLETED', { result: 'Nenhum erro de tabela' });
+
+        // Transition PENDING -> RUNNING -> COMPLETED
+        await frankExecutionStateService.updateRunStatus(run.id, 'RUNNING', 'Iniciando Step 1');
         await frankExecutionStateService.updateRunStatus(run.id, 'COMPLETED', 'Step 1 Finalizado', { success: true });
 
         const executionData = await frankExecutionStateService.getExecutionWithSteps(tenantId, run.executionId);
         expect(executionData).not.toBeNull();
         expect(executionData?.run.status).toBe('COMPLETED');
         expect(executionData?.steps[0].status).toBe('COMPLETED');
+    });
+
+    it('should reject invalid state transitions', async () => {
+        const run = await frankExecutionStateService.createRun({
+            tenantId,
+            title: 'Execução de Teste de Transição',
+            autonomyLevel: 'OBSERVE',
+        });
+
+        // PENDING -> RUNNING -> COMPLETED
+        await frankExecutionStateService.updateRunStatus(run.id, 'RUNNING');
+        await frankExecutionStateService.updateRunStatus(run.id, 'COMPLETED');
+
+        // Attempting COMPLETED -> RUNNING must fail
+        await expect(
+            frankExecutionStateService.updateRunStatus(run.id, 'RUNNING')
+        ).rejects.toThrow('Invalid state transition from COMPLETED to RUNNING');
     });
 });
