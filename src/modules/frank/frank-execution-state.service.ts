@@ -6,6 +6,13 @@ export type RiskClass = 'SAFE' | 'GUARDED' | 'CRITICAL';
 export type ExecutionRunStatus = 'PENDING' | 'RUNNING' | 'PAUSED_HUMAN_APPROVAL' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type ExecutionStepStatus = 'PENDING' | 'RUNNING' | 'AWAITING_APPROVAL' | 'COMPLETED' | 'FAILED' | 'SKIPPED';
 
+export class FrankPersistenceError extends Error {
+    constructor(message: string, public readonly cause?: unknown) {
+        super(message);
+        this.name = 'FrankPersistenceError';
+    }
+}
+
 export interface FrankExecutionRunRecord {
     id: string;
     tenantId: string;
@@ -64,7 +71,7 @@ export interface CreateStepParams {
     inputPayload?: Record<string, unknown>;
 }
 
-// In-Memory store fallback for unit testing or when DB is not accessible
+// In-Memory store for unit testing or local fallback in non-production environments
 const memoryRuns = new Map<string, FrankExecutionRunRecord>();
 const memorySteps = new Map<string, FrankExecutionStepRecord>();
 
@@ -73,7 +80,7 @@ const VALID_RUN_TRANSITIONS: Record<ExecutionRunStatus, ExecutionRunStatus[]> = 
     RUNNING: ['PAUSED_HUMAN_APPROVAL', 'COMPLETED', 'FAILED', 'CANCELLED'],
     PAUSED_HUMAN_APPROVAL: ['RUNNING', 'CANCELLED', 'FAILED'],
     COMPLETED: [], // Terminal state
-    FAILED: ['RUNNING'], // Retry allowed
+    FAILED: ['RUNNING', 'CANCELLED'], // Retry or cancel allowed
     CANCELLED: [] // Terminal state
 };
 
@@ -86,12 +93,20 @@ export class FrankExecutionStateService {
         const allowed = VALID_RUN_TRANSITIONS[currentStatus] || [];
         return allowed.includes(newStatus);
     }
+
+    private isProductionMode(): boolean {
+        return process.env.NODE_ENV === 'production';
+    }
+
     private async getDbSafe() {
         if (!process.env.DATABASE_URL) return null;
         try {
             const { getDb } = await import('@/infra/db');
             return await getDb();
-        } catch {
+        } catch (err) {
+            if (this.isProductionMode()) {
+                throw new FrankPersistenceError('Database connection unavailable in production', err);
+            }
             return null;
         }
     }
@@ -119,15 +134,29 @@ export class FrankExecutionStateService {
             updatedAt: now,
         };
 
+        const isProd = this.isProductionMode();
+        let persistedInDb = false;
+
         const db = await this.getDbSafe();
         if (db) {
             try {
                 const { frankExecutionRuns } = await import('@/drizzle/schema');
                 await db.insert(frankExecutionRuns).values(newRun as any);
+                persistedInDb = true;
             } catch (err) {
+                if (isProd) {
+                    logger.error('CRITICAL: DB insert failed for Frank execution run in production', err as Error, { tenantId: params.tenantId, executionId });
+                    throw new FrankPersistenceError('Failed to persist execution run to DB in production', err);
+                }
                 logger.warn('Failed DB insert for execution run, falling back to memory', { err });
-                memoryRuns.set(id, newRun);
             }
+        }
+
+        if (!persistedInDb) {
+            if (isProd) {
+                throw new FrankPersistenceError('DATABASE_URL missing or DB unavailable in production');
+            }
+            memoryRuns.set(id, newRun);
         } else {
             memoryRuns.set(id, newRun);
         }
@@ -161,14 +190,29 @@ export class FrankExecutionStateService {
             createdAt: now,
         };
 
+        const isProd = this.isProductionMode();
+        let persistedInDb = false;
+
         const db = await this.getDbSafe();
         if (db) {
             try {
                 const { frankExecutionSteps } = await import('@/drizzle/schema');
                 await db.insert(frankExecutionSteps).values(newStep as any);
+                persistedInDb = true;
             } catch (err) {
-                memorySteps.set(id, newStep);
+                if (isProd) {
+                    logger.error('CRITICAL: DB insert failed for Frank execution step in production', err as Error, { tenantId: params.tenantId, stepId: id });
+                    throw new FrankPersistenceError('Failed to persist execution step to DB in production', err);
+                }
+                logger.warn('Failed DB insert for step, falling back to memory', { err });
             }
+        }
+
+        if (!persistedInDb) {
+            if (isProd) {
+                throw new FrankPersistenceError('DATABASE_URL missing or DB unavailable in production');
+            }
+            memorySteps.set(id, newStep);
         } else {
             memorySteps.set(id, newStep);
         }
@@ -184,7 +228,9 @@ export class FrankExecutionStateService {
         toolCallsJson?: Record<string, unknown>,
         errorMsg?: string
     ): Promise<void> {
+        const isProd = this.isProductionMode();
         const db = await this.getDbSafe();
+
         const updateData: Partial<FrankExecutionStepRecord> = {
             status,
             outputPayload: outputPayload || null,
@@ -202,10 +248,15 @@ export class FrankExecutionStateService {
                 await db.update(frankExecutionSteps).set(updateData as any).where(
                     and(eq(frankExecutionSteps.id, stepId), eq(frankExecutionSteps.tenantId, tenantId))
                 );
+                const step = memorySteps.get(stepId);
+                if (step && step.tenantId === tenantId) Object.assign(step, updateData);
                 return;
             } catch (err: any) {
-                logger.error('Failed to update step checkpoint in DB', err as Error, { tenantId, stepId });
-                throw err;
+                if (isProd) {
+                    logger.error('CRITICAL: Failed to update step checkpoint in DB in production', err as Error, { tenantId, stepId });
+                    throw new FrankPersistenceError('Failed to update step checkpoint in DB in production', err);
+                }
+                logger.warn('Failed to update step checkpoint in DB, falling back to memory in dev/test', { tenantId, stepId, err });
             }
         }
 
@@ -214,11 +265,14 @@ export class FrankExecutionStateService {
             Object.assign(step, updateData);
         } else if (step && step.tenantId !== tenantId) {
             throw new Error('Cross-tenant step access denied');
+        } else if (isProd) {
+            throw new FrankPersistenceError(`Execution step [${stepId}] not found in DB`);
         }
     }
 
     async approveStep(tenantId: string, stepId: string, approvedBy: string): Promise<void> {
         const approvedAt = new Date();
+        const isProd = this.isProductionMode();
         const db = await this.getDbSafe();
 
         if (db) {
@@ -230,10 +284,20 @@ export class FrankExecutionStateService {
                     approvedBy,
                     approvedAt,
                 }).where(and(eq(frankExecutionSteps.id, stepId), eq(frankExecutionSteps.tenantId, tenantId)));
+
+                const step = memorySteps.get(stepId);
+                if (step && step.tenantId === tenantId) {
+                    step.status = 'PENDING';
+                    step.approvedBy = approvedBy;
+                    step.approvedAt = approvedAt;
+                }
                 return;
             } catch (err: any) {
-                logger.error('Failed to approve step in DB', err as Error, { tenantId, stepId });
-                throw err;
+                if (isProd) {
+                    logger.error('CRITICAL: Failed to approve step in DB in production', err as Error, { tenantId, stepId });
+                    throw new FrankPersistenceError('Failed to approve step in DB in production', err);
+                }
+                logger.warn('Failed to approve step in DB, falling back to memory in dev/test', { tenantId, stepId, err });
             }
         }
 
@@ -244,22 +308,24 @@ export class FrankExecutionStateService {
             step.approvedAt = approvedAt;
         } else if (step && step.tenantId !== tenantId) {
             throw new Error('Cross-tenant step access denied');
+        } else if (isProd) {
+            throw new FrankPersistenceError(`Execution step [${stepId}] not found in DB`);
         }
     }
 
     async updateRunStatusWithTenantCheck(
         tenantId: string,
-        runId: string,
+        runIdOrExecutionId: string,
         status: ExecutionRunStatus,
         currentStep?: string,
         resultJson?: Record<string, unknown>,
         errorMsg?: string
     ): Promise<void> {
-        const executionData = await this.getExecutionWithSteps(tenantId, runId);
+        const executionData = await this.getExecutionWithSteps(tenantId, runIdOrExecutionId);
         if (!executionData) {
             throw new Error('Cross-tenant access denied or execution run not found');
         }
-        await this.updateRunStatus(runId, status, currentStep, resultJson, errorMsg);
+        await this.updateRunStatus(executionData.run.id, status, currentStep, resultJson, errorMsg);
     }
 
     async updateRunStatus(
@@ -269,11 +335,12 @@ export class FrankExecutionStateService {
         resultJson?: Record<string, unknown>,
         errorMsg?: string
     ): Promise<void> {
-        const existingRun = Array.from(memoryRuns.values()).find(r => r.id === runId);
+        const existingRun = Array.from(memoryRuns.values()).find(r => r.id === runId || r.executionId === runId);
         if (existingRun && !this.isValidTransition(existingRun.status, status)) {
             throw new Error(`Invalid state transition from ${existingRun.status} to ${status}`);
         }
 
+        const isProd = this.isProductionMode();
         const db = await this.getDbSafe();
         const updateData: Partial<FrankExecutionRunRecord> = {
             status,
@@ -291,38 +358,93 @@ export class FrankExecutionStateService {
             try {
                 const { frankExecutionRuns } = await import('@/drizzle/schema');
                 const { eq } = await import('drizzle-orm');
-                await db.update(frankExecutionRuns).set(updateData as any).where(eq(frankExecutionRuns.id, runId));
+                const actualRunId = existingRun ? existingRun.id : runId;
+                await db.update(frankExecutionRuns).set(updateData as any).where(eq(frankExecutionRuns.id, actualRunId));
+
+                const run = memoryRuns.get(actualRunId);
+                if (run) Object.assign(run, updateData);
                 return;
-            } catch {}
+            } catch (err) {
+                if (isProd) {
+                    logger.error('CRITICAL: Failed to update run status in DB in production', err as Error, { runId, status });
+                    throw new FrankPersistenceError('Failed to update run status in DB in production', err);
+                }
+                logger.warn('Failed to update run status in DB, using memory fallback in dev/test', { runId, err });
+            }
         }
 
-        const run = memoryRuns.get(runId);
+        const actualRunId = existingRun ? existingRun.id : runId;
+        const run = memoryRuns.get(actualRunId);
         if (run) {
             Object.assign(run, updateData);
+        } else if (isProd) {
+            throw new FrankPersistenceError(`Execution run [${runId}] not found in DB`);
         }
     }
 
-    async getExecutionWithSteps(tenantId: string, executionId: string) {
+    async cancelExecutionRun(tenantId: string, runIdOrExecutionId: string, reason: string): Promise<void> {
+        await this.updateRunStatusWithTenantCheck(tenantId, runIdOrExecutionId, 'CANCELLED', 'Cancelado pelo operador/sistema', undefined, reason);
+        logger.info('Frank Execution Run cancelled', { tenantId, runIdOrExecutionId, reason });
+    }
+
+    async recoverActiveExecutions(tenantId: string): Promise<FrankExecutionRunRecord[]> {
+        const db = await this.getDbSafe();
+        if (db) {
+            try {
+                const { frankExecutionRuns } = await import('@/drizzle/schema');
+                const { eq, inArray, and } = await import('drizzle-orm');
+
+                const active = await db.select().from(frankExecutionRuns)
+                    .where(and(
+                        eq(frankExecutionRuns.tenantId, tenantId),
+                        inArray(frankExecutionRuns.status, ['PENDING', 'RUNNING', 'PAUSED_HUMAN_APPROVAL'])
+                    ));
+
+                if (active.length > 0) {
+                    return active as FrankExecutionRunRecord[];
+                }
+            } catch (err) {
+                logger.warn('Failed recovering active executions from DB, checking memory', { tenantId, err });
+            }
+        }
+
+        return Array.from(memoryRuns.values()).filter(
+            r => r.tenantId === tenantId && ['PENDING', 'RUNNING', 'PAUSED_HUMAN_APPROVAL'].includes(r.status)
+        );
+    }
+
+    async getExecutionWithSteps(tenantId: string, executionIdOrId: string) {
         const db = await this.getDbSafe();
         if (db) {
             try {
                 const { frankExecutionRuns, frankExecutionSteps } = await import('@/drizzle/schema');
-                const { eq, and } = await import('drizzle-orm');
+                const { eq, and, or } = await import('drizzle-orm');
+
                 const [run] = await db.select().from(frankExecutionRuns)
-                    .where(and(eq(frankExecutionRuns.tenantId, tenantId), eq(frankExecutionRuns.executionId, executionId)))
+                    .where(and(
+                        eq(frankExecutionRuns.tenantId, tenantId),
+                        or(
+                            eq(frankExecutionRuns.executionId, executionIdOrId),
+                            eq(frankExecutionRuns.id, executionIdOrId)
+                        )
+                    ))
                     .limit(1);
 
-                if (!run) return null;
+                if (run) {
+                    const steps = await db.select().from(frankExecutionSteps)
+                        .where(and(eq(frankExecutionSteps.tenantId, tenantId), eq(frankExecutionSteps.executionRunId, run.id)))
+                        .orderBy(frankExecutionSteps.stepNumber);
 
-                const steps = await db.select().from(frankExecutionSteps)
-                    .where(and(eq(frankExecutionSteps.tenantId, tenantId), eq(frankExecutionSteps.executionRunId, run.id)))
-                    .orderBy(frankExecutionSteps.stepNumber);
-
-                return { run: run as FrankExecutionRunRecord, steps: steps as FrankExecutionStepRecord[] };
-            } catch {}
+                    return { run: run as FrankExecutionRunRecord, steps: steps as FrankExecutionStepRecord[] };
+                }
+            } catch (err) {
+                logger.warn('Failed querying execution from DB, trying memory fallback', { tenantId, executionIdOrId, err });
+            }
         }
 
-        const run = Array.from(memoryRuns.values()).find(r => r.tenantId === tenantId && r.executionId === executionId);
+        const run = Array.from(memoryRuns.values()).find(
+            r => r.tenantId === tenantId && (r.executionId === executionIdOrId || r.id === executionIdOrId)
+        );
         if (!run) return null;
 
         const steps = Array.from(memorySteps.values())
