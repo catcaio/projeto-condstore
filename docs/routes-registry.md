@@ -58,6 +58,7 @@
 | /api/cockpit/frank/knowledge | GET,POST | internal | required | cockpit | live | Frank Knowledge Base CRUD |
 | /api/cockpit/frank/knowledge/[id] | GET,PUT,DELETE | internal | required | cockpit | live | Frank Knowledge Base item CRUD |
 | /api/cockpit/frank/playbooks | GET/POST | internal | required | cockpit | live | Added |
+| /api/cockpit/frank/supervisor | GET, POST | internal | required | cockpit | live | Frank Supremo operational supervisor endpoint |
 | /api/cockpit/frank/suggestions | GET | internal | required | cockpit | live | Frank Suggestions list |
 | /api/cockpit/frank/suggestions/[id]/approve | POST | internal | required | cockpit | live | Frank Suggestions approval |
 | /api/cockpit/frank/suggestions/[id]/approve-draft | GET/POST | internal | required | cockpit | live | Added |

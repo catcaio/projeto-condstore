@@ -2063,6 +2063,59 @@ export const frankSessionState = mysqlTable('frank_session_state', {
 
 export type FrankSessionStateRecord = typeof frankSessionState.$inferSelect;
 
+// --- Frank Durable Execution Runs & Steps ---
+
+export const frankExecutionRuns = mysqlTable('frank_execution_runs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    executionId: varchar('execution_id', { length: 100 }).notNull().unique(),
+    title: varchar('title', { length: 255 }).notNull(),
+    triggerSource: varchar('trigger_source', { length: 50 }).notNull().default('OBSERVER'), // OBSERVER, MANUAL, CRON, SYSTEM
+    status: varchar('status', { length: 30 }).notNull().default('PENDING'), // PENDING, RUNNING, PAUSED_HUMAN_APPROVAL, COMPLETED, FAILED, CANCELLED
+    currentStep: varchar('current_step', { length: 100 }),
+    autonomyLevel: varchar('autonomy_level', { length: 30 }).notNull().default('OBSERVE'), // OBSERVE, SUGGEST, EXECUTE_SAFE, EXECUTE_GUARDED, HUMAN_REQUIRED
+    contextJson: json('context_json'),
+    resultJson: json('result_json'),
+    errorMsg: text('error_msg'),
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+}, (table) => ({
+    idxExecutionRunTenantStatus: index('idx_frank_exec_run_tenant_status').on(table.tenantId, table.status),
+    idxExecutionRunTenantCreated: index('idx_frank_exec_run_tenant_created').on(table.tenantId, table.createdAt),
+}));
+
+export type FrankExecutionRunRecord = typeof frankExecutionRuns.$inferSelect;
+export type NewFrankExecutionRunRecord = typeof frankExecutionRuns.$inferInsert;
+
+export const frankExecutionSteps = mysqlTable('frank_execution_steps', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    executionRunId: varchar('execution_run_id', { length: 36 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    stepNumber: int('step_number').notNull(),
+    stepName: varchar('step_name', { length: 100 }).notNull(),
+    actionType: varchar('action_type', { length: 100 }).notNull(),
+    status: varchar('status', { length: 30 }).notNull().default('PENDING'), // PENDING, RUNNING, AWAITING_APPROVAL, COMPLETED, FAILED, SKIPPED
+    inputPayload: json('input_payload'),
+    outputPayload: json('output_payload'),
+    toolCallsJson: json('tool_calls_json'),
+    riskClass: varchar('risk_class', { length: 30 }).notNull().default('SAFE'), // SAFE, GUARDED, CRITICAL
+    requiresHumanApproval: boolean('requires_human_approval').notNull().default(false),
+    approvedBy: varchar('approved_by', { length: 100 }),
+    approvedAt: timestamp('approved_at'),
+    errorMsg: text('error_msg'),
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxExecutionStepRun: index('idx_frank_exec_step_run').on(table.executionRunId, table.stepNumber),
+    idxExecutionStepTenantStatus: index('idx_frank_exec_step_tenant_status').on(table.tenantId, table.status),
+}));
+
+export type FrankExecutionStepRecord = typeof frankExecutionSteps.$inferSelect;
+export type NewFrankExecutionStepRecord = typeof frankExecutionSteps.$inferInsert;
+
 // --- Atendimento Humano (Conversations) ---
 
 export const conversations = mysqlTable('conversations', {
