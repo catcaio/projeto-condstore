@@ -34,7 +34,6 @@
 | `/cockpit/knowledge` | page | operação | `/operacao/knowledge` (futuro) |
 | `/cockpit/knowledge/ask` | page | operação | futuro |
 | `/cockpit/knowledge/collections` | page | operação | futuro |
-| `/cockpit/marciano/[...slug]` | page | placeholder | remover |
 | `/cockpit/packing-profiles` | page | logística | `/logistica/packing` (futuro) |
 | `/cockpit/packing-rules` | page | logística | `/logistica/regras` (futuro) |
 | `/cockpit/playbooks` | page | operação | `/operacao/playbooks` (futuro) |
