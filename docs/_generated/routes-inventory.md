@@ -225,7 +225,6 @@
 | `/api/whatsapp/incoming` | API |
 | `/api/whatsapp/status` | API |
 | `/app` | Page |
-| `/area-estudo/estrutura-quantica-relacional` | Page |
 | `/attribution` | Page |
 | `/billing` | Page |
 | `/billing/manage` | Page |
@@ -261,7 +260,6 @@
 | `/cockpit/knowledge/ask` | Page |
 | `/cockpit/knowledge/collections` | Page |
 | `/cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId]` | Page |
-| `/cockpit/marciano/[...slug]` | Page |
 | `/cockpit/metrics` | Page |
 | `/cockpit/orders` | Page |
 | `/cockpit/orders/[id]` | Page |

@@ -47,7 +47,7 @@ O MVP atual é um sistema supervisionado para operação comercial B2B via Whats
 | Knowledge / RAG authoring | `src/modules/knowledge/**`, `src/app/api/knowledge/**`, `src/app/(app)/cockpit/knowledge/**`, scripts `*qdrant*`, `ingest-docs*` | Fora do recorte vendável imediato. |
 | Playbooks autorais e treinamento | `src/modules/playbooks/**`, `src/app/(admin)/cockpit/playbooks/**`, `src/app/api/cockpit/playbooks/**` | Manter estável, sem ampliar. |
 | DOMINE Console e control plane visual | `src/app/(app)/cockpit/domine/**`, `src/app/api/cockpit/domine/**`, `src/app/(app)/operacao/**`, `src/app/(app)/sistema/dlq/**` | A infraestrutura fica; a superfície de produto/console não entra no MVP atual. |
-| Superfícies experimentais e narrativas | `src/app/evolution/**`, `src/app/(app)/supreme/**`, `src/app/(app)/cockpit/marciano/**`, `src/app/(app)/cockpit/deliveries/**`, `src/app/(app)/cockpit/freight-insights/**`, `src/app/(app)/cockpit/freight-memory/**`, `src/app/(app)/cockpit/freight-simulator/**` | Não destravar sem decisão explícita de produto. |
+| Superfícies experimentais e narrativas | `src/app/evolution/**`, `src/app/(app)/supreme/**`, `src/app/(app)/cockpit/deliveries/**`, `src/app/(app)/cockpit/freight-insights/**`, `src/app/(app)/cockpit/freight-memory/**`, `src/app/(app)/cockpit/freight-simulator/**` | Não destravar sem decisão explícita de produto. |
 
 ## O que Está Explicitamente Fora do MVP Agora
 
@@ -55,7 +55,7 @@ O MVP atual é um sistema supervisionado para operação comercial B2B via Whats
 - Treinamento de intents, playbooks e knowledge base como frente ativa de produto.
 - RAG/Qdrant como dependência obrigatória do fluxo principal.
 - DOMINE Console, DLQ manager e conectores como foco de evolução de UI.
-- Evolution/roadmap/storytelling pages e superfícies experimentais tipo `supreme` e `marciano`.
+- Evolution/roadmap/storytelling pages e superfícies experimentais tipo `supreme`.
 
 ## Regras do que Não Mexer
 

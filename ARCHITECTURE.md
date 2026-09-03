@@ -6,7 +6,7 @@ Documento técnico interno para navegação arquitetural do estado atual do cód
 
 CONDSTORE OS é uma aplicação Next.js com App Router que combina:
 
-- superfícies web (cockpit, áreas operacionais, páginas públicas e hubs didáticos isolados por rota),
+- superfícies web (cockpit, áreas operacionais e páginas públicas),
 - API routes HTTP,
 - módulos de domínio,
 - infraestrutura transversal (auth, segurança, banco, cache, observabilidade),
