@@ -84,7 +84,6 @@
 │   │   ├── envios/            → /planos/envios
 │   │   ├── crm/               → /planos/crm
 │   │   └── domine/            → /planos/domine (Frozen)
-│   └── area-estudo/           → área experimental
 │
 ├── (marketing)/               ← grupo conceitual/experimental
 │   ├── concept-layer/         → /concept-layer (Frozen)
@@ -144,7 +143,6 @@
 | `/valores` | **Remover** | Missão pode ficar no footer, não precisa de página própria. |
 | `/planos/domine` | **Remover** | DOMINE é superfície Frozen. |
 | `/docs` | **Avaliar** | Verificar se tem tração SEO. Se não, remover. |
-| `/area-estudo/*` | **Remover** | Experimental não-mvp. |
 
 ### Frozen / Sem Toque
 

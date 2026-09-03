@@ -1,5 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/infra/repositories/tenant.repository', () => {
+    return {
+        tenantRepository: {
+            getTenantById: vi.fn().mockResolvedValue({
+                id: 'tenant-a',
+                name: 'Tenant Alpha',
+                twilioNumber: 'whatsapp:+5511999999999',
+            }),
+        },
+    };
+});
+
 const mockContext = {
     conversation: {
         id: 'conv-1',

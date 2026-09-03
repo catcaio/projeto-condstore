@@ -58,7 +58,6 @@ export const hardFrozenSurfaces = [
     prefixes: [
       'src/app/evolution/',
       'src/app/(app)/supreme/',
-      'src/app/(app)/cockpit/marciano/',
       'src/app/(app)/cockpit/deliveries/',
       'src/app/(app)/cockpit/freight-insights/',
       'src/app/(app)/cockpit/freight-memory/',

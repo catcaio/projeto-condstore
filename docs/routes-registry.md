@@ -228,7 +228,6 @@
 | /api/whatsapp/incoming | POST | public | none | PUBLIC | live | WhatsApp incoming webhook — Frank auto-quote with Twilio signature verification |
 | /api/whatsapp/status | POST | public | none | PUBLIC | live | Added |
 | /app | TBA | public | none | PUBLIC | live | App do Ecossistema page |
-| /area-estudo/estrutura-quantica-relacional | Hub didático da Área de Estudo (Estrutura Quântica-Relacional) | public | none | PUBLIC | live | Rota isolada para conteúdo didático e freeze explícito das frentes paralelas |
 | /attribution | TBA | public | none | PUBLIC | live | Auto-detected |
 | /avaliacao | TBA | public | none | PUBLIC | live | Auto-detected |
 | /billing | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -266,7 +265,6 @@
 | /cockpit/knowledge/ask | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/knowledge/collections | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId] | TBA | public | none | PUBLIC | live | Auto-detected |
-| /cockpit/marciano/[...slug] | GET | internal | required | cockpit | live | Placeholder visual para rotas Marciano |
 | /cockpit/metrics | GET | internal | required | cockpit | live | Business metrics cockpit (operational_events, 5 domains) |
 | /cockpit/orders | GET | frontend | requireAdmin | cockpit | live | CRM Order Module Kanban |
 | /cockpit/orders/[id] | GET | frontend | requireAdmin | cockpit | live | Order Details Read Page |

@@ -2,8 +2,6 @@ import { Role } from '@/ui/auth/entitlements-logic';
 import {
     COCKPIT_TILES,
     SALAS_PADRAO,
-    MARCIANO_TILES,
-    MARCIANO_SALAS,
     CockpitTile,
     CockpitSala
 } from './tiles.registry';
@@ -25,11 +23,11 @@ import { and, eq, sql } from 'drizzle-orm';
  * the user is permitted to see based on their role. Empty Salas are omitted.
  */
 export async function getVisibleTiles({ tenantId, role }: CalculateVisibleTilesProps): Promise<{ salas: VisibleSala[] }> {
-    // Determine which registry to use. If internal tenant, use LOJACOND presets. Else use MARCIANO presets.
-    const isInternal = tenantId.startsWith('lojacond');
     // Clone tiles to avoid mutating the constant registry
-    const sourceTiles = isInternal ? COCKPIT_TILES.map(t => ({ ...t })) : MARCIANO_TILES.map(t => ({ ...t }));
-    const sourceSalas = isInternal ? SALAS_PADRAO : MARCIANO_SALAS;
+    const sourceTiles = COCKPIT_TILES.map(t => ({ ...t }));
+    const sourceSalas = SALAS_PADRAO;
+
+    const isInternal = tenantId.startsWith('lojacond');
 
     let dlqDepth = 0;
     let incidentMode = false;
