@@ -119,6 +119,8 @@ export class FrankExecutionStateService {
             updatedAt: now,
         };
 
+        memoryRuns.set(id, newRun);
+
         const db = await this.getDbSafe();
         if (db) {
             try {
@@ -126,10 +128,7 @@ export class FrankExecutionStateService {
                 await db.insert(frankExecutionRuns).values(newRun as any);
             } catch (err) {
                 logger.warn('Failed DB insert for execution run, falling back to memory', { err });
-                memoryRuns.set(id, newRun);
             }
-        } else {
-            memoryRuns.set(id, newRun);
         }
 
         logger.info('Frank Execution Run created', { tenantId: params.tenantId, executionId, runId: id });
@@ -161,16 +160,16 @@ export class FrankExecutionStateService {
             createdAt: now,
         };
 
+        memorySteps.set(id, newStep);
+
         const db = await this.getDbSafe();
         if (db) {
             try {
                 const { frankExecutionSteps } = await import('@/drizzle/schema');
                 await db.insert(frankExecutionSteps).values(newStep as any);
             } catch (err) {
-                memorySteps.set(id, newStep);
+                logger.warn('Failed DB insert for execution step, falling back to memory', { err });
             }
-        } else {
-            memorySteps.set(id, newStep);
         }
 
         return newStep;
@@ -204,8 +203,7 @@ export class FrankExecutionStateService {
                 );
                 return;
             } catch (err: any) {
-                logger.error('Failed to update step checkpoint in DB', err as Error, { tenantId, stepId });
-                throw err;
+                logger.warn('Failed to update step checkpoint in DB, falling back to memory store', { tenantId, stepId, err });
             }
         }
 
@@ -232,8 +230,7 @@ export class FrankExecutionStateService {
                 }).where(and(eq(frankExecutionSteps.id, stepId), eq(frankExecutionSteps.tenantId, tenantId)));
                 return;
             } catch (err: any) {
-                logger.error('Failed to approve step in DB', err as Error, { tenantId, stepId });
-                throw err;
+                logger.warn('Failed to approve step in DB, falling back to memory store', { tenantId, stepId, err });
             }
         }
 
