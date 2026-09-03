@@ -163,11 +163,8 @@ export class MessageRepository {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const [totalResult] = await db
-            .select({ count: sql<number>`count(*)` })
-            .from(messages)
-            .where(sql`${messages.createdAt} >= ${today} AND ${messages.tenantId} = ${tenantId}`);
-
+        // Single database query grouped by intent: total count is derived by summing group counts.
+        // This avoids an extra database round-trip while preserving exact counts and tenant isolation.
         const intentsResult = await db
             .select({
                 intent: messages.intent,
@@ -177,14 +174,17 @@ export class MessageRepository {
             .where(sql`${messages.createdAt} >= ${today} AND ${messages.tenantId} = ${tenantId}`)
             .groupBy(messages.intent);
 
+        let total = 0;
         const intentsBreakdown: Record<string, number> = {};
         intentsResult.forEach((row: { intent: string | null; count: number }) => {
+            const countNum = Number(row.count || 0);
+            total += countNum;
             const key = row.intent || 'unknown';
-            intentsBreakdown[key] = Number(row.count);
+            intentsBreakdown[key] = countNum;
         });
 
         return {
-            total: Number(totalResult?.count || 0),
+            total,
             breakdown: intentsBreakdown,
         };
     }
