@@ -1,6 +1,9 @@
+import { z } from 'zod';
 import { createOrderFromSimulation } from '../../pedidos/order.service';
 import { logger } from '@/infra/logger';
 import { executeFrankTool } from './tool-guard';
+import { FrankToolContract } from './frank-tool.contract';
+import { frankToolRegistry } from './frank-tool.registry';
 
 export interface CreateOrderFromQuoteParams {
     tenantId: string;
@@ -14,6 +17,41 @@ export interface CreateOrderFromQuoteParams {
         unitPrice: number;
     }>;
 }
+
+export const createOrderFromQuoteInputSchema = z.object({
+    tenantId: z.string().min(1, 'tenantId is required'),
+    simulationId: z.string().min(1, 'simulationId is required'),
+    customerId: z.string().min(1, 'customerId is required'),
+    organizationId: z.string().min(1, 'organizationId is required'),
+    items: z.array(z.object({
+        name: z.string().min(1),
+        sku: z.string().optional(),
+        quantity: z.number().positive(),
+        unitPrice: z.number().nonnegative(),
+    })).min(1, 'At least one item is required'),
+});
+
+export const createOrderFromQuoteOutputSchema: z.ZodType<Awaited<ReturnType<typeof createOrderFromSimulation>>> = z.object({
+    orderId: z.string().min(1) as unknown as z.ZodType<`${string}-${string}-${string}-${string}-${string}`>,
+    status: z.string().min(1),
+    shipmentLink: z.string().min(1),
+}) as unknown as z.ZodType<Awaited<ReturnType<typeof createOrderFromSimulation>>>;
+
+export const createOrderFromQuoteContract: FrankToolContract<CreateOrderFromQuoteParams, Awaited<ReturnType<typeof createOrderFromSimulation>>> = {
+    name: 'create_order_from_quote',
+    description: 'Creates an official customer order from an accepted quote simulation.',
+    inputSchema: createOrderFromQuoteInputSchema,
+    outputSchema: createOrderFromQuoteOutputSchema,
+    isReadOnly: false,
+    riskClass: 'CRITICAL',
+    capabilities: ['WRITE', 'CREATE', 'FINANCIAL'],
+    sideEffects: ['STATE_MUTATION', 'PERSISTENCE_WRITE'],
+    execute: async (input) => {
+        return createOrderFromQuoteTool(input);
+    },
+};
+
+frankToolRegistry.registerTool(createOrderFromQuoteContract);
 
 /**
  * Frank Tool: createOrderFromQuoteTool

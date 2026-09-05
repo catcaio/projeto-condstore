@@ -1,4 +1,5 @@
 import { logger } from '@/infra/logger';
+import { frankToolRegistry } from './frank-tool.registry';
 
 export type FrankToolAction =
     | 'freight_calculation'
@@ -8,7 +9,8 @@ export type FrankToolAction =
     | 'get_shipment_status'
     | 'get_recent_orders'
     | 'get_recent_quotes'
-    | 'get_customer_context';
+    | 'get_customer_context'
+    | (string & {});
 
 export type FrankToolRiskLevel = 'LOW_RISK' | 'MEDIUM_RISK' | 'HIGH_RISK';
 
@@ -29,7 +31,7 @@ export interface FrankToolPolicyDecision {
     reason?: string;
 }
 
-const ACTION_RISK_MAP: Readonly<Record<FrankToolAction, FrankToolRiskLevel>> = {
+const ACTION_RISK_MAP: Readonly<Record<string, FrankToolRiskLevel>> = {
     freight_calculation: 'LOW_RISK',
     create_quote: 'MEDIUM_RISK',
     create_order_from_quote: 'HIGH_RISK',
@@ -41,11 +43,22 @@ const ACTION_RISK_MAP: Readonly<Record<FrankToolAction, FrankToolRiskLevel>> = {
 };
 
 export function evaluateFrankToolPolicy(
-    action: FrankToolAction,
+    action: string,
     context: FrankToolPolicyContext,
     input: FrankToolPolicyInput = {},
 ): FrankToolPolicyDecision {
-    const riskLevel = ACTION_RISK_MAP[action];
+    let riskLevel: FrankToolRiskLevel = ACTION_RISK_MAP[action] || 'LOW_RISK';
+
+    const registeredTool = frankToolRegistry.getTool(action);
+    if (registeredTool) {
+        if (registeredTool.riskClass === 'CRITICAL') {
+            riskLevel = 'HIGH_RISK';
+        } else if (registeredTool.riskClass === 'GUARDED') {
+            riskLevel = 'MEDIUM_RISK';
+        } else {
+            riskLevel = 'LOW_RISK';
+        }
+    }
 
     if (input.targetTenantId && input.targetTenantId !== context.tenantId) {
         logger.warn('frank_tool_policy_blocked', {
