@@ -224,4 +224,47 @@ describe('MessageRepository.getLastMessages', () => {
     });
 });
 
+describe('MessageRepository.getMetricsToday', () => {
+    let repo: MessageRepository;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        repo = new MessageRepository();
+    });
+
+    it('throws error when tenantId is empty', async () => {
+        await expect(repo.getMetricsToday('')).rejects.toThrow('tenant_id is required to get metrics');
+    });
+
+    it('returns total and breakdown using a single query', async () => {
+        mockDb.where.mockReturnValueOnce({
+            groupBy: vi.fn().mockResolvedValueOnce([
+                { intent: 'FREIGHT_QUERY', count: 3 },
+                { intent: 'ORDER_STATUS', count: 2 },
+                { intent: null, count: 1 },
+            ]),
+        });
+
+        const metrics = await repo.getMetricsToday('tenant-1');
+
+        expect(metrics.total).toBe(6);
+        expect(metrics.breakdown).toEqual({
+            FREIGHT_QUERY: 3,
+            ORDER_STATUS: 2,
+            unknown: 1,
+        });
+        expect(mockDb.select).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns zero total and empty breakdown when no messages today', async () => {
+        mockDb.where.mockReturnValueOnce({
+            groupBy: vi.fn().mockResolvedValueOnce([]),
+        });
+
+        const metrics = await repo.getMetricsToday('tenant-1');
+
+        expect(metrics.total).toBe(0);
+        expect(metrics.breakdown).toEqual({});
+    });
+});
 

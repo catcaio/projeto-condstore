@@ -1,0 +1,3 @@
+## 2026-09-03 - [MessageRepository.getMetricsToday DB round-trip reduction]
+**Learning:** `MessageRepository.getMetricsToday(tenantId)` executed two sequential database queries (`count(*)` and `GROUP BY intent`) over the identical table and filter conditions. Since SQL `GROUP BY intent` includes `NULL` values in a group, summing `count` across the grouped results in JavaScript derives `total` without needing a second database query.
+**Action:** When gathering table totals alongside category breakdowns, use a single `GROUP BY` query and derive total sums in application logic to reduce database round-trips by 50%.
