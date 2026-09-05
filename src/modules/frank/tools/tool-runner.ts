@@ -4,6 +4,9 @@ import { adminAuditLogRepository } from '@/infra/repositories/admin-audit-log.re
 import { createOrderFromQuoteTool, type CreateOrderFromQuoteParams } from './create-order-from-quote.tool';
 import { getOrderStatusTool, type GetOrderStatusParams, type OrderStatusResult } from './read-only/getOrderStatus.tool';
 import { getShipmentStatusTool, type GetShipmentStatusParams, type ShipmentStatusResult } from './read-only/getShipmentStatus.tool';
+import { getRecentOrdersTool, type GetRecentOrdersParams, type RecentOrderSummary } from './read-only/getRecentOrders.tool';
+import { getRecentQuotesTool, type GetRecentQuotesParams, type RecentQuoteSummary } from './read-only/getRecentQuotes.tool';
+import { getCustomerContextTool, type GetCustomerContextParams, type CustomerContextToolResult } from './read-only/getCustomerContext.tool';
 import {
     evaluateFrankToolPolicy,
     type FrankToolAction,
@@ -27,6 +30,9 @@ interface RunnerInputMap {
     create_order_from_quote: CreateOrderFromQuoteParams;
     get_order_status: GetOrderStatusParams;
     get_shipment_status: GetShipmentStatusParams;
+    get_recent_orders: GetRecentOrdersParams;
+    get_recent_quotes: GetRecentQuotesParams;
+    get_customer_context: GetCustomerContextParams;
 }
 
 interface RunnerOutputMap {
@@ -35,6 +41,9 @@ interface RunnerOutputMap {
     create_order_from_quote: Awaited<ReturnType<typeof createOrderFromQuoteTool>>;
     get_order_status: OrderStatusResult | null;
     get_shipment_status: ShipmentStatusResult | null;
+    get_recent_orders: RecentOrderSummary[];
+    get_recent_quotes: RecentQuoteSummary[];
+    get_customer_context: CustomerContextToolResult | null;
 }
 
 export interface ToolRunnerContext extends FrankToolPolicyContext {}
@@ -211,6 +220,12 @@ async function executeToolAction<TAction extends FrankToolAction>(
             return getOrderStatusTool(input as RunnerInputMap['get_order_status']) as Promise<RunnerOutputMap[TAction]>;
         case 'get_shipment_status':
             return getShipmentStatusTool(input as RunnerInputMap['get_shipment_status']) as Promise<RunnerOutputMap[TAction]>;
+        case 'get_recent_orders':
+            return getRecentOrdersTool(input as RunnerInputMap['get_recent_orders']) as Promise<RunnerOutputMap[TAction]>;
+        case 'get_recent_quotes':
+            return getRecentQuotesTool(input as RunnerInputMap['get_recent_quotes']) as Promise<RunnerOutputMap[TAction]>;
+        case 'get_customer_context':
+            return getCustomerContextTool(input as RunnerInputMap['get_customer_context']) as Promise<RunnerOutputMap[TAction]>;
         default: {
             const exhaustive: never = action;
             throw new Error(`Unsupported tool action: ${String(exhaustive)}`);

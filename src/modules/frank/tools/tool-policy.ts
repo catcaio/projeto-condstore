@@ -5,7 +5,10 @@ export type FrankToolAction =
     | 'create_quote'
     | 'create_order_from_quote'
     | 'get_order_status'
-    | 'get_shipment_status';
+    | 'get_shipment_status'
+    | 'get_recent_orders'
+    | 'get_recent_quotes'
+    | 'get_customer_context';
 
 export type FrankToolRiskLevel = 'LOW_RISK' | 'MEDIUM_RISK' | 'HIGH_RISK';
 
@@ -32,6 +35,9 @@ const ACTION_RISK_MAP: Readonly<Record<FrankToolAction, FrankToolRiskLevel>> = {
     create_order_from_quote: 'HIGH_RISK',
     get_order_status: 'LOW_RISK',
     get_shipment_status: 'LOW_RISK',
+    get_recent_orders: 'LOW_RISK',
+    get_recent_quotes: 'LOW_RISK',
+    get_customer_context: 'LOW_RISK',
 };
 
 export function evaluateFrankToolPolicy(
