@@ -50,6 +50,7 @@
 | /api/cockpit/finops/alerts | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cockpit/finops/unlock | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/cockpit/frank/feed | POST | internal | requireAdmin | cockpit | live | Added |
+| /api/cockpit/frank/chat | POST | internal | requireSession | cockpit | live | Frank Supremo Cockpit Chat |
 | /api/cockpit/frank/intents | GET/POST | internal | required | cockpit | live | Added |
 | /api/cockpit/frank/intents/[id]/create-playbook | GET/POST | internal | required | cockpit | live | Added |
 | /api/cockpit/frank/intents/[id]/ignore | GET/POST | internal | required | cockpit | live | Added |

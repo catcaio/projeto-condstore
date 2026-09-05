@@ -50,6 +50,7 @@
 | `/api/cockpit/finops` | API |
 | `/api/cockpit/finops/alerts` | API |
 | `/api/cockpit/finops/unlock` | API |
+| `/api/cockpit/frank/chat` | API |
 | `/api/cockpit/frank/feed` | API |
 | `/api/cockpit/frank/intents` | API |
 | `/api/cockpit/frank/intents/[id]/create-playbook` | API |

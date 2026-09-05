@@ -3,6 +3,7 @@ import { getDb } from '@/infra/db';
 import { eq, and, gte, or, like, desc } from 'drizzle-orm';
 import { operationalEvents, FrankExecutionRunRecord } from '@/drizzle/schema';
 import { frankExecutionStateService } from './frank-execution-state.service';
+import { frankHumanGatePolicyEngine } from './frank-human-gate-policy';
 import { runTool } from './tools/tool-runner';
 import { evaluateFrankToolPolicy, FrankToolAction } from './tools/tool-policy';
 import { getSystemKnowledgeContext } from './frank-system-knowledge';
@@ -22,7 +23,7 @@ export interface CockpitChatMessageInput {
     humanApproval?: {
         stepId: string;
         approved: boolean;
-        approvedBy?: string;
+        approvedBy?: string; // Note: client input is ignored; session userId is enforced
     };
 }
 
@@ -99,21 +100,46 @@ export class FrankCockpitChatService {
 
         // 2. Process Human Gate Approval if supplied
         if (humanApproval && humanApproval.stepId) {
-            onEvent({ type: 'status', message: 'Processando resposta do Human Gate...' });
+            onEvent({ type: 'status', message: 'Processando validação do Human Gate...' });
+
+            // Enforcement: Acknowledged approver MUST BE the authenticated session userId
+            const realApproverUserId = userId;
+
             if (humanApproval.approved) {
-                await frankExecutionStateService.approveStep(
-                    tenantId,
-                    humanApproval.stepId,
-                    humanApproval.approvedBy || userId
-                );
-
-                onEvent({ type: 'status', message: 'Aprovação recebida. Executando ação aprovada...' });
-
-                // Retrieve step details and execute
                 const runDetails = await frankExecutionStateService.getExecutionWithSteps(tenantId, runRecord.executionId);
                 const step = runDetails?.steps.find(s => s.id === humanApproval.stepId);
 
                 if (step && step.actionType) {
+                    const policyResult = frankHumanGatePolicyEngine.evaluate({
+                        userId: realApproverUserId,
+                        tenantId,
+                        actionType: step.actionType,
+                        riskClass: (step.riskClass as 'SAFE' | 'GUARDED' | 'CRITICAL') || 'CRITICAL',
+                        requiresHumanApproval: true,
+                        approvalToken: `hg_token_${realApproverUserId}_${Date.now()}`,
+                        tokenIssuedAt: new Date(),
+                    });
+
+                    if (!policyResult.allowed) {
+                        await frankExecutionStateService.updateStepCheckpoint(
+                            tenantId,
+                            step.id,
+                            'FAILED',
+                            undefined,
+                            undefined,
+                            `Human Gate Policy Denied: ${policyResult.reason}`
+                        );
+                        onEvent({ type: 'error', error: `Human Gate Negado: ${policyResult.reason}` });
+                        return { text: `❌ Ação negada pela política do Human Gate: ${policyResult.reason}`, executionId: runRecord.executionId };
+                    }
+
+                    await frankExecutionStateService.approveStep(
+                        tenantId,
+                        step.id,
+                        realApproverUserId
+                    );
+
+                    onEvent({ type: 'status', message: 'Aprovação validada no Human Gate. Executando ação...' });
                     await frankExecutionStateService.updateStepCheckpoint(tenantId, step.id, 'RUNNING');
 
                     const toolResult = await runTool(
@@ -123,7 +149,7 @@ export class FrankCockpitChatService {
                             tenantId,
                             requestId: runRecord.executionId,
                             allowHighRisk: true,
-                            humanApprovalToken: `approved_by_${humanApproval.approvedBy || userId}`,
+                            humanApprovalToken: `hg_token_${realApproverUserId}`,
                         }
                     );
 
@@ -136,7 +162,7 @@ export class FrankCockpitChatService {
                         );
                         onEvent({
                             type: 'evidence',
-                            message: `Ação ${step.actionType} executada com sucesso.`,
+                            message: `Ação ${step.actionType} executada com sucesso via Human Gate.`,
                             data: toolResult.data,
                         });
                     } else {
@@ -150,7 +176,7 @@ export class FrankCockpitChatService {
                         );
                         onEvent({
                             type: 'error',
-                            error: `Falha na execução: ${toolResult.error?.message}`,
+                            error: `Falha na execução da ferramenta: ${toolResult.error?.message}`,
                         });
                     }
                 }
@@ -161,7 +187,7 @@ export class FrankCockpitChatService {
                     'SKIPPED',
                     undefined,
                     undefined,
-                    'Rejeitado pelo operador humano'
+                    `Rejeitado pelo operador humano autenticado (${realApproverUserId})`
                 );
                 onEvent({ type: 'status', message: 'Ação rejeitada pelo operador humano.' });
             }
@@ -215,6 +241,7 @@ export class FrankCockpitChatService {
                     action: s.actionType,
                     status: s.status,
                     risk: s.riskClass,
+                    approvedBy: s.approvedBy,
                 })),
             };
 
