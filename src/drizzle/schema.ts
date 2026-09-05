@@ -2116,6 +2116,7 @@ export const frankExecutionSteps = mysqlTable('frank_execution_steps', {
 export type FrankExecutionStepRecord = typeof frankExecutionSteps.$inferSelect;
 export type NewFrankExecutionStepRecord = typeof frankExecutionSteps.$inferInsert;
 
+
 // --- Atendimento Humano (Conversations) ---
 
 export const conversations = mysqlTable('conversations', {

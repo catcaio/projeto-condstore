@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { frankObserverService } from '../frank-observer.service';
 import { frankExecutionStateService } from '../frank-execution-state.service';
+import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 
 describe('Frank Observer & Telemetry Pipeline', () => {
     const tenantId = 'tenant_obs_test';
@@ -40,5 +41,22 @@ describe('Frank Observer & Telemetry Pipeline', () => {
         const exec2 = await frankObserverService.observeSignal(signal);
 
         expect(exec1).toBe(exec2); // Same execution ID returned for deduplicated incident
+    });
+
+    it('should report live supervisor health status and track real-time telemetry events', async () => {
+        const health = frankObserverService.getSupervisorHealthStatus(tenantId);
+        expect(health.status).toBe('ACTIVE');
+        expect(health.active).toBe(true);
+        expect(typeof health.totalSignalsObserved).toBe('number');
+
+        await publishOperationalEvent({
+            tenantId,
+            eventType: 'api_gateway_error_spike',
+            eventDomain: 'OPERATIONS',
+            payload: { httpStatus: 502, count: 42 }
+        });
+
+        const updatedHealth = frankObserverService.getSupervisorHealthStatus(tenantId);
+        expect(updatedHealth.lastEvent).toContain('api_gateway_error_spike');
     });
 });

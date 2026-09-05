@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { tenantRepository } from '@/infra/repositories/tenant.repository';
 
 const mockContext = {
     conversation: {
@@ -20,12 +21,22 @@ const mockContext = {
 
 describe('frankSuggestions', () => {
     beforeEach(() => {
-        vi.resetModules();
         vi.unstubAllEnvs();
+        vi.spyOn(tenantRepository, 'getTenantById').mockResolvedValue({
+            id: 'tenant-a',
+            name: 'Tenant Alpha',
+            twilioNumber: 'whatsapp:+5511999999999',
+            timezone: 'America/Sao_Paulo',
+            outboundEnabled: true,
+            incidentMode: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        } as any);
     });
 
     afterEach(() => {
         vi.unstubAllEnvs();
+        vi.restoreAllMocks();
     });
 
     it('fails explicitly when OPENAI_API_KEY is missing outside development', async () => {

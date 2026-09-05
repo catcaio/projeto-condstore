@@ -4,6 +4,8 @@ import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { frankExecutionStateService } from '@/modules/frank/frank-execution-state.service';
 import { frankObserverService } from '@/modules/frank/frank-observer.service';
+import { frankFactorySupervisionService } from '@/modules/frank/frank-factory-supervision.service';
+import { frankPostDeployService } from '@/modules/frank/frank-post-deploy.service';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
     const requestId = makeRequestId(request);
@@ -21,9 +23,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             return res;
         }
 
+        const health = frankObserverService.getSupervisorHealthStatus(tenantId);
+        const activeExecutions = await frankExecutionStateService.recoverActiveExecutions(tenantId);
+
         const res = NextResponse.json({
             success: true,
-            status: 'ACTIVE_SUPERVISOR',
+            status: health.status,
+            health,
+            activeExecutions,
             timestamp: new Date().toISOString()
         }, { status: 200 });
         attachRequestIdHeader(res, requestId);
@@ -75,6 +82,40 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
             await frankExecutionStateService.approveStep(tenantId, payload.stepId, auth.session.sub || 'human_gate');
             const res = NextResponse.json({ success: true, message: 'Step approved by Human Gate' }, { status: 200 });
+            attachRequestIdHeader(res, requestId);
+            return res;
+        }
+
+        if (action === 'SUPERVISE_PR') {
+            const review = await frankFactorySupervisionService.reviewFactoryPR({
+                tenantId,
+                executionId: payload.executionId,
+                prNumber: payload.prNumber,
+                prTitle: payload.prTitle,
+                diffSummary: payload.diffSummary,
+                ciStatus: payload.ciStatus || 'PENDING',
+            });
+            const res = NextResponse.json({ success: true, review }, { status: 200 });
+            attachRequestIdHeader(res, requestId);
+            return res;
+        }
+
+        if (action === 'VERIFY_POST_DEPLOY') {
+            const verification = await frankPostDeployService.verifyPostDeploy({
+                tenantId,
+                executionId: payload.executionId,
+                signalType: payload.signalType,
+                currentValue: payload.currentValue,
+                expectedThreshold: payload.expectedThreshold,
+            });
+            const res = NextResponse.json({ success: true, verification }, { status: 200 });
+            attachRequestIdHeader(res, requestId);
+            return res;
+        }
+
+        if (action === 'TRIGGER_CYCLE') {
+            const result = await frankObserverService.runSupervisorObservationCycle(tenantId);
+            const res = NextResponse.json({ success: true, result }, { status: 200 });
             attachRequestIdHeader(res, requestId);
             return res;
         }

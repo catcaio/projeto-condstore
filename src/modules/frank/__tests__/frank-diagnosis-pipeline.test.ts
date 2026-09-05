@@ -38,10 +38,32 @@ describe('Frank Diagnosis & Issue Pipeline with Human Gate', () => {
 
         // 4. Perform Human Approval
         const approved = await frankDiagnosisPipelineService.approveIssueForFactory(tenantId, executionId, 'user_supervisor_123');
-        expect(approved).toBe(true);
+        expect(approved.success).toBe(true);
 
         // 5. Verify Execution State resumed
         const runAfterApproval = await frankExecutionStateService.getExecutionWithSteps(tenantId, executionId);
         expect(runAfterApproval?.run.status).toBe('RUNNING');
+    });
+
+    it('should distinguish HYPOTHESIS from CONFIRMED_CAUSE based on empirical proof', async () => {
+        const signal = {
+            tenantId,
+            signalType: 'database_deadlock',
+            domain: 'OPERATIONS',
+            severity: 'HIGH' as const,
+            summary: 'Deadlock detectado em transação de pedido',
+            evidence: { query: 'UPDATE orders SET status = ...' }
+        };
+
+        // Without empirical proof -> HYPOTHESIS
+        const unverified = await frankDiagnosisPipelineService.diagnoseAndPrepareIssue(signal);
+        expect(unverified.evidenceChain.classification).toBe('HYPOTHESIS');
+
+        // With empirical proof -> CONFIRMED_CAUSE
+        const confirmed = await frankDiagnosisPipelineService.diagnoseAndPrepareIssue(signal, undefined, {
+            confirmedCause: 'Lock timeout provocado por transação concorrente sem ordenação de chaves em update_order_status'
+        });
+        expect(confirmed.evidenceChain.classification).toBe('CONFIRMED_CAUSE');
+        expect(confirmed.causalHypothesis).toContain('Lock timeout provocado');
     });
 });
