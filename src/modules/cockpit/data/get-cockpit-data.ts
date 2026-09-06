@@ -13,7 +13,7 @@ import { getCockpitQueues } from './get-cockpit-queues';
 import { getCockpitShortcuts } from './get-cockpit-shortcuts';
 import { getSystemStatusItems } from './get-system-status';
 import type { CockpitDataBundle, CockpitDerivedState } from './shared';
-import { loadCockpitRawData, resolveCockpitRequestContext } from './shared';
+import { loadCockpitRawData, resolveCockpitRequestContext } from './load-cockpit-raw-data';
 
 const emptyDerived: CockpitDerivedState = {
     metricsSnapshot: {
