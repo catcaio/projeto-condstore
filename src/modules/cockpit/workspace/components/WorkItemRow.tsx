@@ -11,9 +11,10 @@ export interface WorkItemRowProps {
     item: CockpitActionQueueItem;
     isSelected: boolean;
     onSelect: (id: string) => void;
+    density?: 'compact' | 'comfortable';
 }
 
-export function WorkItemRow({ item, isSelected, onSelect }: WorkItemRowProps) {
+export function WorkItemRow({ item, isSelected, onSelect, density = 'comfortable' }: WorkItemRowProps) {
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -21,15 +22,18 @@ export function WorkItemRow({ item, isSelected, onSelect }: WorkItemRowProps) {
         }
     };
 
-    const isCritical = item.priority === 'critical';
+    const isCompact = density === 'compact';
 
     return (
         <div
             role="button"
             tabIndex={0}
+            aria-selected={isSelected}
             onClick={() => onSelect(item.id)}
             onKeyDown={handleKeyDown}
-            className={`p-4 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[56px] ${
+            className={`transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ui-accent-blue-ink))] focus:ring-inset ${
+                isCompact ? 'p-2.5 min-h-[44px]' : 'p-4 min-h-[56px]'
+            } ${
                 isSelected
                     ? 'bg-[hsl(var(--ui-page))] border-l-4 border-l-[hsl(var(--ui-accent-blue-ink))] shadow-xs'
                     : 'hover:bg-[hsl(var(--ui-page))/0.6]'

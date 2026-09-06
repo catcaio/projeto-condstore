@@ -65,35 +65,9 @@ export function getCockpitQueues(rawData: CockpitRawData): CockpitActionQueueIte
                 lastActivityAt: conversation.lastActivityAt,
             };
 
-            const matchingQuote = rawData.recentFreightQuotes[0];
-            const quotation: WorkItemQuotation | undefined = matchingQuote
-                ? {
-                      id: matchingQuote.correlationId,
-                      carrier: matchingQuote.bestCarrier,
-                      price: matchingQuote.bestPriceCents ? matchingQuote.bestPriceCents / 100 : null,
-                      status: 'SIMULATED',
-                  }
-                : undefined;
-
-            const matchingOrder = rawData.recentOrders[0];
-            const order: WorkItemOrder | undefined = matchingOrder
-                ? {
-                      id: matchingOrder.orderId,
-                      status: matchingOrder.status,
-                      total: extractOrderValue(matchingOrder.totals),
-                  }
-                : undefined;
-
-            const matchingShipment = rawData.recentShipments[0];
-            const shipment: WorkItemShipment | undefined = matchingShipment
-                ? {
-                      id: matchingShipment.id,
-                      carrier: matchingShipment.carrier,
-                      service: matchingShipment.service,
-                      status: matchingShipment.status,
-                      trackingCode: matchingShipment.trackingCode,
-                  }
-                : undefined;
+            const quotation: WorkItemQuotation | undefined = undefined;
+            const order: WorkItemOrder | undefined = undefined;
+            const shipment: WorkItemShipment | undefined = undefined;
 
             const availableActions: WorkItemAction[] = [
                 {
@@ -161,7 +135,7 @@ export function getCockpitQueues(rawData: CockpitRawData): CockpitActionQueueIte
             createdAt: order.updatedAt,
         };
 
-        const matchingShipment = rawData.recentShipments.find((s) => s.id.includes(order.orderId)) ?? rawData.recentShipments[0];
+        const matchingShipment = rawData.recentShipments.find((s) => s.id.includes(order.orderId));
         const shipment: WorkItemShipment | undefined = matchingShipment
             ? {
                   id: matchingShipment.id,

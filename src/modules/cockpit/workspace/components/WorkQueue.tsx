@@ -9,9 +9,10 @@ export interface WorkQueueProps {
     items: CockpitActionQueueItem[];
     activeItemId: string | null;
     onSelectItem: (id: string) => void;
+    density?: 'compact' | 'comfortable';
 }
 
-export function WorkQueue({ items, activeItemId, onSelectItem }: WorkQueueProps) {
+export function WorkQueue({ items, activeItemId, onSelectItem, density = 'comfortable' }: WorkQueueProps) {
     return (
         <div className="bg-[hsl(var(--ui-surface))] rounded-xl border border-[hsl(var(--ui-border))] shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-[hsl(var(--ui-border))] flex items-center justify-between">
@@ -42,6 +43,7 @@ export function WorkQueue({ items, activeItemId, onSelectItem }: WorkQueueProps)
                             item={item}
                             isSelected={activeItemId === item.id}
                             onSelect={onSelectItem}
+                            density={density}
                         />
                     ))}
                 </div>

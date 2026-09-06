@@ -198,6 +198,24 @@ export function ContextPanel({ activeItem, onExecuteAction }: ContextPanelProps)
                                         </p>
                                     )}
                                 </div>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => {
+                                        if (typeof window !== 'undefined') {
+                                            window.dispatchEvent(
+                                                new CustomEvent('open-frank', {
+                                                    detail: {
+                                                        message: `Investigar pendência do item ${activeItem.entity} (${activeItem.waitingFor})`,
+                                                    },
+                                                })
+                                            );
+                                        }
+                                    }}
+                                    className="w-full justify-center text-[11px] mt-2 border-indigo-500/30 hover:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
+                                >
+                                    <Bot className="h-3.5 w-3.5 mr-1 text-indigo-500" />
+                                    <span>Consultar Frank para este Item</span>
+                                </Button>
                             </div>
                         </div>
 
