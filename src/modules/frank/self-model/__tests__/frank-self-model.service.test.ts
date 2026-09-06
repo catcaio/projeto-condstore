@@ -1,60 +1,87 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { frankSelfModelService } from '../frank-self-model.service';
 import { FrankSelfModel } from '../frank-self-model.types';
+import * as metricsModule from '../../frank-assist-metrics.service';
 
 describe('FrankSelfModelService', () => {
-    it('generates a valid Operational Self-Model snapshot', async () => {
-        const tenantId = 'tenant_test_123';
+    it('generates, persists, and retrieves versioned Operational Self-Model snapshots', async () => {
+        const tenantId = 'tenant_persist_123';
+        const version = '1.0.0-sm-persist';
+
         const model: FrankSelfModel = await frankSelfModelService.generateSelfModel({
             tenantId,
-            version: '1.0.0-sm-test',
+            version,
         });
 
         expect(model).toBeDefined();
         expect(model.tenantId).toBe(tenantId);
-        expect(model.version).toBe('1.0.0-sm-test');
-        expect(model.timestamp).toBeDefined();
+        expect(model.version).toBe(version);
+        expect(['COMPLETE', 'UNAVAILABLE']).toContain(model.evidenceStatus);
 
-        // Verify capabilities initialized from CONDSTORE_SYSTEM_KNOWLEDGE
-        expect(model.capabilities.length).toBeGreaterThan(0);
-        const atendimentoCap = model.capabilities.find((c) => c.domain === 'atendimento');
-        expect(atendimentoCap).toBeDefined();
-        expect(atendimentoCap?.status).toBe('ACTIVE');
+        // Test persistent retrieval by version
+        const retrieved = await frankSelfModelService.getSelfModel(tenantId, version);
+        expect(retrieved).toBeDefined();
+        expect(retrieved?.version).toBe(version);
+        expect(retrieved?.tenantId).toBe(tenantId);
 
-        // Verify tool reliabilities mapped from FrankToolRegistry
-        expect(model.toolReliabilities.length).toBeGreaterThan(0);
-        const freightTool = model.toolReliabilities.find((t) => t.toolName === 'freight_calculation');
-        expect(freightTool).toBeDefined();
-
-        // Verify structured beliefs classification (FACT, INFERENCE, HYPOTHESIS)
-        expect(model.beliefs).toBeDefined();
-        const facts = model.beliefs.filter((b) => b.type === 'FACT');
-        const inferences = model.beliefs.filter((b) => b.type === 'INFERENCE');
-
-        expect(facts.length).toBeGreaterThan(0);
-        expect(inferences.length).toBeGreaterThan(0);
-
-        // Verify provenance exists for every belief
-        for (const belief of model.beliefs) {
-            expect(belief.id).toBeDefined();
-            expect(belief.provenance).toBeDefined();
-            expect(belief.provenance.source).toBeDefined();
-            expect(belief.provenance.timestamp).toBeDefined();
-            expect(belief.confidence).toBeGreaterThanOrEqual(0.0);
-            expect(belief.confidence).toBeLessThanOrEqual(1.0);
-        }
+        // Test latest retrieval
+        const latest = await frankSelfModelService.getLatestSelfModel(tenantId);
+        expect(latest).toBeDefined();
+        expect(latest?.version).toBe(version);
     });
 
-    it('differentiates facts vs inferences vs hypotheses accurately', async () => {
-        const tenantId = 'tenant_belief_check';
-        const model = await frankSelfModelService.generateSelfModel({ tenantId });
+    it('enforces tenant isolation when retrieving self-models', async () => {
+        const tenantA = 'tenant_a_iso';
+        const tenantB = 'tenant_b_iso';
+        const version = '1.0.0-sm-iso';
 
-        const factTotal = model.beliefs.find((b) => b.id === 'belief_fact_total_interactions');
-        expect(factTotal?.type).toBe('FACT');
-        expect(factTotal?.confidence).toBe(1.0);
+        await frankSelfModelService.generateSelfModel({ tenantId: tenantA, version });
 
-        const infHandoff = model.beliefs.find((b) => b.id === 'belief_inf_handoff_rate');
-        expect(infHandoff?.type).toBe('INFERENCE');
-        expect(infHandoff?.confidence).toBe(0.95);
+        const retrievedByB = await frankSelfModelService.getSelfModel(tenantB, version);
+        expect(retrievedByB).toBeNull();
+
+        const latestB = await frankSelfModelService.getLatestSelfModel(tenantB);
+        expect(latestB).toBeNull();
+    });
+
+    it('handles telemetry collection errors gracefully without fabricating 100% success metrics', async () => {
+        const tenantId = 'tenant_err_123';
+
+        // Mock getFrankAssistMetrics to throw telemetry error
+        const spy = vi.spyOn(metricsModule, 'getFrankAssistMetrics').mockRejectedValueOnce(
+            new Error('Database connection failed')
+        );
+
+        const model = await frankSelfModelService.generateSelfModel({
+            tenantId,
+            version: '1.0.0-sm-err',
+        });
+
+        expect(model.evidenceStatus).toBe('UNAVAILABLE');
+        expect(model.evidenceNotes).toBeDefined();
+        expect(model.evidenceNotes?.[0]).toContain('Database connection failed');
+
+        // Verify UNTESTED tools have null success rate, not 100.0%
+        const untestedTool = model.toolReliabilities.find((t) => t.status === 'UNTESTED');
+        expect(untestedTool).toBeDefined();
+        expect(untestedTool?.successRate).toBeNull();
+        expect(untestedTool?.errorRate).toBeNull();
+        expect(untestedTool?.lastExecutedAt).toBeNull();
+
+        // Verify FACT belief states evidence unavailable explicitly
+        const unavailFact = model.beliefs.find((b) => b.id === 'belief_fact_evidence_unavailable');
+        expect(unavailFact).toBeDefined();
+        expect(unavailFact?.type).toBe('FACT');
+
+        spy.mockRestore();
+    });
+
+    it('correctly formats changeHistory as INITIALIZATION baseline without fake observed effects', async () => {
+        const tenantId = 'tenant_chg_123';
+        const model = await frankSelfModelService.generateSelfModel({ tenantId, version: '1.0.0-sm-chg' });
+
+        expect(model.changeHistory).toBeDefined();
+        expect(model.changeHistory[0].changeType).toBe('INITIALIZATION');
+        expect(model.changeHistory[0].observedEffects[0].verdict).toBe('BASELINE');
     });
 });

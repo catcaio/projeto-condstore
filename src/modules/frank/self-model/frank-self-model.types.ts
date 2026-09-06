@@ -33,18 +33,18 @@ export interface ToolReliability {
     toolName: string;
     status: 'RELIABLE' | 'FRAGILE' | 'UNTESTED' | 'BLOCKED';
     totalExecutions: number;
-    successRate: number; // 0.0 to 100.0
-    avgLatencyMs: number;
-    errorRate: number;
-    lastExecutedAt?: string;
+    successRate: number | null; // null for UNTESTED, 0.0 to 100.0 when tested
+    avgLatencyMs: number | null; // null when specific latency telemetry is unmeasured
+    errorRate: number | null; // null for UNTESTED
+    lastExecutedAt: string | null; // Real last execution timestamp, null if unexecuted in window
 }
 
 export interface TaskClassPerformance {
     taskClass: string; // e.g. 'cotação_frete', 'criação_pedido', 'atendimento_whatsapp'
     totalRequests: number;
-    successRate: number; // 0.0 to 100.0
-    humanInterventionRate: number; // 0.0 to 100.0
-    avgLatencyMs: number;
+    successRate: number | null; // segmented per class, null if no requests or unmeasured
+    humanInterventionRate: number | null; // segmented per class
+    avgLatencyMs: number | null; // segmented per class
     avgTokensPerCall: number;
     estimatedCostUsd: number;
 }
@@ -64,7 +64,7 @@ export interface FailureHypothesis {
     id: string;
     failureModeId: string;
     suspectedCause: string;
-    mechanism: string;
+    expectedMechanism: string; // Describes unconfirmed expected causal mechanism
     confidence: number; // 0.0 to 1.0
     proposedIntervention?: string;
     status: 'OPEN' | 'TESTING' | 'CONFIRMED' | 'REJECTED';
@@ -75,20 +75,24 @@ export interface ChangeHistoryRecord {
     id: string;
     version: string;
     appliedAt: string;
-    changeType: 'MUTATION' | 'PROMOTION' | 'POLICY_UPDATE' | 'CONFIGURATION';
+    changeType: 'MUTATION' | 'PROMOTION' | 'POLICY_UPDATE' | 'CONFIGURATION' | 'INITIALIZATION';
     description: string;
     observedEffects: {
         metric: string;
         before: number | string;
         after: number | string;
-        verdict: 'IMPROVED' | 'NEUTRAL' | 'REGRESSED';
+        verdict: 'IMPROVED' | 'NEUTRAL' | 'REGRESSED' | 'BASELINE';
     }[];
 }
+
+export type EvidenceStatus = 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE';
 
 export interface FrankSelfModel {
     version: string; // e.g. "1.0.0-sm"
     tenantId: string;
     timestamp: string;
+    evidenceStatus: EvidenceStatus;
+    evidenceNotes?: string[];
 
     // Core capabilities and dependencies
     capabilities: CapabilityState[];
@@ -104,7 +108,7 @@ export interface FrankSelfModel {
         estimatedCostUsd: number;
         trackedCalls: number;
     };
-    overallAvgLatencyMs: number;
+    overallAvgLatencyMs: number | null;
 
     // Failures and hypotheses
     failureModes: FailureMode[];
