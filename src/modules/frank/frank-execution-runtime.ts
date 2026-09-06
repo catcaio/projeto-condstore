@@ -16,6 +16,7 @@ export type ToolExecutionStatus =
     | 'OPERATIONAL_ERROR'
     | 'POLICY_BLOCKED'
     | 'VALIDATION_FAILED'
+    | 'PERSISTENCE_FAILED'
     | 'EXECUTION_FAILED';
 
 export interface StructuredToolExecutionResult<TData = unknown> {
@@ -93,7 +94,8 @@ function sanitizeTelemetryInput(input: unknown): unknown {
 export class FrankExecutionRuntime {
     /**
      * Canonical entrypoint for running any tool/action within the Frank Execution Runtime.
-     * Enforces: Identity -> Run/Step -> Contract Lookup -> Strict Input Validation -> Tenant Normalization -> Policy -> Execution -> Output Verification -> Evidence -> State Persistence.
+     * Fail-closed persistence guarantee: Execution without persistent state is impossible.
+     * Enforces: Identity -> Run State -> Step State -> Contract Lookup -> Strict Input Validation -> Policy -> Tool Execution -> Output Verification -> Evidence -> State Persistence.
      */
     async executeTool<TInput = unknown, TOutput = unknown>(
         params: FrankRuntimeExecutionParams
@@ -101,27 +103,18 @@ export class FrankExecutionRuntime {
         const startedAt = Date.now();
         const { tenantId, requestId, toolName, input, userId, allowHighRisk, humanApprovalToken } = params;
 
-        // 1. Resolve or initialize Execution Run
-        let runId = params.executionId;
-        let executionId = params.requestId;
+        // 1. Resolve or initialize Execution Run (Fail-closed)
+        let runId: string;
+        let executionId: string;
 
         try {
-            if (runId) {
-                const runDetails = await frankExecutionStateService.getExecutionWithSteps(tenantId, runId);
-                if (runDetails) {
-                    executionId = runDetails.run.executionId;
-                    runId = runDetails.run.id;
-                } else {
-                    const newRun = await frankExecutionStateService.createRun({
-                        tenantId,
-                        title: `Frank Execution: ${toolName}`,
-                        triggerSource: 'SYSTEM',
-                        autonomyLevel: 'EXECUTE_GUARDED',
-                        contextJson: { toolName, requestId },
-                    });
-                    runId = newRun.id;
-                    executionId = newRun.executionId;
+            if (params.executionId) {
+                const runDetails = await frankExecutionStateService.getExecutionWithSteps(tenantId, params.executionId);
+                if (!runDetails || runDetails.run.tenantId !== tenantId) {
+                    throw new Error(`Cross-tenant execution run access denied or run [${params.executionId}] not found for tenant [${tenantId}]`);
                 }
+                executionId = runDetails.run.executionId;
+                runId = runDetails.run.id;
             } else {
                 const newRun = await frankExecutionStateService.createRun({
                     tenantId,
@@ -134,7 +127,26 @@ export class FrankExecutionRuntime {
                 executionId = newRun.executionId;
             }
         } catch (err) {
-            logger.warn('Failed to resolve execution run in DB/memory, continuing with inline executionId', { tenantId, toolName, err });
+            const durationMs = Date.now() - startedAt;
+            const message = err instanceof Error ? err.message : 'Failed to establish persistent execution run';
+            logger.error('frank_runtime_persistence_run_failed', err as Error, { tenantId, toolName, requestId });
+
+            return {
+                ok: false,
+                status: 'PERSISTENCE_FAILED',
+                action: toolName,
+                toolName,
+                executionId: params.executionId || requestId,
+                riskLevel: 'LOW_RISK',
+                durationMs,
+                data: null,
+                error: {
+                    code: 'PERSISTENCE_FAILED',
+                    message: `Execution aborted: Fail-closed state persistence required [${message}]`,
+                },
+                evidence: null,
+                metadata: { tenantId, requestId },
+            };
         }
 
         // 2. Resolve Tool Contract from Canonical Registry (FRANK-002)
@@ -148,6 +160,14 @@ export class FrankExecutionRuntime {
                 executionId,
                 toolName,
             });
+
+            await frankExecutionStateService.updateRunStatus(
+                runId,
+                'FAILED',
+                undefined,
+                undefined,
+                notFoundErr.message
+            ).catch(() => {});
 
             return {
                 ok: false,
@@ -170,25 +190,50 @@ export class FrankExecutionRuntime {
         const riskLevel = mapRiskClassToRiskLevel(toolContract.riskClass);
         const stateRisk = mapRiskClassToStateRisk(toolContract.riskClass);
 
-        // 3. Create persistent Execution Step checkpoint
-        let stepId: string | undefined;
+        // 3. Create persistent Execution Step checkpoint (Fail-closed)
+        let stepId: string;
         try {
-            if (runId) {
-                const step = await frankExecutionStateService.addStep({
-                    executionRunId: runId,
-                    tenantId,
-                    stepNumber: Date.now(),
-                    stepName: `Execute ${toolName}`,
-                    actionType: toolName,
-                    riskClass: stateRisk,
-                    requiresHumanApproval: toolContract.riskClass === 'CRITICAL' && !humanApprovalToken,
-                    inputPayload: sanitizeTelemetryInput(input) as Record<string, unknown>,
-                });
-                stepId = step.id;
-                await frankExecutionStateService.updateStepCheckpoint(tenantId, stepId, 'RUNNING');
-            }
+            const step = await frankExecutionStateService.addStep({
+                executionRunId: runId,
+                tenantId,
+                stepNumber: Date.now(),
+                stepName: `Execute ${toolName}`,
+                actionType: toolName,
+                riskClass: stateRisk,
+                requiresHumanApproval: toolContract.riskClass === 'CRITICAL' && !humanApprovalToken,
+                inputPayload: sanitizeTelemetryInput(input) as Record<string, unknown>,
+            });
+            stepId = step.id;
+            await frankExecutionStateService.updateStepCheckpoint(tenantId, stepId, 'RUNNING');
         } catch (stepErr) {
-            logger.warn('Failed creating execution step checkpoint, continuing execution', { tenantId, toolName, stepErr });
+            const durationMs = Date.now() - startedAt;
+            const message = stepErr instanceof Error ? stepErr.message : 'Failed to persist step state';
+            logger.error('frank_runtime_persistence_step_failed', stepErr as Error, { tenantId, toolName, runId });
+
+            await frankExecutionStateService.updateRunStatus(
+                runId,
+                'FAILED',
+                undefined,
+                undefined,
+                `Step persistence failed: ${message}`
+            ).catch(() => {});
+
+            return {
+                ok: false,
+                status: 'PERSISTENCE_FAILED',
+                action: toolName,
+                toolName,
+                executionId,
+                riskLevel,
+                durationMs,
+                data: null,
+                error: {
+                    code: 'PERSISTENCE_FAILED',
+                    message: `Execution aborted: Fail-closed step state persistence required [${message}]`,
+                },
+                evidence: null,
+                metadata: { tenantId, requestId, runId },
+            };
         }
 
         // 4. Strict Input Schema Validation & Tenant Spoofing Check (FRANK-003)
@@ -203,16 +248,22 @@ export class FrankExecutionRuntime {
                     executionId,
                 });
 
-                if (stepId) {
-                    await frankExecutionStateService.updateStepCheckpoint(
-                        tenantId,
-                        stepId,
-                        'FAILED',
-                        undefined,
-                        undefined,
-                        `Tenant spoofing attempt blocked: payload tenant [${rawTenant}] does not match context tenant [${tenantId}]`
-                    );
-                }
+                await frankExecutionStateService.updateStepCheckpoint(
+                    tenantId,
+                    stepId,
+                    'FAILED',
+                    undefined,
+                    undefined,
+                    `Tenant spoofing attempt blocked: payload tenant [${rawTenant}] does not match context tenant [${tenantId}]`
+                );
+
+                await frankExecutionStateService.updateRunStatus(
+                    runId,
+                    'FAILED',
+                    undefined,
+                    undefined,
+                    'Tenant spoofing attempt blocked'
+                );
 
                 return {
                     ok: false,
@@ -247,16 +298,22 @@ export class FrankExecutionRuntime {
                 issues,
             });
 
-            if (stepId) {
-                await frankExecutionStateService.updateStepCheckpoint(
-                    tenantId,
-                    stepId,
-                    'FAILED',
-                    undefined,
-                    undefined,
-                    `Input schema validation failed: ${issues}`
-                );
-            }
+            await frankExecutionStateService.updateStepCheckpoint(
+                tenantId,
+                stepId,
+                'FAILED',
+                undefined,
+                undefined,
+                `Input schema validation failed: ${issues}`
+            );
+
+            await frankExecutionStateService.updateRunStatus(
+                runId,
+                'FAILED',
+                undefined,
+                undefined,
+                `Input validation failed: ${issues}`
+            );
 
             return {
                 ok: false,
@@ -314,26 +371,32 @@ export class FrankExecutionRuntime {
                 metadata: { tenantId, requestId },
             };
 
-            if (stepId) {
-                const stepStatus: ExecutionStepStatus = decision.reason === 'missing_human_approval_token'
-                    ? 'AWAITING_APPROVAL'
-                    : 'FAILED';
+            const stepStatus: ExecutionStepStatus = decision.reason === 'missing_human_approval_token'
+                ? 'AWAITING_APPROVAL'
+                : 'FAILED';
 
-                await frankExecutionStateService.updateStepCheckpoint(
-                    tenantId,
-                    stepId,
-                    stepStatus,
-                    undefined,
-                    undefined,
-                    `Policy blocked execution: ${decision.reason}`
-                );
-            }
+            await frankExecutionStateService.updateStepCheckpoint(
+                tenantId,
+                stepId,
+                stepStatus,
+                undefined,
+                undefined,
+                `Policy blocked execution: ${decision.reason}`
+            );
 
-            if (runId && decision.reason === 'missing_human_approval_token') {
+            if (decision.reason === 'missing_human_approval_token') {
                 await frankExecutionStateService.updateRunStatus(
                     runId,
                     'PAUSED_HUMAN_APPROVAL',
                     `Aguardando aprovação do operador para ${toolName}`
+                );
+            } else {
+                await frankExecutionStateService.updateRunStatus(
+                    runId,
+                    'FAILED',
+                    undefined,
+                    undefined,
+                    `Policy blocked execution: ${decision.reason}`
                 );
             }
 
@@ -378,16 +441,22 @@ export class FrankExecutionRuntime {
                     issues,
                 });
 
-                if (stepId) {
-                    await frankExecutionStateService.updateStepCheckpoint(
-                        tenantId,
-                        stepId,
-                        'FAILED',
-                        undefined,
-                        undefined,
-                        `Output verification failed: ${issues}`
-                    );
-                }
+                await frankExecutionStateService.updateStepCheckpoint(
+                    tenantId,
+                    stepId,
+                    'FAILED',
+                    undefined,
+                    undefined,
+                    `Output verification failed: ${issues}`
+                );
+
+                await frankExecutionStateService.updateRunStatus(
+                    runId,
+                    'FAILED',
+                    undefined,
+                    undefined,
+                    `Output verification failed: ${issues}`
+                );
 
                 return {
                     ok: false,
@@ -433,15 +502,20 @@ export class FrankExecutionRuntime {
             };
 
             // Update step checkpoint with verified output
-            if (stepId) {
-                await frankExecutionStateService.updateStepCheckpoint(
-                    tenantId,
-                    stepId,
-                    'COMPLETED',
-                    verifiedOutput as Record<string, unknown>,
-                    { evidence }
-                );
-            }
+            await frankExecutionStateService.updateStepCheckpoint(
+                tenantId,
+                stepId,
+                'COMPLETED',
+                verifiedOutput as Record<string, unknown>,
+                { evidence }
+            );
+
+            await frankExecutionStateService.updateRunStatus(
+                runId,
+                'COMPLETED',
+                `Executed ${toolName}`,
+                { verifiedOutput }
+            );
 
             logger.info('frank_runtime_execution_completed', {
                 tenantId,
@@ -497,16 +571,22 @@ export class FrankExecutionRuntime {
                 durationMs,
             });
 
-            if (stepId) {
-                await frankExecutionStateService.updateStepCheckpoint(
-                    tenantId,
-                    stepId,
-                    'FAILED',
-                    undefined,
-                    undefined,
-                    message
-                );
-            }
+            await frankExecutionStateService.updateStepCheckpoint(
+                tenantId,
+                stepId,
+                'FAILED',
+                undefined,
+                undefined,
+                message
+            );
+
+            await frankExecutionStateService.updateRunStatus(
+                runId,
+                'FAILED',
+                undefined,
+                undefined,
+                message
+            );
 
             return {
                 ok: false,
