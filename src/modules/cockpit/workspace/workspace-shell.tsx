@@ -52,6 +52,37 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
         setIsMobileDrawerOpen(true);
     };
 
+    const handleExecuteAction = async (action: import('../data/shared').WorkItemAction, item: import('../data/shared').CockpitActionQueueItem) => {
+        if (!action.endpoint) return;
+
+        const methodMap: Record<import('../data/shared').WorkItemAction['type'], string> = {
+            api_put: 'PUT',
+            api_post: 'POST',
+            api_patch: 'PATCH',
+            link: 'GET',
+        };
+
+        const method = methodMap[action.type];
+        if (!method || method === 'GET') return;
+
+        const response = await fetch(action.endpoint, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: action.payload ? JSON.stringify(action.payload) : undefined,
+        });
+
+        if (!response.ok) {
+            const errorJson = await response.json().catch(() => ({}));
+            throw new Error(errorJson.message || `Ação recusada pelo servidor (${response.status})`);
+        }
+
+        if (onRefresh) {
+            onRefresh();
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))] flex flex-col font-sans w-full overflow-x-hidden">
             <CommandPalette />
@@ -91,7 +122,7 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
                 </section>
 
                 <div className="hidden lg:block lg:col-span-4 w-full">
-                    <ContextPanel activeItem={activeItem} />
+                    <ContextPanel activeItem={activeItem} onExecuteAction={handleExecuteAction} />
                 </div>
             </main>
 
@@ -99,6 +130,7 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
                 isOpen={isMobileDrawerOpen}
                 activeItem={activeItem}
                 onClose={() => setIsMobileDrawerOpen(false)}
+                onExecuteAction={handleExecuteAction}
             />
         </div>
     );

@@ -49,6 +49,86 @@ export type CockpitEvent = {
 };
 
 export type WorkItemCategory = 'conversation' | 'freight' | 'order' | 'exception';
+export type OperationalThreadStage = 'cliente' | 'atendimento' | 'cotacao' | 'pedido' | 'logistica';
+
+export interface WorkItemCustomer {
+    id?: string;
+    name?: string;
+    phone?: string;
+    email?: string;
+    organization?: string;
+    segment?: string;
+}
+
+export interface WorkItemConversation {
+    id?: string;
+    phoneKey?: string;
+    status?: string;
+    lastIntent?: string;
+    lastActivityAt?: string;
+    assignedTo?: string | null;
+}
+
+export interface WorkItemQuotation {
+    id?: string;
+    carrier?: string | null;
+    service?: string | null;
+    price?: number | string | null;
+    status?: string;
+    expiresAt?: string;
+    itemCount?: number;
+}
+
+export interface WorkItemOrder {
+    id?: string;
+    status?: string;
+    total?: number | string | null;
+    itemCount?: number;
+    createdAt?: string;
+    quoteId?: string;
+}
+
+export interface WorkItemShipment {
+    id?: string;
+    carrier?: string | null;
+    service?: string | null;
+    status?: string;
+    trackingCode?: string | null;
+    estimatedDelivery?: string | null;
+    updatedAt?: string;
+}
+
+export interface WorkItemException {
+    id?: string;
+    type?: string;
+    description?: string;
+    severity?: 'critical' | 'warning' | 'info';
+    provider?: string;
+    failedAt?: string;
+}
+
+export interface WorkItemAction {
+    id: string;
+    label: string;
+    type: 'api_put' | 'api_post' | 'api_patch' | 'link';
+    endpoint?: string;
+    href?: string;
+    payload?: Record<string, unknown>;
+    tone?: 'primary' | 'secondary' | 'danger';
+    requiresApprovalToken?: boolean;
+}
+
+export interface OperationalThread {
+    customer?: WorkItemCustomer;
+    conversation?: WorkItemConversation;
+    quotation?: WorkItemQuotation;
+    order?: WorkItemOrder;
+    shipment?: WorkItemShipment;
+    exception?: WorkItemException;
+    activeStage: OperationalThreadStage;
+    blockedStage?: OperationalThreadStage;
+    blockReason?: string;
+}
 
 export type CockpitActionQueueItem = {
     id: string;
@@ -58,15 +138,30 @@ export type CockpitActionQueueItem = {
     age: string;
     owner: string;
     priority: 'critical' | 'warning' | 'info';
+    status: string;
     href: string;
     category: WorkItemCategory;
+    timestamps: {
+        createdAt: string;
+        updatedAt?: string;
+        pendingMinutes?: number;
+    };
+    customer?: WorkItemCustomer;
+    conversation?: WorkItemConversation;
+    quotation?: WorkItemQuotation;
+    order?: WorkItemOrder;
+    shipment?: WorkItemShipment;
+    exception?: WorkItemException;
+    availableActions: WorkItemAction[];
+    operationalThread: OperationalThread;
+    /** @deprecated retained for backward compatibility */
     threadContext?: {
         customerId?: string;
         phoneKey?: string;
         orderId?: string;
         freightQuoteId?: string;
         shipmentId?: string;
-        stage: 'atendimento' | 'cotacao' | 'pedido' | 'logistica';
+        stage: OperationalThreadStage;
     };
 };
 

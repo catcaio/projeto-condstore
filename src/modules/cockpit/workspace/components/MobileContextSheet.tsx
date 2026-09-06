@@ -1,19 +1,60 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { UserCheck, ChevronRight, X } from 'lucide-react';
+import { UserCheck, ChevronRight, X, Loader2, CheckCircle2, AlertCircle, Bot } from 'lucide-react';
 import { Button } from '@/ui/components';
-import type { CockpitActionQueueItem } from '../../data/shared';
+import type { CockpitActionQueueItem, WorkItemAction } from '../../data/shared';
+import { OperationalThreadView } from './OperationalThreadView';
 
 export interface MobileContextSheetProps {
     isOpen: boolean;
     activeItem: CockpitActionQueueItem | null;
     onClose: () => void;
+    onExecuteAction?: (action: WorkItemAction, item: CockpitActionQueueItem) => Promise<void>;
 }
 
-export function MobileContextSheet({ isOpen, activeItem, onClose }: MobileContextSheetProps) {
+export function MobileContextSheet({
+    isOpen,
+    activeItem,
+    onClose,
+    onExecuteAction,
+}: MobileContextSheetProps) {
+    const [executingActionId, setExecutingActionId] = useState<string | null>(null);
+    const [actionFeedback, setActionFeedback] = useState<{
+        type: 'success' | 'error';
+        message: string;
+    } | null>(null);
+
     if (!isOpen || !activeItem) return null;
+
+    const handleActionClick = async (action: WorkItemAction) => {
+        if (action.type === 'link' && action.href) {
+            onClose();
+            return;
+        }
+
+        if (!onExecuteAction) return;
+
+        setExecutingActionId(action.id);
+        setActionFeedback(null);
+
+        try {
+            await onExecuteAction(action, activeItem);
+            setActionFeedback({
+                type: 'success',
+                message: `Ação "${action.label}" executada com sucesso.`,
+            });
+        } catch (err: unknown) {
+            const errorMsg = err instanceof Error ? err.message : 'Falha ao executar ação.';
+            setActionFeedback({
+                type: 'error',
+                message: errorMsg,
+            });
+        } finally {
+            setExecutingActionId(null);
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end bg-black/60 backdrop-blur-xs">
@@ -36,11 +77,14 @@ export function MobileContextSheet({ isOpen, activeItem, onClose }: MobileContex
                 <div className="space-y-4">
                     <div className="space-y-1">
                         <span className="text-[10px] uppercase font-mono text-[hsl(var(--ui-text-subtle))]">
-                            Fila & Identificação
+                            Fila Operacional
                         </span>
                         <p className="text-sm font-bold text-[hsl(var(--ui-text))]">{activeItem.entity}</p>
                         <p className="text-xs text-[hsl(var(--ui-text-subtle))]">{activeItem.queue}</p>
                     </div>
+
+                    {/* Operational Thread Stepper */}
+                    <OperationalThreadView item={activeItem} />
 
                     <div className="p-3 bg-[hsl(var(--ui-page))] rounded-lg border border-[hsl(var(--ui-border))] space-y-2 text-xs">
                         <div className="flex justify-between">
@@ -53,8 +97,70 @@ export function MobileContextSheet({ isOpen, activeItem, onClose }: MobileContex
                         </div>
                     </div>
 
+                    {/* Action Feedback Banner */}
+                    {actionFeedback && (
+                        <div
+                            className={`p-2.5 rounded-lg border text-xs flex items-center gap-2 ${
+                                actionFeedback.type === 'success'
+                                    ? 'bg-emerald-500/10 text-emerald-800 border-emerald-500/20'
+                                    : 'bg-red-500/10 text-red-800 border-red-500/20'
+                            }`}
+                        >
+                            {actionFeedback.type === 'success' ? (
+                                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                            ) : (
+                                <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                            )}
+                            <span className="font-medium text-[11px]">{actionFeedback.message}</span>
+                        </div>
+                    )}
+
+                    {/* Available Contextual Actions */}
+                    {activeItem.availableActions && activeItem.availableActions.length > 0 && (
+                        <div className="space-y-2 pt-1 border-t border-[hsl(var(--ui-border))]">
+                            <span className="text-[10px] uppercase font-mono text-[hsl(var(--ui-text-subtle))] block">
+                                Ações Contextuais Disponíveis
+                            </span>
+                            <div className="space-y-2">
+                                {activeItem.availableActions.map((action) => {
+                                    const isExecuting = executingActionId === action.id;
+
+                                    if (action.type === 'link' && action.href) {
+                                        return (
+                                            <Link key={action.id} href={action.href} onClick={onClose} className="block">
+                                                <Button variant="secondary" className="w-full justify-between text-xs">
+                                                    <span>{action.label}</span>
+                                                    <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                                                </Button>
+                                            </Link>
+                                        );
+                                    }
+
+                                    return (
+                                        <Button
+                                            key={action.id}
+                                            disabled={Boolean(executingActionId)}
+                                            onClick={() => handleActionClick(action)}
+                                            variant={action.tone === 'danger' ? 'secondary' : 'primary'}
+                                            className="w-full justify-center text-xs"
+                                        >
+                                            {isExecuting ? (
+                                                <>
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                                                    <span>Processando...</span>
+                                                </>
+                                            ) : (
+                                                <span>{action.label}</span>
+                                            )}
+                                        </Button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     <Link href={activeItem.href} className="block" onClick={onClose}>
-                        <Button className="w-full justify-center">
+                        <Button variant="secondary" className="w-full justify-center text-xs">
                             Acessar Contexto Completo
                             <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
