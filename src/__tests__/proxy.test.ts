@@ -32,7 +32,7 @@ describe("Global Edge Middleware Enforcement", () => {
     }
 
     describe("General Header Stripping", () => {
-        it("should strip spoofable headers before passing to next", async () => {
+        it("fail-closed: aborts with 403 when spoofable headers are present (never passes to next)", async () => {
             const req = makeRequest("/api/internal/test", {
                 "x-tenant-id": "spoofed",
                 "x-auth-tenant-id": "spoofed",
@@ -43,18 +43,12 @@ describe("Global Edge Middleware Enforcement", () => {
             });
             process.env.INTERNAL_TOKEN = "valid";
 
-            const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
-                const h = args?.request?.headers as Headers;
-                expect(h.get("x-tenant-id")).toBeNull();
-                expect(h.get("x-auth-tenant-id")).toBeNull();
-                expect(h.get("x-auth-role")).toBeNull();
-                expect(h.get("x-auth-user-id")).toBeNull();
-                expect(h.get("x-auth-email")).toBeNull();
-                return new NextResponse();
-            });
+            const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation(() => new NextResponse());
 
             const res = await middleware(req);
-            expect(nextSpy).toHaveBeenCalled();
+            expect(res.status).toBe(403);
+            expect(await res.json()).toEqual({ error: "Forbidden", code: "header_spoof_detected" });
+            expect(nextSpy).not.toHaveBeenCalled();
             nextSpy.mockRestore();
         });
     });
@@ -96,15 +90,12 @@ describe("Global Edge Middleware Enforcement", () => {
     });
 
     describe("Targeted Matcher rules: Health & Debug", () => {
-        it("should allow exactly /api/health and strip spoofed headers", async () => {
+        it("fail-closed: aborts with 403 on spoofed headers even on /api/health", async () => {
              const reqHealth = makeRequest("/api/health", { "x-tenant-id": "hacker" });
-             const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
-                 const h = args?.request?.headers as Headers;
-                 expect(h.get("x-tenant-id")).toBeNull();
-                 return new NextResponse();
-             });
-             await middleware(reqHealth);
-             expect(nextSpy).toHaveBeenCalled();
+             const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation(() => new NextResponse());
+             const res = await middleware(reqHealth);
+             expect(res.status).toBe(403);
+             expect(nextSpy).not.toHaveBeenCalled();
              nextSpy.mockRestore();
         });
 
@@ -134,19 +125,16 @@ describe("Global Edge Middleware Enforcement", () => {
             expect(res.status).toBe(401);
         });
 
-        it("should allow exactly /api/debug with VALID token and strip spoofed headers", async () => {
+        it("fail-closed: aborts with 403 on spoofed headers even with a VALID internal token", async () => {
              process.env.INTERNAL_JOB_TOKEN = "valid-job-token";
              const req = makeRequest("/api/debug", {
                  "x-tenant-id": "hacker",
                  "x-internal-token": "valid-job-token"
              });
-             const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
-                 const h = args?.request?.headers as Headers;
-                 expect(h.get("x-tenant-id")).toBeNull();
-                 return new NextResponse();
-             });
-             await middleware(req);
-             expect(nextSpy).toHaveBeenCalled();
+             const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation(() => new NextResponse());
+             const res = await middleware(req);
+             expect(res.status).toBe(403);
+             expect(nextSpy).not.toHaveBeenCalled();
              nextSpy.mockRestore();
         });
 
@@ -190,24 +178,17 @@ describe("Global Edge Middleware Enforcement", () => {
             nextSpy.mockRestore();
         });
 
-        it("should strip spoofed headers and allow /api/simulate with valid session", async () => {
+        it("fail-closed: aborts with 403 on spoofed headers even with a valid session", async () => {
             (jose.jwtVerify as any).mockResolvedValue({
                 payload: { sub: "usr_1", tenantId: "tnt_2", role: "admin" }
             });
             const req = makeRequest("/api/simulate", { "x-tenant-id": "hacker_tenant" }, { condstore_session: "good-token" });
 
-            const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation((args: any) => {
-                const h = args?.request?.headers as Headers;
-                // Spoofed header should be removed
-                expect(h.get("x-tenant-id")).toBeNull();
-                // Valid auth headers should be injected
-                expect(h.get("x-auth-tenant-id")).toBe("tnt_2");
-                expect(h.get("x-auth-user-id")).toBe("usr_1");
-                return new NextResponse();
-            });
+            const nextSpy = vi.spyOn(NextResponse, "next").mockImplementation(() => new NextResponse());
 
-            await middleware(req);
-            expect(nextSpy).toHaveBeenCalled();
+            const res = await middleware(req);
+            expect(res.status).toBe(403);
+            expect(nextSpy).not.toHaveBeenCalled();
             nextSpy.mockRestore();
         });
 

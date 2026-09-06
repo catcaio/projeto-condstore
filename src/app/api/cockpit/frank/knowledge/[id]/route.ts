@@ -51,7 +51,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams): Promis
 
     try {
         const body = await request.json();
-        await updateKnowledgeEntry({ id, tenantId, ...body });
+        const { title, content, tags, source } = body ?? {};
+        // NB: never spread body over `tenantId` — a body field like `tenantId`
+        // must not override the session-derived tenant (IDOR hardening).
+        await updateKnowledgeEntry({ id, tenantId, title, content, tags, source });
 
         const res = NextResponse.json({ ok: true }, { status: 200 });
         attachRequestIdHeader(res, requestId);

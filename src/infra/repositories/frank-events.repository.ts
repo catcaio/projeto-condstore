@@ -63,6 +63,7 @@ export class FrankEventsRepository {
           .select({ id: frankEvents.id })
           .from(frankEvents)
           .where(and(
+            eq(frankEvents.tenantId, input.tenantId),
             eq(frankEvents.correlationId, input.correlationId),
             eq(frankEvents.kind, input.kind),
             gte(frankEvents.createdAt, threshold),

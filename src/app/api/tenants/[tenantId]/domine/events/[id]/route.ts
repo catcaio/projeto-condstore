@@ -49,13 +49,14 @@ export async function GET(
     }
 
     try {
-        const event = await domineEventsRepository.getById(id);
+        const event = await domineEventsRepository.getById(guard.tenantId, id);
 
         if (!event) {
             return errorResponse(ErrorCode.VALIDATION_ERROR, 404, requestId, 'Event not found');
         }
 
-        // Verify the event belongs to the requesting tenant
+        // Verify the event belongs to the requesting tenant (defense-in-depth;
+        // the repository already scopes by tenantId).
         if (event.tenantId !== guard.tenantId) {
             return errorResponse(ErrorCode.FORBIDDEN, 403, requestId, 'Forbidden');
         }

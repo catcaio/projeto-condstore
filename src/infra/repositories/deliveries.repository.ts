@@ -52,14 +52,17 @@ export const deliveriesRepository = {
 
             await tx.insert(deliveryLocationEvents).values(eventPayload);
 
-            // 3. Update the read model (the actual Deliveries row)
+            // 3. Update the read model (the actual Deliveries row, tenant-scoped)
             await tx.update(deliveries)
                 .set({
                     lastLat: lat.toString() as any,
                     lastLng: lng.toString() as any,
                     lastUpdateAt: new Date(),
                 })
-                .where(eq(deliveries.id, deliveryId));
+                .where(and(
+                    eq(deliveries.id, deliveryId),
+                    eq(deliveries.tenantId, tenantId),
+                ));
         });
     },
 
@@ -84,8 +87,21 @@ export const deliveriesRepository = {
         return results[0] || null;
     },
 
-    async findLatestLocationEvent(deliveryId: string) {
+    async findLatestLocationEvent(tenantId: string, deliveryId: string) {
         const db = await getDb();
+
+        // `deliveryLocationEvents` has no tenantId column (derived child table).
+        // Gate the read on tenant ownership of the parent `deliveries` row so a
+        // foreign deliveryId can never expose location data.
+        const delivery = await db.select({ id: deliveries.id }).from(deliveries)
+            .where(and(
+                eq(deliveries.id, deliveryId),
+                eq(deliveries.tenantId, tenantId),
+            ))
+            .limit(1);
+
+        if (delivery.length === 0) return null;
+
         const results = await db
             .select()
             .from(deliveryLocationEvents)
