@@ -47,6 +47,7 @@ export interface FrankRuntimeExecutionParams {
     userId?: string;
     allowHighRisk?: boolean;
     humanApprovalToken?: string;
+    abortSignal?: AbortSignal;
 }
 
 function mapRiskClassToRiskLevel(riskClass: FrankToolRiskClass): FrankToolRiskLevel {
@@ -101,7 +102,28 @@ export class FrankExecutionRuntime {
         params: FrankRuntimeExecutionParams
     ): Promise<StructuredToolExecutionResult<TOutput>> {
         const startedAt = Date.now();
-        const { tenantId, requestId, toolName, input, userId, allowHighRisk, humanApprovalToken } = params;
+        const { tenantId, requestId, toolName, input, userId, allowHighRisk, humanApprovalToken, abortSignal } = params;
+
+        // 0. Check Abort Signal before doing any persistence or execution
+        if (abortSignal?.aborted) {
+            const durationMs = Date.now() - startedAt;
+            return {
+                ok: false,
+                status: 'EXECUTION_FAILED',
+                action: toolName,
+                toolName,
+                executionId: params.executionId || requestId,
+                riskLevel: 'LOW_RISK',
+                durationMs,
+                data: null,
+                error: {
+                    code: 'CANCELLED',
+                    message: `Task execution aborted prior to starting: ${abortSignal.reason || 'Operation cancelled'}`,
+                },
+                evidence: null,
+                metadata: { tenantId, requestId, cancelled: true },
+            };
+        }
 
         // 1. Resolve or initialize Execution Run (Fail-closed)
         let runId: string;
@@ -344,6 +366,7 @@ export class FrankExecutionRuntime {
             userId,
             allowHighRisk,
             humanApprovalToken,
+            abortSignal,
         };
 
         const decision = evaluateFrankToolPolicy(toolName as any, context, {

@@ -28,6 +28,7 @@ export interface ToolExecutionContext {
     userId?: string;
     allowHighRisk?: boolean;
     humanApprovalToken?: string;
+    abortSignal?: AbortSignal;
 }
 
 export interface FrankToolContract<TInput = unknown, TOutput = unknown> {
