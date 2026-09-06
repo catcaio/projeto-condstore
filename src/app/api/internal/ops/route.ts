@@ -11,6 +11,10 @@ import { requireAdmin } from '@/infra/auth/guards';
 export async function GET(request: NextRequest) {
     const auth = await requireAdmin(request);
     if (!auth.ok) return auth.response;
+    // Ops aggregates must never leak cross-tenant counts: any session admin
+    // (of any tenant) can reach this route, so every aggregate is pinned to
+    // the session tenant. Global rollups belong to internal-token jobs only.
+    const tenantId = auth.session.tenantId;
 
     try {
         const db = await getDb();
@@ -25,6 +29,7 @@ export async function GET(request: NextRequest) {
       SELECT COUNT(*) as count 
       FROM freight_funnel_events 
       WHERE stage = 'FLOW_STARTED' 
+      AND tenant_id = ${tenantId}
       AND created_at >= NOW() - INTERVAL 1 DAY
     `);
         const sessions_started_last_24h = Number((startedResult as any)[0]?.count || 0);
@@ -34,6 +39,7 @@ export async function GET(request: NextRequest) {
       SELECT COUNT(*) as count 
       FROM freight_funnel_events 
       WHERE stage = 'FLOW_ABORTED' 
+      AND tenant_id = ${tenantId}
       AND created_at >= NOW() - INTERVAL 1 DAY
     `);
         const sessions_aborted_last_24h = Number((abortedResult as any)[0]?.count || 0);
@@ -43,6 +49,7 @@ export async function GET(request: NextRequest) {
       SELECT COUNT(*) as count 
       FROM freight_funnel_events 
       WHERE stage = 'FREIGHT_QUOTED' 
+      AND tenant_id = ${tenantId}
       AND created_at >= NOW() - INTERVAL 1 DAY
     `);
         const quotesSent = Number((quotedResult as any)[0]?.count || 0);

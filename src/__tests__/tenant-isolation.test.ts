@@ -156,9 +156,16 @@ function flattenCondition(condition: unknown, out: { text: string[]; params: unk
         condition.forEach((c) => flattenCondition(c, out));
         return;
     }
-    // StringChunk and other wrappers expose the raw string as `.value`
-    if (condition && typeof condition === 'object' && typeof (condition as { value?: unknown }).value === 'string') {
-        out.text.push((condition as { value: string }).value);
+    // StringChunk exposes raw SQL text as `.value` (string or string[]).
+    // NOTE: drizzle inlines primitive interpolations (string/number) directly
+    // into the SQL text instead of binding them as Params — only objects
+    // (Date, etc.) become bound params. Tenant checks below therefore accept
+    // the tenant as bound param OR as inlined literal equal to the session
+    // tenant (server-controlled, never client input).
+    if (condition && typeof condition === 'object' && 'value' in condition) {
+        const v = (condition as { value?: unknown }).value;
+        if (typeof v === 'string') out.text.push(v);
+        else if (Array.isArray(v)) v.forEach((s) => typeof s === 'string' && out.text.push(s));
     }
 }
 
@@ -172,14 +179,18 @@ function recordedWheres(): unknown[] {
     return dbState.calls.filter((c) => c.op === 'where').map((c) => c.where);
 }
 
-/** Every recorded WHERE must pin `tenant_id` to exactly the session tenant. */
+/**
+ * Every recorded WHERE must pin `tenant_id` to exactly the session tenant —
+ * either as a bound param or as an inlined literal equal to it (drizzle
+ * inlines primitive interpolations; the value is server-controlled).
+ */
 function expectAllWheresTenantScoped(tenantId: string) {
     const wheres = recordedWheres();
     expect(wheres.length).toBeGreaterThan(0);
     for (const w of wheres) {
         const { sql, params } = whereSql(w);
         expect(sql).toMatch(/tenant_id/i);
-        expect(params).toContain(tenantId);
+        expect(params.includes(tenantId) || sql.includes(tenantId)).toBe(true);
     }
 }
 

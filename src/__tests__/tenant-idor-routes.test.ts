@@ -15,6 +15,7 @@ import { SQL, Name, Param, Column } from 'drizzle-orm';
 interface RecordedCall {
     op: string;
     where?: unknown;
+    arg?: unknown;
 }
 
 const dbState = vi.hoisted(() => ({
@@ -33,6 +34,7 @@ const chain: any = vi.hoisted(() => {
                 }
                 return (...args: unknown[]) => {
                     if (prop === 'where') dbState.calls.push({ op: 'where', where: args[0] });
+                    else if (prop === 'execute') dbState.calls.push({ op: 'execute', arg: args[0] });
                     else dbState.calls.push({ op: prop });
                     return c;
                 };
@@ -48,6 +50,10 @@ const mockGetDb = vi.hoisted(() =>
         update: () => chain,
         insert: () => chain,
         delete: () => chain,
+        execute: (...args: unknown[]) => {
+            dbState.calls.push({ op: 'execute', arg: args[0] });
+            return chain;
+        },
     })),
 );
 
@@ -128,8 +134,13 @@ function flattenCondition(condition: unknown, out: { text: string[]; params: unk
         condition.forEach((c) => flattenCondition(c, out));
         return;
     }
-    if (condition && typeof condition === 'object' && typeof (condition as { value?: unknown }).value === 'string') {
-        out.text.push((condition as { value: string }).value);
+    // StringChunk exposes raw SQL text as `.value` (string or string[]).
+    // NOTE: drizzle inlines primitive interpolations into the SQL text;
+    // tenant assertions below accept bound param OR inlined session literal.
+    if (condition && typeof condition === 'object' && 'value' in condition) {
+        const v = (condition as { value?: unknown }).value;
+        if (typeof v === 'string') out.text.push(v);
+        else if (Array.isArray(v)) v.forEach((s) => typeof s === 'string' && out.text.push(s));
     }
 }
 
@@ -259,5 +270,31 @@ describe('GET /api/tenants/[tenantId]/domine/events/[id] IDOR', () => {
         });
 
         expect(res.status).toBe(403);
+    });
+});
+
+// ─── 4. internal/ops: aggregates pinned to the session tenant ────────────────
+
+describe('GET /api/internal/ops tenant-scoped aggregates', () => {
+    it('pins every aggregate to the session tenant — never global counts', async () => {
+        const { GET } = await import('@/app/api/internal/ops/route');
+        mockRequireAdmin.mockResolvedValue(adminSession(TENANT_A));
+        // mysql2 execute() resolves [rows, fields]; route destructures [result] then [0]?.count
+        dbState.rowsQueue.push([[{ count: 5 }]], [[{ count: 2 }]], [[{ count: 1 }]]);
+
+        const req = new NextRequest('http://localhost/api/internal/ops');
+        const res = await GET(req as never);
+
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body.sessions_started_last_24h).toBe(5);
+
+        const execs = dbState.calls.filter((c) => c.op === 'execute');
+        expect(execs).toHaveLength(3);
+        for (const e of execs) {
+            const { sql, params } = whereSql(e.arg);
+            expect(sql).toMatch(/tenant_id/i);
+            expect(params.includes(TENANT_A) || sql.includes(TENANT_A)).toBe(true);
+        }
     });
 });
