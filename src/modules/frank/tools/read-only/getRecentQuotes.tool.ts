@@ -1,7 +1,10 @@
+import { z } from 'zod';
 import { getRecentOrdersForCustomer } from '@/modules/pedidos/server';
 import { getQuoteContext } from '@/modules/freight/server';
 import { executeFrankTool } from '../tool-guard';
 import { buildQuoteRouteSummary, clampSupportLimit } from './shared';
+import { FrankToolContract } from '../frank-tool.contract';
+import { frankToolRegistry } from '../frank-tool.registry';
 
 export interface RecentQuoteSummary {
     simulationId: string;
@@ -16,6 +19,38 @@ export interface GetRecentQuotesParams {
     customerId: string;
     limit?: number;
 }
+
+export const getRecentQuotesInputSchema = z.object({
+    tenantId: z.string().min(1, 'tenantId is required'),
+    customerId: z.string().min(1, 'customerId is required'),
+    limit: z.number().int().positive().optional(),
+});
+
+export const getRecentQuotesOutputSchema = z.array(
+    z.object({
+        simulationId: z.string(),
+        routeSummary: z.string(),
+        carrierSummary: z.string().nullable(),
+        quotedAt: z.any(),
+        currentQuoteState: z.string().nullable(),
+    })
+);
+
+export const getRecentQuotesContract: FrankToolContract<GetRecentQuotesParams, RecentQuoteSummary[]> = {
+    name: 'get_recent_quotes',
+    description: 'Retrieves recent quotes and simulation history for a given customer.',
+    inputSchema: getRecentQuotesInputSchema,
+    outputSchema: getRecentQuotesOutputSchema,
+    isReadOnly: true,
+    riskClass: 'SAFE',
+    capabilities: ['READ', 'QUERY'],
+    sideEffects: ['NONE'],
+    execute: async (input) => {
+        return getRecentQuotesTool(input);
+    },
+};
+
+frankToolRegistry.registerTool(getRecentQuotesContract);
 
 export async function getRecentQuotesTool(
     params: GetRecentQuotesParams,

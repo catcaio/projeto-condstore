@@ -1,6 +1,9 @@
+import { z } from 'zod';
 import { deliveriesRepository } from '@/infra/repositories/deliveries.repository';
 import { getShipmentById } from '@/modules/freight/server';
 import { executeFrankTool } from '../tool-guard';
+import { FrankToolContract } from '../frank-tool.contract';
+import { frankToolRegistry } from '../frank-tool.registry';
 
 export interface ShipmentLocationEventSummary {
     lat: string;
@@ -24,6 +27,43 @@ export interface GetShipmentStatusParams {
     tenantId: string;
     shipmentId: string;
 }
+
+export const getShipmentStatusInputSchema = z.object({
+    tenantId: z.string().min(1, 'tenantId is required'),
+    shipmentId: z.string().min(1, 'shipmentId is required'),
+});
+
+export const getShipmentStatusOutputSchema = z.object({
+    shipment: z.any(),
+    carrier: z.object({
+        name: z.string(),
+        service: z.string(),
+    }),
+    trackingToken: z.string().nullable(),
+    deliveryStatus: z.string(),
+    lastLocationEvent: z.object({
+        lat: z.string(),
+        lng: z.string(),
+        accuracy: z.number().nullable(),
+        recordedAt: z.any(),
+    }).nullable(),
+}).nullable();
+
+export const getShipmentStatusContract: FrankToolContract<GetShipmentStatusParams, ShipmentStatusResult | null> = {
+    name: 'get_shipment_status',
+    description: 'Fetches shipment details, carrier info, tracking token, and real-time delivery status.',
+    inputSchema: getShipmentStatusInputSchema,
+    outputSchema: getShipmentStatusOutputSchema,
+    isReadOnly: true,
+    riskClass: 'SAFE',
+    capabilities: ['READ', 'QUERY'],
+    sideEffects: ['NONE'],
+    execute: async (input) => {
+        return getShipmentStatusTool(input);
+    },
+};
+
+frankToolRegistry.registerTool(getShipmentStatusContract);
 
 export async function getShipmentStatusTool(
     params: GetShipmentStatusParams,

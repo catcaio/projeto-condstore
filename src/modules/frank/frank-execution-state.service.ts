@@ -76,7 +76,7 @@ const memoryRuns = new Map<string, FrankExecutionRunRecord>();
 const memorySteps = new Map<string, FrankExecutionStepRecord>();
 
 const VALID_RUN_TRANSITIONS: Record<ExecutionRunStatus, ExecutionRunStatus[]> = {
-    PENDING: ['RUNNING', 'PAUSED_HUMAN_APPROVAL', 'CANCELLED', 'FAILED'],
+    PENDING: ['RUNNING', 'PAUSED_HUMAN_APPROVAL', 'COMPLETED', 'CANCELLED', 'FAILED'],
     RUNNING: ['PAUSED_HUMAN_APPROVAL', 'COMPLETED', 'FAILED', 'CANCELLED'],
     PAUSED_HUMAN_APPROVAL: ['RUNNING', 'CANCELLED', 'FAILED'],
     COMPLETED: [], // Terminal state
@@ -311,6 +311,34 @@ export class FrankExecutionStateService {
         } else if (isProd) {
             throw new FrankPersistenceError(`Execution step [${stepId}] not found in DB`);
         }
+    }
+
+    async resumeExecutionStep(
+        tenantId: string,
+        executionIdOrId: string,
+        stepId: string,
+        approvedBy: string
+    ): Promise<{ run: FrankExecutionRunRecord; step: FrankExecutionStepRecord }> {
+        const executionData = await this.getExecutionWithSteps(tenantId, executionIdOrId);
+        if (!executionData) {
+            throw new Error(`Cross-tenant access denied or execution run [${executionIdOrId}] not found for tenant [${tenantId}]`);
+        }
+
+        const step = executionData.steps.find(s => s.id === stepId && s.tenantId === tenantId);
+        if (!step) {
+            throw new Error(`Step [${stepId}] not found or access denied for tenant [${tenantId}]`);
+        }
+
+        await this.approveStep(tenantId, step.id, approvedBy);
+        await this.updateRunStatus(executionData.run.id, 'RUNNING', `Resumed step ${step.stepName}`);
+
+        const updated = await this.getExecutionWithSteps(tenantId, executionData.run.id);
+        const updatedStep = updated?.steps.find(s => s.id === step.id);
+
+        return {
+            run: updated!.run,
+            step: updatedStep!,
+        };
     }
 
     async updateRunStatusWithTenantCheck(
