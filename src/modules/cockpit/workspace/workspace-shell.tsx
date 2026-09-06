@@ -21,6 +21,7 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
     const [selectedCategory, setSelectedCategory] = useState<WorkItemCategory | 'all'>('all');
     const [activeItemId, setActiveItemId] = useState<string | null>(null);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+    const [density, setDensity] = useState<'compact' | 'comfortable'>('comfortable');
 
     const metrics = data.derived?.metricsSnapshot ?? {
         activeConversationCount: 0,
@@ -51,6 +52,39 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
         setActiveItemId(id);
         setIsMobileDrawerOpen(true);
     };
+
+    // Keyboard navigation (j/k or ArrowDown/ArrowUp, Enter, Esc)
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement | null;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+                return;
+            }
+
+            if (filteredQueue.length === 0) return;
+
+            const currentIndex = filteredQueue.findIndex((item) => item.id === activeItemId);
+
+            if (e.key === 'j' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const nextIndex = currentIndex < filteredQueue.length - 1 ? currentIndex + 1 : 0;
+                setActiveItemId(filteredQueue[nextIndex].id);
+            } else if (e.key === 'k' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prevIndex = currentIndex > 0 ? currentIndex - 1 : filteredQueue.length - 1;
+                setActiveItemId(filteredQueue[prevIndex].id);
+            } else if (e.key === 'Escape') {
+                if (isMobileDrawerOpen) {
+                    setIsMobileDrawerOpen(false);
+                } else {
+                    setActiveItemId(null);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [filteredQueue, activeItemId, isMobileDrawerOpen]);
 
     const handleExecuteAction = async (action: import('../data/shared').WorkItemAction, item: import('../data/shared').CockpitActionQueueItem) => {
         if (!action.endpoint) return;
@@ -106,11 +140,26 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
 
             <main className="flex-1 mx-auto max-w-7xl w-full p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <section className="lg:col-span-8 space-y-4 w-full">
-                    <WorkspaceFilters
-                        selectedCategory={selectedCategory}
-                        onSelectCategory={(cat) => setSelectedCategory(cat)}
-                        totalCount={queueItems.length}
-                    />
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <WorkspaceFilters
+                            selectedCategory={selectedCategory}
+                            onSelectCategory={(cat) => setSelectedCategory(cat)}
+                            totalCount={queueItems.length}
+                        />
+                        <div className="flex items-center gap-2 text-xs text-[hsl(var(--ui-text-subtle))] self-end sm:self-auto">
+                            <span className="font-mono text-[10px] hidden md:inline-block bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] px-2 py-1 rounded">
+                                <kbd className="font-bold text-[hsl(var(--ui-text))]">j</kbd>/<kbd className="font-bold text-[hsl(var(--ui-text))]">k</kbd> navegar
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setDensity((d) => (d === 'compact' ? 'comfortable' : 'compact'))}
+                                className="px-2.5 py-1 rounded border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] hover:bg-[hsl(var(--ui-page))] font-mono text-[11px] transition-colors"
+                                title="Alternar densidade de exibição"
+                            >
+                                Densidade: <strong className="capitalize">{density}</strong>
+                            </button>
+                        </div>
+                    </div>
 
                     <WorkspaceAlertBanner alerts={alerts} />
 
@@ -118,10 +167,11 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
                         items={filteredQueue}
                         activeItemId={activeItemId}
                         onSelectItem={handleSelectItem}
+                        density={density}
                     />
                 </section>
 
-                <div className="hidden lg:block lg:col-span-4 w-full">
+                <div className="hidden lg:block lg:col-span-4 w-full sticky top-4">
                     <ContextPanel activeItem={activeItem} onExecuteAction={handleExecuteAction} />
                 </div>
             </main>
