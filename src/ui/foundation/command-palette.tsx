@@ -57,7 +57,11 @@ export function CommandPalette() {
 
     const handleNavigate = (href: string) => {
         setIsOpen(false);
-        router.push(href);
+        if (router?.push) {
+            router.push(href);
+        } else {
+            window.location.href = href;
+        }
     };
 
     const handleAskFrank = () => {

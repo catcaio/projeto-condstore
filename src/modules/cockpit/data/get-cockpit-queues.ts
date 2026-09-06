@@ -36,7 +36,7 @@ function resolveFreightWaitingFor(status: string) {
 }
 
 export function getCockpitQueues(rawData: CockpitRawData): CockpitActionQueueItem[] {
-    const conversationRows = rawData.derived.unansweredConversations.slice(0, 4).map((conversation) => ({
+    const conversationRows: CockpitActionQueueItem[] = rawData.derived.unansweredConversations.slice(0, 4).map((conversation) => ({
         id: `queue-conversation-${conversation.phoneKey}`,
         queue: 'Conversas sem resposta',
         entity: conversation.actorLabel,
@@ -45,6 +45,11 @@ export function getCockpitQueues(rawData: CockpitRawData): CockpitActionQueueIte
         owner: 'CX Ops',
         priority: resolveConversationPriority(conversation.pendingMinutes),
         href: rawData.derived.routeHints.conversationsHref,
+        category: 'conversation' as const,
+        threadContext: {
+            phoneKey: conversation.phoneKey,
+            stage: 'atendimento' as const,
+        },
     }));
 
     const orderRows: CockpitActionQueueItem[] = rawData.derived.pendingOrders.slice(0, 3).map((order) => ({
@@ -59,6 +64,11 @@ export function getCockpitQueues(rawData: CockpitRawData): CockpitActionQueueIte
                 ? 'warning'
                 : 'info',
         href: `/pedidos?status=${toCanonicalOrderStatus(order.status)}`,
+        category: 'order' as const,
+        threadContext: {
+            orderId: order.orderId,
+            stage: 'pedido' as const,
+        },
     }));
 
     const freightRows: CockpitActionQueueItem[] = rawData.derived.pendingFreight.slice(0, 3).map((freight) => ({
@@ -80,6 +90,12 @@ export function getCockpitQueues(rawData: CockpitRawData): CockpitActionQueueIte
                 ? 'critical'
                 : 'info',
         href: `/logistica?status=${toCanonicalLogisticsStatus(freight.status)}`,
+        category: freight.status.toLowerCase().includes('exce') ? ('exception' as const) : ('freight' as const),
+        threadContext: {
+            freightQuoteId: freight.kind === 'quote' ? freight.id : undefined,
+            shipmentId: freight.kind === 'shipment' ? freight.id : undefined,
+            stage: freight.kind === 'shipment' ? ('logistica' as const) : ('cotacao' as const),
+        },
     }));
 
     return [...conversationRows, ...orderRows, ...freightRows];

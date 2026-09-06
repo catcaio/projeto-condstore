@@ -35,9 +35,9 @@ export default async function CockpitPage(props: { searchParams: Promise<{ [key:
 
     return (
         <SettingsPage
-            title="Cockpit Operacional"
+            title="Cockpit Operacional (Visão Gerencial)"
             description="Visão em tempo real das operações e saúde do sistema"
-            headerAction={<Link href="/cockpit" className="text-xs text-[hsl(var(--ui-accent-blue))] font-medium hover:underline flex items-center gap-1">&larr; Voltar ao Launcher</Link>}
+            headerAction={<Link href="/cockpit" className="text-xs text-[hsl(var(--ui-accent-blue))] font-medium hover:underline flex items-center gap-1">&larr; Voltar à Área de Trabalho Operacional (Cockpit V2)</Link>}
         >
             {/* MINI STATUS BAR */}
             <div className="flex gap-2 mb-6 w-full overflow-x-auto pb-2 scrollbar-hide shrink-0">
