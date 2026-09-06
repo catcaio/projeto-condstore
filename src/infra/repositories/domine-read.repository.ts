@@ -24,7 +24,10 @@ export class DomineReadRepository {
         const db = await getDb();
         const existing = await db.select().from(domineOrders).where(and(eq(domineOrders.tenantId, tenantId), eq(domineOrders.orderId, orderId)));
         if (existing.length) {
-            await db.update(domineOrders).set({ status, totals, updatedAt: new Date() }).where(eq(domineOrders.id, existing[0].id));
+            await db.update(domineOrders).set({ status, totals, updatedAt: new Date() }).where(and(
+                eq(domineOrders.id, existing[0].id),
+                eq(domineOrders.tenantId, tenantId),
+            ));
         } else {
             await db.insert(domineOrders).values({
                 id: crypto.randomUUID(),
@@ -68,7 +71,10 @@ export class DomineReadRepository {
                         bestPriceCents: input.bestPriceCents ?? existing[0].bestPriceCents,
                         bestEtaDays: input.bestEtaDays ?? existing[0].bestEtaDays,
                     })
-                    .where(eq(domineFreightQuotes.id, existing[0].id));
+                    .where(and(
+                        eq(domineFreightQuotes.id, existing[0].id),
+                        eq(domineFreightQuotes.tenantId, tenantId),
+                    ));
 
                 structuredLogger.info('domine_freight_quote_updated', { tenantId, correlationId });
             } else {

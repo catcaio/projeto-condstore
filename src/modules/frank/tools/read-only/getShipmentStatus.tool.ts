@@ -47,7 +47,7 @@ export async function getShipmentStatusTool(
                 : null;
 
             const locationEvent = delivery
-                ? await deliveriesRepository.findLatestLocationEvent(delivery.id)
+                ? await deliveriesRepository.findLatestLocationEvent(params.tenantId, delivery.id)
                 : null;
 
             const lastLocationEvent = locationEvent

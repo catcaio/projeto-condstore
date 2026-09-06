@@ -6,7 +6,7 @@ import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { getInternalExportTokenOrThrow } from '@/infra/config/internal-token';
 import { getDb } from '@/infra/db';
 import { domineFreightQuotes } from '@/drizzle/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { z } from 'zod';
 
 const actionsSchema = z.object({
@@ -59,7 +59,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ten
             const { correlationId } = parameters;
             const db = await getDb();
             if (correlationId) {
-                const q = await db.select().from(domineFreightQuotes).where(eq(domineFreightQuotes.correlationId, correlationId));
+                const tenantId = (await params).tenantId;
+                const q = await db.select().from(domineFreightQuotes).where(and(
+                    eq(domineFreightQuotes.correlationId, correlationId),
+                    eq(domineFreightQuotes.tenantId, tenantId),
+                ));
                 return NextResponse.json({ ok: true, data: q[0] || null });
             } else {
                 const latest = await db.select().from(domineFreightQuotes)

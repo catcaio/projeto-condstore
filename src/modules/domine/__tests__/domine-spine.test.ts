@@ -80,8 +80,8 @@ describe('Domine Minimal Event Spine', () => {
             { value: 100 }
         );
 
-        // Check if event was marked as processed
-        expect(domineEventsRepository.markProcessed).toHaveBeenCalledWith(eventId);
+        // Check if event was marked as processed (tenant-scoped)
+        expect(domineEventsRepository.markProcessed).toHaveBeenCalledWith(eventId, 'tenant-123');
     });
 
     it('should correctly capture DLQ when read model logic fails', async () => {
@@ -103,6 +103,6 @@ describe('Domine Minimal Event Spine', () => {
         await domineEventBus.processAsync('tenant-123', eventId);
 
         expect(domineReadRepository.upsertOrder).not.toHaveBeenCalled();
-        expect(domineEventsRepository.sendToDLQ).toHaveBeenCalledWith(eventId, 'orderId missing from payload constraints');
+        expect(domineEventsRepository.sendToDLQ).toHaveBeenCalledWith(eventId, 'tenant-123', 'orderId missing from payload constraints');
     });
 });

@@ -40,6 +40,10 @@ export async function createKnowledgeEntry(data: CreateKnowledgeDto): Promise<st
 export async function updateKnowledgeEntry(data: UpdateKnowledgeDto): Promise<void> {
     const db = await getDb();
     const { id, tenantId, ...updates } = data;
+    // Defense-in-depth: never allow a caller-provided tenantId to leak into the SET
+    // clause (would permit cross-tenant writes via field proliferation).
+    delete (updates as Record<string, unknown>).tenantId;
+    delete (updates as Record<string, unknown>).id;
 
     await db.update(frankKnowledge)
         .set(updates)

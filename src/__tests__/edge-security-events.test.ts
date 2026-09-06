@@ -45,7 +45,7 @@ describe("Edge Middleware Telemetry & Security Events", () => {
                 "x-request-id": "req-123"
             });
             const res = await middleware(req);
-            expect(res.status).toBe(200); // the request itself is valid internally
+            expect(res.status).toBe(403); // fail-closed: spoof aborts even with a valid internal token
 
             expect(logEdgeSecurityEventSpy).toHaveBeenCalledWith({
                 requestId: "req-123",
