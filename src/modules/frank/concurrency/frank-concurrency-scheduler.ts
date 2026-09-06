@@ -141,6 +141,50 @@ export class FrankConcurrencyScheduler {
 
         const abortController = new AbortController();
 
+        // 1. Check if external AbortSignal is already pre-aborted BEFORE enqueuing
+        if (abortSignal?.aborted) {
+            const reason = abortSignal.reason || 'External AbortSignal pre-aborted';
+            abortController.abort(reason);
+            metrics.cancelledCount++;
+
+            logger.info('frank_scheduler_task_pre_aborted', {
+                taskId,
+                tenantId,
+                toolName,
+                reason,
+            });
+
+            const preAbortedResult: StructuredToolExecutionResult<TOutput> = {
+                ok: false,
+                status: 'EXECUTION_FAILED',
+                action: toolName,
+                toolName,
+                executionId: taskId,
+                riskLevel: 'LOW_RISK',
+                durationMs: 0,
+                data: null,
+                error: {
+                    code: 'CANCELLED',
+                    message: `Task cancelled before execution: ${reason}`,
+                },
+                evidence: null,
+                metadata: { tenantId, taskId, cancelled: true },
+            };
+
+            return {
+                taskId,
+                tenantId,
+                toolName,
+                priority,
+                get status(): TaskStatus {
+                    return 'CANCELLED';
+                },
+                promise: Promise.resolve(preAbortedResult),
+                cancel: () => false,
+                abortSignal: abortController.signal,
+            };
+        }
+
         let resolvePromise!: (result: StructuredToolExecutionResult<TOutput>) => void;
         let rejectPromise!: (reason: unknown) => void;
 
@@ -167,17 +211,13 @@ export class FrankConcurrencyScheduler {
 
         // Handle external AbortSignal if supplied
         if (abortSignal) {
-            if (abortSignal.aborted) {
-                this.cancelTaskInternal(taskItem, abortSignal.reason || 'External AbortSignal pre-aborted');
-            } else {
-                const onExternalAbort = () => {
-                    this.cancelTaskInternal(taskItem, abortSignal.reason || 'External AbortSignal triggered');
-                };
-                abortSignal.addEventListener('abort', onExternalAbort, { once: true });
-                taskItem.externalAbortUnsubscribe = () => {
-                    abortSignal.removeEventListener('abort', onExternalAbort);
-                };
-            }
+            const onExternalAbort = () => {
+                this.cancelTaskInternal(taskItem, abortSignal.reason || 'External AbortSignal triggered');
+            };
+            abortSignal.addEventListener('abort', onExternalAbort, { once: true });
+            taskItem.externalAbortUnsubscribe = () => {
+                abortSignal.removeEventListener('abort', onExternalAbort);
+            };
         }
 
         if (!this.tenantQueues.has(tenantId)) {
@@ -228,6 +268,9 @@ export class FrankConcurrencyScheduler {
             taskItem.status = 'CANCELLED';
             taskItem.completedAt = Date.now();
             metrics.cancelledCount++;
+
+            // Abort handle AbortSignal on queued cancellation as well
+            taskItem.abortController.abort(reason);
 
             // Remove from queue
             const queue = this.tenantQueues.get(taskItem.tenantId);
@@ -346,6 +389,60 @@ export class FrankConcurrencyScheduler {
                 continue;
             }
 
+            // Prune expired tasks from tenant queue based on taskQueueTimeoutMs
+            if (this.config.taskQueueTimeoutMs && this.config.taskQueueTimeoutMs > 0) {
+                const now = Date.now();
+                const timeoutMs = this.config.taskQueueTimeoutMs;
+                let i = 0;
+                while (i < queue.length) {
+                    const qTask = queue[i];
+                    if (now - qTask.enqueuedAt > timeoutMs) {
+                        queue.splice(i, 1);
+                        this.queuedGlobalCount--;
+                        qTask.status = 'CANCELLED';
+                        qTask.completedAt = now;
+                        qTask.abortController.abort(`Task queue timeout exceeded (${timeoutMs}ms)`);
+                        const metrics = this.getOrCreateTenantMetrics(qTask.tenantId);
+                        metrics.cancelledCount++;
+
+                        if (qTask.externalAbortUnsubscribe) {
+                            qTask.externalAbortUnsubscribe();
+                        }
+
+                        logger.warn('frank_scheduler_task_queue_timeout', {
+                            taskId: qTask.taskId,
+                            tenantId: qTask.tenantId,
+                            toolName: qTask.toolName,
+                            waitedMs: now - qTask.enqueuedAt,
+                        });
+
+                        qTask.resolve({
+                            ok: false,
+                            status: 'EXECUTION_FAILED',
+                            action: qTask.toolName,
+                            toolName: qTask.toolName,
+                            executionId: qTask.taskId,
+                            riskLevel: 'LOW_RISK',
+                            durationMs: now - qTask.enqueuedAt,
+                            data: null,
+                            error: {
+                                code: 'QUEUE_TIMEOUT',
+                                message: `Task expired in queue after ${now - qTask.enqueuedAt}ms (timeout: ${timeoutMs}ms)`,
+                            },
+                            evidence: null,
+                            metadata: { tenantId: qTask.tenantId, taskId: qTask.taskId, expired: true },
+                        });
+                    } else {
+                        i++;
+                    }
+                }
+            }
+
+            if (queue.length === 0) {
+                this.tenantQueues.delete(tenantId);
+                continue;
+            }
+
             // Sort tenant queue by effective priority (highest score first; tie-breaker enqueuedAt earlier first)
             queue.sort((a, b) => {
                 const effA = this.getEffectivePriority(a);
@@ -404,55 +501,91 @@ export class FrankConcurrencyScheduler {
             });
 
             task.completedAt = Date.now();
-            if ((task.status as TaskStatus) !== 'CANCELLED') {
-                if (result.ok) {
-                    task.status = 'COMPLETED';
-                    metrics.completedCount++;
-                } else {
-                    task.status = 'FAILED';
-                    metrics.failedCount++;
-                }
-            }
 
             if (task.externalAbortUnsubscribe) {
                 task.externalAbortUnsubscribe();
             }
 
-            task.resolve(result);
-        } catch (err) {
-            task.completedAt = Date.now();
-            if ((task.status as TaskStatus) !== 'CANCELLED') {
+            if ((task.status as TaskStatus) === 'CANCELLED' || task.abortController.signal.aborted) {
+                task.status = 'CANCELLED';
+                task.resolve({
+                    ok: false,
+                    status: 'EXECUTION_FAILED',
+                    action: task.toolName,
+                    toolName: task.toolName,
+                    executionId: task.taskId,
+                    riskLevel: 'LOW_RISK',
+                    durationMs: Date.now() - (task.startedAt || task.enqueuedAt),
+                    data: null,
+                    error: {
+                        code: 'CANCELLED',
+                        message: `Task cancelled during execution: ${task.abortController.signal.reason || 'Operation cancelled'}`,
+                    },
+                    evidence: null,
+                    metadata: { tenantId: task.tenantId, taskId: task.taskId, cancelled: true },
+                });
+            } else if (result.ok) {
+                task.status = 'COMPLETED';
+                metrics.completedCount++;
+                task.resolve(result);
+            } else {
                 task.status = 'FAILED';
                 metrics.failedCount++;
+                task.resolve(result);
             }
+        } catch (err) {
+            task.completedAt = Date.now();
 
             if (task.externalAbortUnsubscribe) {
                 task.externalAbortUnsubscribe();
             }
 
-            const errorMsg = err instanceof Error ? err.message : 'Unexpected execution failure';
-            logger.error('frank_scheduler_task_execution_error', err as Error, {
-                taskId: task.taskId,
-                tenantId: task.tenantId,
-                toolName: task.toolName,
-            });
+            if ((task.status as TaskStatus) === 'CANCELLED' || task.abortController.signal.aborted) {
+                task.status = 'CANCELLED';
+                task.resolve({
+                    ok: false,
+                    status: 'EXECUTION_FAILED',
+                    action: task.toolName,
+                    toolName: task.toolName,
+                    executionId: task.taskId,
+                    riskLevel: 'LOW_RISK',
+                    durationMs: Date.now() - (task.startedAt || task.enqueuedAt),
+                    data: null,
+                    error: {
+                        code: 'CANCELLED',
+                        message: `Task cancelled during execution: ${task.abortController.signal.reason || 'Operation cancelled'}`,
+                    },
+                    evidence: null,
+                    metadata: { tenantId: task.tenantId, taskId: task.taskId, cancelled: true },
+                });
+            } else {
+                task.status = 'FAILED';
+                metrics.failedCount++;
 
-            task.resolve({
-                ok: false,
-                status: 'EXECUTION_FAILED',
-                action: task.toolName,
-                toolName: task.toolName,
-                executionId: task.taskId,
-                riskLevel: 'LOW_RISK',
-                durationMs: Date.now() - (task.startedAt || task.enqueuedAt),
-                data: null,
-                error: {
-                    code: 'SCHEDULER_EXECUTION_ERROR',
-                    message: `Scheduler execution error: ${errorMsg}`,
-                },
-                evidence: null,
-                metadata: { tenantId: task.tenantId, taskId: task.taskId },
-            });
+                const errorMsg = err instanceof Error ? err.message : 'Unexpected execution failure';
+                logger.error('frank_scheduler_task_execution_error', err as Error, {
+                    taskId: task.taskId,
+                    tenantId: task.tenantId,
+                    toolName: task.toolName,
+                });
+
+                task.resolve({
+                    ok: false,
+                    status: 'EXECUTION_FAILED',
+                    action: task.toolName,
+                    toolName: task.toolName,
+                    executionId: task.taskId,
+                    riskLevel: 'LOW_RISK',
+                    durationMs: Date.now() - (task.startedAt || task.enqueuedAt),
+                    data: null,
+                    error: {
+                        code: 'SCHEDULER_EXECUTION_ERROR',
+                        message: `Scheduler execution error: ${errorMsg}`,
+                    },
+                    evidence: null,
+                    metadata: { tenantId: task.tenantId, taskId: task.taskId },
+                });
+            }
         } finally {
             // Cleanup active counters
             this.activeGlobalCount--;

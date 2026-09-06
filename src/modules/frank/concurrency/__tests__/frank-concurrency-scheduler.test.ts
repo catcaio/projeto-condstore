@@ -175,7 +175,6 @@ describe('FrankConcurrencyScheduler (FRANK-006)', () => {
             priority: 'MEDIUM',
         });
 
-        // Ensure blocker starts running before enqueuing queued items
         await new Promise(r => setTimeout(r, 5));
 
         // While blocker is running, enqueue LOW, HIGH, MEDIUM
@@ -414,7 +413,7 @@ describe('FrankConcurrencyScheduler (FRANK-006)', () => {
         const result = await handle.promise;
         expect(result.ok).toBe(false);
         expect(result.status).toBe('EXECUTION_FAILED');
-        expect(result.error?.message).toMatch(/Aborted during execution/);
+        expect(result.error?.message).toMatch(/cancelled during execution|Aborted during execution/);
     });
 
     it('9. External AbortSignal triggers task cancellation automatically', async () => {
@@ -649,5 +648,161 @@ describe('FrankConcurrencyScheduler (FRANK-006)', () => {
         expect(result.data).toEqual({ quoteId: 'quote_999', price: 42.50 });
         expect(result.evidence).not.toBeNull();
         expect(result.evidence?.toolName).toBe('mock_freight_calculation');
+    });
+
+    // --- P0 / P1 RESSALVAS FUNCIONAIS TESTS ---
+
+    it('15. P0 #1 Fix: Pre-aborted AbortSignal is NOT enqueued and does NOT consume queue capacity', async () => {
+        const scheduler = new FrankConcurrencyScheduler({
+            maxGlobalConcurrency: 1,
+            maxGlobalQueueSize: 1,
+            maxTenantQueueSize: 1,
+        });
+
+        const preAbortedController = new AbortController();
+        preAbortedController.abort('Pre-aborted user signal');
+
+        const preAbortedHandle = scheduler.scheduleToolExecution({
+            tenantId: 'tenant_pre_abort',
+            toolName: 'scheduler_fast_tool',
+            input: { tenantId: 'tenant_pre_abort' },
+            abortSignal: preAbortedController.signal,
+        });
+
+        expect(preAbortedHandle.status).toBe('CANCELLED');
+        expect(preAbortedHandle.abortSignal.aborted).toBe(true);
+        expect(preAbortedHandle.abortSignal.reason).toBe('Pre-aborted user signal');
+
+        const preResult = await preAbortedHandle.promise;
+        expect(preResult.ok).toBe(false);
+        expect(preResult.error?.code).toBe('CANCELLED');
+
+        // Verify queue is empty and snapshot has zero queued tasks
+        const snapshot = scheduler.getSnapshot();
+        expect(snapshot.queuedGlobalCount).toBe(0);
+
+        // Prove capacity was NOT consumed by scheduling a valid task
+        const validHandle = scheduler.scheduleToolExecution({
+            tenantId: 'tenant_pre_abort',
+            toolName: 'scheduler_fast_tool',
+            input: { tenantId: 'tenant_pre_abort' },
+        });
+
+        const validResult = await validHandle.promise;
+        expect(validResult.ok).toBe(true);
+    });
+
+    it('16. P0 #2 Fix: Cancelling QUEUED task aborts handle.abortSignal consistently', async () => {
+        const scheduler = new FrankConcurrencyScheduler({
+            maxGlobalConcurrency: 1,
+        });
+
+        // Blocker
+        scheduler.scheduleToolExecution({
+            tenantId: 'tenant_queued_abort',
+            toolName: 'scheduler_delay_tool',
+            input: { tenantId: 'tenant_queued_abort' },
+        });
+
+        // Queued task
+        const queuedHandle = scheduler.scheduleToolExecution({
+            tenantId: 'tenant_queued_abort',
+            toolName: 'scheduler_fast_tool',
+            input: { tenantId: 'tenant_queued_abort' },
+        });
+
+        expect(queuedHandle.status).toBe('QUEUED');
+        expect(queuedHandle.abortSignal.aborted).toBe(false);
+
+        // Cancel while queued
+        const cancelSuccess = queuedHandle.cancel('Manual cancellation from UI button');
+        expect(cancelSuccess).toBe(true);
+
+        // Prove handle.abortSignal IS aborted with correct reason
+        expect(queuedHandle.abortSignal.aborted).toBe(true);
+        expect(queuedHandle.abortSignal.reason).toBe('Manual cancellation from UI button');
+
+        const result = await queuedHandle.promise;
+        expect(result.ok).toBe(false);
+        expect(result.error?.code).toBe('CANCELLED');
+    });
+
+    it('17. P0 #3 Fix: Cancellation during execution prevails over tool success if tool ignores AbortSignal', async () => {
+        const scheduler = new FrankConcurrencyScheduler({
+            maxGlobalConcurrency: 2,
+        });
+
+        frankToolRegistry.registerTool({
+            name: 'stubborn_unabortable_tool',
+            description: 'Tool that ignores AbortSignal and returns success',
+            inputSchema: z.object({ tenantId: z.string() }),
+            outputSchema: z.object({ ok: z.boolean(), data: z.string() }),
+            isReadOnly: true,
+            riskClass: 'SAFE',
+            capabilities: ['READ'],
+            sideEffects: ['NONE'],
+            execute: async () => {
+                // Intentionally ignore context.abortSignal and sleep then return success
+                await new Promise(r => setTimeout(r, 40));
+                return { ok: true, data: 'unwanted_result' };
+            },
+        });
+
+        const handle = scheduler.scheduleToolExecution({
+            tenantId: 'tenant_stubborn',
+            toolName: 'stubborn_unabortable_tool',
+            input: { tenantId: 'tenant_stubborn' },
+        });
+
+        // Wait for task to be RUNNING
+        await new Promise(r => setTimeout(r, 10));
+        expect(handle.status).toBe('RUNNING');
+
+        // Cancel while running
+        const cancelResult = handle.cancel('Abort stubborn task');
+        expect(cancelResult).toBe(true);
+
+        const result = await handle.promise;
+
+        // MUST return failure with CANCELLED code, NOT tool success
+        expect(result.ok).toBe(false);
+        expect(result.status).toBe('EXECUTION_FAILED');
+        expect(result.error?.code).toBe('CANCELLED');
+        expect(result.data).toBeNull();
+    });
+
+    it('18. P1 #4 Fix: taskQueueTimeoutMs automatically expires stale queued tasks', async () => {
+        const scheduler = new FrankConcurrencyScheduler({
+            maxGlobalConcurrency: 1,
+            taskQueueTimeoutMs: 15, // Expire after 15ms in queue
+        });
+
+        // Blocker task (takes 50ms)
+        scheduler.scheduleToolExecution({
+            tenantId: 'tenant_timeout',
+            toolName: 'scheduler_delay_tool',
+            input: { tenantId: 'tenant_timeout' },
+        });
+
+        await new Promise(r => setTimeout(r, 5));
+
+        // Enqueue task that will exceed queue timeout while blocker runs
+        const timeoutHandle = scheduler.scheduleToolExecution({
+            tenantId: 'tenant_timeout',
+            toolName: 'scheduler_fast_tool',
+            input: { tenantId: 'tenant_timeout' },
+        });
+
+        expect(timeoutHandle.status).toBe('QUEUED');
+
+        const result = await timeoutHandle.promise;
+
+        // Task should be expired automatically upon dispatch attempt
+        expect(result.ok).toBe(false);
+        expect(result.error?.code).toBe('QUEUE_TIMEOUT');
+        expect(result.error?.message).toMatch(/Task expired in queue/);
+
+        const snapshot = scheduler.getSnapshot();
+        expect(snapshot.tenantMetrics['tenant_timeout'].cancelledCount).toBe(1);
     });
 });
