@@ -26,6 +26,7 @@
     "test:freight": "npm run test:win-stable -- src/modules/freight src/modules/logistics src/modules/logistica src/modules/pedidos src/modules/shipping src/app/api/public/cotacao src/app/api/orders \"src/app/api/cockpit/conversations/[id]/quotes\" src/infra/__tests__/freight-table.test.ts",
     "test:mvp": "npm run test:win-stable -- src/mvp/",
     "guardrail:mvp-freeze": "node scripts/verify-mvp-freeze.mjs",
+    "guardrail:mvp-baseline": "node scripts/verify-mvp-freeze.mjs",
     "scope:pr-tests": "node scripts/pr-test-scope.mjs",
     "release:check": "node scripts/release-check.mjs",
     "staging:smoke": "node --import tsx scripts/smoke/staging-smoke.ts",

@@ -10,7 +10,18 @@ export const guardrailAllowlist = new Set([
   'src/modules/cockpit/rooms/subrooms.registry.ts',
 ]);
 
-export const hardFrozenSurfaces = [
+/**
+ * MVP Baseline surfaces (conceito vigente desde a conversão Freeze → Baseline).
+ *
+ * Mesmos prefixos do antigo hard freeze, porém com semântica diferente:
+ * toques aqui são MUDANÇAS INTENCIONAIS PERMITIDAS — o guardrail apenas as
+ * REPORTA em voz alta (advisory) para detectar regressão acidental e quebra
+ * de contrato. Desenvolvimento normal NÃO é bloqueado.
+ *
+ * O bloqueio obrigatório vive em `securityInvariantGates` abaixo e NUNCA foi
+ * afrouxado pela conversão.
+ */
+export const baselineSurfaces = [
   {
     label: 'Frank runtime, training e consoles',
     prefixes: [
@@ -64,6 +75,25 @@ export const hardFrozenSurfaces = [
       'src/app/(app)/cockpit/freight-simulator/',
     ],
   },
+];
+
+/**
+ * Alias de compatibilidade: aponta para `baselineSurfaces`. Mantido porque
+ * `verify-mvp-freeze.mjs` e docs legadas importam este nome. A semântica de
+ * BLOQUEIO foi removida no script do guardrail — este export hoje serve só
+ * para detecção/classificação, nunca para vetar.
+ */
+export const hardFrozenSurfaces = baselineSurfaces;
+
+/**
+ * Security invariants: gates OBRIGATÓRIOS e BLOQUEANTES executados pelo
+ * guardrail do MVP Baseline. A conversão Freeze → Baseline NÃO afrouxou
+ * nenhum deles. Falha em qualquer um = exit 1 (fail closed, inclusive se o
+ * próprio gate quebrar ao executar).
+ */
+export const securityInvariantGates = [
+  { label: 'tenant isolation (AST)', command: 'verify:tenant-isolation' },
+  { label: 'route security guards', command: 'routes:verify-security' },
 ];
 
 export const freightConversationQuotePrefixes = [
