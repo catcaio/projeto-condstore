@@ -48,6 +48,8 @@ export type CockpitEvent = {
     href?: string;
 };
 
+export type WorkItemCategory = 'conversation' | 'freight' | 'order' | 'exception';
+
 export type CockpitActionQueueItem = {
     id: string;
     queue: string;
@@ -57,6 +59,15 @@ export type CockpitActionQueueItem = {
     owner: string;
     priority: 'critical' | 'warning' | 'info';
     href: string;
+    category: WorkItemCategory;
+    threadContext?: {
+        customerId?: string;
+        phoneKey?: string;
+        orderId?: string;
+        freightQuoteId?: string;
+        shipmentId?: string;
+        stage: 'atendimento' | 'cotacao' | 'pedido' | 'logistica';
+    };
 };
 
 export type SystemStatusItem = {
