@@ -130,27 +130,6 @@ export class MessageRepository {
             });
         }
     }
-    /**
-     * Check if a message with this SID has already been persisted.
-     * Used for idempotency — prevents re-processing Twilio retries.
-     */
-    async existsByMessageSid(messageSid: string): Promise<boolean> {
-        if (!messageSid) return false;
-        try {
-            const db = await getDb();
-            const [row] = await db
-                .select({ messageSid: messages.messageSid })
-                .from(messages)
-                .where(eq(messages.messageSid, messageSid))
-                ;
-            return !!row;
-        } catch (error) {
-            // On error, return false so the request is NOT blocked (fail-open for idempotency)
-            logger.error('existsByMessageSid query failed', error as Error, { messageSid });
-            return false;
-        }
-    }
-
     async getMetricsToday(tenantId: string) {
         if (!tenantId) {
             throw new InfrastructureError(

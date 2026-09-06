@@ -45,15 +45,15 @@ export class DomineEventBus {
     }
 
     async processAsync(tenantId: string, eventId: string) {
-        const event = await domineEventsRepository.getById(eventId);
-        if (!event || event.status !== 'queued') return;
+        const event = await domineEventsRepository.getById(tenantId, eventId);
+        if (!event || event.tenantId !== tenantId || event.status !== 'queued') return;
 
         try {
             await processDomineEvent(event);
-            await domineEventsRepository.markProcessed(eventId);
+            await domineEventsRepository.markProcessed(eventId, tenantId);
         } catch (error: any) {
             structuredLogger.error('domine_event_failed', { eventId, type: event.type, err: error.message });
-            await domineEventsRepository.sendToDLQ(eventId, error.message || 'PROC_ERR');
+            await domineEventsRepository.sendToDLQ(eventId, tenantId, error.message || 'PROC_ERR');
 
             // Check if we exceed N
             const failCount = await domineEventsRepository.getDLQCount(tenantId);

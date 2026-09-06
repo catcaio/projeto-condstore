@@ -39,17 +39,24 @@ export class DomineEventsRepository {
         return { id, inserted: true };
     }
 
-    async getById(id: string) {
+    async getById(tenantId: string, id: string) {
         const db = await getDb();
-        const rows = await db.select().from(domineEvents).where(eq(domineEvents.id, id));
+        const rows = await db.select().from(domineEvents)
+            .where(and(
+                eq(domineEvents.id, id),
+                eq(domineEvents.tenantId, tenantId),
+            ));
         return rows[0];
     }
 
-    async markProcessed(id: string) {
+    async markProcessed(id: string, tenantId: string) {
         const db = await getDb();
         await db.update(domineEvents)
             .set({ status: 'processed', processedAt: new Date() })
-            .where(eq(domineEvents.id, id));
+            .where(and(
+                eq(domineEvents.id, id),
+                eq(domineEvents.tenantId, tenantId),
+            ));
     }
 
     /**
@@ -82,11 +89,14 @@ export class DomineEventsRepository {
         const candidate = candidates[0];
         if (!candidate) return null;
 
-        // Atomic lock: only update if still in expected status
+        // Atomic lock: only update if still in expected status (tenant-pinned —
+        // candidate was selected tenant-scoped, but the lock itself must also
+        // carry tenantId so the UPDATE can never latch a foreign row).
         await db.update(domineEvents)
             .set({ status: 'processing' })
             .where(and(
                 eq(domineEvents.id, candidate.id),
+                eq(domineEvents.tenantId, tenantId),
                 or(
                     eq(domineEvents.status, 'queued'),
                     eq(domineEvents.status, 'failed'),
@@ -96,25 +106,32 @@ export class DomineEventsRepository {
         return candidate;
     }
 
-    async markDone(id: string) {
+    async markDone(id: string, tenantId: string) {
         const db = await getDb();
         await db.update(domineEvents)
             .set({ status: 'completed', processedAt: new Date() })
-            .where(eq(domineEvents.id, id));
+            .where(and(
+                eq(domineEvents.id, id),
+                eq(domineEvents.tenantId, tenantId),
+            ));
     }
 
-    async markFailed(id: string, errorCode: string, errorMessage?: string) {
+    async markFailed(id: string, tenantId: string, errorCode: string, errorMessage?: string) {
         const db = await getDb();
 
-        // Fetch current retry count
-        const rows = await db.select().from(domineEvents).where(eq(domineEvents.id, id));
+        // Fetch current retry count (tenant-scoped)
+        const rows = await db.select().from(domineEvents)
+            .where(and(
+                eq(domineEvents.id, id),
+                eq(domineEvents.tenantId, tenantId),
+            ));
         const event = rows[0];
-        if (!event) return;
+        if (!event || event.tenantId !== tenantId) return;
 
         const newRetryCount = (event.retryCount ?? 0) + 1;
 
         if (shouldMoveToDLQ(newRetryCount)) {
-            await this.sendToDLQ(id, errorMessage ?? errorCode);
+            await this.sendToDLQ(id, tenantId, errorMessage ?? errorCode);
             return;
         }
 
@@ -127,15 +144,22 @@ export class DomineEventsRepository {
                 errorCode,
                 errorMessage: errorMessage ?? null,
             })
-            .where(eq(domineEvents.id, id));
+            .where(and(
+                eq(domineEvents.id, id),
+                eq(domineEvents.tenantId, tenantId),
+            ));
     }
 
-    async sendToDLQ(id: string, reason: string) {
+    async sendToDLQ(id: string, tenantId: string, reason: string) {
         const db = await getDb();
 
-        const rows = await db.select().from(domineEvents).where(eq(domineEvents.id, id));
+        const rows = await db.select().from(domineEvents)
+            .where(and(
+                eq(domineEvents.id, id),
+                eq(domineEvents.tenantId, tenantId),
+            ));
         const event = rows[0];
-        if (!event) return;
+        if (!event || event.tenantId !== tenantId) return;
 
         // Insert into domine_events_dlq
         await db.insert(domineEventsDlq).values({
@@ -155,7 +179,10 @@ export class DomineEventsRepository {
                 errorCode: 'MAX_RETRIES_EXCEEDED',
                 errorMessage: reason,
             })
-            .where(eq(domineEvents.id, id));
+            .where(and(
+                eq(domineEvents.id, id),
+                eq(domineEvents.tenantId, tenantId),
+            ));
     }
 
     /**
@@ -210,13 +237,19 @@ export class DomineEventsRepository {
         const dlqEntry = rows[0];
         if (!dlqEntry) return false;
 
-        // Reset the main event back to queued
+        // Reset the main event back to queued (scope the update by tenant as well)
         await db.update(domineEvents)
             .set({ status: 'queued', retryCount: 0, nextRetryAt: null, errorCode: null, errorMessage: null })
-            .where(eq(domineEvents.id, dlqEntry.eventId));
+            .where(and(
+                eq(domineEvents.id, dlqEntry.eventId),
+                eq(domineEvents.tenantId, tenantId),
+            ));
 
-        // Remove from DLQ
-        await db.delete(domineEventsDlq).where(eq(domineEventsDlq.id, dlqEntryId));
+        // Remove from DLQ (scope the delete by tenant as well)
+        await db.delete(domineEventsDlq).where(and(
+            eq(domineEventsDlq.id, dlqEntryId),
+            eq(domineEventsDlq.tenantId, tenantId),
+        ));
 
         return true;
     }

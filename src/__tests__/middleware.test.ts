@@ -97,4 +97,36 @@ describe('Middleware', () => {
             code: 'MISSING_AUTH_SECRET',
         });
     });
+
+    it('fail-closed: aborts with 403 when spoofed tenant/role headers are present (unauthenticated)', async () => {
+        const req = new NextRequest('http://localhost/api/protected');
+        req.headers.set('x-tenant-id', 'tenant-b');
+        req.headers.set('x-auth-role', 'admin');
+
+        const res = await middleware(req);
+
+        expect(res.status).toBe(403);
+        const data = await res.json();
+        expect(data.code).toBe('header_spoof_detected');
+
+        const { logEdgeSecurityEvent } = await import('../lib/security/edge-logger');
+        expect(logEdgeSecurityEvent).toHaveBeenCalledWith(
+            expect.objectContaining({ reason: 'header_spoof_detected' }),
+        );
+    });
+
+    it('fail-closed: aborts with 403 on spoofed headers even with a valid session cookie', async () => {
+        const req = new NextRequest('http://localhost/api/protected');
+        req.cookies.set('condstore_session', 'mock-valid-token');
+        req.headers.set('x-auth-tenant-id', 'tenant-b');
+
+        const { jwtVerify } = await import('jose');
+        vi.mocked(jwtVerify).mockResolvedValue({
+            payload: { sub: 'user-123', tenantId: 'tenant-123', role: 'admin' }
+        } as any);
+
+        const res = await middleware(req);
+
+        expect(res.status).toBe(403);
+    });
 });

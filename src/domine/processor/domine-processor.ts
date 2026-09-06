@@ -37,7 +37,7 @@ export async function processOnce(tenantId: string): Promise<'completed' | 'fail
         });
 
         if (result.ok) {
-            await domineEventsRepository.markDone(event.id);
+            await domineEventsRepository.markDone(event.id, tenantId);
             structuredLogger.info('domine_processor_completed', {
                 eventId: event.id,
                 tenantId,
@@ -48,7 +48,7 @@ export async function processOnce(tenantId: string): Promise<'completed' | 'fail
         }
 
         // Handler returned failure
-        await domineEventsRepository.markFailed(event.id, 'HANDLER_FAILED', result.error);
+        await domineEventsRepository.markFailed(event.id, tenantId, 'HANDLER_FAILED', result.error);
         structuredLogger.warn('domine_processor_failed', {
             eventId: event.id,
             tenantId,
@@ -58,7 +58,7 @@ export async function processOnce(tenantId: string): Promise<'completed' | 'fail
         });
         return 'failed';
     } catch (err: any) {
-        await domineEventsRepository.markFailed(event.id, 'UNHANDLED_ERROR', err.message);
+        await domineEventsRepository.markFailed(event.id, tenantId, 'UNHANDLED_ERROR', err.message);
         structuredLogger.error('domine_processor_error', {
             eventId: event.id,
             tenantId,

@@ -123,6 +123,16 @@ export async function middleware(req: NextRequest) {
             reason: 'header_spoof_detected',
             ip: clientIp
         });
+
+        // Fail-closed: abort immediately instead of stripping the headers and
+        // continuing. This removes any future dependency on header-removal being
+        // sufficient to neutralize a spoofed tenant/role/user claim, and gives a
+        // clean, auditable signal. These headers are attacker-controlled and
+        // carrying XSS/auth-fragment payloads; never trust them.
+        return new NextResponse(JSON.stringify({ error: 'Forbidden', code: 'header_spoof_detected' }), {
+            status: 403,
+            headers: { 'content-type': 'application/json' },
+        });
     }
 
     requestHeaders.delete('x-tenant-id');
