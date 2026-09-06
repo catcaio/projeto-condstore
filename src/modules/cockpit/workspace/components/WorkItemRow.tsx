@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, AlertCircle, Clock } from 'lucide-react';
 import { Button } from '@/ui/components';
 import { StatusChip } from '@/ui/foundation';
 import type { CockpitActionQueueItem } from '../../data/shared';
@@ -14,18 +14,30 @@ export interface WorkItemRowProps {
 }
 
 export function WorkItemRow({ item, isSelected, onSelect }: WorkItemRowProps) {
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect(item.id);
+        }
+    };
+
+    const isCritical = item.priority === 'critical';
+
     return (
         <div
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(item.id)}
-            className={`p-4 transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+            onKeyDown={handleKeyDown}
+            className={`p-4 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[56px] ${
                 isSelected
-                    ? 'bg-[hsl(var(--ui-page))] border-l-4 border-l-[hsl(var(--ui-accent-blue-ink))]'
-                    : 'hover:bg-[hsl(var(--ui-page))/0.5]'
+                    ? 'bg-[hsl(var(--ui-page))] border-l-4 border-l-[hsl(var(--ui-accent-blue-ink))] shadow-xs'
+                    : 'hover:bg-[hsl(var(--ui-page))/0.6]'
             }`}
         >
-            <div className="space-y-1">
+            <div className="space-y-1.5 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-[hsl(var(--ui-text))]">
+                    <span className="text-xs font-bold text-[hsl(var(--ui-text))] truncate max-w-[220px] sm:max-w-none">
                         {item.entity}
                     </span>
                     <StatusChip
@@ -38,28 +50,35 @@ export function WorkItemRow({ item, isSelected, onSelect }: WorkItemRowProps) {
                                 : 'info'
                         }
                     />
-                    <span className="text-[11px] font-mono text-[hsl(var(--ui-text-subtle))] bg-[hsl(var(--ui-page))] px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] font-mono text-[hsl(var(--ui-text-subtle))] bg-[hsl(var(--ui-page))] px-2 py-0.5 rounded border border-[hsl(var(--ui-border))]">
                         {item.queue}
                     </span>
-                    {item.threadContext?.stage && (
-                        <span className="text-[10px] uppercase font-bold text-[hsl(var(--ui-accent-blue-ink))] bg-[hsl(var(--ui-accent-blue-ink))/0.1] px-1.5 py-0.5 rounded">
-                            Etapa: {item.threadContext.stage}
+                    {item.operationalThread.activeStage && (
+                        <span className="text-[10px] uppercase font-bold text-[hsl(var(--ui-accent-blue-ink))] bg-[hsl(var(--ui-accent-blue-ink))/0.1] px-2 py-0.5 rounded border border-[hsl(var(--ui-accent-blue-ink))/0.2]">
+                            Etapa: {item.operationalThread.activeStage}
                         </span>
                     )}
                 </div>
-                <p className="text-xs text-[hsl(var(--ui-text-subtle))]">
-                    Aguardando: <strong className="text-[hsl(var(--ui-text))] font-medium">{item.waitingFor}</strong> • Aging: {item.age}
-                </p>
+                <div className="flex items-center gap-2 text-xs text-[hsl(var(--ui-text-subtle))] flex-wrap">
+                    <span>
+                        Aguardando: <strong className="text-[hsl(var(--ui-text))] font-medium">{item.waitingFor}</strong>
+                    </span>
+                    <span className="text-[hsl(var(--ui-border))]">•</span>
+                    <span className="inline-flex items-center gap-1 font-mono text-[11px]">
+                        <Clock className="h-3 w-3 shrink-0" />
+                        {item.age}
+                    </span>
+                </div>
             </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-auto">
+            <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
                 <span className="text-xs text-[hsl(var(--ui-text-subtle))] hidden md:inline">
                     {item.owner}
                 </span>
                 <Link href={item.href} onClick={(e) => e.stopPropagation()}>
-                    <Button size="sm" variant={isSelected ? 'primary' : 'secondary'}>
-                        <span>Agir agora</span>
-                        <ArrowRight className="h-3 w-3 ml-1" />
+                    <Button size="sm" variant={isSelected ? 'primary' : 'secondary'} className="min-h-[38px]">
+                        <span>Agir</span>
+                        <ArrowRight className="h-3.5 w-3.5 ml-1" />
                     </Button>
                 </Link>
             </div>
