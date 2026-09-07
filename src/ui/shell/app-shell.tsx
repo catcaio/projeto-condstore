@@ -1,10 +1,9 @@
 import * as React from 'react';
-import { AppNav } from './app-nav';
+import { Sidebar } from './app-nav';
 import { type Role } from '@/ui/auth/entitlements-logic';
-import { ThemeToggle } from '@/ui/theme';
 import { InspectBadge } from './inspect-badge';
 import { FinOpsStatusBar } from './finops-status-bar';
-import { ModuleBreadcrumb, CondstoreLogo } from '@/ui/components';
+import { ModuleBreadcrumb } from '@/ui/components';
 import { FrankGlobalWidget } from '@/modules/frank/ui/global-assistant/frank-global-widget';
 import { CommandPalette } from '@/ui/foundation';
 
@@ -19,24 +18,8 @@ export function AppShell({
 }) {
     return (
         <div className="os-root h-dvh max-w-full overflow-hidden bg-[hsl(var(--ui-bg))] text-[hsl(var(--ui-text))]">
-            <div className="grid h-full min-h-0 max-w-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden md:grid-cols-[4.5rem_minmax(0,1fr)] md:grid-rows-1">
-                <aside className="z-30 min-w-0 shrink-0 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] md:h-dvh md:border-b-0 md:border-r">
-                    <div className="flex min-h-0 flex-col items-center px-3 py-3 md:h-full md:px-0 md:py-4">
-                        <div className="mb-3 flex items-center justify-center md:mb-6">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] shadow-sm">
-                                <CondstoreLogo size="sm" hideText />
-                            </div>
-                        </div>
-
-                        <div className="flex min-h-0 w-full flex-1 flex-col items-center overflow-y-auto px-0 md:px-2">
-                            <AppNav role={role} tenantId={tenantId} />
-                        </div>
-
-                        <div className="mt-auto hidden w-full flex-col items-center gap-4 border-t border-[hsl(var(--ui-border))] pb-2 pt-4 md:flex">
-                            <ThemeToggle />
-                        </div>
-                    </div>
-                </aside>
+            <div className="grid h-full min-h-0 max-w-full grid-rows-[auto_minmax(0,1fr)] overflow-hidden md:grid-cols-[auto_minmax(0,1fr)] md:grid-rows-1 transition-[grid-template-columns] duration-200">
+                <Sidebar role={role} tenantId={tenantId} />
 
                 <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[hsl(var(--ui-bg))]">
                     <header className="z-20 flex min-h-[4rem] shrink-0 items-center justify-between gap-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface)/0.92)] px-4 py-3 backdrop-blur md:px-6">

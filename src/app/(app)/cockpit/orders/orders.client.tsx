@@ -195,9 +195,25 @@ export default function OrdersClient() {
                                             <Clock className="w-3 h-3" />
                                             {format(new Date(item.createdAt), 'dd/MM HH:mm')}
                                         </span>
-                                        <a href={`/cockpit/orders/${item.id}`} className="text-[hsl(var(--ui-accent-blue))] hover:underline flex items-center gap-1 font-medium" onClick={(e) => e.stopPropagation()}>
-                                            Detalhes <MoveRight className="w-3 h-3" />
-                                        </a>
+                                        <div className="flex items-center gap-3">
+                                            <select
+                                                id={`order-status-${item.id}`}
+                                                aria-label={`Alterar status do pedido ${item.id}`}
+                                                value={item.status || 'DRAFT'}
+                                                onChange={(e) => updateStatus(item.id, e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="min-h-[44px] rounded-md border border-[hsl(var(--ui-border))] bg-white px-2 py-1 text-xs text-[hsl(var(--ui-text))] shadow-sm outline-none focus:border-[hsl(var(--ui-accent-blue))] focus:ring-1 focus:ring-[hsl(var(--ui-accent-blue))]"
+                                            >
+                                                {COLUMNS.map((c) => (
+                                                    <option key={c.id} value={c.id}>
+                                                        {c.title}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <a href={`/cockpit/orders/${item.id}`} className="text-[hsl(var(--ui-accent-blue))] hover:underline flex items-center gap-1 font-medium" onClick={(e) => e.stopPropagation()}>
+                                                Detalhes <MoveRight className="w-3 h-3" />
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
