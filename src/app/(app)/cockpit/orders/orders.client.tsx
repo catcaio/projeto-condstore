@@ -190,21 +190,33 @@ export default function OrdersClient() {
                                         <Truck className="w-3.5 h-3.5" />
                                         {item.carrier || 'N/D'} - {item.service || 'N/D'}
                                     </div>
-                                    <div className="flex items-center justify-between text-[10px] text-[hsl(var(--ui-text-muted))]">
+                                    <div className="mt-3 flex items-center justify-between gap-2 text-[10px] text-[hsl(var(--ui-text-muted))]">
                                         <span className="flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
                                             {format(new Date(item.createdAt), 'dd/MM HH:mm')}
                                         </span>
-                                        <a href={`/cockpit/orders/${item.id}`} className="text-[hsl(var(--ui-accent-blue))] hover:underline flex items-center gap-1 font-medium" onClick={(e) => e.stopPropagation()}>
-                                            Detalhes <MoveRight className="w-3 h-3" />
-                                        </a>
+                                        <div className="flex items-center gap-2">
+                                            <label className="sr-only" htmlFor={`order-status-${item.id}`}>Alterar status do pedido {item.id}</label>
+                                            <select
+                                                id={`order-status-${item.id}`}
+                                                value={item.status}
+                                                onChange={(e) => updateStatus(item.id, e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="min-h-9 rounded-md border border-[hsl(var(--ui-border))] bg-white px-2 text-[11px] font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ui-accent-blue)/0.35)]"
+                                            >
+                                                {COLUMNS.map((status) => <option key={status.id} value={status.id}>{status.title}</option>)}
+                                            </select>
+                                            <a href={`/cockpit/orders/${item.id}`} className="inline-flex min-h-9 items-center gap-1 rounded-md px-1 font-medium text-[hsl(var(--ui-accent-blue))] hover:underline" onClick={(e) => e.stopPropagation()}>
+                                                Detalhes <MoveRight className="w-3 h-3" />
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                             {columnItems.length === 0 && (
                                 <div className="h-full flex flex-col items-center justify-center opacity-30 text-xs text-center p-4">
                                     <HelpCircle className="w-6 h-6 mb-2" />
-                                    Arraste pedidos para cá
+                                    Use o seletor do pedido ou arraste um cartão para cá
                                 </div>
                             )}
                         </div>

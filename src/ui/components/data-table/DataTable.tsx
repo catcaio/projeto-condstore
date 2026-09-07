@@ -148,11 +148,11 @@ export function DataTable<TData, TValue>({
             )}
             <div
                 ref={parentRef}
-                className="relative overflow-auto flex-1 w-full"
+                className="relative flex-1 w-full overflow-x-auto overflow-y-visible overscroll-x-contain"
                 style={{ maxHeight: isVirtual ? '600px' : 'auto' }}
             >
                 <div className="min-w-full">
-                    <table className="w-full text-sm text-left">
+                    <table className="min-w-max w-full text-sm text-left">
                         <thead className="sticky top-0 z-10 bg-[hsl(var(--ui-muted))] border-b border-[hsl(var(--ui-border))]">
                             {table.getHeaderGroups().map((headerGroup) => (
                                 <tr key={headerGroup.id}>

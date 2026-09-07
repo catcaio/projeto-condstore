@@ -283,6 +283,7 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
     const [contextFeedback, setContextFeedback] = useState<ActionFeedbackState | null>(null);
     const [contextRefreshToken, setContextRefreshToken] = useState(0);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     const abortControllers = useRef<{
         list: AbortController | null;
@@ -358,7 +359,9 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
 
     useEffect(() => {
         fetchConversations();
-        const t = setInterval(fetchConversations, 15000); // poll list every 15s
+        const t = setInterval(() => {
+            if (document.visibilityState === 'visible') void fetchConversations();
+        }, 15000); // poll list every 15s
         return () => {
             clearInterval(t);
             if (abortControllers.current.list) {
@@ -370,7 +373,9 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
     useEffect(() => {
         if (activeConvId) {
             fetchMessages(activeConvId);
-            const t = setInterval(() => fetchMessages(activeConvId, true), 8000); // poll messages every 8s
+            const t = setInterval(() => {
+                if (document.visibilityState === 'visible') void fetchMessages(activeConvId, true);
+            }, 8000); // poll messages every 8s
             return () => {
                 clearInterval(t);
                 if (abortControllers.current.msgs) {
@@ -384,7 +389,10 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
     }, [activeConvId]);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        const container = messagesContainerRef.current;
+        if (!container) return;
+        const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 160;
+        if (nearBottom) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
     useEffect(() => {
@@ -604,7 +612,7 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                                 </div>
                                 <div className="flex items-center gap-2 md:gap-3 shrink-0">
                                     <StatusBadge status={activeConvDetails.status} />
-                                    <button 
+                                    <button aria-label={isContextOpen ? 'Fechar painel de contexto' : 'Abrir painel de contexto'}
                                         className={`2xl:hidden p-2 rounded-md transition-colors border shadow-sm flex items-center gap-1.5 text-xs font-medium ${isContextOpen ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                                         onClick={() => setIsContextOpen(!isContextOpen)}
                                     >
@@ -658,7 +666,7 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                             </div>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-gradient-to-b from-gray-50/50 to-white">
+                        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-gradient-to-b from-gray-50/50 to-white">
                             {messagesError ? (
                                 <div className="rounded-lg border border-[hsl(var(--ui-danger)/0.2)] bg-[hsl(var(--ui-danger)/0.08)] p-4 text-sm text-[hsl(var(--ui-danger-ink))]">
                                     {messagesError}
@@ -743,7 +751,7 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                             <h3 className="font-bold text-sm text-[hsl(var(--ui-text))] flex items-center gap-2">
                                 <Sparkles className="w-4 h-4 text-purple-600" /> Contexto Operacional
                             </h3>
-                            <button 
+                            <button aria-label="Fechar painel de contexto"
                                 className="2xl:hidden bg-white hover:bg-gray-100 p-1.5 rounded-md border text-gray-500 transition-colors shadow-sm"
                                 onClick={() => setIsContextOpen(false)}
                             >

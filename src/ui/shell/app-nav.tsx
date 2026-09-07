@@ -3,47 +3,63 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Menu, X, LogOut, Loader2 } from 'lucide-react';
+import { Menu, X, LogOut, Loader2, ChevronRight } from 'lucide-react';
 import { getPrimaryNavigationGroups, type ModuleConfig } from '@/config/modules';
 import { isModuleAuthorized } from '@/config/rbac';
 
-function NavLink({ item, pathname }: { item: ModuleConfig; pathname: string }) {
+type AppNavProps = {
+    role: string;
+    tenantId: string | null;
+    desktopExpanded?: boolean;
+    mobileOnly?: boolean;
+    mobileOpen?: boolean;
+    onMobileOpenChange?: (open: boolean) => void;
+    onNavigate?: () => void;
+};
+
+function NavLink({ item, pathname, expanded, desktopExpandable, onNavigate }: { item: ModuleConfig; pathname: string; expanded: boolean; desktopExpandable?: boolean; onNavigate?: () => void }) {
     const Icon = item.icon;
     const isActive = pathname === item.route || pathname.startsWith(item.route + '/');
 
     return (
         <Link
             href={item.route}
-            title={item.label}
-            className={`
-                group relative flex items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors duration-150
-                md:justify-center md:px-0 md:h-11 md:w-11 md:rounded-xl md:mb-1
-                ${isActive
-                    ? 'bg-[hsl(var(--ui-accent-blue)/0.08)] text-[hsl(var(--ui-accent-blue))] font-medium md:bg-[hsl(var(--ui-accent-blue)/0.12)]'
-                    : 'text-[hsl(var(--ui-text-muted))] hover:bg-[hsl(var(--ui-bg)/0.8)] hover:text-[hsl(var(--ui-text))]'
-                }
-            `}
+            title={!expanded ? item.label : undefined}
+            onClick={onNavigate}
+            aria-current={isActive ? 'page' : undefined}
+            className={`group relative flex min-h-11 items-center gap-3 rounded-xl text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] ${expanded ? 'w-full px-3' : desktopExpandable ? 'w-11 justify-center md:group-hover/sidebar:w-full md:group-hover/sidebar:justify-start md:group-hover/sidebar:px-3' : 'w-11 justify-center'} ${isActive
+                ? 'bg-[hsl(var(--ui-accent-blue)/0.12)] text-[hsl(var(--ui-accent-blue))] font-medium'
+                : 'text-[hsl(var(--ui-text-muted))] hover:bg-[hsl(var(--ui-bg)/0.8)] hover:text-[hsl(var(--ui-text))]'
+            }`}
         >
-            <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md md:bg-transparent md:shadow-none md:ring-0 ${isActive ? 'bg-white text-[hsl(var(--ui-accent-blue))] shadow-sm ring-1 ring-black/5' : 'bg-transparent group-hover:bg-white group-hover:shadow-sm group-hover:ring-1 group-hover:ring-black/5 md:group-hover:bg-transparent md:group-hover:shadow-none'}`}>
-                <Icon className="h-5 w-5" />
+            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md">
+                <Icon className="h-5 w-5" aria-hidden="true" />
             </span>
-            <span className="min-w-0 flex-1 truncate text-sm md:hidden">
-                {item.label}
-            </span>
-            
-            {/* Tooltip for desktop */}
-            <div className="hidden md:group-hover:block absolute left-full ml-3 rounded bg-gray-900 px-2 py-1 text-xs font-semibold text-white whitespace-nowrap z-50">
-                {item.label}
-                <div className="absolute top-1/2 -left-1 -mt-1 h-2 w-2 rotate-45 bg-gray-900" />
-            </div>
+            {expanded || desktopExpandable ? <span className={`${expanded ? '' : 'hidden md:group-hover/sidebar:inline'} min-w-0 flex-1 truncate text-sm`}>{item.label}</span> : null}
+            {expanded || desktopExpandable ? <ChevronRight className={`${expanded ? '' : 'hidden md:group-hover/sidebar:block'} h-4 w-4 shrink-0 opacity-70`} aria-hidden="true" /> : null}
+            {!expanded && !desktopExpandable ? (
+                <span className="pointer-events-none absolute left-full z-50 ml-3 hidden whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-semibold text-white shadow-lg group-hover:block group-focus-visible:block">
+                    {item.label}
+                </span>
+            ) : null}
         </Link>
     );
 }
 
-export function AppNav({ role, tenantId }: { role: string; tenantId: string | null }) {
+export function AppNav({
+    role,
+    tenantId,
+    desktopExpanded = false,
+    mobileOnly = false,
+    mobileOpen = false,
+    onMobileOpenChange,
+    onNavigate,
+}: AppNavProps) {
     const pathname = usePathname();
-    const [mobileOpen, setMobileOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [internalMobileOpen, setInternalMobileOpen] = useState(false);
+    const resolvedMobileOpen = onMobileOpenChange ? mobileOpen : internalMobileOpen;
+    const setMobileOpen = (open: boolean) => onMobileOpenChange ? onMobileOpenChange(open) : setInternalMobileOpen(open);
     const navGroups = getPrimaryNavigationGroups()
         .map((group) => ({
             ...group,
@@ -62,70 +78,64 @@ export function AppNav({ role, tenantId }: { role: string; tenantId: string | nu
         }
     };
 
-    const navContent = (
-        <nav className="flex h-full w-full flex-col gap-8 md:items-center">
+    const handleNavigate = () => onNavigate ? onNavigate() : setMobileOpen(false);
+
+    const renderLinks = (expanded: boolean, desktopExpandable = false) => (
+        <nav aria-label="Navegação principal" className={`flex flex-col ${expanded ? 'w-full gap-5' : desktopExpandable ? 'items-center gap-5 md:group-hover/sidebar:items-stretch' : 'items-center gap-5'}`}>
             {navGroups.map((group) => (
-                <div key={group.key} className="flex flex-col items-center w-full">
-                    <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))] md:hidden w-full">
-                        {group.title}
-                    </p>
-                    <div className="flex mb-4 md:mb-0 flex-col gap-1.5 w-full items-center">
+                <div key={group.key} className={`flex flex-col ${expanded || desktopExpandable ? 'w-full' : 'items-center'}`}>
+                    {expanded || desktopExpandable ? <p className={`${expanded ? '' : 'hidden md:group-hover/sidebar:block'} mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))]`}>{group.title}</p> : null}
+                    <div className={`flex flex-col gap-1.5 ${expanded || desktopExpandable ? 'w-full' : 'items-center'}`}>
                         {group.items.map((item) => (
-                            <NavLink key={item.id} item={item} pathname={pathname} />
+                            <NavLink key={item.id} item={item} pathname={pathname} expanded={expanded} desktopExpandable={desktopExpandable} onNavigate={handleNavigate} />
                         ))}
                     </div>
                 </div>
             ))}
 
-            <div className="mt-auto flex w-full flex-col items-center gap-3 border-t border-[hsl(var(--ui-border))] pt-6 md:border-none">
-                <div className="px-3 md:hidden w-full">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--ui-text-subtle))]">
-                        Sessão
-                    </p>
-                    <div className="mt-2 flex flex-col gap-1 text-[11px] text-[hsl(var(--ui-text-muted))]">
-                        <span>Perfil: <strong className="font-semibold text-slate-700">{role}</strong></span>
-                        {tenantId && <span>Tenant: <strong className="font-semibold text-slate-700">{tenantId}</strong></span>}
-                    </div>
+            {expanded || desktopExpandable ? (
+                <div className={`${expanded ? '' : 'hidden md:group-hover/sidebar:block'} mt-auto border-t border-[hsl(var(--ui-border))] pt-4 text-xs text-[hsl(var(--ui-text-muted))]`}>
+                    <p>Perfil: <strong className="font-semibold text-[hsl(var(--ui-text))]">{role}</strong></p>
+                    {tenantId ? <p className="mt-1 truncate">Tenant: <strong className="font-semibold text-[hsl(var(--ui-text))]">{tenantId}</strong></p> : null}
                 </div>
-                <button 
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    title="Sair do Sistema"
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 md:px-0 md:justify-center md:h-11 md:w-11 text-sm text-[hsl(var(--ui-text-muted))] hover:bg-red-50 hover:text-red-600 focus:outline-none transition-colors text-left group relative"
-                >
-                    {isLoggingOut ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogOut className="h-5 w-5" />}
-                    <span className="md:hidden">Sair</span>
-                    
-                    {/* Tooltip for desktop */}
-                    <div className="hidden md:group-hover:block absolute left-full ml-3 rounded bg-gray-900 px-2 py-1 text-xs font-semibold text-white whitespace-nowrap z-50">
-                        Sair
-                        <div className="absolute top-1/2 -left-1 -mt-1 h-2 w-2 rotate-45 bg-gray-900" />
-                    </div>
-                </button>
-            </div>
+            ) : null}
+
+            <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                title={!expanded ? 'Sair do sistema' : undefined}
+                className={`group relative flex min-h-11 items-center gap-3 rounded-xl text-sm text-[hsl(var(--ui-text-muted))] transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${expanded ? 'w-full px-3 text-left' : desktopExpandable ? 'w-11 justify-center md:group-hover/sidebar:w-full md:group-hover/sidebar:justify-start md:group-hover/sidebar:px-3' : 'w-11 justify-center'}`}
+            >
+                {isLoggingOut ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogOut className="h-5 w-5" />}
+                {expanded || desktopExpandable ? <span className={expanded ? '' : 'hidden md:group-hover/sidebar:inline'}>Sair</span> : <span className="pointer-events-none absolute left-full z-50 ml-3 hidden whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-semibold text-white shadow-lg group-hover:block group-focus-visible:block">Sair</span>}
+            </button>
         </nav>
     );
 
-    return (
-        <>
-            <div className="hidden h-full w-full md:block">
-                {navContent}
-            </div>
-
-            <div className="md:hidden">
+    if (mobileOnly) {
+        return (
+            <div className="relative">
                 <button
-                    onClick={() => setMobileOpen(!mobileOpen)}
-                    className="flex items-center gap-2 rounded-xl border border-[hsl(var(--ui-border))] px-3 py-2 text-sm font-medium text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors"
+                    type="button"
+                    aria-expanded={resolvedMobileOpen}
+                    aria-controls="mobile-navigation-drawer"
+                    aria-label={mobileOpen ? 'Fechar navegação' : 'Abrir navegação'}
+                    onClick={() => setMobileOpen(!resolvedMobileOpen)}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] text-[hsl(var(--ui-text-muted))] shadow-sm transition-colors hover:text-[hsl(var(--ui-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))]"
                 >
-                    {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                    Navegacao
+                    {resolvedMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
-                {mobileOpen ? (
-                    <div className="mt-3 rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] p-3">
-                        {navContent}
-                    </div>
+                {resolvedMobileOpen ? (
+                    <>
+                        <button type="button" aria-label="Fechar navegação" onClick={() => setMobileOpen(false)} className="fixed inset-0 z-40 bg-slate-950/20" />
+                        <div id="mobile-navigation-drawer" className="absolute right-0 top-12 z-50 w-[min(19rem,calc(100vw-2rem))] rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] p-3 shadow-xl">
+                            {renderLinks(true)}
+                        </div>
+                    </>
                 ) : null}
             </div>
-        </>
-    );
+        );
+    }
+
+    return <div className="hidden min-h-0 md:block">{renderLinks(false, true)}</div>;
 }

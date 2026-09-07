@@ -18,8 +18,8 @@ export default function CommandBar() {
                                 Online
                             </Badge>
                         </div>
-                        <p className="mt-0.5 text-xs text-[hsl(var(--cockpit-text-muted))]">
-                            Foundation UI (FRONT-01) aplicada ao shell
+                            <p className="mt-0.5 hidden text-xs text-[hsl(var(--cockpit-text-muted))] sm:block">
+                            Visão operacional consolidada
                         </p>
                     </div>
 
@@ -27,7 +27,8 @@ export default function CommandBar() {
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[hsl(var(--ui-text-subtle))]" />
                         <input
                             type="text"
-                            placeholder="Buscar rota, métrica, evento..."
+                            aria-label="Buscar no cockpit"
+                            placeholder="Buscar no cockpit"
                             className="h-10 w-full rounded-xl border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-bg))]/70 pl-9 pr-20 text-sm text-[hsl(var(--cockpit-text))] placeholder:text-[hsl(var(--ui-text-subtle))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--cockpit-accent))]"
                         />
                         <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-[hsl(var(--cockpit-border))] bg-[hsl(var(--cockpit-surface))] px-1.5 py-0.5 text-[10px] text-[hsl(var(--cockpit-text-muted))] sm:inline-block">
@@ -40,7 +41,7 @@ export default function CommandBar() {
                             <ShieldCheck className="h-3 w-3" />
                             RBAC
                         </Badge>
-                        <ThemeToggle />
+                        <div className="hidden sm:block"><ThemeToggle /></div>
                         <Button variant="secondary" size="sm" className="hidden sm:inline-flex">
                             Logs
                         </Button>

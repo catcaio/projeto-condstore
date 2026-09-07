@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/ui/components';
 export function CockpitOverviewBlock({ metrics, funnel, loading }: { metrics: any, funnel: any, loading: boolean }) {
     if (loading && (!metrics || !funnel)) {
         return (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map(k => <div key={k} className="h-28 rounded-xl bg-slate-200 animate-pulse" />)}
             </div>
         );
@@ -22,7 +22,7 @@ export function CockpitOverviewBlock({ metrics, funnel, loading }: { metrics: an
     const conversao = metrics?.conversaoCotacaoPedido ?? null;
     
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <MetricBox title="Mensagens (Hoje)" value={mensagensHoje} />
             <MetricBox title="Cotações (Hoje)" value={cotacoesHoje} />
             <MetricBox title="Pedidos (Hoje)" value={pedidosHoje} />
@@ -44,11 +44,11 @@ function MetricBox({ title, value, alert = false, suffix = '' }: { title: string
 
     return (
         <Card variant="elevated" className={`overflow-hidden border-l-4 ${alert ? 'border-red-500' : 'border-indigo-500'}`}>
-            <CardContent className="p-5 flex flex-col justify-center">
+            <CardContent className="p-4 sm:p-5 flex min-h-[6.5rem] flex-col justify-center">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                     {title}
                 </span>
-                <span className={`text-2xl font-extrabold tracking-tight ${alert ? 'text-red-600' : 'text-slate-800'} ${!hasData ? 'text-slate-400 italic text-lg' : ''}`}>
+                <span className={`break-words text-xl sm:text-2xl font-extrabold tracking-tight ${alert ? 'text-red-600' : 'text-slate-800'} ${!hasData ? 'text-slate-400 italic text-lg' : ''}`}>
                     {displayValue}
                 </span>
             </CardContent>

@@ -251,8 +251,8 @@ export function CarrierTablesClient() {
                                 </div>
                             </button>
                             {expanded && (
-                                <div className="border-t border-[hsl(var(--ui-border))] overflow-x-auto">
-                                    <table className="w-full text-[11px]">
+                                <div className="border-t border-[hsl(var(--ui-border))] overflow-x-auto overscroll-x-contain" aria-label={`Faixas de preço de ${p.carrierName}`}>
+                                    <table className="min-w-[1100px] w-full text-[11px]">
                                         <thead>
                                             <tr className="border-b border-[hsl(var(--ui-border))]">
                                                 {['Zona', 'Faixa kg', 'Base R$', 'Exc. kg', 'ADV %', 'GRIS %', 'TAS', 'TRT %', 'Pedágio', 'EMEX', 'TXA', 'FPK', 'FV %', 'Prazo', ''].map(h => (
@@ -278,7 +278,7 @@ export function CarrierTablesClient() {
                                                     <EditableCell value={r.fvPercent} onSave={v => saveRateField(r.id, 'fvPercent', v)} />
                                                     <td className="px-2 py-1 tabular-nums">{r.deliveryTimeDays}d</td>
                                                     <td className="px-2 py-1">
-                                                        <button onClick={() => toggleActive('carrier_rate_rows', r.id, r.isActive)} disabled={saving}>
+                                                        <button aria-label={`${r.isActive ? 'Desativar' : 'Ativar'} faixa ${r.zoneCode}`} onClick={() => toggleActive('carrier_rate_rows', r.id, r.isActive)} disabled={saving} className="flex min-h-11 min-w-11 items-center justify-center">
                                                             {r.isActive
                                                                 ? <ToggleRight className="w-4 h-4 text-emerald-500" />
                                                                 : <ToggleLeft className="w-4 h-4 text-gray-400" />}
@@ -300,8 +300,8 @@ export function CarrierTablesClient() {
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--ui-text-muted))]">
                     <Table2 className="w-3.5 h-3.5 inline mr-1.5 mb-0.5" /> Resumo de Importação
                 </h2>
-                <div className="rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] overflow-hidden">
-                    <table className="w-full text-sm">
+                <div className="overflow-x-auto rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] overscroll-x-contain">
+                    <table className="min-w-[34rem] w-full text-sm">
                         <thead>
                             <tr className="border-b border-[hsl(var(--ui-border))]">
                                 <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--ui-text-muted))]">Transportadora</th>
@@ -342,7 +342,7 @@ function EditableCell({ value, onSave }: { value: string; onSave: (v: string) =>
     }
 
     return (
-        <td className="px-2 py-1 tabular-nums text-[hsl(var(--ui-text))] cursor-pointer hover:bg-[hsl(var(--ui-accent-blue)/0.05)] rounded transition-colors"
+        <td className="min-h-11 cursor-pointer rounded px-2 py-1 tabular-nums text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-accent-blue)/0.05)]"
             onClick={() => { setEditing(true); setVal(value); }}>
             {parseFloat(value) === 0 ? <span className="text-[hsl(var(--ui-text-muted)/0.4)]">—</span> : value}
         </td>
