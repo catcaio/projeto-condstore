@@ -25,7 +25,7 @@ export function AppShell({
                     <header className="z-20 flex min-h-[4rem] shrink-0 items-center justify-between gap-4 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface)/0.92)] px-4 py-3 backdrop-blur md:px-6">
                             <div className="min-w-0">
                                 <ModuleBreadcrumb />
-                                <p className="mt-1 text-xs text-[hsl(var(--ui-text-muted))]">
+                                <p className="hidden sm:block mt-0.5 text-xs text-[hsl(var(--ui-text-muted))] truncate">
                                     Fundacao consolidada para cockpit, operacao, clientes, pedidos, logistica, Frank e governanca.
                                 </p>
                             </div>
