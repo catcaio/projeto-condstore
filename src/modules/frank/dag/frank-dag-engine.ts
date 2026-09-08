@@ -431,18 +431,14 @@ class FrankDagExecutionInstance {
         this.plan.updatedAt = now;
 
         // Cancel all running scheduler tasks
-        for (const [taskId, handle] of this.runningHandles.entries()) {
+        for (const handle of this.runningHandles.values()) {
             handle.cancel(reason);
-            const task = this.plan.tasks.get(taskId);
-            if (task && task.status === 'RUNNING') {
-                await this.transitionTaskStatus(taskId, 'CANCELLED', reason);
-            }
         }
         this.runningHandles.clear();
 
-        // Transition remaining BLOCKED/READY tasks to CANCELLED
+        // Transition all non-terminal tasks to CANCELLED
         for (const [taskId, task] of this.plan.tasks.entries()) {
-            if (task.status === 'BLOCKED' || task.status === 'READY') {
+            if (!['COMPLETED', 'FAILED', 'CANCELLED', 'SKIPPED'].includes(task.status)) {
                 await this.transitionTaskStatus(taskId, 'CANCELLED', `DAG plan cancelled: ${reason}`);
             }
         }
