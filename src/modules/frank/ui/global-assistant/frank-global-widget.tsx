@@ -169,7 +169,7 @@ export function FrankGlobalWidget({ tenantId }: { tenantId: string | null }) {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans">
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end font-sans">
             {isOpen && (
                 <div className="mb-4 flex flex-col h-[520px] w-[380px] sm:w-[420px] rounded-2xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] shadow-2xl overflow-hidden transition-all animate-in fade-in slide-in-from-bottom-5">
                     {/* Header */}

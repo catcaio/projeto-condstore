@@ -13,28 +13,28 @@ export interface WorkspaceHeaderProps {
 export function WorkspaceHeader({ isRealData, onRefresh, isLoading }: WorkspaceHeaderProps) {
     return (
         <header className="sticky top-0 z-30 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))/0.95] backdrop-blur px-4 sm:px-6 py-3">
-            <div className="mx-auto max-w-7xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+            <div className="mx-auto max-w-7xl flex flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                     <div className="h-9 w-9 rounded-lg bg-[hsl(var(--ui-accent-blue-ink))] text-white flex items-center justify-center font-bold text-sm tracking-widest shadow-sm shrink-0">
                         CS
                     </div>
                     <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h1 className="text-base font-bold text-[hsl(var(--ui-text))] tracking-tight">
-                                Área de Trabalho Operacional
+                            <h1 className="text-sm sm:text-base font-bold text-[hsl(var(--ui-text))] tracking-tight truncate">
+                                Área de Trabalho
                             </h1>
                             <StatusChip
                                 label={isRealData ? 'Operação em Tempo Real' : 'Modo Diagnóstico'}
                                 tone={isRealData ? 'success' : 'warning'}
                             />
                         </div>
-                        <p className="text-xs text-[hsl(var(--ui-text-subtle))]">
+                        <p className="hidden sm:block text-xs text-[hsl(var(--ui-text-subtle))] truncate">
                             CONDSTORE OS — Fila de trabalho viva e contexto persistente
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                <div className="flex items-center gap-2 shrink-0">
                     <button
                         type="button"
                         aria-label="Abrir busca global e comandos (⌘K)"

@@ -21,7 +21,7 @@ export function AttentionStrip({ metrics, onSelectCategoryFilter }: AttentionStr
                     <button
                         type="button"
                         onClick={() => onSelectCategoryFilter?.('conversation')}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text-muted))] border border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-hover))] hover:text-[hsl(var(--ui-text))] transition-colors cursor-pointer"
                     >
                         <Clock className="h-3.5 w-3.5" />
                         <span>{metrics.unansweredConversationCount} sem resposta</span>
@@ -29,7 +29,7 @@ export function AttentionStrip({ metrics, onSelectCategoryFilter }: AttentionStr
                     <button
                         type="button"
                         onClick={() => onSelectCategoryFilter?.('freight')}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text-muted))] border border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-hover))] hover:text-[hsl(var(--ui-text))] transition-colors cursor-pointer"
                     >
                         <Truck className="h-3.5 w-3.5" />
                         <span>{metrics.pendingFreightCount} cotações pendentes</span>
@@ -37,7 +37,7 @@ export function AttentionStrip({ metrics, onSelectCategoryFilter }: AttentionStr
                     <button
                         type="button"
                         onClick={() => onSelectCategoryFilter?.('order')}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text-muted))] border border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-hover))] hover:text-[hsl(var(--ui-text))] transition-colors cursor-pointer"
                     >
                         <Package className="h-3.5 w-3.5" />
                         <span>{metrics.processingOrderCount} em esteira</span>

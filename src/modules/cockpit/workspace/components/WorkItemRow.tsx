@@ -41,7 +41,7 @@ export function WorkItemRow({ item, isSelected, onSelect, density = 'comfortable
         >
             <div className="space-y-1.5 flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-bold text-[hsl(var(--ui-text))] truncate max-w-[220px] sm:max-w-none">
+                    <span className="text-xs font-bold text-[hsl(var(--ui-text))] break-words max-w-full">
                         {item.entity}
                     </span>
                     <StatusChip
@@ -65,7 +65,7 @@ export function WorkItemRow({ item, isSelected, onSelect, density = 'comfortable
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[hsl(var(--ui-text-subtle))] flex-wrap">
                     <span>
-                        Aguardando: <strong className="text-[hsl(var(--ui-text))] font-medium">{item.waitingFor}</strong>
+                        Aguardando: <strong className="text-[hsl(var(--ui-text))] font-medium break-words">{item.waitingFor}</strong>
                     </span>
                     <span className="text-[hsl(var(--ui-border))]">•</span>
                     <span className="inline-flex items-center gap-1 font-mono text-[11px]">

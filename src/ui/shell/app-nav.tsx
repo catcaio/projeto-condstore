@@ -9,7 +9,7 @@ import { isModuleAuthorized } from '@/config/rbac';
 import { CondstoreLogo } from '@/ui/components';
 import { ThemeToggle } from '@/ui/theme';
 
-function NavLink({ item, pathname, expanded }: { item: ModuleConfig; pathname: string; expanded?: boolean }) {
+function NavLink({ item, pathname, expanded, onNavigate }: { item: ModuleConfig; pathname: string; expanded?: boolean; onNavigate?: () => void }) {
     const Icon = item.icon;
     const isActive = pathname === item.route || pathname.startsWith(item.route + '/');
 
@@ -17,6 +17,7 @@ function NavLink({ item, pathname, expanded }: { item: ModuleConfig; pathname: s
         <Link
             href={item.route}
             title={item.label}
+            onClick={() => { if (onNavigate) onNavigate(); }}
             className={`
                 group relative flex items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors duration-150
                 ${expanded ? 'w-full px-3 py-2.5 mb-1 h-auto rounded-lg' : 'md:justify-center md:px-0 md:h-11 md:w-11 md:rounded-xl md:mb-1'}
@@ -100,7 +101,7 @@ export function AppNav({
         }
     }, [mobileOpen]);
 
-    const navContent = (
+    const renderNavContent = (onNav?: () => void) => (
         <div className={`flex h-full w-full flex-col gap-8 ${expanded ? 'items-start' : 'md:items-center'}`}>
             {navGroups.map((group) => (
                 <div key={group.key} className="flex flex-col w-full">
@@ -109,7 +110,7 @@ export function AppNav({
                     </p>
                     <div className={`flex mb-4 md:mb-0 flex-col gap-1.5 w-full ${expanded ? 'items-start' : 'items-center'}`}>
                         {group.items.map((item) => (
-                            <NavLink key={item.id} item={item} pathname={pathname} expanded={expanded} />
+                            <NavLink key={item.id} item={item} pathname={pathname} expanded={expanded} onNavigate={onNav} />
                         ))}
                     </div>
                 </div>
@@ -149,7 +150,7 @@ export function AppNav({
         <>
             <div className="hidden h-full w-full md:block">
                 <nav role="navigation" aria-label="Menu principal" className="h-full w-full">
-                    {navContent}
+                    {renderNavContent()}
                 </nav>
             </div>
 
@@ -184,7 +185,7 @@ export function AppNav({
                         />
 
                         {/* Drawer panel */}
-                        <div className="relative flex w-full max-w-xs flex-col bg-[hsl(var(--ui-surface))] p-4 shadow-xl ring-1 ring-black/5 h-full">
+                        <div className="relative flex w-full max-w-[280px] sm:max-w-xs flex-col bg-[hsl(var(--ui-surface))] p-4 shadow-xl ring-1 ring-black/5 h-full min-w-0 overflow-hidden">
                             <div className="flex justify-between items-center mb-6 border-b border-[hsl(var(--ui-border))] pb-4">
                                 <span className="font-semibold text-sm text-[hsl(var(--ui-text))]">Navegação</span>
                                 <button
@@ -201,7 +202,7 @@ export function AppNav({
                             </div>
                             <div className="flex-1 overflow-y-auto">
                                 <nav role="navigation" aria-label="Menu principal" className="h-full">
-                                    {navContent}
+                                    {renderNavContent(() => setMobileOpen(false))}
                                 </nav>
                             </div>
                         </div>

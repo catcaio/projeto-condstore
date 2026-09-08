@@ -15,10 +15,10 @@ export interface WorkQueueProps {
 export function WorkQueue({ items, activeItemId, onSelectItem, density = 'comfortable' }: WorkQueueProps) {
     return (
         <div className="bg-[hsl(var(--ui-surface))] rounded-xl border border-[hsl(var(--ui-border))] shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-[hsl(var(--ui-border))] flex items-center justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--ui-text-subtle))] flex items-center gap-2">
+            <div className="px-4 py-3 border-b border-[hsl(var(--ui-border))] flex flex-wrap items-center justify-between gap-2 min-w-0">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--ui-text-subtle))] flex items-center gap-2 min-w-0 flex-1 break-words">
                     <Activity className="h-3.5 w-3.5 text-[hsl(var(--ui-accent-blue-ink))]" />
-                    Fila Operacional Requerendo Atenção
+                    <span className="break-words">Fila Operacional Requerendo Atenção</span>
                 </h2>
                 <span className="text-xs font-mono text-[hsl(var(--ui-text-subtle))]">
                     {items.length} itens ativos
