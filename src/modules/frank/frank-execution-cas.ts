@@ -6,6 +6,7 @@ import {
     frankExecutionSteps,
     frankExecutionTurns,
 } from '@/drizzle/schema';
+import type { ExecutionRunStatus, ExecutionStepStatus } from './frank-execution-state.service';
 
 export class VersionConflictError extends Error {
     constructor(
@@ -59,6 +60,48 @@ export class TurnRegressionError extends Error {
     }
 }
 
+export class InvalidEnvelopeError extends Error {
+    constructor(message: string) {
+        super(`Invalid envelope: ${message}`);
+        this.name = 'InvalidEnvelopeError';
+    }
+}
+
+export class InvalidTransitionError extends Error {
+    constructor(
+        public readonly entity: 'run' | 'step',
+        public readonly id: string,
+        public readonly currentStatus: string,
+        public readonly requestedStatus: string
+    ) {
+        super(
+            `Invalid transition for ${entity} ${id}: from ${currentStatus} to ${requestedStatus}`
+        );
+        this.name = 'InvalidTransitionError';
+    }
+}
+
+const VALID_RUN_STATUSES: readonly ExecutionRunStatus[] = [
+    'PENDING',
+    'RUNNING',
+    'PAUSED_HUMAN_APPROVAL',
+    'COMPLETED',
+    'FAILED',
+    'CANCELLED',
+];
+
+const VALID_STEP_STATUSES: readonly ExecutionStepStatus[] = [
+    'PENDING',
+    'RUNNING',
+    'AWAITING_APPROVAL',
+    'COMPLETED',
+    'FAILED',
+    'SKIPPED',
+];
+
+const TERMINAL_RUN_STATUSES: readonly ExecutionRunStatus[] = ['COMPLETED', 'CANCELLED'];
+const TERMINAL_STEP_STATUSES: readonly ExecutionStepStatus[] = ['COMPLETED', 'SKIPPED'];
+
 export interface TransitionRunParams {
     tenantId: string;
     runId: string;
@@ -88,7 +131,7 @@ export interface TransitionStepParams {
 export interface RecordTurnParams {
     tenantId: string;
     runId: string;
-    turn: number;
+    turn?: number;
     envelope: Record<string, unknown>;
 }
 
@@ -109,6 +152,31 @@ export interface ExecutionCasStore {
     listTurns(tenantId: string, runId: string): Promise<ExecutionTurn[]>;
 }
 
+export function nextTurnNumber(existingTurns: number[]): number {
+    if (existingTurns.length === 0) return 1;
+    return Math.max(...existingTurns) + 1;
+}
+
+function validateEnvelope(
+    envelope: Record<string, unknown>,
+    tenantId: string,
+    runId: string,
+    turn: number
+): void {
+    if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) {
+        throw new InvalidEnvelopeError('envelope must be a non-null object');
+    }
+    if (envelope.tenantId !== undefined && envelope.tenantId !== tenantId) {
+        throw new InvalidEnvelopeError('envelope tenantId does not match params');
+    }
+    if (envelope.runId !== undefined && envelope.runId !== runId) {
+        throw new InvalidEnvelopeError('envelope runId does not match params');
+    }
+    if (envelope.turn !== undefined && envelope.turn !== turn) {
+        throw new InvalidEnvelopeError('envelope turn does not match resolved turn');
+    }
+}
+
 function extractAffectedRows(result: unknown): number {
     if (Array.isArray(result) && result[0] && typeof result[0] === 'object') {
         const first = result[0] as { affectedRows?: number; rowsAffected?: number };
@@ -119,6 +187,37 @@ function extractAffectedRows(result: unknown): number {
     if (typeof direct?.affectedRows === 'number') return direct.affectedRows;
     if (typeof direct?.rowsAffected === 'number') return direct.rowsAffected;
     return 0;
+}
+
+function isMysqlDuplicateEntry(err: unknown): boolean {
+    if (!(err instanceof Error)) return false;
+    const anyErr = err as { code?: string; cause?: unknown };
+    const code = anyErr.code;
+    const message = err.message ?? '';
+    if (code === 'ER_DUP_ENTRY' || message.includes('Duplicate entry')) return true;
+    const cause = anyErr.cause;
+    if (cause instanceof Error) {
+        const anyCause = cause as { code?: string };
+        const causeMessage = cause.message ?? '';
+        return anyCause.code === 'ER_DUP_ENTRY' || causeMessage.includes('Duplicate entry');
+    }
+    return false;
+}
+
+function assertTransitionValid<T extends string>(
+    entity: 'run' | 'step',
+    id: string,
+    currentStatus: string,
+    requestedStatus: string,
+    validStatuses: readonly T[],
+    terminalStatuses: readonly T[]
+): void {
+    if (!validStatuses.includes(requestedStatus as T)) {
+        throw new InvalidTransitionError(entity, id, currentStatus, requestedStatus);
+    }
+    if (terminalStatuses.includes(currentStatus as T)) {
+        throw new InvalidTransitionError(entity, id, currentStatus, requestedStatus);
+    }
 }
 
 export class DrizzleExecutionCasStore implements ExecutionCasStore {
@@ -143,6 +242,16 @@ export class DrizzleExecutionCasStore implements ExecutionCasStore {
 
     async transitionRun(params: TransitionRunParams): Promise<number> {
         const db = await getDb();
+        const current = await this.readRunStatusAndVersion(params.tenantId, params.runId);
+        assertTransitionValid(
+            'run',
+            params.runId,
+            current.status,
+            params.status,
+            VALID_RUN_STATUSES,
+            TERMINAL_RUN_STATUSES
+        );
+
         const set: Record<string, unknown> = {
             version: params.expectedVersion + 1,
         };
@@ -172,6 +281,16 @@ export class DrizzleExecutionCasStore implements ExecutionCasStore {
 
     async transitionStep(params: TransitionStepParams): Promise<number> {
         const db = await getDb();
+        const current = await this.readStepStatusAndVersion(params.tenantId, params.stepId);
+        assertTransitionValid(
+            'step',
+            params.stepId,
+            current.status,
+            params.status,
+            VALID_STEP_STATUSES,
+            TERMINAL_STEP_STATUSES
+        );
+
         const set: Record<string, unknown> = {
             version: params.expectedVersion + 1,
         };
@@ -217,21 +336,34 @@ export class DrizzleExecutionCasStore implements ExecutionCasStore {
             .orderBy(asc(frankExecutionTurns.turn));
 
         const existingTurns = rows.map((r) => r.turn);
-        if (existingTurns.includes(params.turn)) {
-            throw new DuplicateTurnError(params.runId, params.turn);
-        }
-        const maxTurn = existingTurns.length === 0 ? 0 : Math.max(...existingTurns);
-        if (params.turn <= maxTurn) {
-            throw new TurnRegressionError(params.runId, params.turn, maxTurn);
+        const turn = params.turn ?? nextTurnNumber(existingTurns);
+
+        if (params.turn !== undefined) {
+            if (existingTurns.includes(params.turn)) {
+                throw new DuplicateTurnError(params.runId, params.turn);
+            }
+            const maxTurn = existingTurns.length === 0 ? 0 : Math.max(...existingTurns);
+            if (params.turn <= maxTurn) {
+                throw new TurnRegressionError(params.runId, params.turn, maxTurn);
+            }
         }
 
-        await db.insert(frankExecutionTurns).values({
-            id: randomUUID(),
-            runId: params.runId,
-            tenantId: params.tenantId,
-            turn: params.turn,
-            envelopeJson: JSON.stringify(params.envelope),
-        });
+        validateEnvelope(params.envelope, params.tenantId, params.runId, turn);
+
+        try {
+            await db.insert(frankExecutionTurns).values({
+                id: randomUUID(),
+                runId: params.runId,
+                tenantId: params.tenantId,
+                turn,
+                envelopeJson: JSON.stringify(params.envelope),
+            });
+        } catch (err) {
+            if (isMysqlDuplicateEntry(err)) {
+                throw new DuplicateTurnError(params.runId, turn);
+            }
+            throw err;
+        }
     }
 
     async listTurns(tenantId: string, runId: string): Promise<ExecutionTurn[]> {
@@ -262,6 +394,52 @@ export class DrizzleExecutionCasStore implements ExecutionCasStore {
 
     private async assertRunBelongsToTenant(tenantId: string, runId: string): Promise<void> {
         await this.readRunVersion(tenantId, runId);
+    }
+
+    private async readRunStatusAndVersion(
+        tenantId: string,
+        runId: string
+    ): Promise<{ status: string; version: number }> {
+        const db = await getDb();
+        const rows = await db
+            .select({
+                tenantId: frankExecutionRuns.tenantId,
+                status: frankExecutionRuns.status,
+                version: frankExecutionRuns.version,
+            })
+            .from(frankExecutionRuns)
+            .where(eq(frankExecutionRuns.id, runId));
+
+        if (rows.length === 0) {
+            throw new UnknownExecutionEntityError('run', runId);
+        }
+        if (rows[0].tenantId !== tenantId) {
+            throw new TenantMismatchError('run', runId);
+        }
+        return { status: rows[0].status, version: rows[0].version };
+    }
+
+    private async readStepStatusAndVersion(
+        tenantId: string,
+        stepId: string
+    ): Promise<{ status: string; version: number }> {
+        const db = await getDb();
+        const rows = await db
+            .select({
+                tenantId: frankExecutionSteps.tenantId,
+                status: frankExecutionSteps.status,
+                version: frankExecutionSteps.version,
+            })
+            .from(frankExecutionSteps)
+            .where(eq(frankExecutionSteps.id, stepId));
+
+        if (rows.length === 0) {
+            throw new UnknownExecutionEntityError('step', stepId);
+        }
+        if (rows[0].tenantId !== tenantId) {
+            throw new TenantMismatchError('step', stepId);
+        }
+        return { status: rows[0].status, version: rows[0].version };
     }
 
     private async diagnoseRunFailure(
@@ -339,6 +517,14 @@ export class InMemoryExecutionCasStore implements ExecutionCasStore {
         if (run.version !== params.expectedVersion) {
             throw new VersionConflictError('run', params.runId, params.expectedVersion);
         }
+        assertTransitionValid(
+            'run',
+            params.runId,
+            run.status,
+            params.status,
+            VALID_RUN_STATUSES,
+            TERMINAL_RUN_STATUSES
+        );
         run.version += 1;
         run.status = params.status;
         return run.version;
@@ -351,6 +537,14 @@ export class InMemoryExecutionCasStore implements ExecutionCasStore {
         if (step.version !== params.expectedVersion) {
             throw new VersionConflictError('step', params.stepId, params.expectedVersion);
         }
+        assertTransitionValid(
+            'step',
+            params.stepId,
+            step.status,
+            params.status,
+            VALID_STEP_STATUSES,
+            TERMINAL_STEP_STATUSES
+        );
         step.version += 1;
         step.status = params.status;
         return step.version;
@@ -359,18 +553,26 @@ export class InMemoryExecutionCasStore implements ExecutionCasStore {
     async recordTurn(params: RecordTurnParams): Promise<void> {
         await this.readRunVersion(params.tenantId, params.runId);
         const list = this.turns.get(params.runId) ?? [];
-        if (list.some((t) => t.turn === params.turn)) {
-            throw new DuplicateTurnError(params.runId, params.turn);
+        const existingTurns = list.map((t) => t.turn);
+        const turn = params.turn ?? nextTurnNumber(existingTurns);
+
+        if (params.turn !== undefined) {
+            if (list.some((t) => t.turn === params.turn)) {
+                throw new DuplicateTurnError(params.runId, params.turn);
+            }
+            const maxTurn = existingTurns.length === 0 ? 0 : Math.max(...existingTurns);
+            if (params.turn <= maxTurn) {
+                throw new TurnRegressionError(params.runId, params.turn, maxTurn);
+            }
         }
-        const maxTurn = list.length === 0 ? 0 : Math.max(...list.map((t) => t.turn));
-        if (params.turn <= maxTurn) {
-            throw new TurnRegressionError(params.runId, params.turn, maxTurn);
-        }
+
+        validateEnvelope(params.envelope, params.tenantId, params.runId, turn);
+
         list.push({
             id: randomUUID(),
             runId: params.runId,
             tenantId: params.tenantId,
-            turn: params.turn,
+            turn,
             envelope: params.envelope,
             createdAt: new Date(),
         });
@@ -386,11 +588,11 @@ export class InMemoryExecutionCasStore implements ExecutionCasStore {
             .sort((a, b) => a.turn - b.turn);
     }
 
-    seedRun(runId: string, tenantId: string, version = 1, status = 'PENDING'): void {
+    seedRun(runId: string, tenantId: string, version = 1, status: string = 'PENDING'): void {
         this.runs.set(runId, { tenantId, version, status });
     }
 
-    seedStep(stepId: string, tenantId: string, version = 1, status = 'PENDING'): void {
+    seedStep(stepId: string, tenantId: string, version = 1, status: string = 'PENDING'): void {
         this.steps.set(stepId, { tenantId, version, status });
     }
 }
