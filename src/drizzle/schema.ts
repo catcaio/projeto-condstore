@@ -2079,6 +2079,7 @@ export const frankExecutionRuns = mysqlTable('frank_execution_runs', {
     errorMsg: text('error_msg'),
     startedAt: timestamp('started_at'),
     completedAt: timestamp('completed_at'),
+    version: int('version').notNull().default(1),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 }, (table) => ({
@@ -2107,6 +2108,7 @@ export const frankExecutionSteps = mysqlTable('frank_execution_steps', {
     errorMsg: text('error_msg'),
     startedAt: timestamp('started_at'),
     completedAt: timestamp('completed_at'),
+    version: int('version').notNull().default(1),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
     idxExecutionStepRun: index('idx_frank_exec_step_run').on(table.executionRunId, table.stepNumber),
@@ -2115,6 +2117,21 @@ export const frankExecutionSteps = mysqlTable('frank_execution_steps', {
 
 export type FrankExecutionStepRecord = typeof frankExecutionSteps.$inferSelect;
 export type NewFrankExecutionStepRecord = typeof frankExecutionSteps.$inferInsert;
+
+export const frankExecutionTurns = mysqlTable('frank_execution_turns', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    runId: varchar('run_id', { length: 36 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    turn: int('turn').notNull(),
+    envelopeJson: text('envelope_json').notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxExecutionTurnRunTurn: index('idx_frank_exec_turn_run_turn').on(table.runId, table.turn),
+    uqExecutionTurnRunTurn: uniqueIndex('uq_frank_exec_turn_run_turn').on(table.runId, table.turn),
+}));
+
+export type FrankExecutionTurnRecord = typeof frankExecutionTurns.$inferSelect;
+export type NewFrankExecutionTurnRecord = typeof frankExecutionTurns.$inferInsert;
 
 
 // --- Atendimento Humano (Conversations) ---
@@ -2694,99 +2711,3 @@ export const operationalMetrics = mysqlTable('operational_metrics', {
 
 export type OperationalMetricRecord = typeof operationalMetrics.$inferSelect;
 export type NewOperationalMetricRecord = typeof operationalMetrics.$inferInsert;
-// --- Frank execution (FRK-9): operational state, separated from events ---
-//
-// frank_runs / frank_steps hold the CURRENT operational state (status,
-// attempt, optimistic-locking version). frank_turns is append-only: one row
-// per (run, turn); history is never updated, only superseded by newer turns.
-
-export const frankRuns = mysqlTable('frank_runs', {
-    id: varchar('id', { length: 36 }).primaryKey().notNull(),
-    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    status: varchar('status', { length: 20 }).notNull().default('CREATED'),
-    version: int('version').notNull().default(1),
-    maxAttempts: int('max_attempts').notNull().default(3),
-    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
-    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
-});
-
-export type FrankRunRecord = typeof frankRuns.$inferSelect;
-export type NewFrankRunRecord = typeof frankRuns.$inferInsert;
-
-export const frankSteps = mysqlTable('frank_steps', {
-    id: varchar('id', { length: 36 }).primaryKey().notNull(),
-    runId: varchar('run_id', { length: 36 }).notNull(),
-    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    status: varchar('status', { length: 20 }).notNull().default('PENDING'),
-    attempt: int('attempt').notNull().default(1),
-    version: int('version').notNull().default(1),
-    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
-    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
-});
-
-export type FrankStepRecord = typeof frankSteps.$inferSelect;
-export type NewFrankStepRecord = typeof frankSteps.$inferInsert;
-
-export const frankTurns = mysqlTable('frank_turns', {
-    id: varchar('id', { length: 36 }).primaryKey().notNull(),
-    runId: varchar('run_id', { length: 36 }).notNull(),
-    stepId: varchar('step_id', { length: 36 }).notNull(),
-    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    turn: int('turn').notNull(),
-    envelopeJson: text('envelope_json').notNull(),
-    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
-});
-
-export type FrankTurnRecord = typeof frankTurns.$inferSelect;
-export type NewFrankTurnRecord = typeof frankTurns.$inferInsert;
-
-// --- Frank intelligence (FRK-8/008): contextual layer over the Cockpit ---
-//
-// frank_suggestions: persisted, traceable recommendations produced by the
-// intelligence layer (one row per suggestion, tenant-scoped, surface-labeled,
-// with the mandatory `reason` for explainability). frank_feedbacks: the
-// operator decision loop (accepted/rejected/dismissed/expired) — every
-// feedback references an existing suggestion. frank_preferences: per-tenant
-// operator settings (disabled suggestion types, confidence cutoff).
-//
-// The intelligence layer NEVER executes actions: it only produces
-// recommendations. Execution (post-approval) is delegated to the existing
-// execution boundary (frank_runs / frank_steps) — see FRK-9.
-
-export const frankSuggestions = mysqlTable('frank_suggestions', {
-    id: varchar('id', { length: 36 }).primaryKey().notNull(),
-    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    surface: varchar('surface', { length: 30 }).notNull(),
-    type: varchar('type', { length: 20 }).notNull(),
-    title: varchar('title', { length: 200 }).notNull(),
-    description: text('description').notNull(),
-    reason: text('reason').notNull(),
-    confidence: decimal('confidence', { precision: 4, scale: 2 }).notNull(),
-    actionJson: text('action_json'),
-    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
-    expiresAt: timestamp('expires_at'),
-});
-
-export type FrankSuggestionRecord = typeof frankSuggestions.$inferSelect;
-export type NewFrankSuggestionRecord = typeof frankSuggestions.$inferInsert;
-
-export const frankFeedbacks = mysqlTable('frank_feedbacks', {
-    id: varchar('id', { length: 36 }).primaryKey().notNull(),
-    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
-    suggestionId: varchar('suggestion_id', { length: 36 }).notNull(),
-    outcome: varchar('outcome', { length: 20 }).notNull(),
-    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
-});
-
-export type FrankFeedbackRecord = typeof frankFeedbacks.$inferSelect;
-export type NewFrankFeedbackRecord = typeof frankFeedbacks.$inferInsert;
-
-export const frankPreferences = mysqlTable('frank_preferences', {
-    tenantId: varchar('tenant_id', { length: 36 }).primaryKey().notNull(),
-    disabledTypesJson: text('disabled_types_json').notNull(),
-    minConfidence: decimal('min_confidence', { precision: 4, scale: 2 }).notNull().default('0.75'),
-    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
-});
-
-export type FrankPreferenceRecord = typeof frankPreferences.$inferSelect;
-export type NewFrankPreferenceRecord = typeof frankPreferences.$inferInsert;

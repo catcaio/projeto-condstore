@@ -1,8 +1,8 @@
 import { logger } from '@/infra/logger';
 import { getDb } from '@/infra/db';
 import { eq, and, gte, or, like, desc } from 'drizzle-orm';
-import { operationalEvents, FrankExecutionRunRecord } from '@/drizzle/schema';
-import { frankExecutionStateService } from './frank-execution-state.service';
+import { operationalEvents } from '@/drizzle/schema';
+import { frankExecutionStateService, type FrankExecutionRunRecord } from './frank-execution-state.service';
 import { frankHumanGatePolicyEngine } from './frank-human-gate-policy';
 import { runTool } from './tools/tool-runner';
 import { evaluateFrankToolPolicy, FrankToolAction } from './tools/tool-policy';
