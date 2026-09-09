@@ -40,10 +40,13 @@ export const RUN_TERMINAL: ReadonlySet<RunStatus> = new Set([
   'FAILED',
   'CANCELLED',
 ]);
+// NOTE (FRK-9 audit): FAILED is terminal for a Run because a Run never
+// auto-retries — retrying means opening a new Run via the runtime boundary.
+// For Steps the retry unit is the Step itself (see below), so FAILED there
+// is quiescent (stable unless explicitly retried), NOT terminal.
 
 export const STEP_TERMINAL: ReadonlySet<StepStatus> = new Set([
   'SUCCEEDED',
-  'FAILED',
   'SKIPPED',
   'CANCELLED',
 ]);
@@ -101,18 +104,36 @@ export function assertStepTransition(from: StepStatus, to: StepStatus): void {
   }
 }
 
-export interface RunState {
-  runId: string;
-  status: RunStatus;
-  updatedAt: string;
-}
-
 export interface StepState {
   stepId: string;
   runId: string;
+  tenantId: string;
   status: StepStatus;
   attempt: number;
+  /** Optimistic-locking version. Every persisted advance requires CAS. */
+  version: number;
   updatedAt: string;
+}
+
+export interface RunState {
+  runId: string;
+  tenantId: string;
+  status: RunStatus;
+  /** Optimistic-locking version. Every persisted advance requires CAS. */
+  version: number;
+  updatedAt: string;
+}
+
+/** attempt is 1-based and never decreases; violations are programming errors. */
+export function assertValidAttempt(attempt: number): void {
+  if (!Number.isInteger(attempt) || attempt < 1) {
+    throw new RangeError(`attempt must be an integer >= 1, got ${attempt}`);
+  }
+}
+
+/** A FAILED step may retry only while attempts remain. */
+export function isStepRetryable(step: Pick<StepState, 'status' | 'attempt'>, maxAttempts: number): boolean {
+  return step.status === 'FAILED' && step.attempt < maxAttempts;
 }
 
 function nowIso(): string {
@@ -122,17 +143,29 @@ function nowIso(): string {
 /** Pure transition: returns the next state or throws InvalidTransitionError. */
 export function transitionRun(current: RunState, to: RunStatus, at = nowIso()): RunState {
   assertRunTransition(current.status, to);
-  return { ...current, status: to, updatedAt: at };
+  return { ...current, status: to, version: current.version + 1, updatedAt: at };
 }
 
 /**
  * Pure step transition. Entering RETRYING bumps the attempt counter;
- * leaving RETRYING for RUNNING keeps the bumped attempt.
+ * leaving RETRYING for RUNNING keeps the bumped attempt. attempt is
+ * validated (1-based, never decreases here — persistence enforces
+ * non-decrease across restarts via the stored record).
  */
 export function transitionStep(current: StepState, to: StepStatus, at = nowIso()): StepState {
   assertStepTransition(current.status, to);
+  assertValidAttempt(current.attempt);
   const attempt = to === 'RETRYING' ? current.attempt + 1 : current.attempt;
-  return { ...current, status: to, attempt, updatedAt: at };
+  return { ...current, status: to, attempt, version: current.version + 1, updatedAt: at };
+}
+
+/** Next turn number for a run given the turns already stored (strictly +1). */
+export function nextTurnNumber(existingTurns: number[]): number {
+  const max = existingTurns.length === 0 ? 0 : Math.max(...existingTurns);
+  if (!Number.isInteger(max) || max < 0) {
+    throw new RangeError('existing turns must be non-negative integers');
+  }
+  return max + 1;
 }
 
 // ─── Execution Turn Envelope ────────────────────────────────────────────────

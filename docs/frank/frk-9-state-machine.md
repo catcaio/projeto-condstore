@@ -1,21 +1,27 @@
 # FRK-9 — Execution State Machine (Run / Step)
 
-Dependência: Execution Runtime. Critério: máquina de estados documentada,
-persistida e coberta por testes de transição.
+Dependência: Execution Runtime. Critério: máquina documentada, persistida e
+coberta por testes de transição.
 
-## 1. Onde Run/Step viviam antes
+## 1. Boundary de responsabilidade (review ponto 1)
 
-- `src/modules/frank/agent-loop.ts` — stateless: `decideNextAction` +
-  `evaluatePolicy` + `runFrankAgentTool` retornam `ToolResult` efêmero
-  (`BLOCKED_BY_POLICY` / `EXECUTED` / `FAILED`). Nenhum registro de Run.
-- `src/modules/frank/session.repository.ts` (`frank_session_state`) —
-  `currentIntent` / `currentStep` são strings livres, sem transições válidas.
-- `src/modules/frank/tools/tool-runner.ts` + `tool-policy.ts` — gate por
-  chamada de tool, sem ciclo de vida.
-- `src/modules/frank/workers/frank-worker.ts` — poll de `incoming_messages`,
-  sem registro de execução.
-- `src/core/conversation/state-machine.ts` — estados de *diálogo*
-  (`IDLE` / `AWAITING_CEP` / …), não de execução. Não confundir.
+Uma única autoridade — `execution-runtime.ts` (`ExecutionRuntime`). Cada
+responsabilidade tem exatamente um dono:
+
+| Responsabilidade | Dono | Observação |
+|---|---|---|
+| Criar Run / Step | `createRun` / `createStep` | Único caminho de abertura |
+| Abrir / fechar Turn | `openTurn` / `closeTurn` | Turn calculado (`nextTurn`), nunca aceito |
+| Avançar status | `advanceRun` / `advanceStep` | Sempre com versão observada (CAS) |
+| Retry | `retryStep` | Único caminho; respeita o budget do Run |
+| Persistir estado | `ExecutionStore` (memória ou Drizzle) | Separado da máquina pura |
+| Registrar auditoria | `closeTurn` → `saveTurn` (append-only) | Histórico nunca reescrito |
+| Retomar após restart | `resumeRun` | Reconstrói a partir das linhas persistidas, sem mutar |
+| Concorrência | versão CAS em cada avanço | Perdedor recebe `VersionConflictError` |
+
+Limite declarado: o agent-loop legado não passa por este boundary nesta PR.
+A integração (plug das decisões do loop em `openTurn`/`closeTurn`) é uma
+demanda separada já delimitada; o contrato está preparado para ela.
 
 ## 2. Estados e transições válidas
 
@@ -28,49 +34,45 @@ persistida e coberta por testes de transição.
 | PAUSED | RUNNING, FAILED, CANCELLED |
 | SUCCEEDED / FAILED / CANCELLED | *(terminal — nenhuma saída)* |
 
+FAILED é terminal no Run porque Run nunca faz auto-retry: reexecutar
+significa abrir um novo Run pelo boundary.
+
 ### Step
 
 | De | Para |
 |---|---|
 | PENDING | RUNNING, SKIPPED, CANCELLED |
 | RUNNING | SUCCEEDED, FAILED, SKIPPED, CANCELLED |
-| FAILED | RETRYING, CANCELLED |
+| FAILED | RETRYING, CANCELLED *(quiescente: estável salvo retry explícito)* |
 | RETRYING | RUNNING, FAILED, CANCELLED |
 | SUCCEEDED / SKIPPED / CANCELLED | *(terminal — nenhuma saída)* |
 
-Qualquer par fora dessas tabelas lança `InvalidTransitionError`
-(`invalid_run_transition` / `invalid_step_transition`). Entrar em `RETRYING`
-incrementa `attempt`.
+`attempt` é 1-based, inteiro, nunca diminui. `FAILED → RETRYING` exige
+`attempt < maxAttempts` do Run; estouro gera `RetryBudgetExhaustedError`.
 
-## 3. Execution Turn Envelope
+## 3. Persistência: estado operacional × log de eventos (review ponto 2)
 
-```
-input → contexto resolvido → decisão → policy → ação → resultado → trilha auditável
-```
+- `frank_runs` / `frank_steps`: estado operacional corrente (status, attempt,
+  `version` para CAS). Migration `0005_frank_execution.sql`.
+- `frank_turns`: append-only, `UNIQUE(run_id, turn)`, ordenação determinística
+  por `turn`. Turn duplicado ou em regressão é rejeitado (`DuplicateTurnError`
+  / `TurnRegressionError`).
+- Toda leitura e escrita é tenant-scoped (`listTurns({ tenantId, runId })`;
+  acesso cruzado falha fechado com `TenantMismatchError`).
 
-`buildTurnEnvelope({ runId, stepId, tenantId, requestId, turn, input,
-resolvedContext, decision, policy, action, result })` impõe invariantes
-determinísticos:
+## 4. Níveis de garantia (review ponto 7, com precisão)
 
-- ids obrigatórios; `turn >= 1`;
-- `result.ok` não pode ser `true` com `policy.allowed === false`;
-- `result.status` não pode ser `EXECUTED` com policy bloqueada.
+- Objetos em memória: funcionalmente imutáveis (builders retornam novos).
+- Histórico persistido: append-only + chave única + CAS de versão.
+- NÃO há hash chain: esta PR não declara trilha inviolável.
 
-`appendAuditEvent` estende a trilha de forma imutável.
+## 5. Validação no boundary (review ponto 8)
 
-## 4. Persistência
+`saveTurn` reconstrói o envelope pelo builder canônico (rejeita envelope
+artesanal), confere tenant do Run/Step, existência do Step no Run,
+unicidade e monotonicidade do turn.
 
-- `InMemoryExecutionStore` — usada em testes e como fallback.
-- `DrizzleFrankEventsExecutionStore` — persiste o envelope na tabela
-  existente `frank_events` com `kind = 'frank.execution.turn'`
-  (`sessionId = runId`, `correlationId = requestId`). Sem migration nova.
-- Pendente (requer migration + DB): tabela dedicada
-  `frank_execution_runs` / `frank_execution_steps` com lock otimista por
-  `version`. Não implementada nesta branch.
+## 6. Testes (review ponto 9)
 
-## 5. Testes
-
-`src/modules/frank/execution/__tests__/execution-state-machine.test.ts`:
-9 transições válidas de Run, 10 inválidas, 12 válidas de Step,
-12 inválidas, bump de `attempt`, invariantes do envelope, imutabilidade da
-trilha e persistência in-memory por run.
+Propriedades cobertas em memória + suite Drizzle real sob
+`TEST_DATABASE_URL` (pula — sem fingir — quando ausente).

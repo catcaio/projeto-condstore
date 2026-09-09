@@ -2694,3 +2694,48 @@ export const operationalMetrics = mysqlTable('operational_metrics', {
 
 export type OperationalMetricRecord = typeof operationalMetrics.$inferSelect;
 export type NewOperationalMetricRecord = typeof operationalMetrics.$inferInsert;
+// --- Frank execution (FRK-9): operational state, separated from events ---
+//
+// frank_runs / frank_steps hold the CURRENT operational state (status,
+// attempt, optimistic-locking version). frank_turns is append-only: one row
+// per (run, turn); history is never updated, only superseded by newer turns.
+
+export const frankRuns = mysqlTable('frank_runs', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('CREATED'),
+    version: int('version').notNull().default(1),
+    maxAttempts: int('max_attempts').notNull().default(3),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type FrankRunRecord = typeof frankRuns.$inferSelect;
+export type NewFrankRunRecord = typeof frankRuns.$inferInsert;
+
+export const frankSteps = mysqlTable('frank_steps', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    runId: varchar('run_id', { length: 36 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('PENDING'),
+    attempt: int('attempt').notNull().default(1),
+    version: int('version').notNull().default(1),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type FrankStepRecord = typeof frankSteps.$inferSelect;
+export type NewFrankStepRecord = typeof frankSteps.$inferInsert;
+
+export const frankTurns = mysqlTable('frank_turns', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    runId: varchar('run_id', { length: 36 }).notNull(),
+    stepId: varchar('step_id', { length: 36 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    turn: int('turn').notNull(),
+    envelopeJson: text('envelope_json').notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type FrankTurnRecord = typeof frankTurns.$inferSelect;
+export type NewFrankTurnRecord = typeof frankTurns.$inferInsert;

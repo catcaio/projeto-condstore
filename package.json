@@ -27,6 +27,7 @@
     "test:mvp": "npm run test:win-stable -- src/mvp/",
     "guardrail:mvp-freeze": "node scripts/verify-mvp-freeze.mjs",
     "guardrail:mvp-baseline": "node scripts/verify-mvp-freeze.mjs",
+    "frank:bot": "node scripts/frank-local-bot.mjs",
     "scope:pr-tests": "node scripts/pr-test-scope.mjs",
     "release:check": "node scripts/release-check.mjs",
     "staging:smoke": "node --import tsx scripts/smoke/staging-smoke.ts",
