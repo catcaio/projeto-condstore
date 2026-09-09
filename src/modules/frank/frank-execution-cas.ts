@@ -235,6 +235,9 @@ export class DrizzleExecutionCasStore implements ExecutionCasStore {
     }
 
     async listTurns(tenantId: string, runId: string): Promise<ExecutionTurn[]> {
+        // Fail closed: cross-tenant access must throw, never return an empty
+        // list that could be mistaken for "no data".
+        await this.assertRunBelongsToTenant(tenantId, runId);
         const db = await getDb();
         const rows = await db
             .select()
