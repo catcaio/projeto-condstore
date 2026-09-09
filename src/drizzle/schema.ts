@@ -2739,3 +2739,54 @@ export const frankTurns = mysqlTable('frank_turns', {
 
 export type FrankTurnRecord = typeof frankTurns.$inferSelect;
 export type NewFrankTurnRecord = typeof frankTurns.$inferInsert;
+
+// --- Frank intelligence (FRK-8/008): contextual layer over the Cockpit ---
+//
+// frank_suggestions: persisted, traceable recommendations produced by the
+// intelligence layer (one row per suggestion, tenant-scoped, surface-labeled,
+// with the mandatory `reason` for explainability). frank_feedbacks: the
+// operator decision loop (accepted/rejected/dismissed/expired) — every
+// feedback references an existing suggestion. frank_preferences: per-tenant
+// operator settings (disabled suggestion types, confidence cutoff).
+//
+// The intelligence layer NEVER executes actions: it only produces
+// recommendations. Execution (post-approval) is delegated to the existing
+// execution boundary (frank_runs / frank_steps) — see FRK-9.
+
+export const frankSuggestions = mysqlTable('frank_suggestions', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    surface: varchar('surface', { length: 30 }).notNull(),
+    type: varchar('type', { length: 20 }).notNull(),
+    title: varchar('title', { length: 200 }).notNull(),
+    description: text('description').notNull(),
+    reason: text('reason').notNull(),
+    confidence: decimal('confidence', { precision: 4, scale: 2 }).notNull(),
+    actionJson: text('action_json'),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+    expiresAt: timestamp('expires_at'),
+});
+
+export type FrankSuggestionRecord = typeof frankSuggestions.$inferSelect;
+export type NewFrankSuggestionRecord = typeof frankSuggestions.$inferInsert;
+
+export const frankFeedbacks = mysqlTable('frank_feedbacks', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    suggestionId: varchar('suggestion_id', { length: 36 }).notNull(),
+    outcome: varchar('outcome', { length: 20 }).notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type FrankFeedbackRecord = typeof frankFeedbacks.$inferSelect;
+export type NewFrankFeedbackRecord = typeof frankFeedbacks.$inferInsert;
+
+export const frankPreferences = mysqlTable('frank_preferences', {
+    tenantId: varchar('tenant_id', { length: 36 }).primaryKey().notNull(),
+    disabledTypesJson: text('disabled_types_json').notNull(),
+    minConfidence: decimal('min_confidence', { precision: 4, scale: 2 }).notNull().default('0.75'),
+    updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`).notNull(),
+});
+
+export type FrankPreferenceRecord = typeof frankPreferences.$inferSelect;
+export type NewFrankPreferenceRecord = typeof frankPreferences.$inferInsert;
