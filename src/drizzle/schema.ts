@@ -2079,6 +2079,7 @@ export const frankExecutionRuns = mysqlTable('frank_execution_runs', {
     errorMsg: text('error_msg'),
     startedAt: timestamp('started_at'),
     completedAt: timestamp('completed_at'),
+    version: int('version').notNull().default(1),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
     updatedAt: timestamp('updated_at').default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 }, (table) => ({
@@ -2107,6 +2108,7 @@ export const frankExecutionSteps = mysqlTable('frank_execution_steps', {
     errorMsg: text('error_msg'),
     startedAt: timestamp('started_at'),
     completedAt: timestamp('completed_at'),
+    version: int('version').notNull().default(1),
     createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
     idxExecutionStepRun: index('idx_frank_exec_step_run').on(table.executionRunId, table.stepNumber),
@@ -2115,6 +2117,21 @@ export const frankExecutionSteps = mysqlTable('frank_execution_steps', {
 
 export type FrankExecutionStepRecord = typeof frankExecutionSteps.$inferSelect;
 export type NewFrankExecutionStepRecord = typeof frankExecutionSteps.$inferInsert;
+
+export const frankExecutionTurns = mysqlTable('frank_execution_turns', {
+    id: varchar('id', { length: 36 }).primaryKey().notNull(),
+    runId: varchar('run_id', { length: 36 }).notNull(),
+    tenantId: varchar('tenant_id', { length: 36 }).notNull(),
+    turn: int('turn').notNull(),
+    envelopeJson: text('envelope_json').notNull(),
+    createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+    idxExecutionTurnRunTurn: index('idx_frank_exec_turn_run_turn').on(table.runId, table.turn),
+    uqExecutionTurnRunTurn: uniqueIndex('uq_frank_exec_turn_run_turn').on(table.runId, table.turn),
+}));
+
+export type FrankExecutionTurnRecord = typeof frankExecutionTurns.$inferSelect;
+export type NewFrankExecutionTurnRecord = typeof frankExecutionTurns.$inferInsert;
 
 
 // --- Atendimento Humano (Conversations) ---
