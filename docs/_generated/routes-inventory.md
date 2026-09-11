@@ -231,6 +231,7 @@
 | `/billing` | Page |
 | `/billing/manage` | Page |
 | `/billing/success` | Page |
+| `/career` | Page |
 | `/clientes` | Page |
 | `/cockpit` | Page |
 | `/cockpit-gerencial` | Page |
