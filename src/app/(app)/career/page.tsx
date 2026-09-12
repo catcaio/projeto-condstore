@@ -156,7 +156,7 @@ const careerData = {
   ]
 };
 
-export default function CareerDashboardPage() {
+export default function CareerDashboardPage({ isPublic = false }: { isPublic?: boolean } = {}) {
   const [filter, setFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [selectedApp, setSelectedApp] = useState<any>(null);
@@ -199,12 +199,14 @@ export default function CareerDashboardPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">Career & Applications Hub</h1>
-            <p className="text-xs text-slate-400">Protegido por CondStore Auth • Sincronizado com catcaio/career</p>
+            <p className="text-xs text-slate-400">
+              {isPublic ? 'Painel público • Sincronizado com catcaio/career' : 'Protegido por CondStore Auth • Sincronizado com catcaio/career'}
+            </p>
           </div>
         </div>
         <div className="flex items-center space-x-3">
           <span className="px-3 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Autenticado & Protegido
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> {isPublic ? 'Acesso Público' : 'Autenticado & Protegido'}
           </span>
         </div>
       </div>
