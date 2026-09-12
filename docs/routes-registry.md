@@ -3,6 +3,7 @@
 
 # CONDSTORE OS - Routes Registry
 | /career | GET | internal | required | career | live | Protected Career & Applications Dashboard |
+| /dashboard1 | GET | public | none | career | live | Public Career & Applications Dashboard |
 | / | TBA | public | none | PUBLIC | live | Auto-detected |
 | /about | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/app/events | TBA | public | none | PUBLIC | live | Auto-detected |
