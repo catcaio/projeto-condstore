@@ -6,7 +6,7 @@ export const metadata = {
 
 export default function DeliveriesPage() {
     return (
-        <div className="flex flex-col min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+        <div className="flex flex-col min-h-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
             <header className="px-6 md:px-8 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--card))]">
                 <div className="max-w-7xl mx-auto w-full">
                     <h2 className="text-lg font-medium">Monitoramento de Entregas</h2>

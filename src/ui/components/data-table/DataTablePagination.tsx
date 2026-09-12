@@ -11,12 +11,12 @@ export function DataTablePagination<TData>({
     table,
 }: DataTablePaginationProps<TData>) {
     return (
-        <div className="flex items-center justify-between px-2 py-3 border-t border-[hsl(var(--ui-border))]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2 py-3 border-t border-[hsl(var(--ui-border))]">
             <div className="flex-1 text-sm text-[hsl(var(--ui-text-muted))]">
                 {table.getFilteredSelectedRowModel().rows.length} de{' '}
                 {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
             </div>
-            <div className="flex items-center space-x-6 lg:space-x-8">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 lg:gap-8">
                 <div className="flex items-center space-x-2">
                     <p className="text-sm font-medium text-[hsl(var(--ui-text))]">Linhas por página</p>
                     <select
