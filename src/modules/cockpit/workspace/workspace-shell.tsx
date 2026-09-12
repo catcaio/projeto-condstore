@@ -118,7 +118,7 @@ export function CockpitWorkspaceShell({ data, onRefresh, isLoading }: CockpitWor
     };
 
     return (
-        <div className="min-h-screen bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))] flex flex-col font-sans w-full overflow-x-hidden">
+        <div className="min-h-full bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))] flex flex-col font-sans w-full overflow-x-hidden">
             <CommandPalette />
 
             <WorkspaceHeader

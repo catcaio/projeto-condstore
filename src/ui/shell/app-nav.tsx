@@ -222,6 +222,15 @@ export function Sidebar({
 }) {
     const [isHovered, setIsHovered] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     const isExpanded = isHovered || isFocused;
 
     const handleFocusCapture = () => {
@@ -240,17 +249,20 @@ export function Sidebar({
             onMouseLeave={() => setIsHovered(false)}
             onFocusCapture={handleFocusCapture}
             onBlurCapture={handleBlurCapture}
-            className="z-30 min-w-0 shrink-0 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] md:h-dvh md:border-b-0 md:border-r transition-[width] duration-200 overflow-hidden"
-            style={{ width: isExpanded ? '15rem' : '4.5rem' }}
+            className="z-30 min-w-0 shrink-0 border-b border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-page))] w-full md:w-auto md:h-dvh md:border-b-0 md:border-r transition-[width] duration-200 overflow-hidden"
+            style={isMobile ? undefined : { width: isExpanded ? '15rem' : '4.5rem' }}
         >
-            <div className={`flex min-h-0 flex-col px-3 py-3 md:h-full md:py-4 transition-[padding] duration-200 ${isExpanded ? 'md:px-4 items-start' : 'md:px-0 items-center'}`}>
-                <div className="mb-3 flex items-center justify-center md:mb-6 shrink-0">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] shadow-sm">
+            <div className={`flex min-h-0 flex-row md:flex-col items-center justify-between px-3 py-2.5 md:py-4 transition-[padding] duration-200 md:h-full ${isExpanded ? 'md:px-4 md:items-start' : 'md:px-0 md:items-center'}`}>
+                <div className="flex items-center gap-3 shrink-0 md:mb-6">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] shadow-2xs">
                         <CondstoreLogo size="sm" hideText />
                     </div>
+                    <span className="md:hidden text-xs font-bold tracking-tight text-[hsl(var(--ui-text))]">
+                        CONDSTORE OS
+                    </span>
                 </div>
 
-                <div className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-0 md:px-2">
+                <div className="flex min-h-0 w-auto md:w-full md:flex-1 flex-col items-end md:items-stretch overflow-y-visible md:overflow-y-auto px-0 md:px-2">
                     <AppNav role={role} tenantId={tenantId} expanded={isExpanded} />
                 </div>
 
