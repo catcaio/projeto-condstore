@@ -1,12 +1,12 @@
-import { BusinessError, ErrorCode } from '../../infra/errors';
-import { logger } from '../../infra/logger';
-import { ConversationEvent, ConversationState, stateMachine } from '../../core/conversation/state-machine';
-import { sessionManager } from '../../core/conversation/session-manager';
+import { BusinessError, ErrorCode } from '@/infra/errors';
+import { logger } from '@/infra/logger';
+import { ConversationEvent, ConversationState, stateMachine } from '@/core/conversation/state-machine';
+import { sessionManager } from '@/core/conversation/session-manager';
 import { freightService } from './freight.service';
 import { planEnforcementService } from '@/modules/finops';
-import { funnelRepository, FunnelStage } from '../funnel/funnel.repository';
-import { appConfig } from '../../config/app.config';
-import type { AttributionSnapshot } from '../../infra/attribution/attribution.types';
+import { funnelRepository, FunnelStage } from '@/modules/funnel/funnel.repository';
+import { appConfig } from '@/config/app.config';
+import type { AttributionSnapshot } from '@/infra/attribution/attribution.types';
 
 export class FreightController {
     async handleIncoming(

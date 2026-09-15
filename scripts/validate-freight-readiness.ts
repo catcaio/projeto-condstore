@@ -1,4 +1,4 @@
-import { selectCarrierStrategy, type RoutingRequest } from '../src/modules/freight/carrier-router';
+import { selectCarrierStrategy, type RoutingRequest } from '../src/modules/fulfillment/freight/carrier-router';
 import { melhorEnvioConfig } from '../src/config/melhorenvio.config';
 import { getDb } from '../src/infra/db';
 import * as schema from '../src/drizzle/schema';

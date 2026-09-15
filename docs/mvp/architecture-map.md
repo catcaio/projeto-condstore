@@ -65,7 +65,7 @@
 
 ### [E] Freight Engine
 
-- **Módulo:** `src/modules/shipping/` + `src/modules/freight/`
+- **Módulo:** `src/modules/fulfillment/freight/`
 - **Responsabilidade:** consultar múltiplos carriers em paralelo
   - Melhor Envio API (real-time)
   - Movvi, Mengue, Braspress (tabelas pré-carregadas)
@@ -103,7 +103,7 @@
 
 ### [J] Logística acompanha
 
-- **Módulo:** `src/modules/logistica/`
+- **Módulo:** `src/modules/fulfillment/presentation/logistics/`
 - **Responsabilidade:** fila de shipments, SLA, exceções
 - **Visibilidade:** painel logístico com todos os abertos
 

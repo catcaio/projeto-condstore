@@ -5,9 +5,9 @@
  * Also provides memory lookup for diagnostic comparison.
  */
 
-import { getDb } from '../../infra/db';
-import { logger } from '../../infra/logger';
-import { freightSimulations, freightConfirmations, freightMemory } from '../../drizzle/schema';
+import { getDb } from '@/infra/db';
+import { logger } from '@/infra/logger';
+import { freightSimulations, freightConfirmations, freightMemory } from '@/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { randomUUID, createHash } from 'crypto';
 

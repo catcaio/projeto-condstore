@@ -41,7 +41,7 @@ O Next.js App Router usa **route groups** `(nome)` para agrupar páginas sob lay
 | **Cockpit** | `/cockpit` | `modules/cockpit` | Core |
 | **Conversas** | `/conversas` | `modules/conversas` + `modules/atendimento` | Core |
 | **Pedidos** | `/pedidos` | `modules/orders` | Core |
-| **Logística** | `/logistica` | `modules/logistica` + `modules/freight` | Core |
+| **Logística** | `/logistica` | `modules/fulfillment/presentation/logistics` + `modules/fulfillment/freight` | Core |
 | **Clientes** | `/clientes` | `modules/clientes` + `modules/customers` | Core |
 | **Frank** | `/frank` | `modules/frank` | Inteligência |
 | **Métricas** | `/metricas` | `modules/metrics` + `modules/analytics` | Inteligência |
@@ -52,7 +52,7 @@ O Next.js App Router usa **route groups** `(nome)` para agrupar páginas sob lay
 | **Dashboard** | `/dashboard` | legado removido; usar `/cockpit` | — |
 | **Home** | `/home` | `modules/cockpit` (redirect to `/cockpit`) | — |
 | **Financeiro** | `/financeiro` | `modules/finops` | Legacy |
-| **Freight** | `/freight` | `modules/freight` | — |
+| **Freight** | `/freight` | `modules/fulfillment/freight` | — |
 | **Inbox** | `/inbox` | `modules/conversas` (alias de `/conversas`) | — |
 | **Settings** | `/settings` | Legacy settings | Legacy |
 | **Sistema** | `/sistema` | `modules/system-status` | Legacy |

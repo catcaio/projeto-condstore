@@ -29,7 +29,7 @@ import { aiDecisionLogRepository } from "../../../infra/repositories/ai-decision
 import { verifyTwilioSignature } from "../../../lib/security/webhook-verifier";
 import { registerWebhookEvent } from "../../../lib/security/webhook-dedupe";
 import { withDistributedLock } from "../../../lib/infra/locks";
-import { freightController } from "../../../modules/freight/freight.controller";
+import { freightController } from "../../../modules/fulfillment/freight/freight.controller";
 import { normalizeAndHash, isValidPhone } from "../../../lib/phone";
 import { intentClassifier } from "../../../core/conversation/intent-classifier";
 import { appendMessage } from "../../../infra/context-cache";

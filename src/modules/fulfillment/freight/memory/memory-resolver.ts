@@ -5,8 +5,8 @@
  * Read-only diagnostics: does NOT modify quoted prices.
  */
 
-import { getDb } from '../../../infra/db';
-import { freightMemory } from '../../../drizzle/schema';
+import { getDb } from '@/infra/db';
+import { freightMemory } from '@/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
 // ─── Types ──────────────────────────────────────────────────────────────────

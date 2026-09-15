@@ -3,7 +3,7 @@
  * Defines all types used in the freight calculation module.
  */
 
-import type { AttributionSnapshot } from '../../infra/attribution/attribution.types';
+import type { AttributionSnapshot } from '@/infra/attribution/attribution.types';
 
 /**
  * Freight calculation request.

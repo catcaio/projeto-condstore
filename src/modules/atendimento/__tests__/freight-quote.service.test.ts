@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FreightQuoteService } from '../freight-quote.service';
 import * as dbInfra from '@/infra/db';
-import { freightService } from '@/modules/freight/freight.service';
+import { freightService } from '@/modules/fulfillment/freight/freight.service';
 import { domineIntakeService } from '@/domine/domine-intake.service';
 import { conversationService } from '../conversation.service';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
@@ -32,7 +32,7 @@ vi.mock('@/infra/db', async () => {
     };
 });
 
-vi.mock('@/modules/freight/freight.service', () => ({
+vi.mock('@/modules/fulfillment/freight/freight.service', () => ({
     freightService: {
         calculateFreight: vi.fn(),
     }

@@ -5,7 +5,7 @@
  * Returns normalized quote format compatible with the freight engine.
  */
 
-import { logger } from '../../../infra/logger';
+import { logger } from '@/infra/logger';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

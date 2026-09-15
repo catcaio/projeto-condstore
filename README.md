@@ -79,7 +79,7 @@ docs/                  # estado do produto, runbooks e documentação técnica c
 - Comece por `src/middleware.ts` para entender fronteiras de acesso.
 - Veja `src/app/api/whatsapp/incoming/route.ts` para o fluxo real de entrada WhatsApp.
 - Siga para `src/modules/atendimento/whatsapp-inbound-orchestrator.service.ts` e `src/modules/frank/*` para a decisão de resposta.
-- Para frete/pedidos/logística: `src/modules/freight/*`, `src/modules/pedidos/*`, `src/modules/logistics/*`.
+- Para frete/pedidos/logística: `src/modules/fulfillment/freight/*`, `src/modules/pedidos/*`, `src/modules/fulfillment/shipments/*`.
 - Para multi-tenant e guards: `src/infra/auth/*` e `src/infra/db.ts`.
 - Para eventos: `src/lib/events/operational-event-bus.ts` e `src/modules/domine/*`.
 

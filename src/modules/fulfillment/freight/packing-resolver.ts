@@ -4,10 +4,10 @@
  * Falls back to raw FreightRequest values if no profile matches.
  */
 
-import { getDb } from '../../infra/db';
-import { packingProfiles } from '../../drizzle/schema';
+import { getDb } from '@/infra/db';
+import { packingProfiles } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { logger } from '../../infra/logger';
+import { logger } from '@/infra/logger';
 import {
     consolidateIdenticalProducts,
     consolidateMixedOrder,
@@ -15,8 +15,8 @@ import {
     type ProductInput,
     type PackingRuleConfig,
     DEFAULT_PACKING_RULES,
-} from '../../core/freight/packing-consolidation';
-import { loadOperationalSettings } from '../../core/freight/operational-settings';
+} from '@/core/freight/packing-consolidation';
+import { loadOperationalSettings } from '@/core/freight/operational-settings';
 
 export interface ResolvedDimensions {
     width: number;   // cm

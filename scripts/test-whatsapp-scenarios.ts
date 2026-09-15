@@ -10,7 +10,7 @@ import {
     formatProductSuggestionsResponse,
 } from '@/lib/formatters/whatsapp-response';
 import { catalogService } from '@/modules/catalog/catalog.service';
-import { freightService } from '@/modules/freight/freight.service';
+import { freightService } from '@/modules/fulfillment/freight/freight.service';
 import { resolveEntities } from '@/modules/frank/entity-resolver';
 import { resolveIntent } from '@/modules/frank/intent-resolver';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';

@@ -1,4 +1,4 @@
-import { freightController } from '../modules/freight/freight.controller';
+import { freightController } from '../modules/fulfillment/freight/freight.controller';
 import { getDb } from '../infra/db';
 import { freightFunnelEvents, tenants } from '../drizzle/schema';
 import { desc } from 'drizzle-orm';

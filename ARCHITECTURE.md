@@ -85,10 +85,10 @@ Isolamento por tenant é implementado em múltiplas barreiras:
 | Módulo | Paths | Papel no sistema |
 |---|---|---|
 | Atendimento | `src/modules/atendimento/**` | Inbound WhatsApp, conversas, políticas de resposta, métricas de pipeline |
-| Freight | `src/modules/freight/**` | Simulação, roteamento/adapters de transportadora, memória e auditoria de frete |
+| Freight | `src/modules/fulfillment/freight/**` | Simulação, roteamento/adapters de transportadora, memória e auditoria de frete |
 | CRM | `src/modules/crm/**`, `src/modules/clientes/**` | Oportunidades, notas/tarefas/quotes e composição de visão de clientes |
 | Pedidos | `src/modules/pedidos/**` | Carregamento/serviço de pedidos e integração com contexto logístico |
-| Logistics | `src/modules/logistics/**`, `src/modules/logistica/**` | Serviço/repositório de shipments + superfícies de operação logística |
+| Logistics | `src/modules/fulfillment/shipments/**`, `src/modules/fulfillment/presentation/logistics/**` | Serviço/repositório de shipments + superfícies de operação logística |
 | Cockpit | `src/modules/cockpit/**` | Dados agregados para painéis, alertas, filas, métricas e atalhos |
 | Frank | `src/modules/frank/**`, `src/core/ai/**` | Intent/context resolver, sugestões, tools, memória, gateway LLM e governança |
 | DOMINE | `src/modules/domine/**`, `src/domine/**` | Publicação/processamento de eventos com status, retries e DLQ |
@@ -100,7 +100,7 @@ Isolamento por tenant é implementado em múltiplas barreiras:
 - **Stripe**: webhook de billing + cliente singleton com circuit breaker.
 - **Providers LLM**: via gateway central (`src/core/ai/llm-gateway.ts`) e providers OpenAI-compatible.
 - **Qdrant**: clientes/adapters para vetores e reindex.
-- **Melhor Envio**: adapter de frete em `src/modules/freight/adapters/`.
+- **Melhor Envio**: adapter de frete em `src/modules/fulfillment/freight/adapters/`.
 
 ## 7) Frank/AI: limites de runtime e governança
 

@@ -26,7 +26,7 @@ import { CockpitWorkspaceShell } from '@/modules/cockpit/workspace/workspace-she
 import { getCockpitData } from '@/modules/cockpit/data/get-cockpit-data';
 import { ClientsView } from '@/modules/clientes/clients-view';
 import { ConversationsView } from '@/modules/conversas/conversations-view';
-import { LogisticsView } from '@/modules/logistica/logistics-view';
+import { LogisticsView } from '@/modules/fulfillment/presentation/logistics/logistics-view';
 import { OrdersView } from '@/modules/pedidos';
 import { loadClientsHydrated } from '@/modules/clientes/customer.loader';
 import { loadOrdersHydrated } from '@/modules/pedidos/server';

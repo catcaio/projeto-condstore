@@ -9,7 +9,7 @@ import { conversationService } from '@/modules/atendimento/conversation.service'
 import { catalogService } from '@/modules/catalog/catalog.service';
 import { resolveCustomerByPhone } from '@/modules/customers/identity-resolver/identity-resolver.service';
 import { customerResolutionService } from '@/modules/customers/customer-resolution.service';
-import { freightService } from '@/modules/freight/freight.service';
+import { freightService } from '@/modules/fulfillment/freight/freight.service';
 import { funnelRepository, FunnelStage } from '@/modules/funnel/funnel.repository';
 import { resolveEntities } from '@/modules/frank/entity-resolver';
 import { resolveIntent, resolveContextualIntent, type SessionAnchors, type Intent } from '@/modules/frank/intent-resolver';

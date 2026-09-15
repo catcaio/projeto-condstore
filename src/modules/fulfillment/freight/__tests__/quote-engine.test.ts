@@ -23,15 +23,15 @@ vi.mock('@/providers/melhorenvio.provider', () => ({
     },
 }));
 
-vi.mock('@/modules/freight/table-driven-adapter', () => ({
+vi.mock('@/modules/fulfillment/freight/table-driven-adapter', () => ({
     getTableAdaptersForDestination: (...args: any[]) => mockGetTableAdaptersForDestination(...args),
 }));
 
-vi.mock('@/modules/freight/carrier-router', () => ({
+vi.mock('@/modules/fulfillment/freight/carrier-router', () => ({
     selectCarrierStrategy: (...args: any[]) => mockSelectCarrierStrategy(...args),
 }));
 
-vi.mock('@/modules/shipping/quote-engine/ConcurrentQuoteEngine', () => ({
+vi.mock('@/modules/fulfillment/freight/quote-engine/ConcurrentQuoteEngine', () => ({
     ConcurrentQuoteEngine: {
         run: (...args: any[]) => mockConcurrentRun(...args),
     },

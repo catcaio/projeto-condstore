@@ -26,9 +26,9 @@ Domínios que implementam a operação core do negócio. Todo novo desenvolvimen
 | **Clientes** | `src/modules/clientes/` | UI de clientes, customer loader/repository. Cliente 360 com relacionamento e ações | `operation` |
 | **Conversas** | `src/modules/conversas/` | UI do inbox WhatsApp (view, hooks, components) | `operation` |
 | **Pedidos (Orders)** | `src/modules/orders/` | Order lifecycle completo: service, repository, loader, view. Fluxo CREATED → DELIVERED | `operation` |
-| **Freight** | `src/modules/freight/` | Multi-carrier quote engine: carrier-router, table-driven adapter, packing resolver, adapters | `frete` |
-| **Logística** | `src/modules/logistica/` | UI logística: fila de acompanhamento, simulações, SLA, exceções | `frete` |
-| **Shipping** | `src/modules/shipping/` | Carriers, quote-engine runtimes, simulações server-side | `frete` |
+| **Freight** | `src/modules/fulfillment/freight/` | Multi-carrier quote engine: carrier-router, table-driven adapter, packing resolver, adapters | `frete` |
+| **Logística** | `src/modules/fulfillment/presentation/logistics/` | UI logística: fila de acompanhamento, simulações, SLA, exceções | `frete` |
+| **Fulfillment** | `src/modules/fulfillment/` | Bounded context logístico: freight (cotação/pricing), shipments (lifecycle/vínculo) e presentation/logistics | `frete` |
 | **Shipments** | `src/modules/shipments/` | Repositories e services de shipments. Linkage order→shipment | `frete` |
 | **Frank AI** | `src/modules/frank/` | AI agent operacional: intent resolver, context resolver, tools, orchestrator | `cockpit` |
 | **CRM** | `src/modules/crm/` | Pipeline management, CRM services | `operation` |
@@ -71,7 +71,7 @@ Módulos com overlap, mortos ou em convergência. **Não criar código novo nest
 
 | Módulo | Path | Status | Observação |
 |---|---|---|---|
-| `logistics` | `src/modules/logistics/` | ⚠️ **Ativo (recente)** | Contém `shipment.service.ts`, `shipment.repository.ts`, `shipment.events.ts` e testes. Overlap com `modules/logistica/` (que foca em UI) e `modules/shipments/` (que foca em linkage). Avaliar convergência. |
+| `logistics` | `src/modules/fulfillment/shipments/` | ⚠️ **Ativo (recente)** | Contém `shipment.service.ts`, `shipment.repository.ts`, `shipment.events.ts` e testes. Overlap com `modules/fulfillment/presentation/logistics/` (que foca em UI) e `modules/shipments/` (que foca em linkage). Avaliar convergência. |
 | `customers` | `src/modules/customers/` | ⚠️ **Sobreposição** | Contém `customer-resolution.service.ts` e `identity-resolver/`. Overlap com `modules/clientes/` (que tem repository + UI). Dívida de convergência. |
 | `conversas` vs `atendimento` | Ver paths acima | ⚠️ **Sobreposição** | `conversas/` = UI (view, hooks). `atendimento/` = services (orchestrator, conversation, message). Separação funcional, mas nomes confusos para quem não conhece. |
 | `shipping` vs `freight` vs `shipments` | Ver paths acima | ⚠️ **Tríade logística** | `freight/` = quote engine e pricing. `shipping/` = carrier adapters e quote runtime. `shipments/` = persistence e linkage. Funcionam juntos, mas a fronteira não é óbvia. |

@@ -5,12 +5,12 @@ import { carrierPolicies } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
-import { TableDrivenAdapter } from '@/modules/freight/table-driven-adapter';
+import { TableDrivenAdapter } from '@/modules/fulfillment/freight/table-driven-adapter';
 import { resolveCarrierZone, extractStateFromCep } from '@/core/freight/zone-resolver';
 import { loadOperationalSettings } from '@/core/freight/operational-settings';
-import { logFreightSimulation, computeWeightBand, computeVolumeBand } from '@/modules/freight/freight-audit';
-import { resolveFreightMemory, generateRecommendation } from '@/modules/freight/memory/memory-resolver';
-import { selectCarrierStrategy } from '@/modules/freight/carrier-router';
+import { logFreightSimulation, computeWeightBand, computeVolumeBand } from '@/modules/fulfillment/freight/freight-audit';
+import { resolveFreightMemory, generateRecommendation } from '@/modules/fulfillment/freight/memory/memory-resolver';
+import { selectCarrierStrategy } from '@/modules/fulfillment/freight/carrier-router';
 
 export const dynamic = 'force-dynamic';
 
