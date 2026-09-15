@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getCustomerWithContext } from '@/modules/clientes/customer.repository';
+import { getCustomerWithContext } from '@/modules/customers';
 import { executeFrankTool } from '../tool-guard';
 import { getRecentOrdersTool, type RecentOrderSummary } from './getRecentOrders.tool';
 import { getRecentQuotesTool, type RecentQuoteSummary } from './getRecentQuotes.tool';
