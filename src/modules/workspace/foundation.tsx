@@ -27,9 +27,9 @@ import { getCockpitData } from '@/modules/cockpit/data/get-cockpit-data';
 import { ClientsView } from '@/modules/clientes/clients-view';
 import { ConversationsView } from '@/modules/conversas/conversations-view';
 import { LogisticsView } from '@/modules/logistica/logistics-view';
-import { OrdersView } from '@/modules/pedidos';
+import { OrdersView } from '@/modules/orders';
+import { loadOrdersHydrated } from '@/modules/orders/server';
 import { loadClientsHydrated } from '@/modules/clientes/customer.loader';
-import { loadOrdersHydrated } from '@/modules/pedidos/server';
 import { getServerSessionUser } from '@/infra/auth/session';
 import { getEnvironmentInfo, getIntegrationsStatus, getTenantBasics } from '@/app/(app)/settings/queries';
 

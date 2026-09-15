@@ -1,4 +1,4 @@
-import type { OrderRecord } from '@/modules/pedidos/types';
+import type { OrderRecord } from '@/modules/orders/types';
 
 export type LogisticsStatus =
     | 'simulado'

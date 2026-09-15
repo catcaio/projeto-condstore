@@ -18,7 +18,7 @@ vi.mock('@/modules/clientes/customer.loader', () => ({
     loadClientsHydrated: vi.fn(),
 }));
 
-vi.mock('@/modules/pedidos/server', () => ({
+vi.mock('@/modules/orders/server', () => ({
     loadOrdersHydrated: vi.fn(),
 }));
 

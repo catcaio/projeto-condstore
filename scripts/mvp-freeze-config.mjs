@@ -148,7 +148,7 @@ export const scopeRules = [
       'src/modules/freight/',
       'src/modules/logistics/',
       'src/modules/logistica/',
-      'src/modules/pedidos/',
+      'src/modules/orders/',
       'src/modules/shipping/',
       'src/app/api/public/cotacao/',
       'src/app/api/orders/',
