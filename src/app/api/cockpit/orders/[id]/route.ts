@@ -3,7 +3,7 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
-import { getOrderAggregate } from '@/modules/pedidos/order.repository';
+import { getOrderAggregate } from '@/modules/orders/order.repository';
 
 export async function GET(
     request: NextRequest,
