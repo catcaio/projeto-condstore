@@ -1,5 +1,5 @@
-import { mockOrders } from '@/modules/orders';
-import type { OrderRecord } from '@/modules/orders/types';
+import { mockOrders } from '@/modules/pedidos';
+import type { OrderRecord } from '@/modules/pedidos/types';
 import type {
     FreightSimulationOption,
     LogisticsEvent,

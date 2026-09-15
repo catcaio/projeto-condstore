@@ -1,5 +1,3 @@
-import type { ClientRecord } from '@/modules/clientes/types';
-
 export type OrderStatus = 'recebido' | 'em-analise' | 'aprovado' | 'faturado' | 'expedido' | 'concluido' | 'excecao';
 
 export type OrderPriority = 'critica' | 'alta' | 'media' | 'baixa';
@@ -41,9 +39,33 @@ export type OrderLogisticsContext = {
     quoteId: string;
 };
 
+export type OrderCustomer = {
+    id: string;
+    name: string;
+    company: string;
+    contact: string;
+    email: string;
+    phone: string;
+    city: string;
+    segment: string;
+    status?: string;
+    activityBucket?: string;
+    lastActivity?: string;
+    orderCount?: number;
+    conversationCount?: number;
+    simulationCount?: number;
+    averageTicket?: string;
+    lastInteraction?: string;
+    summary?: string;
+    tags: readonly string[];
+    conversations?: any[];
+    orders?: any[];
+    simulations?: any[];
+};
+
 export type OrderRecord = {
     id: string;
-    customer: ClientRecord;
+    customer: OrderCustomer;
     status: OrderStatus;
     priority: OrderPriority;
     channel: OrderChannel;

@@ -39,7 +39,7 @@ export async function createOrderFromSimulation(params: CreateOrderParams) {
     const acquiredLock = await redisClient.setNx(lockKey, '1', 10);
 
     if (!acquiredLock) {
-        structuredLogger.warn('pedidos_create_order_race_condition_prevented', {
+        structuredLogger.warn('orders_create_order_race_condition_prevented', {
             tenantId,
             simulationId
         });
@@ -70,7 +70,7 @@ export async function createOrderFromSimulation(params: CreateOrderParams) {
             ? 'already converted to order'
             : `must be ACCEPTED (current: ${simulation.status})`;
 
-        structuredLogger.warn('pedidos_create_order_from_simulation_blocked_status', {
+        structuredLogger.warn('orders_create_order_from_simulation_blocked_status', {
             tenantId,
             simulationId,
             simulationStatus: simulation.status,
@@ -164,7 +164,7 @@ export async function createOrderFromSimulation(params: CreateOrderParams) {
         entityId: orderId,
         payload: { simulationId, customerId, organizationId, totalAmount },
         actor: createdBy,
-        source: 'pedidos',
+        source: 'orders',
     }).catch(() => {});
 
     return {

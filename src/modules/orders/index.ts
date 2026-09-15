@@ -1,7 +1,6 @@
-export { mockOrders } from './mock-data';
-export { OrdersView } from './orders-view';
 export type {
     OrderChannel,
+    OrderCustomer,
     OrderEvent,
     OrderLineItem,
     OrderLogisticsContext,
@@ -12,3 +11,10 @@ export type {
     OrderTimelineState,
     OrderTimelineStep,
 } from './types';
+export { createOrderFromSimulation } from './order.service';
+export { loadOrdersHydrated } from './order.loader';
+export {
+    getRecentOrdersForCustomer,
+    getOrderAggregate,
+    findOrderWithShipmentByPrefix,
+} from './order.repository';
