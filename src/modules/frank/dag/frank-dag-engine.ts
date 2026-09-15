@@ -315,6 +315,14 @@ class FrankDagExecutionInstance {
         const task = this.plan.tasks.get(taskId);
         if (!task) return;
 
+        // Terminal states are final: a stale in-flight tick suspended at an await
+        // must not overwrite them after cancel()/termination won the race.
+        if (['COMPLETED', 'FAILED', 'CANCELLED', 'SKIPPED'].includes(task.status)) return;
+
+        // Once terminated, only cancellation transitions are allowed, so a stale
+        // tick resumed after cancel() cannot apply SKIP/FAIL successor policies.
+        if (this.isTerminated && toStatus !== 'CANCELLED') return;
+
         const fromStatus = task.status;
         if (fromStatus === toStatus) return;
 
