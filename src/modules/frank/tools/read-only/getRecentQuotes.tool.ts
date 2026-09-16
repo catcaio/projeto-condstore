@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getRecentOrdersForCustomer } from '@/modules/pedidos/server';
+import { getRecentOrdersForCustomer } from '@/modules/orders/server';
 import { getQuoteContext } from '@/modules/fulfillment/freight/server';
 import { executeFrankTool } from '../tool-guard';
 import { buildQuoteRouteSummary, clampSupportLimit } from './shared';

@@ -1,4 +1,4 @@
-import { getCustomerWithContext } from './customer.repository';
+import { getCustomerWithContext } from '@/modules/customers';
 import type { ClientRecord, ClientStatus, ClientActivityBucket } from './types';
 import { db } from '@/db/client';
 import { customers, organizations, customerContacts, orders, simulations, crmOpportunities, conversations } from '@/drizzle/schema';

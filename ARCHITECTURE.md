@@ -87,7 +87,7 @@ Isolamento por tenant é implementado em múltiplas barreiras:
 | Atendimento | `src/modules/atendimento/**` | Inbound WhatsApp, conversas, políticas de resposta, métricas de pipeline |
 | Freight | `src/modules/fulfillment/freight/**` | Simulação, roteamento/adapters de transportadora, memória e auditoria de frete |
 | CRM | `src/modules/crm/**`, `src/modules/clientes/**` | Oportunidades, notas/tarefas/quotes e composição de visão de clientes |
-| Pedidos | `src/modules/pedidos/**` | Carregamento/serviço de pedidos e integração com contexto logístico |
+| Orders | `src/modules/orders/**` | Order domain service, repository, loader, types and lifecycle |
 | Logistics | `src/modules/fulfillment/shipments/**`, `src/modules/fulfillment/presentation/logistics/**` | Serviço/repositório de shipments + superfícies de operação logística |
 | Cockpit | `src/modules/cockpit/**` | Dados agregados para painéis, alertas, filas, métricas e atalhos |
 | Frank | `src/modules/frank/**`, `src/core/ai/**` | Intent/context resolver, sugestões, tools, memória, gateway LLM e governança |

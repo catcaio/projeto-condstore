@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getOrderAggregate } from '@/modules/pedidos/server';
+import { getOrderAggregate } from '@/modules/orders/server';
 import { getShipmentsForOrder } from '@/modules/fulfillment/shipments/server';
 import { executeFrankTool } from '../tool-guard';
 import { selectLatestShipment, toShipmentSummary, type ShipmentSummary } from './shared';

@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { POST } from '../route';
 import { requireInternalAuth } from '@/infra/auth/require-internal-auth';
 import { redisClient } from '@/infra/redis.client';
-import { createOrderFromSimulation } from '@/modules/pedidos/server';
+import { createOrderFromSimulation } from '@/modules/orders/server';
 
 vi.mock('@/infra/auth/require-internal-auth', () => ({
     requireInternalAuth: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('@/infra/redis.client', () => ({
     }
 }));
 
-vi.mock('@/modules/pedidos/server', () => ({
+vi.mock('@/modules/orders/server', () => ({
     createOrderFromSimulation: vi.fn(),
 }));
 

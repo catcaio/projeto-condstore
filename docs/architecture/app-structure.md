@@ -84,7 +84,7 @@ O cockpit contém 37 subdiretórios incluindo áreas legacy:
 | `rate-limit/` | `/cockpit/rate-limit` | Legacy |
 | `security/` | `/cockpit/security` | Ativo |
 | `settings/` | `/cockpit/settings` | Ativo |
-| `shipments/` | `/cockpit/shipments` | Ativo |
+| `fulfillment/shipments/` | `/cockpit/shipments` | Ativo |
 | `status/` | `/cockpit/status` | Ativo |
 | `supreme/` | `/cockpit/supreme` | Ativo |
 | `timeline/` | `/cockpit/timeline` | Ativo |

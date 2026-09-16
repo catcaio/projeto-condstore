@@ -65,7 +65,7 @@
 
 ### [E] Freight Engine
 
-- **Módulo:** `src/modules/fulfillment/freight/`
+- **Módulo:** `src/modules/shipping/` + `src/modules/fulfillment/freight/`
 - **Responsabilidade:** consultar múltiplos carriers em paralelo
   - Melhor Envio API (real-time)
   - Movvi, Mengue, Braspress (tabelas pré-carregadas)
@@ -97,7 +97,7 @@
 
 ### [I] Shipment linkado
 
-- **Módulo:** `src/modules/shipments/`
+- **Módulo:** `src/modules/fulfillment/shipments/`
 - **Responsabilidade:** criado automaticamente quando pedido é confirmado (DRAFT → CONFIRMED)
 - **Resultado:** freight_shipment criado, tracking disponível
 

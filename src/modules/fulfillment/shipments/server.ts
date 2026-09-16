@@ -1,8 +1,12 @@
 /**
  * Fulfillment Shipments Subdomain — Server Entrypoint.
+ *
+ * Re-exports server-only shipment capabilities for consumers outside the fulfillment module.
  */
 
 export { shipmentService } from './shipment.service';
+export { shipmentRepository } from './shipment.repository';
+export { shipmentEvents } from './shipment.events';
 export type { ShipmentStatus } from './shipment.service';
 export type { ShipmentListFilter } from './shipment.repository';
 

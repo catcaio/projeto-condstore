@@ -1,5 +1,5 @@
 import type { FreightShipmentRecord } from '@/drizzle/schema';
-import { findCustomerReferenceByPhone } from '@/modules/clientes/customer.repository';
+import { findCustomerReferenceByPhone } from '@/modules/customers';
 
 const DEFAULT_SUPPORT_LIMIT = 5;
 
