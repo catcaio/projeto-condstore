@@ -38,6 +38,13 @@ const DOMAIN_COLORS: Record<string, string> = {
   'Core System': '#3E5CFF'
 };
 
+const VALID_VIEWS: ViewPerspective[] = [
+  'architecture', 'flow', 'dependencies', 'data',
+  'integrations', 'ai', 'infra', 'multi_tenant', 'stack'
+];
+
+const VALID_LAYERS = ['UI', 'Application', 'Domain', 'Infrastructure', 'Database', 'External'];
+
 export function ArchitectureExplorer() {
   // Navigation & View state
   const [activeView, setActiveView] = useState<ViewPerspective>('architecture');
@@ -73,9 +80,8 @@ export function ArchitectureExplorer() {
   const [zoomLevel, setZoomLevel] = useState<number>(0.9);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isCanvasDragging, setIsCanvasDragging] = useState<boolean>(false);
-  const [canvasDragStart, setCanvasDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
-  const [nodeDragStart, setNodeDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isActivelyDraggingNode, setIsActivelyDraggingNode] = useState<boolean>(false);
 
   // Filters
   const [selectedDomain, setSelectedDomain] = useState<string>('ALL');
@@ -92,23 +98,96 @@ export function ArchitectureExplorer() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Deep Linking URL synchronization
+  // Pointer event tracking for gestures (touch & mouse)
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const initialPinchDistRef = useRef<number | null>(null);
+  const initialPinchZoomRef = useRef<number>(0.9);
+  const initialPinchCenterRef = useRef<{ x: number; y: number } | null>(null);
+  const initialPinchPanRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const canvasDragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const nodeDragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const nodeDragDistRef = useRef<number>(0);
+
+  // URL State Updates
+  const updateUrl = useCallback((overrides: {
+    nodeId?: string | null;
+    view?: ViewPerspective;
+    scope?: 'MVP' | 'FULL';
+    flowId?: string | null;
+    layer?: string;
+    domain?: string;
+    status?: string;
+    theme?: 'dark' | 'light';
+  } = {}) => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+
+    const currentView = overrides.view ?? activeView;
+    const currentScope = overrides.scope ?? systemMode;
+    const currentNode = overrides.nodeId !== undefined ? overrides.nodeId : selectedNodeId;
+    const currentFlow = overrides.flowId !== undefined ? overrides.flowId : selectedFlowId;
+    const currentLayer = overrides.layer ?? selectedLayer;
+    const currentDomain = overrides.domain ?? selectedDomain;
+    const currentStatus = overrides.status ?? selectedStatus;
+    const currentTheme = overrides.theme ?? theme;
+
+    url.searchParams.set('view', currentView);
+    url.searchParams.set('scope', currentScope);
+    url.searchParams.delete('mode'); // Clean up legacy param
+
+    if (currentNode) url.searchParams.set('node', currentNode);
+    else url.searchParams.delete('node');
+
+    if (currentFlow) url.searchParams.set('flow', currentFlow);
+    else url.searchParams.delete('flow');
+
+    if (currentLayer && currentLayer !== 'ALL') url.searchParams.set('layer', currentLayer);
+    else url.searchParams.delete('layer');
+
+    if (currentDomain && currentDomain !== 'ALL') url.searchParams.set('domain', currentDomain);
+    else url.searchParams.delete('domain');
+
+    if (currentStatus && currentStatus !== 'ALL') url.searchParams.set('status', currentStatus);
+    else url.searchParams.delete('status');
+
+    if (currentTheme) url.searchParams.set('theme', currentTheme);
+
+    window.history.replaceState({}, '', url.toString());
+  }, [activeView, systemMode, selectedNodeId, selectedFlowId, selectedLayer, selectedDomain, selectedStatus, theme]);
+
+  // Deep Linking URL initialization & restoration
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const nodeParam = params.get('node');
       const viewParam = params.get('view');
-      const modeParam = params.get('mode');
+      const scopeParam = params.get('scope') || params.get('mode');
+      const nodeParam = params.get('node');
+      const flowParam = params.get('flow');
+      const layerParam = params.get('layer');
+      const domainParam = params.get('domain');
+      const statusParam = params.get('status');
       const themeParam = params.get('theme');
 
+      if (viewParam && VALID_VIEWS.includes(viewParam as ViewPerspective)) {
+        setActiveView(viewParam as ViewPerspective);
+      }
+      if (scopeParam && ['MVP', 'FULL'].includes(scopeParam)) {
+        setSystemMode(scopeParam as 'MVP' | 'FULL');
+      }
       if (nodeParam && ARCHITECTURE_DATA.nodes.some(n => n.id === nodeParam)) {
         setSelectedNodeId(nodeParam);
       }
-      if (viewParam) {
-        setActiveView(viewParam as ViewPerspective);
+      if (flowParam && ARCHITECTURE_DATA.flows.some(f => f.id === flowParam)) {
+        setSelectedFlowId(flowParam);
       }
-      if (modeParam && ['MVP', 'FULL'].includes(modeParam)) {
-        setSystemMode(modeParam as 'MVP' | 'FULL');
+      if (layerParam && (VALID_LAYERS.includes(layerParam) || layerParam === 'ALL')) {
+        setSelectedLayer(layerParam);
+      }
+      if (domainParam) {
+        setSelectedDomain(domainParam);
+      }
+      if (statusParam) {
+        setSelectedStatus(statusParam);
       }
       if (themeParam && ['dark', 'light'].includes(themeParam)) {
         setTheme(themeParam as 'dark' | 'light');
@@ -116,21 +195,9 @@ export function ArchitectureExplorer() {
     }
   }, []);
 
-  const updateUrl = useCallback((nodeId: string | null, view: string, mode: string, currentTheme: string) => {
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (nodeId) url.searchParams.set('node', nodeId);
-      else url.searchParams.delete('node');
-      url.searchParams.set('view', view);
-      url.searchParams.set('mode', mode);
-      url.searchParams.set('theme', currentTheme);
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, []);
-
   // Node Visibility Logic
   const isNodeVisible = useCallback((node: ArchNode): boolean => {
-    // Mode Filter
+    // Mode / Scope Filter
     if (systemMode === 'MVP' && !node.isMvp) return false;
 
     // View Perspective Filter
@@ -247,8 +314,8 @@ export function ArchitectureExplorer() {
     expandAncestors(id);
     centerOnNode(id);
     setIsMobileInspectorOpen(true);
-    updateUrl(id, activeView, systemMode, theme);
-  }, [expandAncestors, centerOnNode, activeView, systemMode, theme, updateUrl]);
+    updateUrl({ nodeId: id });
+  }, [expandAncestors, centerOnNode, updateUrl]);
 
   // Fit canvas to bounds
   const handleFitCanvas = useCallback(() => {
@@ -297,26 +364,41 @@ export function ArchitectureExplorer() {
       }
 
       if (['1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(e.key)) {
-        const views: ViewPerspective[] = ['architecture', 'flow', 'dependencies', 'data', 'integrations', 'ai', 'infra', 'multi_tenant', 'stack'];
         const index = parseInt(e.key) - 1;
-        if (views[index]) {
-          setActiveView(views[index]);
-          updateUrl(selectedNodeId, views[index], systemMode, theme);
+        const targetView = VALID_VIEWS[index];
+        if (targetView) {
+          setActiveView(targetView);
+          updateUrl({ view: targetView });
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleFitCanvas, selectedNodeId, systemMode, theme, updateUrl]);
+  }, [handleFitCanvas, updateUrl]);
 
-  // Pan Zoom Wheel Handler
+  // Wheel Handler - smooth zoom toward mouse pointer & trackpad pan
   const handleWheel = (e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-      setZoomLevel(prev => Math.min(Math.max(prev * zoomFactor, 0.3), 2.5));
+    e.preventDefault();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (e.ctrlKey || e.metaKey || (!e.shiftKey && Math.abs(e.deltaY) > Math.abs(e.deltaX) * 2)) {
+      // Zoom toward cursor
+      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+      setZoomLevel(prevZoom => {
+        const newZoom = Math.min(Math.max(prevZoom * zoomFactor, 0.3), 2.5);
+        setPan(prevPan => ({
+          x: mouseX - (mouseX - prevPan.x) * (newZoom / prevZoom),
+          y: mouseY - (mouseY - prevPan.y) * (newZoom / prevZoom)
+        }));
+        return newZoom;
+      });
     } else {
+      // Pan canvas
       setPan(prev => ({
         x: prev.x - e.deltaX,
         y: prev.y - e.deltaY
@@ -324,47 +406,129 @@ export function ArchitectureExplorer() {
     }
   };
 
-  // Canvas Mouse Dragging (Pan)
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0 || draggedNodeId) return;
-    setIsCanvasDragging(true);
-    setCanvasDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  // Pointer Down Handler for Canvas & Touch Gestures
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    const target = e.target as HTMLElement;
+    const nodeEl = target.closest('[data-node-id]') as HTMLElement | null;
+    const targetNodeId = nodeEl?.getAttribute('data-node-id');
+
+    if (activePointersRef.current.size === 1) {
+      if (targetNodeId) {
+        setDraggedNodeId(targetNodeId);
+        setIsActivelyDraggingNode(false);
+        nodeDragStartRef.current = { x: e.clientX, y: e.clientY };
+        nodeDragDistRef.current = 0;
+      } else {
+        setIsCanvasDragging(true);
+        canvasDragStartRef.current = {
+          x: e.clientX - pan.x,
+          y: e.clientY - pan.y
+        };
+      }
+    } else if (activePointersRef.current.size === 2) {
+      // Touch Pinch Gesture Start
+      setDraggedNodeId(null);
+      setIsActivelyDraggingNode(false);
+      setIsCanvasDragging(false);
+
+      const pointers = Array.from(activePointersRef.current.values());
+      const dist = Math.hypot(pointers[1].x - pointers[0].x, pointers[1].y - pointers[0].y);
+      const center = {
+        x: (pointers[0].x + pointers[1].x) / 2,
+        y: (pointers[0].y + pointers[1].y) / 2
+      };
+
+      initialPinchDistRef.current = dist;
+      initialPinchZoomRef.current = zoomLevel;
+      initialPinchCenterRef.current = center;
+      initialPinchPanRef.current = { ...pan };
+    }
   };
 
-  const handleCanvasMouseMove = (e: React.MouseEvent) => {
-    if (draggedNodeId) {
-      const dx = (e.clientX - nodeDragStart.x) / zoomLevel;
-      const dy = (e.clientY - nodeDragStart.y) / zoomLevel;
-      setNodePositions(prev => ({
-        ...prev,
-        [draggedNodeId]: {
-          x: (prev[draggedNodeId]?.x || 0) + dx,
-          y: (prev[draggedNodeId]?.y || 0) + dy
-        }
-      }));
-      setNodeDragStart({ x: e.clientX, y: e.clientY });
+  // Pointer Move Handler
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!activePointersRef.current.has(e.pointerId)) return;
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Handle 2-Finger Touch Pinch Zoom
+    if (activePointersRef.current.size === 2 && initialPinchDistRef.current && initialPinchCenterRef.current) {
+      const pointers = Array.from(activePointersRef.current.values());
+      const currentDist = Math.hypot(pointers[1].x - pointers[0].x, pointers[1].y - pointers[0].y);
+      const scale = currentDist / initialPinchDistRef.current;
+      const newZoom = Math.min(Math.max(initialPinchZoomRef.current * scale, 0.3), 2.5);
+
+      const currentCenter = {
+        x: (pointers[0].x + pointers[1].x) / 2,
+        y: (pointers[0].y + pointers[1].y) / 2
+      };
+
+      const rect = canvasRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
+      const initCenterCanvasX = initialPinchCenterRef.current.x - rect.left;
+      const initCenterCanvasY = initialPinchCenterRef.current.y - rect.top;
+
+      const newPanX = initCenterCanvasX - (initCenterCanvasX - initialPinchPanRef.current.x) * (newZoom / initialPinchZoomRef.current) + (currentCenter.x - initialPinchCenterRef.current.x);
+      const newPanY = initCenterCanvasY - (initCenterCanvasY - initialPinchPanRef.current.y) * (newZoom / initialPinchZoomRef.current) + (currentCenter.y - initialPinchCenterRef.current.y);
+
+      setZoomLevel(newZoom);
+      setPan({ x: newPanX, y: newPanY });
       return;
     }
 
-    if (isCanvasDragging) {
+    // Handle Node Drag
+    if (draggedNodeId && activePointersRef.current.size === 1) {
+      const dx = e.clientX - nodeDragStartRef.current.x;
+      const dy = e.clientY - nodeDragStartRef.current.y;
+      nodeDragDistRef.current += Math.hypot(dx, dy);
+      nodeDragStartRef.current = { x: e.clientX, y: e.clientY };
+
+      if (nodeDragDistRef.current > 4) {
+        setIsActivelyDraggingNode(true);
+      }
+
+      setNodePositions(prev => ({
+        ...prev,
+        [draggedNodeId]: {
+          x: (prev[draggedNodeId]?.x || 0) + dx / zoomLevel,
+          y: (prev[draggedNodeId]?.y || 0) + dy / zoomLevel
+        }
+      }));
+      return;
+    }
+
+    // Handle Single Pointer Canvas Pan
+    if (isCanvasDragging && activePointersRef.current.size === 1) {
       setPan({
-        x: e.clientX - canvasDragStart.x,
-        y: e.clientY - canvasDragStart.y
+        x: e.clientX - canvasDragStartRef.current.x,
+        y: e.clientY - canvasDragStartRef.current.y
       });
     }
   };
 
-  const handleCanvasMouseUp = () => {
-    setIsCanvasDragging(false);
-    setDraggedNodeId(null);
-  };
+  // Pointer Up / Cancel Handler
+  const handlePointerUp = (e: React.PointerEvent) => {
+    activePointersRef.current.delete(e.pointerId);
 
-  // Node Drag Handle
-  const handleNodeMouseDown = (e: React.MouseEvent, nodeId: string) => {
-    e.stopPropagation();
-    if (e.button !== 0) return;
-    setDraggedNodeId(nodeId);
-    setNodeDragStart({ x: e.clientX, y: e.clientY });
+    if (activePointersRef.current.size < 2) {
+      initialPinchDistRef.current = null;
+      initialPinchCenterRef.current = null;
+    }
+
+    if (draggedNodeId) {
+      if (nodeDragDistRef.current <= 4) {
+        // Clean Click -> Select Node
+        handleSelectNode(draggedNodeId);
+      }
+      setDraggedNodeId(null);
+      setIsActivelyDraggingNode(false);
+    }
+
+    if (activePointersRef.current.size === 0) {
+      setIsCanvasDragging(false);
+    }
   };
 
   // Search Query Matching
@@ -426,7 +590,7 @@ export function ArchitectureExplorer() {
   const selectedPrDiff = ARCHITECTURE_DATA.prDiffs[0];
 
   return (
-    <div className={`flex flex-col h-screen w-screen overflow-hidden select-none sitemap-font-sans transition-colors duration-200 ${
+    <div className={`flex flex-col h-full w-full overflow-hidden select-none sitemap-font-sans transition-colors duration-200 ${
       theme === 'dark' ? 'sitemap-theme-dark bg-[#09090b] text-[#f4f4f5]' : 'sitemap-theme-light bg-[#f4f3f0] text-[#141416]'
     }`}>
 
@@ -459,10 +623,10 @@ export function ArchitectureExplorer() {
 
         {/* System Scope & Controls */}
         <div className="flex items-center space-x-2">
-          {/* Mode Switcher */}
+          {/* Mode/Scope Switcher */}
           <div className="bg-[var(--color-bg-subtle)] p-0.5 rounded-lg border border-[var(--color-border-subtle)] flex space-x-0.5">
             <button
-              onClick={() => { setSystemMode('MVP'); updateUrl(selectedNodeId, activeView, 'MVP', theme); }}
+              onClick={() => { setSystemMode('MVP'); updateUrl({ scope: 'MVP' }); }}
               className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${
                 systemMode === 'MVP' ? 'bg-[#3E5CFF] text-white shadow-sm' : 'text-[var(--color-fg-secondary)] hover:text-[var(--color-fg-main)]'
               }`}
@@ -470,7 +634,7 @@ export function ArchitectureExplorer() {
               MVP CORE
             </button>
             <button
-              onClick={() => { setSystemMode('FULL'); updateUrl(selectedNodeId, activeView, 'FULL', theme); }}
+              onClick={() => { setSystemMode('FULL'); updateUrl({ scope: 'FULL' }); }}
               className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${
                 systemMode === 'FULL' ? 'bg-[#3E5CFF] text-white shadow-sm' : 'text-[var(--color-fg-secondary)] hover:text-[var(--color-fg-main)]'
               }`}
@@ -484,7 +648,7 @@ export function ArchitectureExplorer() {
             onClick={() => {
               const nextTheme = theme === 'dark' ? 'light' : 'dark';
               setTheme(nextTheme);
-              updateUrl(selectedNodeId, activeView, systemMode, nextTheme);
+              updateUrl({ theme: nextTheme });
             }}
             className="p-1.5 text-[var(--color-fg-secondary)] hover:text-[var(--color-fg-main)] border border-[var(--color-border-subtle)] rounded-lg bg-[var(--color-bg-subtle)] transition-colors"
             title="Alternar Tema (Dark / Light)"
@@ -533,8 +697,9 @@ export function ArchitectureExplorer() {
               <button
                 key={view.id}
                 onClick={() => {
-                  setActiveView(view.id as ViewPerspective);
-                  updateUrl(selectedNodeId, view.id, systemMode, theme);
+                  const targetView = view.id as ViewPerspective;
+                  setActiveView(targetView);
+                  updateUrl({ view: targetView });
                 }}
                 className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md transition-all whitespace-nowrap ${
                   isActive
@@ -551,12 +716,38 @@ export function ArchitectureExplorer() {
 
         {/* Combinable Filters */}
         <div className="flex items-center space-x-2 text-[11px] shrink-0 ml-4">
+          {/* Layer Filter */}
+          <div className="flex items-center space-x-1">
+            <span className="text-[var(--color-fg-subtle)] hidden lg:inline">Camada:</span>
+            <select
+              value={selectedLayer}
+              onChange={(e) => {
+                const layer = e.target.value;
+                setSelectedLayer(layer);
+                updateUrl({ layer });
+              }}
+              className="bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded px-2 py-0.5 text-[var(--color-fg-main)] text-xs focus:outline-none focus:border-[#3E5CFF]"
+            >
+              <option value="ALL">Todas Camadas</option>
+              <option value="UI">UI</option>
+              <option value="Application">Application</option>
+              <option value="Domain">Domain</option>
+              <option value="Infrastructure">Infrastructure</option>
+              <option value="Database">Database</option>
+              <option value="External">External</option>
+            </select>
+          </div>
+
           {/* Domain Filter */}
           <div className="flex items-center space-x-1">
             <span className="text-[var(--color-fg-subtle)] hidden lg:inline">Domínio:</span>
             <select
               value={selectedDomain}
-              onChange={(e) => setSelectedDomain(e.target.value)}
+              onChange={(e) => {
+                const domain = e.target.value;
+                setSelectedDomain(domain);
+                updateUrl({ domain });
+              }}
               className="bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded px-2 py-0.5 text-[var(--color-fg-main)] text-xs focus:outline-none focus:border-[#3E5CFF]"
             >
               <option value="ALL">Todos Domínios</option>
@@ -577,7 +768,11 @@ export function ArchitectureExplorer() {
             <span className="text-[var(--color-fg-subtle)] hidden lg:inline">Status:</span>
             <select
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={(e) => {
+                const status = e.target.value;
+                setSelectedStatus(status);
+                updateUrl({ status });
+              }}
               className="bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded px-2 py-0.5 text-[var(--color-fg-main)] text-xs focus:outline-none focus:border-[#3E5CFF]"
             >
               <option value="ALL">Todos Status</option>
@@ -623,7 +818,10 @@ export function ArchitectureExplorer() {
           {ARCHITECTURE_DATA.flows.map(flow => (
             <button
               key={flow.id}
-              onClick={() => setSelectedFlowId(flow.id)}
+              onClick={() => {
+                setSelectedFlowId(flow.id);
+                updateUrl({ flowId: flow.id });
+              }}
               className={`px-2.5 py-1 rounded text-xs font-medium transition-all shrink-0 ${
                 selectedFlowId === flow.id
                   ? 'bg-[#3E5CFF] text-white'
@@ -643,10 +841,11 @@ export function ArchitectureExplorer() {
         <div
           ref={canvasRef}
           onWheel={handleWheel}
-          onMouseDown={handleCanvasMouseDown}
-          onMouseMove={handleCanvasMouseMove}
-          onMouseUp={handleCanvasMouseUp}
-          className={`flex-1 relative overflow-hidden transition-cursor ${
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          className={`flex-1 relative overflow-hidden touch-none ${
             isCanvasDragging ? 'cursor-grabbing' : 'cursor-grab'
           }`}
           style={{
@@ -722,11 +921,10 @@ export function ArchitectureExplorer() {
               return (
                 <div
                   key={node.id}
-                  onClick={(e) => { e.stopPropagation(); handleSelectNode(node.id); }}
-                  onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+                  data-node-id={node.id}
                   onMouseEnter={() => setHoveredNodeId(node.id)}
                   onMouseLeave={() => setHoveredNodeId(null)}
-                  className={`absolute w-56 rounded-xl border backdrop-blur-md p-3.5 cursor-pointer transition-all duration-150 shadow-lg z-10 ${
+                  className={`absolute w-56 rounded-xl border backdrop-blur-md p-3.5 cursor-pointer transition-shadow duration-150 shadow-lg z-10 ${
                     isSelected
                       ? 'border-[#3E5CFF] ring-2 ring-[#3E5CFF]/40 bg-[var(--color-bg-elevated)] scale-105 shadow-2xl z-20'
                       : isHovered
@@ -863,7 +1061,7 @@ export function ArchitectureExplorer() {
               </div>
 
               <button
-                onClick={() => { setSelectedNodeId(null); setIsMobileInspectorOpen(false); }}
+                onClick={() => { setSelectedNodeId(null); setIsMobileInspectorOpen(false); updateUrl({ nodeId: null }); }}
                 className="text-[var(--color-fg-subtle)] hover:text-[var(--color-fg-main)] p-1 rounded-lg hover:bg-[var(--color-bg-hover)]"
                 aria-label="Fechar Inspector"
               >
