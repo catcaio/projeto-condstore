@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ConversationStageConflictError, conversationService } from '@/modules/atendimento/conversation.service';
-import { conversationRepository } from '@/modules/atendimento/conversation.repository';
+import { ConversationStageConflictError, conversationService } from '@/modules/conversations/server';
+import { conversationRepository } from '@/modules/conversations/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';

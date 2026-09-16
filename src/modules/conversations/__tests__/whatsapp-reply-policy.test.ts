@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { resolveInboundReplyPolicy } from '../whatsapp-reply-policy';
+import { resolveInboundReplyPolicy } from '@/modules/conversations/domain/whatsapp-reply-policy';
 
 describe('WhatsApp Reply Policy', () => {
     it('Should return AUTO_REPLY with LGPD consent text if no consent', () => {

@@ -1,15 +1,5 @@
 /**
- * Backward-compatible re-exports from the canonical types file.
- * All mock seed data has been removed — the inbox now uses the real API.
+ * @deprecated Use `@/modules/conversations` or `@/modules/conversations/presentation/mock-data` instead.
+ * Compatibility re-export layer.
  */
-export type {
-    ConversationActor,
-    ConversationChannel,
-    ConversationContextData,
-    ConversationMessage,
-    ConversationOrder,
-    ConversationPriority,
-    ConversationRecord,
-    ConversationSimulation,
-    ConversationStatus,
-} from './types';
+export * from '@/modules/conversations/presentation/mock-data';

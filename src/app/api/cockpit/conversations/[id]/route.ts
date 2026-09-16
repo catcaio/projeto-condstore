@@ -18,7 +18,7 @@ import {
     crmNotes,
     crmTasks
 } from '@/drizzle/schema';
-import { conversationService } from '@/modules/atendimento/conversation.service';
+import { conversationService } from '@/modules/conversations/server';
 
 export const revalidate = 0;
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pipelineMetricsService } from '@/modules/atendimento/pipeline-metrics.service';
+import { pipelineMetricsService } from '@/modules/conversations/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';

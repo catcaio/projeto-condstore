@@ -56,7 +56,7 @@ describe('WhatsApp Core Hardening', () => {
 
     describe('Reply Policy - Operator Active Bypass', () => {
         it('should return ACK_ONLY when conversation is operator_active', async () => {
-            const { resolveInboundReplyPolicy } = await import('../whatsapp-reply-policy');
+            const { resolveInboundReplyPolicy } = await import('@/modules/conversations/domain/whatsapp-reply-policy');
             const policy = resolveInboundReplyPolicy({
                 tenantId: 't1',
                 phoneHash: 'hash123',
@@ -70,7 +70,7 @@ describe('WhatsApp Core Hardening', () => {
         });
 
         it('should not send auto-reply when product is detected without operator', async () => {
-            const { resolveInboundReplyPolicy } = await import('../whatsapp-reply-policy');
+            const { resolveInboundReplyPolicy } = await import('@/modules/conversations/domain/whatsapp-reply-policy');
             const policy = resolveInboundReplyPolicy({
                 tenantId: 't1',
                 phoneHash: 'hash123',

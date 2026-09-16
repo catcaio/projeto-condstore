@@ -77,7 +77,7 @@ const ALLOWLIST: AllowEntry[] = [
         reason: 'findFreightShipmentByExternalShipmentId resolves by globally-unique external_shipment_id for the signature-verified Melhor Envio webhook; all subsequent writes re-scope via shipment.tenantId.',
     },
     {
-        fileSuffix: 'modules/atendimento/conversation.repository.ts',
+        fileSuffix: 'modules/conversations/infrastructure/conversation.repository.ts',
         table: 'conversationMessages',
         reason: 'getConversationMessageByProviderMessageId resolves by globally-unique provider_message_id for the Twilio status webhook; updates re-scope via the resolved row tenantId.',
     },

@@ -119,7 +119,7 @@ export const scopeRules = [
     label: 'WhatsApp supervisionado',
     coreArea: 'whatsapp',
     prefixes: [
-      'src/modules/atendimento/',
+      'src/modules/conversations/',
       'src/app/api/whatsapp/',
       'src/server/twilio/',
       'src/app/(app)/cockpit/atendimento/',

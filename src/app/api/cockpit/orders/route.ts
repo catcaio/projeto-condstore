@@ -3,7 +3,7 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
-import { orderService } from '@/modules/atendimento/order.service';
+import { orderService } from '@/modules/conversations/server';
 
 export async function GET(request: NextRequest) {
     const requestId = makeRequestId(request);

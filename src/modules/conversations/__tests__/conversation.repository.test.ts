@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as dbInfra from '@/infra/db';
-import { conversationRepository } from '../conversation.repository';
+import { conversationRepository } from '@/modules/conversations/infrastructure/conversation.repository';
 
 vi.mock('@/infra/db', () => ({
     getDb: vi.fn(),

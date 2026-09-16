@@ -22,9 +22,8 @@ Domínios que implementam a operação core do negócio. Todo novo desenvolvimen
 
 | Domínio | Path Canônico | Responsabilidade | Auth Module |
 |---|---|---|---|
-| **Atendimento** | `src/modules/atendimento/` | Orquestração WhatsApp inbound, conversation lifecycle, message service, pipeline metrics | `operation` |
+| **Conversations** | `src/modules/conversations/` | Único domínio técnico de Conversation/Message (domain/, application/, infrastructure/, presentation/). Superfície comercial 'Atendimento'. | `operation` |
 | **Clientes** | `src/modules/clientes/` | UI de clientes, customer loader/repository. Cliente 360 com relacionamento e ações | `operation` |
-| **Conversas** | `src/modules/conversas/` | UI do inbox WhatsApp (view, hooks, components) | `operation` |
 | **Pedidos (Orders)** | `src/modules/orders/` | Order lifecycle completo: service, repository, loader, view. Fluxo CREATED → DELIVERED | `operation` |
 | **Freight** | `src/modules/freight/` | Multi-carrier quote engine: carrier-router, table-driven adapter, packing resolver, adapters | `frete` |
 | **Logística** | `src/modules/logistica/` | UI logística: fila de acompanhamento, simulações, SLA, exceções | `frete` |
@@ -73,7 +72,7 @@ Módulos com overlap, mortos ou em convergência. **Não criar código novo nest
 |---|---|---|---|
 | `logistics` | `src/modules/logistics/` | ⚠️ **Ativo (recente)** | Contém `shipment.service.ts`, `shipment.repository.ts`, `shipment.events.ts` e testes. Overlap com `modules/logistica/` (que foca em UI) e `modules/shipments/` (que foca em linkage). Avaliar convergência. |
 | `customers` | `src/modules/customers/` | ⚠️ **Sobreposição** | Contém `customer-resolution.service.ts` e `identity-resolver/`. Overlap com `modules/clientes/` (que tem repository + UI). Dívida de convergência. |
-| `conversas` vs `atendimento` | Ver paths acima | ⚠️ **Sobreposição** | `conversas/` = UI (view, hooks). `atendimento/` = services (orchestrator, conversation, message). Separação funcional, mas nomes confusos para quem não conhece. |
+| `conversas` e `atendimento` | `src/modules/conversas/`, `src/modules/atendimento/` | ✅ **Consolidado** | `src/modules/conversations/` é o único bounded context canônico. `atendimento` e `conversas` atuam apenas como adapters de compatibilidade/re-export. |
 | `shipping` vs `freight` vs `shipments` | Ver paths acima | ⚠️ **Tríade logística** | `freight/` = quote engine e pricing. `shipping/` = carrier adapters e quote runtime. `shipments/` = persistence e linkage. Funcionam juntos, mas a fronteira não é óbvia. |
 
 > [!IMPORTANT]

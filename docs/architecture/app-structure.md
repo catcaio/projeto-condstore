@@ -39,7 +39,7 @@ O Next.js App Router usa **route groups** `(nome)` para agrupar páginas sob lay
 | Área | Path | Módulo de Suporte | Nav Group |
 |---|---|---|---|
 | **Cockpit** | `/cockpit` | `modules/cockpit` | Core |
-| **Conversas** | `/conversas` | `modules/conversas` + `modules/atendimento` | Core |
+| **Conversas** | `/conversas` | `modules/conversations` | Core |
 | **Pedidos** | `/pedidos` | `modules/orders` | Core |
 | **Logística** | `/logistica` | `modules/logistica` + `modules/freight` | Core |
 | **Clientes** | `/clientes` | `modules/clientes` + `modules/customers` | Core |
