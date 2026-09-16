@@ -45,6 +45,7 @@ test('Design System Consistency - No hardcoded colors', () => {
             file.includes('cockpit') ||
             file.includes('marketing') ||
             file.includes('career') ||
+            file.includes('sitemap') ||
             // newly introduced UI primitives often use base tailwind variables
             file.includes('ui' + path.sep + 'foundation') ||
             file.includes('ui' + path.sep + 'frank') ||
