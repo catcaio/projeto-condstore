@@ -372,3 +372,4 @@
 | /vendas/clientes | GET | internal | required | clientes | live | Alias legado redirecionado para /clientes |
 | /vendas/cotacao | GET | internal | required | console | live | Nova Cotação (stub — em breve) |
 | /vendas/pedidos | GET | internal | required | pedidos | live | Alias legado redirecionado para /pedidos |
+| /sitemap | GET | public | none | PUBLIC | live | Public Interactive Architecture Explorer & Sitemap |

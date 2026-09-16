@@ -349,6 +349,7 @@
 | `/sistema/health` | Page |
 | `/sistema/logs` | Page |
 | `/sistema/security` | Page |
+| `/sitemap` | Page |
 | `/solucoes` | Page |
 | `/supreme` | Page |
 | `/t/[token]` | Page |
