@@ -1,0 +1,67 @@
+.explorer-root {
+  --color-bg: #09090b;
+  --color-bg-elevated: #121214;
+  --color-bg-subtle: #1a1a1e;
+  --color-bg-hover: #222228;
+  --color-fg: #f4f4f5;
+  --color-fg-muted: #a1a1aa;
+  --color-fg-subtle: #71717a;
+  --color-border: color-mix(in oklab, var(--color-fg) 12%, transparent);
+  --color-border-strong: color-mix(in oklab, var(--color-fg) 22%, transparent);
+  --color-accent: #c8ccd4;
+  --color-accent-fg: #0a0a0b;
+  --color-status-production: #4ade80;
+  --color-status-partial: #eab308;
+  --color-status-implemented: #60a5fa;
+  --color-status-experimental: #a78bfa;
+  --color-status-planned: #a1a1aa;
+  --color-status-out: #f87171;
+  --color-status-unconfirmed: #78787f;
+  --color-domain-product: #8b9aab;
+  --color-domain-ops: #6f9a7e;
+  --color-domain-ai: #7aa0b8;
+  --color-domain-data: #b09a7a;
+  --color-domain-events: #7a96aa;
+  --color-domain-integrations: #6a9a96;
+  --color-domain-infra: #8a8a96;
+  --color-domain-security: #b08080;
+  --color-domain-quality: #8a8a82;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-panel: 0 12px 40px color-mix(in oklab, #000 45%, transparent);
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+html[data-theme="light"] .explorer-root {
+  --color-bg: #f4f3f0;
+  --color-bg-elevated: #fffcf8;
+  --color-bg-subtle: #eceae4;
+  --color-bg-hover: #e4e1da;
+  --color-fg: #141416;
+  --color-fg-muted: #5c5c64;
+  --color-fg-subtle: #7a7a82;
+  --color-accent: #2a2e36;
+  --color-accent-fg: #f4f3f0;
+  --shadow-panel: 0 12px 32px color-mix(in oklab, #141416 10%, transparent);
+}
+
+.explorer-grid {
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--color-fg) 9%, transparent) 1px, transparent 0);
+  background-size: 28px 28px;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--color-fg) 18%, transparent) transparent;
+}
+
+.bg-status-production { background: var(--color-status-production); }
+.bg-status-partial { background: var(--color-status-partial); }
+.bg-status-implemented { background: var(--color-status-implemented); }
+.bg-status-experimental { background: var(--color-status-experimental); }
+.bg-status-planned { background: var(--color-status-planned); }
+.bg-status-out { background: var(--color-status-out); }
+.bg-status-unconfirmed { background: var(--color-status-unconfirmed); }
