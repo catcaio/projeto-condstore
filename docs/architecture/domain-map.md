@@ -25,7 +25,7 @@ Domínios que implementam a operação core do negócio. Todo novo desenvolvimen
 | **Atendimento** | `src/modules/atendimento/` | Orquestração WhatsApp inbound, conversation lifecycle, message service, pipeline metrics | `operation` |
 | **Clientes** | `src/modules/clientes/` | UI de clientes, customer loader/repository. Cliente 360 com relacionamento e ações | `operation` |
 | **Conversas** | `src/modules/conversas/` | UI do inbox WhatsApp (view, hooks, components) | `operation` |
-| **Pedidos (Orders)** | `src/modules/pedidos/` | Order lifecycle completo: service, repository, loader, view. Fluxo CREATED → DELIVERED | `operation` |
+| **Pedidos (Orders)** | `src/modules/orders/` | Order lifecycle completo: service, repository, loader, types and lifecycle | `operation` |
 | **Fulfillment** | `src/modules/fulfillment/` | Bounded context logístico canônico: `freight/` (cotação, pricing, carriers), `shipments/` (lifecycle, linkage order->shipment), `presentation/logistics/` (UI/composição /logistica) | `frete` |
 | **Frank AI** | `src/modules/frank/` | AI agent operacional: intent resolver, context resolver, tools, orchestrator | `cockpit` |
 | **CRM** | `src/modules/crm/` | Pipeline management, CRM services | `operation` |
@@ -71,7 +71,6 @@ Módulos com overlap, mortos ou em convergência. **Não criar código novo nest
 | `logistics`, `freight`, `shipping`, `shipments`, `logistica` | `src/modules/...` | 🟢 **Consolidado** | Módulos consolidados no bounded context canônico `src/modules/fulfillment/`. Não utilizar os caminhos antigos. |
 | `customers` | `src/modules/customers/` | ⚠️ **Sobreposição** | Contém `customer-resolution.service.ts` e `identity-resolver/`. Overlap com `modules/clientes/` (que tem repository + UI). Dívida de convergência. |
 | `conversas` vs `atendimento` | Ver paths acima | ⚠️ **Sobreposição** | `conversas/` = UI (view, hooks). `atendimento/` = services (orchestrator, conversation, message). Separação funcional, mas nomes confusos para quem não conhece. |
-| `shipping` vs `freight` vs `shipments` | Ver paths acima | ⚠️ **Tríade logística** | `freight/` = quote engine e pricing. `shipping/` = carrier adapters e quote runtime. `shipments/` = persistence e linkage. Funcionam juntos, mas a fronteira não é óbvia. |
 
 > [!IMPORTANT]
 > Antes de criar qualquer módulo novo com nome similar aos listados acima, consulte este mapa e valide se o código não pertence a um módulo existente.
@@ -120,19 +119,15 @@ O DOMINE é um **domínio unificado** composto por dois diretórios complementar
 
 `order_created` · `freight_quoted` · `message_received` · `shipment_dispatched` · `customer_created` · `pipeline_stage_changed`
 
----
-
-## 7. Mapa de Dependência
-
 ### Fluxo Quote → Order → Shipment
 
-```
+```text
 cotacao-publica / fulfillment/freight (quote engine)
     → fulfillment/freight/carriers (carrier adapters)
     → providers/melhorenvio
     → drizzle/schema (freight_simulations)
         ↓
-pedidos (order.service)
+orders (order.service)
     → fulfillment/shipments (linkage repository / shipment service)
     → drizzle/schema (orders, order_items, freight_shipments)
         ↓
@@ -142,7 +137,7 @@ domine/event-bus (order_created, freight_quoted)
 
 ### Fluxo WhatsApp Inbound
 
-```
+```text
 api/whatsapp/incoming (Twilio webhook)
     → atendimento (whatsapp-inbound-orchestrator)
     → customers (identity-resolver)
@@ -154,7 +149,7 @@ api/whatsapp/incoming (Twilio webhook)
 
 ### Fluxo CRM Pipeline
 
-```
+```text
 atendimento (conversation.service)
     → crm (pipeline management)
     → atendimento (pipeline-metrics.service)
@@ -163,7 +158,7 @@ atendimento (conversation.service)
 
 ### Infraestrutura compartilhada (todos os domínios)
 
-```
+```text
 infra/auth     — session, guards
 infra/db       — drizzle client
 infra/redis    — cache, rate-limit
