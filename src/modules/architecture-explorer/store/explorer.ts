@@ -1,4 +1,6 @@
-import { create } from "zustand";
+"use client";
+
+import { useSyncExternalStore } from "react";
 import { defaultExpanded } from "@/modules/architecture-explorer/lib/architecture";
 import type { Layer, NodeStatus, ViewId } from "@/modules/architecture-explorer/lib/architecture/types";
 import { LAYERS, STATUSES } from "@/modules/architecture-explorer/lib/architecture/types";
@@ -8,7 +10,7 @@ const allStatuses = Object.fromEntries(STATUSES.map((s) => [s, true])) as Record
 
 export type Scope = "mvp" | "full";
 
-interface ExplorerState {
+export interface ExplorerState {
   view: ViewId;
   scope: Scope;
   selectedId: string | null;
@@ -52,7 +54,14 @@ function expandedRecord(view: ViewId, scope: Scope): Record<string, boolean> {
   return rec;
 }
 
-export const useExplorer = create<ExplorerState>((set, get) => ({
+type Listener = () => void;
+const listeners = new Set<Listener>();
+
+function emit() {
+  for (const l of listeners) l();
+}
+
+let state: ExplorerState = {
   view: "architecture",
   scope: "full",
   selectedId: null,
@@ -69,48 +78,118 @@ export const useExplorer = create<ExplorerState>((set, get) => ({
   helpOpen: false,
   searchOpen: false,
   centerRequest: null,
-  setView: (view) =>
-    set({
+  setView: (view) => {
+    state = {
+      ...state,
       view,
-      expanded: { ...get().expanded, ...expandedRecord(view, get().scope) },
-    }),
-  setScope: (scope) =>
-    set({
+      expanded: { ...state.expanded, ...expandedRecord(view, state.scope) },
+    };
+    emit();
+  },
+  setScope: (scope) => {
+    state = {
+      ...state,
       scope,
-      expanded: { ...expandedRecord(get().view, scope), ...get().expanded },
-    }),
-  select: (id) =>
-    set({
+      expanded: { ...expandedRecord(state.view, scope), ...state.expanded },
+    };
+    emit();
+  },
+  select: (id) => {
+    state = {
+      ...state,
       selectedId: id,
-      inspectorOpen: id ? true : get().inspectorOpen,
-    }),
-  hover: (id) => set({ hoveredId: id }),
-  toggleExpand: (id) =>
-    set((s) => ({ expanded: { ...s.expanded, [id]: !s.expanded[id] } })),
-  expandTo: (ids) =>
-    set((s) => {
-      const next = { ...s.expanded };
-      for (const id of ids) next[id] = true;
-      return { expanded: next };
-    }),
-  resetExpanded: () => set({ expanded: expandedRecord(get().view, get().scope) }),
-  toggleDomain: (domain) =>
-    set((s) => ({ hiddenDomains: { ...s.hiddenDomains, [domain]: !s.hiddenDomains[domain] } })),
-  toggleLayer: (layer) =>
-    set((s) => ({ layers: { ...s.layers, [layer]: !s.layers[layer] } })),
-  toggleStatus: (status) =>
-    set((s) => ({ statuses: { ...s.statuses, [status]: !s.statuses[status] } })),
-  setFlow: (id) => set({ selectedFlow: id }),
-  toggleEdges: () => set((s) => ({ showEdges: !s.showEdges })),
-  toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
-  setNavOpen: (navOpen) => set({ navOpen }),
-  setInspectorOpen: (inspectorOpen) => set({ inspectorOpen }),
-  setHelpOpen: (helpOpen) => set({ helpOpen }),
-  setSearchOpen: (searchOpen) => set({ searchOpen }),
-  requestCenter: (id) => set({ centerRequest: { id, nonce: Date.now() } }),
-  hydrate: (partial) =>
-    set({
+      inspectorOpen: id ? true : state.inspectorOpen,
+    };
+    emit();
+  },
+  hover: (id) => {
+    state = { ...state, hoveredId: id };
+    emit();
+  },
+  toggleExpand: (id) => {
+    state = { ...state, expanded: { ...state.expanded, [id]: !state.expanded[id] } };
+    emit();
+  },
+  expandTo: (ids) => {
+    const next = { ...state.expanded };
+    for (const id of ids) next[id] = true;
+    state = { ...state, expanded: next };
+    emit();
+  },
+  resetExpanded: () => {
+    state = { ...state, expanded: expandedRecord(state.view, state.scope) };
+    emit();
+  },
+  toggleDomain: (domain) => {
+    state = {
+      ...state,
+      hiddenDomains: { ...state.hiddenDomains, [domain]: !state.hiddenDomains[domain] },
+    };
+    emit();
+  },
+  toggleLayer: (layer) => {
+    state = { ...state, layers: { ...state.layers, [layer]: !state.layers[layer] } };
+    emit();
+  },
+  toggleStatus: (status) => {
+    state = { ...state, statuses: { ...state.statuses, [status]: !state.statuses[status] } };
+    emit();
+  },
+  setFlow: (id) => {
+    state = { ...state, selectedFlow: id };
+    emit();
+  },
+  toggleEdges: () => {
+    state = { ...state, showEdges: !state.showEdges };
+    emit();
+  },
+  toggleTheme: () => {
+    state = { ...state, theme: state.theme === "dark" ? "light" : "dark" };
+    emit();
+  },
+  setNavOpen: (navOpen) => {
+    state = { ...state, navOpen };
+    emit();
+  },
+  setInspectorOpen: (inspectorOpen) => {
+    state = { ...state, inspectorOpen };
+    emit();
+  },
+  setHelpOpen: (helpOpen) => {
+    state = { ...state, helpOpen };
+    emit();
+  },
+  setSearchOpen: (searchOpen) => {
+    state = { ...state, searchOpen };
+    emit();
+  },
+  requestCenter: (id) => {
+    state = { ...state, centerRequest: { id, nonce: Date.now() } };
+    emit();
+  },
+  hydrate: (partial) => {
+    state = {
+      ...state,
       ...partial,
-      expanded: expandedRecord(partial.view ?? get().view, partial.scope ?? get().scope),
-    }),
-}));
+      expanded: expandedRecord(partial.view ?? state.view, partial.scope ?? state.scope),
+    };
+    emit();
+  },
+};
+
+function subscribe(listener: Listener) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getSnapshot() {
+  return state;
+}
+
+/** Selector-compatible hook (zustand-like API, zero extra deps). */
+export function useExplorer<T>(selector: (s: ExplorerState) => T): T {
+  const snap = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return selector(snap);
+}
