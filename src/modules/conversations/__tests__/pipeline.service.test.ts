@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { pipelineMetricsService } from '../pipeline-metrics.service';
+import { pipelineMetricsService } from '@/modules/conversations/application/orchestration/pipeline-metrics.service';
 import * as dbInfra from '@/infra/db';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
-import { ConversationStageConflictError, conversationService } from '../conversation.service';
+import { ConversationStageConflictError, conversationService } from '@/modules/conversations/application/orchestration/conversation.service';
 
 vi.mock('@/infra/db', () => ({
     getDb: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock('@/services/ecosystem-events.service', () => ({
 }));
 
 // Quick mock for conversation repo since it is exported as a const object
-vi.mock('../conversation.repository', () => ({
+vi.mock('@/modules/conversations/infrastructure/conversation.repository', () => ({
     conversationRepository: {
         updateConversationStage: vi.fn().mockResolvedValue(true),
         getConversationById: vi.fn().mockResolvedValue({ id: 'conv-123', stage: 'NEW_LEAD', version: 0 }),
@@ -82,7 +82,7 @@ describe('Conversation Service - Stage Changes', () => {
     });
 
     it('should fire correct operational events on stage change (DEAL_WON)', async () => {
-        const { conversationRepository } = await import('../conversation.repository');
+        const { conversationRepository } = await import('@/modules/conversations/infrastructure/conversation.repository');
         await conversationService.changeConversationStage('tenant-1', 'conv-123', 'WON', 'cust-456');
 
         expect(conversationRepository.updateConversationStage).toHaveBeenCalledWith(
@@ -112,7 +112,7 @@ describe('Conversation Service - Stage Changes', () => {
     });
 
     it('should not allow regression from an advanced stage back to a basic one', async () => {
-        const { conversationRepository } = await import('../conversation.repository');
+        const { conversationRepository } = await import('@/modules/conversations/infrastructure/conversation.repository');
         vi.mocked(conversationRepository.getConversationById).mockResolvedValueOnce({
             id: 'conv-123',
             stage: 'QUOTED',
@@ -126,7 +126,7 @@ describe('Conversation Service - Stage Changes', () => {
     });
 
     it('should throw conflict error when optimistic locking detects stale write', async () => {
-        const { conversationRepository } = await import('../conversation.repository');
+        const { conversationRepository } = await import('@/modules/conversations/infrastructure/conversation.repository');
         const { ecosystemEventsService } = await import('@/services/ecosystem-events.service');
         vi.mocked(conversationRepository.updateConversationStage).mockResolvedValueOnce(false);
 

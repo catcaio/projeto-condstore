@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { FreightQuoteService } from '../freight-quote.service';
+import { FreightQuoteService } from '@/modules/conversations/application/orchestration/freight-quote.service';
 import * as dbInfra from '@/infra/db';
 import { freightService } from '@/modules/freight/freight.service';
 import { domineIntakeService } from '@/domine/domine-intake.service';
-import { conversationService } from '../conversation.service';
+import { conversationService } from '@/modules/conversations/application/orchestration/conversation.service';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { crmService } from '@/modules/crm/server';
 
-vi.mock('../conversation.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/conversation.service', () => ({
     conversationService: {
         changeConversationStage: vi.fn(),
     }

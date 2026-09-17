@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PATCH } from '../route';
 import { requireAdmin } from '@/infra/auth/guards';
-import { orderService } from '@/modules/atendimento/order.service';
+import { orderService } from '@/modules/conversations/server';
 import { OrderBillingRequiredError } from '@/modules/billing/guards/assertTenantCanOperateOrders';
 
 vi.mock('@/infra/auth/guards', () => ({
     requireAdmin: vi.fn(),
 }));
 
-vi.mock('@/modules/atendimento/order.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/order.service', () => ({
     orderService: {
         updateOrderStatus: vi.fn().mockResolvedValue(undefined),
     }

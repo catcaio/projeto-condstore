@@ -3,7 +3,7 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
-import { conversationRepository } from '@/modules/atendimento/conversation.repository';
+import { conversationRepository } from '@/modules/conversations/server';
 import crypto from 'crypto';
 import { crmRepository } from '@/modules/crm/server';
 

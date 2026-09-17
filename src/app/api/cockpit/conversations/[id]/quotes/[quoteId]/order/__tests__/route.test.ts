@@ -1,21 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from '../route';
 import { requireAdmin } from '@/infra/auth/guards';
-import { freightQuoteService } from '@/modules/atendimento/freight-quote.service';
-import { orderService } from '@/modules/atendimento/order.service';
+import { freightQuoteService } from '@/modules/conversations/server';
+import { orderService } from '@/modules/conversations/server';
 import { OrderBillingRequiredError } from '@/modules/billing/guards/assertTenantCanOperateOrders';
 
 vi.mock('@/infra/auth/guards', () => ({
     requireAdmin: vi.fn(),
 }));
 
-vi.mock('@/modules/atendimento/order.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/order.service', () => ({
     orderService: {
         createOrderFromQuote: vi.fn(),
     }
 }));
 
-vi.mock('@/modules/atendimento/freight-quote.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/freight-quote.service', () => ({
     freightQuoteService: {
         getQuoteById: vi.fn(),
     }

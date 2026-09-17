@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { POST } from '../route';
 import { verifyTwilioSignature } from '@/lib/security/webhook-verifier';
-import { whatsappInboundOrchestrator } from '@/modules/atendimento/whatsapp-inbound-orchestrator.service';
+import { whatsappInboundOrchestrator } from '@/modules/conversations/server';
 import { rateLimiter } from '@/infra/security/rate-limiter';
 
 vi.mock('@/infra/security/rate-limiter', () => ({
@@ -14,7 +14,7 @@ vi.mock('@/lib/security/webhook-verifier', () => ({
     verifyTwilioSignature: vi.fn(),
 }));
 
-vi.mock('@/modules/atendimento/whatsapp-inbound-orchestrator.service', () => ({
+vi.mock('@/modules/conversations/application/inbound/whatsapp-inbound-orchestrator.service', () => ({
     whatsappInboundOrchestrator: {
         process: vi.fn()
     }

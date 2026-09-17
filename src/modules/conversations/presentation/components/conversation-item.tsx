@@ -1,5 +1,5 @@
 import { StatusChip } from '@/ui/foundation';
-import type { ConversationChannel, ConversationPriority, ConversationRecord, ConversationStatus } from '../types';
+import type { ConversationChannel, ConversationPriority, ConversationRecord, ConversationStatus } from '../../domain/types';
 import { UserPlus, XCircle } from 'lucide-react';
 
 function getStatusTone(status: ConversationStatus) {

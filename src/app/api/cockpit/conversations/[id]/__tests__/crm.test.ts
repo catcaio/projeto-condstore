@@ -27,7 +27,7 @@ vi.mock('@/infra/auth/guards', () => ({
     })
 }));
 
-vi.mock('@/modules/atendimento/conversation.repository', () => ({
+vi.mock('@/modules/conversations/infrastructure/conversation.repository', () => ({
     conversationRepository: {
         getConversationById: vi.fn().mockResolvedValue({ id: 'conv-1', customerId: 'cust-1', assignedTo: 'op1', stage: 'NEW_LEAD', version: 0 }),
         assignConversation: vi.fn().mockResolvedValue({}),
@@ -35,7 +35,7 @@ vi.mock('@/modules/atendimento/conversation.repository', () => ({
     }
 }));
 
-vi.mock('@/modules/atendimento/conversation.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/conversation.service', () => ({
     ConversationStageConflictError: MockConversationStageConflictError,
     conversationService: {
         changeConversationStage: mockChangeConversationStage,
@@ -115,7 +115,7 @@ describe('Operational CRM Actions & Integration', () => {
     });
 
     it('returns 409 when service reports optimistic locking conflict', async () => {
-        const { ConversationStageConflictError } = await import('@/modules/atendimento/conversation.service');
+        const { ConversationStageConflictError } = await import('@/modules/conversations/application/orchestration/conversation.service');
         mockChangeConversationStage.mockRejectedValueOnce(
             new ConversationStageConflictError('Conversation stage changed by another operator')
         );
@@ -133,8 +133,8 @@ describe('Operational CRM Actions & Integration', () => {
     });
 
     it('uses tenant scope from session in stage change flow', async () => {
-        const { conversationRepository } = await import('@/modules/atendimento/conversation.repository');
-        const { conversationService } = await import('@/modules/atendimento/conversation.service');
+        const { conversationRepository } = await import('@/modules/conversations/infrastructure/conversation.repository');
+        const { conversationService } = await import('@/modules/conversations/application/orchestration/conversation.service');
 
         const req = new Request('http://localhost/api', {
             method: 'PATCH',

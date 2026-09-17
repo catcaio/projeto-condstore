@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { orderService } from '../order.service';
+import { orderService } from '@/modules/conversations/application/orchestration/order.service';
 import { LOCK_TTL } from '@/infra/redis-ttl';
 import * as dbInfra from '@/infra/db';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
-import { conversationService } from '../conversation.service';
+import { conversationService } from '@/modules/conversations/application/orchestration/conversation.service';
 import { redisClient } from '@/infra/redis.client';
 import { shipmentService } from '@/modules/logistics/server';
 
@@ -27,13 +27,13 @@ vi.mock('@/infra/redis.client', () => ({
     }
 }));
 
-vi.mock('../conversation.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/conversation.service', () => ({
     conversationService: {
         changeConversationStage: vi.fn().mockResolvedValue(undefined),
     }
 }));
 
-vi.mock('../message.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/message.service', () => ({
     messageService: {
         processSystemEvent: vi.fn().mockResolvedValue(undefined),
     }
@@ -295,7 +295,7 @@ describe('Order Service Implementation', () => {
                 payload: { orderId: 'order-1', status: 'CONFIRMED' }
             }));
 
-            const { messageService } = await import('../message.service');
+            const { messageService } = await import('@/modules/conversations/application/orchestration/message.service');
             expect(messageService.processSystemEvent).toHaveBeenCalledWith(
                 'tenant-1',
                 'conv-1',

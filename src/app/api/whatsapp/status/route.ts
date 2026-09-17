@@ -3,7 +3,7 @@ import { logger } from '@/infra/logger';
 import { structuredLogger } from '@/infra/log/logger';
 import { rateLimiter, hashRateLimitKeyForLog } from '@/infra/security/rate-limiter';
 import { verifyTwilioSignature } from '@/lib/security/webhook-verifier';
-import { whatsappDeliveryStatusService } from '@/modules/atendimento/whatsapp-delivery-status.service';
+import { whatsappDeliveryStatusService } from '@/modules/conversations/server';
 
 function xmlAck(status: number = 200) {
     return new NextResponse('<Response></Response>', {

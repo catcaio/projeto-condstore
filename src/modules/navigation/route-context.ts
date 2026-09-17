@@ -1,5 +1,5 @@
 import type { ClientActivityBucket, ClientStatus } from '@/modules/clientes/mock-data';
-import type { ConversationPriority, ConversationStatus } from '@/modules/conversas/mock-data';
+import type { ConversationPriority, ConversationStatus } from '@/modules/conversations';
 import type { LogisticsStatus } from '@/modules/logistica/mock-data';
 import type { OrderChannel, OrderPriority, OrderStatus } from '@/modules/orders';
 

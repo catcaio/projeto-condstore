@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { conversationService } from '@/modules/atendimento/conversation.service';
+import { conversationService } from '@/modules/conversations/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { twilioProvider } from '@/providers/twilio.provider';
 import { logger } from '@/infra/logger';
 import { decryptString } from '@/infra/pii/crypto';
-import { whatsappOutboundService } from '@/modules/atendimento/whatsapp-outbound.service';
+import { whatsappOutboundService } from '@/modules/conversations/server';
 
 function extractInboundMessageSid(metadata: Record<string, unknown> | null | undefined): string | null {
     if (!metadata) return null;

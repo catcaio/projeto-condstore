@@ -22,8 +22,8 @@ O MVP atual é um sistema supervisionado para operação comercial B2B via Whats
 
 | Área | Paths principais | Motivo |
 |---|---|---|
-| WhatsApp supervisionado | `src/modules/atendimento/**`, `src/app/api/whatsapp/**`, `src/server/twilio/**`, `src/app/(app)/cockpit/atendimento/**`, `src/app/api/cockpit/conversations/**` | É o canal operacional principal descrito no estado atual do produto. |
-| CRM operacional | `src/modules/crm/**`, `src/modules/clientes/**`, `src/modules/customers/**`, `src/modules/conversas/**`, `src/modules/timeline/**`, `src/app/(app)/cockpit/pipeline/**` | Sustenta acompanhamento comercial, pipeline e histórico do cliente. |
+| WhatsApp supervisionado | `src/modules/conversations/**`, `src/app/api/whatsapp/**`, `src/server/twilio/**`, `src/app/(app)/cockpit/atendimento/**`, `src/app/api/cockpit/conversations/**` | É o canal operacional principal descrito no estado atual do produto. |
+| CRM operacional | `src/modules/crm/**`, `src/modules/clientes/**`, `src/modules/customers/**`, `src/modules/conversations/**`, `src/modules/timeline/**`, `src/app/(app)/cockpit/pipeline/**` | Sustenta acompanhamento comercial, pipeline e histórico do cliente. |
 | Cotação de frete | `src/modules/freight/**`, `src/app/api/public/cotacao/**`, `src/app/api/cockpit/conversations/[id]/quotes/**`, `src/app/(app)/cockpit/freight/**` | Faz parte do fluxo principal de venda e atendimento. |
 | Pedido e shipment | `src/modules/orders/**`, `src/modules/logistics/**`, `src/modules/logistica/**`, `src/modules/shipping/**`, `src/app/api/orders/**`, `src/app/(app)/cockpit/orders/**` | Fecha o ciclo quote -> order -> shipment que o produto já opera. |
 | Cockpit diário | `src/modules/cockpit/**`, `src/app/(app)/cockpit/**` exceto superfícies frozen listadas abaixo | É a interface operacional central do MVP. |
@@ -76,7 +76,7 @@ Uma área frozen só sai do freeze quando todos os itens abaixo estiverem explí
 
 ## Dependências Ocultas e Armadilhas
 
-1. `src/modules/atendimento/whatsapp-inbound-orchestrator.service.ts` importa costuras de `src/modules/frank/*` para resolver intent, sessão, guard e sugestões. Congelar Frank não significa remover essas costuras; significa não transformar esse subsistema em centro do roadmap.
+1. `src/modules/conversations/application/inbound/whatsapp-inbound-orchestrator.service.ts` importa costuras de `src/modules/frank/*` para resolver intent, sessão, guard e sugestões. Congelar Frank não significa remover essas costuras; significa não transformar esse subsistema em centro do roadmap.
 2. `src/app/(app)/cockpit/atendimento/atendimento.client.tsx` renderiza `FrankSuggestionPanel`, contexto de sessão e `PlaybookQuickActions`. Mudanças em atendimento podem tocar UI frozen por tabela se o agente não limitar o diff.
 3. `src/modules/cockpit/rooms/rooms.registry.ts` e `src/modules/cockpit/rooms/subrooms.registry.ts` continuam listando salas Frank. Alterações no launcher podem reabrir escopo frozen sem intenção.
 4. `src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/send/route.ts` e `src/app/api/public/cotacao/quotes/route.ts` publicam eventos para DOMINE. O console DOMINE está frozen, mas o barramento continua sendo suporte do MVP.

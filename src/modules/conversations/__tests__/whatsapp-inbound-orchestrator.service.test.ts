@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { whatsappInboundOrchestrator } from '../whatsapp-inbound-orchestrator.service';
+import { whatsappInboundOrchestrator } from '@/modules/conversations/application/inbound/whatsapp-inbound-orchestrator.service';
 import { inboundMessageDedupRepository } from '@/infra/repositories/inbound-message-dedup.repository';
 import { endUserConsentRepository } from '@/infra/repositories/end-user-consent.repository';
 import { messageRepository } from '@/infra/repositories/message.repository';
-import { conversationService } from '@/modules/atendimento/conversation.service';
+import { conversationService } from '@/modules/conversations/application/orchestration/conversation.service';
 import { catalogService } from '@/modules/catalog/catalog.service';
 import { freightService } from '@/modules/freight/freight.service';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
@@ -58,11 +58,11 @@ vi.mock('@/modules/customers/customer-resolution.service', () => ({
     customerResolutionService: { resolveOrCreateCustomer: vi.fn() }
 }));
 
-vi.mock('@/modules/atendimento/message.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/message.service', () => ({
     messageService: { processInbound: vi.fn() }
 }));
 
-vi.mock('@/modules/atendimento/conversation.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/conversation.service', () => ({
     conversationService: { 
         findOrCreateConversationByPhone: vi.fn(),
         hasRecentOperatorMessage: vi.fn()
@@ -146,7 +146,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
         expect((policy as any).text).toContain('política de privacidade');
         
         // Ensure no identity/AI processing happens
-        const { messageService } = await import('@/modules/atendimento/message.service');
+        const { messageService } = await import('@/modules/conversations/application/orchestration/message.service');
         expect(messageService.processInbound).not.toHaveBeenCalled();
         expect(catalogService.searchProductsByName).not.toHaveBeenCalled();
         expect(mockResolveIntent).not.toHaveBeenCalled();
@@ -161,7 +161,7 @@ describe('WhatsApp Inbound Orchestrator', () => {
         const policy = await whatsappInboundOrchestrator.process(defaultPayload);
         
         expect(policy.type).toBe('ACK_ONLY');
-        const { messageService } = await import('@/modules/atendimento/message.service');
+        const { messageService } = await import('@/modules/conversations/application/orchestration/message.service');
         expect(messageService.processInbound).toHaveBeenCalled();
         
         // Ensure NLP and Catalog are skipped to save costs and avoid noise

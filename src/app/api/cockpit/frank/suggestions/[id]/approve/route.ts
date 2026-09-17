@@ -5,7 +5,7 @@ import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
 import { ApproveSuggestionDTOSchema } from '@/modules/frank/suggestions/suggestion.types';
 import { suggestionRepository } from '@/modules/frank/suggestions/suggestion.repository';
-import { conversationService } from '@/modules/atendimento/conversation.service';
+import { conversationService } from '@/modules/conversations/server';
 import { decryptString } from '@/infra/pii/crypto';
 import { twilioProvider } from '@/providers/twilio.provider';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';

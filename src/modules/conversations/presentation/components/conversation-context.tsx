@@ -5,7 +5,7 @@ import { SectionHeader, StatusChip, SurfacePanel } from '@/ui/foundation';
 import { getPendingFrankActions, approveAndExecuteFrankAction, rejectFrankAction } from '@/modules/frank';
 import { ActionPlayground } from '@/ui/frank/action-playground';
 import { Zap, RefreshCw } from 'lucide-react';
-import type { ConversationOrder, ConversationRecord, ConversationSimulation } from '../types';
+import type { ConversationOrder, ConversationRecord, ConversationSimulation } from '../../domain/types';
 
 function getSimulationTone(status: ConversationSimulation['status']) {
     if (status === 'contingencia') {

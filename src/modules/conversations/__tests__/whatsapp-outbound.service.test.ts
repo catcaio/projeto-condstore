@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { conversationService } from '@/modules/atendimento/conversation.service';
+import { conversationService } from '@/modules/conversations/application/orchestration/conversation.service';
 import { twilioProvider } from '@/providers/twilio.provider';
-import { whatsappOutboundService } from '../whatsapp-outbound.service';
+import { whatsappOutboundService } from '@/modules/conversations/application/outbound/whatsapp-outbound.service';
 
-vi.mock('@/modules/atendimento/conversation.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/conversation.service', () => ({
     conversationService: {
         processOutboundMessage: vi.fn(),
         updateMessageFields: vi.fn(),

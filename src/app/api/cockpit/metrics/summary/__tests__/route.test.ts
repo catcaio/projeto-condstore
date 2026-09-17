@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GET } from '../route';
-import { metricsService } from '@/modules/atendimento/metrics.service';
+import { metricsService } from '@/modules/conversations/server';
 
 vi.mock('@/infra/auth/guards', () => ({
     requireAdmin: vi.fn().mockResolvedValue({
@@ -9,7 +9,7 @@ vi.mock('@/infra/auth/guards', () => ({
     })
 }));
 
-vi.mock('@/modules/atendimento/metrics.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/metrics.service', () => ({
     metricsService: {
         getMetrics: vi.fn().mockResolvedValue({ totalConversations: 10 })
     }
