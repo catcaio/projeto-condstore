@@ -22,7 +22,7 @@ O MVP atual é um sistema supervisionado para operação comercial B2B via Whats
 
 | Área | Paths principais | Motivo |
 |---|---|---|
-| WhatsApp supervisionado | `src/modules/conversations/**`, `src/app/api/whatsapp/**`, `src/server/twilio/**`, `src/app/(app)/cockpit/atendimento/**`, `src/app/api/cockpit/conversations/**` | É o canal operacional principal descrito no estado atual do produto. |
+| WhatsApp supervisionado | `src/modules/conversations/**`, `src/app/api/whatsapp/**`, `src/app/api/webhooks/whatsapp/**`, `src/server/twilio/**`, `src/app/(app)/cockpit/atendimento/**`, `src/app/api/cockpit/conversations/**` | É o canal operacional principal descrito no estado atual do produto. |
 | CRM operacional | `src/modules/crm/**`, `src/modules/clientes/**`, `src/modules/customers/**`, `src/modules/conversations/**`, `src/modules/timeline/**`, `src/app/(app)/cockpit/pipeline/**` | Sustenta acompanhamento comercial, pipeline e histórico do cliente. |
 | Cotação de frete | `src/modules/fulfillment/freight/**`, `src/app/api/public/cotacao/**`, `src/app/api/cockpit/conversations/[id]/quotes/**`, `src/app/(app)/cockpit/freight/**` | Faz parte do fluxo principal de venda e atendimento. |
 | Pedido e shipment | `src/modules/orders/**`, `src/modules/pedidos/**`, `src/modules/fulfillment/**`, `src/app/api/orders/**`, `src/app/(app)/cockpit/orders/**` | Fecha o ciclo quote -> order -> shipment que o produto já opera. |
@@ -34,7 +34,7 @@ O MVP atual é um sistema supervisionado para operação comercial B2B via Whats
 |---|---|---|
 | Segurança, auth e multi-tenant | `src/infra/auth/**`, `src/infra/security/**`, `src/middleware.ts`, `src/app/api/auth/**` | Bloqueia regressões críticas; não é tema de expansão de produto nesta fase. |
 | Observabilidade e auditoria | `src/infra/log/**`, `src/infra/observability/**`, `src/app/api/cockpit/audit/**`, `src/modules/audit/**`, `src/modules/system-status/**` | Necessário para operar o MVP com governança. |
-| Billing e FinOps | `src/modules/billing/**`, `src/modules/finops/**`, `src/app/api/webhook/stripe/**`, `src/app/api/cockpit/billing/**` | Suporte comercial/operacional, mas não o centro do MVP atual. |
+| Billing e FinOps | `src/modules/billing/**`, `src/modules/finops/**`, `src/app/api/webhooks/stripe/**`, `src/app/api/webhook/stripe/**`, `src/app/api/cockpit/billing/**` | Suporte comercial/operacional, mas não o centro do MVP atual. |
 | Attribution, funnel e métricas | `src/infra/attribution/**`, `src/modules/funnel/**`, `src/modules/metrics/**`, `src/modules/analytics/**`, `src/app/(app)/cockpit/acquisition/**` | Ajuda aquisição e leitura do funil; não deve puxar escopo para além do core. |
 | DOMINE como infraestrutura | `src/domine/**`, `src/modules/domine/**`, `src/lib/events/**`, `src/app/api/domine/intake/**`, `src/app/api/internal/jobs/domine-process/**` | Continua como trilho de eventos e integração, não como frente principal de produto. |
 | Costuras supervisionadas do Frank usadas pelo core | `src/modules/frank/entity-resolver.ts`, `src/modules/frank/intent-resolver.ts`, `src/modules/frank/session.repository.ts`, `src/modules/frank/conversation-control.ts`, `src/modules/frank/auto-response-guard.ts`, `src/modules/frank/suggestions/**` | São dependências técnicas do WhatsApp supervisionado; manter compatibilidade, sem expandir o subsistema. |

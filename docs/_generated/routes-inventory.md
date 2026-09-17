@@ -224,6 +224,10 @@
 | `/api/webhook/fallback` | API |
 | `/api/webhook/stripe` | API |
 | `/api/webhooks/melhor-envio` | API |
+| `/api/webhooks/stripe` | API |
+| `/api/webhooks/whatsapp/fallback` | API |
+| `/api/webhooks/whatsapp/incoming` | API |
+| `/api/webhooks/whatsapp/status` | API |
 | `/api/whatsapp/incoming` | API |
 | `/api/whatsapp/status` | API |
 | `/app` | Page |

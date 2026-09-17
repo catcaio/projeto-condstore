@@ -109,7 +109,7 @@ As API routes seguem 5 padrões de autenticação e escopo:
 | **Cockpit** | `/api/cockpit/*` | Session cookie (any role) | `/api/cockpit/metrics`, `/api/cockpit/analytics/*` |
 | **Internal** | `/api/internal/*` | Internal tokens por propósito (`INTERNAL_DIAG_TOKEN`, `INTERNAL_EXPORT_TOKEN`, `INTERNAL_JOB_TOKEN`) | `/api/internal/diag`, `/api/internal/jobs/*` |
 | **Tenant-scoped** | `/api/tenants/[tenantId]/*` | Session cookie + tenant match | `/api/tenants/[tenantId]/settings`, `/api/tenants/[tenantId]/domine/*` |
-| **Webhook** | `/api/webhook/*` | Signature verification | `/api/webhook/stripe` (Stripe sig), `/api/whatsapp/*` (Twilio sig) |
+| **Webhook** | `/api/webhooks/*` | Signature verification | `/api/webhooks/stripe` (Stripe sig), `/api/webhooks/whatsapp/*` (Twilio sig), `/api/webhooks/melhor-envio` (shared secret) |
 
 ### Organização de diretórios (`src/app/api/`)
 
@@ -142,13 +142,12 @@ api/
 ├── simulate/          ← Simulation API
 ├── supreme/           ← Supreme AI APIs
 ├── tenants/           ← Tenant-scoped APIs
-├── webhook/           ← Webhook receivers (Stripe)
-├── webhooks/          ← ⚠️ Duplicata legacy de webhook/ (Stripe)
-└── whatsapp/          ← WhatsApp webhook (Twilio)
+├── webhook/           ← Compat legada (adapters finos que delegam ao canônico)
+├── webhooks/          ← Webhook receivers canônicos (stripe, whatsapp/*, melhor-envio)
+└── whatsapp/          ← Compat legada Twilio (adapters que delegam a webhooks/whatsapp/*)
 ```
 
-> [!WARNING]
-> `api/webhook/` e `api/webhooks/` coexistem. Ambos contém rota Stripe. Não criar novas rotas em `api/webhooks/` — usar `api/webhook/`.
+> `api/webhooks/` é o namespace canônico (issue #395). `api/webhook/` e `api/whatsapp/` permanecem apenas como adapters de compatibilidade que delegam aos handlers canônicos — não duplicar lógica. URLs públicas legadas são preservadas (Stripe Dashboard e console Twilio).
 
 ---
 

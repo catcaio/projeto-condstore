@@ -121,6 +121,8 @@ export const scopeRules = [
     prefixes: [
       'src/modules/conversations/',
       'src/app/api/whatsapp/',
+      'src/app/api/webhooks/whatsapp/',
+      'src/app/api/webhooks/__tests__/',
       'src/server/twilio/',
       'src/app/(app)/cockpit/atendimento/',
       'src/app/api/cockpit/conversations/',

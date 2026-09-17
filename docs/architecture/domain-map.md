@@ -142,7 +142,7 @@ domine/event-bus (order_created, freight_quoted)
 ### Fluxo WhatsApp Inbound
 
 ```
-api/whatsapp/incoming (Twilio webhook)
+api/webhooks/whatsapp/incoming (Twilio webhook canônico; compat em api/whatsapp/incoming)
     → atendimento (whatsapp-inbound-orchestrator)
     → customers (identity-resolver)
     → frank (intent-resolver → context-resolver → tools)

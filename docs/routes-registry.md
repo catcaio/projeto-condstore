@@ -223,13 +223,16 @@
 | /api/tenants/[tenantId]/secrets/rotate | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/secrets/test | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/tenants/[tenantId]/settings | TBA | public | none | PUBLIC | live | Auto-detected |
-| /api/webhook | TBA | public | none | PUBLIC | live | Auto-detected |
-| /api/webhook/fallback | TBA | public | none | PUBLIC | live | Auto-detected |
-| /api/webhook/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
+| /api/webhook | TBA | public | none | PUBLIC | live | Auto-detected — legacy compat (410, aponta para /api/whatsapp/incoming) |
+| /api/webhook/fallback | TBA | public | none | PUBLIC | live | Compat legada — adapter para /api/webhooks/whatsapp/fallback |
+| /api/webhook/stripe | TBA | public | none | PUBLIC | live | Compat legada — adapter para /api/webhooks/stripe |
 | /api/webhooks/melhor-envio | POST | public | none | PUBLIC | live | Webhook intake for shipment tracking and freight auto-confirmation |
-| /api/webhooks/stripe | TBA | public | none | PUBLIC | live | Auto-detected |
-| /api/whatsapp/incoming | POST | public | none | PUBLIC | live | WhatsApp incoming webhook — Frank auto-quote with Twilio signature verification |
-| /api/whatsapp/status | POST | public | none | PUBLIC | live | Added |
+| /api/webhooks/stripe | POST | public | none | PUBLIC | live | Canônico Stripe (assinatura + idempotência + tenant resolution) |
+| /api/webhooks/whatsapp/fallback | POST | public | none | PUBLIC | live | Canônico Twilio fallback (assinatura + TwiML 200) |
+| /api/webhooks/whatsapp/incoming | POST | public | none | PUBLIC | live | Canônico WhatsApp inbound — Twilio signature verification |
+| /api/webhooks/whatsapp/status | POST | public | none | PUBLIC | live | Canônico WhatsApp delivery status |
+| /api/whatsapp/incoming | POST | public | none | PUBLIC | live | Compat legada — adapter para /api/webhooks/whatsapp/incoming |
+| /api/whatsapp/status | POST | public | none | PUBLIC | live | Compat legada — adapter para /api/webhooks/whatsapp/status |
 | /app | TBA | public | none | PUBLIC | live | App do Ecossistema page |
 | /attribution | TBA | public | none | PUBLIC | live | Auto-detected |
 | /avaliacao | TBA | public | none | PUBLIC | live | Auto-detected |

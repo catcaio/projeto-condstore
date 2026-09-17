@@ -109,7 +109,13 @@ This map classifies all detected routes according to zero-trust and security pri
 | `/api/webhook` | Worker/Webhook | Signature/None | Operational/LGPD | Medium |
 | `/api/webhook/fallback` | Worker/Webhook | Signature/None | Operational/LGPD | Medium |
 | `/api/webhook/stripe` | Worker/Webhook | Signature/None | Operational/LGPD | Critical |
+| `/api/webhooks/melhor-envio` | Worker/Webhook | Signature/None | Operational/LGPD | Critical |
 | `/api/webhooks/stripe` | Worker/Webhook | Signature/None | Operational/LGPD | Critical |
+| `/api/webhooks/whatsapp/fallback` | Worker/Webhook | Signature/None | Operational/LGPD | Medium |
+| `/api/webhooks/whatsapp/incoming` | Worker/Webhook | Signature/None | Operational/LGPD | Critical |
+| `/api/webhooks/whatsapp/status` | Worker/Webhook | Signature/None | Operational/LGPD | Medium |
+| `/api/whatsapp/incoming` | Worker/Webhook | Signature/None | Operational/LGPD | Critical |
+| `/api/whatsapp/status` | Worker/Webhook | Signature/None | Operational/LGPD | Medium |
 | `/attribution` | Tenant UI | Cookie | Operational/PII | High |
 | `/billing` | Unknown | Unknown | Operational | Medium |
 | `/billing/manage` | Unknown | Unknown | Operational | Medium |
