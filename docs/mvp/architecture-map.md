@@ -47,7 +47,7 @@
 
 ### [B] Inbound Orchestrator
 
-- **Módulo:** `src/modules/atendimento/`
+- **Módulo:** `src/modules/conversations/application/inbound/`
 - **Responsabilidade:** decidir o que fazer com a mensagem (ACK_ONLY / SUPERVISED_NO_REPLY)
 - **Saída:** conversa criada/atualizada, message persistida
 
@@ -65,7 +65,7 @@
 
 ### [E] Freight Engine
 
-- **Módulo:** `src/modules/shipping/` + `src/modules/fulfillment/freight/`
+- **Módulo:** `src/modules/fulfillment/freight/`
 - **Responsabilidade:** consultar múltiplos carriers em paralelo
   - Melhor Envio API (real-time)
   - Movvi, Mengue, Braspress (tabelas pré-carregadas)
@@ -119,14 +119,13 @@
 
 | Módulo | Responsabilidade |
 |---|---|
-| **atendimento** | Orquestração WhatsApp inbound, conversation lifecycle |
+| **conversations** | Orquestração WhatsApp inbound, conversation lifecycle |
 | **customers** | Resolução de identidade, histórico de cliente |
-| **conversas** | UI do inbox WhatsApp |
+| **conversations/presentation** | UI do inbox WhatsApp |
 | **orders** | Lifecycle de pedido DRAFT→CONFIRMED→SHIPPED→DELIVERED |
-| **freight** | Quote engine, carrier routing, packing |
-| **shipping** | Carrier adapters, ConcurrentQuoteEngine runtime |
-| **shipments** | Persistência de shipments, linkage order→shipment |
-| **logistica** | UI de logística, fila de acompanhamento |
+| **fulfillment/freight** | Quote engine, carrier routing, packing, carrier adapters |
+| **fulfillment/shipments** | Persistência de shipments, linkage order→shipment |
+| **fulfillment/presentation/logistics** | UI de logística, fila de acompanhamento |
 | **crm** | Pipeline management, Kanban |
 | **cockpit** | Dashboard operacional, agregação de dados |
 | **cotacao-publica** | API pública de cotação (sem auth) |
