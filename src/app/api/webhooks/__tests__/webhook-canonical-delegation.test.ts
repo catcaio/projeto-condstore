@@ -56,6 +56,11 @@ describe('webhooks canonical delegation (issue #395)', () => {
         const content = read(legacy);
         expect(content).toContain(canonicalFragment);
         expect(content).toContain('export { POST');
+        // Route segment config (runtime/dynamic) precisa ser literal estático;
+        // re-export quebra `next build` (Turbopack: "mustn't be reexported").
+        expect(content, `${legacy} não deve re-exportar route segment config`).not.toMatch(
+            /export\s*\{[^}]*\b(runtime|dynamic)\b[^}]*\}\s*from/,
+        );
         for (const token of LOGIC_TOKENS) {
             expect(content, `${legacy} não deve conter lógica (${token})`).not.toContain(token);
         }

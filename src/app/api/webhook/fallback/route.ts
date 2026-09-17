@@ -6,5 +6,10 @@
  * console Twilio (Fallback URL) aponta para esta URL pública.
  * Sem lógica duplicada: mesma referência de função, mesma verificação
  * de assinatura Twilio e mesma resposta TwiML 200.
+ *
+ * Nota: `runtime` é declarado como literal (não re-exportado) porque o
+ * Next.js exige route segment config estaticamente analisável.
  */
-export { POST, runtime } from '../../webhooks/whatsapp/fallback/route';
+export const runtime = 'nodejs';
+
+export { POST } from '../../webhooks/whatsapp/fallback/route';

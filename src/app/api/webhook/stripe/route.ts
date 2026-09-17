@@ -6,5 +6,10 @@
  * pública configurada no Dashboard Stripe / `stripe:listen`.
  * Sem lógica duplicada: mesma referência de função, mesmos status codes,
  * mesma verificação de assinatura (raw body), idempotência e tenant resolution.
+ *
+ * Nota: `runtime` é declarado como literal (não re-exportado) porque o
+ * Next.js exige route segment config estaticamente analisável.
  */
-export { POST, runtime } from '../../webhooks/stripe/route';
+export const runtime = 'nodejs';
+
+export { POST } from '../../webhooks/stripe/route';
