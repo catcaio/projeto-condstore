@@ -24,8 +24,8 @@ O MVP atual é um sistema supervisionado para operação comercial B2B via Whats
 |---|---|---|
 | WhatsApp supervisionado | `src/modules/conversations/**`, `src/app/api/whatsapp/**`, `src/server/twilio/**`, `src/app/(app)/cockpit/atendimento/**`, `src/app/api/cockpit/conversations/**` | É o canal operacional principal descrito no estado atual do produto. |
 | CRM operacional | `src/modules/crm/**`, `src/modules/clientes/**`, `src/modules/customers/**`, `src/modules/conversations/**`, `src/modules/timeline/**`, `src/app/(app)/cockpit/pipeline/**` | Sustenta acompanhamento comercial, pipeline e histórico do cliente. |
-| Cotação de frete | `src/modules/freight/**`, `src/app/api/public/cotacao/**`, `src/app/api/cockpit/conversations/[id]/quotes/**`, `src/app/(app)/cockpit/freight/**` | Faz parte do fluxo principal de venda e atendimento. |
-| Pedido e shipment | `src/modules/orders/**`, `src/modules/logistics/**`, `src/modules/logistica/**`, `src/modules/shipping/**`, `src/app/api/orders/**`, `src/app/(app)/cockpit/orders/**` | Fecha o ciclo quote -> order -> shipment que o produto já opera. |
+| Cotação de frete | `src/modules/fulfillment/freight/**`, `src/app/api/public/cotacao/**`, `src/app/api/cockpit/conversations/[id]/quotes/**`, `src/app/(app)/cockpit/freight/**` | Faz parte do fluxo principal de venda e atendimento. |
+| Pedido e shipment | `src/modules/orders/**`, `src/modules/pedidos/**`, `src/modules/fulfillment/**`, `src/app/api/orders/**`, `src/app/(app)/cockpit/orders/**` | Fecha o ciclo quote -> order -> shipment que o produto já opera. |
 | Cockpit diário | `src/modules/cockpit/**`, `src/app/(app)/cockpit/**` exceto superfícies frozen listadas abaixo | É a interface operacional central do MVP. |
 
 ### Adjacent / Support

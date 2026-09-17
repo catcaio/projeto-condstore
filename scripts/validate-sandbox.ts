@@ -4,8 +4,8 @@ import { randomUUID } from 'crypto';
 import { eq, desc } from 'drizzle-orm';
 import { POST as webhookHandler } from '../src/app/api/webhooks/melhor-envio/route';
 import { NextRequest } from 'next/server';
-import { logFreightSimulation } from '../src/modules/freight/freight-audit';
-import { createShipmentFromQuote } from '../src/modules/freight/adapters/melhor-envio-shipment';
+import { logFreightSimulation } from '../src/modules/fulfillment/freight/freight-audit';
+import { createShipmentFromQuote } from '../src/modules/fulfillment/shipments/adapters/melhor-envio-shipment';
 
 const tenantId = 'LOJACOND';
 

@@ -7,9 +7,9 @@
  * Usage: npx tsx scripts/validate-simulator-e2e.ts
  */
 
-import { unifiedQuoteEngine } from '../src/modules/freight/quote-engine';
-import { logFreightSimulation } from '../src/modules/freight/freight-audit';
-import type { FreightRequest } from '../src/modules/freight/freight.types';
+import { unifiedQuoteEngine } from '../src/modules/fulfillment/freight/quote-engine';
+import { logFreightSimulation } from '../src/modules/fulfillment/freight/freight-audit';
+import type { FreightRequest } from '../src/modules/fulfillment/freight/freight.types';
 
 const tenantId = 'LOJACOND';
 

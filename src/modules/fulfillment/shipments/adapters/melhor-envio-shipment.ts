@@ -4,9 +4,9 @@
  * Handles label generation via the Melhor Envio API.
  */
 
-import { logger } from '../../../infra/logger';
-import { getDb } from '../../../infra/db';
-import { freightShipments } from '../../../drizzle/schema';
+import { logger } from '@/infra/logger';
+import { getDb } from '@/infra/db';
+import { freightShipments } from '@/drizzle/schema';
 import { randomUUID } from 'crypto';
 
 export interface RecipientData {

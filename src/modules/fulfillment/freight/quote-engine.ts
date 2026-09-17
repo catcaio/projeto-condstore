@@ -1,13 +1,13 @@
-import { appConfig } from '../../config/app.config';
-import { logger } from '../../infra/logger';
-import { melhorEnvioProvider } from '../../providers/melhorenvio.provider';
-import { freightTableProvider } from '../../infra/freight-table';
+import { appConfig } from '@/config/app.config';
+import { logger } from '@/infra/logger';
+import { melhorEnvioProvider } from '@/providers/melhorenvio.provider';
+import { freightTableProvider } from '@/infra/freight-table';
 import { FreightRequest, FreightOption, FreightStrategy } from './freight.types';
-import { CarrierAdapter, QuoteInput, NormalizedQuote } from '../shipping/carriers/types';
-import { ConcurrentQuoteEngine } from '../shipping/quote-engine/ConcurrentQuoteEngine';
+import { CarrierAdapter, QuoteInput, NormalizedQuote } from './carriers/types';
+import { ConcurrentQuoteEngine } from './quote-engine/ConcurrentQuoteEngine';
 import { getTableAdaptersForDestination } from './table-driven-adapter';
-import { loadOperationalSettings } from '../../core/freight/operational-settings';
-import { BusinessError, ErrorCode } from '../../infra/errors';
+import { loadOperationalSettings } from '@/core/freight/operational-settings';
+import { BusinessError, ErrorCode } from '@/infra/errors';
 
 export class MelhorEnvioAdapter implements CarrierAdapter {
     id = 'melhorenvio';

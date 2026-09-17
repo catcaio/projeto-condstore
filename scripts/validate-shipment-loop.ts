@@ -15,7 +15,7 @@ import { freightSimulations, freightShipments, freightConfirmations } from '../s
 import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { logger } from '../src/infra/logger';
-import { logFreightSimulation } from '../src/modules/freight/freight-audit';
+import { logFreightSimulation } from '../src/modules/fulfillment/freight/freight-audit';
 
 const tenantId = 'LOJACOND';
 

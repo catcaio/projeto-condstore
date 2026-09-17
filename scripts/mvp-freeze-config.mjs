@@ -145,9 +145,9 @@ export const scopeRules = [
     label: 'Frete, pedidos e shipments',
     coreArea: 'freight',
     prefixes: [
-      'src/modules/freight/',
-      'src/modules/logistics/',
-      'src/modules/logistica/',
+      'src/modules/fulfillment/freight/',
+      'src/modules/fulfillment/shipments/',
+      'src/modules/fulfillment/presentation/logistics/',
       'src/modules/orders/',
       'src/modules/shipping/',
       'src/app/api/public/cotacao/',

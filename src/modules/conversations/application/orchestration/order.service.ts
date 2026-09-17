@@ -5,7 +5,7 @@ import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from '@/modules/conversations/application/orchestration/conversation.service';
 import { messageService } from '@/modules/conversations/application/orchestration/message.service';
 import { assertTenantCanOperateOrders } from '@/modules/billing/guards/assertTenantCanOperateOrders';
-import { shipmentService } from '@/modules/logistics/server';
+import { shipmentService } from '@/modules/fulfillment/shipments/server';
 import { redisClient } from '@/infra/redis.client';
 import { LOCK_TTL } from '@/infra/redis-ttl';
 import { logger } from '@/infra/logger';

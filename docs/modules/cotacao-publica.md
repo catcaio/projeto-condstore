@@ -22,7 +22,7 @@ Este módulo permite que usuários anônimos simulem cotações de frete sem nec
 - **Rastreamento Controlado**: IDs anônimos (`anonId`) e hashes de IP (`ipHash`, `uaHash`) evitam o vazamento de dados de rastreamento no evento `public_events`.
 
 ## Contrato de Adapters (Carriers)
-Foi criada a fundação de tipos em `src/modules/shipping/carriers/types.ts`:
+Foi criada a fundação de tipos em `src/modules/fulfillment/freight/carriers/types.ts`:
 - `QuoteInput`
 - `NormalizedQuote`
 - `CarrierHealth`

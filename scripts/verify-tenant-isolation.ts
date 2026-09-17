@@ -72,7 +72,7 @@ const ALLOWLIST: AllowEntry[] = [
         reason: 'Auth-plane lookups by globally-unique email (pre-tenant login) and by JWT sub (self read); password UPDATE is internal-token-gated (reset-admin, non-prod). No tenant-scoped request path reaches these unfiltered.',
     },
     {
-        fileSuffix: 'modules/freight/shipment-linkage.repository.ts',
+        fileSuffix: 'modules/fulfillment/shipments/shipment-linkage.repository.ts',
         table: 'freightShipments',
         reason: 'findFreightShipmentByExternalShipmentId resolves by globally-unique external_shipment_id for the signature-verified Melhor Envio webhook; all subsequent writes re-scope via shipment.tenantId.',
     },

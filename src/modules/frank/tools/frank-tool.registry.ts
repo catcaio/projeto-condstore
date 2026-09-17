@@ -36,7 +36,7 @@ export class FrankToolRegistry {
             capabilities: ['READ', 'QUERY'],
             sideEffects: ['NONE'],
             execute: async (input) => {
-                const { freightService } = await import('@/modules/freight/freight.service');
+                const { freightService } = await import('@/modules/fulfillment/freight/freight.service');
                 return freightService.simulateFreight(input as any);
             },
         });
@@ -57,7 +57,7 @@ export class FrankToolRegistry {
             capabilities: ['WRITE', 'CREATE', 'FINANCIAL'],
             sideEffects: ['PERSISTENCE_WRITE'],
             execute: async (input) => {
-                const { freightService } = await import('@/modules/freight/freight.service');
+                const { freightService } = await import('@/modules/fulfillment/freight/freight.service');
                 return freightService.simulateFreight(input as any);
             },
         });

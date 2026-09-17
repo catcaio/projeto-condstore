@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { freightService } from '../../../modules/freight/freight.service';
+import { freightService } from '../../../modules/fulfillment/freight/freight.service';
 import { simulationRepository } from '../../../infra/repositories/simulation.repository';
 import { getSessionUser } from '@/infra/auth/session';
 import { BusinessError, ErrorCode, getUserMessage } from '../../../infra/errors';

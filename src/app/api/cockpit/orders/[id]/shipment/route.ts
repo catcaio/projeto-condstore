@@ -3,7 +3,7 @@ import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
 import { logger } from '@/infra/logger';
-import { shipmentService } from '@/modules/logistics/server';
+import { shipmentService } from '@/modules/fulfillment/shipments/server';
 
 export async function GET(
     request: NextRequest,

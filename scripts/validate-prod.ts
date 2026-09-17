@@ -2,8 +2,8 @@ import { getDb } from '../src/infra/db';
 import { freightShipments, freightConfirmations, freightSimulations, freightMemory } from '../src/drizzle/schema';
 import { randomUUID } from 'crypto';
 import { eq, desc, and } from 'drizzle-orm';
-import { logFreightSimulation } from '../src/modules/freight/freight-audit';
-import { createShipmentFromQuote } from '../src/modules/freight/adapters/melhor-envio-shipment';
+import { logFreightSimulation } from '../src/modules/fulfillment/freight/freight-audit';
+import { createShipmentFromQuote } from '../src/modules/fulfillment/shipments/adapters/melhor-envio-shipment';
 
 function generateCPF() {
     const n = (count: number) => Array(count).fill(0).map(() => Math.floor(Math.random() * 9));

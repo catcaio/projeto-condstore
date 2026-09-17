@@ -1,8 +1,8 @@
 import { subscribeEvent, publishEvent } from '../domine/event-bus';
 import { logger } from '../infra/logger';
 import crypto from 'crypto';
-import { unifiedQuoteEngine } from '../modules/freight/quote-engine';
-import { FreightRequest } from '../modules/freight/freight.types';
+import { unifiedQuoteEngine } from '../modules/fulfillment/freight/quote-engine';
+import { FreightRequest } from '../modules/fulfillment/freight/freight.types';
 
 export function startQuoteWorker() {
     logger.info('Starting Quote Worker...');

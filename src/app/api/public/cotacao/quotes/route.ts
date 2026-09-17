@@ -10,7 +10,7 @@ import { publicEventsRepository } from '@/infra/repositories/public-events.repos
 import { getDb } from '@/infra/db';
 import { publicEvents } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import type { QuoteInput } from '@/modules/shipping/carriers/types';
+import type { QuoteInput } from '@/modules/fulfillment/freight/carriers/types';
 import { publishEvent, eventBus } from '@/domine/event-bus';
 import { sanitizeQuoteIntentPayload } from '@/modules/cotacao-publica/sanitization';
 

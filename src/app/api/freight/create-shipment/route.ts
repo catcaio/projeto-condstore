@@ -13,7 +13,7 @@ import { freightShipments, freightSimulations } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
-import { confirmFreight } from '@/modules/freight/freight-audit';
+import { confirmFreight } from '@/modules/fulfillment/freight/freight-audit';
 import { randomUUID } from 'crypto';
 
 export const dynamic = 'force-dynamic';

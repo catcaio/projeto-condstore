@@ -14,11 +14,11 @@ import { carrierPolicies } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
-import { resolvePackingDimensions, type ResolvedDimensions } from '@/modules/freight/packing-resolver';
-import { TableDrivenAdapter } from '@/modules/freight/table-driven-adapter';
+import { resolvePackingDimensions, type ResolvedDimensions } from '@/modules/fulfillment/freight/packing-resolver';
+import { TableDrivenAdapter } from '@/modules/fulfillment/freight/table-driven-adapter';
 import { resolveCarrierZone, extractStateFromCep } from '@/core/freight/zone-resolver';
 import { loadOperationalSettings } from '@/core/freight/operational-settings';
-import { logFreightSimulation, computeWeightBand, computeVolumeBand } from '@/modules/freight/freight-audit';
+import { logFreightSimulation, computeWeightBand, computeVolumeBand } from '@/modules/fulfillment/freight/freight-audit';
 
 export const dynamic = 'force-dynamic';
 

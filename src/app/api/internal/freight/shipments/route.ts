@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { ErrorCode, errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';
-import { createShipmentFromQuote, listFreightShipments, type CreateShipmentInput } from '@/modules/freight/server';
+import { createShipmentFromQuote, listFreightShipments, type CreateShipmentInput } from '@/modules/fulfillment/shipments/server';
 
 export const dynamic = 'force-dynamic';
 

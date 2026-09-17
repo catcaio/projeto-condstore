@@ -1,6 +1,6 @@
 import { getDb, withTenantIdNotDeleted } from '@/infra/db';
 import { simulations, crmQuotes, crmOpportunities, conversations } from '@/drizzle/schema';
-import { freightService } from '@/modules/freight/freight.service';
+import { freightService } from '@/modules/fulfillment/freight/freight.service';
 import { domineIntakeService } from '@/domine/domine-intake.service';
 import { eq, and, desc } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
