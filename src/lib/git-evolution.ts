@@ -25,7 +25,7 @@ const FRONTS = [
   { id: 'auth', name: 'Auth & Security', matchers: ['src/infra/security', 'middleware', 'src/app/api/auth'] },
   { id: 'cockpit', name: 'Cockpit & CRM', matchers: ['src/modules/cockpit', 'src/modules/crm', 'src/app/(cockpit)', 'src/app/api/cockpit'] },
   { id: 'tenant', name: 'Tenant & Admin', matchers: ['src/modules/tenant', 'src/app/(admin)', 'src/infra/db', 'src/drizzle'] },
-  { id: 'freight', name: 'Logística', matchers: ['src/modules/freight', 'src/modules/logistics', 'src/app/painel-logistico', 'src/app/api/freight'] },
+  { id: 'freight', name: 'Logística', matchers: ['src/modules/fulfillment/freight', 'src/modules/fulfillment/shipments', 'src/app/painel-logistico', 'src/app/api/freight'] },
   { id: 'observability', name: 'Observability & Core', matchers: ['sentry', 'instrumentation', 'logging', 'src/core', '.github'] },
   { id: 'integration', name: 'Integrações (API/Webhooks)', matchers: ['webhook', 'whatsapp', 'stripe', 'twilio', 'src/app/api'] }
 ];

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getRecentOrdersForCustomer } from '@/modules/orders/server';
-import { getShipmentsForOrder } from '@/modules/freight/server';
+import { getShipmentsForOrder } from '@/modules/fulfillment/shipments/server';
 import { executeFrankTool } from '../tool-guard';
 import { clampSupportLimit, selectLatestShipment, toShipmentSummary, type ShipmentSummary } from './shared';
 import { FrankToolContract } from '../frank-tool.contract';

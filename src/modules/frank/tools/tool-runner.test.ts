@@ -6,7 +6,7 @@ const { simulateFreightMock, createOrderMock, getOrderStatusMock } = vi.hoisted(
     getOrderStatusMock: vi.fn(),
 }));
 
-vi.mock('@/modules/freight/freight.service', () => ({
+vi.mock('@/modules/fulfillment/freight/freight.service', () => ({
     freightService: {
         simulateFreight: simulateFreightMock,
     },

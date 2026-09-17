@@ -5,7 +5,7 @@ import { endUserConsentRepository } from '@/infra/repositories/end-user-consent.
 import { messageRepository } from '@/infra/repositories/message.repository';
 import { conversationService } from '@/modules/conversations/application/orchestration/conversation.service';
 import { catalogService } from '@/modules/catalog/catalog.service';
-import { freightService } from '@/modules/freight/freight.service';
+import { freightService } from '@/modules/fulfillment/freight/freight.service';
 import { suggestionService } from '@/modules/frank/suggestions/suggestion.service';
 
 const mockResolveIntent = vi.fn().mockReturnValue({ intent: 'SUPPORT', confidence: 0.9, entities: [] });
@@ -73,7 +73,7 @@ vi.mock('@/modules/catalog/catalog.service', () => ({
     catalogService: { searchProductsByName: vi.fn() }
 }));
 
-vi.mock('@/modules/freight/freight.service', () => ({
+vi.mock('@/modules/fulfillment/freight/freight.service', () => ({
     freightService: { simulateFreightQuote: vi.fn() }
 }));
 

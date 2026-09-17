@@ -9,8 +9,8 @@ import { BusinessError, ErrorCode, getUserMessage } from '../infra/errors';
 import { logger } from '../infra/logger';
 import { ConversationEvent, ConversationState, stateMachine } from '../core/conversation/state-machine';
 import { sessionManager } from '../core/conversation/session-manager';
-import type { FreightRequest } from '../modules/freight/freight.types';
-import { freightService } from '../modules/freight/freight.service';
+import type { FreightRequest } from '../modules/fulfillment/freight/freight.types';
+import { freightService } from '../modules/fulfillment/freight/freight.service';
 import { funnelRepository, FunnelStage } from '../modules/funnel/funnel.repository';
 
 type TwilioIncoming = {

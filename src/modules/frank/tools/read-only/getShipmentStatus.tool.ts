@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { deliveriesRepository } from '@/infra/repositories/deliveries.repository';
-import { getShipmentById } from '@/modules/freight/server';
+import { getShipmentById } from '@/modules/fulfillment/shipments/server';
 import { executeFrankTool } from '../tool-guard';
 import { FrankToolContract } from '../frank-tool.contract';
 import { frankToolRegistry } from '../frank-tool.registry';

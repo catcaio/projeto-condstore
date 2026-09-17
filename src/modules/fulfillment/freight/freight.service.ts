@@ -4,9 +4,9 @@
  * Orchestrates providers based on weight-based decision rules.
  */
 
-import { appConfig } from '../../config/app.config';
-import { BusinessError, ErrorCode } from '../../infra/errors';
-import { logger } from '../../infra/logger';
+import { appConfig } from '@/config/app.config';
+import { BusinessError, ErrorCode } from '@/infra/errors';
+import { logger } from '@/infra/logger';
 import type {
   FreightOption,
   FreightRequest,
@@ -15,9 +15,9 @@ import type {
   WeightDecision,
 } from './freight.types';
 import { unifiedQuoteEngine } from './quote-engine';
-import { redisClient } from '../../infra/redis.client';
-import { freightSimulationLogRepository } from '../../infra/repositories/freight-simulation-log.repository';
-import { domineIntakeService } from '../../domine/domine-intake.service';
+import { redisClient } from '@/infra/redis.client';
+import { freightSimulationLogRepository } from '@/infra/repositories/freight-simulation-log.repository';
+import { domineIntakeService } from '@/domine/domine-intake.service';
 import { resolvePackingDimensions } from './packing-resolver';
 
 
@@ -75,7 +75,7 @@ class FreightService {
             weight: totalWeight,
             dims: request.dimensions ? `${request.dimensions.width}x${request.dimensions.height}x${request.dimensions.length}` : null
           }
-        }).catch(e => logger.warn('domine_publish_req_fail', { error: e.message }));
+        }).catch((e: any) => logger.warn('domine_publish_req_fail', { error: e.message }));
       }
 
       logger.info('Calculating freight', {
@@ -126,7 +126,7 @@ class FreightService {
               eta: o.deliveryTime
             }))
           }
-        }).catch(e => logger.warn('domine_publish_comp_fail', { error: e.message }));
+        }).catch((e: any) => logger.warn('domine_publish_comp_fail', { error: e.message }));
       }
 
       // Cache the result
@@ -273,7 +273,7 @@ class FreightService {
     quantity: number;
     destinationZip: string;
   }): Promise<{ carrier: string; price: number; deliveryDays: number }> {
-    const { catalogService } = await import('../catalog/catalog.service');
+    const { catalogService } = await import('@/modules/catalog/catalog.service');
     const [product] = await catalogService.searchProductsByName(params.tenantId, params.productId);
 
     if (!product) {

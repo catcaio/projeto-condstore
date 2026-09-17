@@ -6,7 +6,7 @@ import { suggestionService } from './suggestions/suggestion.service';
 import { isFrankSupervisedOnly } from '@/config/app.config';
 import { logger } from '@/infra/logger';
 import { catalogService } from '@/modules/catalog/catalog.service';
-import { freightService } from '@/modules/freight/freight.service';
+import { freightService } from '@/modules/fulfillment/freight/freight.service';
 import {
     formatFreightQuoteResponse,
     formatProductInquiryResponse,

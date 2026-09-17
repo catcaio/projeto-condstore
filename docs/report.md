@@ -45,7 +45,7 @@ graph TD
 ## 3. Estrutura de Diretórios (Core)
 - `src/app/api`: Entry points das APIs (Webhook, Simulate, History).
 - `src/core/conversation`: Lógica central do chatbot (State Machine, Intent Classifier, Session Manager).
-- `src/modules/freight`: Módulo de negócio principal (Calculation, Ranking, Controllers).
+- `src/modules/fulfillment/freight`: Módulo de negócio principal (Calculation, Ranking, Controllers).
 - `src/infra`: Serviços de infraestrutura (Database, Redis, Logger, Errors).
 - `src/providers`: Client SDKs desacoplados para serviços externos.
 

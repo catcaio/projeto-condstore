@@ -1,5 +1,5 @@
 import { NormalizedQuote } from '../carriers/types';
-import { logger } from '../../../infra/logger';
+import { logger } from '@/infra/logger';
 
 /**
  * Normalizes and validates quotes from different carrier adapters.

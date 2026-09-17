@@ -23,7 +23,7 @@
     "test:win-stable": "cross-env ESBUILD_BINARY_PATH=node_modules/vite/node_modules/@esbuild/win32-x64/esbuild.exe NODE_OPTIONS=--require=./scripts/vitest-windows-eperm-workaround.cjs VITEST_POOL=forks vitest run --configLoader runner --config vitest.config.mjs",
     "test:whatsapp": "npm run test:win-stable -- src/modules/conversations/__tests__ src/app/api/whatsapp/incoming/__tests__ src/server/twilio/__tests__ \"src/app/(app)/cockpit/atendimento/__tests__\" src/app/api/cockpit/conversations src/__tests__/middleware.test.ts src/__tests__/rbac-guards.test.ts",
     "test:cockpit": "npm run test:win-stable -- src/modules/cockpit \"src/app/(app)/cockpit/__tests__\" \"src/app/(app)/cockpit/components/__tests__\" src/app/api/cockpit/metrics src/app/api/cockpit/ops src/app/api/cockpit/timeline src/app/api/cockpit/custom-fields src/__tests__/cockpit-observability.test.ts",
-    "test:freight": "npm run test:win-stable -- src/modules/freight src/modules/logistics src/modules/logistica src/modules/orders src/modules/shipping src/app/api/public/cotacao src/app/api/orders \"src/app/api/cockpit/conversations/[id]/quotes\" src/infra/__tests__/freight-table.test.ts",
+    "test:freight": "npm run test:win-stable -- src/modules/fulfillment/freight src/modules/fulfillment/shipments src/modules/fulfillment/presentation/logistics src/modules/pedidos src/app/api/public/cotacao src/app/api/orders \"src/app/api/cockpit/conversations/[id]/quotes\" src/infra/__tests__/freight-table.test.ts",
     "test:mvp": "npm run test:win-stable -- src/mvp/",
     "guardrail:mvp-freeze": "node scripts/verify-mvp-freeze.mjs",
     "guardrail:mvp-baseline": "node scripts/verify-mvp-freeze.mjs",
@@ -56,8 +56,7 @@
     "pilot:readiness": "node --env-file=.env.local --import tsx scripts/validate-pilot-launch-readiness.ts",
     "auth:readiness": "node --env-file=.env.local --import tsx scripts/validate-auth-readiness.ts",
     "email:readiness": "node --env-file=.env.local --import tsx scripts/validate-email-readiness.ts",
-    "mvp:release-candidate": "node --env-file=.env.local --import tsx scripts/validate-mvp-release-candidate.ts",
-    "bela:update": "./scripts/bela-update.sh"
+    "mvp:release-candidate": "node --env-file=.env.local --import tsx scripts/validate-mvp-release-candidate.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1000.0",

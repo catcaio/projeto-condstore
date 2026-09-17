@@ -24,11 +24,8 @@ Domínios que implementam a operação core do negócio. Todo novo desenvolvimen
 |---|---|---|---|
 | **Conversations** | `src/modules/conversations/` | Único domínio técnico de Conversation/Message (domain/, application/, infrastructure/, presentation/). Superfície comercial 'Atendimento'. | `operation` |
 | **Clientes** | `src/modules/clientes/` | UI de clientes, customer loader/repository. Cliente 360 com relacionamento e ações | `operation` |
-| **Pedidos (Orders)** | `src/modules/orders/` | Order lifecycle completo: service, repository, loader, view. Fluxo CREATED → DELIVERED | `operation` |
-| **Freight** | `src/modules/freight/` | Multi-carrier quote engine: carrier-router, table-driven adapter, packing resolver, adapters | `frete` |
-| **Logística** | `src/modules/logistica/` | UI logística: fila de acompanhamento, simulações, SLA, exceções | `frete` |
-| **Shipping** | `src/modules/shipping/` | Carriers, quote-engine runtimes, simulações server-side | `frete` |
-| **Shipments** | `src/modules/shipments/` | Repositories e services de shipments. Linkage order→shipment | `frete` |
+| **Pedidos (Orders)** | `src/modules/orders/` + `src/modules/pedidos/` | Order lifecycle: service/repository/loader em `orders/`; view/actions em `pedidos/`. ⚠️ Overlap — convergência pendente | `operation` |
+| **Fulfillment** | `src/modules/fulfillment/` | Bounded context logístico canônico: `freight/` (cotação, pricing, carriers), `shipments/` (lifecycle, linkage order->shipment) | `frete` |
 | **Frank AI** | `src/modules/frank/` | AI agent operacional: intent resolver, context resolver, tools, orchestrator | `cockpit` |
 | **CRM** | `src/modules/crm/` | Pipeline management, CRM services | `operation` |
 | **Cockpit** | `src/modules/cockpit/` | Dashboard operacional agregando dados de todos os domínios | `cockpit` |
@@ -70,7 +67,7 @@ Módulos com overlap, mortos ou em convergência. **Não criar código novo nest
 
 | Módulo | Path | Status | Observação |
 |---|---|---|---|
-| `logistics` | `src/modules/logistics/` | ⚠️ **Ativo (recente)** | Contém `shipment.service.ts`, `shipment.repository.ts`, `shipment.events.ts` e testes. Overlap com `modules/logistica/` (que foca em UI) e `modules/shipments/` (que foca em linkage). Avaliar convergência. |
+| `logistics`, `freight`, `shipping`, `shipments`, `logistica` | `src/modules/...` | 🟢 **Consolidado** | Módulos consolidados no bounded context canônico `src/modules/fulfillment/`. Não utilizar os caminhos antigos. |
 | `customers` | `src/modules/customers/` | ⚠️ **Sobreposição** | Contém `customer-resolution.service.ts` e `identity-resolver/`. Overlap com `modules/clientes/` (que tem repository + UI). Dívida de convergência. |
 | `conversas` e `atendimento` | `src/modules/conversas/`, `src/modules/atendimento/` | ✅ **Consolidado** | `src/modules/conversations/` é o único bounded context canônico. `atendimento` e `conversas` atuam apenas como adapters de compatibilidade/re-export. |
 | `shipping` vs `freight` vs `shipments` | Ver paths acima | ⚠️ **Tríade logística** | `freight/` = quote engine e pricing. `shipping/` = carrier adapters e quote runtime. `shipments/` = persistence e linkage. Funcionam juntos, mas a fronteira não é óbvia. |
@@ -129,13 +126,13 @@ O DOMINE é um **domínio unificado** composto por dois diretórios complementar
 ### Fluxo Quote → Order → Shipment
 
 ```
-cotacao-publica / freight (quote engine)
-    → shipping (carrier adapters)
+cotacao-publica / fulfillment/freight (quote engine)
+    → fulfillment/freight/carriers (carrier adapters)
     → providers/melhorenvio
     → drizzle/schema (freight_simulations)
         ↓
-orders (order.service)
-    → shipments (linkage repository)
+pedidos (order.service)
+    → fulfillment/shipments (linkage repository / shipment service)
     → drizzle/schema (orders, order_items, freight_shipments)
         ↓
 domine/event-bus (order_created, freight_quoted)

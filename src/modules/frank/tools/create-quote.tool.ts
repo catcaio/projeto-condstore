@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { freightService } from '@/modules/freight/freight.service';
+import { freightService } from '@/modules/fulfillment/freight/freight.service';
 import { FrankToolContract } from './frank-tool.contract';
 import { frankToolRegistry } from './frank-tool.registry';
 

@@ -10,8 +10,8 @@
  * - braspress_api: Heavy packages to other regions
  */
 
-import { extractStateFromCep } from '../../core/freight/zone-resolver';
-import { logger } from '../../infra/logger';
+import { extractStateFromCep } from '@/core/freight/zone-resolver';
+import { logger } from '@/infra/logger';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

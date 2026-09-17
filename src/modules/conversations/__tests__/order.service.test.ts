@@ -5,7 +5,7 @@ import * as dbInfra from '@/infra/db';
 import { publishOperationalEvent } from '@/lib/events/operational-event-bus';
 import { conversationService } from '@/modules/conversations/application/orchestration/conversation.service';
 import { redisClient } from '@/infra/redis.client';
-import { shipmentService } from '@/modules/logistics/server';
+import { shipmentService } from '@/modules/fulfillment/shipments/server';
 
 vi.mock('@/infra/db', async () => {
     const actual = await vi.importActual<typeof import('@/infra/db')>('@/infra/db');
@@ -39,7 +39,7 @@ vi.mock('@/modules/conversations/application/orchestration/message.service', () 
     }
 }));
 
-vi.mock('@/modules/logistics/server', () => ({
+vi.mock('@/modules/fulfillment/shipments/server', () => ({
     shipmentService: {
         createShipmentFromOrder: vi.fn().mockResolvedValue({ id: 'shipment-1' }),
     }

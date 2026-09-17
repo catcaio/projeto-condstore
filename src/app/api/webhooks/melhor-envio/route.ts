@@ -12,10 +12,10 @@ import { freightSimulations } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '@/infra/logger';
 import { structuredLogger } from '@/infra/log/logger';
-import { confirmFreight } from '@/modules/freight/freight-audit';
-import { upsertFreightMemory } from '@/modules/freight/freight-audit';
+import { confirmFreight } from '@/modules/fulfillment/freight/freight-audit';
+import { upsertFreightMemory } from '@/modules/fulfillment/freight/freight-audit';
 import { verifyMelhorEnvioWebhook } from '@/lib/security/melhorenvio-webhook-verifier';
-import { findFreightShipmentByExternalShipmentId, updateFreightShipmentStatus } from '@/modules/freight/server';
+import { findFreightShipmentByExternalShipmentId, updateFreightShipmentStatus } from '@/modules/fulfillment/shipments/server';
 
 export async function POST(request: NextRequest) {
     // ── Webhook signature verification ────────────────────────────────
