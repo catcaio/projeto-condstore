@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { conversationService } from '@/modules/atendimento/conversation.service';
+import { conversationService } from '@/modules/conversations/application/orchestration/conversation.service';
 import { ecosystemEventsService } from '@/services/ecosystem-events.service';
 import { getDb } from '@/infra/db';
 import {
@@ -7,10 +7,10 @@ import {
     normalizeTwilioDeliveryStatus,
     resolveInitialOutboundDeliveryStatus,
     classifyDeliveryStatusTransition,
-} from '../whatsapp-delivery-status.service';
+} from '@/modules/conversations/application/inbound/whatsapp-delivery-status.service';
 
 vi.mock('@/infra/db', () => ({ getDb: vi.fn() }));
-vi.mock('@/modules/atendimento/conversation.service', () => ({
+vi.mock('@/modules/conversations/application/orchestration/conversation.service', () => ({
     conversationService: {
         getMessageByProviderMessageId: vi.fn(),
     },

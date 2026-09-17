@@ -1,6 +1,6 @@
 import { getBillingSummary } from '../cockpit/queries';
 import { getAttributionSummary } from '../attribution/queries';
-import { getInboxConversations } from '@/modules/conversas/queries';
+import { getInboxConversations } from '@/modules/conversations';
 
 export async function getHomeFinancialSnapshot(tenantId: string) {
     const billing = await getBillingSummary(tenantId);

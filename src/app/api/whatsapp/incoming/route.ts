@@ -8,7 +8,7 @@ import { logger } from '@/infra/logger';
 import { verifyTwilioSignature } from '@/lib/security/webhook-verifier';
 import { twilioProvider } from '@/providers/twilio.provider';
 import { tenantRepository } from '@/infra/repositories/tenant.repository';
-import { whatsappInboundOrchestrator } from '@/modules/atendimento/whatsapp-inbound-orchestrator.service';
+import { whatsappInboundOrchestrator } from '@/modules/conversations/server';
 import { normalizePhone, toWhatsAppPhone } from '@/lib/phone/normalize-phone';
 import { phoneHash } from '@/lib/phone';
 import { rateLimiter, hashRateLimitKeyForLog } from '@/infra/security/rate-limiter';

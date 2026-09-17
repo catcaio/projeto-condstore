@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { conversationService } from '@/modules/atendimento/conversation.service';
+import { conversationService } from '@/modules/conversations/server';
 import { requireAdmin } from '@/infra/auth/guards';
 import { errorResponse } from '@/infra/http/error-response';
 import { makeRequestId } from '@/infra/http/request-trace';

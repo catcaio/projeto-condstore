@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { POST } from '../route';
 import { verifyTwilioSignature } from '@/lib/security/webhook-verifier';
 import { rateLimiter } from '@/infra/security/rate-limiter';
-import { whatsappDeliveryStatusService } from '@/modules/atendimento/whatsapp-delivery-status.service';
+import { whatsappDeliveryStatusService } from '@/modules/conversations/server';
 
 vi.mock('@/infra/security/rate-limiter', () => ({
     rateLimiter: { limit: vi.fn() },
@@ -12,7 +12,7 @@ vi.mock('@/infra/security/rate-limiter', () => ({
 vi.mock('@/lib/security/webhook-verifier', () => ({
     verifyTwilioSignature: vi.fn(),
 }));
-vi.mock('@/modules/atendimento/whatsapp-delivery-status.service', () => ({
+vi.mock('@/modules/conversations/application/inbound/whatsapp-delivery-status.service', () => ({
     whatsappDeliveryStatusService: {
         updateDeliveryStatus: vi.fn(),
     },

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { metricsService } from '../metrics.service';
+import { metricsService } from '@/modules/conversations/application/orchestration/metrics.service';
 import * as dbInfra from '@/infra/db';
 
 vi.mock('@/infra/db', () => ({

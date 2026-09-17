@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Bot, Flag, UserPlus, UserMinus, Loader2 } from 'lucide-react';
 import { Button } from '@/ui/components';
-import type { ConversationRecord } from '../types';
+import type { ConversationRecord } from '../../domain/types';
 import { useState } from 'react';
 
 export function ConversationActions({ conversation, onActionComplete }: { conversation: ConversationRecord, onActionComplete?: () => void }) {
