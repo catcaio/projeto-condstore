@@ -188,8 +188,6 @@
 | /api/orders/create-from-quote | POST | internal | required | pedidos | live | Create order from freight simulation |
 | /api/painel-logistico | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/public/contato | POST | public | none | PUBLIC | live | Endpoint de submissão do formulário de contato |
-| /api/public/cotacao/intent | TBA | public | none | PUBLIC | live | Auto-detected |
-| /api/public/cotacao/quotes | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/public/delivery/[token]/location | POST | public | controlled | PUBLIC | live | Delivery GPS Webhook |
 | /api/public/events | TBA | public | none | PUBLIC | live | Auto-detected |
 | /api/reports/ingest | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -297,8 +295,6 @@
 | /configuracoes | GET | internal | required | configuracoes | live | Governança canônica de usuários, permissões, integrações, AI provider e auditoria |
 | /contato | GET | public | none | PUBLIC | live | Página de contato e agendamento de demonstração |
 | /conversas | GET | internal | required | conversas | live | Inbox operacional canônica com lista, thread e contexto do cliente |
-| /cotacao | TBA | public | none | PUBLIC | live | Auto-detected |
-| /cotacao/result | TBA | public | none | PUBLIC | live | Auto-detected |
 | /crm-whatsapp | CRM e WhatsApp | public | none | PUBLIC | live | Landing page de CRM e WhatsApp |
 | /dashboard | GET | internal | required | cockpit | deprecated | Legado removido das instruções operacionais; usar /cockpit |
 | /docs | TBA | public | none | PUBLIC | live | Auto-detected |
