@@ -4,6 +4,7 @@ import path from 'path';
 const APP_DIR = path.join(process.cwd(), 'src', 'app');
 const REGISTRY_FILE = path.join(process.cwd(), 'docs', 'routes-registry.md');
 const OUTPUT_FILE = path.join(process.cwd(), 'src', 'ui', 'sitemap', 'architecture-data.ts');
+const GITHUB_BASE_URL = 'https://github.com/catcaio/projeto-condstore/tree/main';
 
 interface RouteEntry {
     path: string;
@@ -13,6 +14,14 @@ interface RouteEntry {
     domain: string;
     status: string;
     description: string;
+}
+
+interface DiscoveredRoute {
+    urlPath: string;
+    filePath: string;
+    routeType: 'page' | 'api';
+    isPublicGroup: boolean;
+    isAppGroup: boolean;
 }
 
 // 1. Existing Core Architectural Nodes (29 canonical nodes)
@@ -39,7 +48,7 @@ const CORE_NODES = [
         dependents: ['conversations-module', 'fulfillment-module', 'orders-module', 'cockpit-module', 'frank-module', 'infra-core', 'customers-module'],
         technologies: ['Next.js 16', 'TypeScript', 'Tailwind CSS', 'Drizzle ORM', 'MySQL'],
         relatedFiles: ['AGENTS.md', 'README.md', 'docs/mvp-freeze-plan.md'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src',
+        githubUrl: `${GITHUB_BASE_URL}/src`,
         evidence: 'Root directory src/ e diretivas em AGENTS.md.',
         level: 1,
         children: ['conversations-module', 'fulfillment-module', 'orders-module', 'cockpit-module', 'frank-module', 'customers-module', 'infra-core'],
@@ -67,7 +76,7 @@ const CORE_NODES = [
         dependents: ['cockpit-module', 'frank-module', 'orders-module'],
         technologies: ['TypeScript', 'Drizzle ORM', 'Twilio SDK', 'Zod'],
         relatedFiles: ['src/modules/conversations/index.ts', 'src/modules/conversations/server.ts', 'src/modules/conversations/presentation/use-conversations.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/conversations',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/conversations`,
         evidence: 'Canonical bounded context em src/modules/conversations/ index.ts & server.ts.',
         level: 1,
         parent: 'condstore-root',
@@ -96,7 +105,7 @@ const CORE_NODES = [
         dependents: ['orders-module', 'cockpit-module', 'freight-api'],
         technologies: ['TypeScript', 'Drizzle ORM', 'Melhor Envio SDK'],
         relatedFiles: ['src/modules/fulfillment/index.ts', 'src/modules/fulfillment/freight/adapters/melhor-envio.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/fulfillment',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/fulfillment`,
         evidence: 'Canonical bounded context em src/modules/fulfillment/.',
         level: 1,
         parent: 'condstore-root',
@@ -125,7 +134,7 @@ const CORE_NODES = [
         dependents: ['cockpit-module', 'finops-module'],
         technologies: ['TypeScript', 'Drizzle ORM', 'Zod'],
         relatedFiles: ['src/modules/orders/index.ts', 'src/modules/orders/server.ts', 'src/modules/orders/order.service.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/orders',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/orders`,
         evidence: 'Canonical bounded context em src/modules/orders/ com bloqueio de cotação ACCEPTED em order.service.ts.',
         level: 1,
         parent: 'condstore-root',
@@ -154,7 +163,7 @@ const CORE_NODES = [
         dependents: [],
         technologies: ['React 19', 'Next.js App Router', 'Tailwind CSS', 'Lucide Icons'],
         relatedFiles: ['src/modules/cockpit/workspace/components/WorkQueue.tsx', 'src/modules/cockpit/workspace/components/ContextPanel.tsx', 'COCKPIT_AUDIT_REPORT.md'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/cockpit',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/cockpit`,
         evidence: 'Decomposição do Cockpit V2 em src/modules/cockpit/workspace/.',
         level: 1,
         parent: 'condstore-root',
@@ -183,7 +192,7 @@ const CORE_NODES = [
         dependents: ['cockpit-module', 'whatsapp-webhook-api'],
         technologies: ['TypeScript', 'Zod', 'Drizzle ORM', 'OpenAI SDK'],
         relatedFiles: ['src/modules/frank/frank-execution-runtime.ts', 'src/modules/frank/frank-human-gate-policy.ts', 'src/modules/frank/tools/frank-tool.registry.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/frank',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/frank`,
         evidence: 'Módulo Frank Supremo em src/modules/frank/ com 15 ferramentas registradas em FrankToolRegistry.',
         level: 1,
         parent: 'condstore-root',
@@ -212,7 +221,7 @@ const CORE_NODES = [
         dependents: ['conversations-module', 'orders-module'],
         technologies: ['TypeScript', 'Drizzle ORM', 'Crypto'],
         relatedFiles: ['src/modules/customers/index.ts', 'src/modules/customers/customer.service.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/customers',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/customers`,
         evidence: 'Canonical bounded context em src/modules/customers/.',
         level: 2,
         parent: 'condstore-root',
@@ -241,7 +250,7 @@ const CORE_NODES = [
         dependents: ['frank-execution-runtime', 'frank-dag'],
         technologies: ['TypeScript', 'Node Events'],
         relatedFiles: ['src/modules/frank/concurrency/frank-concurrency-scheduler.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/frank/concurrency/frank-concurrency-scheduler.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/frank/concurrency/frank-concurrency-scheduler.ts`,
         evidence: 'FRANK-006 em src/modules/frank/concurrency/frank-concurrency-scheduler.ts.',
         level: 2,
         parent: 'frank-module',
@@ -270,7 +279,7 @@ const CORE_NODES = [
         dependents: ['frank-module'],
         technologies: ['TypeScript', 'Kahn Algorithm'],
         relatedFiles: ['src/modules/frank/dag/frank-dag-engine.ts', 'src/modules/frank/dag/frank-dag-validator.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/frank/dag',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/frank/dag`,
         evidence: 'FRANK-007 em src/modules/frank/dag/.',
         level: 2,
         parent: 'frank-module',
@@ -298,7 +307,7 @@ const CORE_NODES = [
         dependents: ['frank-execution-runtime', 'cockpit-module'],
         technologies: ['TypeScript', 'Zod'],
         relatedFiles: ['src/modules/frank/frank-human-gate-policy.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/frank/frank-human-gate-policy.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/frank/frank-human-gate-policy.ts`,
         evidence: 'Motor de aprovação em src/modules/frank/frank-human-gate-policy.ts.',
         level: 2,
         parent: 'frank-module',
@@ -326,7 +335,7 @@ const CORE_NODES = [
         dependents: ['orders-module', 'fulfillment-module', 'frank-observer'],
         technologies: ['TypeScript', 'MySQL DLQ'],
         relatedFiles: ['src/modules/domine/event-bus.service.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/domine',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/domine`,
         evidence: 'Serviço DOMINE em src/modules/domine/event-bus.service.ts.',
         level: 2,
         parent: 'infra-core',
@@ -354,7 +363,7 @@ const CORE_NODES = [
         dependents: ['cockpit-context-panel'],
         technologies: ['React', 'TypeScript', 'Tailwind CSS'],
         relatedFiles: ['src/modules/cockpit/workspace/components/WorkQueue.tsx', 'src/modules/cockpit/data/shared.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/cockpit/workspace/components/WorkQueue.tsx',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/cockpit/workspace/components/WorkQueue.tsx`,
         evidence: 'Componente em src/modules/cockpit/workspace/components/WorkQueue.tsx.',
         level: 3,
         parent: 'cockpit-module',
@@ -382,7 +391,7 @@ const CORE_NODES = [
         dependents: [],
         technologies: ['React', 'TypeScript', 'Tailwind CSS'],
         relatedFiles: ['src/modules/cockpit/workspace/components/ContextPanel.tsx', 'src/modules/cockpit/workspace/types/frank-context.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/cockpit/workspace/components/ContextPanel.tsx',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/cockpit/workspace/components/ContextPanel.tsx`,
         evidence: 'Componente de contexto em src/modules/cockpit/workspace/components/ContextPanel.tsx.',
         level: 3,
         parent: 'cockpit-module',
@@ -411,7 +420,7 @@ const CORE_NODES = [
         dependents: ['cockpit-module'],
         technologies: ['TypeScript', 'Zod', 'Drizzle ORM'],
         relatedFiles: ['src/modules/frank/frank-execution-runtime.ts', 'src/modules/frank/frank-execution-state.service.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/frank/frank-execution-runtime.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/frank/frank-execution-runtime.ts`,
         evidence: 'Pipeline de execução em src/modules/frank/frank-execution-runtime.ts.',
         level: 3,
         parent: 'frank-module',
@@ -439,7 +448,7 @@ const CORE_NODES = [
         dependents: ['frank-diagnosis'],
         technologies: ['TypeScript', 'Event Bus'],
         relatedFiles: ['src/modules/frank/observation/frank-observer.service.ts', 'src/lib/events/operational-event-bus.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/frank/observation/frank-observer.service.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/frank/observation/frank-observer.service.ts`,
         evidence: 'FrankObserverService integrado em src/lib/events/operational-event-bus.ts.',
         level: 3,
         parent: 'frank-module',
@@ -467,7 +476,7 @@ const CORE_NODES = [
         dependents: ['frank-human-gate'],
         technologies: ['TypeScript', 'LLM Prompting'],
         relatedFiles: ['src/modules/frank/diagnosis/frank-diagnosis-pipeline.service.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/frank/diagnosis/frank-diagnosis-pipeline.service.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/frank/diagnosis/frank-diagnosis-pipeline.service.ts`,
         evidence: 'Pipeline em src/modules/frank/diagnosis/frank-diagnosis-pipeline.service.ts.',
         level: 3,
         parent: 'frank-module',
@@ -498,7 +507,7 @@ const CORE_NODES = [
         dependents: ['cockpit-module'],
         technologies: ['Next.js Route Handler', 'Twilio SDK', 'Crypto HMAC'],
         relatedFiles: ['src/app/api/whatsapp/incoming/route.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/app/api/whatsapp/incoming/route.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/app/api/whatsapp/incoming/route.ts`,
         evidence: 'Endpoint com validação Twilio em src/app/api/whatsapp/incoming/route.ts.',
         level: 3,
         parent: 'conversations-module',
@@ -529,7 +538,7 @@ const CORE_NODES = [
         dependents: ['orders-module'],
         technologies: ['Next.js Route Handler', 'TypeScript'],
         relatedFiles: ['src/app/api/freight/simulate/route.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/app/api/freight/simulate/route.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/app/api/freight/simulate/route.ts`,
         evidence: 'Endpoint em src/app/api/freight/simulate/route.ts.',
         level: 3,
         parent: 'fulfillment-module',
@@ -557,7 +566,7 @@ const CORE_NODES = [
         dependents: ['conversations-module', 'orders-module', 'fulfillment-module', 'frank-module'],
         technologies: ['Drizzle ORM', 'TypeScript', 'MySQL 8'],
         relatedFiles: ['src/drizzle/schema.ts', 'tools/drizzle/fix-snapshot-drift.cjs'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/drizzle/schema.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/drizzle/schema.ts`,
         evidence: 'Schema central em src/drizzle/schema.ts com verificação via npm run db:verify.',
         level: 3,
         parent: 'database-mysql',
@@ -585,7 +594,7 @@ const CORE_NODES = [
         dependents: ['frank-module'],
         technologies: ['OpenAI SDK', 'TypeScript', 'Crypto PII'],
         relatedFiles: ['src/core/ai/llm-gateway.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/core/ai/llm-gateway.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/core/ai/llm-gateway.ts`,
         evidence: 'Gateway unificado em src/core/ai/llm-gateway.ts.',
         level: 3,
         parent: 'frank-module',
@@ -613,7 +622,7 @@ const CORE_NODES = [
         dependents: ['cockpit-module'],
         technologies: ['Stripe SDK', 'TypeScript'],
         relatedFiles: ['src/modules/billing/index.ts', 'src/workers/finops-worker.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/billing',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/billing`,
         evidence: 'Módulo Billing e workers em src/modules/billing/.',
         level: 2,
         parent: 'condstore-root',
@@ -641,7 +650,7 @@ const CORE_NODES = [
         dependents: ['cockpit-module', 'whatsapp-webhook-api'],
         technologies: ['Next.js Edge Middleware', 'JOSE JWT'],
         relatedFiles: ['src/middleware.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/middleware.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/middleware.ts`,
         evidence: 'Middleware central em src/middleware.ts.',
         level: 4,
         parent: 'infra-core',
@@ -669,7 +678,7 @@ const CORE_NODES = [
         dependents: ['drizzle-schema'],
         technologies: ['MySQL 8', 'mysql2 driver'],
         relatedFiles: ['src/drizzle/schema.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/drizzle',
+        githubUrl: `${GITHUB_BASE_URL}/src/drizzle`,
         evidence: 'Driver mysql2 3.24.2 em package.json.',
         level: 4,
         parent: 'infra-core',
@@ -697,7 +706,7 @@ const CORE_NODES = [
         dependents: ['conversations-module', 'whatsapp-webhook-api'],
         technologies: ['Twilio Node SDK', 'Webhooks'],
         relatedFiles: ['src/server/twilio/index.ts', 'src/app/api/whatsapp/incoming/route.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/server/twilio',
+        githubUrl: `${GITHUB_BASE_URL}/src/server/twilio`,
         evidence: 'SDK Twilio e handlers em src/server/twilio.',
         level: 4,
         parent: 'conversations-module',
@@ -725,7 +734,7 @@ const CORE_NODES = [
         dependents: ['fulfillment-module'],
         technologies: ['REST API', 'Melhor Envio OAuth'],
         relatedFiles: ['src/modules/fulfillment/freight/adapters/melhor-envio.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/fulfillment/freight/adapters/melhor-envio.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/fulfillment/freight/adapters/melhor-envio.ts`,
         evidence: 'Adapter em src/modules/fulfillment/freight/adapters/melhor-envio.ts.',
         level: 4,
         parent: 'fulfillment-module',
@@ -753,7 +762,7 @@ const CORE_NODES = [
         dependents: ['finops-module'],
         technologies: ['Stripe Node SDK', 'Stripe Webhooks'],
         relatedFiles: ['src/app/api/webhook/stripe/route.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/app/api/webhook/stripe/route.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/app/api/webhook/stripe/route.ts`,
         evidence: 'SDK Stripe e webhook em src/app/api/webhook/stripe/route.ts.',
         level: 4,
         parent: 'finops-module',
@@ -781,7 +790,7 @@ const CORE_NODES = [
         dependents: ['llm-gateway'],
         technologies: ['OpenAI REST API', 'GPT-4o'],
         relatedFiles: ['src/core/ai/llm-gateway.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/core/ai/llm-gateway.ts',
+        githubUrl: `${GITHUB_BASE_URL}/src/core/ai/llm-gateway.ts`,
         evidence: 'SDK OpenAI e gateway em src/core/ai/llm-gateway.ts.',
         level: 4,
         parent: 'frank-module',
@@ -808,7 +817,7 @@ const CORE_NODES = [
         dependents: ['frank-module'],
         technologies: ['Qdrant', 'Vector Embeddings'],
         relatedFiles: ['docker-compose.qdrant.yml', 'src/workers/knowledge-ingest.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/modules/knowledge',
+        githubUrl: `${GITHUB_BASE_URL}/src/modules/knowledge`,
         evidence: 'docker-compose.qdrant.yml e src/workers/knowledge-ingest.ts.',
         level: 4,
         parent: 'frank-module',
@@ -836,7 +845,7 @@ const CORE_NODES = [
         dependents: ['condstore-root', 'edge-middleware', 'domine-event-bus'],
         technologies: ['TypeScript', 'Node Crypto', 'Bcrypt', 'Pino Logger'],
         relatedFiles: ['src/infra/auth/password.ts', 'src/infra/crypto/pii.ts'],
-        githubUrl: 'https://github.com/condstore/condstore-os/tree/main/src/infra',
+        githubUrl: `${GITHUB_BASE_URL}/src/infra`,
         evidence: 'Serviços sob src/infra/ e ARCHITECTURE.md.',
         level: 2,
         parent: 'condstore-root',
@@ -965,118 +974,129 @@ const CORE_EDGES = [
     { id: 'e-fin-str', source: 'finops-module', target: 'integration-stripe', type: 'calls', description: 'Sincroniza pagamentos com Stripe' }
 ];
 
-// Helper: Parse registry
-function parseRegistry(): RouteEntry[] {
-    if (!fs.existsSync(REGISTRY_FILE)) return [];
+// Recursively discover all real page.tsx and route.ts files in src/app
+function discoverRealRoutesFromDisk(): DiscoveredRoute[] {
+    const discovered: DiscoveredRoute[] = [];
+
+    function traverseDir(dir: string, segments: string[]) {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                traverseDir(fullPath, [...segments, entry.name]);
+            } else if (entry.isFile()) {
+                if (entry.name === 'page.tsx' || entry.name === 'page.ts' || entry.name === 'route.ts') {
+                    const isApi = entry.name === 'route.ts';
+                    const routeSegments: string[] = [];
+                    let isPublicGroup = false;
+                    let isAppGroup = false;
+
+                    for (const seg of segments) {
+                        if (seg.startsWith('(') && seg.endsWith(')')) {
+                            if (seg === '(public)') isPublicGroup = true;
+                            if (seg === '(app)') isAppGroup = true;
+                            continue; // Route group (does not affect URL)
+                        }
+                        routeSegments.push(seg);
+                    }
+
+                    const urlPath = '/' + routeSegments.join('/');
+                    const normalizedUrl = urlPath === '/' ? '/' : urlPath.replace(/\/+/g, '/');
+                    const relFilePath = path.relative(process.cwd(), fullPath).replace(/\\/g, '/');
+
+                    discovered.push({
+                        urlPath: normalizedUrl,
+                        filePath: relFilePath,
+                        routeType: isApi ? 'api' : 'page',
+                        isPublicGroup,
+                        isAppGroup
+                    });
+                }
+            }
+        }
+    }
+
+    traverseDir(APP_DIR, []);
+    return discovered;
+}
+
+// Parse registry metadata as lookup map keyed by URL path
+function parseRegistryMetadata(): Map<string, RouteEntry> {
+    const registryMap = new Map<string, RouteEntry>();
+    if (!fs.existsSync(REGISTRY_FILE)) return registryMap;
+
     const content = fs.readFileSync(REGISTRY_FILE, 'utf-8');
     const lines = content.split('\n');
-    const routes: RouteEntry[] = [];
 
     for (const line of lines) {
         const trimmed = line.trim();
         if (trimmed.startsWith('|') && !trimmed.includes('---') && !trimmed.includes('Path')) {
             const parts = trimmed.split('|').map(p => p.trim());
             if (parts.length >= 8 && parts[1].startsWith('/')) {
-                routes.push({
+                registryMap.set(parts[1], {
                     path: parts[1],
                     method: parts[2] || 'GET',
-                    access: parts[3] || 'public',
-                    auth: parts[4] || 'none',
-                    domain: parts[5] || 'PUBLIC',
-                    status: parts[6] || 'live',
+                    access: parts[3] || '',
+                    auth: parts[4] || '',
+                    domain: parts[5] || '',
+                    status: parts[6] || '',
                     description: parts[7] || ''
                 });
             }
         }
     }
-    return routes;
+    return registryMap;
 }
 
-// Helper: Disk file lookup
-function findRouteFilePath(routePath: string): string {
-    if (routePath === '/') {
-        if (fs.existsSync(path.join(APP_DIR, '(public)', 'page.tsx'))) return 'src/app/(public)/page.tsx';
-        if (fs.existsSync(path.join(APP_DIR, 'page.tsx'))) return 'src/app/page.tsx';
-    }
-
-    const parts = routePath.split('/').filter(Boolean);
-
-    function searchDir(currentDir: string, partIndex: number): string | null {
-        if (partIndex >= parts.length) {
-            for (const f of ['page.tsx', 'page.ts', 'route.ts']) {
-                const candidate = path.join(currentDir, f);
-                if (fs.existsSync(candidate)) {
-                    return path.relative(process.cwd(), candidate).replace(/\\/g, '/');
-                }
-            }
-            return null;
-        }
-
-        const target = parts[partIndex];
-        if (!fs.existsSync(currentDir)) return null;
-
-        const entries = fs.readdirSync(currentDir).sort();
-        for (const entry of entries) {
-            const full = path.join(currentDir, entry);
-            if (fs.statSync(full).isDirectory()) {
-                if (entry === target) {
-                    const res = searchDir(full, partIndex + 1);
-                    if (res) return res;
-                } else if (entry.startsWith('(') && entry.endsWith(')')) {
-                    const res = searchDir(full, partIndex);
-                    if (res) return res;
-                }
-            }
-        }
-        return null;
-    }
-
-    const matched = searchDir(APP_DIR, 0);
-    if (matched) return matched;
-
-    // Fallback path
-    const isApi = routePath.startsWith('/api');
-    return `src/app${routePath}/${isApi ? 'route.ts' : 'page.tsx'}`;
-}
-
-// Domain & Parent resolution
+// Map domain & parent placement
 function mapDomainInfo(domainRaw: string, routePath: string): { domainName: string; parentId: string; baseX: number; baseY: number } {
-    const d = domainRaw.toLowerCase();
+    const d = (domainRaw || '').toLowerCase();
 
-    if (d === 'cockpit') return { domainName: 'Cockpit', parentId: 'cockpit-module', baseX: 2650, baseY: 600 };
-    if (d === 'conversas' || d === 'atendimento' || d === 'auth') return { domainName: 'Atendimento', parentId: 'conversations-module', baseX: 100, baseY: 600 };
-    if (d === 'frete' || d === 'logistica') return { domainName: 'Logística', parentId: 'fulfillment-module', baseX: 950, baseY: 600 };
-    if (d === 'pedidos') return { domainName: 'Orders', parentId: 'orders-module', baseX: 1800, baseY: 600 };
-    if (d === 'frank') return { domainName: 'IA Frank', parentId: 'frank-module', baseX: 3500, baseY: 900 };
-    if (d === 'clientes') return { domainName: 'Clientes', parentId: 'customers-module', baseX: 4350, baseY: 600 };
-    if (d === 'domine' || d === 'operacao') return { domainName: 'Infrastructure', parentId: 'domine-event-bus', baseX: 5200, baseY: 900 };
-    if (d === 'ops' || d === 'console' || d === 'lgpd' || d === 'internal' || d === 'backend') return { domainName: 'Infrastructure', parentId: 'infra-core', baseX: 5200, baseY: 1200 };
-    if (d === 'vendas') return { domainName: 'Vendas', parentId: 'orders-module', baseX: 1800, baseY: 1200 };
-    if (d === 'configuracoes' || d === 'tenant') return { domainName: 'Governança / Tenant', parentId: 'infra-core', baseX: 6050, baseY: 600 };
+    if (d === 'cockpit' || routePath.startsWith('/cockpit')) return { domainName: 'Cockpit', parentId: 'cockpit-module', baseX: 2650, baseY: 600 };
+    if (d === 'conversas' || d === 'atendimento' || d === 'auth' || routePath.startsWith('/atendimento') || routePath.startsWith('/conversas')) return { domainName: 'Atendimento', parentId: 'conversations-module', baseX: 100, baseY: 600 };
+    if (d === 'frete' || d === 'logistica' || routePath.startsWith('/frete') || routePath.startsWith('/logistica') || routePath.startsWith('/shipments')) return { domainName: 'Logística', parentId: 'fulfillment-module', baseX: 950, baseY: 600 };
+    if (d === 'pedidos' || routePath.startsWith('/pedidos') || routePath.startsWith('/orders')) return { domainName: 'Orders', parentId: 'orders-module', baseX: 1800, baseY: 600 };
+    if (d === 'frank' || routePath.startsWith('/frank')) return { domainName: 'IA Frank', parentId: 'frank-module', baseX: 3500, baseY: 900 };
+    if (d === 'clientes' || routePath.startsWith('/clientes') || routePath.startsWith('/customers')) return { domainName: 'Clientes', parentId: 'customers-module', baseX: 4350, baseY: 600 };
+    if (d === 'domine' || d === 'operacao' || routePath.startsWith('/domine')) return { domainName: 'Infrastructure', parentId: 'domine-event-bus', baseX: 5200, baseY: 900 };
+    if (d === 'ops' || d === 'console' || d === 'lgpd' || d === 'internal' || d === 'backend' || routePath.startsWith('/api/admin') || routePath.startsWith('/api/ops')) return { domainName: 'Infrastructure', parentId: 'infra-core', baseX: 5200, baseY: 1200 };
+    if (d === 'vendas' || routePath.startsWith('/vendas')) return { domainName: 'Vendas', parentId: 'orders-module', baseX: 1800, baseY: 1200 };
+    if (d === 'configuracoes' || d === 'tenant' || routePath.startsWith('/configuracoes') || routePath.startsWith('/settings')) return { domainName: 'Governança / Tenant', parentId: 'infra-core', baseX: 6050, baseY: 600 };
     if (d === 'mvp' || routePath.startsWith('/mvp')) return { domainName: 'MVP Core', parentId: 'condstore-root', baseX: 6900, baseY: 600 };
 
     return { domainName: 'Public / Marketing', parentId: 'condstore-root', baseX: 7750, baseY: 600 };
 }
 
-// Map status string to canonical NodeStatus
-function mapNodeStatus(statusRaw: string): 'production' | 'partial' | 'implemented' | 'experimental' {
-    const s = statusRaw.toLowerCase();
-    if (s === 'live' || s === 'production') return 'production';
-    if (s === 'deprecated' || s === 'stub') return 'partial';
-    if (s === 'experimental') return 'experimental';
-    return 'implemented';
+// Infer clean access level based on route path, route group, and registry metadata
+function inferAccessLevel(realRoute: DiscoveredRoute, regMeta?: RouteEntry): string {
+    if (regMeta && regMeta.access) {
+        if (regMeta.access === 'internal') return 'Interno / autenticado';
+        if (regMeta.access === 'public') return 'Público';
+        if (regMeta.access === 'authenticated') return 'Autenticado';
+    }
+    if (realRoute.isPublicGroup) return 'Público';
+    if (realRoute.isAppGroup || realRoute.urlPath.startsWith('/cockpit')) return 'Autenticado';
+    if (realRoute.urlPath.startsWith('/api/public') || realRoute.urlPath.startsWith('/api/whatsapp')) return 'Público';
+    if (realRoute.urlPath.startsWith('/api/admin')) return 'Interno / autenticado';
+    if (realRoute.routeType === 'api') return 'Autenticado';
+    return 'Público';
 }
 
 function generateSitemapData() {
     console.log('🔄 Synchronizing Sitemap Architecture Data with repo...');
-    const routes = parseRegistry();
-    console.log(`📋 Found ${routes.length} routes in registry.`);
 
-    // Existing core nodes lookup map
-    const existingNodeUrls = new Set<string>();
-    CORE_NODES.forEach(n => {
-        if ((n as any).url) existingNodeUrls.add((n as any).url);
-    });
+    // 1. Discover all real routes in src/app (Source of Truth)
+    const realRoutes = discoverRealRoutesFromDisk();
+    console.log(`📁 Discovered ${realRoutes.length} real route files in src/app.`);
+
+    if (realRoutes.length === 0) {
+        throw new Error('❌ Fail-closed: No real routes discovered in src/app!');
+    }
+
+    // 2. Parse registry metadata
+    const registryMap = parseRegistryMetadata();
+    console.log(`📋 Parsed ${registryMap.size} route metadata entries from registry.`);
 
     const generatedNodes: any[] = [...CORE_NODES];
     const generatedEdges: any[] = [...CORE_EDGES];
@@ -1088,28 +1108,39 @@ function generateSitemapData() {
     const pageRouteMap = new Map<string, string>();
     const apiRouteMap = new Map<string, string>();
 
-    routes.forEach(r => {
-        const isApi = r.path.startsWith('/api');
+    let processedCount = 0;
+
+    realRoutes.forEach(r => {
+        const isApi = r.routeType === 'api';
         const nodeType = isApi ? 'API / Backend' : 'Página';
         const category = isApi ? 'api' : 'page';
         const layer = isApi ? 'Application' : 'UI';
 
         // Check if existing core node already represents this exact URL
-        const existingCoreNode = generatedNodes.find(n => n.url === r.path);
+        const existingCoreNode = generatedNodes.find(n => n.url === r.urlPath);
         if (existingCoreNode) {
-            existingCoreNode.access = r.access === 'internal' ? 'Interno / autenticado' : r.access === 'public' ? 'Público' : 'Autenticado';
+            existingCoreNode.githubUrl = `${GITHUB_BASE_URL}/${r.filePath}`;
             existingCoreNode.nodeType = nodeType;
             return;
         }
 
+        // Get metadata from registry if available
+        const regMeta = registryMap.get(r.urlPath);
+
+        // Fail-closed verification: Ensure file path actually exists
+        if (!fs.existsSync(path.join(process.cwd(), r.filePath))) {
+            throw new Error(`❌ Fail-closed: Discovered route file does not exist on disk: ${r.filePath}`);
+        }
+
         // Clean ID
-        const slug = r.path.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'root';
+        const slug = r.urlPath.replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'root';
         const nodeId = `route-${category}-${slug}`;
 
-        if (isApi) apiRouteMap.set(r.path, nodeId);
-        else pageRouteMap.set(r.path, nodeId);
+        if (isApi) apiRouteMap.set(r.urlPath, nodeId);
+        else pageRouteMap.set(r.urlPath, nodeId);
 
-        const { domainName, parentId, baseX, baseY } = mapDomainInfo(r.domain, r.path);
+        const domainRaw = regMeta?.domain || '';
+        const { domainName, parentId, baseX, baseY } = mapDomainInfo(domainRaw, r.urlPath);
 
         // Position calculation
         const count = domainCounters[domainName] || 0;
@@ -1120,50 +1151,51 @@ function generateSitemapData() {
         const x = baseX + col * 260;
         const y = baseY + row * 140;
 
-        const filePath = findRouteFilePath(r.path);
-        const dirPath = path.dirname(filePath) + '/';
-        const githubUrl = `https://github.com/condstore/condstore-os/tree/main/${filePath}`;
+        const dirPath = path.dirname(r.filePath) + '/';
+        const githubUrl = `${GITHUB_BASE_URL}/${r.filePath}`;
 
-        const accessFormatted = r.access === 'internal' ? 'Interno / autenticado' : r.access === 'public' ? 'Público' : 'Autenticado';
-        const statusFormatted = r.status === 'live' ? 'Live' : r.status;
+        const accessFormatted = inferAccessLevel(r, regMeta);
+        const statusFormatted = regMeta?.status ? (regMeta.status === 'live' ? 'Live' : regMeta.status) : 'Live';
+
+        const descriptionText = regMeta?.description || (isApi ? `Endpoint para operação ${r.urlPath}.` : `Interface do operador para ${r.urlPath}.`);
 
         // Standardized Description string
         const standardizedDescription = [
-            `URL: ${r.path}`,
+            `URL: ${r.urlPath}`,
             `Tipo: ${nodeType}`,
             `Acesso: ${accessFormatted}`,
             `Domínio: ${domainName}`,
             `Status: ${statusFormatted}`,
-            `Descrição: ${r.description || (isApi ? `Endpoint para operação ${r.path}.` : `Interface do operador para ${r.path}.`)}`
+            `Descrição: ${descriptionText}`
         ].join('\n');
 
-        const isMvp = r.domain === 'MVP' || r.path.startsWith('/mvp') || r.auth === 'MVP';
+        const isMvp = domainRaw === 'MVP' || r.urlPath.startsWith('/mvp') || regMeta?.auth === 'MVP';
 
         const nodeObj = {
             id: nodeId,
-            name: `${nodeType}: ${r.path}`,
+            name: `${nodeType}: ${r.urlPath}`,
             category: category as any,
             domain: domainName,
             layer: layer as any,
-            status: mapNodeStatus(r.status),
+            status: 'production',
             isMvp,
-            path: filePath,
+            path: r.filePath,
             directory: dirPath,
-            url: r.path,
+            url: r.urlPath,
             access: accessFormatted,
             nodeType,
             description: standardizedDescription,
             responsibilities: [
-                isApi ? `Processamento de requisições ${r.method} em ${r.path}` : `Interface UI para a rota ${r.path}`,
+                isApi ? `Processamento de requisições ${regMeta?.method || 'HTTP'} em ${r.urlPath}` : `Interface UI para a rota ${r.urlPath}`,
                 `Controle de acesso ${accessFormatted}`,
                 `Domínio ${domainName}`
             ],
             dependencies: [parentId],
             dependents: [],
             technologies: ['Next.js 16 App Router', 'TypeScript', isApi ? 'Route Handler' : 'React 19'],
-            relatedFiles: [filePath],
+            relatedFiles: [r.filePath],
             githubUrl,
-            evidence: `Arquivo de rota ${filePath} em ${dirPath}.`,
+            evidence: `Arquivo de rota real ${r.filePath} em ${dirPath}.`,
             level: 3,
             parent: parentId,
             x,
@@ -1171,6 +1203,7 @@ function generateSitemapData() {
         };
 
         generatedNodes.push(nodeObj);
+        processedCount++;
 
         // Add parent containment edge
         generatedEdges.push({
@@ -1178,7 +1211,7 @@ function generateSitemapData() {
             source: parentId,
             target: nodeId,
             type: 'contains',
-            description: `Contém ${nodeType.toLowerCase()} ${r.path}`
+            description: `Contém ${nodeType.toLowerCase()} ${r.urlPath}`
         });
     });
 
@@ -1309,7 +1342,7 @@ export const ARCHITECTURE_DATA: {
 `;
 
     fs.writeFileSync(OUTPUT_FILE, code, 'utf-8');
-    console.log(`✅ Generated ${generatedNodes.length} nodes and ${generatedEdges.length} edges in ${OUTPUT_FILE}.`);
+    console.log(`✅ Generated ${generatedNodes.length} nodes (${processedCount} real routes from src/app) and ${generatedEdges.length} edges in ${OUTPUT_FILE}.`);
 }
 
 generateSitemapData();
