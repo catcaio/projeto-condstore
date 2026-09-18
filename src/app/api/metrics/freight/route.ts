@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from 'next/server';
-import { metricsRepository } from '../../../../modules/metrics/metrics.repository';
+import { getFreightKpis } from '../../../../modules/metrics/queries/freight-queries';
 import { logger } from '@/infra/logger';
 import { requireActivePlan } from '@/modules/billing';
 
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
         }
         const tenantId = entitlement.tenantId!;
 
-        const metrics = await metricsRepository.getFreightMetrics(tenantId);
+        const metrics = await getFreightKpis(tenantId);
         return NextResponse.json(metrics);
 
     } catch (error) {

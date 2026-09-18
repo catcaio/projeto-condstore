@@ -9,13 +9,9 @@ import { toZonedTime } from 'date-fns-tz';
 
 import { getDb } from '../../infra/db';
 
-// Removed local getDb implementation and dbInstance variable
-
-export enum FreightEvent {
-    REQUESTED = 'FREIGHT_QUOTE_REQUESTED',
-    FAILED = 'FREIGHT_QUOTE_FAILED',
-    QUOTED = 'FREIGHT_QUOTED',
-}
+// Fonte formal em `metrics/events` (re-export aqui por compatibilidade).
+export { FreightEvent } from './events/metric-events';
+import { FreightEvent } from './events/metric-events';
 
 export interface FreightMetrics {
     totalQuotes: number;
