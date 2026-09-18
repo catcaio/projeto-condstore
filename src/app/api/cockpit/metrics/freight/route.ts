@@ -1,26 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from 'drizzle-orm';
-import { getDb } from '../../../../../infra/db';
 import { requireAdmin } from '../../../../../infra/auth/guards';
 import { logger } from '../../../../../infra/logger';
 import { redisClient } from '../../../../../infra/redis.client';
-import { buildAttributionBreakdown, isAttributionGroupBy, parseAttributionGroupBy, unwrapRows } from '../../../../../modules/metrics/attribution-breakdown';
+import { getFreightSimulationLogs, type FreightSimulationLogsResult } from '../../../../../modules/metrics/queries/freight-queries';
+import { isAttributionGroupBy, parseAttributionGroupBy } from '../../../../../modules/metrics/attribution-breakdown';
 import { attachRequestIdHeader, makeRequestId } from '../../../../../infra/http/request-trace';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '../../../../../infra/http/error-response';
 import { structuredLogger } from '../../../../../infra/log/logger';
 
-interface FreightMetricsResponse {
-  total_simulations_7d: number;
-  top_ufs_7d: Array<{ uf: string; count: number }>;
-  avg_valor_by_uf_7d: Array<{ uf: string; avg_valor: number }>;
-  avg_peso_7d: number;
-  avg_prazo_by_uf_7d: Array<{ uf: string; avg_prazo: number }>;
-  daily_14d: Array<{ date: string; count: number }>;
-  attribution_breakdown_7d?: {
-    groupBy: 'utm_source' | 'utm_campaign';
-    buckets: Array<{ key: string; count: number }>;
-  };
-}
+type FreightMetricsResponse = FreightSimulationLogsResult;
 
 interface FreightCacheEntry {
   expiresAt: number;
@@ -146,102 +134,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    const db = await getDb();
-
-    const [totalResult, topUfsResult, avgValorByUfResult, avgPesoResult, avgPrazoByUfResult, dailyResult, attributionBreakdownResult] =
-      await Promise.all([
-        db.execute(sql`
-          SELECT COUNT(*) AS total
-          FROM freight_simulation_logs
-          WHERE tenant_id = ${resolvedTenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
-        `),
-        db.execute(sql`
-          SELECT uf, COUNT(*) AS count
-          FROM freight_simulation_logs
-          WHERE tenant_id = ${resolvedTenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
-          GROUP BY uf
-          ORDER BY count DESC, uf ASC
-        `),
-        db.execute(sql`
-          SELECT uf, AVG(valor) AS avg_valor
-          FROM freight_simulation_logs
-          WHERE tenant_id = ${resolvedTenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
-          GROUP BY uf
-          ORDER BY uf ASC
-        `),
-        db.execute(sql`
-          SELECT AVG(peso) AS avg_peso
-          FROM freight_simulation_logs
-          WHERE tenant_id = ${resolvedTenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
-        `),
-        db.execute(sql`
-          SELECT uf, AVG(prazo) AS avg_prazo
-          FROM freight_simulation_logs
-          WHERE tenant_id = ${resolvedTenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
-          GROUP BY uf
-          ORDER BY uf ASC
-        `),
-        db.execute(sql`
-          SELECT DATE(created_at) AS date, COUNT(*) AS count
-          FROM freight_simulation_logs
-          WHERE tenant_id = ${resolvedTenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 14 DAY)
-          GROUP BY DATE(created_at)
-          ORDER BY date ASC
-        `),
-        groupBy
-          ? db.execute(
-              groupBy === 'utm_campaign'
-                ? sql`
-                    SELECT COALESCE(NULLIF(utm_campaign, ''), '(none)') AS bucket, COUNT(*) AS count
-                    FROM freight_simulation_logs
-                    WHERE tenant_id = ${resolvedTenantId}
-                      AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
-                    GROUP BY COALESCE(NULLIF(utm_campaign, ''), '(none)')
-                    ORDER BY count DESC, bucket ASC
-                  `
-                : sql`
-                    SELECT COALESCE(NULLIF(utm_source, ''), '(none)') AS bucket, COUNT(*) AS count
-                    FROM freight_simulation_logs
-                    WHERE tenant_id = ${resolvedTenantId}
-                      AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
-                    GROUP BY COALESCE(NULLIF(utm_source, ''), '(none)')
-                    ORDER BY count DESC, bucket ASC
-                  `,
-            )
-          : Promise.resolve(null),
-      ]);
-
-    const totalRows = unwrapRows<{ total: number | string }>(totalResult);
-    const topUfsRows = unwrapRows<{ uf: string; count: number | string }>(topUfsResult);
-    const avgValorRows = unwrapRows<{ uf: string; avg_valor: number | string | null }>(avgValorByUfResult);
-    const avgPesoRows = unwrapRows<{ avg_peso: number | string | null }>(avgPesoResult);
-    const avgPrazoRows = unwrapRows<{ uf: string; avg_prazo: number | string | null }>(avgPrazoByUfResult);
-    const dailyRows = unwrapRows<{ date: string | Date; count: number | string }>(dailyResult);
-
-    const payload: FreightMetricsResponse = {
-      total_simulations_7d: Number(totalRows[0]?.total ?? 0),
-      top_ufs_7d: topUfsRows.map((row) => ({ uf: row.uf, count: Number(row.count) })),
-      avg_valor_by_uf_7d: avgValorRows.map((row) => ({ uf: row.uf, avg_valor: Number(row.avg_valor ?? 0) })),
-      avg_peso_7d: Number(avgPesoRows[0]?.avg_peso ?? 0),
-      avg_prazo_by_uf_7d: avgPrazoRows.map((row) => ({ uf: row.uf, avg_prazo: Number(row.avg_prazo ?? 0) })),
-      daily_14d: dailyRows.map((row) => ({
-        date: typeof row.date === 'string' ? row.date : row.date.toISOString().slice(0, 10),
-        count: Number(row.count),
-      })),
-    };
-
-    if (groupBy && attributionBreakdownResult) {
-      payload.attribution_breakdown_7d = buildAttributionBreakdown(
-        groupBy,
-        unwrapRows<{ bucket: string | null; count: number | string | null }>(attributionBreakdownResult),
-      );
-    }
+    // Query oficial (metrics = autoridade semântica); rota é apresentação.
+    const payload: FreightMetricsResponse = await getFreightSimulationLogs(resolvedTenantId, requestedGroupBy);
 
     if (!groupBy) {
       writeToCache(cacheKey, resolvedTenantId, payload);

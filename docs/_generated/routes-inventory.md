@@ -185,8 +185,6 @@
 | `/api/orders/create-from-quote` | API |
 | `/api/painel-logistico` | API |
 | `/api/public/contato` | API |
-| `/api/public/cotacao/intent` | API |
-| `/api/public/cotacao/quotes` | API |
 | `/api/public/delivery/[token]/location` | API |
 | `/api/public/events` | API |
 | `/api/reports/ingest` | API |
@@ -290,8 +288,6 @@
 | `/concept-layer-preview` | Page |
 | `/configuracoes` | Page |
 | `/contato` | Page |
-| `/cotacao` | Page |
-| `/cotacao/result` | Page |
 | `/crm-whatsapp` | Page |
 | `/dashboard` | Page |
 | `/dashboard1` | Page |

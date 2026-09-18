@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from 'next/server';
-import { metricsRepository } from '../../../../../modules/metrics/metrics.repository';
+import { getFreightTimeseries } from '../../../../../modules/metrics/queries/freight-queries';
 import { logger } from '@/infra/logger';
 import { requireActivePlan } from '@/modules/billing';
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
         const searchParams = request.nextUrl.searchParams;
         const range = searchParams.get('range') === '30d' ? '30d' : '7d';
 
-        const data = await metricsRepository.getFreightTimeseries(tenantId, range);
+        const data = await getFreightTimeseries(tenantId, range);
         return NextResponse.json(data);
 
     } catch (error) {

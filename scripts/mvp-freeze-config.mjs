@@ -150,7 +150,6 @@ export const scopeRules = [
       'src/modules/fulfillment/presentation/logistics/',
       'src/modules/orders/',
       'src/modules/shipping/',
-      'src/app/api/public/cotacao/',
       'src/app/api/orders/',
       ...freightConversationQuotePrefixes,
     ],

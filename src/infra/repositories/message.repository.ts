@@ -7,6 +7,7 @@ import { redisClient } from '../redis.client';
 import { encryptString, decryptString, isEncryptedString } from '../pii/crypto';
 import { hashPhoneForTenant } from '../pii/phone';
 import { planEnforcementService } from '@/modules/finops';
+import { getStartOfDayInMetricsTimezone } from '@/modules/metrics/timezone';
 
 /**
  * Compact message snapshot used by the context cache and Frank orchestrator.
@@ -139,8 +140,8 @@ export class MessageRepository {
         }
 
         const db = await getDb();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // Contrato canônico (#396): "today" = dia em America/Sao_Paulo, explícito.
+        const today = getStartOfDayInMetricsTimezone();
 
         // Single database query grouped by intent: total count is derived by summing group counts.
         // This avoids an extra database round-trip while preserving exact counts and tenant isolation.
