@@ -11,7 +11,7 @@ Este documento funciona como o registry canônico das páginas públicas do COND
 | `/como-funciona` | MVP | Detalhamento do fluxo supervisionado passo a passo. | LIN-PR3 |
 | `/crm-whatsapp` | MVP | Foco em centralização de conversas e copiloto Frank. | LIN-PR4 |
 | `/logistica-pedidos` | MVP | Foco em frete multicarrier e gestão de pedidos. | LIN-PR5 |
-| `/cotacao` | MVP | Formulário público de cotação. | LIN-PR5 |
+| `/cotacao` | Removida (#396) | Formulário público de cotação — fora do MVP. Cotação segue no fluxo interno supervisionado. | LIN-PR5 |
 | `/cockpit-gerencial` | MVP | Visão gerencial, dashboards e indicadores operacionais. | LIN-PR6 |
 | `/ia-frank` | MVP | Copiloto supervisionado e limites de segurança. | LIN-PR7 |
 | `/seguranca` | MVP | Isolamento por tenant, criptografia PII e rastro de decisão. | LIN-PR5 |

@@ -80,8 +80,6 @@ This map classifies all detected routes according to zero-trust and security pri
 | `/api/metrics/rate-limit` | Unknown | Unknown | Operational | Medium |
 | `/api/metrics/rate-limit-alerts` | Unknown | Unknown | Operational | Medium |
 | `/api/painel-logistico` | Unknown | Unknown | Operational | Medium |
-| `/api/public/cotacao/intent` | Public API | None | Operational/LGPD | Medium |
-| `/api/public/cotacao/quotes` | Public API | None | Operational/LGPD | Medium |
 | `/api/public/events` | Public API | None | Operational/LGPD | Medium |
 | `/api/reports/ingest` | Unknown | Unknown | Operational | Medium |
 | `/api/reports/seed` | Unknown | Unknown | Operational | Medium |
@@ -142,8 +140,6 @@ This map classifies all detected routes according to zero-trust and security pri
 | `/cockpit/status/audit` | Cockpit | Cookie | Operational/PII | Critical |
 | `/cockpit/system-status` | Cockpit | Cookie | Operational/PII | High |
 | `/concept-layer-preview` | Unknown | Unknown | Operational | Medium |
-| `/cotacao` | Public | None | Public | Low |
-| `/cotacao/result` | Unknown | Unknown | Operational | Medium |
 | `/docs` | Public | None | Public | Low |
 | `/evolution` | Unknown | Unknown | Operational | Medium |
 | `/evolution/[id]` | Unknown | Unknown | Operational | Medium |

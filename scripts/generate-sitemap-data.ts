@@ -979,7 +979,12 @@ function discoverRealRoutesFromDisk(): DiscoveredRoute[] {
     const discovered: DiscoveredRoute[] = [];
 
     function traverseDir(dir: string, segments: string[]) {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        // Ordem canônica: readdir não garante ordem entre SOs/filesystems;
+        // sem sort o arquivo gerado diverge entre Windows/Linux e quebra o
+        // gate de worktree limpa no CI. Comparação por code-unit (não
+        // localeCompare) para independência total de locale/ICU.
+        const entries = fs.readdirSync(dir, { withFileTypes: true })
+            .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
         for (const entry of entries) {
             const fullPath = path.join(dir, entry.name);

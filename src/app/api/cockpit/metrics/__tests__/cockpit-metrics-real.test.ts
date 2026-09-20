@@ -62,19 +62,32 @@ describe('GET /api/cockpit/metrics', () => {
         // Mock simulationRepository.countToday
         (simulationRepository.countToday as any).mockResolvedValue(50);
 
-        // Mock various select calls
+        // Mock various select calls (ordem de disparo: pedidos, erros, handoffs, conversão)
         // 1. pedidosHoje
         // 2. erros24h
         // 3. handoffsHoje
-        // 4. conversion (simulations)
-        // 5. conversion (orders)
-        mockDb.select.mockImplementation(() => {
-            return {
+        // 4. conversion (coorte: { total, converted })
+        mockDb.select
+            .mockImplementationOnce(() => ({
                 from: () => ({
                     where: () => Promise.resolve([{ count: 10 }]),
                 }),
-            } as any;
-        });
+            }) as any)
+            .mockImplementationOnce(() => ({
+                from: () => ({
+                    where: () => Promise.resolve([{ count: 10 }]),
+                }),
+            }) as any)
+            .mockImplementationOnce(() => ({
+                from: () => ({
+                    where: () => Promise.resolve([{ count: 10 }]),
+                }),
+            }) as any)
+            .mockImplementationOnce(() => ({
+                from: () => ({
+                    where: () => Promise.resolve([{ total: 10, converted: 10 }]),
+                }),
+            }) as any);
 
         // Mock timingsResult execute call
         mockDb.execute.mockResolvedValueOnce([
@@ -94,7 +107,7 @@ describe('GET /api/cockpit/metrics', () => {
             tempoMedioRespostaMin: 2, // 120s / 60
             tempoMedioCotacaoMin: 5, // 300s / 60
             handoffsHoje: 10,
-            conversaoCotacaoPedido: 100, // (10 orders / 10 simulations) * 100 = 100
+            conversaoCotacaoPedido: 100, // coorte: 10 CONVERTED / 10 cotações * 100 = 100
         });
     });
 
@@ -111,13 +124,27 @@ describe('GET /api/cockpit/metrics', () => {
         (messageRepository.getMetricsToday as any).mockResolvedValue({ total: 100 });
         (simulationRepository.countToday as any).mockResolvedValue(50);
 
-        mockDb.select.mockImplementation(() => {
-            return {
+        mockDb.select
+            .mockImplementationOnce(() => ({
                 from: () => ({
                     where: () => Promise.resolve([{ count: 0 }]),
                 }),
-            } as any;
-        });
+            }) as any)
+            .mockImplementationOnce(() => ({
+                from: () => ({
+                    where: () => Promise.resolve([{ count: 0 }]),
+                }),
+            }) as any)
+            .mockImplementationOnce(() => ({
+                from: () => ({
+                    where: () => Promise.resolve([{ count: 0 }]),
+                }),
+            }) as any)
+            .mockImplementationOnce(() => ({
+                from: () => ({
+                    where: () => Promise.resolve([{ total: 0, converted: 0 }]),
+                }),
+            }) as any);
 
         // Mock timingsResult execute call with nulls
         mockDb.execute.mockResolvedValueOnce([

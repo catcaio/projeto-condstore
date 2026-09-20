@@ -5,6 +5,7 @@ import { logger } from '../logger';
 import { appConfig } from '../../config/app.config';
 import { ErrorCode, InfrastructureError } from '../errors';
 import { redisClient } from '../redis.client';
+import { getStartOfDayInMetricsTimezone } from '../../modules/metrics/timezone';
 
 export class SimulationRepository {
     /**
@@ -121,8 +122,8 @@ export class SimulationRepository {
         }
 
         const db = await getDb();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // Contrato canônico (#396): "today" = dia em America/Sao_Paulo, explícito.
+        const today = getStartOfDayInMetricsTimezone();
 
         const [result] = await db
             .select({ count: sql<number>`count(*)` })

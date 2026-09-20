@@ -128,7 +128,6 @@
 | **fulfillment/presentation/logistics** | UI de logística, fila de acompanhamento |
 | **crm** | Pipeline management, Kanban |
 | **cockpit** | Dashboard operacional, agregação de dados |
-| **cotacao-publica** | API pública de cotação (sem auth) |
 
 ---
 

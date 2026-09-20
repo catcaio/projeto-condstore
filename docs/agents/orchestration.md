@@ -702,7 +702,7 @@ pr-closer               ──→ merge somente com mergeable=TRUE + CI verde + 
 
 ### `seo-specialist`
 - **Nível:** LARGE condicional (páginas públicas)
-- **Entra quando:** mudança em páginas públicas com objetivo de ranqueamento orgânico; landing pages; página de cotação pública; conteúdo indexável
+- **Entra quando:** mudança em páginas públicas com objetivo de ranqueamento orgânico; landing pages; conteúdo indexável
 - **Acionado por:** `product-lead` (quando objetivo inclui aquisição orgânica) ou solicitação explícita
 - **Fluxo:** Especialista pontual — após frontend-specialist, antes de preflight
 

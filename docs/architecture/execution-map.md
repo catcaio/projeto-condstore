@@ -2,8 +2,13 @@
 
 ## Synchronous Heavy Processing Flow
 
-### Quotes
-**Route:** `POST /api/public/cotacao/quotes`
+### Quotes — REMOVED from MVP (issue #396)
+
+> A rota `POST /api/public/cotacao/quotes` e o `ConcurrentQuoteEngine` público foram
+> removidos do MVP. Registro abaixo é histórico (pré-migração). A cotação de frete
+> segue ativa apenas no fluxo interno supervisionado.
+
+**Route (histórica):** `POST /api/public/cotacao/quotes`
 **Processing:** `ConcurrentQuoteEngine` (Calls multiple carrier APIs concurrently and saves to analytics DB)
 **Responsible Module:** `shipping`
 
