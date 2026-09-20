@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import {
     InteractiveHero,
@@ -16,6 +15,7 @@ import {
     FaqSection,
     ScrollReveal,
     PageContainer,
+    SiteButton,
 } from '@/ui/site';
 
 export const metadata = {
@@ -144,20 +144,14 @@ export default function HomePage() {
                         </p>
 
                         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-                            <Link
-                                href="/piloto"
-                                className="inline-flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[hsl(var(--ui-text))] px-8 text-sm font-bold text-[hsl(var(--ui-page))] shadow-md transition-all hover:opacity-90 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))]"
-                            >
+                            <SiteButton href="/piloto" variant="primary" className="px-8">
                                 Solicitar avaliação operacional
                                 <ArrowRight className="h-4 w-4" />
-                            </Link>
+                            </SiteButton>
 
-                            <Link
-                                href="/contato"
-                                className="inline-flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[hsl(var(--ui-border-strong))] bg-[hsl(var(--ui-surface)/0.5)] px-8 text-sm font-semibold text-[hsl(var(--ui-text))] transition-all hover:bg-[hsl(var(--ui-surface-elevated))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))]"
-                            >
+                            <SiteButton href="/contato" variant="secondary" className="px-8">
                                 Agendar uma conversa
-                            </Link>
+                            </SiteButton>
                         </div>
                     </div>
                 </PageContainer>

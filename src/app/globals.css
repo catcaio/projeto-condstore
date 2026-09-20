@@ -132,6 +132,10 @@
     --ui-success: 145 66% 42%;
     --ui-success-ink: 145 72% 28%;
 
+    --ui-warning: 32 95% 44%;
+    --ui-warning-strong: 28 90% 38%;
+    --ui-warning-ink: 32 85% 30%;
+
     --background: var(--ui-page);
     --foreground: var(--ui-text);
     --card: var(--ui-surface);
@@ -195,6 +199,10 @@
     --ui-success: 145 60% 45%;
     --ui-success-ink: 145 82% 80%;
 
+    --ui-warning: 38 95% 60%;
+    --ui-warning-strong: 43 96% 65%;
+    --ui-warning-ink: 45 100% 80%;
+
     --background: var(--ui-page);
     --foreground: var(--ui-text);
     --card: var(--ui-surface);
@@ -251,6 +259,10 @@
     --ui-success: 145 60% 45%;
     --ui-success-ink: 145 82% 80%;
 
+    --ui-warning: 38 95% 60%;
+    --ui-warning-strong: 43 96% 65%;
+    --ui-warning-ink: 45 100% 80%;
+
     --background: var(--ui-page);
     --foreground: var(--ui-text);
     --border: var(--ui-border);
@@ -281,6 +293,10 @@
 
     --ui-success: 145 66% 42%;
     --ui-success-ink: 145 72% 28%;
+
+    --ui-warning: 32 95% 44%;
+    --ui-warning-strong: 28 90% 38%;
+    --ui-warning-ink: 32 85% 30%;
 
     --background: var(--ui-page);
     --foreground: var(--ui-text);
