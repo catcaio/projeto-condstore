@@ -20,7 +20,7 @@ const variantClasses: Record<SiteButtonVariant, string> = {
     secondary:
         'inline-flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[hsl(var(--ui-border-strong))] bg-[hsl(var(--ui-surface)/0.5)] px-7 text-sm font-semibold text-[hsl(var(--ui-text))] transition-all hover:bg-[hsl(var(--ui-surface-elevated))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))]',
     accent:
-        'inline-flex h-10 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-5 text-sm font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))]',
+        'inline-flex h-10 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-5 text-sm font-bold text-[hsl(var(--ui-accent-blue-ink))] transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))]',
     ghost:
         'inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors',
 };
