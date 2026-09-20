@@ -8,7 +8,7 @@
 **Responsible Module:** `shipping`
 
 ### Webhooks
-**Route:** `POST /api/webhook/stripe`
+**Route:** `POST /api/webhooks/stripe` (canônico; compat legada em `POST /api/webhook/stripe`)
 **Processing:** `BillingService` / Stripe lifecycle handlers (Atomic DB insertions, upgrade tenant plan, update subscriptions)
 **Responsible Module:** `billing`
 

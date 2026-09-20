@@ -79,7 +79,7 @@ The following routes are explicitly **public** (no auth required): `/`, `/cotaca
 ### Sensitive Routes List
 Routes classified as **critical** for rate-limiting and access control:
 - `/api/internal/**` — requires `x-internal-token`
-- `/api/webhook/**` — requires webhook signature verification
+- `/api/webhooks/**` — requires webhook signature verification (canônico; legados `/api/webhook/**` e `/api/whatsapp/**` são adapters de compatibilidade)
 - `/api/tenants/[tenantId]/privacy/**` — requires admin session + tenant match
 - `/api/auth/**` — login/logout boundaries
 - `/api/cockpit/**` — requires authenticated cookie session

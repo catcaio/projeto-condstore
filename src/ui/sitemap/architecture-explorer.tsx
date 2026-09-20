@@ -6,7 +6,7 @@ import {
   Database, Cpu, Network, Server, ShieldCheck, CheckCircle2, AlertTriangle,
   X, ChevronRight, ExternalLink, HelpCircle, FileText, ArrowRight, Eye, Code2,
   Maximize2, Minimize2, Sun, Moon, Share2, CornerDownRight, ChevronDown, Key,
-  Sparkles, Layers2, Box, Radio
+  Sparkles, Layers2, Box, Radio, Globe, Terminal, Link, MapPin
 } from 'lucide-react';
 import {
   ARCHITECTURE_DATA, ArchNode, NodeCategory, NodeStatus, ViewPerspective, ArchFlow
@@ -23,7 +23,7 @@ const STATUS_CONFIG: Record<NodeStatus, { label: string; dotClass: string; textC
   unconfirmed: { label: 'Não Confirmado', dotClass: 'bg-gray-600', textClass: 'text-gray-500' }
 };
 
-// Domain badge color accents (desaturated)
+// Domain badge color accents
 const DOMAIN_COLORS: Record<string, string> = {
   'Atendimento': '#4A72B0',
   'Logística': '#3B8B88',
@@ -35,7 +35,11 @@ const DOMAIN_COLORS: Record<string, string> = {
   'Infrastructure': '#64748B',
   'Integrations': '#5E81AC',
   'FinOps': '#8F7249',
-  'Core System': '#3E5CFF'
+  'Core System': '#3E5CFF',
+  'Public / Marketing': '#10B981',
+  'Governança / Tenant': '#EC4899',
+  'Vendas': '#F59E0B',
+  'MVP Core': '#8B5CF6'
 };
 
 const VALID_VIEWS: ViewPerspective[] = [
@@ -133,7 +137,7 @@ export function ArchitectureExplorer() {
 
     url.searchParams.set('view', currentView);
     url.searchParams.set('scope', currentScope);
-    url.searchParams.delete('mode'); // Clean up legacy param
+    url.searchParams.delete('mode');
 
     if (currentNode) url.searchParams.set('node', currentNode);
     else url.searchParams.delete('node');
@@ -258,7 +262,7 @@ export function ArchitectureExplorer() {
     const contentHeight = (maxY - minY) + 120;
     const scaleX = rect.width / (contentWidth || 1);
     const scaleY = rect.height / (contentHeight || 1);
-    const newZoom = Math.min(Math.max(Math.min(scaleX, scaleY) * 0.85, 0.4), 1.2);
+    const newZoom = Math.min(Math.max(Math.min(scaleX, scaleY) * 0.85, 0.3), 1.2);
 
     const centerX = (minX + maxX) / 2 + 110;
     const centerY = (minY + maxY) / 2 + 45;
@@ -274,7 +278,6 @@ export function ArchitectureExplorer() {
   useEffect(() => {
     fitVisibleNodes(visibleNodes);
 
-    // Deselect selected node if it's no longer visible in current view
     if (selectedNodeId && !visibleNodes.some(n => n.id === selectedNodeId)) {
       if (visibleNodes.length > 0) {
         setSelectedNodeId(visibleNodes[0].id);
@@ -387,10 +390,9 @@ export function ArchitectureExplorer() {
     const mouseY = e.clientY - rect.top;
 
     if (e.ctrlKey || e.metaKey || (!e.shiftKey && Math.abs(e.deltaY) > Math.abs(e.deltaX) * 2)) {
-      // Zoom toward cursor
       const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
       setZoomLevel(prevZoom => {
-        const newZoom = Math.min(Math.max(prevZoom * zoomFactor, 0.3), 2.5);
+        const newZoom = Math.min(Math.max(prevZoom * zoomFactor, 0.2), 2.5);
         setPan(prevPan => ({
           x: mouseX - (mouseX - prevPan.x) * (newZoom / prevZoom),
           y: mouseY - (mouseY - prevPan.y) * (newZoom / prevZoom)
@@ -398,7 +400,6 @@ export function ArchitectureExplorer() {
         return newZoom;
       });
     } else {
-      // Pan canvas
       setPan(prev => ({
         x: prev.x - e.deltaX,
         y: prev.y - e.deltaY
@@ -430,7 +431,6 @@ export function ArchitectureExplorer() {
         };
       }
     } else if (activePointersRef.current.size === 2) {
-      // Touch Pinch Gesture Start
       setDraggedNodeId(null);
       setIsActivelyDraggingNode(false);
       setIsCanvasDragging(false);
@@ -454,12 +454,11 @@ export function ArchitectureExplorer() {
     if (!activePointersRef.current.has(e.pointerId)) return;
     activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // Handle 2-Finger Touch Pinch Zoom
     if (activePointersRef.current.size === 2 && initialPinchDistRef.current && initialPinchCenterRef.current) {
       const pointers = Array.from(activePointersRef.current.values());
       const currentDist = Math.hypot(pointers[1].x - pointers[0].x, pointers[1].y - pointers[0].y);
       const scale = currentDist / initialPinchDistRef.current;
-      const newZoom = Math.min(Math.max(initialPinchZoomRef.current * scale, 0.3), 2.5);
+      const newZoom = Math.min(Math.max(initialPinchZoomRef.current * scale, 0.2), 2.5);
 
       const currentCenter = {
         x: (pointers[0].x + pointers[1].x) / 2,
@@ -478,7 +477,6 @@ export function ArchitectureExplorer() {
       return;
     }
 
-    // Handle Node Drag
     if (draggedNodeId && activePointersRef.current.size === 1) {
       const dx = e.clientX - nodeDragStartRef.current.x;
       const dy = e.clientY - nodeDragStartRef.current.y;
@@ -499,7 +497,6 @@ export function ArchitectureExplorer() {
       return;
     }
 
-    // Handle Single Pointer Canvas Pan
     if (isCanvasDragging && activePointersRef.current.size === 1) {
       setPan({
         x: e.clientX - canvasDragStartRef.current.x,
@@ -519,7 +516,6 @@ export function ArchitectureExplorer() {
 
     if (draggedNodeId) {
       if (nodeDragDistRef.current <= 4) {
-        // Clean Click -> Select Node
         handleSelectNode(draggedNodeId);
       }
       setDraggedNodeId(null);
@@ -531,17 +527,20 @@ export function ArchitectureExplorer() {
     }
   };
 
-  // Search Query Matching
+  // Search Query Matching (URL, path, name, description, domain, category, etc.)
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const q = searchQuery.toLowerCase();
     return ARCHITECTURE_DATA.nodes.filter(node => {
       const nameMatch = node.name.toLowerCase().includes(q);
       const pathMatch = node.path.toLowerCase().includes(q);
+      const urlMatch = node.url ? node.url.toLowerCase().includes(q) : false;
       const descMatch = node.description.toLowerCase().includes(q);
+      const domainMatch = node.domain.toLowerCase().includes(q);
+      const typeMatch = node.nodeType ? node.nodeType.toLowerCase().includes(q) : false;
       const respMatch = node.responsibilities.some(r => r.toLowerCase().includes(q));
       const techMatch = node.technologies.some(t => t.toLowerCase().includes(q));
-      return nameMatch || pathMatch || descMatch || respMatch || techMatch;
+      return nameMatch || pathMatch || urlMatch || descMatch || domainMatch || typeMatch || respMatch || techMatch;
     });
   }, [searchQuery]);
 
@@ -602,7 +601,7 @@ export function ArchitectureExplorer() {
               CONDSTORE OS
             </span>
             <span className="text-xs text-[var(--color-fg-subtle)] sitemap-font-mono hidden sm:inline">
-              /sitemap — Architecture Explorer
+              /sitemap — Architecture Explorer ({ARCHITECTURE_DATA.nodes.length} nós)
             </span>
           </div>
         </div>
@@ -614,7 +613,7 @@ export function ArchitectureExplorer() {
         >
           <div className="flex items-center space-x-2">
             <Search className="h-3.5 w-3.5 text-[var(--color-fg-subtle)]" />
-            <span className="truncate">Pesquisar módulos, APIs, tabelas...</span>
+            <span className="truncate">Pesquisar rotas /cockpit, /api, módulos...</span>
           </div>
           <kbd className="sitemap-font-mono text-[10px] bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)] px-1.5 py-0.5 rounded text-[var(--color-fg-subtle)]">
             Cmd+K
@@ -760,6 +759,10 @@ export function ArchitectureExplorer() {
               <option value="Database">Database</option>
               <option value="Infrastructure">Infrastructure</option>
               <option value="Integrations">Integrations</option>
+              <option value="Public / Marketing">Public / Marketing</option>
+              <option value="Governança / Tenant">Governança / Tenant</option>
+              <option value="Vendas">Vendas</option>
+              <option value="MVP Core">MVP Core</option>
             </select>
           </div>
 
@@ -918,6 +921,9 @@ export function ArchitectureExplorer() {
               const hasChildren = node.children && node.children.length > 0;
               const isExpanded = expandedNodes[node.id];
 
+              const isPage = node.category === 'page' || node.nodeType === 'Página';
+              const isApi = node.category === 'api' || node.nodeType === 'API / Backend';
+
               return (
                 <div
                   key={node.id}
@@ -936,16 +942,24 @@ export function ArchitectureExplorer() {
                     top: `${pos.y}px`
                   }}
                 >
-                  {/* Subtle Domain Color Bar Accent */}
+                  {/* Domain Accent Line */}
                   <div
                     className="absolute top-0 left-3 right-3 h-[2px] rounded-t-full"
                     style={{ backgroundColor: domainAccentColor }}
                   />
 
-                  {/* Top Meta Line: Status Dot & Category Badge */}
+                  {/* Top Meta Line: Status Dot & Badge */}
                   <div className="flex items-center justify-between mb-2 pt-1">
-                    <span className="text-[10px] sitemap-font-mono px-1.5 py-0.5 rounded bg-[var(--color-bg-subtle)] text-[var(--color-fg-secondary)] uppercase font-semibold">
-                      {node.category}
+                    <span className={`text-[10px] sitemap-font-mono px-1.5 py-0.5 rounded font-semibold uppercase flex items-center space-x-1 ${
+                      isPage
+                        ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
+                        : isApi
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        : 'bg-[var(--color-bg-subtle)] text-[var(--color-fg-secondary)]'
+                    }`}>
+                      {isPage && <Globe className="h-2.5 w-2.5 inline mr-1" />}
+                      {isApi && <Terminal className="h-2.5 w-2.5 inline mr-1" />}
+                      <span>{node.nodeType || node.category}</span>
                     </span>
 
                     <div className="flex items-center space-x-1.5" title={`Status: ${statusInfo.label}`}>
@@ -956,15 +970,17 @@ export function ArchitectureExplorer() {
                     </div>
                   </div>
 
-                  {/* Title & Description */}
-                  <h3 className="font-semibold text-sm text-[var(--color-fg-main)] leading-tight mb-1">
-                    {node.name}
+                  {/* Title */}
+                  <h3 className="font-semibold text-xs text-[var(--color-fg-main)] leading-tight mb-1 truncate" title={node.name}>
+                    {node.url ? node.url : node.name}
                   </h3>
+
+                  {/* URL badge or short description */}
                   <p className="text-[11px] text-[var(--color-fg-secondary)] line-clamp-2 mb-2 font-normal">
-                    {node.description}
+                    {node.url ? node.name : node.description}
                   </p>
 
-                  {/* Footer Meta: Domain, Level, Expand/Collapse toggle */}
+                  {/* Footer Meta: Domain, MVP Tag, Expand Toggle */}
                   <div className="flex items-center justify-between text-[10px] sitemap-font-mono text-[var(--color-fg-subtle)] pt-1.5 border-t border-[var(--color-border-subtle)]">
                     <span className="truncate max-w-[110px]" style={{ color: domainAccentColor }}>
                       {node.domain}
@@ -1006,7 +1022,7 @@ export function ArchitectureExplorer() {
               {Math.round(zoomLevel * 100)}%
             </span>
             <button
-              onClick={() => setZoomLevel(prev => Math.max(prev - 0.15, 0.3))}
+              onClick={() => setZoomLevel(prev => Math.max(prev - 0.15, 0.2))}
               className="p-1.5 text-[var(--color-fg-secondary)] hover:text-[var(--color-fg-main)] hover:bg-[var(--color-bg-subtle)] rounded-lg transition-colors"
               title="Diminuir Zoom (-)"
             >
@@ -1030,7 +1046,7 @@ export function ArchitectureExplorer() {
             <div className="text-[var(--color-fg-subtle)] mb-0.5 flex items-center justify-between space-x-4">
               <span className="uppercase text-[10px]">Visão Ativa: {activeView.toUpperCase()}</span>
               <span className="bg-[var(--color-bg-subtle)] px-1.5 py-0.5 rounded text-[10px] text-[var(--color-fg-main)] font-semibold">
-                {visibleNodes.length} nós no canvas
+                {visibleNodes.length} / {ARCHITECTURE_DATA.nodes.length} nós no canvas
               </span>
             </div>
             <div className="text-[var(--color-fg-main)] font-semibold truncate max-w-xs">
@@ -1049,8 +1065,16 @@ export function ArchitectureExplorer() {
             <div className="p-4 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-subtle)] flex items-start justify-between">
               <div>
                 <div className="flex items-center space-x-2 mb-1.5">
-                  <span className="text-[10px] sitemap-font-mono px-2 py-0.5 rounded bg-[#3E5CFF]/15 text-[#3E5CFF] border border-[#3E5CFF]/30 font-semibold uppercase">
-                    {selectedNode.category}
+                  <span className={`text-[10px] sitemap-font-mono px-2 py-0.5 rounded font-semibold uppercase flex items-center space-x-1 ${
+                    selectedNode.category === 'page' || selectedNode.nodeType === 'Página'
+                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
+                      : selectedNode.category === 'api' || selectedNode.nodeType === 'API / Backend'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      : 'bg-[#3E5CFF]/15 text-[#3E5CFF] border border-[#3E5CFF]/30'
+                  }`}>
+                    {(selectedNode.category === 'page' || selectedNode.nodeType === 'Página') && <Globe className="h-3 w-3 mr-1 inline" />}
+                    {(selectedNode.category === 'api' || selectedNode.nodeType === 'API / Backend') && <Terminal className="h-3 w-3 mr-1 inline" />}
+                    <span>{selectedNode.nodeType || selectedNode.category}</span>
                   </span>
 
                   <span className={`text-[10px] sitemap-font-mono font-semibold ${STATUS_CONFIG[selectedNode.status].textClass}`}>
@@ -1072,23 +1096,47 @@ export function ArchitectureExplorer() {
             {/* Inspector Scrollable Body */}
             <div className="p-4 space-y-5 text-xs overflow-y-auto flex-1 sitemap-scrollbar">
 
+              {/* URL & Access Identification Card (if Node has URL) */}
+              {selectedNode.url && (
+                <div className="bg-[var(--color-bg-subtle)] p-3 rounded-lg border border-[var(--color-border-subtle)] space-y-2 sitemap-font-mono">
+                  <div className="text-[var(--color-fg-subtle)] font-semibold uppercase text-[10px] tracking-wider flex items-center justify-between">
+                    <span>Identificação da Rota</span>
+                    <span className="text-[#3E5CFF] font-bold">{selectedNode.nodeType}</span>
+                  </div>
+                  <div>
+                    <span className="text-[var(--color-fg-subtle)]">URL da Aplicação: </span>
+                    <span className="text-cyan-400 font-bold break-all">{selectedNode.url}</span>
+                  </div>
+                  {selectedNode.access && (
+                    <div>
+                      <span className="text-[var(--color-fg-subtle)]">Nível de Acesso: </span>
+                      <span className="text-[var(--color-fg-main)] font-semibold">{selectedNode.access}</span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-[var(--color-fg-subtle)]">Domínio Operacional: </span>
+                    <span className="text-[var(--color-fg-main)] font-semibold">{selectedNode.domain}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Description */}
               <div>
                 <h4 className="sitemap-font-mono uppercase text-[10px] text-[var(--color-fg-subtle)] mb-1 font-semibold tracking-wider">
                   Descrição do Componente
                 </h4>
-                <p className="text-[var(--color-fg-secondary)] leading-relaxed font-sans text-xs">
+                <div className="bg-[var(--color-bg-subtle)] p-3 rounded-lg border border-[var(--color-border-subtle)] font-mono text-[11px] whitespace-pre-wrap leading-relaxed text-[var(--color-fg-secondary)]">
                   {selectedNode.description}
-                </p>
+                </div>
               </div>
 
               {/* Architectural Provenance & Repository Path */}
               <div className="bg-[var(--color-bg-subtle)] p-3 rounded-lg border border-[var(--color-border-subtle)] space-y-2 sitemap-font-mono">
                 <div className="text-[var(--color-fg-subtle)] font-semibold uppercase text-[10px] tracking-wider">
-                  Proveniência & Localização
+                  Proveniência & Código
                 </div>
                 <div>
-                  <span className="text-[var(--color-fg-subtle)]">Caminho: </span>
+                  <span className="text-[var(--color-fg-subtle)]">Arquivo Fonte: </span>
                   <span className="text-emerald-400 font-bold break-all">{selectedNode.path}</span>
                 </div>
                 <div>
@@ -1137,7 +1185,7 @@ export function ArchitectureExplorer() {
                           onClick={() => handleSelectNode(depId)}
                           className="sitemap-font-mono text-[11px] px-2 py-1 bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] hover:border-[#3E5CFF] text-[var(--color-fg-secondary)] hover:text-[var(--color-fg-main)] rounded transition-colors"
                         >
-                          {depNode ? depNode.name : depId}
+                          {depNode ? (depNode.url || depNode.name) : depId}
                         </button>
                       );
                     })}
@@ -1162,7 +1210,7 @@ export function ArchitectureExplorer() {
                           onClick={() => handleSelectNode(depId)}
                           className="sitemap-font-mono text-[11px] px-2 py-1 bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] hover:border-[#3E5CFF] text-[var(--color-fg-secondary)] hover:text-[var(--color-fg-main)] rounded transition-colors"
                         >
-                          {depNode ? depNode.name : depId}
+                          {depNode ? (depNode.url || depNode.name) : depId}
                         </button>
                       );
                     })}
@@ -1185,22 +1233,6 @@ export function ArchitectureExplorer() {
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Related Files */}
-              {selectedNode.relatedFiles.length > 0 && (
-                <div>
-                  <h4 className="sitemap-font-mono uppercase text-[10px] text-[var(--color-fg-subtle)] mb-1.5 font-semibold tracking-wider">
-                    Arquivos Relacionados
-                  </h4>
-                  <ul className="space-y-1 font-mono text-[11px]">
-                    {selectedNode.relatedFiles.map(file => (
-                      <li key={file} className="text-[var(--color-fg-secondary)] hover:text-[var(--color-fg-main)] truncate">
-                        • {file}
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               )}
 
@@ -1235,7 +1267,7 @@ export function ArchitectureExplorer() {
                 ref={searchInputRef}
                 type="text"
                 autoFocus
-                placeholder="Pesquisar por nome, diretório, API, responsabilidade... (Esc para sair)"
+                placeholder="Pesquisar por URL /cockpit, /api, módulo, serviço... (Esc para sair)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-transparent text-sm text-[var(--color-fg-main)] focus:outline-none"
@@ -1264,10 +1296,10 @@ export function ArchitectureExplorer() {
                     <div>
                       <div className="flex items-center space-x-2">
                         <span className="font-semibold text-xs text-[var(--color-fg-main)] group-hover:text-[#3E5CFF]">
-                          {node.name}
+                          {node.url ? node.url : node.name}
                         </span>
                         <span className="text-[10px] sitemap-font-mono px-1.5 py-0.5 rounded bg-[var(--color-bg-subtle)] text-[var(--color-fg-subtle)] uppercase">
-                          {node.category}
+                          {node.nodeType || node.category}
                         </span>
                       </div>
                       <div className="text-[11px] text-[var(--color-fg-subtle)] sitemap-font-mono mt-0.5 truncate max-w-md">
@@ -1287,7 +1319,7 @@ export function ArchitectureExplorer() {
                 </div>
               ) : (
                 <div className="p-6 text-center text-xs text-[var(--color-fg-subtle)] sitemap-font-mono">
-                  Digite para encontrar componentes, rotas, tabelas ou ferramentas do Frank...
+                  Digite para encontrar componentes, páginas /cockpit, endpoints /api, tabelas ou ferramentas do Frank...
                 </div>
               )}
             </div>

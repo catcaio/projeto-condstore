@@ -223,5 +223,5 @@ Lista do que **nunca** fazer, independente do motivo:
 | 8 | Criar rota sem registrar em `docs/routes-registry.md` | CI bloqueia |
 | 9 | Ignorar DLQ do DOMINE | Perda silenciosa de eventos |
 | 10 | Criar novas dependências em `src/legacy/` | Código em deprecação |
-| 11 | Criar rotas em `api/webhooks/` (com s) | Usar `api/webhook/` (sem s) |
+| 11 | Criar rotas em `api/webhook/` (sem s) ou `api/whatsapp/` | Usar `api/webhooks/<provider>/` (canônico, issue #395); legados viram adapters finos |
 | 12 | Skipar PII sanitization em eventos | DOMINE sanitiza, mas código emissor deve ser consciente |
