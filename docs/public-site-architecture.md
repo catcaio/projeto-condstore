@@ -19,7 +19,7 @@
 | `/termos` | `(public)/termos/page.tsx` | Termos de Uso |
 | `/crm-whatsapp` | `(public)/crm-whatsapp/page.tsx` | CRM e atendimento via WhatsApp |
 | `/logistica-pedidos` | `(public)/logistica-pedidos/page.tsx` | Frete multicarrier e pedidos |
-| `/cotacao` | `(public)/cotacao/page.tsx` | Formulário público de cotação |
+| `/cotacao` | REMOVIDA (#396) | Página removida do MVP — cotação segue no fluxo interno supervisionado |
 | `/cockpit-gerencial` | `(public)/cockpit-gerencial/page.tsx` | Dashboards e indicadores |
 | `/piloto` | `(public)/piloto/page.tsx` | CTA principal para avaliação |
 | `/contato` | `(public)/contato/page.tsx` | Agendamento de demonstração |
@@ -65,7 +65,6 @@
 │   ├── termos/                → /termos
 │   ├── crm-whatsapp/          → /crm-whatsapp
 │   ├── logistica-pedidos/     → /logistica-pedidos
-│   ├── cotacao/               → /cotacao
 │   ├── cockpit-gerencial/     → /cockpit-gerencial
 │   ├── piloto/                → /piloto
 │   ├── contato/               → /contato

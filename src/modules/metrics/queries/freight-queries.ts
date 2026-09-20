@@ -9,6 +9,7 @@
 import { sql } from 'drizzle-orm';
 import { getDb } from '@/infra/db';
 import { metricsRepository, type FreightMetrics } from '../metrics.repository';
+import { METRICS_TZ_OFFSET, getRollingWindowStart } from '../timezone';
 import {
     buildAttributionBreakdown,
     isAttributionGroupBy,
@@ -51,16 +52,24 @@ export async function getFreightTimeseries(tenantId: string, range: FreightTimes
 }
 
 /**
- * Query oficial `freight_logs.*` (fonte: `freight_simulation_logs`,
- * janelas UTC de 7/14 dias — ver definições).
+ * Query oficial `freight_logs.*` (fonte: `freight_simulation_logs`).
+ *
+ * Contrato temporal: janelas móveis (7d/14d) como instantes absolutos
+ * calculados em app a partir de um único `now`; agrupamento diário por
+ * data-calendário America/Sao_Paulo via CONVERT_TZ. O SQL nunca usa
+ * NOW()/UTC_TIMESTAMP().
  */
 export async function getFreightSimulationLogs(
     tenantId: string,
     groupByInput?: string | null,
+    now: Date = new Date(),
 ): Promise<FreightSimulationLogsResult> {
     requireTenant(tenantId);
     const parsedGroupBy = parseAttributionGroupBy(groupByInput ?? null);
     const groupBy: AttributionGroupBy | null = isAttributionGroupBy(parsedGroupBy) ? parsedGroupBy : null;
+
+    const last7d = getRollingWindowStart(now, 7);
+    const last14d = getRollingWindowStart(now, 14);
 
     const db = await getDb();
 
@@ -70,13 +79,13 @@ export async function getFreightSimulationLogs(
           SELECT COUNT(*) AS total
           FROM freight_simulation_logs
           WHERE tenant_id = ${tenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+            AND created_at >= ${last7d}
         `),
             db.execute(sql`
           SELECT uf, COUNT(*) AS count
           FROM freight_simulation_logs
           WHERE tenant_id = ${tenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+            AND created_at >= ${last7d}
           GROUP BY uf
           ORDER BY count DESC, uf ASC
         `),
@@ -84,7 +93,7 @@ export async function getFreightSimulationLogs(
           SELECT uf, AVG(valor) AS avg_valor
           FROM freight_simulation_logs
           WHERE tenant_id = ${tenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+            AND created_at >= ${last7d}
           GROUP BY uf
           ORDER BY uf ASC
         `),
@@ -92,22 +101,22 @@ export async function getFreightSimulationLogs(
           SELECT AVG(peso) AS avg_peso
           FROM freight_simulation_logs
           WHERE tenant_id = ${tenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+            AND created_at >= ${last7d}
         `),
             db.execute(sql`
           SELECT uf, AVG(prazo) AS avg_prazo
           FROM freight_simulation_logs
           WHERE tenant_id = ${tenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+            AND created_at >= ${last7d}
           GROUP BY uf
           ORDER BY uf ASC
         `),
             db.execute(sql`
-          SELECT DATE(created_at) AS date, COUNT(*) AS count
+          SELECT DATE(CONVERT_TZ(created_at, '+00:00', ${METRICS_TZ_OFFSET})) AS date, COUNT(*) AS count
           FROM freight_simulation_logs
           WHERE tenant_id = ${tenantId}
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 14 DAY)
-          GROUP BY DATE(created_at)
+            AND created_at >= ${last14d}
+          GROUP BY DATE(CONVERT_TZ(created_at, '+00:00', ${METRICS_TZ_OFFSET}))
           ORDER BY date ASC
         `),
             groupBy
@@ -117,7 +126,7 @@ export async function getFreightSimulationLogs(
                     SELECT COALESCE(NULLIF(utm_campaign, ''), '(none)') AS bucket, COUNT(*) AS count
                     FROM freight_simulation_logs
                     WHERE tenant_id = ${tenantId}
-                      AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+                      AND created_at >= ${last7d}
                     GROUP BY COALESCE(NULLIF(utm_campaign, ''), '(none)')
                     ORDER BY count DESC, bucket ASC
                   `
@@ -125,7 +134,7 @@ export async function getFreightSimulationLogs(
                     SELECT COALESCE(NULLIF(utm_source, ''), '(none)') AS bucket, COUNT(*) AS count
                     FROM freight_simulation_logs
                     WHERE tenant_id = ${tenantId}
-                      AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+                      AND created_at >= ${last7d}
                     GROUP BY COALESCE(NULLIF(utm_source, ''), '(none)')
                     ORDER BY count DESC, bucket ASC
                   `,

@@ -12,6 +12,12 @@ import { getDb } from '../../infra/db';
 // Fonte formal em `metrics/events` (re-export aqui por compatibilidade).
 export { FreightEvent } from './events/metric-events';
 import { FreightEvent } from './events/metric-events';
+import {
+    METRICS_TZ_OFFSET,
+    getMetricsDateString,
+    getMetricsMonthString,
+    getRollingWindowStart,
+} from './timezone';
 
 export interface FreightMetrics {
     totalQuotes: number;
@@ -74,8 +80,13 @@ export class MetricsRepository {
     /**
      * Get aggregated freight metrics for a tenant.
      * Respects Sao Paulo timezone for Today/Month stats.
+     *
+     * Contrato temporal (issue #396): fronteiras calculadas em app a partir
+     * de um único `now` (dia/mês-calendário SP como strings); o SQL nunca usa
+     * NOW(). Agrupamento/comparação por dia SP via CONVERT_TZ com offsets
+     * numéricos (sem tz tables no MySQL).
      */
-    async getFreightMetrics(tenantId: string): Promise<FreightMetrics> {
+    async getFreightMetrics(tenantId: string, now: Date = new Date()): Promise<FreightMetrics> {
         if (!tenantId) {
             throw new InfrastructureError(ErrorCode.INTERNAL_ERROR, 'tenant_id required');
         }
@@ -84,13 +95,15 @@ export class MetricsRepository {
 
         // Timezone Logic: We want to match records where the *local Sao Paulo time* of creation matches today/this month.
         // Since DB stores in UTC (presumably), we convert the stored UTC time to Sao Paulo time -> then extract date.
-        // MySQL `CONVERT_TZ` is the standard way. 
-        // We assume DB server has timezone info or we pass offsets. 
+        // MySQL `CONVERT_TZ` is the standard way.
+        // We assume DB server has timezone info or we pass offsets.
         // Safest is to use offsets: 'America/Sao_Paulo' is roughly -03:00 (ignoring DST which Brazil abolished mostly, but good to be careful).
         // Actually, explicit offsets are safer if we don't know if named timezones are loaded in TiDB/MySQL.
         // Sao Paulo is UTC-3.
 
-        const tzOffset = '-03:00';
+        const tzOffset = METRICS_TZ_OFFSET;
+        const spDate = getMetricsDateString(now);
+        const spMonth = getMetricsMonthString(now);
 
         const quotedFilter = eq(simulations.event, FreightEvent.QUOTED);
 
@@ -104,21 +117,21 @@ export class MetricsRepository {
             .from(simulations)
             .where(and(eq(simulations.tenantId, tenantId), quotedFilter));
 
-        // 2. Quotes Today (in SP)
+        // 2. Quotes Today (dia-calendário SP calculado em app; sem NOW() no SQL)
         const [todayStats] = await db
             .select({ count: sql<number>`count(*)` })
             .from(simulations)
             .where(sql`${simulations.tenantId} = ${tenantId} 
                       AND ${simulations.event} = ${FreightEvent.QUOTED}
-                      AND DATE(CONVERT_TZ(${simulations.createdAt}, '+00:00', ${tzOffset})) = DATE(CONVERT_TZ(NOW(), '+00:00', ${tzOffset}))`);
+                      AND DATE(CONVERT_TZ(${simulations.createdAt}, '+00:00', ${tzOffset})) = ${spDate}`);
 
-        // 3. Quotes This Month (in SP)
+        // 3. Quotes This Month (ano-mês SP calculado em app; sem NOW() no SQL)
         const [monthStats] = await db
             .select({ count: sql<number>`count(*)` })
             .from(simulations)
             .where(sql`${simulations.tenantId} = ${tenantId} 
                       AND ${simulations.event} = ${FreightEvent.QUOTED}
-                      AND DATE_FORMAT(CONVERT_TZ(${simulations.createdAt}, '+00:00', ${tzOffset}), '%Y-%m') = DATE_FORMAT(CONVERT_TZ(NOW(), '+00:00', ${tzOffset}), '%Y-%m')`);
+                      AND DATE_FORMAT(CONVERT_TZ(${simulations.createdAt}, '+00:00', ${tzOffset}), '%Y-%m') = ${spMonth}`);
 
         // 4. Top Carriers
         const topCarriersResult = await db
@@ -148,12 +161,14 @@ export class MetricsRepository {
         };
     }
 
-    async getFreightTimeseries(tenantId: string, range: '7d' | '30d'): Promise<any> {
+    async getFreightTimeseries(tenantId: string, range: '7d' | '30d', now: Date = new Date()): Promise<any> {
         if (!tenantId) throw new InfrastructureError(ErrorCode.INTERNAL_ERROR, 'tenant_id required');
 
         const db = await getDb();
-        const tzOffset = '-03:00';
+        const tzOffset = METRICS_TZ_OFFSET;
         const limitDays = range === '30d' ? 30 : 7;
+        // Janela móvel como instante absoluto calculado em app (sem NOW() no SQL).
+        const windowStart = getRollingWindowStart(now, limitDays);
 
         // Group by Date(SP Time)
         const result = await db.execute(sql`
@@ -164,7 +179,7 @@ export class MetricsRepository {
             FROM simulations
             WHERE tenant_id = ${tenantId}
               AND event = ${FreightEvent.QUOTED}
-              AND created_at >= DATE_SUB(NOW(), INTERVAL ${limitDays} DAY)
+              AND created_at >= ${windowStart}
             GROUP BY DATE(CONVERT_TZ(created_at, '+00:00', ${tzOffset}))
             ORDER BY date ASC
         `);

@@ -12,6 +12,10 @@ import { orders, operationalEvents, simulations } from '@/drizzle/schema';
 import { messageRepository } from '@/infra/repositories/message.repository';
 import { simulationRepository } from '@/infra/repositories/simulation.repository';
 import {
+    getRollingWindowStart,
+    getStartOfDayInMetricsTimezone,
+} from '../timezone';
+import {
     buildAttributionBreakdown,
     isAttributionGroupBy,
     parseAttributionGroupBy,
@@ -40,14 +44,25 @@ function requireTenant(tenantId: string): void {
     }
 }
 
-/** Query oficial `ops.*` — todas as leituras filtram por `tenantId`. */
+/**
+ * Query oficial `ops.*` — todas as leituras filtram por `tenantId`.
+ *
+ * Contrato temporal: fronteiras calculadas em app a partir de um único `now`
+ * (dia-calendário em America/Sao_Paulo; janelas móveis como instantes
+ * absolutos). O SQL nunca usa NOW()/CURDATE().
+ */
 export async function getOperationalMetrics(
     tenantId: string,
     groupByInput?: string | null,
+    now: Date = new Date(),
 ): Promise<OperationalMetrics> {
     requireTenant(tenantId);
     const parsedGroupBy = parseAttributionGroupBy(groupByInput ?? null);
     const groupBy: AttributionGroupBy | null = isAttributionGroupBy(parsedGroupBy) ? parsedGroupBy : null;
+
+    const startOfToday = getStartOfDayInMetricsTimezone(now);
+    const last24h = getRollingWindowStart(now, 1);
+    const last7d = getRollingWindowStart(now, 7);
 
     const [
         msgMetrics,
@@ -72,7 +87,7 @@ export async function getOperationalMetrics(
                     SELECT COALESCE(NULLIF(utm_campaign, ''), '(none)') AS bucket, COUNT(*) AS count
                     FROM attribution_clicks
                     WHERE tenant_id = ${tenantId}
-                      AND created_at >= NOW() - INTERVAL 7 DAY
+                      AND created_at >= ${last7d}
                     GROUP BY COALESCE(NULLIF(utm_campaign, ''), '(none)')
                     ORDER BY count DESC, bucket ASC
                   `
@@ -80,7 +95,7 @@ export async function getOperationalMetrics(
                     SELECT COALESCE(NULLIF(utm_source, ''), '(none)') AS bucket, COUNT(*) AS count
                     FROM attribution_clicks
                     WHERE tenant_id = ${tenantId}
-                      AND created_at >= NOW() - INTERVAL 7 DAY
+                      AND created_at >= ${last7d}
                     GROUP BY COALESCE(NULLIF(utm_source, ''), '(none)')
                     ORDER BY count DESC, bucket ASC
                   `,
@@ -91,7 +106,7 @@ export async function getOperationalMetrics(
                 }
             })()
             : Promise.resolve(null),
-        // pedidosHoje: orders created today for this tenant
+        // pedidosHoje: orders criados a partir da meia-noite SP (contrato canônico).
         (async () => {
             const db = await getDb();
             const rows = await db
@@ -100,12 +115,12 @@ export async function getOperationalMetrics(
                 .where(
                     and(
                         eq(orders.tenantId, tenantId),
-                        gte(orders.createdAt, sql`CURDATE()`),
+                        gte(orders.createdAt, startOfToday),
                     ),
                 );
             return rows[0]?.count ?? 0;
         })(),
-        // erros24h: operational_events with error/failed event types in last 24h
+        // erros24h: operational_events com tipos error/failed na janela móvel de 24h.
         (async () => {
             const db = await getDb();
             const rows = await db
@@ -114,7 +129,7 @@ export async function getOperationalMetrics(
                 .where(
                     and(
                         eq(operationalEvents.tenantId, tenantId),
-                        gte(operationalEvents.createdAt, sql`NOW() - INTERVAL 24 HOUR`),
+                        gte(operationalEvents.createdAt, last24h),
                         or(
                             like(operationalEvents.eventType, '%FAILED%'),
                             like(operationalEvents.eventType, '%ERROR%'),
@@ -123,7 +138,7 @@ export async function getOperationalMetrics(
                 );
             return rows[0]?.count ?? 0;
         })(),
-        // handoffsHoje
+        // handoffsHoje: handoffs a partir da meia-noite SP (contrato canônico).
         (async () => {
             const db = await getDb();
             const rows = await db
@@ -132,23 +147,22 @@ export async function getOperationalMetrics(
                 .where(
                     and(
                         eq(operationalEvents.tenantId, tenantId),
-                        gte(operationalEvents.createdAt, sql`CURDATE()`),
+                        gte(operationalEvents.createdAt, startOfToday),
                         eq(operationalEvents.eventType, 'frank_assist_handoff'),
                     ),
                 );
             return rows[0]?.count ?? 0;
         })(),
-        // timings (avg response and quote time)
+        // timings (avg response and quote time, janela móvel de 7 dias)
         (async () => {
             const db = await getDb();
-            const sevenDaysAgo = sql`DATE_SUB(NOW(), INTERVAL 7 DAY)`;
             const result = await db.execute(sql`
           WITH FirstInbound AS (
               SELECT conversation_id, MIN(created_at) as first_in
               FROM conversation_messages
               WHERE tenant_id = ${tenantId}
                 AND direction = 'inbound'
-                AND created_at >= ${sevenDaysAgo}
+                AND created_at >= ${last7d}
               GROUP BY conversation_id
           ),
           FirstOutboundHuman AS (
@@ -157,14 +171,14 @@ export async function getOperationalMetrics(
               WHERE tenant_id = ${tenantId}
                 AND direction = 'outbound'
                 AND source = 'OPERATOR'
-                AND created_at >= ${sevenDaysAgo}
+                AND created_at >= ${last7d}
               GROUP BY conversation_id
           ),
           FirstQuote AS (
               SELECT conversation_id, MIN(created_at) as first_quote
               FROM simulations
               WHERE tenant_id = ${tenantId}
-                AND created_at >= ${sevenDaysAgo}
+                AND created_at >= ${last7d}
               GROUP BY conversation_id
           )
           SELECT
@@ -177,15 +191,23 @@ export async function getOperationalMetrics(
             const rows = unwrapRows<{ avgFirstResponseSec: number | string | null; avgFirstQuoteSec: number | string | null }>(result);
             return rows[0] || { avgFirstResponseSec: null, avgFirstQuoteSec: null };
         })(),
-        // conversionQuoteToOrder (7 days)
+        // conversionQuoteToOrder (coorte 7d): fração das cotações criadas na
+        // janela que atingiram status CONVERTED — i.e., geraram pedido via
+        // createOrderFromQuote (cotação interna → aceite → pedido; vínculo
+        // orders.quoteId com índice único, transição ACCEPTED → CONVERTED).
+        // Coorte impede taxa > 100% e pedidos órfãos de inflar o numerador.
         (async () => {
             const db = await getDb();
-            const sevenDaysAgo = sql`DATE_SUB(NOW(), INTERVAL 7 DAY)`;
-            const [q] = await db.select({ count: sql<number>`COUNT(*)` }).from(simulations).where(and(eq(simulations.tenantId, tenantId), gte(simulations.createdAt, sevenDaysAgo)));
-            const [o] = await db.select({ count: sql<number>`COUNT(*)` }).from(orders).where(and(eq(orders.tenantId, tenantId), gte(orders.createdAt, sevenDaysAgo)));
-            const quotes = Number(q?.count ?? 0);
-            const ordersCount = Number(o?.count ?? 0);
-            return quotes > 0 ? (ordersCount / quotes) * 100 : 0;
+            const [row] = await db
+                .select({
+                    total: sql<number>`COUNT(*)`,
+                    converted: sql<number>`SUM(CASE WHEN ${simulations.status} = 'CONVERTED' THEN 1 ELSE 0 END)`,
+                })
+                .from(simulations)
+                .where(and(eq(simulations.tenantId, tenantId), gte(simulations.createdAt, last7d)));
+            const total = Number(row?.total ?? 0);
+            const converted = Number(row?.converted ?? 0);
+            return total > 0 ? (converted / total) * 100 : 0;
         })(),
     ]);
 

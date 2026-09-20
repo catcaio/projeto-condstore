@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { redisClient } from "@/infra/redis.client";
 import { logger } from '@/infra/logger';
 import { requireAdmin } from '@/infra/auth/guards';
-import { getOperationalMetrics, type OperationalMetrics as CockpitMetrics } from '@/modules/metrics/queries/operational-queries';
+import { getOperationalMetrics, type OperationalMetrics as CockpitMetrics } from '../../../../modules/metrics/queries/operational-queries';
 import { attachRequestIdHeader, makeRequestId } from '@/infra/http/request-trace';
 import { ErrorCode, errorResponse, inferErrorCodeFromStatus } from '@/infra/http/error-response';
 import { structuredLogger } from '@/infra/log/logger';

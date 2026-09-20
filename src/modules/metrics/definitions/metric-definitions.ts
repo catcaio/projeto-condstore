@@ -107,7 +107,7 @@ export const FREIGHT_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
     define({
         name: 'freight.timeseries',
-        formula: 'Por dia (America/Sao_Paulo): COUNT(*) e AVG(best_price) WHERE event = FREIGHT_QUOTED, últimos 7 ou 30 dias',
+        formula: 'Por dia-calendário (America/Sao_Paulo): COUNT(*) e AVG(best_price) WHERE event = FREIGHT_QUOTED, janela móvel de 7 ou 30 dias',
         source: METRIC_SOURCE_TABLES.simulations,
         granularity: 'timeseries',
         timezone: TZ,
@@ -117,11 +117,11 @@ export const FREIGHT_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
 ];
 
-/** Métricas de simulação por UF (fonte: `freight_simulation_logs`, janelas UTC de 7/14 dias). */
+/** Métricas de simulação por UF (fonte: `freight_simulation_logs`). */
 export const FREIGHT_LOG_METRIC_DEFINITIONS: MetricDefinition[] = [
     define({
         name: 'freight_logs.simulations_7d',
-        formula: 'COUNT(*) de freight_simulation_logs com created_at >= UTC_TIMESTAMP() - 7 dias',
+        formula: 'COUNT(*) de freight_simulation_logs com created_at >= instante (now - 7 dias)',
         source: METRIC_SOURCE_TABLES.freightSimulationLogs,
         granularity: 'total',
         timezone: TZ,
@@ -131,7 +131,7 @@ export const FREIGHT_LOG_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
     define({
         name: 'freight_logs.top_ufs_7d',
-        formula: 'UFs por COUNT(*) (mesma janela de 7 dias), ordem desc',
+        formula: 'UFs por COUNT(*) (mesma janela móvel de 7 dias), ordem desc',
         source: METRIC_SOURCE_TABLES.freightSimulationLogs,
         granularity: 'top_n',
         timezone: TZ,
@@ -141,7 +141,7 @@ export const FREIGHT_LOG_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
     define({
         name: 'freight_logs.avg_valor_peso_prazo_7d',
-        formula: 'AVG(valor) por UF, AVG(peso) global, AVG(prazo) por UF (janela de 7 dias)',
+        formula: 'AVG(valor) por UF, AVG(peso) global, AVG(prazo) por UF (janela móvel de 7 dias)',
         source: METRIC_SOURCE_TABLES.freightSimulationLogs,
         granularity: 'average',
         timezone: TZ,
@@ -151,7 +151,7 @@ export const FREIGHT_LOG_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
     define({
         name: 'freight_logs.daily_14d',
-        formula: 'Por dia (DATE(created_at)): COUNT(*), últimos 14 dias',
+        formula: 'Por dia-calendário America/Sao_Paulo (DATE(CONVERT_TZ)): COUNT(*), janela móvel de 14 dias',
         source: METRIC_SOURCE_TABLES.freightSimulationLogs,
         granularity: 'timeseries',
         timezone: TZ,
@@ -185,7 +185,7 @@ export const OPERATIONAL_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
     define({
         name: 'ops.orders_today',
-        formula: 'COUNT(*) de orders com created_at >= CURDATE()',
+        formula: 'COUNT(*) de orders com created_at >= início do dia em America/Sao_Paulo',
         source: METRIC_SOURCE_TABLES.orders,
         granularity: 'daily',
         timezone: TZ,
@@ -195,7 +195,7 @@ export const OPERATIONAL_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
     define({
         name: 'ops.errors_24h',
-        formula: 'COUNT(*) de operational_events com eventType LIKE %FAILED%/%ERROR% nas últimas 24h',
+        formula: 'COUNT(*) de operational_events com eventType LIKE %FAILED%/%ERROR% na janela móvel de 24h',
         source: METRIC_SOURCE_TABLES.operationalEvents,
         granularity: 'total',
         timezone: TZ,
@@ -205,7 +205,7 @@ export const OPERATIONAL_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
     define({
         name: 'ops.handoffs_today',
-        formula: "COUNT(*) de operational_events WHERE eventType = 'frank_assist_handoff' no dia (CURDATE())",
+        formula: "COUNT(*) de operational_events WHERE eventType = 'frank_assist_handoff' com created_at >= início do dia em America/Sao_Paulo",
         source: METRIC_SOURCE_TABLES.operationalEvents,
         granularity: 'daily',
         timezone: TZ,
@@ -215,7 +215,7 @@ export const OPERATIONAL_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
     define({
         name: 'ops.avg_response_quote_time',
-        formula: 'AVG(segundos) primeira inbound → primeira outbound humana / primeira cotação, últimos 7 dias (minutos na apresentação)',
+        formula: 'AVG(segundos) primeira inbound → primeira outbound humana / primeira cotação, janela móvel de 7 dias (minutos na apresentação)',
         source: `${METRIC_SOURCE_TABLES.conversationMessages} + ${METRIC_SOURCE_TABLES.simulations}`,
         granularity: 'average',
         timezone: TZ,
@@ -225,8 +225,8 @@ export const OPERATIONAL_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
     define({
         name: 'ops.quote_to_order_conversion_7d',
-        formula: '100 * COUNT(orders 7d) / COUNT(simulations 7d) (0 quando sem cotações)',
-        source: `${METRIC_SOURCE_TABLES.simulations} + ${METRIC_SOURCE_TABLES.orders}`,
+        formula: '100 * COUNT(simulations da coorte 7d com status CONVERTED) / COUNT(simulations da coorte 7d); CONVERTED = pedido criado via createOrderFromQuote (cotação interna → aceite → pedido, vínculo orders.quoteId único). Coorte impede taxa > 100%; 0 quando sem cotações',
+        source: METRIC_SOURCE_TABLES.simulations,
         granularity: 'total',
         timezone: TZ,
         tenantScope: 'tenant_id',
@@ -235,7 +235,7 @@ export const OPERATIONAL_METRIC_DEFINITIONS: MetricDefinition[] = [
     }),
     define({
         name: 'ops.attribution_breakdown_7d',
-        formula: 'COUNT(*) de attribution_clicks por utm_source/utm_campaign, últimos 7 dias',
+        formula: 'COUNT(*) de attribution_clicks por utm_source/utm_campaign na janela móvel de 7 dias',
         source: METRIC_SOURCE_TABLES.attributionClicks,
         granularity: 'top_n',
         timezone: TZ,

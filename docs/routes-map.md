@@ -7,7 +7,6 @@ This document defines the canonical route architecture for the Condstore OS publ
 | Route | Objective | Auth | Data Source |
 |---|---|---|---|
 | `/home` | Marketing & Institutional Landing Page | Public | Static / CMS |
-| `/cotacao` | Public freight quotation engine | Public | `api/public/cotacao` |
 | `/login` | Client authentication portal | Public | Supabase Auth |
 | `/login/staff` | Employee & Admin authentication portal | Public | Supabase Auth (SSO/MFA) |
 | `/docs` | Public API & Integration Documentation | Public | Static Markdown/MDX |

@@ -46,7 +46,6 @@ Módulos que fornecem capacidades transversais consumidas pelos domínios princi
 | **Metrics** | `src/modules/metrics/` | Métricas operacionais, retenção, rollups |
 | **Knowledge** | `src/modules/knowledge/` | Knowledge base para AI/RAG (Qdrant) |
 | **Governance** | `src/modules/governance/` | Governança operacional, tenant governance |
-| **Cotação Pública** | `src/modules/cotacao-publica/` | Engine de cotação pública (LGPD-safe, sem auth) |
 | **FinOps** | `src/modules/finops/` | Operações financeiras, cost tracking, reconciliação |
 | **Funnel** | `src/modules/funnel/` | Tracking de funil de aquisição |
 | **Jobs** | `src/modules/jobs/` | Background jobs (cleanup, backfill, rollup) |
@@ -126,7 +125,7 @@ O DOMINE é um **domínio unificado** composto por dois diretórios complementar
 ### Fluxo Quote → Order → Shipment
 
 ```
-cotacao-publica / fulfillment/freight (quote engine)
+fulfillment/freight (quote engine, cotação interna supervisionada)
     → fulfillment/freight/carriers (carrier adapters)
     → providers/melhorenvio
     → drizzle/schema (freight_simulations)

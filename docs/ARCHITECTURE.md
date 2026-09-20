@@ -33,9 +33,14 @@ The system uses a rigidly separated topology, decoupling public ingestion from i
                (Redis Streams/Cache)
 ```
 
-## 2. Public Quotation Data Flow (Concurrent Engine)
+## 2. Public Quotation Data Flow (Concurrent Engine) — REMOVED from MVP (issue #396)
 
-The `/cotacao` engine is engineered for resilience against upstream logistics API failures. It abstracts individual carriers behind standardized adapters.
+> A superfície de Cotação Pública (`/cotacao`, `/api/public/cotacao/*`, `src/modules/cotacao-publica/`)
+> foi removida do MVP. A mecânica abaixo é registro histórico de como o motor funcionava;
+> a cotação de frete segue ativa apenas no fluxo interno supervisionado
+> (conversas do cockpit → aceite → pedido).
+
+The `/cotacao` engine was engineered for resilience against upstream logistics API failures. It abstracted individual carriers behind standardized adapters.
 
 1. **Intention Registration:** A user visits the quote page. An anonymous session identity (`condstore_anon`) is created and tied to an `intentId`.
 2. **Concurrent Fetch:** The `/api/public/cotacao/quotes` endpoint is hit. The `ConcurrentQuoteEngine` orchestrates parallel requests to multiple `CarrierAdapter` instances via `Promise.allSettled`.
@@ -74,7 +79,7 @@ Automated E2E tests (Playwright) bypass CAPTCHA and MFA bottlenecks by invoking 
 All tenant-scoped API routes under `/api/tenants/[tenantId]/**` require authenticated sessions. Destructive operations (e.g., `DELETE /api/tenants/[tenantId]/privacy/purge-user`) additionally require `admin` role and strict tenant match via `requireAdminSession()`. The `proxy.ts` middleware strips all spoofable auth headers (`x-tenant-id`, `x-auth-*`) from incoming requests before any route handler executes.
 
 ### Public Surface Map
-The following routes are explicitly **public** (no auth required): `/`, `/cotacao`, `/docs`, `/login`, `/pricing`, `/robots.txt`, `/sitemap.xml`. These are excluded from the `proxy.ts` matcher and served as static or ISR pages.
+The following routes are explicitly **public** (no auth required): `/`, `/docs`, `/login`, `/pricing`, `/robots.txt`, `/sitemap.xml`. These are excluded from the `proxy.ts` matcher and served as static or ISR pages.
 
 ### Sensitive Routes List
 Routes classified as **critical** for rate-limiting and access control:
@@ -87,5 +92,5 @@ Routes classified as **critical** for rate-limiting and access control:
 ### Rate-Limit Policy
 The rate limiter classifies route scopes into two sensitivity levels:
 - **`critical`** (default): On Redis failure, the limiter **fails closed** (blocks the request). Applies to webhook, auth, internal, ingest, and all unclassified routes.
-- **`public_safe`**: On Redis failure, the limiter **fails open** (allows the request). Applies only to explicitly safe public routes (home, docs, pricing, cotacao).
+- **`public_safe`**: On Redis failure, the limiter **fails open** (allows the request). Applies only to explicitly safe public routes (home, docs, pricing).
 

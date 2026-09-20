@@ -105,7 +105,7 @@ As API routes seguem 5 padrões de autenticação e escopo:
 
 | Classificação | Prefixo | Auth | Exemplos |
 |---|---|---|---|
-| **Public** | `/api/public/*` | Nenhuma | `/api/public/cotacao/quotes`, `/api/public/events` |
+| **Public** | `/api/public/*` | Nenhuma | `/api/public/contato`, `/api/public/events` |
 | **Cockpit** | `/api/cockpit/*` | Session cookie (any role) | `/api/cockpit/metrics`, `/api/cockpit/analytics/*` |
 | **Internal** | `/api/internal/*` | Internal tokens por propósito (`INTERNAL_DIAG_TOKEN`, `INTERNAL_EXPORT_TOKEN`, `INTERNAL_JOB_TOKEN`) | `/api/internal/diag`, `/api/internal/jobs/*` |
 | **Tenant-scoped** | `/api/tenants/[tenantId]/*` | Session cookie + tenant match | `/api/tenants/[tenantId]/settings`, `/api/tenants/[tenantId]/domine/*` |
@@ -220,4 +220,4 @@ Governança     → Tenant, Configurações, Operação
 
 - Rotas UI → **português** (ex: `/pedidos`, `/clientes`, `/financeiro`)
 - Rotas API → **inglês** (ex: `/api/orders`, `/api/freight`, `/api/billing`)
-- Slugs compostos → **kebab-case** (ex: `/cotacao-publica`, `/painel-logistico`)
+- Slugs compostos → **kebab-case** (ex: `/como-funciona`, `/painel-logistico`)

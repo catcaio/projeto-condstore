@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMetricsOverview } from '@/modules/metrics/queries/overview-queries';
+import { getMetricsOverview } from '../../../../modules/metrics/queries/overview-queries';
 import { logger } from '@/infra/logger';
 import { requireActivePlan } from '@/modules/billing';
 
