@@ -78,6 +78,9 @@ const config: Config = {
                 'md': 'var(--space-md)',
                 'lg': 'var(--space-lg)',
                 'xl': 'var(--space-xl)',
+                // Issue #420: `h-13` é usado pela Home mas não existe na escala
+                // default do Tailwind v3. Valor formalizado = 3.25rem (52px).
+                '13': '3.25rem',
             },
             fontSize: {
                 'body-sm': ['14px', '20px'],

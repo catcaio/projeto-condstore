@@ -1,6 +1,10 @@
 export { PageContainer } from './page-container';
 export { PageSection } from './page-section';
 export { SectionIntro } from './section-intro';
+// Issue #420: primitivos oficiais do Design System público.
+export { SiteButton, type SiteButtonVariant } from './site-button';
+export { SiteBadge, type SiteBadgeVariant } from './site-badge';
+export { SiteCard, SiteFeatureCard, type SiteCardVariant } from './site-card';
 export { HeroSection } from './hero-section';
 export { FeatureGrid, type FeatureItem } from './feature-grid';
 export { FlowSection, type FlowStep } from './flow-section';

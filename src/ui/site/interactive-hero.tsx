@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { SiteButton } from './site-button';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowRight,
@@ -78,20 +78,13 @@ export function InteractiveHero() {
 
                     {/* Primary CTAs */}
                     <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto">
-                        <Link
-                            href="/piloto"
-                            data-testid="public-primary-cta"
-                            className="inline-flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[hsl(var(--ui-text))] px-7 text-sm font-bold text-[hsl(var(--ui-page))] shadow-md transition-all hover:opacity-90 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))]"
-                        >
+                        <SiteButton href="/piloto" variant="primary" testId="public-primary-cta">
                             Solicitar avaliação operacional
                             <ArrowRight className="h-4 w-4" />
-                        </Link>
-                        <Link
-                            href="/login"
-                            className="inline-flex h-13 w-full sm:w-auto items-center justify-center rounded-xl border border-[hsl(var(--ui-border-strong))] bg-[hsl(var(--ui-surface)/0.5)] px-7 text-sm font-semibold text-[hsl(var(--ui-text))] transition-all hover:bg-[hsl(var(--ui-surface-elevated))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-text))]"
-                        >
+                        </SiteButton>
+                        <SiteButton href="/login" variant="secondary">
                             Entrar no sistema
-                        </Link>
+                        </SiteButton>
                     </div>
 
                     {/* Guarantees micro-copy */}
