@@ -7,7 +7,6 @@ import {
     Gauge,
     MessageCircle,
     Route,
-    ScanSearch,
     Shield,
     Truck,
     UserCheck,
@@ -21,6 +20,9 @@ import {
     PageSection,
     ScrollReveal,
     SectionIntro,
+    SiteBadge,
+    SiteButton,
+    SiteCard,
 } from '@/ui/site';
 
 export const metadata: Metadata = {
@@ -151,9 +153,9 @@ export default function ComoFuncionaPage() {
                 <PageContainer>
                     <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-10 lg:gap-14 items-start">
                         <div className="max-w-3xl">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[hsl(var(--ui-text-muted))]">
+                            <SiteBadge variant="accent" className="uppercase tracking-[0.15em] text-[11px]">
                                 Fluxo operacional CONDSTORE OS
-                            </span>
+                            </SiteBadge>
                             <h1 className="mt-6 text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-[hsl(var(--ui-text))] leading-[1.08]">
                                 Do WhatsApp ao Cockpit: como conectamos sua operação de ponta a ponta.
                             </h1>
@@ -161,23 +163,17 @@ export default function ComoFuncionaPage() {
                                 O CONDSTORE OS conecta atendimento, cotação, pedidos e logística em um fluxo único. IA supervisionada auxilia o operador, garantindo controle real e decisão humana.
                             </p>
                             <div className="mt-8 flex flex-wrap items-center gap-3">
-                                <Link
-                                    href="/proof"
-                                    className="inline-flex h-11 items-center justify-center rounded-full border border-[hsl(var(--ui-border))] px-6 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
-                                >
+                                <SiteButton href="/proof" variant="secondary">
                                     Ver prova operacional
-                                </Link>
-                                <Link
-                                    href="/produto"
-                                    className="inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--ui-text-muted))] transition-colors hover:text-[hsl(var(--ui-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))] rounded-full px-3 py-2"
-                                >
+                                </SiteButton>
+                                <SiteButton href="/produto" variant="ghost">
                                     Explorar produto
                                     <ArrowRight className="h-4 w-4" />
-                                </Link>
+                                </SiteButton>
                             </div>
                         </div>
 
-                        <aside className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.35)] p-6 md:p-7">
+                        <SiteCard variant="default" className="p-6 md:p-7 bg-[hsl(var(--ui-surface)/0.35)]">
                             <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))]">
                                 Fases da operação
                             </h2>
@@ -194,7 +190,7 @@ export default function ComoFuncionaPage() {
                             <p className="mt-5 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
                                 Cada etapa alimenta a próxima. O gestor tem visão clara do estado de cada negociação e entrega em fluxo contínuo.
                             </p>
-                        </aside>
+                        </SiteCard>
                     </div>
                 </PageContainer>
             </PageSection>
@@ -211,23 +207,21 @@ export default function ComoFuncionaPage() {
                             {overviewStages.map((stage) => {
                                 const Icon = stage.icon;
                                 return (
-                                    <Link
-                                        key={stage.title}
-                                        href={stage.href}
-                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.28)] p-5 md:p-6 transition-colors hover:border-[hsl(var(--ui-border))] group"
-                                    >
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.55)] text-[hsl(var(--ui-accent-blue))]">
-                                            <Icon className="h-5 w-5" />
-                                        </div>
-                                        <h3 className="mt-4 text-lg font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">
-                                            {stage.title}
-                                        </h3>
-                                        <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text-muted))]">
-                                            {stage.summary}
-                                        </p>
-                                        <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-subtle))]">
-                                            {stage.detail}
-                                        </p>
+                                    <Link key={stage.title} href={stage.href} className="group">
+                                        <SiteCard variant="interactive" className="h-full p-5 md:p-6">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.55)] text-[hsl(var(--ui-accent-blue))]">
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                            <h3 className="mt-4 text-lg font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">
+                                                {stage.title}
+                                            </h3>
+                                            <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text-muted))]">
+                                                {stage.summary}
+                                            </p>
+                                            <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-subtle))]">
+                                                {stage.detail}
+                                            </p>
+                                        </SiteCard>
                                     </Link>
                                 );
                             })}
@@ -248,9 +242,9 @@ export default function ComoFuncionaPage() {
                                     align="left"
                                     className="mb-8"
                                 />
-                                <p className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
+                                <SiteCard variant="default" className="p-5 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))] bg-[hsl(var(--ui-surface)/0.3)]">
                                     O fluxo supervisionado garante que a IA sugira e organize, enquanto o operador valida e executa a decisão final em pontos críticos.
-                                </p>
+                                </SiteCard>
                             </div>
 
                             <div className="rounded-3xl border border-[hsl(var(--ui-border)/0.35)] bg-[hsl(var(--ui-surface)/0.2)] p-4 md:p-6">
@@ -303,10 +297,7 @@ export default function ComoFuncionaPage() {
                             {frankCapabilities.map((card) => {
                                 const Icon = card.icon;
                                 return (
-                                    <article
-                                        key={card.title}
-                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-6"
-                                    >
+                                    <SiteCard key={card.title} variant="default" className="p-6 bg-[hsl(var(--ui-surface)/0.3)]">
                                         <div className="flex items-center gap-3">
                                             <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${card.accentClass}`}>
                                                 <Icon className="h-5 w-5" />
@@ -321,16 +312,16 @@ export default function ComoFuncionaPage() {
                                                 </li>
                                             ))}
                                         </ul>
-                                    </article>
+                                    </SiteCard>
                                 );
                             })}
                         </div>
-                        <div className="mt-6 rounded-2xl border border-[hsl(var(--ui-warning)/0.45)] bg-[hsl(var(--ui-warning)/0.08)] p-5 md:p-6">
+                        <SiteCard variant="default" className="mt-6 p-5 md:p-6 border-[hsl(var(--ui-warning)/0.45)] bg-[hsl(var(--ui-warning)/0.08)]">
                             <p className="text-sm md:text-base font-semibold text-[hsl(var(--ui-text))]">
                                 A CONDSTORE OS prioriza a segurança: o Frank não executa ações críticas ou financeiras sem aprovação explícita.
                                 <Link href="/ia-frank" className="ml-2 underline hover:text-[hsl(var(--ui-accent-blue))]">Conheça o Frank</Link>
                             </p>
-                        </div>
+                        </SiteCard>
                     </PageContainer>
                 </PageSection>
             </ScrollReveal>
@@ -347,17 +338,15 @@ export default function ComoFuncionaPage() {
                             {operatorCards.map((card) => {
                                 const Icon = card.icon;
                                 return (
-                                    <Link
-                                        key={card.title}
-                                        href={card.href}
-                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.28)] p-6 transition-colors hover:border-[hsl(var(--ui-border))] group"
-                                    >
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.6)] text-[hsl(var(--ui-accent-blue))]">
-                                            <Icon className="h-5 w-5" />
-                                        </div>
-                                        <h3 className="mt-4 text-base font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">{card.title}</h3>
-                                        <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text-muted))]">{card.summary}</p>
-                                        <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-subtle))]">{card.detail}</p>
+                                    <Link key={card.title} href={card.href} className="group">
+                                        <SiteCard variant="interactive" className="h-full p-6 bg-[hsl(var(--ui-surface)/0.28)]">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.6)] text-[hsl(var(--ui-accent-blue))]">
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                            <h3 className="mt-4 text-base font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">{card.title}</h3>
+                                            <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text-muted))]">{card.summary}</p>
+                                            <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-subtle))]">{card.detail}</p>
+                                        </SiteCard>
                                     </Link>
                                 );
                             })}
@@ -376,17 +365,15 @@ export default function ComoFuncionaPage() {
                         />
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
                             {productConnections.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className="group rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.28)] p-5 transition-colors hover:border-[hsl(var(--ui-border))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-page))]"
-                                >
-                                    <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{item.title}</h3>
-                                    <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{item.description}</p>
-                                    <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--ui-text-subtle))] transition-colors group-hover:text-[hsl(var(--ui-text))]">
-                                        Acessar
-                                        <ArrowRight className="h-4 w-4" />
-                                    </span>
+                                <Link key={item.href} href={item.href} className="group">
+                                    <SiteCard variant="interactive" className="h-full p-5 bg-[hsl(var(--ui-surface)/0.28)]">
+                                        <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{item.title}</h3>
+                                        <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{item.description}</p>
+                                        <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--ui-text-subtle))] transition-colors group-hover:text-[hsl(var(--ui-text))]">
+                                            Acessar
+                                            <ArrowRight className="h-4 w-4" />
+                                        </span>
+                                    </SiteCard>
                                 </Link>
                             ))}
                         </div>
@@ -397,28 +384,22 @@ export default function ComoFuncionaPage() {
             <ScrollReveal>
                 <PageSection spacing="md" borderTop>
                     <PageContainer narrow>
-                        <div className="rounded-3xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] px-6 py-8 md:px-10 md:py-10 text-center">
+                        <SiteCard variant="default" className="rounded-3xl px-6 py-8 md:px-10 md:py-10 text-center bg-[hsl(var(--ui-surface)/0.3)]">
                             <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[hsl(var(--ui-text))]">
                                 Pronto para profissionalizar sua operação?
                             </h2>
                             <p className="mt-4 text-sm md:text-base leading-relaxed text-[hsl(var(--ui-text-muted))] max-w-2xl mx-auto">
                                 Agende uma conversa para entender como o fluxo supervisionado se aplica ao seu cenário logístico.
                             </p>
-                            <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
-                                <Link
-                                    href="/piloto"
-                                    className="inline-flex h-11 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-6 text-sm font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))]"
-                                >
+                            <div className="mt-7 flex flex-col sm:flex-row justify-center items-center gap-3">
+                                <SiteButton href="/piloto" variant="accent">
                                     Solicitar avaliação operacional
-                                </Link>
-                                <Link
-                                    href="/proof"
-                                    className="inline-flex h-11 items-center justify-center rounded-full border border-[hsl(var(--ui-border))] px-6 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))]"
-                                >
+                                </SiteButton>
+                                <SiteButton href="/proof" variant="secondary">
                                     Ver prova operacional
-                                </Link>
+                                </SiteButton>
                             </div>
-                        </div>
+                        </SiteCard>
                     </PageContainer>
                 </PageSection>
             </ScrollReveal>
