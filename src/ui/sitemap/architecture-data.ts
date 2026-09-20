@@ -1454,6 +1454,44 @@ export const ARCHITECTURE_DATA: {
     "y": 250
   },
   {
+    "id": "route-page-cockpit-playbooks-id",
+    "name": "Página: /cockpit/playbooks/[id]",
+    "category": "page",
+    "domain": "Cockpit",
+    "layer": "UI",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/(admin)/cockpit/playbooks/[id]/page.tsx",
+    "directory": "src/app/(admin)/cockpit/playbooks/[id]/",
+    "url": "/cockpit/playbooks/[id]",
+    "access": "Interno / autenticado",
+    "nodeType": "Página",
+    "description": "URL: /cockpit/playbooks/[id]\nTipo: Página\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
+    "responsibilities": [
+      "Interface UI para a rota /cockpit/playbooks/[id]",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "React 19"
+    ],
+    "relatedFiles": [
+      "src/app/(admin)/cockpit/playbooks/[id]/page.tsx"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(admin)/cockpit/playbooks/[id]/page.tsx",
+    "evidence": "Arquivo de rota real src/app/(admin)/cockpit/playbooks/[id]/page.tsx em src/app/(admin)/cockpit/playbooks/[id]/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 2650,
+    "y": 600
+  },
+  {
     "id": "route-page-cockpit-playbooks-new",
     "name": "Página: /cockpit/playbooks/new",
     "category": "page",
@@ -1488,7 +1526,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(admin)/cockpit/playbooks/new/page.tsx em src/app/(admin)/cockpit/playbooks/new/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 600
   },
   {
@@ -1524,44 +1562,6 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(admin)/cockpit/playbooks/page.tsx",
     "evidence": "Arquivo de rota real src/app/(admin)/cockpit/playbooks/page.tsx em src/app/(admin)/cockpit/playbooks/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 2910,
-    "y": 600
-  },
-  {
-    "id": "route-page-cockpit-playbooks-id",
-    "name": "Página: /cockpit/playbooks/[id]",
-    "category": "page",
-    "domain": "Cockpit",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(admin)/cockpit/playbooks/[id]/page.tsx",
-    "directory": "src/app/(admin)/cockpit/playbooks/[id]/",
-    "url": "/cockpit/playbooks/[id]",
-    "access": "Interno / autenticado",
-    "nodeType": "Página",
-    "description": "URL: /cockpit/playbooks/[id]\nTipo: Página\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
-    "responsibilities": [
-      "Interface UI para a rota /cockpit/playbooks/[id]",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(admin)/cockpit/playbooks/[id]/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(admin)/cockpit/playbooks/[id]/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(admin)/cockpit/playbooks/[id]/page.tsx em src/app/(admin)/cockpit/playbooks/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 3170,
@@ -1986,44 +1986,6 @@ export const ARCHITECTURE_DATA: {
     "y": 1020
   },
   {
-    "id": "route-page-cockpit-configuracoes-campos",
-    "name": "Página: /cockpit/configuracoes/campos",
-    "category": "page",
-    "domain": "Cockpit",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(app)/cockpit/configuracoes/campos/page.tsx",
-    "directory": "src/app/(app)/cockpit/configuracoes/campos/",
-    "url": "/cockpit/configuracoes/campos",
-    "access": "Interno / autenticado",
-    "nodeType": "Página",
-    "description": "URL: /cockpit/configuracoes/campos\nTipo: Página\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
-    "responsibilities": [
-      "Interface UI para a rota /cockpit/configuracoes/campos",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(app)/cockpit/configuracoes/campos/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(app)/cockpit/configuracoes/campos/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(app)/cockpit/configuracoes/campos/page.tsx em src/app/(app)/cockpit/configuracoes/campos/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 3170,
-    "y": 1020
-  },
-  {
     "id": "route-page-cockpit-configuracoes-category",
     "name": "Página: /cockpit/configuracoes/[category]",
     "category": "page",
@@ -2056,6 +2018,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(app)/cockpit/configuracoes/[category]/page.tsx",
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/configuracoes/[category]/page.tsx em src/app/(app)/cockpit/configuracoes/[category]/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 3170,
+    "y": 1020
+  },
+  {
+    "id": "route-page-cockpit-configuracoes-campos",
+    "name": "Página: /cockpit/configuracoes/campos",
+    "category": "page",
+    "domain": "Cockpit",
+    "layer": "UI",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/(app)/cockpit/configuracoes/campos/page.tsx",
+    "directory": "src/app/(app)/cockpit/configuracoes/campos/",
+    "url": "/cockpit/configuracoes/campos",
+    "access": "Interno / autenticado",
+    "nodeType": "Página",
+    "description": "URL: /cockpit/configuracoes/campos\nTipo: Página\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
+    "responsibilities": [
+      "Interface UI para a rota /cockpit/configuracoes/campos",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "React 19"
+    ],
+    "relatedFiles": [
+      "src/app/(app)/cockpit/configuracoes/campos/page.tsx"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(app)/cockpit/configuracoes/campos/page.tsx",
+    "evidence": "Arquivo de rota real src/app/(app)/cockpit/configuracoes/campos/page.tsx em src/app/(app)/cockpit/configuracoes/campos/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 2650,
@@ -2784,44 +2784,6 @@ export const ARCHITECTURE_DATA: {
     "y": 2000
   },
   {
-    "id": "route-page-cockpit-orders",
-    "name": "Página: /cockpit/orders",
-    "category": "page",
-    "domain": "Cockpit",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(app)/cockpit/orders/page.tsx",
-    "directory": "src/app/(app)/cockpit/orders/",
-    "url": "/cockpit/orders",
-    "access": "Autenticado",
-    "nodeType": "Página",
-    "description": "URL: /cockpit/orders\nTipo: Página\nAcesso: Autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: CRM Order Module Kanban",
-    "responsibilities": [
-      "Interface UI para a rota /cockpit/orders",
-      "Controle de acesso Autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(app)/cockpit/orders/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(app)/cockpit/orders/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(app)/cockpit/orders/page.tsx em src/app/(app)/cockpit/orders/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 3170,
-    "y": 2000
-  },
-  {
     "id": "route-page-cockpit-orders-id",
     "name": "Página: /cockpit/orders/[id]",
     "category": "page",
@@ -2854,6 +2816,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(app)/cockpit/orders/[id]/page.tsx",
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/orders/[id]/page.tsx em src/app/(app)/cockpit/orders/[id]/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 3170,
+    "y": 2000
+  },
+  {
+    "id": "route-page-cockpit-orders",
+    "name": "Página: /cockpit/orders",
+    "category": "page",
+    "domain": "Cockpit",
+    "layer": "UI",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/(app)/cockpit/orders/page.tsx",
+    "directory": "src/app/(app)/cockpit/orders/",
+    "url": "/cockpit/orders",
+    "access": "Autenticado",
+    "nodeType": "Página",
+    "description": "URL: /cockpit/orders\nTipo: Página\nAcesso: Autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: CRM Order Module Kanban",
+    "responsibilities": [
+      "Interface UI para a rota /cockpit/orders",
+      "Controle de acesso Autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "React 19"
+    ],
+    "relatedFiles": [
+      "src/app/(app)/cockpit/orders/page.tsx"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(app)/cockpit/orders/page.tsx",
+    "evidence": "Arquivo de rota real src/app/(app)/cockpit/orders/page.tsx em src/app/(app)/cockpit/orders/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 2650,
@@ -3696,44 +3696,6 @@ export const ARCHITECTURE_DATA: {
     "y": 900
   },
   {
-    "id": "route-page-freight-simulations",
-    "name": "Página: /freight/simulations",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(app)/freight/simulations/page.tsx",
-    "directory": "src/app/(app)/freight/simulations/",
-    "url": "/freight/simulations",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /freight/simulations\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Interface UI para a rota /freight/simulations",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(app)/freight/simulations/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(app)/freight/simulations/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(app)/freight/simulations/page.tsx em src/app/(app)/freight/simulations/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 8270,
-    "y": 600
-  },
-  {
     "id": "route-page-freight-simulations-id",
     "name": "Página: /freight/simulations/[id]",
     "category": "page",
@@ -3766,6 +3728,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(app)/freight/simulations/[id]/page.tsx",
     "evidence": "Arquivo de rota real src/app/(app)/freight/simulations/[id]/page.tsx em src/app/(app)/freight/simulations/[id]/.",
+    "level": 3,
+    "parent": "condstore-root",
+    "x": 8270,
+    "y": 600
+  },
+  {
+    "id": "route-page-freight-simulations",
+    "name": "Página: /freight/simulations",
+    "category": "page",
+    "domain": "Public / Marketing",
+    "layer": "UI",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/(app)/freight/simulations/page.tsx",
+    "directory": "src/app/(app)/freight/simulations/",
+    "url": "/freight/simulations",
+    "access": "Público",
+    "nodeType": "Página",
+    "description": "URL: /freight/simulations\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
+    "responsibilities": [
+      "Interface UI para a rota /freight/simulations",
+      "Controle de acesso Público",
+      "Domínio Public / Marketing"
+    ],
+    "dependencies": [
+      "condstore-root"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "React 19"
+    ],
+    "relatedFiles": [
+      "src/app/(app)/freight/simulations/page.tsx"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(app)/freight/simulations/page.tsx",
+    "evidence": "Arquivo de rota real src/app/(app)/freight/simulations/page.tsx em src/app/(app)/freight/simulations/.",
     "level": 3,
     "parent": "condstore-root",
     "x": 7750,
@@ -4494,44 +4494,6 @@ export const ARCHITECTURE_DATA: {
     "y": 600
   },
   {
-    "id": "route-page-logistica-tabelas-frete",
-    "name": "Página: /logistica/tabelas-frete",
-    "category": "page",
-    "domain": "Logística",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(cockpit)/logistica/tabelas-frete/page.tsx",
-    "directory": "src/app/(cockpit)/logistica/tabelas-frete/",
-    "url": "/logistica/tabelas-frete",
-    "access": "Interno / autenticado",
-    "nodeType": "Página",
-    "description": "URL: /logistica/tabelas-frete\nTipo: Página\nAcesso: Interno / autenticado\nDomínio: Logística\nStatus: Live\nDescrição: Cockpit para gerenciamento das tabelas de frete",
-    "responsibilities": [
-      "Interface UI para a rota /logistica/tabelas-frete",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Logística"
-    ],
-    "dependencies": [
-      "fulfillment-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(cockpit)/logistica/tabelas-frete/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(cockpit)/logistica/tabelas-frete/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(cockpit)/logistica/tabelas-frete/page.tsx em src/app/(cockpit)/logistica/tabelas-frete/.",
-    "level": 3,
-    "parent": "fulfillment-module",
-    "x": 1470,
-    "y": 740
-  },
-  {
     "id": "route-page-logistica-tabelas-frete-carrier",
     "name": "Página: /logistica/tabelas-frete/[carrier]",
     "category": "page",
@@ -4564,6 +4526,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(cockpit)/logistica/tabelas-frete/[carrier]/page.tsx",
     "evidence": "Arquivo de rota real src/app/(cockpit)/logistica/tabelas-frete/[carrier]/page.tsx em src/app/(cockpit)/logistica/tabelas-frete/[carrier]/.",
+    "level": 3,
+    "parent": "fulfillment-module",
+    "x": 1470,
+    "y": 740
+  },
+  {
+    "id": "route-page-logistica-tabelas-frete",
+    "name": "Página: /logistica/tabelas-frete",
+    "category": "page",
+    "domain": "Logística",
+    "layer": "UI",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/(cockpit)/logistica/tabelas-frete/page.tsx",
+    "directory": "src/app/(cockpit)/logistica/tabelas-frete/",
+    "url": "/logistica/tabelas-frete",
+    "access": "Interno / autenticado",
+    "nodeType": "Página",
+    "description": "URL: /logistica/tabelas-frete\nTipo: Página\nAcesso: Interno / autenticado\nDomínio: Logística\nStatus: Live\nDescrição: Cockpit para gerenciamento das tabelas de frete",
+    "responsibilities": [
+      "Interface UI para a rota /logistica/tabelas-frete",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Logística"
+    ],
+    "dependencies": [
+      "fulfillment-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "React 19"
+    ],
+    "relatedFiles": [
+      "src/app/(cockpit)/logistica/tabelas-frete/page.tsx"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(cockpit)/logistica/tabelas-frete/page.tsx",
+    "evidence": "Arquivo de rota real src/app/(cockpit)/logistica/tabelas-frete/page.tsx em src/app/(cockpit)/logistica/tabelas-frete/.",
     "level": 3,
     "parent": "fulfillment-module",
     "x": 950,
@@ -6432,44 +6432,6 @@ export const ARCHITECTURE_DATA: {
     "y": 2700
   },
   {
-    "id": "route-api-api-cockpit-config",
-    "name": "API / Backend: /api/cockpit/config",
-    "category": "api",
-    "domain": "Cockpit",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/cockpit/config/route.ts",
-    "directory": "src/app/api/cockpit/config/",
-    "url": "/api/cockpit/config",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/config\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
-    "responsibilities": [
-      "Processamento de requisições GET/POST em /api/cockpit/config",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/cockpit/config/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/config/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/config/route.ts em src/app/api/cockpit/config/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3120
-  },
-  {
     "id": "route-api-api-cockpit-config-key",
     "name": "API / Backend: /api/cockpit/config/[key]",
     "category": "api",
@@ -6504,25 +6466,25 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/config/[key]/route.ts em src/app/api/cockpit/config/[key]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 3120
   },
   {
-    "id": "route-api-api-cockpit-conversations",
-    "name": "API / Backend: /api/cockpit/conversations",
+    "id": "route-api-api-cockpit-config",
+    "name": "API / Backend: /api/cockpit/config",
     "category": "api",
     "domain": "Cockpit",
     "layer": "Application",
     "status": "production",
     "isMvp": false,
-    "path": "src/app/api/cockpit/conversations/route.ts",
-    "directory": "src/app/api/cockpit/conversations/",
-    "url": "/api/cockpit/conversations",
+    "path": "src/app/api/cockpit/config/route.ts",
+    "directory": "src/app/api/cockpit/config/",
+    "url": "/api/cockpit/config",
     "access": "Interno / autenticado",
     "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/conversations\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: List conversations",
+    "description": "URL: /api/cockpit/config\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
     "responsibilities": [
-      "Processamento de requisições GET em /api/cockpit/conversations",
+      "Processamento de requisições GET/POST em /api/cockpit/config",
       "Controle de acesso Interno / autenticado",
       "Domínio Cockpit"
     ],
@@ -6536,13 +6498,13 @@ export const ARCHITECTURE_DATA: {
       "Route Handler"
     ],
     "relatedFiles": [
-      "src/app/api/cockpit/conversations/route.ts"
+      "src/app/api/cockpit/config/route.ts"
     ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/conversations/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/route.ts em src/app/api/cockpit/conversations/.",
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/config/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/config/route.ts em src/app/api/cockpit/config/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 3120
   },
   {
@@ -6580,8 +6542,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/assign/route.ts em src/app/api/cockpit/conversations/[id]/assign/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3260
+    "x": 3170,
+    "y": 3120
   },
   {
     "id": "route-api-api-cockpit-conversations-id-customer",
@@ -6618,7 +6580,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/customer/route.ts em src/app/api/cockpit/conversations/[id]/customer/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 3260
   },
   {
@@ -6656,7 +6618,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/message/route.ts em src/app/api/cockpit/conversations/[id]/message/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 3260
   },
   {
@@ -6694,8 +6656,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/notes/route.ts em src/app/api/cockpit/conversations/[id]/notes/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3400
+    "x": 3170,
+    "y": 3260
   },
   {
     "id": "route-api-api-cockpit-conversations-id-owner",
@@ -6732,45 +6694,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/owner/route.ts em src/app/api/cockpit/conversations/[id]/owner/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
-    "y": 3400
-  },
-  {
-    "id": "route-api-api-cockpit-conversations-id-quotes",
-    "name": "API / Backend: /api/cockpit/conversations/[id]/quotes",
-    "category": "api",
-    "domain": "Cockpit",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/cockpit/conversations/[id]/quotes/route.ts",
-    "directory": "src/app/api/cockpit/conversations/[id]/quotes/",
-    "url": "/api/cockpit/conversations/[id]/quotes",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/conversations/[id]/quotes\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: List and create freight quotes in conversation",
-    "responsibilities": [
-      "Processamento de requisições GET, POST em /api/cockpit/conversations/[id]/quotes",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/cockpit/conversations/[id]/quotes/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/conversations/[id]/quotes/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/route.ts em src/app/api/cockpit/conversations/[id]/quotes/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2650,
     "y": 3400
   },
   {
@@ -6808,8 +6732,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/accept/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/accept/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3540
+    "x": 2910,
+    "y": 3400
   },
   {
     "id": "route-api-api-cockpit-conversations-id-quotes-quoteId-order",
@@ -6846,8 +6770,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/order/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/order/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
-    "y": 3540
+    "x": 3170,
+    "y": 3400
   },
   {
     "id": "route-api-api-cockpit-conversations-id-quotes-quoteId",
@@ -6884,7 +6808,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2650,
     "y": 3540
   },
   {
@@ -6922,8 +6846,46 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/send/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/send/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3680
+    "x": 2910,
+    "y": 3540
+  },
+  {
+    "id": "route-api-api-cockpit-conversations-id-quotes",
+    "name": "API / Backend: /api/cockpit/conversations/[id]/quotes",
+    "category": "api",
+    "domain": "Cockpit",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/cockpit/conversations/[id]/quotes/route.ts",
+    "directory": "src/app/api/cockpit/conversations/[id]/quotes/",
+    "url": "/api/cockpit/conversations/[id]/quotes",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/cockpit/conversations/[id]/quotes\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: List and create freight quotes in conversation",
+    "responsibilities": [
+      "Processamento de requisições GET, POST em /api/cockpit/conversations/[id]/quotes",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/cockpit/conversations/[id]/quotes/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/conversations/[id]/quotes/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/route.ts em src/app/api/cockpit/conversations/[id]/quotes/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 3170,
+    "y": 3540
   },
   {
     "id": "route-api-api-cockpit-conversations-id-release",
@@ -6960,7 +6922,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/release/route.ts em src/app/api/cockpit/conversations/[id]/release/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 3680
   },
   {
@@ -6998,7 +6960,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/route.ts em src/app/api/cockpit/conversations/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 3680
   },
   {
@@ -7034,6 +6996,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/conversations/[id]/stage/route.ts",
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/stage/route.ts em src/app/api/cockpit/conversations/[id]/stage/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 3170,
+    "y": 3680
+  },
+  {
+    "id": "route-api-api-cockpit-conversations-id-tasks-taskId-status",
+    "name": "API / Backend: /api/cockpit/conversations/[id]/tasks/[taskId]/status",
+    "category": "api",
+    "domain": "Cockpit",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/route.ts",
+    "directory": "src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/",
+    "url": "/api/cockpit/conversations/[id]/tasks/[taskId]/status",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/cockpit/conversations/[id]/tasks/[taskId]/status\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
+    "responsibilities": [
+      "Processamento de requisições GET/POST em /api/cockpit/conversations/[id]/tasks/[taskId]/status",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/route.ts em src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 2650,
@@ -7078,21 +7078,21 @@ export const ARCHITECTURE_DATA: {
     "y": 3820
   },
   {
-    "id": "route-api-api-cockpit-conversations-id-tasks-taskId-status",
-    "name": "API / Backend: /api/cockpit/conversations/[id]/tasks/[taskId]/status",
+    "id": "route-api-api-cockpit-conversations",
+    "name": "API / Backend: /api/cockpit/conversations",
     "category": "api",
     "domain": "Cockpit",
     "layer": "Application",
     "status": "production",
     "isMvp": false,
-    "path": "src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/route.ts",
-    "directory": "src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/",
-    "url": "/api/cockpit/conversations/[id]/tasks/[taskId]/status",
+    "path": "src/app/api/cockpit/conversations/route.ts",
+    "directory": "src/app/api/cockpit/conversations/",
+    "url": "/api/cockpit/conversations",
     "access": "Interno / autenticado",
     "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/conversations/[id]/tasks/[taskId]/status\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
+    "description": "URL: /api/cockpit/conversations\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: List conversations",
     "responsibilities": [
-      "Processamento de requisições GET/POST em /api/cockpit/conversations/[id]/tasks/[taskId]/status",
+      "Processamento de requisições GET em /api/cockpit/conversations",
       "Controle de acesso Interno / autenticado",
       "Domínio Cockpit"
     ],
@@ -7106,14 +7106,52 @@ export const ARCHITECTURE_DATA: {
       "Route Handler"
     ],
     "relatedFiles": [
-      "src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/route.ts"
+      "src/app/api/cockpit/conversations/route.ts"
     ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/route.ts em src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/.",
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/conversations/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/route.ts em src/app/api/cockpit/conversations/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 3170,
     "y": 3820
+  },
+  {
+    "id": "route-api-api-cockpit-custom-fields-id",
+    "name": "API / Backend: /api/cockpit/custom-fields/[id]",
+    "category": "api",
+    "domain": "Cockpit",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/cockpit/custom-fields/[id]/route.ts",
+    "directory": "src/app/api/cockpit/custom-fields/[id]/",
+    "url": "/api/cockpit/custom-fields/[id]",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/cockpit/custom-fields/[id]\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
+    "responsibilities": [
+      "Processamento de requisições GET/POST em /api/cockpit/custom-fields/[id]",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/cockpit/custom-fields/[id]/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/custom-fields/[id]/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/custom-fields/[id]/route.ts em src/app/api/cockpit/custom-fields/[id]/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 2650,
+    "y": 3960
   },
   {
     "id": "route-api-api-cockpit-custom-fields",
@@ -7150,7 +7188,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/custom-fields/route.ts em src/app/api/cockpit/custom-fields/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 3960
   },
   {
@@ -7186,44 +7224,6 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/custom-fields/values/route.ts",
     "evidence": "Arquivo de rota real src/app/api/cockpit/custom-fields/values/route.ts em src/app/api/cockpit/custom-fields/values/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 2910,
-    "y": 3960
-  },
-  {
-    "id": "route-api-api-cockpit-custom-fields-id",
-    "name": "API / Backend: /api/cockpit/custom-fields/[id]",
-    "category": "api",
-    "domain": "Cockpit",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/cockpit/custom-fields/[id]/route.ts",
-    "directory": "src/app/api/cockpit/custom-fields/[id]/",
-    "url": "/api/cockpit/custom-fields/[id]",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/custom-fields/[id]\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
-    "responsibilities": [
-      "Processamento de requisições GET/POST em /api/cockpit/custom-fields/[id]",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/cockpit/custom-fields/[id]/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/custom-fields/[id]/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/custom-fields/[id]/route.ts em src/app/api/cockpit/custom-fields/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 3170,
@@ -7496,44 +7496,6 @@ export const ARCHITECTURE_DATA: {
     "y": 4100
   },
   {
-    "id": "route-api-api-cockpit-frank-intents",
-    "name": "API / Backend: /api/cockpit/frank/intents",
-    "category": "api",
-    "domain": "Cockpit",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/cockpit/frank/intents/route.ts",
-    "directory": "src/app/api/cockpit/frank/intents/",
-    "url": "/api/cockpit/frank/intents",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/frank/intents\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
-    "responsibilities": [
-      "Processamento de requisições GET/POST em /api/cockpit/frank/intents",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/cockpit/frank/intents/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/frank/intents/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/route.ts em src/app/api/cockpit/frank/intents/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 3170,
-    "y": 4100
-  },
-  {
     "id": "route-api-api-cockpit-frank-intents-id-create-playbook",
     "name": "API / Backend: /api/cockpit/frank/intents/[id]/create-playbook",
     "category": "api",
@@ -7568,8 +7530,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/create-playbook/route.ts em src/app/api/cockpit/frank/intents/[id]/create-playbook/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 4240
+    "x": 3170,
+    "y": 4100
   },
   {
     "id": "route-api-api-cockpit-frank-intents-id-ignore",
@@ -7606,7 +7568,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/ignore/route.ts em src/app/api/cockpit/frank/intents/[id]/ignore/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 4240
   },
   {
@@ -7644,7 +7606,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/link-playbook/route.ts em src/app/api/cockpit/frank/intents/[id]/link-playbook/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 4240
   },
   {
@@ -7682,25 +7644,25 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/validate/route.ts em src/app/api/cockpit/frank/intents/[id]/validate/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 4380
+    "x": 3170,
+    "y": 4240
   },
   {
-    "id": "route-api-api-cockpit-frank-knowledge",
-    "name": "API / Backend: /api/cockpit/frank/knowledge",
+    "id": "route-api-api-cockpit-frank-intents",
+    "name": "API / Backend: /api/cockpit/frank/intents",
     "category": "api",
     "domain": "Cockpit",
     "layer": "Application",
     "status": "production",
     "isMvp": false,
-    "path": "src/app/api/cockpit/frank/knowledge/route.ts",
-    "directory": "src/app/api/cockpit/frank/knowledge/",
-    "url": "/api/cockpit/frank/knowledge",
+    "path": "src/app/api/cockpit/frank/intents/route.ts",
+    "directory": "src/app/api/cockpit/frank/intents/",
+    "url": "/api/cockpit/frank/intents",
     "access": "Interno / autenticado",
     "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/frank/knowledge\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Frank Knowledge Base CRUD",
+    "description": "URL: /api/cockpit/frank/intents\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
     "responsibilities": [
-      "Processamento de requisições GET,POST em /api/cockpit/frank/knowledge",
+      "Processamento de requisições GET/POST em /api/cockpit/frank/intents",
       "Controle de acesso Interno / autenticado",
       "Domínio Cockpit"
     ],
@@ -7714,13 +7676,13 @@ export const ARCHITECTURE_DATA: {
       "Route Handler"
     ],
     "relatedFiles": [
-      "src/app/api/cockpit/frank/knowledge/route.ts"
+      "src/app/api/cockpit/frank/intents/route.ts"
     ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/frank/knowledge/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/frank/knowledge/route.ts em src/app/api/cockpit/frank/knowledge/.",
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/frank/intents/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/route.ts em src/app/api/cockpit/frank/intents/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 4380
   },
   {
@@ -7756,6 +7718,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/frank/knowledge/[id]/route.ts",
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/knowledge/[id]/route.ts em src/app/api/cockpit/frank/knowledge/[id]/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 2910,
+    "y": 4380
+  },
+  {
+    "id": "route-api-api-cockpit-frank-knowledge",
+    "name": "API / Backend: /api/cockpit/frank/knowledge",
+    "category": "api",
+    "domain": "Cockpit",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/cockpit/frank/knowledge/route.ts",
+    "directory": "src/app/api/cockpit/frank/knowledge/",
+    "url": "/api/cockpit/frank/knowledge",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/cockpit/frank/knowledge\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Frank Knowledge Base CRUD",
+    "responsibilities": [
+      "Processamento de requisições GET,POST em /api/cockpit/frank/knowledge",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/cockpit/frank/knowledge/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/frank/knowledge/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/frank/knowledge/route.ts em src/app/api/cockpit/frank/knowledge/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 3170,
@@ -7800,44 +7800,6 @@ export const ARCHITECTURE_DATA: {
     "y": 4520
   },
   {
-    "id": "route-api-api-cockpit-frank-suggestions",
-    "name": "API / Backend: /api/cockpit/frank/suggestions",
-    "category": "api",
-    "domain": "Cockpit",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/cockpit/frank/suggestions/route.ts",
-    "directory": "src/app/api/cockpit/frank/suggestions/",
-    "url": "/api/cockpit/frank/suggestions",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/frank/suggestions\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Frank Suggestions list",
-    "responsibilities": [
-      "Processamento de requisições GET em /api/cockpit/frank/suggestions",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/cockpit/frank/suggestions/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/frank/suggestions/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/route.ts em src/app/api/cockpit/frank/suggestions/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 2910,
-    "y": 4520
-  },
-  {
     "id": "route-api-api-cockpit-frank-suggestions-id-approve",
     "name": "API / Backend: /api/cockpit/frank/suggestions/[id]/approve",
     "category": "api",
@@ -7872,7 +7834,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/approve/route.ts em src/app/api/cockpit/frank/suggestions/[id]/approve/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 4520
   },
   {
@@ -7910,8 +7872,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/approve-draft/route.ts em src/app/api/cockpit/frank/suggestions/[id]/approve-draft/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 4660
+    "x": 3170,
+    "y": 4520
   },
   {
     "id": "route-api-api-cockpit-frank-suggestions-id-draft",
@@ -7948,7 +7910,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/draft/route.ts em src/app/api/cockpit/frank/suggestions/[id]/draft/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 4660
   },
   {
@@ -7984,6 +7946,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/frank/suggestions/[id]/reject/route.ts",
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/reject/route.ts em src/app/api/cockpit/frank/suggestions/[id]/reject/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 2910,
+    "y": 4660
+  },
+  {
+    "id": "route-api-api-cockpit-frank-suggestions",
+    "name": "API / Backend: /api/cockpit/frank/suggestions",
+    "category": "api",
+    "domain": "Cockpit",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/cockpit/frank/suggestions/route.ts",
+    "directory": "src/app/api/cockpit/frank/suggestions/",
+    "url": "/api/cockpit/frank/suggestions",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/cockpit/frank/suggestions\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Frank Suggestions list",
+    "responsibilities": [
+      "Processamento de requisições GET em /api/cockpit/frank/suggestions",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/cockpit/frank/suggestions/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/frank/suggestions/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/route.ts em src/app/api/cockpit/frank/suggestions/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 3170,
@@ -8028,6 +8028,44 @@ export const ARCHITECTURE_DATA: {
     "y": 4800
   },
   {
+    "id": "route-api-api-cockpit-governance-playbooks-playbookId-apply",
+    "name": "API / Backend: /api/cockpit/governance/playbooks/[playbookId]/apply",
+    "category": "api",
+    "domain": "Cockpit",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts",
+    "directory": "src/app/api/cockpit/governance/playbooks/[playbookId]/apply/",
+    "url": "/api/cockpit/governance/playbooks/[playbookId]/apply",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/cockpit/governance/playbooks/[playbookId]/apply\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
+    "responsibilities": [
+      "Processamento de requisições GET/POST em /api/cockpit/governance/playbooks/[playbookId]/apply",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts em src/app/api/cockpit/governance/playbooks/[playbookId]/apply/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 2910,
+    "y": 4800
+  },
+  {
     "id": "route-api-api-cockpit-governance-playbooks-metrics",
     "name": "API / Backend: /api/cockpit/governance/playbooks/metrics",
     "category": "api",
@@ -8062,7 +8100,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/governance/playbooks/metrics/route.ts em src/app/api/cockpit/governance/playbooks/metrics/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 4800
   },
   {
@@ -8098,44 +8136,6 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/governance/playbooks/route.ts",
     "evidence": "Arquivo de rota real src/app/api/cockpit/governance/playbooks/route.ts em src/app/api/cockpit/governance/playbooks/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 3170,
-    "y": 4800
-  },
-  {
-    "id": "route-api-api-cockpit-governance-playbooks-playbookId-apply",
-    "name": "API / Backend: /api/cockpit/governance/playbooks/[playbookId]/apply",
-    "category": "api",
-    "domain": "Cockpit",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts",
-    "directory": "src/app/api/cockpit/governance/playbooks/[playbookId]/apply/",
-    "url": "/api/cockpit/governance/playbooks/[playbookId]/apply",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/governance/playbooks/[playbookId]/apply\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
-    "responsibilities": [
-      "Processamento de requisições GET/POST em /api/cockpit/governance/playbooks/[playbookId]/apply",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts em src/app/api/cockpit/governance/playbooks/[playbookId]/apply/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 2650,
@@ -8484,44 +8484,6 @@ export const ARCHITECTURE_DATA: {
     "y": 3260
   },
   {
-    "id": "route-api-api-cockpit-orders",
-    "name": "API / Backend: /api/cockpit/orders",
-    "category": "api",
-    "domain": "Cockpit",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/cockpit/orders/route.ts",
-    "directory": "src/app/api/cockpit/orders/",
-    "url": "/api/cockpit/orders",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/orders\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: List created logistic orders",
-    "responsibilities": [
-      "Processamento de requisições GET em /api/cockpit/orders",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/cockpit/orders/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/orders/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/orders/route.ts em src/app/api/cockpit/orders/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 2650,
-    "y": 5080
-  },
-  {
     "id": "route-api-api-cockpit-orders-id",
     "name": "API / Backend: /api/cockpit/orders/[id]",
     "category": "api",
@@ -8556,7 +8518,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/[id]/route.ts em src/app/api/cockpit/orders/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 5080
   },
   {
@@ -8594,7 +8556,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/[id]/shipment/route.ts em src/app/api/cockpit/orders/[id]/shipment/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 5080
   },
   {
@@ -8630,6 +8592,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/orders/[id]/status/route.ts",
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/[id]/status/route.ts em src/app/api/cockpit/orders/[id]/status/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 3170,
+    "y": 5080
+  },
+  {
+    "id": "route-api-api-cockpit-orders",
+    "name": "API / Backend: /api/cockpit/orders",
+    "category": "api",
+    "domain": "Cockpit",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/cockpit/orders/route.ts",
+    "directory": "src/app/api/cockpit/orders/",
+    "url": "/api/cockpit/orders",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/cockpit/orders\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: List created logistic orders",
+    "responsibilities": [
+      "Processamento de requisições GET em /api/cockpit/orders",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/cockpit/orders/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/orders/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/orders/route.ts em src/app/api/cockpit/orders/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 2650,
@@ -8750,44 +8750,6 @@ export const ARCHITECTURE_DATA: {
     "y": 5360
   },
   {
-    "id": "route-api-api-cockpit-playbooks",
-    "name": "API / Backend: /api/cockpit/playbooks",
-    "category": "api",
-    "domain": "Cockpit",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/cockpit/playbooks/route.ts",
-    "directory": "src/app/api/cockpit/playbooks/",
-    "url": "/api/cockpit/playbooks",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/cockpit/playbooks\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
-    "responsibilities": [
-      "Processamento de requisições GET/POST em /api/cockpit/playbooks",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/cockpit/playbooks/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/playbooks/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/cockpit/playbooks/route.ts em src/app/api/cockpit/playbooks/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 2910,
-    "y": 5360
-  },
-  {
     "id": "route-api-api-cockpit-playbooks-id",
     "name": "API / Backend: /api/cockpit/playbooks/[id]",
     "category": "api",
@@ -8820,6 +8782,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/playbooks/[id]/route.ts",
     "evidence": "Arquivo de rota real src/app/api/cockpit/playbooks/[id]/route.ts em src/app/api/cockpit/playbooks/[id]/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 2910,
+    "y": 5360
+  },
+  {
+    "id": "route-api-api-cockpit-playbooks",
+    "name": "API / Backend: /api/cockpit/playbooks",
+    "category": "api",
+    "domain": "Cockpit",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/cockpit/playbooks/route.ts",
+    "directory": "src/app/api/cockpit/playbooks/",
+    "url": "/api/cockpit/playbooks",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/cockpit/playbooks\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Added",
+    "responsibilities": [
+      "Processamento de requisições GET/POST em /api/cockpit/playbooks",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/cockpit/playbooks/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/playbooks/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/playbooks/route.ts em src/app/api/cockpit/playbooks/.",
     "level": 3,
     "parent": "cockpit-module",
     "x": 3170,
@@ -10118,44 +10118,6 @@ export const ARCHITECTURE_DATA: {
     "y": 1300
   },
   {
-    "id": "route-api-api-internal-freight-packing-profiles",
-    "name": "API / Backend: /api/internal/freight/packing-profiles",
-    "category": "api",
-    "domain": "Logística",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/internal/freight/packing-profiles/route.ts",
-    "directory": "src/app/api/internal/freight/packing-profiles/",
-    "url": "/api/internal/freight/packing-profiles",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/internal/freight/packing-profiles\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Logística\nStatus: Live\nDescrição: Packing profiles CRUD (list + create)",
-    "responsibilities": [
-      "Processamento de requisições GET,POST em /api/internal/freight/packing-profiles",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Logística"
-    ],
-    "dependencies": [
-      "fulfillment-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/internal/freight/packing-profiles/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/freight/packing-profiles/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/internal/freight/packing-profiles/route.ts em src/app/api/internal/freight/packing-profiles/.",
-    "level": 3,
-    "parent": "fulfillment-module",
-    "x": 1470,
-    "y": 1300
-  },
-  {
     "id": "route-api-api-internal-freight-packing-profiles-id-review-status",
     "name": "API / Backend: /api/internal/freight/packing-profiles/[id]/review-status",
     "category": "api",
@@ -10190,8 +10152,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/packing-profiles/[id]/review-status/route.ts em src/app/api/internal/freight/packing-profiles/[id]/review-status/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 950,
-    "y": 1440
+    "x": 1470,
+    "y": 1300
   },
   {
     "id": "route-api-api-internal-freight-packing-profiles-id",
@@ -10228,7 +10190,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/packing-profiles/[id]/route.ts em src/app/api/internal/freight/packing-profiles/[id]/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1210,
+    "x": 950,
     "y": 1440
   },
   {
@@ -10264,6 +10226,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/freight/packing-profiles/[id]/toggle/route.ts",
     "evidence": "Arquivo de rota real src/app/api/internal/freight/packing-profiles/[id]/toggle/route.ts em src/app/api/internal/freight/packing-profiles/[id]/toggle/.",
+    "level": 3,
+    "parent": "fulfillment-module",
+    "x": 1210,
+    "y": 1440
+  },
+  {
+    "id": "route-api-api-internal-freight-packing-profiles",
+    "name": "API / Backend: /api/internal/freight/packing-profiles",
+    "category": "api",
+    "domain": "Logística",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/internal/freight/packing-profiles/route.ts",
+    "directory": "src/app/api/internal/freight/packing-profiles/",
+    "url": "/api/internal/freight/packing-profiles",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/internal/freight/packing-profiles\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Logística\nStatus: Live\nDescrição: Packing profiles CRUD (list + create)",
+    "responsibilities": [
+      "Processamento de requisições GET,POST em /api/internal/freight/packing-profiles",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Logística"
+    ],
+    "dependencies": [
+      "fulfillment-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/internal/freight/packing-profiles/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/freight/packing-profiles/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/internal/freight/packing-profiles/route.ts em src/app/api/internal/freight/packing-profiles/.",
     "level": 3,
     "parent": "fulfillment-module",
     "x": 1470,
@@ -10992,44 +10992,6 @@ export const ARCHITECTURE_DATA: {
     "y": 4660
   },
   {
-    "id": "route-api-api-internal-playbooks",
-    "name": "API / Backend: /api/internal/playbooks",
-    "category": "api",
-    "domain": "Infrastructure",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/internal/playbooks/route.ts",
-    "directory": "src/app/api/internal/playbooks/",
-    "url": "/api/internal/playbooks",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/internal/playbooks\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Infrastructure\nStatus: Live\nDescrição: List global Supreme Playbooks",
-    "responsibilities": [
-      "Processamento de requisições GET em /api/internal/playbooks",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Infrastructure"
-    ],
-    "dependencies": [
-      "infra-core"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/internal/playbooks/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/playbooks/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/internal/playbooks/route.ts em src/app/api/internal/playbooks/.",
-    "level": 3,
-    "parent": "infra-core",
-    "x": 5200,
-    "y": 2040
-  },
-  {
     "id": "route-api-api-internal-playbooks-playbookId-toggle",
     "name": "API / Backend: /api/internal/playbooks/[playbookId]/toggle",
     "category": "api",
@@ -11062,6 +11024,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/playbooks/[playbookId]/toggle/route.ts",
     "evidence": "Arquivo de rota real src/app/api/internal/playbooks/[playbookId]/toggle/route.ts em src/app/api/internal/playbooks/[playbookId]/toggle/.",
+    "level": 3,
+    "parent": "infra-core",
+    "x": 5200,
+    "y": 2040
+  },
+  {
+    "id": "route-api-api-internal-playbooks",
+    "name": "API / Backend: /api/internal/playbooks",
+    "category": "api",
+    "domain": "Infrastructure",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/internal/playbooks/route.ts",
+    "directory": "src/app/api/internal/playbooks/",
+    "url": "/api/internal/playbooks",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/internal/playbooks\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Infrastructure\nStatus: Live\nDescrição: List global Supreme Playbooks",
+    "responsibilities": [
+      "Processamento de requisições GET em /api/internal/playbooks",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Infrastructure"
+    ],
+    "dependencies": [
+      "infra-core"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/internal/playbooks/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/playbooks/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/internal/playbooks/route.ts em src/app/api/internal/playbooks/.",
     "level": 3,
     "parent": "infra-core",
     "x": 5460,
@@ -11258,82 +11258,6 @@ export const ARCHITECTURE_DATA: {
     "y": 2040
   },
   {
-    "id": "route-api-api-internal-tenants-tenantId-actions-propose",
-    "name": "API / Backend: /api/internal/tenants/[tenantId]/actions/propose",
-    "category": "api",
-    "domain": "Infrastructure",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/internal/tenants/[tenantId]/actions/propose/route.ts",
-    "directory": "src/app/api/internal/tenants/[tenantId]/actions/propose/",
-    "url": "/api/internal/tenants/[tenantId]/actions/propose",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/internal/tenants/[tenantId]/actions/propose\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Infrastructure\nStatus: Live\nDescrição: Propose a new governed action",
-    "responsibilities": [
-      "Processamento de requisições POST em /api/internal/tenants/[tenantId]/actions/propose",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Infrastructure"
-    ],
-    "dependencies": [
-      "infra-core"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/internal/tenants/[tenantId]/actions/propose/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/tenants/[tenantId]/actions/propose/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/actions/propose/route.ts em src/app/api/internal/tenants/[tenantId]/actions/propose/.",
-    "level": 3,
-    "parent": "infra-core",
-    "x": 5200,
-    "y": 2180
-  },
-  {
-    "id": "route-api-api-internal-tenants-tenantId-actions",
-    "name": "API / Backend: /api/internal/tenants/[tenantId]/actions",
-    "category": "api",
-    "domain": "Infrastructure",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/internal/tenants/[tenantId]/actions/route.ts",
-    "directory": "src/app/api/internal/tenants/[tenantId]/actions/",
-    "url": "/api/internal/tenants/[tenantId]/actions",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/internal/tenants/[tenantId]/actions\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Infrastructure\nStatus: Live\nDescrição: List tenant actions (filter: status, scope, limit)",
-    "responsibilities": [
-      "Processamento de requisições GET em /api/internal/tenants/[tenantId]/actions",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Infrastructure"
-    ],
-    "dependencies": [
-      "infra-core"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/internal/tenants/[tenantId]/actions/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/tenants/[tenantId]/actions/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/actions/route.ts em src/app/api/internal/tenants/[tenantId]/actions/.",
-    "level": 3,
-    "parent": "infra-core",
-    "x": 5460,
-    "y": 2180
-  },
-  {
     "id": "route-api-api-internal-tenants-tenantId-actions-actionId-approve",
     "name": "API / Backend: /api/internal/tenants/[tenantId]/actions/[actionId]/approve",
     "category": "api",
@@ -11368,7 +11292,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/actions/[actionId]/approve/route.ts em src/app/api/internal/tenants/[tenantId]/actions/[actionId]/approve/.",
     "level": 3,
     "parent": "infra-core",
-    "x": 5720,
+    "x": 5200,
     "y": 2180
   },
   {
@@ -11406,8 +11330,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/actions/[actionId]/execute/route.ts em src/app/api/internal/tenants/[tenantId]/actions/[actionId]/execute/.",
     "level": 3,
     "parent": "infra-core",
-    "x": 5200,
-    "y": 2320
+    "x": 5460,
+    "y": 2180
   },
   {
     "id": "route-api-api-internal-tenants-tenantId-actions-actionId-reject",
@@ -11442,6 +11366,82 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/tenants/[tenantId]/actions/[actionId]/reject/route.ts",
     "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/actions/[actionId]/reject/route.ts em src/app/api/internal/tenants/[tenantId]/actions/[actionId]/reject/.",
+    "level": 3,
+    "parent": "infra-core",
+    "x": 5720,
+    "y": 2180
+  },
+  {
+    "id": "route-api-api-internal-tenants-tenantId-actions-propose",
+    "name": "API / Backend: /api/internal/tenants/[tenantId]/actions/propose",
+    "category": "api",
+    "domain": "Infrastructure",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/internal/tenants/[tenantId]/actions/propose/route.ts",
+    "directory": "src/app/api/internal/tenants/[tenantId]/actions/propose/",
+    "url": "/api/internal/tenants/[tenantId]/actions/propose",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/internal/tenants/[tenantId]/actions/propose\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Infrastructure\nStatus: Live\nDescrição: Propose a new governed action",
+    "responsibilities": [
+      "Processamento de requisições POST em /api/internal/tenants/[tenantId]/actions/propose",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Infrastructure"
+    ],
+    "dependencies": [
+      "infra-core"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/internal/tenants/[tenantId]/actions/propose/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/tenants/[tenantId]/actions/propose/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/actions/propose/route.ts em src/app/api/internal/tenants/[tenantId]/actions/propose/.",
+    "level": 3,
+    "parent": "infra-core",
+    "x": 5200,
+    "y": 2320
+  },
+  {
+    "id": "route-api-api-internal-tenants-tenantId-actions",
+    "name": "API / Backend: /api/internal/tenants/[tenantId]/actions",
+    "category": "api",
+    "domain": "Infrastructure",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/internal/tenants/[tenantId]/actions/route.ts",
+    "directory": "src/app/api/internal/tenants/[tenantId]/actions/",
+    "url": "/api/internal/tenants/[tenantId]/actions",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/internal/tenants/[tenantId]/actions\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Infrastructure\nStatus: Live\nDescrição: List tenant actions (filter: status, scope, limit)",
+    "responsibilities": [
+      "Processamento de requisições GET em /api/internal/tenants/[tenantId]/actions",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Infrastructure"
+    ],
+    "dependencies": [
+      "infra-core"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/internal/tenants/[tenantId]/actions/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/tenants/[tenantId]/actions/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/actions/route.ts em src/app/api/internal/tenants/[tenantId]/actions/.",
     "level": 3,
     "parent": "infra-core",
     "x": 5460,
@@ -11676,44 +11676,6 @@ export const ARCHITECTURE_DATA: {
     "y": 2600
   },
   {
-    "id": "route-api-api-internal-tenants-tenantId-supreme-findings",
-    "name": "API / Backend: /api/internal/tenants/[tenantId]/supreme/findings",
-    "category": "api",
-    "domain": "Infrastructure",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/internal/tenants/[tenantId]/supreme/findings/route.ts",
-    "directory": "src/app/api/internal/tenants/[tenantId]/supreme/findings/",
-    "url": "/api/internal/tenants/[tenantId]/supreme/findings",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/internal/tenants/[tenantId]/supreme/findings\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Infrastructure\nStatus: Live\nDescrição: List and filter generated findings",
-    "responsibilities": [
-      "Processamento de requisições GET em /api/internal/tenants/[tenantId]/supreme/findings",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Infrastructure"
-    ],
-    "dependencies": [
-      "infra-core"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/internal/tenants/[tenantId]/supreme/findings/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/tenants/[tenantId]/supreme/findings/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/supreme/findings/route.ts em src/app/api/internal/tenants/[tenantId]/supreme/findings/.",
-    "level": 3,
-    "parent": "infra-core",
-    "x": 5720,
-    "y": 2600
-  },
-  {
     "id": "route-api-api-internal-tenants-tenantId-supreme-findings-findingId-propose-action",
     "name": "API / Backend: /api/internal/tenants/[tenantId]/supreme/findings/[findingId]/propose-action",
     "category": "api",
@@ -11748,8 +11710,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/supreme/findings/[findingId]/propose-action/route.ts em src/app/api/internal/tenants/[tenantId]/supreme/findings/[findingId]/propose-action/.",
     "level": 3,
     "parent": "infra-core",
-    "x": 5200,
-    "y": 2740
+    "x": 5720,
+    "y": 2600
   },
   {
     "id": "route-api-api-internal-tenants-tenantId-supreme-findings-findingId-resolve",
@@ -11784,6 +11746,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/tenants/[tenantId]/supreme/findings/[findingId]/resolve/route.ts",
     "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/supreme/findings/[findingId]/resolve/route.ts em src/app/api/internal/tenants/[tenantId]/supreme/findings/[findingId]/resolve/.",
+    "level": 3,
+    "parent": "infra-core",
+    "x": 5200,
+    "y": 2740
+  },
+  {
+    "id": "route-api-api-internal-tenants-tenantId-supreme-findings",
+    "name": "API / Backend: /api/internal/tenants/[tenantId]/supreme/findings",
+    "category": "api",
+    "domain": "Infrastructure",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/internal/tenants/[tenantId]/supreme/findings/route.ts",
+    "directory": "src/app/api/internal/tenants/[tenantId]/supreme/findings/",
+    "url": "/api/internal/tenants/[tenantId]/supreme/findings",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/internal/tenants/[tenantId]/supreme/findings\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Infrastructure\nStatus: Live\nDescrição: List and filter generated findings",
+    "responsibilities": [
+      "Processamento de requisições GET em /api/internal/tenants/[tenantId]/supreme/findings",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Infrastructure"
+    ],
+    "dependencies": [
+      "infra-core"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/internal/tenants/[tenantId]/supreme/findings/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/internal/tenants/[tenantId]/supreme/findings/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/internal/tenants/[tenantId]/supreme/findings/route.ts em src/app/api/internal/tenants/[tenantId]/supreme/findings/.",
     "level": 3,
     "parent": "infra-core",
     "x": 5460,
@@ -11866,44 +11866,6 @@ export const ARCHITECTURE_DATA: {
     "y": 4940
   },
   {
-    "id": "route-api-api-knowledge-collections",
-    "name": "API / Backend: /api/knowledge/collections",
-    "category": "api",
-    "domain": "Public / Marketing",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/knowledge/collections/route.ts",
-    "directory": "src/app/api/knowledge/collections/",
-    "url": "/api/knowledge/collections",
-    "access": "Público",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/knowledge/collections\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Processamento de requisições TBA em /api/knowledge/collections",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/knowledge/collections/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/knowledge/collections/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/knowledge/collections/route.ts em src/app/api/knowledge/collections/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 8270,
-    "y": 4940
-  },
-  {
     "id": "route-api-api-knowledge-collections-id-sync",
     "name": "API / Backend: /api/knowledge/collections/[id]/sync",
     "category": "api",
@@ -11938,25 +11900,25 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/collections/[id]/sync/route.ts em src/app/api/knowledge/collections/[id]/sync/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 5080
+    "x": 8270,
+    "y": 4940
   },
   {
-    "id": "route-api-api-knowledge-documents",
-    "name": "API / Backend: /api/knowledge/documents",
+    "id": "route-api-api-knowledge-collections",
+    "name": "API / Backend: /api/knowledge/collections",
     "category": "api",
     "domain": "Public / Marketing",
     "layer": "Application",
     "status": "production",
     "isMvp": false,
-    "path": "src/app/api/knowledge/documents/route.ts",
-    "directory": "src/app/api/knowledge/documents/",
-    "url": "/api/knowledge/documents",
+    "path": "src/app/api/knowledge/collections/route.ts",
+    "directory": "src/app/api/knowledge/collections/",
+    "url": "/api/knowledge/collections",
     "access": "Público",
     "nodeType": "API / Backend",
-    "description": "URL: /api/knowledge/documents\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
+    "description": "URL: /api/knowledge/collections\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
     "responsibilities": [
-      "Processamento de requisições TBA em /api/knowledge/documents",
+      "Processamento de requisições TBA em /api/knowledge/collections",
       "Controle de acesso Público",
       "Domínio Public / Marketing"
     ],
@@ -11970,13 +11932,13 @@ export const ARCHITECTURE_DATA: {
       "Route Handler"
     ],
     "relatedFiles": [
-      "src/app/api/knowledge/documents/route.ts"
+      "src/app/api/knowledge/collections/route.ts"
     ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/knowledge/documents/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/knowledge/documents/route.ts em src/app/api/knowledge/documents/.",
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/knowledge/collections/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/knowledge/collections/route.ts em src/app/api/knowledge/collections/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
+    "x": 7750,
     "y": 5080
   },
   {
@@ -12014,7 +11976,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/documents/[id]/mark-sensitive/route.ts em src/app/api/knowledge/documents/[id]/mark-sensitive/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
+    "x": 8010,
     "y": 5080
   },
   {
@@ -12052,8 +12014,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/documents/[id]/reprocess/route.ts em src/app/api/knowledge/documents/[id]/reprocess/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 5220
+    "x": 8270,
+    "y": 5080
   },
   {
     "id": "route-api-api-knowledge-documents-id",
@@ -12088,6 +12050,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/knowledge/documents/[id]/route.ts",
     "evidence": "Arquivo de rota real src/app/api/knowledge/documents/[id]/route.ts em src/app/api/knowledge/documents/[id]/.",
+    "level": 3,
+    "parent": "condstore-root",
+    "x": 7750,
+    "y": 5220
+  },
+  {
+    "id": "route-api-api-knowledge-documents",
+    "name": "API / Backend: /api/knowledge/documents",
+    "category": "api",
+    "domain": "Public / Marketing",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/knowledge/documents/route.ts",
+    "directory": "src/app/api/knowledge/documents/",
+    "url": "/api/knowledge/documents",
+    "access": "Público",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/knowledge/documents\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
+    "responsibilities": [
+      "Processamento de requisições TBA em /api/knowledge/documents",
+      "Controle de acesso Público",
+      "Domínio Public / Marketing"
+    ],
+    "dependencies": [
+      "condstore-root"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/knowledge/documents/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/knowledge/documents/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/knowledge/documents/route.ts em src/app/api/knowledge/documents/.",
     "level": 3,
     "parent": "condstore-root",
     "x": 8010,
@@ -12930,44 +12930,6 @@ export const ARCHITECTURE_DATA: {
     "y": 6060
   },
   {
-    "id": "route-api-api-tenants-tenantId-deliveries",
-    "name": "API / Backend: /api/tenants/[tenantId]/deliveries",
-    "category": "api",
-    "domain": "Public / Marketing",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/tenants/[tenantId]/deliveries/route.ts",
-    "directory": "src/app/api/tenants/[tenantId]/deliveries/",
-    "url": "/api/tenants/[tenantId]/deliveries",
-    "access": "Interno / autenticado",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/tenants/[tenantId]/deliveries\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Active deliveries tracking",
-    "responsibilities": [
-      "Processamento de requisições GET em /api/tenants/[tenantId]/deliveries",
-      "Controle de acesso Interno / autenticado",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/tenants/[tenantId]/deliveries/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/deliveries/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/deliveries/route.ts em src/app/api/tenants/[tenantId]/deliveries/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 8270,
-    "y": 6060
-  },
-  {
     "id": "route-api-api-tenants-tenantId-deliveries-id",
     "name": "API / Backend: /api/tenants/[tenantId]/deliveries/[id]",
     "category": "api",
@@ -13000,6 +12962,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/deliveries/[id]/route.ts",
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/deliveries/[id]/route.ts em src/app/api/tenants/[tenantId]/deliveries/[id]/.",
+    "level": 3,
+    "parent": "condstore-root",
+    "x": 8270,
+    "y": 6060
+  },
+  {
+    "id": "route-api-api-tenants-tenantId-deliveries",
+    "name": "API / Backend: /api/tenants/[tenantId]/deliveries",
+    "category": "api",
+    "domain": "Public / Marketing",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/tenants/[tenantId]/deliveries/route.ts",
+    "directory": "src/app/api/tenants/[tenantId]/deliveries/",
+    "url": "/api/tenants/[tenantId]/deliveries",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/tenants/[tenantId]/deliveries\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Active deliveries tracking",
+    "responsibilities": [
+      "Processamento de requisições GET em /api/tenants/[tenantId]/deliveries",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Public / Marketing"
+    ],
+    "dependencies": [
+      "condstore-root"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/tenants/[tenantId]/deliveries/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/deliveries/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/deliveries/route.ts em src/app/api/tenants/[tenantId]/deliveries/.",
     "level": 3,
     "parent": "condstore-root",
     "x": 7750,
@@ -13158,6 +13158,44 @@ export const ARCHITECTURE_DATA: {
     "y": 6340
   },
   {
+    "id": "route-api-api-tenants-tenantId-domine-events-id",
+    "name": "API / Backend: /api/tenants/[tenantId]/domine/events/[id]",
+    "category": "api",
+    "domain": "Public / Marketing",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/tenants/[tenantId]/domine/events/[id]/route.ts",
+    "directory": "src/app/api/tenants/[tenantId]/domine/events/[id]/",
+    "url": "/api/tenants/[tenantId]/domine/events/[id]",
+    "access": "Público",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/tenants/[tenantId]/domine/events/[id]\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
+    "responsibilities": [
+      "Processamento de requisições TBA em /api/tenants/[tenantId]/domine/events/[id]",
+      "Controle de acesso Público",
+      "Domínio Public / Marketing"
+    ],
+    "dependencies": [
+      "condstore-root"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/tenants/[tenantId]/domine/events/[id]/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/domine/events/[id]/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/events/[id]/route.ts em src/app/api/tenants/[tenantId]/domine/events/[id]/.",
+    "level": 3,
+    "parent": "condstore-root",
+    "x": 8270,
+    "y": 6340
+  },
+  {
     "id": "route-api-api-tenants-tenantId-domine-events-publish",
     "name": "API / Backend: /api/tenants/[tenantId]/domine/events/publish",
     "category": "api",
@@ -13192,8 +13230,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/events/publish/route.ts em src/app/api/tenants/[tenantId]/domine/events/publish/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 6340
+    "x": 7750,
+    "y": 6480
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-events",
@@ -13228,44 +13266,6 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/domine/events/route.ts",
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/events/route.ts em src/app/api/tenants/[tenantId]/domine/events/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 7750,
-    "y": 6480
-  },
-  {
-    "id": "route-api-api-tenants-tenantId-domine-events-id",
-    "name": "API / Backend: /api/tenants/[tenantId]/domine/events/[id]",
-    "category": "api",
-    "domain": "Public / Marketing",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/tenants/[tenantId]/domine/events/[id]/route.ts",
-    "directory": "src/app/api/tenants/[tenantId]/domine/events/[id]/",
-    "url": "/api/tenants/[tenantId]/domine/events/[id]",
-    "access": "Público",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/tenants/[tenantId]/domine/events/[id]\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Processamento de requisições TBA em /api/tenants/[tenantId]/domine/events/[id]",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/tenants/[tenantId]/domine/events/[id]/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/domine/events/[id]/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/events/[id]/route.ts em src/app/api/tenants/[tenantId]/domine/events/[id]/.",
     "level": 3,
     "parent": "condstore-root",
     "x": 8010,
@@ -13310,44 +13310,6 @@ export const ARCHITECTURE_DATA: {
     "y": 6480
   },
   {
-    "id": "route-api-api-tenants-tenantId-domine-orders",
-    "name": "API / Backend: /api/tenants/[tenantId]/domine/orders",
-    "category": "api",
-    "domain": "Public / Marketing",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/tenants/[tenantId]/domine/orders/route.ts",
-    "directory": "src/app/api/tenants/[tenantId]/domine/orders/",
-    "url": "/api/tenants/[tenantId]/domine/orders",
-    "access": "Público",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/tenants/[tenantId]/domine/orders\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Processamento de requisições TBA em /api/tenants/[tenantId]/domine/orders",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/tenants/[tenantId]/domine/orders/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/domine/orders/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/orders/route.ts em src/app/api/tenants/[tenantId]/domine/orders/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 7750,
-    "y": 6620
-  },
-  {
     "id": "route-api-api-tenants-tenantId-domine-orders-orderId",
     "name": "API / Backend: /api/tenants/[tenantId]/domine/orders/[orderId]",
     "category": "api",
@@ -13380,6 +13342,44 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/domine/orders/[orderId]/route.ts",
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/orders/[orderId]/route.ts em src/app/api/tenants/[tenantId]/domine/orders/[orderId]/.",
+    "level": 3,
+    "parent": "condstore-root",
+    "x": 7750,
+    "y": 6620
+  },
+  {
+    "id": "route-api-api-tenants-tenantId-domine-orders",
+    "name": "API / Backend: /api/tenants/[tenantId]/domine/orders",
+    "category": "api",
+    "domain": "Public / Marketing",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/tenants/[tenantId]/domine/orders/route.ts",
+    "directory": "src/app/api/tenants/[tenantId]/domine/orders/",
+    "url": "/api/tenants/[tenantId]/domine/orders",
+    "access": "Público",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/tenants/[tenantId]/domine/orders\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
+    "responsibilities": [
+      "Processamento de requisições TBA em /api/tenants/[tenantId]/domine/orders",
+      "Controle de acesso Público",
+      "Domínio Public / Marketing"
+    ],
+    "dependencies": [
+      "condstore-root"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/tenants/[tenantId]/domine/orders/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/domine/orders/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/orders/route.ts em src/app/api/tenants/[tenantId]/domine/orders/.",
     "level": 3,
     "parent": "condstore-root",
     "x": 8010,
@@ -13424,44 +13424,6 @@ export const ARCHITECTURE_DATA: {
     "y": 6620
   },
   {
-    "id": "route-api-api-tenants-tenantId-knowledge-sources",
-    "name": "API / Backend: /api/tenants/[tenantId]/knowledge/sources",
-    "category": "api",
-    "domain": "Public / Marketing",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/tenants/[tenantId]/knowledge/sources/route.ts",
-    "directory": "src/app/api/tenants/[tenantId]/knowledge/sources/",
-    "url": "/api/tenants/[tenantId]/knowledge/sources",
-    "access": "Público",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/tenants/[tenantId]/knowledge/sources\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Processamento de requisições TBA em /api/tenants/[tenantId]/knowledge/sources",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/tenants/[tenantId]/knowledge/sources/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/knowledge/sources/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/knowledge/sources/route.ts em src/app/api/tenants/[tenantId]/knowledge/sources/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 7750,
-    "y": 6760
-  },
-  {
     "id": "route-api-api-tenants-tenantId-knowledge-sources-sourceId-ready",
     "name": "API / Backend: /api/tenants/[tenantId]/knowledge/sources/[sourceId]/ready",
     "category": "api",
@@ -13496,7 +13458,83 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/knowledge/sources/[sourceId]/ready/route.ts em src/app/api/tenants/[tenantId]/knowledge/sources/[sourceId]/ready/.",
     "level": 3,
     "parent": "condstore-root",
+    "x": 7750,
+    "y": 6760
+  },
+  {
+    "id": "route-api-api-tenants-tenantId-knowledge-sources",
+    "name": "API / Backend: /api/tenants/[tenantId]/knowledge/sources",
+    "category": "api",
+    "domain": "Public / Marketing",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/tenants/[tenantId]/knowledge/sources/route.ts",
+    "directory": "src/app/api/tenants/[tenantId]/knowledge/sources/",
+    "url": "/api/tenants/[tenantId]/knowledge/sources",
+    "access": "Público",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/tenants/[tenantId]/knowledge/sources\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
+    "responsibilities": [
+      "Processamento de requisições TBA em /api/tenants/[tenantId]/knowledge/sources",
+      "Controle de acesso Público",
+      "Domínio Public / Marketing"
+    ],
+    "dependencies": [
+      "condstore-root"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/tenants/[tenantId]/knowledge/sources/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/knowledge/sources/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/knowledge/sources/route.ts em src/app/api/tenants/[tenantId]/knowledge/sources/.",
+    "level": 3,
+    "parent": "condstore-root",
     "x": 8010,
+    "y": 6760
+  },
+  {
+    "id": "route-api-api-tenants-tenantId-privacy-action",
+    "name": "API / Backend: /api/tenants/[tenantId]/privacy/[action]",
+    "category": "api",
+    "domain": "Public / Marketing",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/tenants/[tenantId]/privacy/[action]/route.ts",
+    "directory": "src/app/api/tenants/[tenantId]/privacy/[action]/",
+    "url": "/api/tenants/[tenantId]/privacy/[action]",
+    "access": "Público",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/tenants/[tenantId]/privacy/[action]\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
+    "responsibilities": [
+      "Processamento de requisições TBA em /api/tenants/[tenantId]/privacy/[action]",
+      "Controle de acesso Público",
+      "Domínio Public / Marketing"
+    ],
+    "dependencies": [
+      "condstore-root"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/tenants/[tenantId]/privacy/[action]/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/privacy/[action]/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/privacy/[action]/route.ts em src/app/api/tenants/[tenantId]/privacy/[action]/.",
+    "level": 3,
+    "parent": "condstore-root",
+    "x": 8270,
     "y": 6760
   },
   {
@@ -13534,8 +13572,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/privacy/export-user/route.ts em src/app/api/tenants/[tenantId]/privacy/export-user/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 6760
+    "x": 7750,
+    "y": 6900
   },
   {
     "id": "route-api-api-tenants-tenantId-privacy-purge-user",
@@ -13570,44 +13608,6 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/privacy/purge-user/route.ts",
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/privacy/purge-user/route.ts em src/app/api/tenants/[tenantId]/privacy/purge-user/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 7750,
-    "y": 6900
-  },
-  {
-    "id": "route-api-api-tenants-tenantId-privacy-action",
-    "name": "API / Backend: /api/tenants/[tenantId]/privacy/[action]",
-    "category": "api",
-    "domain": "Public / Marketing",
-    "layer": "Application",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/api/tenants/[tenantId]/privacy/[action]/route.ts",
-    "directory": "src/app/api/tenants/[tenantId]/privacy/[action]/",
-    "url": "/api/tenants/[tenantId]/privacy/[action]",
-    "access": "Público",
-    "nodeType": "API / Backend",
-    "description": "URL: /api/tenants/[tenantId]/privacy/[action]\nTipo: API / Backend\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Processamento de requisições TBA em /api/tenants/[tenantId]/privacy/[action]",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "Route Handler"
-    ],
-    "relatedFiles": [
-      "src/app/api/tenants/[tenantId]/privacy/[action]/route.ts"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/tenants/[tenantId]/privacy/[action]/route.ts",
-    "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/privacy/[action]/route.ts em src/app/api/tenants/[tenantId]/privacy/[action]/.",
     "level": 3,
     "parent": "condstore-root",
     "x": 8010,
@@ -14298,6 +14298,44 @@ export const ARCHITECTURE_DATA: {
     "y": 7740
   },
   {
+    "id": "route-page-evolution-id",
+    "name": "Página: /evolution/[id]",
+    "category": "page",
+    "domain": "Public / Marketing",
+    "layer": "UI",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/evolution/[id]/page.tsx",
+    "directory": "src/app/evolution/[id]/",
+    "url": "/evolution/[id]",
+    "access": "Público",
+    "nodeType": "Página",
+    "description": "URL: /evolution/[id]\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
+    "responsibilities": [
+      "Interface UI para a rota /evolution/[id]",
+      "Controle de acesso Público",
+      "Domínio Public / Marketing"
+    ],
+    "dependencies": [
+      "condstore-root"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "React 19"
+    ],
+    "relatedFiles": [
+      "src/app/evolution/[id]/page.tsx"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/evolution/[id]/page.tsx",
+    "evidence": "Arquivo de rota real src/app/evolution/[id]/page.tsx em src/app/evolution/[id]/.",
+    "level": 3,
+    "parent": "condstore-root",
+    "x": 8010,
+    "y": 7740
+  },
+  {
     "id": "route-page-evolution",
     "name": "Página: /evolution",
     "category": "page",
@@ -14332,7 +14370,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/evolution/page.tsx em src/app/evolution/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
+    "x": 8270,
     "y": 7740
   },
   {
@@ -14368,44 +14406,6 @@ export const ARCHITECTURE_DATA: {
     ],
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/evolution/roadmap/page.tsx",
     "evidence": "Arquivo de rota real src/app/evolution/roadmap/page.tsx em src/app/evolution/roadmap/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 8270,
-    "y": 7740
-  },
-  {
-    "id": "route-page-evolution-id",
-    "name": "Página: /evolution/[id]",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/evolution/[id]/page.tsx",
-    "directory": "src/app/evolution/[id]/",
-    "url": "/evolution/[id]",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /evolution/[id]\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Interface UI para a rota /evolution/[id]",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/evolution/[id]/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/evolution/[id]/page.tsx",
-    "evidence": "Arquivo de rota real src/app/evolution/[id]/page.tsx em src/app/evolution/[id]/.",
     "level": 3,
     "parent": "condstore-root",
     "x": 7750,
@@ -15077,6 +15077,13 @@ export const ARCHITECTURE_DATA: {
     "description": "Sincroniza pagamentos com Stripe"
   },
   {
+    "id": "edge-cockpit-module-route-page-cockpit-playbooks-id",
+    "source": "cockpit-module",
+    "target": "route-page-cockpit-playbooks-id",
+    "type": "contains",
+    "description": "Contém página /cockpit/playbooks/[id]"
+  },
+  {
     "id": "edge-cockpit-module-route-page-cockpit-playbooks-new",
     "source": "cockpit-module",
     "target": "route-page-cockpit-playbooks-new",
@@ -15089,13 +15096,6 @@ export const ARCHITECTURE_DATA: {
     "target": "route-page-cockpit-playbooks",
     "type": "contains",
     "description": "Contém página /cockpit/playbooks"
-  },
-  {
-    "id": "edge-cockpit-module-route-page-cockpit-playbooks-id",
-    "source": "cockpit-module",
-    "target": "route-page-cockpit-playbooks-id",
-    "type": "contains",
-    "description": "Contém página /cockpit/playbooks/[id]"
   },
   {
     "id": "edge-condstore-root-route-page-attribution",
@@ -15175,18 +15175,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /cockpit/carrier-tables"
   },
   {
-    "id": "edge-cockpit-module-route-page-cockpit-configuracoes-campos",
-    "source": "cockpit-module",
-    "target": "route-page-cockpit-configuracoes-campos",
-    "type": "contains",
-    "description": "Contém página /cockpit/configuracoes/campos"
-  },
-  {
     "id": "edge-cockpit-module-route-page-cockpit-configuracoes-category",
     "source": "cockpit-module",
     "target": "route-page-cockpit-configuracoes-category",
     "type": "contains",
     "description": "Contém página /cockpit/configuracoes/[category]"
+  },
+  {
+    "id": "edge-cockpit-module-route-page-cockpit-configuracoes-campos",
+    "source": "cockpit-module",
+    "target": "route-page-cockpit-configuracoes-campos",
+    "type": "contains",
+    "description": "Contém página /cockpit/configuracoes/campos"
   },
   {
     "id": "edge-cockpit-module-route-page-cockpit-deliveries",
@@ -15322,18 +15322,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /cockpit/metrics"
   },
   {
-    "id": "edge-cockpit-module-route-page-cockpit-orders",
-    "source": "cockpit-module",
-    "target": "route-page-cockpit-orders",
-    "type": "contains",
-    "description": "Contém página /cockpit/orders"
-  },
-  {
     "id": "edge-cockpit-module-route-page-cockpit-orders-id",
     "source": "cockpit-module",
     "target": "route-page-cockpit-orders-id",
     "type": "contains",
     "description": "Contém página /cockpit/orders/[id]"
+  },
+  {
+    "id": "edge-cockpit-module-route-page-cockpit-orders",
+    "source": "cockpit-module",
+    "target": "route-page-cockpit-orders",
+    "type": "contains",
+    "description": "Contém página /cockpit/orders"
   },
   {
     "id": "edge-cockpit-module-route-page-cockpit-overview",
@@ -15490,18 +15490,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /frank"
   },
   {
-    "id": "edge-condstore-root-route-page-freight-simulations",
-    "source": "condstore-root",
-    "target": "route-page-freight-simulations",
-    "type": "contains",
-    "description": "Contém página /freight/simulations"
-  },
-  {
     "id": "edge-condstore-root-route-page-freight-simulations-id",
     "source": "condstore-root",
     "target": "route-page-freight-simulations-id",
     "type": "contains",
     "description": "Contém página /freight/simulations/[id]"
+  },
+  {
+    "id": "edge-condstore-root-route-page-freight-simulations",
+    "source": "condstore-root",
+    "target": "route-page-freight-simulations",
+    "type": "contains",
+    "description": "Contém página /freight/simulations"
   },
   {
     "id": "edge-cockpit-module-route-page-home",
@@ -15637,18 +15637,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /signup"
   },
   {
-    "id": "edge-fulfillment-module-route-page-logistica-tabelas-frete",
-    "source": "fulfillment-module",
-    "target": "route-page-logistica-tabelas-frete",
-    "type": "contains",
-    "description": "Contém página /logistica/tabelas-frete"
-  },
-  {
     "id": "edge-fulfillment-module-route-page-logistica-tabelas-frete-carrier",
     "source": "fulfillment-module",
     "target": "route-page-logistica-tabelas-frete-carrier",
     "type": "contains",
     "description": "Contém página /logistica/tabelas-frete/[carrier]"
+  },
+  {
+    "id": "edge-fulfillment-module-route-page-logistica-tabelas-frete",
+    "source": "fulfillment-module",
+    "target": "route-page-logistica-tabelas-frete",
+    "type": "contains",
+    "description": "Contém página /logistica/tabelas-frete"
   },
   {
     "id": "edge-condstore-root-route-page-concept-layer-preview",
@@ -15994,13 +15994,6 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/billing/upgrade"
   },
   {
-    "id": "edge-cockpit-module-route-api-api-cockpit-config",
-    "source": "cockpit-module",
-    "target": "route-api-api-cockpit-config",
-    "type": "contains",
-    "description": "Contém api / backend /api/cockpit/config"
-  },
-  {
     "id": "edge-cockpit-module-route-api-api-cockpit-config-key",
     "source": "cockpit-module",
     "target": "route-api-api-cockpit-config-key",
@@ -16008,11 +16001,11 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/config/[key]"
   },
   {
-    "id": "edge-cockpit-module-route-api-api-cockpit-conversations",
+    "id": "edge-cockpit-module-route-api-api-cockpit-config",
     "source": "cockpit-module",
-    "target": "route-api-api-cockpit-conversations",
+    "target": "route-api-api-cockpit-config",
     "type": "contains",
-    "description": "Contém api / backend /api/cockpit/conversations"
+    "description": "Contém api / backend /api/cockpit/config"
   },
   {
     "id": "edge-cockpit-module-route-api-api-cockpit-conversations-id-assign",
@@ -16050,13 +16043,6 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/conversations/[id]/owner"
   },
   {
-    "id": "edge-cockpit-module-route-api-api-cockpit-conversations-id-quotes",
-    "source": "cockpit-module",
-    "target": "route-api-api-cockpit-conversations-id-quotes",
-    "type": "contains",
-    "description": "Contém api / backend /api/cockpit/conversations/[id]/quotes"
-  },
-  {
     "id": "edge-cockpit-module-route-api-api-cockpit-conversations-id-quotes-quoteId-accept",
     "source": "cockpit-module",
     "target": "route-api-api-cockpit-conversations-id-quotes-quoteId-accept",
@@ -16085,6 +16071,13 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/conversations/[id]/quotes/[quoteId]/send"
   },
   {
+    "id": "edge-cockpit-module-route-api-api-cockpit-conversations-id-quotes",
+    "source": "cockpit-module",
+    "target": "route-api-api-cockpit-conversations-id-quotes",
+    "type": "contains",
+    "description": "Contém api / backend /api/cockpit/conversations/[id]/quotes"
+  },
+  {
     "id": "edge-cockpit-module-route-api-api-cockpit-conversations-id-release",
     "source": "cockpit-module",
     "target": "route-api-api-cockpit-conversations-id-release",
@@ -16106,6 +16099,13 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/conversations/[id]/stage"
   },
   {
+    "id": "edge-cockpit-module-route-api-api-cockpit-conversations-id-tasks-taskId-status",
+    "source": "cockpit-module",
+    "target": "route-api-api-cockpit-conversations-id-tasks-taskId-status",
+    "type": "contains",
+    "description": "Contém api / backend /api/cockpit/conversations/[id]/tasks/[taskId]/status"
+  },
+  {
     "id": "edge-cockpit-module-route-api-api-cockpit-conversations-id-tasks",
     "source": "cockpit-module",
     "target": "route-api-api-cockpit-conversations-id-tasks",
@@ -16113,11 +16113,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/conversations/[id]/tasks"
   },
   {
-    "id": "edge-cockpit-module-route-api-api-cockpit-conversations-id-tasks-taskId-status",
+    "id": "edge-cockpit-module-route-api-api-cockpit-conversations",
     "source": "cockpit-module",
-    "target": "route-api-api-cockpit-conversations-id-tasks-taskId-status",
+    "target": "route-api-api-cockpit-conversations",
     "type": "contains",
-    "description": "Contém api / backend /api/cockpit/conversations/[id]/tasks/[taskId]/status"
+    "description": "Contém api / backend /api/cockpit/conversations"
+  },
+  {
+    "id": "edge-cockpit-module-route-api-api-cockpit-custom-fields-id",
+    "source": "cockpit-module",
+    "target": "route-api-api-cockpit-custom-fields-id",
+    "type": "contains",
+    "description": "Contém api / backend /api/cockpit/custom-fields/[id]"
   },
   {
     "id": "edge-cockpit-module-route-api-api-cockpit-custom-fields",
@@ -16132,13 +16139,6 @@ export const ARCHITECTURE_DATA: {
     "target": "route-api-api-cockpit-custom-fields-values",
     "type": "contains",
     "description": "Contém api / backend /api/cockpit/custom-fields/values"
-  },
-  {
-    "id": "edge-cockpit-module-route-api-api-cockpit-custom-fields-id",
-    "source": "cockpit-module",
-    "target": "route-api-api-cockpit-custom-fields-id",
-    "type": "contains",
-    "description": "Contém api / backend /api/cockpit/custom-fields/[id]"
   },
   {
     "id": "edge-condstore-root-route-api-api-cockpit-domine-connectors",
@@ -16190,13 +16190,6 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/frank/feed"
   },
   {
-    "id": "edge-cockpit-module-route-api-api-cockpit-frank-intents",
-    "source": "cockpit-module",
-    "target": "route-api-api-cockpit-frank-intents",
-    "type": "contains",
-    "description": "Contém api / backend /api/cockpit/frank/intents"
-  },
-  {
     "id": "edge-cockpit-module-route-api-api-cockpit-frank-intents-id-create-playbook",
     "source": "cockpit-module",
     "target": "route-api-api-cockpit-frank-intents-id-create-playbook",
@@ -16225,11 +16218,11 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/frank/intents/[id]/validate"
   },
   {
-    "id": "edge-cockpit-module-route-api-api-cockpit-frank-knowledge",
+    "id": "edge-cockpit-module-route-api-api-cockpit-frank-intents",
     "source": "cockpit-module",
-    "target": "route-api-api-cockpit-frank-knowledge",
+    "target": "route-api-api-cockpit-frank-intents",
     "type": "contains",
-    "description": "Contém api / backend /api/cockpit/frank/knowledge"
+    "description": "Contém api / backend /api/cockpit/frank/intents"
   },
   {
     "id": "edge-cockpit-module-route-api-api-cockpit-frank-knowledge-id",
@@ -16239,18 +16232,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/frank/knowledge/[id]"
   },
   {
+    "id": "edge-cockpit-module-route-api-api-cockpit-frank-knowledge",
+    "source": "cockpit-module",
+    "target": "route-api-api-cockpit-frank-knowledge",
+    "type": "contains",
+    "description": "Contém api / backend /api/cockpit/frank/knowledge"
+  },
+  {
     "id": "edge-cockpit-module-route-api-api-cockpit-frank-playbooks",
     "source": "cockpit-module",
     "target": "route-api-api-cockpit-frank-playbooks",
     "type": "contains",
     "description": "Contém api / backend /api/cockpit/frank/playbooks"
-  },
-  {
-    "id": "edge-cockpit-module-route-api-api-cockpit-frank-suggestions",
-    "source": "cockpit-module",
-    "target": "route-api-api-cockpit-frank-suggestions",
-    "type": "contains",
-    "description": "Contém api / backend /api/cockpit/frank/suggestions"
   },
   {
     "id": "edge-cockpit-module-route-api-api-cockpit-frank-suggestions-id-approve",
@@ -16281,11 +16274,25 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/frank/suggestions/[id]/reject"
   },
   {
+    "id": "edge-cockpit-module-route-api-api-cockpit-frank-suggestions",
+    "source": "cockpit-module",
+    "target": "route-api-api-cockpit-frank-suggestions",
+    "type": "contains",
+    "description": "Contém api / backend /api/cockpit/frank/suggestions"
+  },
+  {
     "id": "edge-cockpit-module-route-api-api-cockpit-frank-supervisor",
     "source": "cockpit-module",
     "target": "route-api-api-cockpit-frank-supervisor",
     "type": "contains",
     "description": "Contém api / backend /api/cockpit/frank/supervisor"
+  },
+  {
+    "id": "edge-cockpit-module-route-api-api-cockpit-governance-playbooks-playbookId-apply",
+    "source": "cockpit-module",
+    "target": "route-api-api-cockpit-governance-playbooks-playbookId-apply",
+    "type": "contains",
+    "description": "Contém api / backend /api/cockpit/governance/playbooks/[playbookId]/apply"
   },
   {
     "id": "edge-cockpit-module-route-api-api-cockpit-governance-playbooks-metrics",
@@ -16300,13 +16307,6 @@ export const ARCHITECTURE_DATA: {
     "target": "route-api-api-cockpit-governance-playbooks",
     "type": "contains",
     "description": "Contém api / backend /api/cockpit/governance/playbooks"
-  },
-  {
-    "id": "edge-cockpit-module-route-api-api-cockpit-governance-playbooks-playbookId-apply",
-    "source": "cockpit-module",
-    "target": "route-api-api-cockpit-governance-playbooks-playbookId-apply",
-    "type": "contains",
-    "description": "Contém api / backend /api/cockpit/governance/playbooks/[playbookId]/apply"
   },
   {
     "id": "edge-condstore-root-route-api-api-cockpit-metrics-acquisition-drilldown",
@@ -16372,13 +16372,6 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/ops/status"
   },
   {
-    "id": "edge-cockpit-module-route-api-api-cockpit-orders",
-    "source": "cockpit-module",
-    "target": "route-api-api-cockpit-orders",
-    "type": "contains",
-    "description": "Contém api / backend /api/cockpit/orders"
-  },
-  {
     "id": "edge-cockpit-module-route-api-api-cockpit-orders-id",
     "source": "cockpit-module",
     "target": "route-api-api-cockpit-orders-id",
@@ -16398,6 +16391,13 @@ export const ARCHITECTURE_DATA: {
     "target": "route-api-api-cockpit-orders-id-status",
     "type": "contains",
     "description": "Contém api / backend /api/cockpit/orders/[id]/status"
+  },
+  {
+    "id": "edge-cockpit-module-route-api-api-cockpit-orders",
+    "source": "cockpit-module",
+    "target": "route-api-api-cockpit-orders",
+    "type": "contains",
+    "description": "Contém api / backend /api/cockpit/orders"
   },
   {
     "id": "edge-cockpit-module-route-api-api-cockpit-organizations-id",
@@ -16421,18 +16421,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/cockpit/pipeline"
   },
   {
-    "id": "edge-cockpit-module-route-api-api-cockpit-playbooks",
-    "source": "cockpit-module",
-    "target": "route-api-api-cockpit-playbooks",
-    "type": "contains",
-    "description": "Contém api / backend /api/cockpit/playbooks"
-  },
-  {
     "id": "edge-cockpit-module-route-api-api-cockpit-playbooks-id",
     "source": "cockpit-module",
     "target": "route-api-api-cockpit-playbooks-id",
     "type": "contains",
     "description": "Contém api / backend /api/cockpit/playbooks/[id]"
+  },
+  {
+    "id": "edge-cockpit-module-route-api-api-cockpit-playbooks",
+    "source": "cockpit-module",
+    "target": "route-api-api-cockpit-playbooks",
+    "type": "contains",
+    "description": "Contém api / backend /api/cockpit/playbooks"
   },
   {
     "id": "edge-cockpit-module-route-api-api-cockpit-products-search",
@@ -16673,13 +16673,6 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/internal/freight/operational-settings"
   },
   {
-    "id": "edge-fulfillment-module-route-api-api-internal-freight-packing-profiles",
-    "source": "fulfillment-module",
-    "target": "route-api-api-internal-freight-packing-profiles",
-    "type": "contains",
-    "description": "Contém api / backend /api/internal/freight/packing-profiles"
-  },
-  {
     "id": "edge-fulfillment-module-route-api-api-internal-freight-packing-profiles-id-review-status",
     "source": "fulfillment-module",
     "target": "route-api-api-internal-freight-packing-profiles-id-review-status",
@@ -16699,6 +16692,13 @@ export const ARCHITECTURE_DATA: {
     "target": "route-api-api-internal-freight-packing-profiles-id-toggle",
     "type": "contains",
     "description": "Contém api / backend /api/internal/freight/packing-profiles/[id]/toggle"
+  },
+  {
+    "id": "edge-fulfillment-module-route-api-api-internal-freight-packing-profiles",
+    "source": "fulfillment-module",
+    "target": "route-api-api-internal-freight-packing-profiles",
+    "type": "contains",
+    "description": "Contém api / backend /api/internal/freight/packing-profiles"
   },
   {
     "id": "edge-fulfillment-module-route-api-api-internal-freight-shipments",
@@ -16834,18 +16834,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/internal/ops"
   },
   {
-    "id": "edge-infra-core-route-api-api-internal-playbooks",
-    "source": "infra-core",
-    "target": "route-api-api-internal-playbooks",
-    "type": "contains",
-    "description": "Contém api / backend /api/internal/playbooks"
-  },
-  {
     "id": "edge-infra-core-route-api-api-internal-playbooks-playbookId-toggle",
     "source": "infra-core",
     "target": "route-api-api-internal-playbooks-playbookId-toggle",
     "type": "contains",
     "description": "Contém api / backend /api/internal/playbooks/[playbookId]/toggle"
+  },
+  {
+    "id": "edge-infra-core-route-api-api-internal-playbooks",
+    "source": "infra-core",
+    "target": "route-api-api-internal-playbooks",
+    "type": "contains",
+    "description": "Contém api / backend /api/internal/playbooks"
   },
   {
     "id": "edge-condstore-root-route-api-api-internal-qa-bootstrap-session",
@@ -16883,20 +16883,6 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/internal/security/events"
   },
   {
-    "id": "edge-infra-core-route-api-api-internal-tenants-tenantId-actions-propose",
-    "source": "infra-core",
-    "target": "route-api-api-internal-tenants-tenantId-actions-propose",
-    "type": "contains",
-    "description": "Contém api / backend /api/internal/tenants/[tenantId]/actions/propose"
-  },
-  {
-    "id": "edge-infra-core-route-api-api-internal-tenants-tenantId-actions",
-    "source": "infra-core",
-    "target": "route-api-api-internal-tenants-tenantId-actions",
-    "type": "contains",
-    "description": "Contém api / backend /api/internal/tenants/[tenantId]/actions"
-  },
-  {
     "id": "edge-infra-core-route-api-api-internal-tenants-tenantId-actions-actionId-approve",
     "source": "infra-core",
     "target": "route-api-api-internal-tenants-tenantId-actions-actionId-approve",
@@ -16916,6 +16902,20 @@ export const ARCHITECTURE_DATA: {
     "target": "route-api-api-internal-tenants-tenantId-actions-actionId-reject",
     "type": "contains",
     "description": "Contém api / backend /api/internal/tenants/[tenantId]/actions/[actionId]/reject"
+  },
+  {
+    "id": "edge-infra-core-route-api-api-internal-tenants-tenantId-actions-propose",
+    "source": "infra-core",
+    "target": "route-api-api-internal-tenants-tenantId-actions-propose",
+    "type": "contains",
+    "description": "Contém api / backend /api/internal/tenants/[tenantId]/actions/propose"
+  },
+  {
+    "id": "edge-infra-core-route-api-api-internal-tenants-tenantId-actions",
+    "source": "infra-core",
+    "target": "route-api-api-internal-tenants-tenantId-actions",
+    "type": "contains",
+    "description": "Contém api / backend /api/internal/tenants/[tenantId]/actions"
   },
   {
     "id": "edge-infra-core-route-api-api-internal-tenants-tenantId-data-contract-status",
@@ -16960,13 +16960,6 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/internal/tenants/[tenantId]/supreme/benchmarks"
   },
   {
-    "id": "edge-infra-core-route-api-api-internal-tenants-tenantId-supreme-findings",
-    "source": "infra-core",
-    "target": "route-api-api-internal-tenants-tenantId-supreme-findings",
-    "type": "contains",
-    "description": "Contém api / backend /api/internal/tenants/[tenantId]/supreme/findings"
-  },
-  {
     "id": "edge-infra-core-route-api-api-internal-tenants-tenantId-supreme-findings-findingId-propose-action",
     "source": "infra-core",
     "target": "route-api-api-internal-tenants-tenantId-supreme-findings-findingId-propose-action",
@@ -16979,6 +16972,13 @@ export const ARCHITECTURE_DATA: {
     "target": "route-api-api-internal-tenants-tenantId-supreme-findings-findingId-resolve",
     "type": "contains",
     "description": "Contém api / backend /api/internal/tenants/[tenantId]/supreme/findings/[findingId]/resolve"
+  },
+  {
+    "id": "edge-infra-core-route-api-api-internal-tenants-tenantId-supreme-findings",
+    "source": "infra-core",
+    "target": "route-api-api-internal-tenants-tenantId-supreme-findings",
+    "type": "contains",
+    "description": "Contém api / backend /api/internal/tenants/[tenantId]/supreme/findings"
   },
   {
     "id": "edge-infra-core-route-api-api-internal-tenants-tenantId-supreme-permissions",
@@ -16995,13 +16995,6 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/knowledge/ask"
   },
   {
-    "id": "edge-condstore-root-route-api-api-knowledge-collections",
-    "source": "condstore-root",
-    "target": "route-api-api-knowledge-collections",
-    "type": "contains",
-    "description": "Contém api / backend /api/knowledge/collections"
-  },
-  {
     "id": "edge-condstore-root-route-api-api-knowledge-collections-id-sync",
     "source": "condstore-root",
     "target": "route-api-api-knowledge-collections-id-sync",
@@ -17009,11 +17002,11 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/knowledge/collections/[id]/sync"
   },
   {
-    "id": "edge-condstore-root-route-api-api-knowledge-documents",
+    "id": "edge-condstore-root-route-api-api-knowledge-collections",
     "source": "condstore-root",
-    "target": "route-api-api-knowledge-documents",
+    "target": "route-api-api-knowledge-collections",
     "type": "contains",
-    "description": "Contém api / backend /api/knowledge/documents"
+    "description": "Contém api / backend /api/knowledge/collections"
   },
   {
     "id": "edge-condstore-root-route-api-api-knowledge-documents-id-mark-sensitive",
@@ -17035,6 +17028,13 @@ export const ARCHITECTURE_DATA: {
     "target": "route-api-api-knowledge-documents-id",
     "type": "contains",
     "description": "Contém api / backend /api/knowledge/documents/[id]"
+  },
+  {
+    "id": "edge-condstore-root-route-api-api-knowledge-documents",
+    "source": "condstore-root",
+    "target": "route-api-api-knowledge-documents",
+    "type": "contains",
+    "description": "Contém api / backend /api/knowledge/documents"
   },
   {
     "id": "edge-condstore-root-route-api-api-knowledge-upload-complete",
@@ -17191,18 +17191,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/tenants/[tenantId]/audit"
   },
   {
-    "id": "edge-condstore-root-route-api-api-tenants-tenantId-deliveries",
-    "source": "condstore-root",
-    "target": "route-api-api-tenants-tenantId-deliveries",
-    "type": "contains",
-    "description": "Contém api / backend /api/tenants/[tenantId]/deliveries"
-  },
-  {
     "id": "edge-condstore-root-route-api-api-tenants-tenantId-deliveries-id",
     "source": "condstore-root",
     "target": "route-api-api-tenants-tenantId-deliveries-id",
     "type": "contains",
     "description": "Contém api / backend /api/tenants/[tenantId]/deliveries/[id]"
+  },
+  {
+    "id": "edge-condstore-root-route-api-api-tenants-tenantId-deliveries",
+    "source": "condstore-root",
+    "target": "route-api-api-tenants-tenantId-deliveries",
+    "type": "contains",
+    "description": "Contém api / backend /api/tenants/[tenantId]/deliveries"
   },
   {
     "id": "edge-condstore-root-route-api-api-tenants-tenantId-domine-actions",
@@ -17233,6 +17233,13 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/tenants/[tenantId]/domine/dlq"
   },
   {
+    "id": "edge-condstore-root-route-api-api-tenants-tenantId-domine-events-id",
+    "source": "condstore-root",
+    "target": "route-api-api-tenants-tenantId-domine-events-id",
+    "type": "contains",
+    "description": "Contém api / backend /api/tenants/[tenantId]/domine/events/[id]"
+  },
+  {
     "id": "edge-condstore-root-route-api-api-tenants-tenantId-domine-events-publish",
     "source": "condstore-root",
     "target": "route-api-api-tenants-tenantId-domine-events-publish",
@@ -17247,25 +17254,11 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/tenants/[tenantId]/domine/events"
   },
   {
-    "id": "edge-condstore-root-route-api-api-tenants-tenantId-domine-events-id",
-    "source": "condstore-root",
-    "target": "route-api-api-tenants-tenantId-domine-events-id",
-    "type": "contains",
-    "description": "Contém api / backend /api/tenants/[tenantId]/domine/events/[id]"
-  },
-  {
     "id": "edge-condstore-root-route-api-api-tenants-tenantId-domine-freight-latest",
     "source": "condstore-root",
     "target": "route-api-api-tenants-tenantId-domine-freight-latest",
     "type": "contains",
     "description": "Contém api / backend /api/tenants/[tenantId]/domine/freight/latest"
-  },
-  {
-    "id": "edge-condstore-root-route-api-api-tenants-tenantId-domine-orders",
-    "source": "condstore-root",
-    "target": "route-api-api-tenants-tenantId-domine-orders",
-    "type": "contains",
-    "description": "Contém api / backend /api/tenants/[tenantId]/domine/orders"
   },
   {
     "id": "edge-condstore-root-route-api-api-tenants-tenantId-domine-orders-orderId",
@@ -17275,11 +17268,25 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/tenants/[tenantId]/domine/orders/[orderId]"
   },
   {
+    "id": "edge-condstore-root-route-api-api-tenants-tenantId-domine-orders",
+    "source": "condstore-root",
+    "target": "route-api-api-tenants-tenantId-domine-orders",
+    "type": "contains",
+    "description": "Contém api / backend /api/tenants/[tenantId]/domine/orders"
+  },
+  {
     "id": "edge-condstore-root-route-api-api-tenants-tenantId-health",
     "source": "condstore-root",
     "target": "route-api-api-tenants-tenantId-health",
     "type": "contains",
     "description": "Contém api / backend /api/tenants/[tenantId]/health"
+  },
+  {
+    "id": "edge-condstore-root-route-api-api-tenants-tenantId-knowledge-sources-sourceId-ready",
+    "source": "condstore-root",
+    "target": "route-api-api-tenants-tenantId-knowledge-sources-sourceId-ready",
+    "type": "contains",
+    "description": "Contém api / backend /api/tenants/[tenantId]/knowledge/sources/[sourceId]/ready"
   },
   {
     "id": "edge-condstore-root-route-api-api-tenants-tenantId-knowledge-sources",
@@ -17289,11 +17296,11 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /api/tenants/[tenantId]/knowledge/sources"
   },
   {
-    "id": "edge-condstore-root-route-api-api-tenants-tenantId-knowledge-sources-sourceId-ready",
+    "id": "edge-condstore-root-route-api-api-tenants-tenantId-privacy-action",
     "source": "condstore-root",
-    "target": "route-api-api-tenants-tenantId-knowledge-sources-sourceId-ready",
+    "target": "route-api-api-tenants-tenantId-privacy-action",
     "type": "contains",
-    "description": "Contém api / backend /api/tenants/[tenantId]/knowledge/sources/[sourceId]/ready"
+    "description": "Contém api / backend /api/tenants/[tenantId]/privacy/[action]"
   },
   {
     "id": "edge-condstore-root-route-api-api-tenants-tenantId-privacy-export-user",
@@ -17308,13 +17315,6 @@ export const ARCHITECTURE_DATA: {
     "target": "route-api-api-tenants-tenantId-privacy-purge-user",
     "type": "contains",
     "description": "Contém api / backend /api/tenants/[tenantId]/privacy/purge-user"
-  },
-  {
-    "id": "edge-condstore-root-route-api-api-tenants-tenantId-privacy-action",
-    "source": "condstore-root",
-    "target": "route-api-api-tenants-tenantId-privacy-action",
-    "type": "contains",
-    "description": "Contém api / backend /api/tenants/[tenantId]/privacy/[action]"
   },
   {
     "id": "edge-condstore-root-route-api-api-tenants-tenantId-secrets-rotate",
@@ -17443,6 +17443,13 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /dashboard1"
   },
   {
+    "id": "edge-condstore-root-route-page-evolution-id",
+    "source": "condstore-root",
+    "target": "route-page-evolution-id",
+    "type": "contains",
+    "description": "Contém página /evolution/[id]"
+  },
+  {
     "id": "edge-condstore-root-route-page-evolution",
     "source": "condstore-root",
     "target": "route-page-evolution",
@@ -17455,13 +17462,6 @@ export const ARCHITECTURE_DATA: {
     "target": "route-page-evolution-roadmap",
     "type": "contains",
     "description": "Contém página /evolution/roadmap"
-  },
-  {
-    "id": "edge-condstore-root-route-page-evolution-id",
-    "source": "condstore-root",
-    "target": "route-page-evolution-id",
-    "type": "contains",
-    "description": "Contém página /evolution/[id]"
   },
   {
     "id": "edge-condstore-root-route-page-executive-dashboard",
@@ -17541,18 +17541,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém api / backend /t/[token]"
   },
   {
-    "id": "edge-calls-route-page-cockpit-playbooks-route-api-api-cockpit-playbooks",
-    "source": "route-page-cockpit-playbooks",
-    "target": "route-api-api-cockpit-playbooks",
-    "type": "calls",
-    "description": "Página /cockpit/playbooks chama API /api/cockpit/playbooks"
-  },
-  {
     "id": "edge-calls-route-page-cockpit-playbooks-id-route-api-api-cockpit-playbooks-id",
     "source": "route-page-cockpit-playbooks-id",
     "target": "route-api-api-cockpit-playbooks-id",
     "type": "calls",
     "description": "Página /cockpit/playbooks/[id] chama API /api/cockpit/playbooks/[id]"
+  },
+  {
+    "id": "edge-calls-route-page-cockpit-playbooks-route-api-api-cockpit-playbooks",
+    "source": "route-page-cockpit-playbooks",
+    "target": "route-api-api-cockpit-playbooks",
+    "type": "calls",
+    "description": "Página /cockpit/playbooks chama API /api/cockpit/playbooks"
   },
   {
     "id": "edge-calls-route-page-cockpit-audit-route-api-api-cockpit-audit",
@@ -17590,18 +17590,18 @@ export const ARCHITECTURE_DATA: {
     "description": "Página /cockpit/metrics chama API /api/cockpit/metrics"
   },
   {
-    "id": "edge-calls-route-page-cockpit-orders-route-api-api-cockpit-orders",
-    "source": "route-page-cockpit-orders",
-    "target": "route-api-api-cockpit-orders",
-    "type": "calls",
-    "description": "Página /cockpit/orders chama API /api/cockpit/orders"
-  },
-  {
     "id": "edge-calls-route-page-cockpit-orders-id-route-api-api-cockpit-orders-id",
     "source": "route-page-cockpit-orders-id",
     "target": "route-api-api-cockpit-orders-id",
     "type": "calls",
     "description": "Página /cockpit/orders/[id] chama API /api/cockpit/orders/[id]"
+  },
+  {
+    "id": "edge-calls-route-page-cockpit-orders-route-api-api-cockpit-orders",
+    "source": "route-page-cockpit-orders",
+    "target": "route-api-api-cockpit-orders",
+    "type": "calls",
+    "description": "Página /cockpit/orders chama API /api/cockpit/orders"
   },
   {
     "id": "edge-calls-route-page-cockpit-pipeline-route-api-api-cockpit-pipeline",
