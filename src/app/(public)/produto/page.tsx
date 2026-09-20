@@ -20,9 +20,6 @@ import {
     PageSection,
     ScrollReveal,
     SectionIntro,
-    SiteBadge,
-    SiteButton,
-    SiteCard,
 } from '@/ui/site';
 
 export const metadata: Metadata = {
@@ -206,9 +203,9 @@ export default function ProdutoPage() {
                 <PageContainer>
                     <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8 lg:gap-12 items-start">
                         <div className="max-w-3xl">
-                            <SiteBadge variant="accent" className="uppercase tracking-[0.15em] text-[11px]">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[hsl(var(--ui-text-muted))]">
                                 Produto CONDSTORE OS
-                            </SiteBadge>
+                            </span>
                             <h1 className="mt-6 text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-[hsl(var(--ui-text))] leading-[1.08]">
                                 O sistema operacional que conecta sua logística comercial.
                             </h1>
@@ -216,17 +213,23 @@ export default function ProdutoPage() {
                                 Centralize conversas de WhatsApp, cotações de frete, pedidos e logística em um cockpit operacional único. Dê visibilidade ao gestor e reduza o retrabalho do time.
                             </p>
                             <div className="mt-8 flex flex-wrap items-center gap-3">
-                                <SiteButton href="/como-funciona" variant="accent">
+                                <Link
+                                    href="/como-funciona"
+                                    className="inline-flex h-11 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-6 text-sm font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))]"
+                                >
                                     Ver como funciona
-                                </SiteButton>
-                                <SiteButton href="/contato" variant="secondary">
+                                </Link>
+                                <Link
+                                    href="/contato"
+                                    className="inline-flex h-11 items-center justify-center rounded-full border border-[hsl(var(--ui-border))] px-6 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))]"
+                                >
                                     Falar com o time
-                                    <ArrowRight className="h-4 w-4" />
-                                </SiteButton>
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Link>
                             </div>
                         </div>
 
-                        <SiteCard variant="default" className="p-6 md:p-7 bg-[hsl(var(--ui-surface)/0.35)]">
+                        <aside className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.35)] p-6 md:p-7">
                             <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-[hsl(var(--ui-text-subtle))]">
                                 Destaques do MVP
                             </h2>
@@ -238,7 +241,7 @@ export default function ProdutoPage() {
                                     </li>
                                 ))}
                             </ul>
-                        </SiteCard>
+                        </aside>
                     </div>
                 </PageContainer>
             </PageSection>
@@ -255,24 +258,20 @@ export default function ProdutoPage() {
                             {consolidatedBlocks.map((block) => {
                                 const Icon = block.icon;
                                 return (
-                                    <Link key={block.title} href={block.href} className="group">
-                                        <SiteCard variant="interactive" className="h-full p-5 flex flex-col justify-between">
-                                            <div>
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.65)] text-[hsl(var(--ui-accent-blue))]">
-                                                    <Icon className="h-5 w-5" />
-                                                </div>
-                                                <h3 className="mt-4 text-base font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">
-                                                    {block.title}
-                                                </h3>
-                                                <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{block.summary}</p>
-                                                <p className="mt-3 text-xs leading-relaxed text-[hsl(var(--ui-text-subtle))]">{block.handoff}</p>
-                                            </div>
-                                            <div className="mt-4">
-                                                <SiteBadge variant="muted" className="text-[11px]">
-                                                    Alimenta {block.connectsTo}
-                                                </SiteBadge>
-                                            </div>
-                                        </SiteCard>
+                                    <Link
+                                        key={block.title}
+                                        href={block.href}
+                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5 transition-colors hover:border-[hsl(var(--ui-border))] group"
+                                    >
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.65)] text-[hsl(var(--ui-accent-blue))]">
+                                            <Icon className="h-5 w-5" />
+                                        </div>
+                                        <h3 className="mt-4 text-base font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">{block.title}</h3>
+                                        <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{block.summary}</p>
+                                        <p className="mt-3 text-xs leading-relaxed text-[hsl(var(--ui-text-subtle))]">{block.handoff}</p>
+                                        <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-[hsl(var(--ui-muted)/0.6)] px-3 py-1 text-[11px] font-semibold text-[hsl(var(--ui-text-subtle))]">
+                                            Alimenta {block.connectsTo}
+                                        </p>
                                     </Link>
                                 );
                             })}
@@ -294,7 +293,10 @@ export default function ProdutoPage() {
                                 {architectureStages.map((stage) => {
                                     const Icon = stage.icon;
                                     return (
-                                        <SiteCard key={stage.stage} variant="default" className="p-4 bg-[hsl(var(--ui-page)/0.65)]">
+                                        <article
+                                            key={stage.stage}
+                                            className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-page)/0.65)] p-4"
+                                        >
                                             <div className="flex items-center gap-3">
                                                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.75)] text-[hsl(var(--ui-accent-blue))]">
                                                     <Icon className="h-4 w-4" />
@@ -304,12 +306,15 @@ export default function ProdutoPage() {
                                             <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{stage.summary}</p>
                                             <div className="mt-4 flex flex-wrap gap-2">
                                                 {stage.items.map((item) => (
-                                                    <SiteBadge key={`${stage.stage}-${item}`} variant="accent" className="text-[11px]">
+                                                    <span
+                                                        key={`${stage.stage}-${item}`}
+                                                        className="inline-flex items-center rounded-full border border-[hsl(var(--ui-border)/0.6)] px-2.5 py-1 text-[11px] font-semibold text-[hsl(var(--ui-text-subtle))]"
+                                                    >
                                                         {item}
-                                                    </SiteBadge>
+                                                    </span>
                                                 ))}
                                             </div>
-                                        </SiteCard>
+                                        </article>
                                     );
                                 })}
                             </div>
@@ -330,28 +335,26 @@ export default function ProdutoPage() {
                             {moduleCards.map((module) => {
                                 const Icon = module.icon;
                                 return (
-                                    <Link key={module.name} href={module.href} className="group flex flex-col">
-                                        <SiteCard variant="interactive" className="h-full p-5 md:p-6 flex flex-col justify-between">
-                                            <div>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.75)] text-[hsl(var(--ui-accent-blue))]">
-                                                        <Icon className="h-5 w-5" />
-                                                    </span>
-                                                    <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">
-                                                        {module.name}
-                                                    </h3>
-                                                </div>
-                                                <p className="mt-4 text-sm font-medium text-[hsl(var(--ui-text))]">{module.role}</p>
-                                                <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{module.description}</p>
-                                            </div>
-                                            <div className="mt-4 flex flex-wrap gap-2">
-                                                {module.connections.map((connection) => (
-                                                    <SiteBadge key={`${module.name}-${connection}`} variant="accent" className="text-[11px]">
-                                                        {connection}
-                                                    </SiteBadge>
-                                                ))}
-                                            </div>
-                                        </SiteCard>
+                                    <Link
+                                        key={module.name}
+                                        href={module.href}
+                                        className="flex flex-col rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5 md:p-6 transition-colors hover:border-[hsl(var(--ui-border))] group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.75)] text-[hsl(var(--ui-accent-blue))]">
+                                                <Icon className="h-5 w-5" />
+                                            </span>
+                                            <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">{module.name}</h3>
+                                        </div>
+                                        <p className="mt-4 text-sm font-medium text-[hsl(var(--ui-text))]">{module.role}</p>
+                                        <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{module.description}</p>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {module.connections.map((connection) => (
+                                                <span key={`${module.name}-${connection}`} className="inline-flex items-center rounded-full border border-[hsl(var(--ui-border)/0.55)] px-2.5 py-1 text-[11px] font-semibold text-[hsl(var(--ui-text-subtle))]">
+                                                    {connection}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </Link>
                                 );
                             })}
@@ -375,7 +378,10 @@ export default function ProdutoPage() {
                                 {structuralPoints.map((point) => {
                                     const Icon = point.icon;
                                     return (
-                                        <SiteCard key={point.title} variant="default" className="p-5 bg-[hsl(var(--ui-surface)/0.3)]">
+                                        <article
+                                            key={point.title}
+                                            className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-5"
+                                        >
                                             <div className="flex items-center gap-3">
                                                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--ui-surface-elevated)/0.75)] text-[hsl(var(--ui-accent-blue))]">
                                                     <Icon className="h-4 w-4" />
@@ -383,12 +389,12 @@ export default function ProdutoPage() {
                                                 <h3 className="text-base font-bold tracking-tight text-[hsl(var(--ui-text))]">{point.title}</h3>
                                             </div>
                                             <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{point.description}</p>
-                                        </SiteCard>
+                                        </article>
                                     );
                                 })}
                             </div>
                         </div>
-                        <SiteCard variant="default" className="mt-8 p-5 md:p-6 bg-[hsl(var(--ui-surface)/0.25)]">
+                        <div className="mt-8 rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.25)] p-5 md:p-6">
                             <div className="flex items-start gap-3">
                                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--ui-success)/0.14)] text-[hsl(var(--ui-success))]">
                                     <Shield className="h-4 w-4" />
@@ -400,13 +406,13 @@ export default function ProdutoPage() {
                                     <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">
                                         Frank (nossa IA) atua como copiloto supervisionado. Ele sugere e organiza, mas nunca aprova ou executa ações críticas sem a validação de um operador humano.
                                     </p>
-                                    <SiteButton href="/ia-frank" variant="ghost" className="mt-4 p-0 text-[hsl(var(--ui-accent-blue))] hover:text-[hsl(var(--ui-accent-blue-strong))]">
+                                    <Link href="/ia-frank" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--ui-accent-blue))]">
                                         Saiba mais sobre o Frank
                                         <ArrowRight className="h-4 w-4" />
-                                    </SiteButton>
+                                    </Link>
                                 </div>
                             </div>
-                        </SiteCard>
+                        </div>
                     </PageContainer>
                 </PageSection>
             </ScrollReveal>
@@ -414,22 +420,28 @@ export default function ProdutoPage() {
             <ScrollReveal>
                 <PageSection spacing="md" borderTop>
                     <PageContainer narrow>
-                        <SiteCard variant="default" className="rounded-3xl p-6 md:p-10 text-center bg-[hsl(var(--ui-surface)/0.35)]">
+                        <div className="rounded-3xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.35)] px-6 py-8 md:px-10 md:py-10 text-center">
                             <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[hsl(var(--ui-text))]">
                                 Próxima etapa: validar sua operação.
                             </h2>
                             <p className="mt-4 text-sm md:text-base leading-relaxed text-[hsl(var(--ui-text-muted))] max-w-2xl mx-auto">
                                 Agende uma demonstração ou solicite uma avaliação operacional para ver como o CONDSTORE OS pode organizar sua rotina.
                             </p>
-                            <div className="mt-7 flex flex-col sm:flex-row justify-center items-center gap-3">
-                                <SiteButton href="/piloto" variant="accent">
+                            <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
+                                <Link
+                                    href="/piloto"
+                                    className="inline-flex h-11 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-6 text-sm font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))]"
+                                >
                                     Solicitar avaliação
-                                </SiteButton>
-                                <SiteButton href="/proof" variant="secondary">
+                                </Link>
+                                <Link
+                                    href="/proof"
+                                    className="inline-flex h-11 items-center justify-center rounded-full border border-[hsl(var(--ui-border))] px-6 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))]"
+                                >
                                     Ver prova operacional
-                                </SiteButton>
+                                </Link>
                             </div>
-                        </SiteCard>
+                        </div>
                     </PageContainer>
                 </PageSection>
             </ScrollReveal>

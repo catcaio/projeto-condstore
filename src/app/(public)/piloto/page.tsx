@@ -14,10 +14,8 @@ import {
     SectionIntro,
     HeroSection,
     FeatureGrid,
-    SiteCard,
-    SiteBadge,
-    SiteButton,
 } from '@/ui/site';
+import { TrackedLink } from '@/ui/lib/track-client';
 
 export const metadata: Metadata = {
     title: 'Piloto Operacional — CONDSTORE OS',
@@ -67,7 +65,7 @@ export default function PilotoPage() {
                                 ))}
                             </ul>
                         </div>
-                        <SiteCard variant="default" className="p-8 bg-[hsl(var(--ui-surface)/0.3)]">
+                        <div className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-8">
                             <h3 className="text-lg font-bold text-[hsl(var(--ui-text))] mb-6">Pré-requisitos básicos</h3>
                             <div className="space-y-6">
                                 {[
@@ -89,7 +87,7 @@ export default function PilotoPage() {
                                     );
                                 })}
                             </div>
-                        </SiteCard>
+                        </div>
                     </div>
                 </PageContainer>
             </PageSection>
@@ -108,13 +106,13 @@ export default function PilotoPage() {
                             { step: '03', title: 'Operação', desc: 'Uso real do sistema pelo time com apoio do Frank.' },
                             { step: '04', title: 'Avaliação', desc: 'Análise de métricas e decisão sobre escala.' },
                         ].map((item) => (
-                            <SiteCard key={item.step} variant="interactive" className="relative p-6 bg-[hsl(var(--ui-surface)/0.2)]">
+                            <div key={item.step} className="relative rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.2)] p-6">
                                 <span className="text-4xl font-black text-[hsl(var(--ui-accent-blue)/0.1)] absolute top-4 right-6 leading-none select-none">
                                     {item.step}
                                 </span>
                                 <h3 className="text-base font-bold text-[hsl(var(--ui-text))] mb-2 relative z-10">{item.title}</h3>
                                 <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed relative z-10">{item.desc}</p>
-                            </SiteCard>
+                            </div>
                         ))}
                     </div>
                 </PageContainer>
@@ -150,11 +148,11 @@ export default function PilotoPage() {
                 </PageContainer>
             </PageSection>
 
-            <PageSection spacing="lg" borderTop>
+            <section className="border-t border-[hsl(var(--ui-border)/0.4)] py-16 md:py-24">
                 <PageContainer narrow>
                     <div className="text-center">
                         <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[hsl(var(--ui-accent-blue))] text-white mb-8 shadow-xl shadow-[hsl(var(--ui-accent-blue)/0.2)]">
-                            <Play className="h-8 w-8 fill-current text-[hsl(var(--ui-accent-blue-ink))]" />
+                            <Play className="h-8 w-8 fill-current" />
                         </div>
                         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[hsl(var(--ui-text))] mb-6">
                             Pronto para começar?
@@ -163,14 +161,20 @@ export default function PilotoPage() {
                             Solicite sua avaliação operacional agora. Nossa equipe entrará em contato para validar os pré-requisitos e agendar o setup.
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <SiteButton href="/contato" variant="accent" className="h-14 px-10 text-base shadow-lg shadow-[hsl(var(--ui-accent-blue)/0.2)]">
+                            <TrackedLink
+                                href="/contato"
+                                trackPage="piloto"
+                                trackSection="footer"
+                                trackElement="request_evaluation"
+                                className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[hsl(var(--ui-accent-blue))] px-10 text-base font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))] shadow-lg shadow-[hsl(var(--ui-accent-blue)/0.2)] w-full sm:w-auto"
+                            >
                                 Solicitar avaliação operacional
                                 <ArrowRight className="h-5 w-5" />
-                            </SiteButton>
+                            </TrackedLink>
                         </div>
                     </div>
                 </PageContainer>
-            </PageSection>
+            </section>
         </>
     );
 }

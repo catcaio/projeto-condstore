@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import {
     PageContainer, PageSection, SectionIntro, HeroSection,
-    FeatureGrid, CTASection, SiteCard, SiteBadge,
+    FeatureGrid, CTASection,
 } from '@/ui/site';
 import type { Metadata } from 'next';
 
@@ -56,11 +56,11 @@ export default function SegurancaPage() {
                             ].map((item) => {
                                 const Icon = item.icon;
                                 return (
-                                    <SiteCard key={item.label} variant="interactive" className="p-5">
+                                    <div key={item.label} className="rounded-xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-5">
                                         <Icon className="h-5 w-5 text-[hsl(var(--ui-accent-blue))] mb-3" />
                                         <h3 className="text-sm font-bold text-[hsl(var(--ui-text))] mb-1 tracking-tight">{item.label}</h3>
                                         <p className="text-xs text-[hsl(var(--ui-text-muted))] leading-relaxed">{item.desc}</p>
-                                    </SiteCard>
+                                    </div>
                                 );
                             })}
                         </div>
@@ -98,7 +98,7 @@ export default function SegurancaPage() {
                         ].map((item) => {
                             const Icon = item.icon;
                             return (
-                                <SiteCard key={item.role} variant="interactive" className="p-6 md:p-7">
+                                <div key={item.role} className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-6 md:p-7">
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-accent-blue)/0.1)]">
                                             <Icon className="h-5 w-5 text-[hsl(var(--ui-accent-blue))]" />
@@ -106,16 +106,15 @@ export default function SegurancaPage() {
                                         <h3 className="text-base font-bold text-[hsl(var(--ui-text))] tracking-tight">{item.role}</h3>
                                     </div>
                                     <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed mb-4">{item.desc}</p>
-                                    <ul className="space-y-2">
+                                    <ul className="space-y-1.5">
                                         {item.permissions.map((p) => (
-                                            <li key={p}>
-                                                <SiteBadge variant="accent" className="text-xs font-normal">
-                                                    {p}
-                                                </SiteBadge>
+                                            <li key={p} className="text-xs text-[hsl(var(--ui-text-subtle))] flex items-center gap-2">
+                                                <span className="h-1 w-1 rounded-full bg-[hsl(var(--ui-accent-blue))]" />
+                                                {p}
                                             </li>
                                         ))}
                                     </ul>
-                                </SiteCard>
+                                </div>
                             );
                         })}
                     </div>
@@ -200,11 +199,11 @@ export default function SegurancaPage() {
                         ].map((item) => {
                             const Icon = item.icon;
                             return (
-                                <SiteCard key={item.title} variant="interactive" className="p-6">
+                                <div key={item.title} className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-6">
                                     <Icon className="h-5 w-5 text-[hsl(var(--ui-accent-blue))] mb-3" />
                                     <h3 className="text-sm font-bold text-[hsl(var(--ui-text))] mb-2 tracking-tight">{item.title}</h3>
                                     <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">{item.desc}</p>
-                                </SiteCard>
+                                </div>
                             );
                         })}
                     </div>

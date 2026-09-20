@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { PageContainer } from './page-container';
 import { PageSection } from './page-section';
 import { SectionIntro } from './section-intro';
-import { SiteCard } from './site-card';
 
 const faqs = [
     {
@@ -58,7 +57,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
         <div className="border-b border-[hsl(var(--ui-border)/0.3)]">
             <button
                 onClick={() => setOpen(!open)}
-                className="flex w-full items-center justify-between py-5 text-left gap-4 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))]"
+                className="flex w-full items-center justify-between py-5 text-left gap-4 group"
             >
                 <span className="text-base font-semibold text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">
                     {question}
@@ -92,13 +91,11 @@ export function FaqSection() {
                     eyebrow="Perguntas frequentes"
                     title="Dúvidas? A gente responde."
                 />
-                <SiteCard variant="default" className="mt-6 p-6 md:p-8 bg-[hsl(var(--ui-surface)/0.25)]">
-                    <div className="divide-y divide-[hsl(var(--ui-border)/0.3)]">
-                        {faqs.map((faq) => (
-                            <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
-                        ))}
-                    </div>
-                </SiteCard>
+                <div className="mt-2">
+                    {faqs.map((faq) => (
+                        <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
+                    ))}
+                </div>
             </PageContainer>
         </PageSection>
     );
