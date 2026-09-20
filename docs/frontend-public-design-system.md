@@ -4,7 +4,7 @@ Fonte oficial da linguagem visual do frontend público, extraída da Home
 (auditada na #419). Páginas públicas usam **tokens semânticos `ui-*`**;
 valores arbitrários repetidos por página são exceção, não padrão.
 
-Etapa: `#419 auditoria → #420 contrato → próximas issues: migração das páginas`.
+Etapa: `#419 auditoria → #420 contrato → próxima etapa: migração das páginas`.
 
 ## 1. Fonte oficial e relação entre famílias
 
