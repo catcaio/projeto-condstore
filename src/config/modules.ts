@@ -60,6 +60,22 @@ const FOUNDATION_MODULES: ModuleConfig[] = [
         ],
     },
     {
+        id: 'gestao-ecommerce',
+        label: 'Gestão de E-commerce',
+        group: 'Workspace',
+        icon: Calendar,
+        route: '/cockpit/gestao-ecommerce',
+        authModule: 'cockpit',
+        requiredRoles: ['admin', 'manager', 'operator', 'viewer'],
+        navVisible: true,
+        navGroup: 'Core',
+        navOrder: 15,
+        summary: 'Frentes, projetos, entregáveis e histórico da operação de e-commerce.',
+        routes: [
+            { pattern: '/cockpit/gestao-ecommerce', title: 'Gestão de E-commerce' },
+        ],
+    },
+    {
         id: 'operacao',
         label: 'Operacao',
         group: 'Workspace',

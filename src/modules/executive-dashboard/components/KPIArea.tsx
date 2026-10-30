@@ -19,10 +19,13 @@ interface KPIAreaProps {
 }
 
 export const KPIArea: React.FC<KPIAreaProps> = ({ kpis }) => {
+  const currency = (value: number | null) => value === null ? 'Indisponível' : formatCurrency(value);
+  const number = (value: number | null) => value === null ? 'Indisponível' : formatNumber(value);
+  const percent = (value: number | null) => value === null ? 'Indisponível' : formatPercent(value);
   const cards = [
     {
       title: 'Faturamento Bruto',
-      value: formatCurrency(kpis.faturamentoTotal),
+      value: currency(kpis.faturamentoTotal),
       variation: kpis.variacaoFaturamento,
       icon: <DollarSign className="h-5 w-5 text-emerald-400" />,
       bgGradient: 'from-emerald-500/10 to-teal-500/5',
@@ -30,17 +33,17 @@ export const KPIArea: React.FC<KPIAreaProps> = ({ kpis }) => {
       description: 'Faturamento acumulado no período',
     },
     {
-      title: 'Total de Vendas',
-      value: formatNumber(kpis.totalVendas),
+      title: 'Pedidos informados',
+      value: number(kpis.totalVendas),
       variation: kpis.variacaoVendas,
       icon: <ShoppingBag className="h-5 w-5 text-blue-400" />,
       bgGradient: 'from-blue-500/10 to-indigo-500/5',
       borderColor: 'border-blue-500/20',
-      description: 'Unidades vendidas confirmadas',
+      description: 'Pedidos informados no relatório importado',
     },
     {
       title: 'Ticket Médio',
-      value: formatCurrency(kpis.ticketMedio),
+      value: currency(kpis.ticketMedio),
       variation: kpis.variacaoTicketMedio,
       icon: <TrendingUp className="h-5 w-5 text-indigo-400" />,
       bgGradient: 'from-indigo-500/10 to-purple-500/5',
@@ -49,7 +52,7 @@ export const KPIArea: React.FC<KPIAreaProps> = ({ kpis }) => {
     },
     {
       title: 'Anúncios Ativos',
-      value: formatNumber(kpis.anunciosAtivos),
+      value: number(kpis.anunciosAtivos),
       variation: null,
       icon: <Package className="h-5 w-5 text-amber-400" />,
       bgGradient: 'from-amber-500/10 to-orange-500/5',
@@ -58,8 +61,8 @@ export const KPIArea: React.FC<KPIAreaProps> = ({ kpis }) => {
     },
     {
       title: 'Visitas Totais',
-      value: formatNumber(kpis.visitasTotais),
-      variation: 11.2,
+      value: number(kpis.visitasTotais),
+      variation: null,
       icon: <Eye className="h-5 w-5 text-cyan-400" />,
       bgGradient: 'from-cyan-500/10 to-blue-500/5',
       borderColor: 'border-cyan-500/20',
@@ -67,8 +70,8 @@ export const KPIArea: React.FC<KPIAreaProps> = ({ kpis }) => {
     },
     {
       title: 'Taxa de Conversão',
-      value: formatPercent(kpis.taxaConversaoMedia),
-      variation: 0.4,
+      value: percent(kpis.taxaConversaoMedia),
+      variation: null,
       icon: <Percent className="h-5 w-5 text-violet-400" />,
       bgGradient: 'from-violet-500/10 to-fuchsia-500/5',
       borderColor: 'border-violet-500/20',
@@ -113,7 +116,7 @@ export const KPIArea: React.FC<KPIAreaProps> = ({ kpis }) => {
                   </span>
                 </div>
               ) : (
-                <span className="text-slate-400">Canal ativo</span>
+                <span className="text-slate-400">Sem comparativo validado</span>
               )}
             </div>
           </div>

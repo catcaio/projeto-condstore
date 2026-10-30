@@ -11,8 +11,9 @@ import { Sidebar } from '../components/Sidebar';
 import { SnapshotHistory } from '../components/SnapshotHistory';
 import { useExecutiveDashboard } from '../hooks/useExecutiveDashboard';
 import { Layers } from 'lucide-react';
+import type { DashboardStorageScope } from '../storage/dashboard-storage';
 
-export const ExecutiveDashboardPage: React.FC = () => {
+export const ExecutiveDashboardPage: React.FC<{ scope: DashboardStorageScope }> = ({ scope }) => {
   const {
     activeView,
     setActiveView,
@@ -32,7 +33,8 @@ export const ExecutiveDashboardPage: React.FC = () => {
     handleUpdateFilters,
     handleResetFilters,
     availablePeriods,
-  } = useExecutiveDashboard();
+    loadDemonstration,
+  } = useExecutiveDashboard(scope);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-blue-500 selection:text-white">
@@ -42,8 +44,8 @@ export const ExecutiveDashboardPage: React.FC = () => {
         onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
         activeView={activeView}
         onNavigate={setActiveView}
-        updatedAt={dashboardData.updatedAt}
-        periodLabel={dashboardData.periodLabel}
+        updatedAt={dashboardData?.updatedAt ?? ''}
+        periodLabel={dashboardData?.periodLabel ?? 'Nenhum registro disponível'}
         isProcessing={isProcessing}
       />
 
@@ -63,7 +65,21 @@ export const ExecutiveDashboardPage: React.FC = () => {
             sidebarOpen ? 'ml-64' : 'ml-16'
           }`}
         >
-          {activeView === 'dashboard' && (
+          <aside role="note" className="rounded-xl border border-amber-500 bg-amber-950 p-4 text-sm text-amber-100">
+            <strong>Laboratório demonstrativo — uso administrativo.</strong>{' '}
+            {dashboardData?.dataKind === 'demonstration' ? 'Os números exibidos são fictícios. ' : ''}
+            Importações locais e parsers ainda exigem homologação; estes números não são indicadores operacionais.
+            Não há integração comercial ativa. Snapshots ficam somente neste navegador e não são compartilhados.
+            {' '}<a className="underline" href="/cockpit/gestao-ecommerce">Abrir Cockpit Operacional</a>
+          </aside>
+          {activeView === 'dashboard' && !dashboardData && (
+            <section className="rounded-xl border border-slate-700 p-6 space-y-4">
+              <h1 className="text-xl font-semibold">Nenhum registro disponível</h1>
+              <p>Importe um relatório para avaliação local ou abra o exemplo explicitamente fictício.</p>
+              <button type="button" className="rounded-lg border border-slate-500 p-3" onClick={loadDemonstration}>Carregar demonstração fictícia</button>
+            </section>
+          )}
+          {activeView === 'dashboard' && dashboardData && (
             <>
               {/* Filters Area */}
               <FiltersArea
@@ -118,13 +134,13 @@ export const ExecutiveDashboardPage: React.FC = () => {
               </p>
               <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-slate-300 text-left pt-2">
                 <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" /> Mercado Livre (Disponível)
+                  <span className="h-2 w-2 rounded-full bg-amber-400" /> Mercado Livre (importação local; conector não implementado)
                 </div>
                 <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-blue-400" /> Mercado Ads (Preparado)
+                  <span className="h-2 w-2 rounded-full bg-blue-400" /> Mercado Ads (não implementado)
                 </div>
                 <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-amber-400" /> Google Ads (Preparado)
+                  <span className="h-2 w-2 rounded-full bg-amber-400" /> Google Ads (não implementado)
                 </div>
                 <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-purple-400" /> ERP / Financeiro / Estoque

@@ -13,6 +13,7 @@ const SESSION_COOKIE_NAME = 'condstore_session';
 export const config = {
     matcher: [
         '/cockpit/:path*',
+        '/executive-dashboard/:path*',
 
         '/operacao/:path*',
         '/conversas/:path*',

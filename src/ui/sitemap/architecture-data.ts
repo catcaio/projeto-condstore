@@ -2594,6 +2594,44 @@ export const ARCHITECTURE_DATA: {
     "y": 1720
   },
   {
+    "id": "route-page-cockpit-gestao-ecommerce",
+    "name": "Página: /cockpit/gestao-ecommerce",
+    "category": "page",
+    "domain": "Cockpit",
+    "layer": "UI",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/(app)/cockpit/gestao-ecommerce/page.tsx",
+    "directory": "src/app/(app)/cockpit/gestao-ecommerce/",
+    "url": "/cockpit/gestao-ecommerce",
+    "access": "Interno / autenticado",
+    "nodeType": "Página",
+    "description": "URL: /cockpit/gestao-ecommerce\nTipo: Página\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Authenticated ecommerce management overview, fronts, projects, WBS and history",
+    "responsibilities": [
+      "Interface UI para a rota /cockpit/gestao-ecommerce",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "React 19"
+    ],
+    "relatedFiles": [
+      "src/app/(app)/cockpit/gestao-ecommerce/page.tsx"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(app)/cockpit/gestao-ecommerce/page.tsx",
+    "evidence": "Arquivo de rota real src/app/(app)/cockpit/gestao-ecommerce/page.tsx em src/app/(app)/cockpit/gestao-ecommerce/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 2650,
+    "y": 1860
+  },
+  {
     "id": "route-page-cockpit-knowledge-ask",
     "name": "Página: /cockpit/knowledge/ask",
     "category": "page",
@@ -2628,7 +2666,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/knowledge/ask/page.tsx em src/app/(app)/cockpit/knowledge/ask/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 1860
   },
   {
@@ -2666,7 +2704,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/knowledge/collections/page.tsx em src/app/(app)/cockpit/knowledge/collections/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 1860
   },
   {
@@ -2704,8 +2742,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId]/page.tsx em src/app/(app)/cockpit/knowledge/documents/[docId]/versions/[versionId]/chunks/[chunkId]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 1860
+    "x": 2650,
+    "y": 2000
   },
   {
     "id": "route-page-cockpit-knowledge",
@@ -2742,7 +2780,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/knowledge/page.tsx em src/app/(app)/cockpit/knowledge/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 2000
   },
   {
@@ -2780,7 +2818,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/metrics/page.tsx em src/app/(app)/cockpit/metrics/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 2000
   },
   {
@@ -2818,8 +2856,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/orders/[id]/page.tsx em src/app/(app)/cockpit/orders/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 2000
+    "x": 2650,
+    "y": 2140
   },
   {
     "id": "route-page-cockpit-orders",
@@ -2856,7 +2894,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/orders/page.tsx em src/app/(app)/cockpit/orders/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 2140
   },
   {
@@ -2894,7 +2932,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/overview/page.tsx em src/app/(app)/cockpit/overview/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 2140
   },
   {
@@ -2932,8 +2970,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/packing-profiles/page.tsx em src/app/(app)/cockpit/packing-profiles/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 2140
+    "x": 2650,
+    "y": 2280
   },
   {
     "id": "route-page-cockpit-packing-rules",
@@ -2970,7 +3008,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/packing-rules/page.tsx em src/app/(app)/cockpit/packing-rules/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 2280
   },
   {
@@ -3008,7 +3046,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/page.tsx em src/app/(app)/cockpit/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 2280
   },
   {
@@ -3046,8 +3084,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/pipeline/page.tsx em src/app/(app)/cockpit/pipeline/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 2280
+    "x": 2650,
+    "y": 2420
   },
   {
     "id": "route-page-cockpit-privacy",
@@ -3084,7 +3122,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/privacy/page.tsx em src/app/(app)/cockpit/privacy/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 2420
   },
   {
@@ -3122,7 +3160,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/rate-limit/page.tsx em src/app/(app)/cockpit/rate-limit/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 2420
   },
   {
@@ -3160,8 +3198,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/rooms/[room]/page.tsx em src/app/(app)/cockpit/rooms/[room]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 2420
+    "x": 2650,
+    "y": 2560
   },
   {
     "id": "route-page-cockpit-security",
@@ -3198,7 +3236,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/security/page.tsx em src/app/(app)/cockpit/security/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 2560
   },
   {
@@ -3236,7 +3274,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/settings/knowledge/page.tsx em src/app/(app)/cockpit/settings/knowledge/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 2560
   },
   {
@@ -3274,8 +3312,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/settings/page.tsx em src/app/(app)/cockpit/settings/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 2560
+    "x": 2650,
+    "y": 2700
   },
   {
     "id": "route-page-cockpit-settings-security",
@@ -3312,7 +3350,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/settings/security/page.tsx em src/app/(app)/cockpit/settings/security/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 2700
   },
   {
@@ -3350,7 +3388,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/shipments/page.tsx em src/app/(app)/cockpit/shipments/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 2700
   },
   {
@@ -3388,8 +3426,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/status/audit/page.tsx em src/app/(app)/cockpit/status/audit/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 2700
+    "x": 2650,
+    "y": 2840
   },
   {
     "id": "route-page-cockpit-status",
@@ -3426,7 +3464,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/status/page.tsx em src/app/(app)/cockpit/status/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 2840
   },
   {
@@ -3464,7 +3502,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/supreme/benchmarks/page.tsx em src/app/(app)/cockpit/supreme/benchmarks/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 2840
   },
   {
@@ -3502,8 +3540,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/supreme/page.tsx em src/app/(app)/cockpit/supreme/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 2840
+    "x": 2650,
+    "y": 2980
   },
   {
     "id": "route-page-cockpit-timeline",
@@ -3540,7 +3578,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/cockpit/timeline/page.tsx em src/app/(app)/cockpit/timeline/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 2980
   },
   {
@@ -3806,7 +3844,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(app)/home/page.tsx em src/app/(app)/home/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 2980
   },
   {
@@ -4680,8 +4718,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/cockpit-gerencial/page.tsx em src/app/(public)/cockpit-gerencial/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 2980
+    "x": 2650,
+    "y": 3120
   },
   {
     "id": "route-page-como-funciona",
@@ -6466,7 +6504,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/config/[key]/route.ts em src/app/api/cockpit/config/[key]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 3120
   },
   {
@@ -6504,7 +6542,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/config/route.ts em src/app/api/cockpit/config/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 3120
   },
   {
@@ -6542,8 +6580,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/assign/route.ts em src/app/api/cockpit/conversations/[id]/assign/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 3120
+    "x": 2650,
+    "y": 3260
   },
   {
     "id": "route-api-api-cockpit-conversations-id-customer",
@@ -6580,7 +6618,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/customer/route.ts em src/app/api/cockpit/conversations/[id]/customer/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 3260
   },
   {
@@ -6618,7 +6656,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/message/route.ts em src/app/api/cockpit/conversations/[id]/message/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 3260
   },
   {
@@ -6656,8 +6694,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/notes/route.ts em src/app/api/cockpit/conversations/[id]/notes/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 3260
+    "x": 2650,
+    "y": 3400
   },
   {
     "id": "route-api-api-cockpit-conversations-id-owner",
@@ -6694,7 +6732,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/owner/route.ts em src/app/api/cockpit/conversations/[id]/owner/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 3400
   },
   {
@@ -6732,7 +6770,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/accept/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/accept/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 3400
   },
   {
@@ -6770,8 +6808,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/order/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/order/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 3400
+    "x": 2650,
+    "y": 3540
   },
   {
     "id": "route-api-api-cockpit-conversations-id-quotes-quoteId",
@@ -6808,7 +6846,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 3540
   },
   {
@@ -6846,7 +6884,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/send/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/send/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 3540
   },
   {
@@ -6884,8 +6922,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/route.ts em src/app/api/cockpit/conversations/[id]/quotes/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 3540
+    "x": 2650,
+    "y": 3680
   },
   {
     "id": "route-api-api-cockpit-conversations-id-release",
@@ -6922,7 +6960,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/release/route.ts em src/app/api/cockpit/conversations/[id]/release/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 3680
   },
   {
@@ -6960,7 +6998,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/route.ts em src/app/api/cockpit/conversations/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 3680
   },
   {
@@ -6998,8 +7036,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/stage/route.ts em src/app/api/cockpit/conversations/[id]/stage/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 3680
+    "x": 2650,
+    "y": 3820
   },
   {
     "id": "route-api-api-cockpit-conversations-id-tasks-taskId-status",
@@ -7036,7 +7074,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/route.ts em src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 3820
   },
   {
@@ -7074,7 +7112,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/tasks/route.ts em src/app/api/cockpit/conversations/[id]/tasks/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 3820
   },
   {
@@ -7112,8 +7150,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/route.ts em src/app/api/cockpit/conversations/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 3820
+    "x": 2650,
+    "y": 3960
   },
   {
     "id": "route-api-api-cockpit-custom-fields-id",
@@ -7150,7 +7188,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/custom-fields/[id]/route.ts em src/app/api/cockpit/custom-fields/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 3960
   },
   {
@@ -7188,7 +7226,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/custom-fields/route.ts em src/app/api/cockpit/custom-fields/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 3960
   },
   {
@@ -7226,8 +7264,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/custom-fields/values/route.ts em src/app/api/cockpit/custom-fields/values/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 3960
+    "x": 2650,
+    "y": 4100
   },
   {
     "id": "route-api-api-cockpit-domine-connectors",
@@ -7454,7 +7492,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/chat/route.ts em src/app/api/cockpit/frank/chat/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 4100
   },
   {
@@ -7492,7 +7530,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/feed/route.ts em src/app/api/cockpit/frank/feed/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 4100
   },
   {
@@ -7530,8 +7568,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/create-playbook/route.ts em src/app/api/cockpit/frank/intents/[id]/create-playbook/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 4100
+    "x": 2650,
+    "y": 4240
   },
   {
     "id": "route-api-api-cockpit-frank-intents-id-ignore",
@@ -7568,7 +7606,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/ignore/route.ts em src/app/api/cockpit/frank/intents/[id]/ignore/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 4240
   },
   {
@@ -7606,7 +7644,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/link-playbook/route.ts em src/app/api/cockpit/frank/intents/[id]/link-playbook/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 4240
   },
   {
@@ -7644,8 +7682,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/validate/route.ts em src/app/api/cockpit/frank/intents/[id]/validate/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 4240
+    "x": 2650,
+    "y": 4380
   },
   {
     "id": "route-api-api-cockpit-frank-intents",
@@ -7682,7 +7720,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/route.ts em src/app/api/cockpit/frank/intents/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 4380
   },
   {
@@ -7720,7 +7758,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/knowledge/[id]/route.ts em src/app/api/cockpit/frank/knowledge/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 4380
   },
   {
@@ -7758,8 +7796,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/knowledge/route.ts em src/app/api/cockpit/frank/knowledge/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 4380
+    "x": 2650,
+    "y": 4520
   },
   {
     "id": "route-api-api-cockpit-frank-playbooks",
@@ -7796,7 +7834,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/playbooks/route.ts em src/app/api/cockpit/frank/playbooks/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 4520
   },
   {
@@ -7834,7 +7872,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/approve/route.ts em src/app/api/cockpit/frank/suggestions/[id]/approve/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 4520
   },
   {
@@ -7872,8 +7910,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/approve-draft/route.ts em src/app/api/cockpit/frank/suggestions/[id]/approve-draft/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 4520
+    "x": 2650,
+    "y": 4660
   },
   {
     "id": "route-api-api-cockpit-frank-suggestions-id-draft",
@@ -7910,7 +7948,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/draft/route.ts em src/app/api/cockpit/frank/suggestions/[id]/draft/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
     "y": 4660
   },
   {
@@ -7948,7 +7986,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/reject/route.ts em src/app/api/cockpit/frank/suggestions/[id]/reject/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 3170,
     "y": 4660
   },
   {
@@ -7986,8 +8024,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/route.ts em src/app/api/cockpit/frank/suggestions/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 4660
+    "x": 2650,
+    "y": 4800
   },
   {
     "id": "route-api-api-cockpit-frank-supervisor",
@@ -8024,7 +8062,45 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/supervisor/route.ts em src/app/api/cockpit/frank/supervisor/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 2910,
+    "y": 4800
+  },
+  {
+    "id": "route-api-api-cockpit-gestao-ecommerce",
+    "name": "API / Backend: /api/cockpit/gestao-ecommerce",
+    "category": "api",
+    "domain": "Cockpit",
+    "layer": "Application",
+    "status": "production",
+    "isMvp": false,
+    "path": "src/app/api/cockpit/gestao-ecommerce/route.ts",
+    "directory": "src/app/api/cockpit/gestao-ecommerce/",
+    "url": "/api/cockpit/gestao-ecommerce",
+    "access": "Interno / autenticado",
+    "nodeType": "API / Backend",
+    "description": "URL: /api/cockpit/gestao-ecommerce\nTipo: API / Backend\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Tenant-scoped ecommerce management reading and explicit administrative setup",
+    "responsibilities": [
+      "Processamento de requisições GET, POST em /api/cockpit/gestao-ecommerce",
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
+    ],
+    "dependencies": [
+      "cockpit-module"
+    ],
+    "dependents": [],
+    "technologies": [
+      "Next.js 16 App Router",
+      "TypeScript",
+      "Route Handler"
+    ],
+    "relatedFiles": [
+      "src/app/api/cockpit/gestao-ecommerce/route.ts"
+    ],
+    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/api/cockpit/gestao-ecommerce/route.ts",
+    "evidence": "Arquivo de rota real src/app/api/cockpit/gestao-ecommerce/route.ts em src/app/api/cockpit/gestao-ecommerce/.",
+    "level": 3,
+    "parent": "cockpit-module",
+    "x": 3170,
     "y": 4800
   },
   {
@@ -8062,8 +8138,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts em src/app/api/cockpit/governance/playbooks/[playbookId]/apply/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
-    "y": 4800
+    "x": 2650,
+    "y": 4940
   },
   {
     "id": "route-api-api-cockpit-governance-playbooks-metrics",
@@ -8100,8 +8176,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/governance/playbooks/metrics/route.ts em src/app/api/cockpit/governance/playbooks/metrics/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 4800
+    "x": 2910,
+    "y": 4940
   },
   {
     "id": "route-api-api-cockpit-governance-playbooks",
@@ -8138,7 +8214,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/governance/playbooks/route.ts em src/app/api/cockpit/governance/playbooks/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 3170,
     "y": 4940
   },
   {
@@ -8252,8 +8328,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/metrics/frank/route.ts em src/app/api/cockpit/metrics/frank/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
-    "y": 4940
+    "x": 2650,
+    "y": 5080
   },
   {
     "id": "route-api-api-cockpit-metrics-freight",
@@ -8404,8 +8480,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/metrics/summary/route.ts em src/app/api/cockpit/metrics/summary/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 4940
+    "x": 2910,
+    "y": 5080
   },
   {
     "id": "route-api-api-cockpit-ops-run-rollup",
@@ -8518,7 +8594,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/[id]/route.ts em src/app/api/cockpit/orders/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 3170,
     "y": 5080
   },
   {
@@ -8556,8 +8632,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/[id]/shipment/route.ts em src/app/api/cockpit/orders/[id]/shipment/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
-    "y": 5080
+    "x": 2650,
+    "y": 5220
   },
   {
     "id": "route-api-api-cockpit-orders-id-status",
@@ -8594,8 +8670,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/[id]/status/route.ts em src/app/api/cockpit/orders/[id]/status/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 5080
+    "x": 2910,
+    "y": 5220
   },
   {
     "id": "route-api-api-cockpit-orders",
@@ -8632,7 +8708,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/route.ts em src/app/api/cockpit/orders/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 3170,
     "y": 5220
   },
   {
@@ -8670,8 +8746,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/organizations/[id]/route.ts em src/app/api/cockpit/organizations/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
-    "y": 5220
+    "x": 2650,
+    "y": 5360
   },
   {
     "id": "route-api-api-cockpit-pipeline-metrics",
@@ -8708,8 +8784,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/pipeline/metrics/route.ts em src/app/api/cockpit/pipeline/metrics/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 5220
+    "x": 2910,
+    "y": 5360
   },
   {
     "id": "route-api-api-cockpit-pipeline",
@@ -8746,7 +8822,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/pipeline/route.ts em src/app/api/cockpit/pipeline/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 3170,
     "y": 5360
   },
   {
@@ -8784,8 +8860,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/playbooks/[id]/route.ts em src/app/api/cockpit/playbooks/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
-    "y": 5360
+    "x": 2650,
+    "y": 5500
   },
   {
     "id": "route-api-api-cockpit-playbooks",
@@ -8822,8 +8898,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/playbooks/route.ts em src/app/api/cockpit/playbooks/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 5360
+    "x": 2910,
+    "y": 5500
   },
   {
     "id": "route-api-api-cockpit-products-search",
@@ -8860,7 +8936,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/products/search/route.ts em src/app/api/cockpit/products/search/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 3170,
     "y": 5500
   },
   {
@@ -8936,8 +9012,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/status/route.ts em src/app/api/cockpit/status/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
-    "y": 5500
+    "x": 2650,
+    "y": 5640
   },
   {
     "id": "route-api-api-cockpit-timeline",
@@ -8974,8 +9050,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/timeline/route.ts em src/app/api/cockpit/timeline/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
-    "y": 5500
+    "x": 2910,
+    "y": 5640
   },
   {
     "id": "route-api-api-cron-cleanup",
@@ -14256,7 +14332,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/dashboard/page.tsx em src/app/dashboard/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
+    "x": 3170,
     "y": 5640
   },
   {
@@ -14415,23 +14491,23 @@ export const ARCHITECTURE_DATA: {
     "id": "route-page-executive-dashboard",
     "name": "Página: /executive-dashboard",
     "category": "page",
-    "domain": "Public / Marketing",
+    "domain": "Cockpit",
     "layer": "UI",
     "status": "production",
     "isMvp": false,
     "path": "src/app/executive-dashboard/page.tsx",
     "directory": "src/app/executive-dashboard/",
     "url": "/executive-dashboard",
-    "access": "Público",
+    "access": "Interno / autenticado",
     "nodeType": "Página",
-    "description": "URL: /executive-dashboard\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
+    "description": "URL: /executive-dashboard\nTipo: Página\nAcesso: Interno / autenticado\nDomínio: Cockpit\nStatus: Live\nDescrição: Authenticated administrative report laboratory; explicit demonstration only",
     "responsibilities": [
       "Interface UI para a rota /executive-dashboard",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
+      "Controle de acesso Interno / autenticado",
+      "Domínio Cockpit"
     ],
     "dependencies": [
-      "condstore-root"
+      "cockpit-module"
     ],
     "dependents": [],
     "technologies": [
@@ -14445,9 +14521,9 @@ export const ARCHITECTURE_DATA: {
     "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/executive-dashboard/page.tsx",
     "evidence": "Arquivo de rota real src/app/executive-dashboard/page.tsx em src/app/executive-dashboard/.",
     "level": 3,
-    "parent": "condstore-root",
-    "x": 8010,
-    "y": 7880
+    "parent": "cockpit-module",
+    "x": 2650,
+    "y": 5780
   },
   {
     "id": "route-page-mvp-app-freight",
@@ -14750,7 +14826,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/painel-logistico/page.tsx em src/app/painel-logistico/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
+    "x": 8010,
     "y": 7880
   },
   {
@@ -14788,8 +14864,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/pricing/route.ts em src/app/pricing/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 8020
+    "x": 8270,
+    "y": 7880
   },
   {
     "id": "route-api-t-token",
@@ -14826,7 +14902,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/t/[token]/route.ts em src/app/t/[token]/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
+    "x": 7750,
     "y": 8020
   }
 ],
@@ -15285,6 +15361,13 @@ export const ARCHITECTURE_DATA: {
     "target": "route-page-cockpit-funcionalidades",
     "type": "contains",
     "description": "Contém página /cockpit/funcionalidades"
+  },
+  {
+    "id": "edge-cockpit-module-route-page-cockpit-gestao-ecommerce",
+    "source": "cockpit-module",
+    "target": "route-page-cockpit-gestao-ecommerce",
+    "type": "contains",
+    "description": "Contém página /cockpit/gestao-ecommerce"
   },
   {
     "id": "edge-cockpit-module-route-page-cockpit-knowledge-ask",
@@ -16286,6 +16369,13 @@ export const ARCHITECTURE_DATA: {
     "target": "route-api-api-cockpit-frank-supervisor",
     "type": "contains",
     "description": "Contém api / backend /api/cockpit/frank/supervisor"
+  },
+  {
+    "id": "edge-cockpit-module-route-api-api-cockpit-gestao-ecommerce",
+    "source": "cockpit-module",
+    "target": "route-api-api-cockpit-gestao-ecommerce",
+    "type": "contains",
+    "description": "Contém api / backend /api/cockpit/gestao-ecommerce"
   },
   {
     "id": "edge-cockpit-module-route-api-api-cockpit-governance-playbooks-playbookId-apply",
@@ -17464,8 +17554,8 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /evolution/roadmap"
   },
   {
-    "id": "edge-condstore-root-route-page-executive-dashboard",
-    "source": "condstore-root",
+    "id": "edge-cockpit-module-route-page-executive-dashboard",
+    "source": "cockpit-module",
     "target": "route-page-executive-dashboard",
     "type": "contains",
     "description": "Contém página /executive-dashboard"
@@ -17581,6 +17671,13 @@ export const ARCHITECTURE_DATA: {
     "target": "route-api-api-cockpit-frank-playbooks",
     "type": "calls",
     "description": "Página /cockpit/frank/playbooks chama API /api/cockpit/frank/playbooks"
+  },
+  {
+    "id": "edge-calls-route-page-cockpit-gestao-ecommerce-route-api-api-cockpit-gestao-ecommerce",
+    "source": "route-page-cockpit-gestao-ecommerce",
+    "target": "route-api-api-cockpit-gestao-ecommerce",
+    "type": "calls",
+    "description": "Página /cockpit/gestao-ecommerce chama API /api/cockpit/gestao-ecommerce"
   },
   {
     "id": "edge-calls-route-page-cockpit-metrics-route-api-api-cockpit-metrics",

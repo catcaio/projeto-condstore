@@ -1,0 +1,3 @@
+export default function EcommerceCockpitLoading() {
+    return <div role="status" aria-live="polite" className="min-w-0 space-y-5 rounded-2xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface))] p-5"><h1 className="text-lg font-semibold">Carregando gestão de e-commerce</h1><p className="text-sm text-[hsl(var(--ui-text-muted))]">Consultando os registros autorizados da operação.</p><div aria-hidden="true" className="grid animate-pulse gap-3 sm:grid-cols-2 xl:grid-cols-3">{Array.from({ length: 6 }, (_, index) => <div key={index} className="h-28 rounded-xl bg-[hsl(var(--ui-muted))]" />)}</div></div>;
+}

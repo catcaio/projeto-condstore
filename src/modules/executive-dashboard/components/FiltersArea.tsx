@@ -38,15 +38,15 @@ export const FiltersArea: React.FC<FiltersAreaProps> = ({
             onChange={(e) => onChangeFilters({ channel: e.target.value })}
             className="h-9 rounded-lg border border-slate-700 bg-slate-950 px-3 pr-8 text-xs font-semibold text-slate-200 focus:border-blue-500 focus:outline-none"
           >
-            <option value="Mercado Livre">Mercado Livre (Ativo)</option>
+            <option value="Mercado Livre">Mercado Livre (arquivo local)</option>
             <option value="Mercado Ads" disabled>
-              Mercado Ads (Em breve)
+              Mercado Ads (não implementado)
             </option>
             <option value="Google Ads" disabled>
-              Google Ads (Em breve)
+              Google Ads (não implementado)
             </option>
             <option value="ERP / Financeiro" disabled>
-              ERP / Financeiro (Em breve)
+              ERP / Financeiro (não implementado)
             </option>
           </select>
         </div>

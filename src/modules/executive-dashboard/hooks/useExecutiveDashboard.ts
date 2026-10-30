@@ -10,6 +10,7 @@ import { createSnapshotFromData, getSavedSnapshots } from '../services/snapshot.
 import {
   loadActiveDashboardData,
   saveActiveDashboardData,
+  type DashboardStorageScope,
 } from '../storage/dashboard-storage';
 import {
   ConsolidatedDashboardData,
@@ -22,7 +23,7 @@ import {
 } from '../types';
 import { detectReportTypeFromFileName } from '../utils/report-detector';
 
-export function useExecutiveDashboard() {
+export function useExecutiveDashboard(scope: DashboardStorageScope) {
   const [activeView, setActiveView] = useState<'dashboard' | 'import' | 'history' | 'channels'>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -37,9 +38,7 @@ export function useExecutiveDashboard() {
   const [produtosRows, setProdutosRows] = useState<DesempenhoProdutoRow[]>([]);
 
   // Active Consolidated Data & Snapshots
-  const [dashboardData, setDashboardData] = useState<ConsolidatedDashboardData>(() => {
-    return createMockConsolidatedData('Agosto 2026');
-  });
+  const [dashboardData, setDashboardData] = useState<ConsolidatedDashboardData | null>(null);
 
   const [snapshots, setSnapshots] = useState<DashboardSnapshot[]>([]);
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | undefined>();
@@ -54,13 +53,11 @@ export function useExecutiveDashboard() {
 
   // Load persisted state on mount
   useEffect(() => {
-    const saved = loadActiveDashboardData();
-    if (saved) {
-      setDashboardData(saved);
-    }
-    const savedSnaps = getSavedSnapshots();
+    const saved = loadActiveDashboardData(scope);
+    setDashboardData(saved);
+    const savedSnaps = getSavedSnapshots(scope);
     setSnapshots(savedSnaps);
-  }, []);
+  }, [scope.tenantId, scope.userId]);
 
   // Handle files selection
   const handleFilesSelected = useCallback((selectedFiles: File[]) => {
@@ -116,15 +113,15 @@ export function useExecutiveDashboard() {
       setPublicacoesRows(pub);
       setProdutosRows(prod);
 
-      const periodLabel = `Período Importado (${new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })})`;
+      const periodLabel = 'Importação local — período do relatório não validado';
       const consolidated = consolidateReportsData(evol, pub, prod, periodLabel);
 
       setDashboardData(consolidated);
-      saveActiveDashboardData(consolidated);
+      saveActiveDashboardData(scope, consolidated);
 
       // Save snapshot
-      const snapshot = createSnapshotFromData(consolidated, periodLabel);
-      setSnapshots(getSavedSnapshots());
+      const snapshot = createSnapshotFromData(scope, consolidated, periodLabel);
+      setSnapshots(getSavedSnapshots(scope));
       setSelectedSnapshotId(snapshot.id);
 
       setActiveView('dashboard');
@@ -134,7 +131,7 @@ export function useExecutiveDashboard() {
     } finally {
       setIsProcessing(false);
     }
-  }, [files]);
+  }, [files, scope]);
 
   const handleSelectSnapshot = useCallback((snapshot: DashboardSnapshot) => {
     setSelectedSnapshotId(snapshot.id);
@@ -156,14 +153,14 @@ export function useExecutiveDashboard() {
   }, []);
 
   // Filtered dataset derived for display
-  const filteredProducts = dashboardData.topProducts.filter((p) =>
+  const filteredProducts = dashboardData?.topProducts.filter((p) =>
     filters.searchQuery
       ? p.titulo.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
         p.sku.toLowerCase().includes(filters.searchQuery.toLowerCase())
       : true
   );
 
-  const filteredPublications = dashboardData.publications.filter((pub) =>
+  const filteredPublications = dashboardData?.publications.filter((pub) =>
     filters.searchQuery
       ? pub.titulo.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
         pub.mlItemId.toLowerCase().includes(filters.searchQuery.toLowerCase())
@@ -181,21 +178,18 @@ export function useExecutiveDashboard() {
     handleFilesSelected,
     handleRemoveFile,
     handleProcessDashboard,
-    dashboardData: {
+    loadDemonstration: () => setDashboardData(createMockConsolidatedData('Exemplo fictício — Agosto 2026')),
+    dashboardData: dashboardData ? {
       ...dashboardData,
-      topProducts: filteredProducts,
-      publications: filteredPublications,
-    },
+      topProducts: filteredProducts ?? [],
+      publications: filteredPublications ?? [],
+    } : null,
     snapshots,
     selectedSnapshotId,
     handleSelectSnapshot,
     filters,
     handleUpdateFilters,
     handleResetFilters,
-    availablePeriods: [
-      { id: '2026-08', label: 'Agosto 2026 (Atual)' },
-      { id: '2026-07', label: 'Julho 2026' },
-      { id: '2026-06', label: 'Junho 2026' },
-    ],
+    availablePeriods: snapshots.map((snapshot) => ({ id: snapshot.periodId, label: snapshot.periodLabel })),
   };
 }

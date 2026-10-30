@@ -304,7 +304,7 @@
 | /evolution | TBA | public | none | PUBLIC | live | Auto-detected |
 | /evolution/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
 | /evolution/roadmap | TBA | public | none | PUBLIC | live | Auto-detected |
-| /executive-dashboard | TBA | public | none | PUBLIC | live | Auto-detected |
+| /executive-dashboard | GET | internal | admin | cockpit | live | Authenticated administrative report laboratory; explicit demonstration only |
 | /faq | FAQ | public | none | PUBLIC | live | FAQ Page |
 | /financeiro/frete | GET | internal | required | console | live | Custos de Frete (stub — em breve) |
 | /financeiro/margem | GET | internal | required | console | live | Margem operacional (stub — em breve) |
@@ -372,3 +372,5 @@
 | /vendas/cotacao | GET | internal | required | console | live | Nova Cotação (stub — em breve) |
 | /vendas/pedidos | GET | internal | required | pedidos | live | Alias legado redirecionado para /pedidos |
 | /sitemap | GET | public | none | PUBLIC | live | Public Interactive Architecture Explorer & Sitemap |
+| /api/cockpit/gestao-ecommerce | GET, POST | internal | requireSession GET; requireAdmin POST | cockpit | live | Tenant-scoped ecommerce management reading and explicit administrative setup |
+| /cockpit/gestao-ecommerce | GET | internal | required | cockpit | live | Authenticated ecommerce management overview, fronts, projects, WBS and history |

@@ -46,15 +46,15 @@ export interface DesempenhoProdutoRow {
 }
 
 export interface DashboardKPIs {
-  faturamentoTotal: number;
-  variacaoFaturamento: number;
-  totalVendas: number;
-  variacaoVendas: number;
-  ticketMedio: number;
-  variacaoTicketMedio: number;
-  anunciosAtivos: number;
-  visitasTotais: number;
-  taxaConversaoMedia: number;
+  faturamentoTotal: number | null;
+  variacaoFaturamento: number | null;
+  totalVendas: number | null;
+  variacaoVendas: number | null;
+  ticketMedio: number | null;
+  variacaoTicketMedio: number | null;
+  anunciosAtivos: number | null;
+  visitasTotais: number | null;
+  taxaConversaoMedia: number | null;
 }
 
 export interface ChartDataPoint {
@@ -92,6 +92,7 @@ export interface AutomatedInsight {
 }
 
 export interface ConsolidatedDashboardData {
+  dataKind: 'demonstration' | 'local-import';
   periodLabel: string;
   updatedAt: string;
   kpis: DashboardKPIs;

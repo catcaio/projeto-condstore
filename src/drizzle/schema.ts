@@ -2277,6 +2277,7 @@ export const governanceProjects = mysqlTable('governance_projects', {
     name: varchar('name', { length: 255 }).notNull(),
     slug: varchar('slug', { length: 255 }).notNull(),
     description: text('description'),
+    ecommerceMetadata: json('ecommerce_metadata'),
     visibility: varchar('visibility', { length: 30 }).notNull().default('private'), // private, space, public
     status: varchar('status', { length: 30 }).notNull().default('active'),
     sortOrder: int('sort_order').notNull().default(0),

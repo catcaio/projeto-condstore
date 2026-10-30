@@ -55,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
             <p className="hidden text-xs text-slate-400 sm:block">
-              Inteligência comercial & analytics de performance
+              Laboratório local de relatórios — não operacional
             </p>
           </div>
         </div>
