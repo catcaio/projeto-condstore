@@ -62,7 +62,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1000.0",
     "@aws-sdk/s3-request-presigner": "^3.1000.0",
-    "@sentry/nextjs": "^10.40.0",
+    "@sentry/nextjs": "10.75.2",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.19",
     "@vercel/speed-insights": "^1.3.1",
@@ -76,8 +76,8 @@
     "jose": "6.1.3",
     "lucide-react": "0.574.0",
     "mysql2": "3.24.2",
-    "next": "16.3.3",
-    "nodemailer": "^9.1.0",
+    "next": "16.4.1",
+    "nodemailer": "10.1.4",
     "openai": "^6.29.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -88,7 +88,7 @@
     "tailwindcss-animate": "1.0.7",
     "twilio": "5.12.1",
     "uuid": "^14.0.0",
-    "zod": "^4.3.6"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@eslint/js": "9.39.3",
@@ -96,7 +96,6 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.3.3",
     "@types/node-fetch": "2.6.13",
-    "@types/nodemailer": "^8.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
@@ -123,13 +122,15 @@
     "@eslint/js": "9.39.3",
     "serialize-javascript": "7.0.5",
     "fast-xml-parser": "5.7.3",
-    "follow-redirects": "1.16.0",
+    "follow-redirects": "1.16.1",
     "vite": "8.0.16",
-    "brace-expansion": "5.0.9",
+    "brace-expansion": "5.0.12",
     "flatted": ">=3.4.0",
     "esbuild": ">=0.25.0",
-    "fast-uri": "3.1.6",
+    "fast-uri": "3.1.9",
     "browserslist": ">=4.28.7",
-    "postcss-selector-parser": ">=6.1.3"
+    "postcss-selector-parser": "7.1.6",
+    "qs": "6.16.1",
+    "source-map-js": "1.2.2"
   }
 }
