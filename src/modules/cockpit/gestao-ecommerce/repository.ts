@@ -163,6 +163,14 @@ export class EcommerceRepository implements EcommerceReadRepository {
                 }).onDuplicateKeyUpdate({ set: { id: taskId } });
             }
 
+            const historyEventId = id('CAT-001:demo.seeded');
+            await tx.insert(governanceTaskEvents).values({
+                id: historyEventId, tenantId, taskId: id('CAT-001:wbs:1'), actorUserId: actor.userId,
+                eventType: 'demo.seeded',
+                payloadJson: { description: 'Exemplo CAT-001 e EAP cadastrados para demonstração, sem execução ou resultado comercial.' },
+                createdAt: now,
+            }).onDuplicateKeyUpdate({ set: { id: historyEventId } });
+
             const configId = id('config');
             await tx.insert(tenantConfigurations).values({
                 id: configId, tenantId, key: ECOMMERCE_CONFIG_KEY, category: 'operacao', createdBy: actor.userId,

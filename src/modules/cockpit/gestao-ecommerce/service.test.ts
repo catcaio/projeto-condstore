@@ -112,6 +112,22 @@ describe('ecommerce cockpit authorization and truthful summaries', () => {
         expect(snapshot.fronts[1]).toMatchObject({ projectCount: 0, demoProjectCount: 1, completedDeliverables: 0 });
     });
 
+    it('shows initial demonstration history without recording work or inflating operational counts', async () => {
+        const description = 'Exemplo CAT-001 e EAP cadastrados para demonstração, sem execução ou resultado comercial.';
+        const repo = repository([project('demo', {
+            ecommerceMetadata: { ...metadata, isDemo: true, source: { ...metadata.source, type: 'demonstration' } },
+        })], [task('wbs', 'demo', { sourceType: 'demonstration' })], [event('demo-created', 'wbs', {
+            eventType: 'demo.seeded', payloadJson: { description },
+        })]);
+        const snapshot = await getEcommerceCockpit(actor('manager'), {}, repo);
+        expect(snapshot.projects[0].history).toEqual([{
+            id: 'demo-created', taskId: 'wbs', type: 'demo.seeded', occurredAt: when.toISOString(), description,
+        }]);
+        expect(snapshot.projects[0].activities).toEqual([]);
+        expect(snapshot.recentDeliveries).toEqual([]);
+        expect(snapshot.management).toEqual({ activeProjects: 0, completedDeliverables: 0, completedActivities: 0 });
+    });
+
     it('counts only structured completed activities, deduplicates identity, and preserves status history', async () => {
         const completed = event('execution-1', 'wbs', {
             eventType: 'activity.completed', payloadJson: {

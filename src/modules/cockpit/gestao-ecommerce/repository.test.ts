@@ -82,7 +82,13 @@ describe('explicit administrative demonstration setup', () => {
         expect(store.rows('governance_projects')).toHaveLength(1);
         expect(store.rows('governance_tasks')).toHaveLength(4);
         expect(store.rows('tenant_events')).toHaveLength(1);
-        expect(store.rows('governance_task_events')).toEqual([]);
+        expect(store.rows('governance_task_events')).toHaveLength(1);
+        expect(store.rows('governance_task_events')[0]).toMatchObject({
+            id: ecommerceSeedId('tenant-a', 'CAT-001:demo.seeded'), tenantId: 'tenant-a',
+            taskId: ecommerceSeedId('tenant-a', 'CAT-001:wbs:1'), actorUserId: 'admin-a', eventType: 'demo.seeded',
+            payloadJson: { description: 'Exemplo CAT-001 e EAP cadastrados para demonstração, sem execução ou resultado comercial.' },
+        });
+        expect(store.rows('governance_task_events')[0].payloadJson).not.toHaveProperty('quantity');
         expect(store.rows('governance_projects')[0]).toBe(originalProject);
         expect(originalProject.ecommerceMetadata).toMatchObject({ isDemo: true, source: { type: 'demonstration' }, observedResult: null });
         expect(store.rows('governance_tasks').every((row) => row.status === 'planned' && row.tenantId === 'tenant-a')).toBe(true);

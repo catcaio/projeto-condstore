@@ -152,6 +152,8 @@ Preparação explícita da demonstração, no mesmo endpoint:
 
 O seed cria seis frentes, o projeto CAT-001 e quatro entregáveis planejados. Usa IDs determinísticos por tenant, transação e inserts que preservam registros existentes. Repetir a ação não duplica projetos, entregáveis ou o evento de preparação. Ela não é executada ao abrir a página e não cria atividades concluídas, vendas ou resultados.
 
+O histórico visível recebe um único evento idempotente `demo.seeded`, ligado ao primeiro entregável e ao administrador da sessão, que registra somente o cadastro do exemplo e não conta como execução.
+
 Exemplo de chamada na origem do aplicativo, após login de administrador:
 
 ```javascript
@@ -181,9 +183,10 @@ As contagens abaixo se referem às execuções da frente registradas antes do ga
 
 | Verificação | Resultado registrado |
 |---|---|
-| Backend: serviço, repository e API | 46 testes aprovados |
+| Backend: serviço, repository e API | 47 testes aprovados |
 | UI do cockpit | 22 testes aprovados |
 | Navegação | 5 testes aprovados |
+| Contrato canônico do menu | 8 testes aprovados; inclui rota, ordem, unicidade e quatro perfis |
 | Contrato de segurança com JWT | 7 testes aprovados |
 | Regressão do dashboard legado | 11 testes aprovados |
 | `npm run test:cockpit` | 97 testes aprovados |
@@ -191,10 +194,23 @@ As contagens abaixo se referem às execuções da frente registradas antes do ga
 | Lint global | Aprovado |
 | Verificação de rotas e guards | Aprovada nas execuções registradas |
 | Isolamento de tenant | Gate aprovado; 193 queries inspecionadas |
-| Regeneração Drizzle | Sem nova alteração de schema/snapshot |
+| `npm run db:verify` | Aprovado offline; sem drift entre schema e migrations commitadas |
+| Conjunto final da Etapa 1 | 95 testes aprovados em 9 arquivos; conjuntos acima se sobrepõem |
 | Persistência MySQL e aplicação da migration | Bloqueadas por conectividade |
 | Demonstração manual desktop/celular | Pendente |
-| Build, coverage e CI no HEAD final | A preencher após conclusão das execuções |
+| Build local final | Aprovado, incluindo compilação TypeScript e geração das rotas |
+| Coverage local amplo | 1.400 testes aprovados, 3 timeouts em Frank e 13 ignorados; exit 1, não aprovado |
+| PR | [#427, em rascunho](https://github.com/catcaio/projeto-condstore/pull/427); CI do último push deve ser conferido antes do Gate 1 |
+
+A branch `feat/indiana-cockpit-foundation` partiu de `aed72347efac1a74f8d0d0bb04e7a6f3ed183d83` e foi atualizada sem conflitos sobre `3005194a34b51a09e95d9a473e837cc2886e1d62`. A cópia original e suas exclusões locais foram preservadas.
+
+O CI inicial identificou uma expectativa antiga do menu, corrigida para incluir o módulo solicitado e acrescentar verificações de rota/perfis/ordem. O Dependency Audit encontrou 11 vulnerabilidades (2 moderadas, 7 altas e 2 críticas) em dependências existentes; `package.json` e `package-lock.json` não têm diff nesta entrega. Não foi feita atualização ampla de dependências fora do escopo.
+
+Os timeouts locais foram comparados com a base sem editar asserts ou aumentar limites de tempo. Em uma comparação de sete arquivos, a branch teve 12 falhas e a base 7; cinco falhas exclusivas daquela execução não foram classificadas como preexistentes. Na comparação posterior de três arquivos Frank, a branch teve 1 timeout e a base 3, em casos alternados. Isso evidencia instabilidade temporal, mas não transforma a execução ampla em aprovada. O CI do HEAD publicado é uma evidência separada.
+
+O teste HTTP local com sessão assinada confirmou 401 sem sessão/cookie inválido, redirecionamento da página anônima, 403 para escrita de manager e para Origin externo, 400 para sobrescrita de tenant, redirecionamento de manager no laboratório e 200 para administrador no laboratório.
+
+O usuário autorizou posteriormente testar no banco real. A conexão fornecida ainda retornou `ECONNREFUSED`; a configuração local original tem `DATABASE_URL` vazio. O conector Vercel negou a leitura das variáveis (403) e a credencial CLI não disponibilizou acesso. Nenhuma credencial real foi obtida, nenhuma migration foi aplicada e nenhum dado operacional foi alterado.
 
 Comandos reproduzíveis, conferidos no `package.json` desta base:
 
