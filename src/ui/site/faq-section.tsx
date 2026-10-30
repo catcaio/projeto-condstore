@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { PageContainer } from './page-container';
 import { PageSection } from './page-section';
 import { SectionIntro } from './section-intro';
+import { SiteCard } from './site-card';
 
 const faqs = [
     {
@@ -50,14 +51,15 @@ const faqs = [
     },
 ];
 
-function FaqItem({ question, answer }: { question: string; answer: string }) {
+function FaqItem({ question, answer, isLast }: { question: string; answer: string; isLast?: boolean }) {
     const [open, setOpen] = useState(false);
 
     return (
-        <div className="border-b border-[hsl(var(--ui-border)/0.3)]">
+        <div className={cn(!isLast && 'border-b border-[hsl(var(--ui-border)/0.3)]')}>
             <button
+                type="button"
                 onClick={() => setOpen(!open)}
-                className="flex w-full items-center justify-between py-5 text-left gap-4 group"
+                className="flex w-full items-center justify-between py-5 text-left gap-4 group rounded-lg px-2 -mx-2 transition-colors hover:bg-[hsl(var(--ui-surface-elevated)/0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--ui-surface))]"
             >
                 <span className="text-base font-semibold text-[hsl(var(--ui-text))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">
                     {question}
@@ -71,7 +73,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
             </button>
             <div
                 className={cn(
-                    'overflow-hidden transition-all duration-300 ease-out',
+                    'overflow-hidden transition-all duration-300 ease-out px-2 -mx-2',
                     open ? 'max-h-60 pb-5' : 'max-h-0'
                 )}
             >
@@ -91,10 +93,17 @@ export function FaqSection() {
                     eyebrow="Perguntas frequentes"
                     title="Dúvidas? A gente responde."
                 />
-                <div className="mt-2">
-                    {faqs.map((faq) => (
-                        <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
-                    ))}
+                <div className="mt-8">
+                    <SiteCard variant="default" className="p-6 md:p-8">
+                        {faqs.map((faq, index) => (
+                            <FaqItem
+                                key={faq.question}
+                                question={faq.question}
+                                answer={faq.answer}
+                                isLast={index === faqs.length - 1}
+                            />
+                        ))}
+                    </SiteCard>
                 </div>
             </PageContainer>
         </PageSection>

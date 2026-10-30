@@ -14,6 +14,7 @@ import {
     SectionIntro,
     HeroSection,
     FeatureGrid,
+    SiteCard,
 } from '@/ui/site';
 import { TrackedLink } from '@/ui/lib/track-client';
 
@@ -65,7 +66,7 @@ export default function PilotoPage() {
                                 ))}
                             </ul>
                         </div>
-                        <div className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-8">
+                        <SiteCard variant="default" className="p-8">
                             <h3 className="text-lg font-bold text-[hsl(var(--ui-text))] mb-6">Pré-requisitos básicos</h3>
                             <div className="space-y-6">
                                 {[
@@ -87,7 +88,7 @@ export default function PilotoPage() {
                                     );
                                 })}
                             </div>
-                        </div>
+                        </SiteCard>
                     </div>
                 </PageContainer>
             </PageSection>
@@ -106,13 +107,13 @@ export default function PilotoPage() {
                             { step: '03', title: 'Operação', desc: 'Uso real do sistema pelo time com apoio do Frank.' },
                             { step: '04', title: 'Avaliação', desc: 'Análise de métricas e decisão sobre escala.' },
                         ].map((item) => (
-                            <div key={item.step} className="relative rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.2)] p-6">
+                            <SiteCard key={item.step} variant="default" className="relative p-6">
                                 <span className="text-4xl font-black text-[hsl(var(--ui-accent-blue)/0.1)] absolute top-4 right-6 leading-none select-none">
                                     {item.step}
                                 </span>
                                 <h3 className="text-base font-bold text-[hsl(var(--ui-text))] mb-2 relative z-10">{item.title}</h3>
                                 <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed relative z-10">{item.desc}</p>
-                            </div>
+                            </SiteCard>
                         ))}
                     </div>
                 </PageContainer>
@@ -166,7 +167,7 @@ export default function PilotoPage() {
                                 trackPage="piloto"
                                 trackSection="footer"
                                 trackElement="request_evaluation"
-                                className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-[hsl(var(--ui-accent-blue))] px-10 text-base font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))] shadow-lg shadow-[hsl(var(--ui-accent-blue)/0.2)] w-full sm:w-auto"
+                                className="inline-flex h-13 items-center justify-center gap-2 rounded-xl bg-[hsl(var(--ui-accent-blue))] px-8 text-sm font-bold text-[hsl(var(--ui-accent-blue-ink))] shadow-md transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))] w-full sm:w-auto"
                             >
                                 Solicitar avaliação operacional
                                 <ArrowRight className="h-5 w-5" />

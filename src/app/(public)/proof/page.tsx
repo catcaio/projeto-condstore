@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import {
     PageContainer, PageSection, SectionIntro, HeroSection,
-    OperationFlow, CTASection, ScrollReveal,
+    OperationFlow, CTASection, ScrollReveal, SiteBadge, SiteCard,
 } from '@/ui/site';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -121,7 +121,7 @@ export default function ProofPage() {
                         />
 
                         {/* Browser chrome mockup */}
-                        <div className="rounded-2xl border border-[hsl(var(--ui-border)/0.3)] bg-[hsl(var(--ui-surface)/0.3)] backdrop-blur-sm overflow-hidden shadow-2xl shadow-[hsl(var(--ui-accent-blue)/0.05)]">
+                        <SiteCard variant="elevated" className="overflow-hidden p-0 shadow-2xl shadow-[hsl(var(--ui-accent-blue)/0.05)]">
                             {/* Window bar */}
                             <div className="flex items-center gap-2 px-4 py-3 border-b border-[hsl(var(--ui-border)/0.2)] bg-[hsl(var(--ui-surface)/0.5)]">
                                 <div className="flex gap-1.5">
@@ -139,7 +139,7 @@ export default function ProofPage() {
                             {/* Cockpit layout */}
                             <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {/* Inbox card */}
-                                <div className="rounded-xl border border-[hsl(var(--ui-border)/0.3)] bg-[hsl(var(--ui-surface)/0.4)] p-4">
+                                <SiteCard variant="default" className="p-4">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
                                             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(var(--ui-accent-blue)/0.1)]">
@@ -147,9 +147,9 @@ export default function ProofPage() {
                                             </div>
                                             <span className="text-xs font-bold text-[hsl(var(--ui-text))] uppercase tracking-wide">Inbox</span>
                                         </div>
-                                        <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-[hsl(var(--ui-accent-blue))] text-[10px] font-bold text-white px-1.5">
+                                        <SiteBadge variant="accent" className="h-5 min-w-5 px-1.5 py-0 text-[10px]">
                                             12
-                                        </span>
+                                        </SiteBadge>
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {[
@@ -174,10 +174,10 @@ export default function ProofPage() {
                                             </div>
                                         ))}
                                     </div>
-                                </div>
+                                </SiteCard>
 
                                 {/* Cotações card */}
-                                <div className="rounded-xl border border-[hsl(var(--ui-border)/0.3)] bg-[hsl(var(--ui-surface)/0.4)] p-4">
+                                <SiteCard variant="default" className="p-4">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
                                             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(var(--ui-success)/0.1)]">
@@ -196,9 +196,12 @@ export default function ProofPage() {
                                             <div key={item.id} className="p-2.5 rounded-lg bg-[hsl(var(--ui-surface-elevated)/0.3)]">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] font-mono font-bold text-[hsl(var(--ui-text-subtle))]">{item.id}</span>
-                                                    <span className={`text-[10px] font-semibold ${item.status === 'Aprovada' ? 'text-[hsl(var(--ui-success))]' : 'text-[hsl(var(--ui-warning))]'}`}>
+                                                    <SiteBadge
+                                                        variant={item.status === 'Aprovada' ? 'success' : 'warning'}
+                                                        className="px-1.5 py-0 text-[10px]"
+                                                    >
                                                         {item.status}
-                                                    </span>
+                                                    </SiteBadge>
                                                 </div>
                                                 <div className="flex items-center justify-between mt-1">
                                                     <span className="text-[11px] text-[hsl(var(--ui-text-muted))]">{item.rota}</span>
@@ -207,10 +210,10 @@ export default function ProofPage() {
                                             </div>
                                         ))}
                                     </div>
-                                </div>
+                                </SiteCard>
 
                                 {/* Pedidos card */}
-                                <div className="rounded-xl border border-[hsl(var(--ui-border)/0.3)] bg-[hsl(var(--ui-surface)/0.4)] p-4">
+                                <SiteCard variant="default" className="p-4">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
                                             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[hsl(var(--ui-accent-blue)/0.1)]">
@@ -230,7 +233,9 @@ export default function ProofPage() {
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] font-mono font-bold text-[hsl(var(--ui-text-subtle))]">{item.id}</span>
                                                     {item.urgente && (
-                                                        <span className="text-[10px] font-semibold text-[hsl(var(--ui-warning))]">Atenção</span>
+                                                        <SiteBadge variant="warning" className="px-1.5 py-0 text-[10px]">
+                                                            Atenção
+                                                        </SiteBadge>
                                                     )}
                                                 </div>
                                                 <div className="flex items-center justify-between mt-1">
@@ -254,9 +259,9 @@ export default function ProofPage() {
                                             </div>
                                         ))}
                                     </div>
-                                </div>
+                                </SiteCard>
                             </div>
-                        </div>
+                        </SiteCard>
 
                         <p className="text-center text-xs text-[hsl(var(--ui-text-subtle))] mt-4">
                             Interface representativa do Cockpit OS — dados ilustrativos do padrão operacional real.
@@ -314,16 +319,17 @@ export default function ProofPage() {
                                 ].map((item) => {
                                     const Icon = item.icon;
                                     return (
-                                        <div
+                                        <SiteCard
                                             key={item.label}
-                                            className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-5 transition-all hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-elevated)/0.4)]"
+                                            variant="interactive"
+                                            className="p-5"
                                         >
                                             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--ui-accent-blue)/0.08)] mb-3">
                                                 <Icon className="h-4 w-4 text-[hsl(var(--ui-accent-blue))]" />
                                             </div>
                                             <h3 className="text-sm font-bold text-[hsl(var(--ui-text))] mb-1 tracking-tight">{item.label}</h3>
                                             <p className="text-xs text-[hsl(var(--ui-text-muted))] leading-relaxed">{item.desc}</p>
-                                        </div>
+                                        </SiteCard>
                                     );
                                 })}
                             </div>
@@ -371,22 +377,23 @@ export default function ProofPage() {
                                 const Icon = item.icon;
                                 const isDanger = item.accent === 'ui-danger';
                                 return (
-                                    <div
+                                    <SiteCard
                                         key={item.title}
-                                        className="rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.3)] p-6 transition-all hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface-elevated)/0.4)]"
+                                        variant="interactive"
+                                        className="p-6"
                                     >
                                         <div className={`flex h-10 w-10 items-center justify-center rounded-xl mb-4 ${isDanger ? 'bg-[hsl(var(--ui-danger)/0.08)]' : 'bg-[hsl(var(--ui-accent-blue)/0.08)]'}`}>
                                             <Icon className={`h-5 w-5 ${isDanger ? 'text-[hsl(var(--ui-danger))]' : 'text-[hsl(var(--ui-accent-blue))]'}`} />
                                         </div>
                                         <h3 className="text-base font-bold text-[hsl(var(--ui-text))] mb-2 tracking-tight">{item.title}</h3>
                                         <p className="text-sm text-[hsl(var(--ui-text-muted))] leading-relaxed">{item.desc}</p>
-                                    </div>
+                                    </SiteCard>
                                 );
                             })}
                         </div>
 
                         {/* Supervised mode note */}
-                        <div className="mt-10 rounded-2xl border border-[hsl(var(--ui-border)/0.3)] bg-[hsl(var(--ui-surface)/0.2)] px-6 py-5 flex items-start gap-4">
+                        <SiteCard variant="default" className="mt-10 px-6 py-5 flex items-start gap-4">
                             <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[hsl(var(--ui-success)/0.1)]">
                                 <CheckCircle2 className="h-4 w-4 text-[hsl(var(--ui-success))]" />
                             </div>
@@ -399,7 +406,7 @@ export default function ProofPage() {
                                     Autonomia se ganha por histórico — não é liberada por padrão.
                                 </p>
                             </div>
-                        </div>
+                        </SiteCard>
                     </PageContainer>
                 </PageSection>
             </ScrollReveal>
@@ -420,18 +427,20 @@ export default function ProofPage() {
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className="group rounded-2xl border border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface)/0.2)] p-5 flex flex-col gap-3 transition-all hover:border-[hsl(var(--ui-border))] hover:bg-[hsl(var(--ui-surface)/0.4)]"
+                                        className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ui-accent-blue))]"
                                     >
-                                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--ui-accent-blue)/0.08)] transition-colors group-hover:bg-[hsl(var(--ui-accent-blue)/0.12)]">
-                                            <Icon className="h-4 w-4 text-[hsl(var(--ui-accent-blue))]" />
-                                        </div>
-                                        <div>
-                                            <span className="block text-sm font-bold text-[hsl(var(--ui-text))] tracking-tight group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">
-                                                {item.label}
-                                            </span>
-                                            <span className="block text-xs text-[hsl(var(--ui-text-muted))] mt-0.5">{item.sub}</span>
-                                        </div>
-                                        <ArrowRight className="h-4 w-4 text-[hsl(var(--ui-text-subtle))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors mt-auto" />
+                                        <SiteCard variant="interactive" className="h-full p-5 flex flex-col gap-3">
+                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--ui-accent-blue)/0.08)] transition-colors group-hover:bg-[hsl(var(--ui-accent-blue)/0.12)]">
+                                                <Icon className="h-4 w-4 text-[hsl(var(--ui-accent-blue))]" />
+                                            </div>
+                                            <div>
+                                                <span className="block text-sm font-bold text-[hsl(var(--ui-text))] tracking-tight group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors">
+                                                    {item.label}
+                                                </span>
+                                                <span className="block text-xs text-[hsl(var(--ui-text-muted))] mt-0.5">{item.sub}</span>
+                                            </div>
+                                            <ArrowRight className="h-4 w-4 text-[hsl(var(--ui-text-subtle))] group-hover:text-[hsl(var(--ui-accent-blue))] transition-colors mt-auto" />
+                                        </SiteCard>
                                     </Link>
                                 );
                             })}

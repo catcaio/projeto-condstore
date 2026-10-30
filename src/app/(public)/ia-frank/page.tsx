@@ -1,10 +1,7 @@
 import { Metadata } from 'next';
-import Link from 'next/link';
 import {
-    ArrowRight,
     Bot,
     CheckCircle2,
-    MessageCircle,
     Shield,
     ShieldCheck,
     Zap,
@@ -17,6 +14,9 @@ import {
     PageSection,
     ScrollReveal,
     SectionIntro,
+    SiteBadge,
+    SiteButton,
+    SiteCard,
 } from '@/ui/site';
 
 export const metadata: Metadata = {
@@ -79,9 +79,9 @@ export default function IAFrankPage() {
                 <PageContainer>
                     <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
                         <div>
-                            <span className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.45)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[hsl(var(--ui-text-muted))]">
+                            <SiteBadge variant="accent" className="uppercase tracking-[0.15em] text-[11px]">
                                 IA Frank Supervisionada
-                            </span>
+                            </SiteBadge>
                             <h1 className="mt-6 text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-[hsl(var(--ui-text))] leading-[1.08]">
                                 Frank: o copiloto que entende sua operação.
                             </h1>
@@ -89,22 +89,16 @@ export default function IAFrankPage() {
                                 O Frank não substitui seu time — ele o torna mais rápido. Uma IA assistiva focada em organizar o caos operacional do WhatsApp e da logística, sempre sob supervisão humana.
                             </p>
                             <div className="mt-8 flex flex-wrap gap-4">
-                                <Link
-                                    href="/piloto"
-                                    className="inline-flex h-12 items-center justify-center rounded-full bg-[hsl(var(--ui-accent-blue))] px-8 text-sm font-bold text-white transition-all hover:bg-[hsl(var(--ui-accent-blue-strong))]"
-                                >
+                                <SiteButton href="/piloto" variant="accent">
                                     Solicitar avaliação operacional
-                                </Link>
-                                <Link
-                                    href="/como-funciona"
-                                    className="inline-flex h-12 items-center justify-center rounded-full border border-[hsl(var(--ui-border))] px-8 text-sm font-semibold text-[hsl(var(--ui-text))] transition-colors hover:bg-[hsl(var(--ui-surface-elevated))]"
-                                >
+                                </SiteButton>
+                                <SiteButton href="/como-funciona" variant="secondary">
                                     Ver fluxo supervisionado
-                                </Link>
+                                </SiteButton>
                             </div>
                         </div>
 
-                        <aside className="rounded-3xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.35)] p-8">
+                        <SiteCard variant="default" className="rounded-3xl p-8">
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--ui-accent-blue)/0.1)] text-[hsl(var(--ui-accent-blue))]">
                                 <Bot className="h-6 w-6" />
                             </div>
@@ -124,7 +118,7 @@ export default function IAFrankPage() {
                                     </li>
                                 ))}
                             </ul>
-                        </aside>
+                        </SiteCard>
                     </div>
                 </PageContainer>
             </PageSection>
@@ -141,13 +135,13 @@ export default function IAFrankPage() {
                             {frankFeatures.map((feature) => {
                                 const Icon = feature.icon;
                                 return (
-                                    <article key={feature.title} className="rounded-2xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-6">
+                                    <SiteCard key={feature.title} variant="default" className="p-6">
                                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-muted)/0.5)] text-[hsl(var(--ui-text))]">
                                             <Icon className="h-5 w-5" />
                                         </div>
                                         <h3 className="mt-4 text-base font-bold text-[hsl(var(--ui-text))]">{feature.title}</h3>
                                         <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--ui-text-muted))]">{feature.description}</p>
-                                    </article>
+                                    </SiteCard>
                                 );
                             })}
                         </div>
@@ -167,7 +161,7 @@ export default function IAFrankPage() {
                             {boundaryItems.map((group) => {
                                 const Icon = group.icon;
                                 return (
-                                    <article key={group.title} className="rounded-3xl border border-[hsl(var(--ui-border)/0.45)] bg-[hsl(var(--ui-surface)/0.3)] p-8">
+                                    <SiteCard key={group.title} variant="default" className="rounded-3xl p-8">
                                         <div className="flex items-center gap-4">
                                             <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--ui-muted)/0.5)] ${group.accent}`}>
                                                 <Icon className="h-5 w-5" />
@@ -182,7 +176,7 @@ export default function IAFrankPage() {
                                                 </li>
                                             ))}
                                         </ul>
-                                    </article>
+                                    </SiteCard>
                                 );
                             })}
                         </div>
@@ -193,20 +187,17 @@ export default function IAFrankPage() {
             <ScrollReveal>
                 <PageSection spacing="md" borderTop>
                     <PageContainer narrow>
-                        <div className="rounded-3xl bg-[hsl(var(--ui-accent-blue))] px-8 py-12 text-center text-white">
+                        <SiteCard variant="elevated" className="rounded-3xl bg-[hsl(var(--ui-accent-blue))] px-8 py-12 text-center text-white border-transparent">
                             <h2 className="text-3xl font-extrabold md:text-4xl">Pronto para ter um copiloto na sua operação?</h2>
                             <p className="mx-auto mt-4 max-w-2xl text-lg text-white/80">
                                 Agende uma demonstração e veja como o Frank auxilia o atendimento e a logística em fluxo integrado.
                             </p>
                             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                                <Link
-                                    href="/piloto"
-                                    className="inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-sm font-bold text-[hsl(var(--ui-accent-blue))] transition-transform hover:scale-105"
-                                >
+                                <SiteButton href="/piloto" variant="primary" className="bg-white text-[hsl(var(--ui-accent-blue))] hover:bg-white/90">
                                     Solicitar avaliação operacional
-                                </Link>
+                                </SiteButton>
                             </div>
-                        </div>
+                        </SiteCard>
                     </PageContainer>
                 </PageSection>
             </ScrollReveal>
