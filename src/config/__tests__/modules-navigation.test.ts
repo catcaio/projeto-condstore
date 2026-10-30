@@ -8,6 +8,7 @@ describe('canonical cockpit module registry', () => {
 
         expect(primary.map((item) => item.id)).toEqual([
             'cockpit',
+            'gestao-ecommerce',
             'conversas',
             'pedidos',
             'logistica',
@@ -21,6 +22,36 @@ describe('canonical cockpit module registry', () => {
         expect(primary.every((item) => item.navVisible)).toBe(true);
         expect(primary.some((item) => item.group === 'Legacy')).toBe(false);
         expect(primary.some((item) => item.route === '/dashboard')).toBe(false);
+    });
+
+    it('registers ecommerce once as a Core route immediately after cockpit', () => {
+        const primary = getPrimaryNavigationModules();
+        const ecommerce = findModuleForPath('/cockpit/gestao-ecommerce');
+
+        expect(ecommerce?.id).toBe('gestao-ecommerce');
+        expect(ecommerce?.route).toBe('/cockpit/gestao-ecommerce');
+        expect(ecommerce?.routes).toEqual([
+            { pattern: '/cockpit/gestao-ecommerce', title: 'Gestão de E-commerce' },
+        ]);
+        expect(ecommerce?.requiredRoles).toEqual(['admin', 'manager', 'operator', 'viewer']);
+        expect(ecommerce?.authModule).toBe('cockpit');
+        expect(ecommerce?.navGroup).toBe('Core');
+        expect(ecommerce?.navOrder).toBe(15);
+        expect(ecommerce?.navVisible).toBe(true);
+        expect(primary.findIndex((item) => item.id === 'gestao-ecommerce'))
+            .toBe(primary.findIndex((item) => item.id === 'cockpit') + 1);
+        expect(primary.filter((item) => item.id === 'gestao-ecommerce')).toHaveLength(1);
+        expect(MODULES.filter((item) => item.route === '/cockpit/gestao-ecommerce')).toHaveLength(1);
+        expect(MODULES.some((item) => item.group === 'Legacy' &&
+            (item.id === 'gestao-ecommerce' || item.route === '/cockpit/gestao-ecommerce'))).toBe(false);
+        expect(isModuleAuthorized(ecommerce!, 'unknown', false).authorized).toBe(false);
+    });
+
+    it.each(['admin', 'manager', 'operator', 'viewer'])('allows the %s profile to consult ecommerce', (role) => {
+        const ecommerce = findModuleForPath('/cockpit/gestao-ecommerce');
+
+        expect(ecommerce?.id).toBe('gestao-ecommerce');
+        expect(isModuleAuthorized(ecommerce!, role, false)).toEqual({ authorized: true, reason: 'ok' });
     });
 
     it('keeps legacy settings hidden while configuracoes is canonical', () => {

@@ -77,12 +77,12 @@ export const SnapshotHistory: React.FC<SnapshotHistoryProps> = ({
                   <div className="flex justify-between">
                     <span className="text-slate-400">Faturamento:</span>
                     <span className="font-bold text-emerald-400">
-                      {formatCurrency(snap.data.kpis.faturamentoTotal)}
+                      {snap.data.kpis.faturamentoTotal === null ? 'Indisponível' : formatCurrency(snap.data.kpis.faturamentoTotal)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Total Vendas:</span>
-                    <span className="font-semibold">{snap.data.kpis.totalVendas} un.</span>
+                    <span className="font-semibold">{snap.data.kpis.totalVendas === null ? 'Indisponível' : `${snap.data.kpis.totalVendas} pedidos`}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Canal:</span>

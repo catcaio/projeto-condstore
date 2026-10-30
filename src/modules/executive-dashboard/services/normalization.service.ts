@@ -74,6 +74,7 @@ export function createMockConsolidatedData(periodLabel = 'Agosto 2026'): Consoli
   ];
 
   return {
+    dataKind: 'demonstration',
     periodLabel,
     updatedAt: new Date().toISOString(),
     kpis,
@@ -96,26 +97,26 @@ export function consolidateReportsData(
   periodLabel = 'Período Importado'
 ): ConsolidatedDashboardData {
   if (!evolucaoRows.length && !publicacoesRows.length && !produtosRows.length) {
-    return createMockConsolidatedData(periodLabel);
+    throw new Error('Nenhum registro disponível nos relatórios selecionados.');
   }
 
   // Calculate KPIs from Evolução Negócio
   const totalFat = evolucaoRows.reduce((acc, r) => acc + r.faturamentoBruto, 0);
-  const totalUnd = evolucaoRows.reduce((acc, r) => acc + r.unidadesVendidas, 0);
   const totalVisitas = evolucaoRows.reduce((acc, r) => acc + r.visitasTotais, 0);
-  const ticketMedio = totalUnd > 0 ? totalFat / totalUnd : 0;
-  const taxaConversaoMedia = totalVisitas > 0 ? (totalUnd / totalVisitas) * 100 : 0;
+  const totalPedidos = evolucaoRows.reduce((acc, row) => acc + row.pedidosTotal, 0);
+  const ticketMedio = totalPedidos > 0 ? totalFat / totalPedidos : null;
+  const taxaConversaoMedia = totalVisitas > 0 ? (totalPedidos / totalVisitas) * 100 : null;
 
   const kpis: DashboardKPIs = {
-    faturamentoTotal: totalFat || publicacoesRows.reduce((acc, r) => acc + r.faturamento, 0),
-    variacaoFaturamento: 12.4,
-    totalVendas: totalUnd || publicacoesRows.reduce((acc, r) => acc + r.unidadesVendidas, 0),
-    variacaoVendas: 7.5,
-    ticketMedio: ticketMedio || (publicacoesRows.length ? totalFat / (totalUnd || 1) : 150),
-    variacaoTicketMedio: 4.8,
-    anunciosAtivos: publicacoesRows.length || 150,
-    visitasTotais: totalVisitas || publicacoesRows.reduce((acc, r) => acc + r.visitas, 0),
-    taxaConversaoMedia: taxaConversaoMedia || 2.5,
+    faturamentoTotal: evolucaoRows.length ? totalFat : publicacoesRows.length ? publicacoesRows.reduce((acc, r) => acc + r.faturamento, 0) : null,
+    variacaoFaturamento: null,
+    totalVendas: evolucaoRows.length ? totalPedidos : null,
+    variacaoVendas: null,
+    ticketMedio,
+    variacaoTicketMedio: null,
+    anunciosAtivos: null, // An imported sample does not establish the account's active listing count.
+    visitasTotais: evolucaoRows.length ? totalVisitas : publicacoesRows.length ? publicacoesRows.reduce((acc, r) => acc + r.visitas, 0) : null,
+    taxaConversaoMedia,
   };
 
   // Build Time Series
@@ -129,7 +130,7 @@ export function consolidateReportsData(
 
   // Build Top Products
   const sortedProds = [...produtosRows].sort((a, b) => b.faturamento - a.faturamento).slice(0, 10);
-  const totalProdFat = sortedProds.reduce((acc, p) => acc + p.faturamento, 0) || kpis.faturamentoTotal || 1;
+  const totalProdFat = produtosRows.reduce((acc, p) => acc + p.faturamento, 0) || 1;
 
   const topProducts: TopProductMetric[] = sortedProds.map((p) => ({
     sku: p.sku,
@@ -154,10 +155,10 @@ export function consolidateReportsData(
   const insights: AutomatedInsight[] = [
     {
       id: 'ins-auto-1',
-      title: 'Consolidação de Relatórios Concluída com Sucesso',
+      title: 'Leitura local de relatórios concluída',
       description: `Foram processadas ${evolucaoRows.length} linhas de evolução, ${publicacoesRows.length} anúncios e ${produtosRows.length} registros de produtos.`,
       type: 'positive',
-      impact: `${kpis.faturamentoTotal ? 'R$ ' + kpis.faturamentoTotal.toLocaleString('pt-BR') : 'Dados validados'}`,
+      impact: 'Importação local não homologada',
     },
   ];
 
@@ -165,24 +166,25 @@ export function consolidateReportsData(
     const top1 = topProducts[0];
     insights.push({
       id: 'ins-auto-2',
-      title: `Produto Mais Vendido: ${top1.titulo.substring(0, 40)}...`,
-      description: `O produto lidera o faturamento com R$ ${top1.faturamento.toLocaleString('pt-BR')} (${top1.participacao}% do total).`,
+      title: `Maior faturamento na amostra: ${top1.titulo.substring(0, 40)}...`,
+      description: `Na amostra importada, o produto registra R$ ${top1.faturamento.toLocaleString('pt-BR')} (${top1.participacao}% do faturamento dos produtos informados).`,
       type: 'info',
       impact: `${top1.unidades} unidades`,
     });
   }
 
-  if (kpis.taxaConversaoMedia > 0) {
+  if (kpis.taxaConversaoMedia !== null && kpis.taxaConversaoMedia > 0) {
     insights.push({
       id: 'ins-auto-3',
-      title: 'Taxa de Conversão Operacional',
+      title: 'Conversão calculada no relatório local',
       description: `A taxa média de conversão do período importado é de ${kpis.taxaConversaoMedia.toFixed(2)}%.`,
-      type: kpis.taxaConversaoMedia >= 2.5 ? 'positive' : 'warning',
-      impact: `${kpis.visitasTotais.toLocaleString('pt-BR')} visitas totais`,
+      type: 'info',
+      impact: `${kpis.visitasTotais?.toLocaleString('pt-BR') ?? 'Indisponível'} visitas totais`,
     });
   }
 
   return {
+    dataKind: 'local-import',
     periodLabel,
     updatedAt: new Date().toISOString(),
     kpis,

@@ -66,6 +66,7 @@
 | `/api/cockpit/frank/suggestions/[id]/draft` | API |
 | `/api/cockpit/frank/suggestions/[id]/reject` | API |
 | `/api/cockpit/frank/supervisor` | API |
+| `/api/cockpit/gestao-ecommerce` | API |
 | `/api/cockpit/governance/playbooks` | API |
 | `/api/cockpit/governance/playbooks/[playbookId]/apply` | API |
 | `/api/cockpit/governance/playbooks/metrics` | API |
@@ -261,6 +262,7 @@
 | `/cockpit/freight-memory` | Page |
 | `/cockpit/freight-simulator` | Page |
 | `/cockpit/funcionalidades` | Page |
+| `/cockpit/gestao-ecommerce` | Page |
 | `/cockpit/knowledge` | Page |
 | `/cockpit/knowledge/ask` | Page |
 | `/cockpit/knowledge/collections` | Page |

@@ -1,21 +1,26 @@
 import { ConsolidatedDashboardData, DashboardSnapshot } from '../types';
 
-const STORAGE_KEY_ACTIVE_DATA = 'exec_dash_active_data_v1';
-const STORAGE_KEY_SNAPSHOTS = 'exec_dash_snapshots_v1';
+export interface DashboardStorageScope { tenantId: string; userId: string }
 
-export function saveActiveDashboardData(data: ConsolidatedDashboardData): void {
+// Deliberately never read legacy global keys: their owner cannot be established.
+function storageKey(scope: DashboardStorageScope, kind: 'active' | 'snapshots'): string {
+  if (!scope.tenantId.trim() || !scope.userId.trim()) throw new Error('Dashboard storage requires an authenticated scope');
+  return `exec_dash_v2:${encodeURIComponent(scope.tenantId)}:${encodeURIComponent(scope.userId)}:${kind}`;
+}
+
+export function saveActiveDashboardData(scope: DashboardStorageScope, data: ConsolidatedDashboardData): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY_ACTIVE_DATA, JSON.stringify(data));
+    localStorage.setItem(storageKey(scope, 'active'), JSON.stringify(data));
   } catch (err) {
     console.error('Erro ao salvar dados ativos no localStorage:', err);
   }
 }
 
-export function loadActiveDashboardData(): ConsolidatedDashboardData | null {
+export function loadActiveDashboardData(scope: DashboardStorageScope): ConsolidatedDashboardData | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_DATA);
+    const raw = localStorage.getItem(storageKey(scope, 'active'));
     if (!raw) return null;
     return JSON.parse(raw) as ConsolidatedDashboardData;
   } catch (err) {
@@ -24,22 +29,22 @@ export function loadActiveDashboardData(): ConsolidatedDashboardData | null {
   }
 }
 
-export function saveSnapshotToStorage(snapshot: DashboardSnapshot): void {
+export function saveSnapshotToStorage(scope: DashboardStorageScope, snapshot: DashboardSnapshot): void {
   if (typeof window === 'undefined') return;
   try {
-    const existing = loadSnapshotsFromStorage();
+    const existing = loadSnapshotsFromStorage(scope);
     const filtered = existing.filter((s) => s.periodId !== snapshot.periodId);
     const updated = [snapshot, ...filtered];
-    localStorage.setItem(STORAGE_KEY_SNAPSHOTS, JSON.stringify(updated));
+    localStorage.setItem(storageKey(scope, 'snapshots'), JSON.stringify(updated));
   } catch (err) {
     console.error('Erro ao salvar snapshot no localStorage:', err);
   }
 }
 
-export function loadSnapshotsFromStorage(): DashboardSnapshot[] {
+export function loadSnapshotsFromStorage(scope: DashboardStorageScope): DashboardSnapshot[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_SNAPSHOTS);
+    const raw = localStorage.getItem(storageKey(scope, 'snapshots'));
     if (!raw) return [];
     return JSON.parse(raw) as DashboardSnapshot[];
   } catch (err) {
@@ -48,11 +53,11 @@ export function loadSnapshotsFromStorage(): DashboardSnapshot[] {
   }
 }
 
-export function clearDashboardStorage(): void {
+export function clearDashboardStorage(scope: DashboardStorageScope): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.removeItem(STORAGE_KEY_ACTIVE_DATA);
-    localStorage.removeItem(STORAGE_KEY_SNAPSHOTS);
+    localStorage.removeItem(storageKey(scope, 'active'));
+    localStorage.removeItem(storageKey(scope, 'snapshots'));
   } catch (err) {
     console.error('Erro ao limpar storage do dashboard:', err);
   }

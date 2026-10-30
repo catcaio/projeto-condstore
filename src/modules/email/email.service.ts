@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 import { structuredLogger } from '../../infra/log/logger';
 
 export interface SendEmailOptions {
@@ -11,7 +11,7 @@ export interface SendEmailOptions {
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter | null = null;
+  private transporter: Transporter | null = null;
 
   private getTransporter() {
     if (this.transporter) return this.transporter;
