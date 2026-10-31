@@ -30,6 +30,9 @@ import {
 
 import { extractAttributionTokenFromText } from '@/infra/attribution/token-parser';
 import { attributionClickRepository } from '@/infra/repositories/attribution-click.repository';
+import { isFrankDevAutonomousEnabled } from '@/config/app.config';
+import { handleIncomingMessage } from '@/modules/frank/whatsapp-orchestrator';
+import { whatsappOutboundService } from '@/modules/conversations/application/outbound/whatsapp-outbound.service';
 
 export interface WebhookOrchestratorPayload {
     tenantId: string;
@@ -541,6 +544,84 @@ export const whatsappInboundOrchestrator = {
         // Since we explicitly call createSessionState early if not found,
         // by this point the session always exists in DB. Update it.
         await updateSessionState(tenantId, fromHash, updateParams);
+
+        // --- 8.5 Frank Dev Autonomous Handling ---
+        // Strictly isolated to development and tenant 'tenant-lojacond-dev' with opt-in
+        const devAutonomousActive = isFrankDevAutonomousEnabled(tenantId);
+        const conversationStatusStr = String(conversation.status);
+        const isOperatorEngaged =
+            conversationStatusStr === 'operator_active' ||
+            Boolean(conversation.assignedTo) ||
+            operatorRespondedRecently;
+
+        // Invariant: Do not auto-respond if gate decides SUPERVISED (low confidence, sensitive intent, incomplete entities, etc.)
+        const isSupervisedRequired = gateResult.mode === 'SUPERVISED';
+
+        if (devAutonomousActive && !isOperatorEngaged && !guardResult.blocked && !isSupervisedRequired) {
+            try {
+                let replyBody = '';
+                if (createdSuggestion) {
+                    const pendingList = await suggestionService.listPendingSuggestions(tenantId, conversation.id);
+                    replyBody = pendingList?.[0]?.suggestedResponse || '';
+                }
+
+                if (!replyBody) {
+                    const frankResult = await handleIncomingMessage(tenantId, messageText, fromE164);
+                    replyBody = frankResult.reply.replace(/^\[SUGESTÃO FRANK\]\s*/i, '').trim();
+                }
+
+                if (replyBody) {
+                    const sendRes = await whatsappOutboundService.sendTrackedMessage({
+                        tenantId,
+                        conversationId: conversation.id,
+                        to: fromE164,
+                        message: replyBody,
+                        source: 'SYSTEM',
+                        actorType: 'AI',
+                        customerId: identity?.customerId,
+                        metadata: {
+                            originatingMessageSid: messageSid,
+                            requestId,
+                            gateMode: gateResult.mode,
+                            intent: intentResult.intent,
+                            autonomousDev: true,
+                        },
+                    });
+
+                    if (sendRes.ok) {
+                        void webhookEventRepository.markProcessed('twilio_frank', messageSid);
+
+                        structuredLogger.info('whatsapp_dev_autonomous_reply_dispatched', {
+                            tenantId,
+                            messageSid,
+                            requestId,
+                            conversationId: conversation.id,
+                            actorType: 'AI',
+                            sendSuccess: true,
+                            providerSid: sendRes.sendResult.sid,
+                        });
+
+                        return { type: 'ACK_ONLY' };
+                    } else {
+                        structuredLogger.warn('whatsapp_dev_autonomous_send_failed_fallback_supervised', {
+                            tenantId,
+                            messageSid,
+                            requestId,
+                            conversationId: conversation.id,
+                            errorCode: sendRes.sendResult.errorCode,
+                            errorMessage: sendRes.sendResult.message,
+                        });
+                    }
+                }
+            } catch (err) {
+                structuredLogger.error('whatsapp_dev_autonomous_reply_failed', {
+                    tenantId,
+                    messageSid,
+                    requestId,
+                    error: err instanceof Error ? err.message : String(err),
+                });
+            }
+        }
 
         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
 
