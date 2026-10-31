@@ -49,4 +49,35 @@ describe('app.config', () => {
         
         expect(() => configModule.validateConfig()).not.toThrow();
     });
+
+    describe('isFrankDevAutonomousEnabled', () => {
+        it('returns true ONLY when in development, tenant is tenant-lojacond-dev, and opt-in flag is true', async () => {
+            process.env.NODE_ENV = 'development';
+            process.env.FRANK_DEV_AUTONOMOUS_ENABLED = 'true';
+
+            const configModule = await import('../app.config');
+
+            expect(configModule.isFrankDevAutonomousEnabled('tenant-lojacond-dev')).toBe(true);
+            expect(configModule.isFrankDevAutonomousEnabled('tenant-lojacond-prod')).toBe(false);
+            expect(configModule.isFrankDevAutonomousEnabled('any-other-tenant')).toBe(false);
+        });
+
+        it('returns false when flag is false or not set', async () => {
+            process.env.NODE_ENV = 'development';
+            delete process.env.FRANK_DEV_AUTONOMOUS_ENABLED;
+
+            const configModule = await import('../app.config');
+
+            expect(configModule.isFrankDevAutonomousEnabled('tenant-lojacond-dev')).toBe(false);
+        });
+
+        it('returns false outside development even if tenant and flag match', async () => {
+            process.env.NODE_ENV = 'production';
+            process.env.FRANK_DEV_AUTONOMOUS_ENABLED = 'true';
+
+            const configModule = await import('../app.config');
+
+            expect(configModule.isFrankDevAutonomousEnabled('tenant-lojacond-dev')).toBe(false);
+        });
+    });
 });
