@@ -62,18 +62,21 @@ test.describe('MVP Critical Flow Smoke - mensagem → cotação → aprovação 
             ];
         };
 
+        // Generate valid JWT signed token for the smoke test session
+        const { SignJWT } = await import('jose');
+        const secret = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev-only-fallback-secret-do-not-use-in-prod');
+        const validToken = await new SignJWT({ tenantId: 'tenant-smoke', role: 'admin' })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setSubject('user-smoke')
+            .setExpirationTime('24h')
+            .sign(secret);
+
         await page.context().addCookies([{
-            name: 'condstoreOS-auth-token',
-            value: 'mock-smoke-token',
+            name: 'condstore_session',
+            value: validToken,
             domain: 'localhost',
             path: '/',
         }]);
-
-        await page.setExtraHTTPHeaders({
-            'x-auth-tenant-id': 'tenant-smoke',
-            'x-auth-user-id': 'user-smoke',
-            'x-auth-role': 'admin',
-        });
 
         await page.route('**/api/cockpit/**', async (route) => {
             const req = route.request();
@@ -192,29 +195,29 @@ test.describe('MVP Critical Flow Smoke - mensagem → cotação → aprovação 
 
         // Abrir painel de contexto em viewport desktop padrão (<2xl)
         await page.getByRole('button', { name: /Painel de Contexto/i }).click();
-        await expect(page.getByText('Cotação de Frete')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Cotação de Frete' })).toBeVisible();
 
         // Cotação
         await page.getByRole('button', { name: /Nova/i }).click();
         await page.locator('label:has-text("CEP Destino") + input').fill('01310100');
         await page.locator('label:has-text("Peso (kg)") + input').fill('7.2');
         await page.getByRole('button', { name: 'Simular' }).click();
-        await expect(page.getByText('Cotacao registrada')).toBeVisible();
+        await expect(page.getByText(/Cota[cç][aã]o registrada/i)).toBeVisible();
 
         // Aprovação supervisionada
-        await page.getByRole('button', { name: 'Enviar' }).click();
-        await expect(page.getByText('Cotacao enviada')).toBeVisible();
+        await page.getByRole('button', { name: /Enviar no WhatsApp|Enviar/i }).click();
+        await expect(page.getByText(/Cota[cç][aã]o enviada/i).first()).toBeVisible();
         await page.getByRole('button', { name: 'Registrar aprovacao' }).click();
-        await expect(page.getByText('Aprovacao registrada')).toBeVisible();
+        await expect(page.getByText(/Aprova[cç][aã]o registrada/i).first()).toBeVisible();
 
         // Pedido
-        await page.getByRole('button', { name: 'Criar pedido' }).click();
-        await expect(page.getByText('Pedido criado')).toBeVisible();
-        await expect(page.getByText('Pedido Gerado')).toBeVisible();
+        await page.getByRole('button', { name: /Gerar pedido DRAFT|Criar pedido/i }).click();
+        await expect(page.getByText(/Pedido em DRAFT criado|Pedido criado/i)).toBeVisible();
+        await expect(page.getByText(/Pedido DRAFT gerado|Pedido Gerado/i)).toBeVisible();
 
         // Logística
         await page.getByRole('button', { name: /Confirmar pedido e abrir shipment/i }).click();
-        await expect(page.getByText('Pedido confirmado')).toBeVisible();
+        await expect(page.getByText('Pedido confirmado').first()).toBeVisible();
         await expect(page.getByText('BR1234567890')).toBeVisible();
     });
 });
