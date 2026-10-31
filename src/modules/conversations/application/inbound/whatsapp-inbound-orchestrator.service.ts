@@ -30,6 +30,9 @@ import {
 
 import { extractAttributionTokenFromText } from '@/infra/attribution/token-parser';
 import { attributionClickRepository } from '@/infra/repositories/attribution-click.repository';
+import { isFrankDevAutonomousEnabled } from '@/config/app.config';
+import { handleIncomingMessage } from '@/modules/frank/whatsapp-orchestrator';
+import { whatsappOutboundService } from '@/modules/conversations/application/outbound/whatsapp-outbound.service';
 
 export interface WebhookOrchestratorPayload {
     tenantId: string;
@@ -543,6 +546,68 @@ export const whatsappInboundOrchestrator = {
         await updateSessionState(tenantId, fromHash, updateParams);
 
         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
+
+        // --- 8.5 Frank Dev Autonomous Handling ---
+        // Strictly isolated to development and tenant 'tenant-lojacond-dev' with opt-in
+        const devAutonomousActive = isFrankDevAutonomousEnabled(tenantId);
+        const conversationStatusStr = String(conversation.status);
+        const isOperatorEngaged =
+            conversationStatusStr === 'operator_active' ||
+            Boolean(conversation.assignedTo) ||
+            operatorRespondedRecently;
+
+        if (devAutonomousActive && !isOperatorEngaged && !guardResult.blocked) {
+            try {
+                let replyBody = '';
+                if (createdSuggestion) {
+                    const pendingList = await suggestionService.listPendingSuggestions(tenantId, conversation.id);
+                    replyBody = pendingList?.[0]?.suggestedResponse || '';
+                }
+
+                if (!replyBody) {
+                    const frankResult = await handleIncomingMessage(tenantId, messageText, fromE164);
+                    replyBody = frankResult.reply.replace(/^\[SUGESTÃO FRANK\]\s*/i, '').trim();
+                }
+
+                if (replyBody) {
+                    const sendRes = await whatsappOutboundService.sendTrackedMessage({
+                        tenantId,
+                        conversationId: conversation.id,
+                        to: fromE164,
+                        message: replyBody,
+                        source: 'SYSTEM',
+                        actorType: 'AI',
+                        customerId: identity?.customerId,
+                        metadata: {
+                            originatingMessageSid: messageSid,
+                            requestId,
+                            gateMode: gateResult.mode,
+                            intent: intentResult.intent,
+                            autonomousDev: true,
+                        },
+                    });
+
+                    structuredLogger.info('whatsapp_dev_autonomous_reply_dispatched', {
+                        tenantId,
+                        messageSid,
+                        requestId,
+                        conversationId: conversation.id,
+                        actorType: 'AI',
+                        sendSuccess: sendRes.ok,
+                        providerSid: sendRes.ok ? sendRes.sendResult.sid : null,
+                    });
+
+                    return { type: 'ACK_ONLY' };
+                }
+            } catch (err) {
+                structuredLogger.error('whatsapp_dev_autonomous_reply_failed', {
+                    tenantId,
+                    messageSid,
+                    requestId,
+                    error: err instanceof Error ? err.message : String(err),
+                });
+            }
+        }
 
         // Override policy if gate mode strictly requires SUPERVISED
         // and policy was going to permit auto-reply.

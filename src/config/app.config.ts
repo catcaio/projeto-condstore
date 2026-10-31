@@ -88,7 +88,8 @@ export function isFrankSupervisedOnly(): boolean {
  * 3. FRANK_DEV_AUTONOMOUS_ENABLED === 'true'
  */
 export function isFrankDevAutonomousEnabled(tenantId: string): boolean {
-  if (appConfig.env !== 'development') {
+  const currentEnv = process.env.NODE_ENV || appConfig.env;
+  if (currentEnv !== 'development') {
     return false;
   }
   if (tenantId !== 'tenant-lojacond-dev') {
