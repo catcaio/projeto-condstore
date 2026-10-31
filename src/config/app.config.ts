@@ -81,6 +81,23 @@ export function isFrankSupervisedOnly(): boolean {
 }
 
 /**
+ * Safely check if Frank dev contextual auto-reply is explicitly enabled.
+ * Strictly limited to:
+ * 1. NODE_ENV === 'development'
+ * 2. tenantId === 'tenant-lojacond-dev'
+ * 3. FRANK_DEV_AUTONOMOUS_ENABLED === 'true'
+ */
+export function isFrankDevAutonomousEnabled(tenantId: string): boolean {
+  if (appConfig.env !== 'development') {
+    return false;
+  }
+  if (tenantId !== 'tenant-lojacond-dev') {
+    return false;
+  }
+  return process.env.FRANK_DEV_AUTONOMOUS_ENABLED === 'true';
+}
+
+/**
  * Validate configuration on startup.
  * Throws if any required config is missing or invalid.
  */
