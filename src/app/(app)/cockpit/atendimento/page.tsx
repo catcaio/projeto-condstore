@@ -22,7 +22,7 @@ export default async function AtendimentoPage() {
     }
 
     return (
-        <ShellContainer className="min-h-0 flex-1 bg-[hsl(var(--ui-page))] p-4 sm:p-6 lg:p-8">
+        <ShellContainer className="min-h-0 flex-1 flex flex-col gap-3 md:gap-4 p-2 sm:p-4 lg:p-6">
             <PageHeader
                 eyebrow="Operação Comercial • CONDSTORE OS"
                 title="Atendimento Supervisionado no WhatsApp"
@@ -37,7 +37,7 @@ export default async function AtendimentoPage() {
                     </Link>
                 }
             />
-            <div className="relative min-h-[42rem] flex-1 overflow-hidden rounded-2xl border border-[hsl(var(--ui-border)/0.6)] bg-[hsl(var(--ui-surface))] shadow-sm md:h-[calc(100dvh-15rem)] mt-4">
+            <div className="relative flex-1 min-h-[500px] h-[calc(100dvh-16rem)] min-h-0 overflow-hidden rounded-2xl border border-[hsl(var(--ui-border)/0.6)] bg-[hsl(var(--ui-surface))] shadow-sm">
                 <AtendimentoClient tenantId={tenantId} />
             </div>
         </ShellContainer>

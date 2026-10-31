@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Send, User, Clock, Check, RefreshCw, AlertCircle, Phone, History, X, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
+import { Send, User, Clock, Check, RefreshCw, AlertCircle, Phone, History, X, PanelLeftClose, PanelLeftOpen, Sparkles, ChevronDown, ChevronUp, Layers, ArrowDown } from 'lucide-react';
 import { Badge } from '@/ui/components';
 import FreightQuotePanel from './components/freight-quote-panel';
 import OrderShipmentPanel from './components/order-shipment-panel';
@@ -62,9 +62,18 @@ interface Conversation {
     orderContext?: ConversationOrderContext[];
 }
 
-interface Message {
+export type NormalizedDirection = 'INBOUND' | 'OUTBOUND';
+
+export function normalizeDirection(rawDirection?: string | null): NormalizedDirection {
+    if (!rawDirection) return 'INBOUND';
+    const lower = String(rawDirection).trim().toLowerCase();
+    if (lower === 'outbound') return 'OUTBOUND';
+    return 'INBOUND';
+}
+
+export interface Message {
     id: string;
-    direction: 'INBOUND' | 'OUTBOUND';
+    direction: 'INBOUND' | 'OUTBOUND' | 'inbound' | 'outbound' | string;
     source: string;
     message: string;
     createdAt: string;
@@ -276,13 +285,20 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
     // UI state
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isContextOpen, setIsContextOpen] = useState(false); // Controls 3rd pane on <2xl screens
+    const [isFlowSummaryExpanded, setIsFlowSummaryExpanded] = useState(false);
 
     const [draftText, setDraftText] = useState('');
     const [customerDraftName, setCustomerDraftName] = useState('');
     const [composerFeedback, setComposerFeedback] = useState<ActionFeedbackState | null>(null);
     const [contextFeedback, setContextFeedback] = useState<ActionFeedbackState | null>(null);
     const [contextRefreshToken, setContextRefreshToken] = useState(0);
+    const [hasUnreadBelow, setHasUnreadBelow] = useState(false);
+
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const isNearBottomRef = useRef<boolean>(true);
+    const prevMessagesCountRef = useRef<number>(0);
+    const activeConvIdRef = useRef<string | null>(null);
 
     const abortControllers = useRef<{
         list: AbortController | null;
@@ -356,6 +372,29 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
         setContextRefreshToken((current) => current + 1);
     };
 
+    const scrollToBottom = (smooth = true) => {
+        const container = messagesContainerRef.current;
+        if (container) {
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: smooth ? 'smooth' : 'auto',
+            });
+            isNearBottomRef.current = true;
+            setHasUnreadBelow(false);
+        }
+    };
+
+    const handleScroll = () => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+        const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+        const isNear = distanceFromBottom < 100;
+        isNearBottomRef.current = isNear;
+        if (isNear) {
+            setHasUnreadBelow(false);
+        }
+    };
+
     useEffect(() => {
         fetchConversations();
         const t = setInterval(fetchConversations, 15000); // poll list every 15s
@@ -369,6 +408,9 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
 
     useEffect(() => {
         if (activeConvId) {
+            prevMessagesCountRef.current = 0;
+            activeConvIdRef.current = activeConvId;
+            setHasUnreadBelow(false);
             fetchMessages(activeConvId);
             const t = setInterval(() => fetchMessages(activeConvId, true), 8000); // poll messages every 8s
             return () => {
@@ -380,12 +422,32 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
         } else {
             setMessages([]);
             setActiveConvDetails(null);
+            prevMessagesCountRef.current = 0;
+            activeConvIdRef.current = null;
+            setHasUnreadBelow(false);
         }
     }, [activeConvId]);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        const isConversationChange = activeConvIdRef.current !== activeConvId;
+        const countDiff = messages.length - prevMessagesCountRef.current;
+
+        if (isConversationChange || prevMessagesCountRef.current === 0) {
+            // Primeira abertura ou troca de conversa: rolagem imediata para o final
+            scrollToBottom(false);
+        } else if (countDiff > 0) {
+            // Novas mensagens chegaram
+            if (isNearBottomRef.current) {
+                // Usuário está no final: auto-scroll suave
+                scrollToBottom(true);
+            } else {
+                // Usuário está lendo histórico anterior: preservar posição e alertar
+                setHasUnreadBelow(true);
+            }
+        }
+
+        prevMessagesCountRef.current = messages.length;
+    }, [messages, activeConvId]);
 
     useEffect(() => {
         setComposerFeedback(null);
@@ -613,52 +675,68 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                                     </button>
                                 </div>
                             </div>
-                            <div className="bg-gradient-to-r from-gray-50 to-white px-4 py-3 rounded-lg border border-gray-100 shadow-sm">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Fluxo Supervisionado do MVP</span>
-                                    {activeConvDetails.stage ? (
-                                        <span className="rounded-full border border-[hsl(var(--ui-border))] bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[hsl(var(--ui-text-muted))]">
-                                            {STAGE_LABELS[activeConvDetails.stage] ?? activeConvDetails.stage}
+                            {/* Resumo compacto do fluxo no topo - libera a thread sem remover o contexto */}
+                            <div className="flex flex-col gap-1.5 bg-gray-50/90 rounded-lg px-3 py-2 border border-gray-200/70 text-xs">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="flex h-2 w-2 rounded-full bg-[hsl(var(--ui-accent-blue))]" />
+                                        <span className="font-semibold text-gray-700 truncate">
+                                            {operationalFlow.nextStepTitle}
                                         </span>
-                                    ) : null}
+                                        <span className="text-gray-400 hidden lg:inline">•</span>
+                                        <span className="text-gray-500 truncate hidden lg:inline text-[11px]">
+                                            {operationalFlow.nextStepDescription}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {activeConvDetails.stage ? (
+                                            <span className="rounded-full border border-[hsl(var(--ui-border))] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[hsl(var(--ui-text-muted))]">
+                                                {STAGE_LABELS[activeConvDetails.stage] ?? activeConvDetails.stage}
+                                            </span>
+                                        ) : null}
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsFlowSummaryExpanded(!isFlowSummaryExpanded)}
+                                            className="text-[11px] font-medium text-[hsl(var(--ui-accent-blue-ink))] hover:underline flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-white"
+                                            title="Ver detalhes das etapas do fluxo"
+                                        >
+                                            <Layers className="w-3 h-3 text-[hsl(var(--ui-accent-blue))]" />
+                                            <span>{isFlowSummaryExpanded ? 'Ocultar etapas' : 'Ver 6 etapas'}</span>
+                                            {isFlowSummaryExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                                    {operationalFlow.steps.map((step) => {
-                                        const styles = getFlowStyles(step.state);
-
-                                        return (
-                                            <div
-                                                key={step.label}
-                                                className={`rounded-lg border px-3 py-3 ${styles.container}`}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`h-2 w-2 rounded-full ${styles.dot}`} />
-                                                    <span className={`text-xs font-semibold uppercase tracking-[0.12em] ${styles.label}`}>
-                                                        {step.label}
-                                                    </span>
+                                {isFlowSummaryExpanded && (
+                                    <div className="mt-2 pt-2 border-t border-gray-200/60 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 animate-in fade-in duration-150">
+                                        {operationalFlow.steps.map((step) => {
+                                            const styles = getFlowStyles(step.state);
+                                            return (
+                                                <div
+                                                    key={step.label}
+                                                    className={`rounded-md border p-2 text-xs ${styles.container}`}
+                                                >
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className={`h-1.5 w-1.5 rounded-full ${styles.dot}`} />
+                                                        <span className={`font-semibold uppercase tracking-[0.08em] text-[10px] ${styles.label}`}>
+                                                            {step.label}
+                                                        </span>
+                                                    </div>
+                                                    <p className="mt-1 text-[11px] leading-tight text-[hsl(var(--ui-text-muted))]">
+                                                        {step.detail}
+                                                    </p>
                                                 </div>
-                                                <p className="mt-2 text-sm leading-5 text-[hsl(var(--ui-text-muted))]">
-                                                    {step.detail}
-                                                </p>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <div className="mt-3 rounded-lg border border-[hsl(var(--ui-accent-blue)/0.18)] bg-[hsl(var(--ui-accent-blue)/0.08)] px-3 py-3">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[hsl(var(--ui-accent-blue-ink))]">
-                                        Proximo passo operacional
-                                    </p>
-                                    <p className="mt-2 text-sm font-medium text-[hsl(var(--ui-text))]">
-                                        {operationalFlow.nextStepTitle}
-                                    </p>
-                                    <p className="mt-1 text-sm leading-5 text-[hsl(var(--ui-text-muted))]">
-                                        {operationalFlow.nextStepDescription}
-                                    </p>
-                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-gradient-to-b from-gray-50/50 to-white">
+                        <div
+                            ref={messagesContainerRef}
+                            onScroll={handleScroll}
+                            className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-4 bg-gradient-to-b from-gray-50/50 to-white relative"
+                        >
                             {messagesError ? (
                                 <div className="rounded-lg border border-[hsl(var(--ui-danger)/0.2)] bg-[hsl(var(--ui-danger)/0.08)] p-4 text-sm text-[hsl(var(--ui-danger-ink))]">
                                     {messagesError}
@@ -666,57 +744,101 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                             ) : loadingMsgs && messages.length === 0 ? (
                                 <div className="text-center text-sm text-[hsl(var(--ui-text-muted))]">Carregando mensagens...</div>
                             ) : messages.map(msg => {
-                                const isInbound = msg.direction === 'INBOUND';
+                                const normalizedDir = normalizeDirection(msg.direction);
+                                const isInbound = normalizedDir === 'INBOUND';
+                                const sourceUpper = String(msg.source || '').toUpperCase();
+                                const isFrank = sourceUpper === 'FRANK' || sourceUpper === 'AI' || sourceUpper === 'ASSISTANT';
+                                const isOperator = sourceUpper === 'OPERATOR';
+
                                 return (
-                                    <div key={msg.id} className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}>
-                                        <div className={`max-w-[85%] md:max-w-[70%] rounded-2xl p-3.5 shadow-sm ${isInbound ? 'bg-white border text-gray-700' : 'bg-[#005c4b] text-[#e9edef] rounded-tr-sm border-none'}`}>
-                                            <div className="text-[14.5px] whitespace-pre-wrap leading-relaxed">{msg.message}</div>
-                                            <div className={`text-[10px] mt-1.5 flex items-center justify-end gap-1 ${isInbound ? 'text-gray-400' : 'text-green-100/70'}`}>
-                                                {format(new Date(msg.createdAt), 'HH:mm', { locale: ptBR })}
-                                                {!isInbound && <span className="ml-1 opacity-80">• {msg.source}</span>}
-                                                {!isInbound && <Check className="w-3 h-3 ml-0.5" />}
+                                    <div
+                                        key={msg.id}
+                                        data-direction={normalizedDir.toLowerCase()}
+                                        data-source={msg.source}
+                                        className={`flex w-full ${isInbound ? 'justify-start' : 'justify-end'}`}
+                                    >
+                                        <div
+                                            className={`max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-3 shadow-sm transition-all ${
+                                                isInbound
+                                                    ? 'bg-white border border-gray-200/80 text-gray-800 rounded-tl-sm'
+                                                    : isFrank
+                                                        ? 'bg-[#1e293b] text-gray-100 rounded-tr-sm border border-slate-700'
+                                                        : 'bg-[#005c4b] text-[#e9edef] rounded-tr-sm border border-[#005c4b]'
+                                            }`}
+                                        >
+                                            <div className="text-[14px] leading-relaxed whitespace-pre-wrap break-words select-text">
+                                                {msg.message}
+                                            </div>
+                                            <div className={`text-[10px] mt-1.5 flex items-center justify-end gap-1.5 font-medium ${
+                                                isInbound ? 'text-gray-400' : isFrank ? 'text-slate-300' : 'text-green-100/75'
+                                            }`}>
+                                                <span>{format(new Date(msg.createdAt), 'HH:mm', { locale: ptBR })}</span>
+                                                {!isInbound && (
+                                                    <span className="flex items-center gap-1 opacity-90">
+                                                        <span>•</span>
+                                                        <span>{isFrank ? 'Frank IA' : isOperator ? 'Operador' : msg.source}</span>
+                                                    </span>
+                                                )}
+                                                {!isInbound && <Check className="w-3 h-3 ml-0.5 opacity-90" />}
                                             </div>
                                         </div>
                                     </div>
                                 );
                             })}
-                            <div ref={messagesEndRef} className="h-4" />
+                            <div ref={messagesEndRef} className="h-2" />
+
+                            {/* Floating button when unread messages arrive while scrolled up */}
+                            {hasUnreadBelow && (
+                                <div className="sticky bottom-2 flex justify-center z-20 pointer-events-none">
+                                    <button
+                                        type="button"
+                                        onClick={() => scrollToBottom(true)}
+                                        className="pointer-events-auto bg-[hsl(var(--ui-accent-blue))] hover:bg-[hsl(var(--ui-accent-blue-hover))] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 transition-all animate-bounce"
+                                    >
+                                        <ArrowDown className="w-3.5 h-3.5" />
+                                        <span>Novas mensagens abaixo</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="px-3 md:px-6 shrink-0 z-10 sticky bottom-[116px] md:bottom-[132px] space-y-3">
-                            <InlineActionFeedback feedback={composerFeedback} />
-                            <FrankSuggestionPanel 
-                                conversationId={activeConvId} 
-                                onApproveAndSend={handleApproveAndSend} 
-                            />
-                        </div>
-
-                        <div className="p-3 md:p-5 bg-gray-50 border-t border-[hsl(var(--ui-border))] shrink-0 z-20 sticky bottom-0">
-                            <div className="flex gap-2 max-w-5xl mx-auto items-end bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-400 transition-all">
-                                <textarea 
-                                    value={draftText}
-                                    onChange={(e) => setDraftText(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSend();
-                                        }
-                                    }}
-                                    placeholder="Digite sua mensagem ao cliente..."
-                                    className="flex-1 resize-none bg-transparent px-3 py-2.5 text-[14.5px] placeholder-gray-400 focus:outline-none max-h-32 min-h-[44px]"
-                                    rows={1}
-                                    style={{ height: draftText ? 'auto' : '44px' }}
+                        {/* Frank Suggestion & Composer Footers */}
+                        <div className="shrink-0 z-20 bg-gray-50 border-t border-[hsl(var(--ui-border))]">
+                            <div className="px-3 md:px-5 pt-2 empty:hidden">
+                                <InlineActionFeedback feedback={composerFeedback} />
+                                <FrankSuggestionPanel
+                                    conversationId={activeConvId}
+                                    onApproveAndSend={handleApproveAndSend}
                                 />
-                                <button 
-                                    onClick={handleSend}
-                                    disabled={sending || !draftText.trim()}
-                                    className="bg-[#00a884] hover:bg-[#008f6f] text-white p-3 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shrink-0 mb-0.5 mr-0.5"
-                                >
-                                    {sending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 translate-x-0.5" />}
-                                </button>
                             </div>
-                            <div className="mt-2 text-[10px] text-gray-400 flex items-center justify-center gap-1.5 max-w-5xl mx-auto">
-                                <AlertCircle className="w-3 h-3" /> Pressione Enter para enviar, Shift+Enter para quebrar linha.
+
+                            <div className="p-3 md:p-4">
+                                <div className="flex gap-2 max-w-5xl mx-auto items-end bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-400 transition-all">
+                                    <textarea
+                                        value={draftText}
+                                        onChange={(e) => setDraftText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSend();
+                                            }
+                                        }}
+                                        placeholder="Digite sua mensagem ao cliente..."
+                                        className="flex-1 resize-none bg-transparent px-3 py-2.5 text-[14.5px] placeholder-gray-400 focus:outline-none max-h-32 min-h-[44px]"
+                                        rows={1}
+                                        style={{ height: draftText ? 'auto' : '44px' }}
+                                    />
+                                    <button
+                                        onClick={handleSend}
+                                        disabled={sending || !draftText.trim()}
+                                        className="bg-[#00a884] hover:bg-[#008f6f] text-white p-3 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shrink-0 mb-0.5 mr-0.5"
+                                    >
+                                        {sending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 translate-x-0.5" />}
+                                    </button>
+                                </div>
+                                <div className="mt-2 text-[10px] text-gray-400 flex items-center justify-center gap-1.5 max-w-5xl mx-auto">
+                                    <AlertCircle className="w-3 h-3" /> Pressione Enter para enviar, Shift+Enter para quebrar linha.
+                                </div>
                             </div>
                         </div>
                     </>
@@ -822,6 +944,53 @@ export default function AtendimentoClient({ tenantId: _tenantId }: { tenantId: s
                                 </div>
                             </div>
                         )}
+
+                        {/* Fluxo Supervisionado do MVP completo no painel lateral */}
+                        <div className="p-4 border-b border-[hsl(var(--ui-border))] bg-gradient-to-r from-gray-50 to-white">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-semibold text-xs tracking-wider text-gray-700 uppercase flex items-center gap-1.5">
+                                    <Layers className="w-3.5 h-3.5 text-[hsl(var(--ui-accent-blue))]" />
+                                    Fluxo Supervisionado do MVP
+                                </h3>
+                                {activeConvDetails.stage ? (
+                                    <span className="rounded-full border border-[hsl(var(--ui-border))] bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[hsl(var(--ui-text-muted))]">
+                                        {STAGE_LABELS[activeConvDetails.stage] ?? activeConvDetails.stage}
+                                    </span>
+                                ) : null}
+                            </div>
+                            <div className="space-y-2 mt-3">
+                                {operationalFlow.steps.map((step) => {
+                                    const styles = getFlowStyles(step.state);
+                                    return (
+                                        <div
+                                            key={step.label}
+                                            className={`rounded-lg border px-3 py-2 text-xs ${styles.container}`}
+                                        >
+                                            <div className="flex items-center justify-between gap-1.5">
+                                                <span className={`font-semibold uppercase tracking-[0.08em] text-[11px] ${styles.label}`}>
+                                                    {step.label}
+                                                </span>
+                                                <span className={`h-2 w-2 rounded-full ${styles.dot}`} />
+                                            </div>
+                                            <p className="mt-1 text-xs leading-4 text-[hsl(var(--ui-text-muted))]">
+                                                {step.detail}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="mt-3 rounded-lg border border-[hsl(var(--ui-accent-blue)/0.18)] bg-[hsl(var(--ui-accent-blue)/0.08)] p-2.5">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[hsl(var(--ui-accent-blue-ink))]">
+                                    Próximo passo
+                                </p>
+                                <p className="mt-1 text-xs font-semibold text-[hsl(var(--ui-text))]">
+                                    {operationalFlow.nextStepTitle}
+                                </p>
+                                <p className="mt-0.5 text-[11px] leading-snug text-[hsl(var(--ui-text-muted))]">
+                                    {operationalFlow.nextStepDescription}
+                                </p>
+                            </div>
+                        </div>
 
                         {/* Ferramentas de Frete e Orders */}
                         <div className="flex-1">
