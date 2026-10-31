@@ -240,22 +240,52 @@ describe('Frank Dependency-aware Task DAG (FRANK-007)', () => {
         });
 
         it('2.4 Successor stays BLOCKED while dependencies are RUNNING', async () => {
+            let releaseDelay: () => void;
+            const delayGate = new Promise<void>((resolve) => {
+                releaseDelay = resolve;
+            });
+
+            if (!frankToolRegistry.hasTool('dag_test_gated_delay_tool')) {
+                frankToolRegistry.registerTool({
+                    name: 'dag_test_gated_delay_tool',
+                    description: 'Deterministic gated tool for testing concurrency and blocking state',
+                    inputSchema: z.object({
+                        tenantId: z.string().min(1),
+                    }),
+                    outputSchema: z.object({ success: z.boolean() }),
+                    isReadOnly: true,
+                    riskClass: 'SAFE',
+                    capabilities: ['READ'],
+                    sideEffects: ['NONE'],
+                    execute: async () => {
+                        await delayGate;
+                        return { success: true };
+                    },
+                });
+            }
+
             const planInput: FrankDagPlanInput = {
                 tenantId: TENANT_A,
                 tasks: [
-                    { taskId: 'slow_parent', toolName: 'dag_test_delay_tool', input: { delayMs: 50 } },
+                    { taskId: 'slow_parent', toolName: 'dag_test_gated_delay_tool', input: {} },
                     { taskId: 'dependent_child', toolName: 'dag_test_fast_tool', input: {}, dependencies: ['slow_parent'] },
                 ],
             };
 
             const handle = await frankDagEngine.createAndExecuteDag(planInput);
 
-            // Give initial tick time to run
-            await new Promise(r => setTimeout(r, 10));
+            // Wait until slow_parent starts RUNNING
+            let snapshotMid = await handle.getSnapshot();
+            for (let i = 0; i < 50 && snapshotMid.tasks['slow_parent'].status !== 'RUNNING'; i++) {
+                await new Promise(r => setTimeout(r, 10));
+                snapshotMid = await handle.getSnapshot();
+            }
 
-            const snapshotMid = await handle.getSnapshot();
             expect(snapshotMid.tasks['slow_parent'].status).toBe('RUNNING');
             expect(snapshotMid.tasks['dependent_child'].status).toBe('BLOCKED');
+
+            // Release the gate so slow_parent completes and dependent_child can run
+            releaseDelay!();
 
             const finalSnapshot = await handle.promise;
             expect(finalSnapshot.status).toBe('COMPLETED');
