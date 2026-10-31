@@ -545,8 +545,6 @@ export const whatsappInboundOrchestrator = {
         // by this point the session always exists in DB. Update it.
         await updateSessionState(tenantId, fromHash, updateParams);
 
-        void webhookEventRepository.markProcessed('twilio_frank', messageSid);
-
         // --- 8.5 Frank Dev Autonomous Handling ---
         // Strictly isolated to development and tenant 'tenant-lojacond-dev' with opt-in
         const devAutonomousActive = isFrankDevAutonomousEnabled(tenantId);
@@ -556,7 +554,10 @@ export const whatsappInboundOrchestrator = {
             Boolean(conversation.assignedTo) ||
             operatorRespondedRecently;
 
-        if (devAutonomousActive && !isOperatorEngaged && !guardResult.blocked) {
+        // Invariant: Do not auto-respond if gate decides SUPERVISED (low confidence, sensitive intent, incomplete entities, etc.)
+        const isSupervisedRequired = gateResult.mode === 'SUPERVISED';
+
+        if (devAutonomousActive && !isOperatorEngaged && !guardResult.blocked && !isSupervisedRequired) {
             try {
                 let replyBody = '';
                 if (createdSuggestion) {
@@ -587,17 +588,30 @@ export const whatsappInboundOrchestrator = {
                         },
                     });
 
-                    structuredLogger.info('whatsapp_dev_autonomous_reply_dispatched', {
-                        tenantId,
-                        messageSid,
-                        requestId,
-                        conversationId: conversation.id,
-                        actorType: 'AI',
-                        sendSuccess: sendRes.ok,
-                        providerSid: sendRes.ok ? sendRes.sendResult.sid : null,
-                    });
+                    if (sendRes.ok) {
+                        void webhookEventRepository.markProcessed('twilio_frank', messageSid);
 
-                    return { type: 'ACK_ONLY' };
+                        structuredLogger.info('whatsapp_dev_autonomous_reply_dispatched', {
+                            tenantId,
+                            messageSid,
+                            requestId,
+                            conversationId: conversation.id,
+                            actorType: 'AI',
+                            sendSuccess: true,
+                            providerSid: sendRes.sendResult.sid,
+                        });
+
+                        return { type: 'ACK_ONLY' };
+                    } else {
+                        structuredLogger.warn('whatsapp_dev_autonomous_send_failed_fallback_supervised', {
+                            tenantId,
+                            messageSid,
+                            requestId,
+                            conversationId: conversation.id,
+                            errorCode: sendRes.sendResult.errorCode,
+                            errorMessage: sendRes.sendResult.message,
+                        });
+                    }
                 }
             } catch (err) {
                 structuredLogger.error('whatsapp_dev_autonomous_reply_failed', {
@@ -608,6 +622,8 @@ export const whatsappInboundOrchestrator = {
                 });
             }
         }
+
+        void webhookEventRepository.markProcessed('twilio_frank', messageSid);
 
         // Override policy if gate mode strictly requires SUPERVISED
         // and policy was going to permit auto-reply.

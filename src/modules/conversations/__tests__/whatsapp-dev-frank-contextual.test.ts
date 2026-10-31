@@ -89,6 +89,11 @@ vi.mock('@/lib/events/operational-event-bus', () => ({
     publishOperationalEvent: vi.fn().mockResolvedValue(undefined)
 }));
 
+vi.mock('@/modules/frank/conversation-control', () => ({
+    resolveConversationMode: vi.fn().mockReturnValue({ mode: 'ASSISTED', reason: 'dev_test' }),
+    isEntitiesCompleteForIntent: vi.fn().mockReturnValue(true)
+}));
+
 vi.mock('@/modules/frank/whatsapp-orchestrator', () => ({
     handleIncomingMessage: vi.fn().mockResolvedValue({
         reply: 'Olá! Sou o Frank e este é um teste contextual de resposta autônoma em dev.',
@@ -214,6 +219,39 @@ describe('Frank Dev Autonomous WhatsApp Inbound Integration', () => {
 
         expect(frankOrchestrator.handleIncomingMessage).not.toHaveBeenCalled();
         expect(whatsappOutboundService.sendTrackedMessage).not.toHaveBeenCalled();
+        expect(['SUPERVISED_NO_REPLY', 'AUTO_REPLY_ALLOWED']).toContain(policy.type);
+    });
+
+    it('Scenario 6: Blocks autonomous response when gate mode is SUPERVISED (e.g. low confidence or sensitive intent)', async () => {
+        const { resolveConversationMode } = await import('@/modules/frank/conversation-control');
+        vi.mocked(resolveConversationMode).mockReturnValueOnce({
+            mode: 'SUPERVISED',
+            reason: 'confidence_below_threshold'
+        });
+
+        const policy = await whatsappInboundOrchestrator.process(devPayload);
+
+        expect(frankOrchestrator.handleIncomingMessage).not.toHaveBeenCalled();
+        expect(whatsappOutboundService.sendTrackedMessage).not.toHaveBeenCalled();
+        expect(policy.type).toBe('SUPERVISED_NO_REPLY');
+    });
+
+    it('Scenario 7: Safe fallback to supervised policy when sendTrackedMessage returns ok: false', async () => {
+        vi.mocked(whatsappOutboundService.sendTrackedMessage).mockResolvedValueOnce({
+            ok: false,
+            conversationMessage: {} as any,
+            sendResult: {
+                ok: false,
+                errorCode: 'DELIVERY_TIMEOUT',
+                message: 'Twilio provider unreachable'
+            }
+        });
+
+        const policy = await whatsappInboundOrchestrator.process(devPayload);
+
+        expect(frankOrchestrator.handleIncomingMessage).toHaveBeenCalled();
+        expect(whatsappOutboundService.sendTrackedMessage).toHaveBeenCalled();
+        // Since send failed, it falls back to the resolved policy (not ACK_ONLY)
         expect(['SUPERVISED_NO_REPLY', 'AUTO_REPLY_ALLOWED']).toContain(policy.type);
     });
 });
