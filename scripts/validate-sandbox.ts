@@ -7,7 +7,12 @@ import { NextRequest } from 'next/server';
 import { logFreightSimulation } from '../src/modules/fulfillment/freight/freight-audit';
 import { createShipmentFromQuote } from '../src/modules/fulfillment/shipments/adapters/melhor-envio-shipment';
 
-const tenantId = 'LOJACOND';
+const tenantId = process.argv[2] ?? process.env.TENANT_ID;
+if (!tenantId) {
+    console.error('❌ ERRO: tenantId é obrigatório. Forneça via argumento ou variável de ambiente TENANT_ID.');
+    console.error('Uso: npx tsx scripts/validate-sandbox.ts <tenantId>');
+    process.exit(1);
+}
 
 async function dispatchWebhook(trackingCode: string, status: string) {
     console.log(`\n> Dispatching Webhook Event: ${status} for tracking ${trackingCode}`);

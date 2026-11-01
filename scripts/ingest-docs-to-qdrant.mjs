@@ -286,7 +286,11 @@ async function searchPoints(qdrantUrl, collection, vector, tenantId, limit = 3) 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const repoRoot = process.cwd();
-  const tenantId = (args.tenantId || 'lojacond-default').trim();
+  const tenantId = (args.tenantId || process.env.TENANT_ID || '').trim();
+  if (!tenantId) {
+    console.error('❌ ERRO: tenantId é obrigatório.');
+    process.exit(1);
+  }
   const pathsArg = typeof args.paths === 'string' ? args.paths : defaultSourcePaths().join(',');
   const requestedPaths = pathsArg.split(',').map((s) => s.trim()).filter(Boolean);
   const collection = (args.collection || getEnv('QDRANT_COLLECTION', 'condstore_docs')).trim();

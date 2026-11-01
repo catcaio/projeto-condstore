@@ -3,7 +3,7 @@ import mysql from 'mysql2/promise';
 
 type JsonLog = Record<string, unknown>;
 
-const DEFAULT_DATABASE_URL = 'mysql://user:pass@127.0.0.1:3306/lojacond';
+const DEFAULT_DATABASE_URL = 'mysql://user:pass@127.0.0.1:3306/condstore_dev';
 const DEFAULT_TENANT_ID = 'demo-mvp-tenant';
 const DEFAULT_ADMIN_EMAIL = 'demo@condstore.io';
 const baseDate = new Date('2026-03-20T14:30:00.000Z');

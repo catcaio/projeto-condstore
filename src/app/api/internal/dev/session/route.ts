@@ -18,33 +18,36 @@ export async function GET(request: NextRequest) {
     if (!authResult.ok) return authResult.response;
 
     try {
+        const forceRole = request.nextUrl.searchParams.get('role');
+        const forceTenant = request.nextUrl.searchParams.get('tenantId');
+
         let user;
         try {
             const db = await getDb();
-            let results = await db
-                .select()
-                .from(users)
-                .where(and(eq(users.role, 'admin'), eq(users.tenantId, 'LOJACOND')))
-                .limit(1);
-
-            if (results.length === 0) {
-                 results = await db.select().from(users).where(eq(users.role, 'admin')).limit(1);
+            if (forceTenant) {
+                const results = await db
+                    .select()
+                    .from(users)
+                    .where(and(eq(users.role, 'admin'), eq(users.tenantId, forceTenant)))
+                    .limit(1);
+                if (results.length > 0) user = results[0];
+            } else {
+                const results = await db.select().from(users).where(eq(users.role, 'admin')).limit(1);
+                if (results.length > 0) user = results[0];
             }
-            if (results.length > 0) user = results[0];
         } catch (dbError) {
             logger.warn('Failed to query DB for dev session, using mock user', { error: String(dbError) });
         }
 
-        const forceRole = request.nextUrl.searchParams.get('role');
-        const forceTenant = request.nextUrl.searchParams.get('tenantId');
+        const targetTenant = forceTenant || user?.tenantId || process.env.DEV_DEFAULT_TENANT_ID || 'condstore-dev-tenant';
 
         if (!user || forceRole || forceTenant) {
             user = {
-                id: 'mock-admin',
-                email: 'admin@condstore.com',
-                tenantId: forceTenant || 'LOJACOND',
-                role: forceRole || 'admin',
-                sessionVersion: 1
+                id: user?.id || 'mock-admin',
+                email: user?.email || 'admin@condstore.local',
+                tenantId: targetTenant,
+                role: forceRole || user?.role || 'admin',
+                sessionVersion: user?.sessionVersion || 1
             };
         }
 

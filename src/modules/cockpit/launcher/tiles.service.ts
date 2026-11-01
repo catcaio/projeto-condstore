@@ -27,12 +27,12 @@ export async function getVisibleTiles({ tenantId, role }: CalculateVisibleTilesP
     const sourceTiles = COCKPIT_TILES.map(t => ({ ...t }));
     const sourceSalas = SALAS_PADRAO;
 
-    const isInternal = tenantId.startsWith('lojacond');
+    const canViewInternalStatus = role === 'admin';
 
     let dlqDepth = 0;
     let incidentMode = false;
 
-    if (isInternal) {
+    if (canViewInternalStatus && tenantId) {
         try {
             const db = await getDb();
             const dlqResult = await db.select({ count: sql<number>`count(*)` })
@@ -62,7 +62,7 @@ export async function getVisibleTiles({ tenantId, role }: CalculateVisibleTilesP
     });
 
     // Inject Badges dynamically
-    if (isInternal) {
+    if (canViewInternalStatus && tenantId) {
         for (const tile of userAllowedTiles) {
             if (tile.id === 'domine' && dlqDepth > 0) {
                 tile.badge = { type: 'danger', label: `${dlqDepth} DLQ` };

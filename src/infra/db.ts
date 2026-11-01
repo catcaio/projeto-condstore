@@ -27,7 +27,7 @@ function validateAndLogDbUrl(): string {
         if (!dbName) {
             throw new InfrastructureError(
                 ErrorCode.DATABASE_URL_MISSING,
-                `DATABASE_URL is missing a database name. Expected: "/lojacond"`
+                `DATABASE_URL is missing a database name.`
             );
         }
         logger.info(`DB pool init: host=${url.hostname}, database=${dbName}`);

@@ -17,7 +17,12 @@ function generateCPF() {
     return cpf.join('');
 }
 
-const tenantId = 'LOJACOND';
+const tenantId = process.argv[2] ?? process.env.TENANT_ID;
+if (!tenantId) {
+    console.error('❌ ERRO: tenantId é obrigatório. Forneça via argumento ou variável de ambiente TENANT_ID.');
+    console.error('Uso: npx tsx scripts/validate-prod.ts <tenantId>');
+    process.exit(1);
+}
 
 async function dispatchLiveWebhook(trackingCode: string, status: string) {
     console.log(`\n> Dispatching LIVE Webhook to VERCEL: ${status} for tracking ${trackingCode}`);

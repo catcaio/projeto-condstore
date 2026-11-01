@@ -17,7 +17,12 @@ import { eq } from 'drizzle-orm';
 import { logger } from '../src/infra/logger';
 import { logFreightSimulation } from '../src/modules/fulfillment/freight/freight-audit';
 
-const tenantId = 'LOJACOND';
+const tenantId = process.argv[2] ?? process.env.TENANT_ID;
+if (!tenantId) {
+    console.error('❌ ERRO: tenantId é obrigatório. Forneça via argumento ou variável de ambiente TENANT_ID.');
+    console.error('Uso: npx tsx scripts/validate-shipment-loop.ts <tenantId>');
+    process.exit(1);
+}
 
 import { POST as webhookHandler } from '../src/app/api/webhooks/melhor-envio/route';
 import { NextRequest } from 'next/server';

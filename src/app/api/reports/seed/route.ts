@@ -24,8 +24,13 @@ export async function POST(request: NextRequest) {
     if (!dbUrl) {
       return NextResponse.json({ success: false, error: 'DATABASE_URL missing' }, { status: 500 });
     }
-    if (!dbUrl.includes('/lojacond')) {
-      return NextResponse.json({ success: false, error: 'DATABASE_URL missing database name' }, { status: 500 });
+    try {
+      const parsedUrl = new URL(dbUrl);
+      if (!parsedUrl.pathname || parsedUrl.pathname === '/') {
+        return NextResponse.json({ success: false, error: 'DATABASE_URL missing database name' }, { status: 500 });
+      }
+    } catch {
+      return NextResponse.json({ success: false, error: 'DATABASE_URL invalid format' }, { status: 500 });
     }
 
     const urlObj = new URL(dbUrl);

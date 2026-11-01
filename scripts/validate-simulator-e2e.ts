@@ -11,7 +11,12 @@ import { unifiedQuoteEngine } from '../src/modules/fulfillment/freight/quote-eng
 import { logFreightSimulation } from '../src/modules/fulfillment/freight/freight-audit';
 import type { FreightRequest } from '../src/modules/fulfillment/freight/freight.types';
 
-const tenantId = 'LOJACOND';
+const tenantId = process.argv[2] ?? process.env.TENANT_ID;
+if (!tenantId) {
+    console.error('❌ ERRO: tenantId é obrigatório. Forneça via argumento ou variável de ambiente TENANT_ID.');
+    console.error('Uso: npx tsx scripts/validate-simulator-e2e.ts <tenantId>');
+    process.exit(1);
+}
 
 const cases = [
     {

@@ -7,7 +7,6 @@ import { getDb } from '@/infra/db';
 import { products } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import {
-    LOJACOND_TENANT_ID,
     LOJACOND_CATALOG,
     validateCatalog,
     buildProductRows,
@@ -21,13 +20,18 @@ export async function POST(req: NextRequest) {
     const tokenGuard = requireInternalToken(req, { purpose: ['jobs'] });
     if (!tokenGuard.ok) return tokenGuard.response;
 
+    const targetTenantId = req.nextUrl.searchParams.get('tenantId') || req.headers.get('x-tenant-id');
+    if (!targetTenantId) {
+        return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Missing required parameter: tenantId');
+    }
+
     try {
         const validation = validateCatalog(LOJACOND_CATALOG);
         if (!validation.valid) {
             return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, validation.errors.join('; '));
         }
 
-        const rows = buildProductRows(LOJACOND_TENANT_ID, LOJACOND_CATALOG);
+        const rows = buildProductRows(targetTenantId, LOJACOND_CATALOG);
         const db = await getDb();
 
         let inserted = 0;
@@ -58,7 +62,7 @@ export async function POST(req: NextRequest) {
 
         structuredLogger.info('seed_catalog_completed', {
             requestId,
-            tenantId: LOJACOND_TENANT_ID,
+            tenantId: targetTenantId,
             totalProducts: rows.length,
             inserted,
             updated,
@@ -66,7 +70,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
             ok: true,
-            tenantId: LOJACOND_TENANT_ID,
+            tenantId: targetTenantId,
             totalProducts: rows.length,
             inserted,
             updated,

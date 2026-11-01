@@ -12,7 +12,11 @@ import { randomUUID } from 'crypto';
 // ─── Config ─────────────────────────────────────────────────────────────────
 
 const SITEMAP_URL = 'https://lojacondstore.com.br/wp-sitemap-posts-product-1.xml';
-const TENANT_ID = process.env.SCRAPE_TENANT_ID || 'lojacond-default';
+const TENANT_ID = process.env.SCRAPE_TENANT_ID;
+if (!TENANT_ID) {
+    console.error('❌ ERRO: SCRAPE_TENANT_ID é obrigatório.');
+    process.exit(1);
+}
 const CONCURRENCY = 3;
 const DELAY_MS = 500; // polite delay between requests
 

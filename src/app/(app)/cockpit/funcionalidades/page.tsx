@@ -16,7 +16,6 @@ export default async function FuncionalidadesPage() {
     const tenantId = headersList.get('x-auth-tenant-id');
     if (!tenantId) return <div>Acesso negado</div>;
     const role = headersList.get('x-auth-role') || 'viewer';
-    const isInternal = tenantId.startsWith('lojacond');
 
     // Fetch all tiles the user is authorized to view
     const { salas: visibleTiles } = await getVisibleTiles({ tenantId, role: role as any });
