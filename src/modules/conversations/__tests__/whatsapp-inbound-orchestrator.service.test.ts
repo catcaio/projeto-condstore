@@ -89,7 +89,8 @@ vi.mock('@/modules/frank/session.repository', () => ({
 
 vi.mock('@/modules/frank/conversation-control', () => ({
     resolveConversationMode: vi.fn(),
-    isEntitiesCompleteForIntent: vi.fn().mockReturnValue(true)
+    isEntitiesCompleteForIntent: vi.fn().mockReturnValue(true),
+    MAX_AUTO_RESPONSES: 2,
 }));
 
 vi.mock('@/modules/orders/order.repository', () => ({
