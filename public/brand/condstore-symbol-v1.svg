@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" width="100" height="100">
+  <!-- Módulo Superior Esquerdo (Entrada / Atendimento) -->
+  <rect x="14" y="14" width="31" height="31" rx="9" fill="currentColor" opacity="0.95" />
+
+  <!-- Módulo Superior Direito (Orquestração / Cotação - Acento Elétrico) -->
+  <rect x="55" y="14" width="31" height="31" rx="9" fill="#0077FF" />
+  <circle cx="70.5" cy="29.5" r="4.5" fill="#FFFFFF" opacity="0.9" />
+
+  <!-- Módulo Inferior Esquerdo (Expedição / Carga) -->
+  <rect x="14" y="55" width="31" height="31" rx="9" fill="currentColor" opacity="0.95" />
+
+  <!-- Módulo Inferior Direito (Resolução / Nó de Entrega) -->
+  <rect x="55" y="55" width="31" height="31" rx="9" fill="currentColor" opacity="0.75" />
+
+  <!-- Nó Central de Conexão Contínua / Espaço do Fio -->
+  <path d="M 45 29.5 L 55 29.5 M 29.5 45 L 29.5 55 M 55 70.5 L 45 70.5 M 70.5 55 L 70.5 45" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.3" />
+</svg>

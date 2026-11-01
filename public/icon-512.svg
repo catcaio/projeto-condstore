@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" width="512" height="512">
+  <!-- Superelipse Background Container -->
+  <rect width="512" height="512" rx="128" fill="#0E1117" />
+
+  <!-- Símbolo Institucional CONDSTORE OS (Módulos 2x2 com Espaço Negativo) -->
+  <g transform="translate(106, 106)">
+    <!-- Top-Left: Atendimento / Recepção -->
+    <rect x="0" y="0" width="135" height="135" rx="38" fill="#F8F9FA" />
+
+    <!-- Top-Right: Núcleo de Cotação e Orquestração (Azul Elétrico) -->
+    <rect x="165" y="0" width="135" height="135" rx="38" fill="#0077FF" />
+    <circle cx="232" cy="67" r="20" fill="#FFFFFF" opacity="0.95" />
+
+    <!-- Bottom-Left: Pedidos e Rastreio -->
+    <rect x="0" y="165" width="135" height="135" rx="38" fill="#F8F9FA" />
+
+    <!-- Bottom-Right: Expedição e Logística -->
+    <rect x="165" y="165" width="135" height="135" rx="38" fill="#F8F9FA" opacity="0.8" />
+  </g>
+</svg>
