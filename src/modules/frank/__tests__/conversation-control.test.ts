@@ -65,7 +65,7 @@ describe('Conversation Control Gate', () => {
 
         it('should return SUPERVISED if auto-response limit is reached', () => {
             const result = resolveConversationMode(makeInput({
-                autoResponsesCount: 6,
+                autoResponsesCount: 2,
                 intent: 'ORDER_STATUS',
                 confidence: 0.9,
             }));
@@ -174,6 +174,27 @@ describe('Conversation Control Gate', () => {
             expect(result.mode).toBe('AUTONOMOUS');
             expect(result.reason).toContain('greeting_off_hours');
         });
+        it('should return ASSISTED for GENERIC_QUESTION with confidence >= 0.6 during business hours', () => {
+            const result = resolveConversationMode(makeInput({
+                intent: 'GENERIC_QUESTION',
+                confidence: 0.7,
+                timestamp: new Date('2026-03-12T13:00:00Z'),
+                operatorOnline: false,
+            }));
+            expect(result.mode).toBe('ASSISTED');
+            expect(result.reason).toContain('generic_support');
+        });
+
+        it('should return SUPERVISED for GENERIC_QUESTION with low confidence (< 0.6)', () => {
+            const result = resolveConversationMode(makeInput({
+                intent: 'GENERIC_QUESTION',
+                confidence: 0.45,
+                timestamp: new Date('2026-03-12T13:00:00Z'),
+            }));
+            expect(result.mode).toBe('SUPERVISED');
+            expect(result.reason).toContain('confidence_below_threshold');
+        });
+
     });
 
     describe('isEntitiesCompleteForIntent', () => {

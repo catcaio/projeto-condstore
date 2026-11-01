@@ -58,7 +58,7 @@ const INFORMATIONAL_INTENTS: Intent[] = [
 const ASSISTED_MIN_CONFIDENCE = 0.6;
 const AUTONOMOUS_MIN_CONFIDENCE = 0.8;
 const SUPERVISED_MAX_CONFIDENCE = 0.6;
-const MAX_AUTO_RESPONSES = 5;
+export const MAX_AUTO_RESPONSES = 2; // Harmonized with auto-response-guard
 
 /** Business hours: 08:00–18:00 BRT, Monday–Friday. */
 const BUSINESS_HOUR_START = 8;
@@ -163,7 +163,7 @@ export function resolveConversationMode(input: ConversationGateInput): Conversat
     }
 
     // Rule 2: Auto-response loop prevention
-    if (autoResponsesCount > MAX_AUTO_RESPONSES) {
+    if (autoResponsesCount >= MAX_AUTO_RESPONSES) {
         return {
             mode: 'SUPERVISED',
             reason: 'auto_response_limit',
@@ -219,7 +219,7 @@ export function resolveConversationMode(input: ConversationGateInput): Conversat
         };
     }
 
-    // Rule 7: SAUDACAO and OUTRO — safe defaults
+    // Rule 7: SAUDACAO and GENERIC_QUESTION — safe conversational defaults (no mutations/side effects)
     if (intent === 'SAUDACAO') {
         if (!businessHours && !operatorOnline) {
             return {
@@ -230,6 +230,19 @@ export function resolveConversationMode(input: ConversationGateInput): Conversat
         return {
             mode: 'ASSISTED',
             reason: `greeting (${businessHours ? 'business_hours' : 'operator_online'})`,
+        };
+    }
+
+    if (intent === 'GENERIC_QUESTION' && confidence >= ASSISTED_MIN_CONFIDENCE) {
+        if (!businessHours && !operatorOnline && confidence >= AUTONOMOUS_MIN_CONFIDENCE) {
+            return {
+                mode: 'AUTONOMOUS',
+                reason: `off_hours_generic_support (confidence=${confidence})`,
+            };
+        }
+        return {
+            mode: 'ASSISTED',
+            reason: `generic_support (${businessHours ? 'business_hours' : 'operator_online'}, confidence=${confidence})`,
         };
     }
 

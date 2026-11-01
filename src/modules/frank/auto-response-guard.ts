@@ -1,4 +1,4 @@
-import { ConversationMode } from './conversation-control';
+import { ConversationMode, MAX_AUTO_RESPONSES } from './conversation-control';
 
 export interface AutoResponseGuardParams {
     autoResponsesCount: number;
@@ -13,8 +13,6 @@ export interface AutoResponseGuardResult {
     forcedMode?: ConversationMode;
 }
 
-const MAX_AUTO_RESPONSES = 2; // Maximum consecutive auto-replies allowed
-
 /**
  * Evaluates whether Frank is stuck in an auto-response loop 
  * or if a human operator is currently presiding over the ticket.
@@ -23,8 +21,8 @@ export function evaluateAutoResponseGuard(
     currentMode: ConversationMode, 
     params: AutoResponseGuardParams
 ): AutoResponseGuardResult {
-    // 1. HUMAN_ACTIVE State
-    if (params.status === 'HUMAN_ACTIVE') {
+    // 1. HUMAN_ACTIVE / operator_active State
+    if (params.status === 'HUMAN_ACTIVE' || params.status === 'operator_active') {
         return {
             blocked: true,
             reason: 'human_active',

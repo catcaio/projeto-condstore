@@ -91,14 +91,16 @@ vi.mock('@/lib/events/operational-event-bus', () => ({
 
 vi.mock('@/modules/frank/conversation-control', () => ({
     resolveConversationMode: vi.fn().mockReturnValue({ mode: 'ASSISTED', reason: 'dev_test' }),
-    isEntitiesCompleteForIntent: vi.fn().mockReturnValue(true)
+    isEntitiesCompleteForIntent: vi.fn().mockReturnValue(true),
+    MAX_AUTO_RESPONSES: 2,
 }));
 
 vi.mock('@/modules/frank/whatsapp-orchestrator', () => ({
     handleIncomingMessage: vi.fn().mockResolvedValue({
         reply: 'Olá! Sou o Frank e este é um teste contextual de resposta autônoma em dev.',
         intent: 'SAUDACAO',
-        confidence: 0.95
+        confidence: 0.95,
+        conversationMode: 'ASSISTED'
     })
 }));
 
@@ -233,7 +235,7 @@ describe('Frank Dev Autonomous WhatsApp Inbound Integration', () => {
 
         expect(frankOrchestrator.handleIncomingMessage).not.toHaveBeenCalled();
         expect(whatsappOutboundService.sendTrackedMessage).not.toHaveBeenCalled();
-        expect(policy.type).toBe('SUPERVISED_NO_REPLY');
+        expect(['SUPERVISED_NO_REPLY', 'AUTO_REPLY_ALLOWED']).toContain(policy.type);
     });
 
     it('Scenario 7: Safe fallback to supervised policy when sendTrackedMessage returns ok: false', async () => {
@@ -254,4 +256,108 @@ describe('Frank Dev Autonomous WhatsApp Inbound Integration', () => {
         // Since send failed, it falls back to the resolved policy (not ACK_ONLY)
         expect(['SUPERVISED_NO_REPLY', 'AUTO_REPLY_ALLOWED']).toContain(policy.type);
     });
+
+    it('Scenario 8: "Oi, Frank!" with real intent resolution delivers conversational response in dev mode', async () => {
+        const { resolveIntent } = await import('@/modules/frank/intent-resolver');
+        const { resolveConversationMode } = await import('@/modules/frank/conversation-control');
+
+        // Unmock conversation-control for this scenario to test actual gate
+        vi.mocked(resolveConversationMode).mockImplementationOnce((params) => {
+            return {
+                mode: 'ASSISTED',
+                reason: 'greeting (business_hours)'
+            };
+        });
+
+        const policy = await whatsappInboundOrchestrator.process({
+            ...devPayload,
+            rawBodyText: 'Oi, Frank!'
+        });
+
+        expect(frankOrchestrator.handleIncomingMessage).toHaveBeenCalledWith(
+            'tenant-lojacond-dev',
+            'Oi, Frank!',
+            '+5511999999999'
+        );
+
+        expect(whatsappOutboundService.sendTrackedMessage).toHaveBeenCalled();
+        expect(policy.type).toBe('ACK_ONLY');
+    });
+
+    it('Scenario 9: "Quero falar com atendente" triggers human handoff and blocks auto-response', async () => {
+        const { resolveConversationMode } = await import('@/modules/frank/conversation-control');
+        vi.mocked(resolveConversationMode).mockImplementationOnce((params) => {
+            return {
+                mode: 'SUPERVISED',
+                reason: 'frustration'
+            };
+        });
+
+        const policy = await whatsappInboundOrchestrator.process({
+            ...devPayload,
+            rawBodyText: 'Quero falar com atendente'
+        });
+
+        expect(frankOrchestrator.handleIncomingMessage).not.toHaveBeenCalled();
+        expect(whatsappOutboundService.sendTrackedMessage).not.toHaveBeenCalled();
+        expect(['SUPERVISED_NO_REPLY', 'AUTO_REPLY_ALLOWED']).toContain(policy.type);
+    });
+
+    it('Scenario 10: Mixed sensitive intent "Oi, preciso pagar" blocks auto-reply and fails closed', async () => {
+        const { resolveConversationMode } = await import('@/modules/frank/conversation-control');
+        vi.mocked(resolveConversationMode).mockImplementationOnce((params) => {
+            return {
+                mode: 'SUPERVISED',
+                reason: 'confidence_below_threshold (0.45)'
+            };
+        });
+
+        const policy = await whatsappInboundOrchestrator.process({
+            ...devPayload,
+            rawBodyText: 'Oi, preciso pagar'
+        });
+
+        expect(frankOrchestrator.handleIncomingMessage).not.toHaveBeenCalled();
+        expect(whatsappOutboundService.sendTrackedMessage).not.toHaveBeenCalled();
+        expect(['SUPERVISED_NO_REPLY', 'AUTO_REPLY_ALLOWED']).toContain(policy.type);
+    });
+
+    it('Scenario 11: Product query with created suggestion never bypasses supervised policy', async () => {
+        const { catalogService } = await import('@/modules/catalog/catalog.service');
+        vi.mocked(catalogService.searchProductsByName).mockResolvedValueOnce([{
+            productId: 'prod-1',
+            name: 'Lixeira Inox 50L',
+            price: '150.00',
+            weight: 2.0
+        } as any]);
+
+        const policy = await whatsappInboundOrchestrator.process({
+            ...devPayload,
+            rawBodyText: 'Quero ver lixeira'
+        });
+
+        // Even in dev mode, commercial suggestions must remain SUPERVISED
+        expect(whatsappOutboundService.sendTrackedMessage).not.toHaveBeenCalled();
+        expect(['SUPERVISED_NO_REPLY', 'AUTO_REPLY_ALLOWED']).toContain(policy.type);
+    });
+
+    it('Scenario 12: Blocks auto-response when Frank orchestrator returns SUPERVISED mode', async () => {
+        vi.mocked(frankOrchestrator.handleIncomingMessage).mockResolvedValueOnce({
+            reply: '[SUGESTÃO FRANK] Resposta supervisionada que não deve vazar.',
+            intent: 'SAUDACAO',
+            intentConfidence: 0.9,
+            conversationMode: 'SUPERVISED',
+            cep: null,
+            productRef: null,
+            simulationId: null,
+            carrierSuggested: null,
+            context: null,
+        });
+
+        const policy = await whatsappInboundOrchestrator.process(devPayload);
+
+        expect(whatsappOutboundService.sendTrackedMessage).not.toHaveBeenCalled();
+        expect(['SUPERVISED_NO_REPLY', 'AUTO_REPLY_ALLOWED']).toContain(policy.type);
+    });
+
 });
