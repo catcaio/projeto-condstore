@@ -234,7 +234,11 @@ function toIso(value) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const tenantId = args.tenantId || 'lojacond-default';
+  const tenantId = args.tenantId || process.env.TENANT_ID;
+  if (!tenantId) {
+    console.error('❌ ERRO: tenantId é obrigatório.');
+    process.exit(1);
+  }
   const from = parseDateOrNull(args.from, 'from');
   const to = parseDateOrNull(args.to, 'to');
   const limit = Math.max(1, Number.parseInt(args.limit || '500', 10) || 500);

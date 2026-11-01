@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.json(
     {
       status: "ok",
-      service: "lojacond-frete-automacao",
+      service: "condstore-frete-automacao",
       timestamp: new Date().toISOString(),
     }
   );

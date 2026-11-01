@@ -852,7 +852,11 @@ async function main() {
   const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const nodeCmd = process.execPath;
 
-  const tenantId = args.tenantId ?? process.env.READY_TO_TRAIN_TENANT_ID ?? 'lojacond-default';
+  const tenantId = args.tenantId ?? process.env.READY_TO_TRAIN_TENANT_ID;
+  if (!tenantId) {
+    console.error('❌ ERRO: tenantId é obrigatório.');
+    process.exit(1);
+  }
   const appBaseUrl = args.baseUrl ?? process.env.READY_SERVER_URL ?? process.env.INTERNAL_EXPORT_BASE_URL ?? 'http://localhost:3000';
   const parsedBaseUrl = new URL(appBaseUrl);
   const readyServerPort = safeInt(

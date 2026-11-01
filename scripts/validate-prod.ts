@@ -17,11 +17,24 @@ function generateCPF() {
     return cpf.join('');
 }
 
-const tenantId = 'LOJACOND';
+const tenantId = process.argv[2] ?? process.env.TENANT_ID;
+if (!tenantId) {
+    console.error('❌ ERRO: tenantId é obrigatório. Forneça via argumento ou variável de ambiente TENANT_ID.');
+    console.error('Uso: npx tsx scripts/validate-prod.ts <tenantId>');
+    process.exit(1);
+}
+
+const targetBaseUrl = process.env.APP_BASE_URL || process.env.VERCEL_ENDPOINT || process.argv[3];
+if (!targetBaseUrl) {
+    console.error('❌ ERRO: Endpoint de destino obrigatório. Forneça via APP_BASE_URL ou como 2º argumento.');
+    console.error('Uso: npx tsx scripts/validate-prod.ts <tenantId> <baseUrl>');
+    process.exit(1);
+}
 
 async function dispatchLiveWebhook(trackingCode: string, status: string) {
-    console.log(`\n> Dispatching LIVE Webhook to VERCEL: ${status} for tracking ${trackingCode}`);
-    const res = await fetch('https://projeto-condstore-28oh62ww3-rafael-s-projects-f32fc2d1.vercel.app/api/webhooks/melhor-envio', {
+    const webhookUrl = `${targetBaseUrl.replace(/\/$/, '')}/api/webhooks/melhor-envio`;
+    console.log(`\n> Dispatching LIVE Webhook to ${webhookUrl}: ${status} for tracking ${trackingCode}`);
+    const res = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

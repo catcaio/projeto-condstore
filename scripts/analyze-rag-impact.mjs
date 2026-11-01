@@ -1,6 +1,10 @@
 import mysql from 'mysql2/promise';
 
-const tenantId = process.argv[2] ?? 'lojacond-default';
+const tenantId = process.argv[2] ?? process.env.TENANT_ID;
+if (!tenantId) {
+  console.error('❌ ERRO: tenantId é obrigatório. Forneça via argumento ou variável de ambiente TENANT_ID.');
+  process.exit(1);
+}
 const url = process.env.DATABASE_URL;
 
 if (!url) {

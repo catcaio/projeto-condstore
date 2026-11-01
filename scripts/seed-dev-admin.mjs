@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import crypto from 'node:crypto';
 
-const connectionUri = process.env.DATABASE_URL || 'mysql://user:pass@127.0.0.1:3306/lojacond';
+const connectionUri = process.env.DATABASE_URL || 'mysql://user:pass@127.0.0.1:3306/condstore_dev';
 
 const tenantId = 'condstore-dev-tenant';
 const adminEmail = 'admin@condstore.local';

@@ -7,7 +7,15 @@ export const dynamic = 'force-dynamic';
 export async function getReports(): Promise<{ data: ProjectReport[], error: string | null }> {
     try {
         const dbUrl = process.env.DATABASE_URL;
-        if (!dbUrl || (!dbUrl.includes('/lojacond') && !dbUrl.includes('localhost'))) {
+        if (!dbUrl) {
+            return { data: [], error: 'DB offline (Invalid Connection)' };
+        }
+        try {
+            const parsed = new URL(dbUrl);
+            if (!parsed.pathname || parsed.pathname === '/') {
+                return { data: [], error: 'DB offline (Invalid Connection)' };
+            }
+        } catch {
             return { data: [], error: 'DB offline (Invalid Connection)' };
         }
 

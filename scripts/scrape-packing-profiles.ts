@@ -11,8 +11,21 @@ import { randomUUID } from 'crypto';
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 
-const SITEMAP_URL = 'https://lojacondstore.com.br/wp-sitemap-posts-product-1.xml';
-const TENANT_ID = process.env.SCRAPE_TENANT_ID || 'lojacond-default';
+/**
+ * Scraper / Catalog Import Utility
+ *
+ * Formalmente isolado como ferramenta de importação parametrizada.
+ * Requer tenant e sitemap configurados explicitamente via variáveis de ambiente ou argumentos.
+ */
+
+const SITEMAP_URL = process.env.SCRAPE_SITEMAP_URL || process.argv[3];
+const TENANT_ID = process.env.SCRAPE_TENANT_ID || process.argv[2];
+
+if (!TENANT_ID || !SITEMAP_URL) {
+    console.error('❌ ERRO: SCRAPE_TENANT_ID e SCRAPE_SITEMAP_URL são obrigatórios.');
+    console.error('Uso: npx tsx scripts/scrape-packing-profiles.ts <tenantId> <sitemapUrl>');
+    process.exit(1);
+}
 const CONCURRENCY = 3;
 const DELAY_MS = 500; // polite delay between requests
 

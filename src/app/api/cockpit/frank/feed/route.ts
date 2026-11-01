@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
         // Use Case 1: "o que mudou hoje na main?"
         if (lowercaseMsg.includes('mudou') || lowercaseMsg.includes('main') || lowercaseMsg.includes('deploy')) {
             const feed = await ecosystemFeedService.getRecentFeed(tenantId, 5);
-            let reply = `**Atualizações do Ecossistema Lojacond:**\n\n`;
+            let reply = `**Atualizações do Ecossistema:**\n\n`;
             
             const suggestions: Array<{ label: string, actionUrl: string }> = [];
 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         // Use Case 3 & 4: "qual a prioridade da operação agora?" / "o que está travando hoje?"
         if (lowercaseMsg.includes('prioridade') || lowercaseMsg.includes('travando') || lowercaseMsg.includes('gargalo')) {
             return NextResponse.json({ 
-                 reply: `**Análise Preditiva Lojacond:**\n\nNeste momento a prioridade é zerar a **Fila Operacional de Mensagens do WhatsApp** (módulo Atendimento). Os eventos indicam leads recentes que aguardam cotação final.\n\nSugiro que navegue até \`/conversas\` para desafogar o volume primário de aquisição.`,
+                 reply: `**Análise Preditiva Operacional:**\n\nNeste momento a prioridade é zerar a **Fila Operacional de Mensagens do WhatsApp** (módulo Atendimento). Os eventos indicam leads recentes que aguardam cotação final.\n\nSugiro que navegue até \`/conversas\` para desafogar o volume primário de aquisição.`,
                  suggestions: [{ label: 'Desafogar WhatsApp Inbound', actionUrl: '/conversas' }]
             });
         }

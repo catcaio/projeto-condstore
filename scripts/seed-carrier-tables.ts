@@ -6,7 +6,12 @@ import { getDb } from '../src/infra/db';
 import { carrierPolicies, carrierZones, carrierRateRows } from '../src/drizzle/schema';
 import { randomUUID } from 'crypto';
 
-const T = 'LOJACOND';
+const T = process.argv[2] ?? process.env.TENANT_ID;
+if (!T) {
+    console.error('❌ ERRO: tenantId é obrigatório. Forneça via argumento ou variável de ambiente TENANT_ID.');
+    console.error('Uso: npx tsx scripts/seed-carrier-tables.ts <tenantId>');
+    process.exit(1);
+}
 
 // ─── CEP prefix ranges per state (first 5 digits) ──────────────────────────
 // Source: Brazilian postal system standard ranges

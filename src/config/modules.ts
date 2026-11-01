@@ -538,7 +538,7 @@ export function getPrimaryNavigationGroups() {
         key: groupKey,
         title:
             groupKey === 'Core'
-                ? 'Cockpit Lojacond'
+                ? 'Cockpit'
                 : groupKey === 'Operacao'
                   ? 'Operacao'
                   : groupKey === 'Inteligencia'
