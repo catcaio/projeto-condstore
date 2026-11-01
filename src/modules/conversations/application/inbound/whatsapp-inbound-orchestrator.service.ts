@@ -522,16 +522,12 @@ export const whatsappInboundOrchestrator = {
             intent: intentResult.intent
         });
 
-        // Determine if we are incrementing the counter due to an outbound auto-reply taking place
-        const shouldIncrementCounter = !guardResult.blocked && policyResolution.type === 'AUTO_REPLY_ALLOWED';
-
         const updateParams: import('@/modules/frank/session.repository').UpdateSessionParams = {
             currentIntent: intentResult.intent,
             lastToolUsed: createdSuggestion ? 'freight_simulation_tool' : undefined,
             ...(validOrderId ? { lastOrderId: validOrderId } : {}),
             ...(validShipmentId ? { lastReferencedShipmentId: validShipmentId } : {}),
-            autoResponsesCount: shouldIncrementCounter ? autoResponsesCount + 1 : autoResponsesCount,
-            ...(shouldIncrementCounter ? { lastAutoResponseAt: new Date() } : {})
+            autoResponsesCount,
         };
 
         if (attributionTokenStr) {
@@ -589,6 +585,12 @@ export const whatsappInboundOrchestrator = {
                     });
 
                     if (sendRes.ok) {
+                        // Increment autoResponsesCount and record lastAutoResponseAt ONLY on successful dispatch
+                        await updateSessionState(tenantId, fromHash, {
+                            autoResponsesCount: autoResponsesCount + 1,
+                            lastAutoResponseAt: new Date(),
+                        }).catch(() => {});
+
                         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
 
                         structuredLogger.info('whatsapp_dev_autonomous_reply_dispatched', {
@@ -601,6 +603,18 @@ export const whatsappInboundOrchestrator = {
                             providerSid: sendRes.sendResult.sid,
                         });
 
+                        structuredLogger.info('frank_reply_decision', {
+                            tenantId,
+                            requestId,
+                            intent: intentResult.intent,
+                            confidence: intentResult.confidence,
+                            decision: 'AUTO_REPLY_DISPATCHED',
+                            reason: 'dev_autonomous_opt_in',
+                            gateMode: gateResult.mode,
+                            modelInvoked: Boolean(replyBody),
+                            sent: true,
+                        });
+
                         return { type: 'ACK_ONLY' };
                     } else {
                         structuredLogger.warn('whatsapp_dev_autonomous_send_failed_fallback_supervised', {
@@ -610,6 +624,18 @@ export const whatsappInboundOrchestrator = {
                             conversationId: conversation.id,
                             errorCode: sendRes.sendResult.errorCode,
                             errorMessage: sendRes.sendResult.message,
+                        });
+
+                        structuredLogger.info('frank_reply_decision', {
+                            tenantId,
+                            requestId,
+                            intent: intentResult.intent,
+                            confidence: intentResult.confidence,
+                            decision: 'SUPERVISED_FALLBACK_SEND_ERROR',
+                            reason: sendRes.sendResult.errorCode,
+                            gateMode: gateResult.mode,
+                            modelInvoked: Boolean(replyBody),
+                            sent: false,
                         });
                     }
                 }
@@ -630,6 +656,18 @@ export const whatsappInboundOrchestrator = {
         if (gateResult.mode === 'SUPERVISED' && policyResolution.type === 'AUTO_REPLY_ALLOWED') {
             const supervisedPolicy: InboundReplyPolicy = { type: 'SUPERVISED_NO_REPLY' };
 
+            structuredLogger.info('frank_reply_decision', {
+                tenantId,
+                requestId,
+                intent: intentResult.intent,
+                confidence: intentResult.confidence,
+                decision: 'SUPERVISED_NO_REPLY',
+                reason: gateResult.reason,
+                gateMode: gateResult.mode,
+                modelInvoked: false,
+                sent: false,
+            });
+
             structuredLogger.info('whatsapp_orchestrator_latency', {
                 tenantId,
                 messageSid,
@@ -643,6 +681,18 @@ export const whatsappInboundOrchestrator = {
 
             return supervisedPolicy;
         }
+
+        structuredLogger.info('frank_reply_decision', {
+            tenantId,
+            requestId,
+            intent: intentResult.intent,
+            confidence: intentResult.confidence,
+            decision: policyResolution.type,
+            reason: gateResult.reason,
+            gateMode: gateResult.mode,
+            modelInvoked: false,
+            sent: false,
+        });
 
         structuredLogger.info('whatsapp_orchestrator_latency', {
             tenantId,

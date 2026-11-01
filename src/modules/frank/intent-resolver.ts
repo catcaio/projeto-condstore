@@ -88,8 +88,16 @@ const CONFIRM_QUOTE_KEYWORDS = [
 ];
 
 const SAUDACAO_KEYWORDS = [
-    'oi', 'olá', 'bom dia', 'boa tarde', 'boa noite', 'hello',
+    'oi', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'hello',
     'hi', 'eae', 'opa', 'tudo bem',
+];
+
+const GENERIC_SUPPORT_KEYWORDS = [
+    'como funciona o atendimento', 'como funciona', 'como voces atendem',
+    'como funciona a loja', 'como funciona o sistema', 'o que voce faz',
+    'o que você faz', 'quais sao os servicos', 'quais são os serviços',
+    'preciso de ajuda', 'ajuda', 'suporte', 'duvidas', 'duvida',
+    'quem e voce', 'quem é você', 'o que e o frank', 'o que é o frank',
 ];
 
 function normalize(text: string): string {
@@ -104,7 +112,13 @@ function countMatches(text: string, keywords: string[]): number {
     const normalized = normalize(text);
     let count = 0;
     for (const kw of keywords) {
-        if (normalized.includes(normalize(kw))) {
+        const normKw = normalize(kw);
+        if (normKw.length <= 3) {
+            const regex = new RegExp('(^|[^a-z0-9])' + normKw + '([^a-z0-9]|$)', 'i');
+            if (regex.test(normalized)) {
+                count++;
+            }
+        } else if (normalized.includes(normKw)) {
             count++;
         }
     }
@@ -137,6 +151,11 @@ export function resolveIntent(message: string): IntentResult {
     // Early rule: detect generic informational questions before specific classifiers.
     // These phrases are too ambiguous on their own to safely route to a tool
     // without session context backing them.
+    // Informational support questions
+    if (GENERIC_SUPPORT_KEYWORDS.some(kw => normalizedMessage.includes(normalize(kw)))) {
+        return { intent: 'GENERIC_QUESTION', confidence: 0.70 };
+    }
+
     if (GENERIC_INFORMATIONAL_PATTERNS.some(p => normalizedMessage.includes(normalize(p)))) {
         return { intent: 'GENERIC_QUESTION', confidence: 0.6 };
     }
@@ -167,14 +186,19 @@ export function resolveIntent(message: string): IntentResult {
         return { intent: 'OUTRO', confidence: 0.1 };
     }
 
-    // Confidence = matches / max possible, capped at 0.95
-    let confidence = Math.min(best.matches / Math.min(best.total, 4), 0.95);
+    // Confidence calculation with domain-specific calibration
+    let confidence: number;
+    if (best.intent === 'SAUDACAO') {
+        confidence = 0.85;
+    } else {
+        confidence = Math.min(best.matches / Math.min(best.total, 4), 0.95);
+    }
     confidence = Math.round(confidence * 100) / 100;
 
     const candidates = scores.filter(s => s.matches > 0).map(s => s.intent);
 
     if (confidence < 0.65) {
-        return { intent: 'GENERIC_QUESTION', confidence: 0, intentCandidates: candidates };
+        return { intent: 'GENERIC_QUESTION', confidence: 0.45, intentCandidates: candidates };
     }
 
     return { intent: best.intent, confidence, intentCandidates: candidates };

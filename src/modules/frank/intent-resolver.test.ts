@@ -177,3 +177,24 @@ describe('resolveContextualIntent', () => {
         expect(turn3.confidence).toBe(0.70);
     });
 });
+
+describe('resolveIntent PT-BR table-driven tests', () => {
+    const tableCases = [
+        { message: 'Oi, Frank!', expectedIntent: 'SAUDACAO', minConfidence: 0.8 },
+        { message: 'Olá, bom dia!', expectedIntent: 'SAUDACAO', minConfidence: 0.8 },
+        { message: 'Como funciona o atendimento?', expectedIntent: 'GENERIC_QUESTION', minConfidence: 0.6 },
+        { message: 'O que você faz?', expectedIntent: 'GENERIC_QUESTION', minConfidence: 0.6 },
+        { message: 'Preciso de ajuda', expectedIntent: 'GENERIC_QUESTION', minConfidence: 0.6 },
+        { message: 'quanto fica o frete', expectedIntent: 'GENERIC_QUESTION', minConfidence: 0.4 },
+        { message: 'Confirme meu pedido', expectedIntent: 'GENERIC_QUESTION', minConfidence: 0.4 },
+        { message: 'Quero falar com atendente', expectedIntent: 'OUTRO', minConfidence: 0.1 },
+    ];
+
+    for (const { message, expectedIntent, minConfidence } of tableCases) {
+        it('correctly resolves ' + message + ' to ' + expectedIntent, () => {
+            const result = resolveIntent(message);
+            expect(result.intent).toBe(expectedIntent);
+            expect(result.confidence).toBeGreaterThanOrEqual(minConfidence);
+        });
+    }
+});

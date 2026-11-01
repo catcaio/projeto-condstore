@@ -91,7 +91,8 @@ vi.mock('@/lib/events/operational-event-bus', () => ({
 
 vi.mock('@/modules/frank/conversation-control', () => ({
     resolveConversationMode: vi.fn().mockReturnValue({ mode: 'ASSISTED', reason: 'dev_test' }),
-    isEntitiesCompleteForIntent: vi.fn().mockReturnValue(true)
+    isEntitiesCompleteForIntent: vi.fn().mockReturnValue(true),
+    MAX_AUTO_RESPONSES: 2,
 }));
 
 vi.mock('@/modules/frank/whatsapp-orchestrator', () => ({
@@ -253,5 +254,32 @@ describe('Frank Dev Autonomous WhatsApp Inbound Integration', () => {
         expect(whatsappOutboundService.sendTrackedMessage).toHaveBeenCalled();
         // Since send failed, it falls back to the resolved policy (not ACK_ONLY)
         expect(['SUPERVISED_NO_REPLY', 'AUTO_REPLY_ALLOWED']).toContain(policy.type);
+    });
+
+    it('Scenario 8: "Oi, Frank!" with real intent resolution delivers conversational response in dev mode', async () => {
+        const { resolveIntent } = await import('@/modules/frank/intent-resolver');
+        const { resolveConversationMode } = await import('@/modules/frank/conversation-control');
+
+        // Unmock conversation-control for this scenario to test actual gate
+        vi.mocked(resolveConversationMode).mockImplementationOnce((params) => {
+            return {
+                mode: 'ASSISTED',
+                reason: 'greeting (business_hours)'
+            };
+        });
+
+        const policy = await whatsappInboundOrchestrator.process({
+            ...devPayload,
+            rawBodyText: 'Oi, Frank!'
+        });
+
+        expect(frankOrchestrator.handleIncomingMessage).toHaveBeenCalledWith(
+            'tenant-lojacond-dev',
+            'Oi, Frank!',
+            '+5511999999999'
+        );
+
+        expect(whatsappOutboundService.sendTrackedMessage).toHaveBeenCalled();
+        expect(policy.type).toBe('ACK_ONLY');
     });
 });

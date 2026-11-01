@@ -17,7 +17,7 @@ import { resolvePlaybook, type ResolvedPlaybook } from './playbooks/playbook.ser
 import { resolveKnowledge } from './knowledge/knowledge.service';
 import { recordInboundMessage, recordOutboundMessage, loadConversationContext } from './memory/memory.service';
 import { suggestionService } from './suggestions/suggestion.service';
-import { isFrankRuntimeEnabled, isFrankSupervisedOnly } from '@/config/app.config';
+import { isFrankRuntimeEnabled, isFrankSupervisedOnly, isFrankDevAutonomousEnabled } from '@/config/app.config';
 import { intentTrainingService } from './intents/intent.service';
 import { resolveProductFromUrl } from './product-resolver';
 import { resolvePackingDimensions } from '@/modules/fulfillment/freight/packing-resolver';
@@ -1113,10 +1113,18 @@ export async function handleIncomingMessage(
 
     const newAutoResponsesCount = gateResult.mode === 'SUPERVISED' ? 0 : autoResponsesCount + 1;
 
-    // Force SUPERVISED mode if the system globally enforces supervised only.
+    // Safe conversational exemption:
+    // When isFrankDevAutonomousEnabled is active for dev tenant, allow low-risk conversational
+    // intents (SAUDACAO, GENERIC_QUESTION) to retain ASSISTED/AUTONOMOUS mode when the gate approved it.
+    // Sensitive actions and production/other tenants remain strictly locked to SUPERVISED.
+    const isDevAutonomous = isFrankDevAutonomousEnabled(tenantId);
+    const isSafeConversationalIntent = ['SAUDACAO', 'GENERIC_QUESTION'].includes(intentResult.intent);
+
     if (isFrankSupervisedOnly()) {
-        gateResult.mode = 'SUPERVISED';
-        gateResult.reason = 'supervised_only_mode_enforced';
+        if (!(isDevAutonomous && isSafeConversationalIntent && gateResult.mode !== 'SUPERVISED')) {
+            gateResult.mode = 'SUPERVISED';
+            gateResult.reason = 'supervised_only_mode_enforced';
+        }
     }
 
     // Persist entities and mode limits in session contextJson
