@@ -65,7 +65,8 @@ vi.mock('@/modules/conversations/application/orchestration/message.service', () 
 vi.mock('@/modules/conversations/application/orchestration/conversation.service', () => ({
     conversationService: { 
         findOrCreateConversationByPhone: vi.fn(),
-        hasRecentOperatorMessage: vi.fn()
+        hasRecentOperatorMessage: vi.fn(),
+        getLastReleaseTimestamp: vi.fn().mockResolvedValue(null)
     }
 }));
 
@@ -118,8 +119,9 @@ describe('WhatsApp Inbound Orchestrator', () => {
         vi.clearAllMocks();
         (inboundMessageDedupRepository.tryAcquire as any).mockResolvedValue(true);
         (endUserConsentRepository.getConsent as any).mockResolvedValue({ consentGiven: true });
-        (conversationService.findOrCreateConversationByPhone as any).mockResolvedValue({ id: 'c1', status: 'OPEN', stage: 'NEW_LEAD' });
+        (conversationService.findOrCreateConversationByPhone as any).mockResolvedValue({ id: 'c1', status: 'triaged', stage: 'NEW_LEAD' });
         (conversationService.hasRecentOperatorMessage as any).mockResolvedValue(false);
+        (conversationService.getLastReleaseTimestamp as any) = vi.fn().mockResolvedValue(null);
         
         const { customerResolutionService } = await import('@/modules/customers/customer-resolution.service');
         (customerResolutionService.resolveOrCreateCustomer as any).mockResolvedValue({

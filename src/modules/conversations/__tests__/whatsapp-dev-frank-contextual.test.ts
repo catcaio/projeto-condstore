@@ -43,6 +43,7 @@ vi.mock('@/modules/conversations/application/orchestration/conversation.service'
     conversationService: {
         findOrCreateConversationByPhone: vi.fn(),
         hasRecentOperatorMessage: vi.fn().mockResolvedValue(false),
+        getLastReleaseTimestamp: vi.fn().mockResolvedValue(null),
     }
 }));
 

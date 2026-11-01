@@ -457,9 +457,14 @@ export const whatsappInboundOrchestrator = {
         }
 
         // 6.5 Persist Contextual Signals
-        // Reset count if the operator has been actively chatting in the previous 15m.
-        // Otherwise, increment if we are sending an AUTO_REPLY.
-        const operatorRespondedRecently = await conversationService.hasRecentOperatorMessage(tenantId, conversation.id, 15);
+        // Retrieve last explicit handback timestamp so messages sent before release do not block Frank.
+        const lastReleaseAt = await conversationService.getLastReleaseTimestamp(tenantId, conversation.id);
+        const operatorRespondedRecently = await conversationService.hasRecentOperatorMessage(
+            tenantId,
+            conversation.id,
+            15,
+            lastReleaseAt ?? undefined
+        );
         if (operatorRespondedRecently) {
             autoResponsesCount = 0;
         }
