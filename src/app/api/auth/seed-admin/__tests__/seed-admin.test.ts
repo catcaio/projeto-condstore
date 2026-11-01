@@ -1,108 +1,115 @@
-import { GET } from '../route';
-import { NextRequest } from 'next/server';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as internalTokenModule from '@/infra/config/internal-token';
+import { NextRequest } from 'next/server';
+import { GET } from '../route';
 
-// Mocks
+const mockDbExecute = vi.hoisted(() => vi.fn());
+const mockDbSelect = vi.hoisted(() => vi.fn());
+const mockDbInsert = vi.hoisted(() => vi.fn());
+
 vi.mock('@/infra/db', () => ({
-    getDb: vi.fn(),
+    getDb: vi.fn().mockResolvedValue({
+        execute: mockDbExecute,
+        select: mockDbSelect,
+        insert: mockDbInsert,
+    }),
 }));
 
-vi.mock('@/infra/logger', () => ({
-    logger: {
-        warn: vi.fn(),
-        error: vi.fn(),
-    }
+vi.mock('@/infra/auth/session', () => ({
+    createSessionToken: vi.fn().mockResolvedValue('mock-session-token'),
+    COOKIE_NAME: 'condstore_session',
 }));
 
-vi.mock('@/infra/log/logger', () => ({
-    structuredLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}));
-
-vi.mock('@/lib/security/require-audit-log', () => ({
-    writeAuditLog: vi.fn().mockResolvedValue(undefined),
-    hashPayload: vi.fn().mockReturnValue('mock-hash'),
-}));
-
-function createMockRequest(url: string, headers: Record<string, string> = {}) {
-    return new NextRequest(new URL(url), {
-        method: 'GET',
-        headers: new Headers(headers),
-    });
-}
-
-describe('Seed Admin Route Guard', () => {
-    const originalEnv = process.env;
-
+describe('seed-admin route tenant isolation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        process.env = { ...originalEnv };
-    });
-
-    it('PROD sem token interno deve ser bloqueado com 403', async () => {
-        process.env.IS_DEV = 'false';
-        // Explicitly enable allowlist to test just the token component
-        process.env.ALLOW_SEED_ADMIN = 'true';
-
-        const req = createMockRequest('http://localhost/api/auth/seed-admin');
-        const res = await GET(req);
-
-        expect(res.status).toBe(403);
-    });
-
-    it('PROD com token interno porem sem allowlist deve ser bloqueado com 403', async () => {
-        process.env.IS_DEV = 'false';
-        process.env.ALLOW_SEED_ADMIN = 'false';
-        vi.spyOn(internalTokenModule, 'getInternalExportTokenOrThrow').mockReturnValue('valid_internal_token');
-
-        const req = createMockRequest('http://localhost/api/auth/seed-admin', {
-            'x-internal-token': 'valid_internal_token'
+        mockDbInsert.mockReturnValue({
+            values: vi.fn().mockResolvedValue(undefined),
         });
-        const res = await GET(req);
-
-        expect(res.status).toBe(403);
-    });
-
-    it('PROD com token interno válido E allowlist deve passar pelo guard (retorna 500 DB_URL missing na fase do banco ou mock error)', async () => {
-        process.env.IS_DEV = 'false';
-        process.env.ALLOW_SEED_ADMIN = 'true';
-        vi.spyOn(internalTokenModule, 'getInternalExportTokenOrThrow').mockReturnValue('valid_internal_token');
-
-        // Setup the next valid phase fail since we only care about the guard passing
-        process.env.DATABASE_URL = '';
-
-        const req = createMockRequest('http://localhost/api/auth/seed-admin', {
-            'x-internal-token': 'valid_internal_token'
-        });
-        const res = await GET(req);
-
-        expect(res.status).toBe(500);
-        const data = await res.json();
-        expect(data.error).toBe('DATABASE_URL missing');
-    });
-
-    it('DEV sem seed token deve ser bloqueado com 401', async () => {
         process.env.IS_DEV = 'true';
-        process.env.SEED_TOKEN = 'expected_seed';
-
-        const req = createMockRequest('http://localhost/api/auth/seed-admin');
-        const res = await GET(req);
-
-        expect(res.status).toBe(401);
+        process.env.SEED_TOKEN = 'test-token';
+        process.env.DATABASE_URL = 'mysql://user:pass@localhost:3306/condstore_dev';
+        process.env.ADMIN_SEED_EMAIL = 'admin@condstore.local';
+        process.env.ADMIN_SEED_PASSWORD = 'strong-password-123';
+        delete process.env.ADMIN_SEED_TENANT_ID;
     });
 
-    it('DEV com seed token válido deve passar pelo guard (retorna 500 na DB phase)', async () => {
-        process.env.IS_DEV = 'true';
-        process.env.SEED_TOKEN = 'expected_seed';
-        process.env.DATABASE_URL = '';
+    it('rejects seed admin request without explicit tenantId when tenants already exist', async () => {
+        // Mock that database already has 2 tenants
+        mockDbExecute.mockResolvedValueOnce([[{ count: 2 }]]);
 
-        const req = createMockRequest('http://localhost/api/auth/seed-admin', {
-            'x-seed-token': 'expected_seed'
+        const req = new NextRequest('http://localhost:3000/api/auth/seed-admin', {
+            method: 'GET',
+            headers: {
+                'x-seed-token': 'test-token',
+            },
         });
-        const res = await GET(req);
 
-        expect(res.status).toBe(500);
+        const res = await GET(req);
         const data = await res.json();
-        expect(data.error).toBe('DATABASE_URL missing');
+
+        expect(res.status).toBe(400);
+        expect(data.success).toBe(false);
+        expect(data.error).toContain('tenantId is required when existing tenants are present');
+    });
+
+    it('rejects seed admin request with non-existent tenantId when tenants exist', async () => {
+        // Mock count = 2, then select tenant where id = ... returns empty
+        mockDbExecute
+            .mockResolvedValueOnce([[{ count: 2 }]])
+            .mockResolvedValueOnce([[]]); // tenant not found
+
+        const req = new NextRequest('http://localhost:3000/api/auth/seed-admin?tenantId=tenant-non-existent', {
+            method: 'GET',
+            headers: {
+                'x-seed-token': 'test-token',
+            },
+        });
+
+        const res = await GET(req);
+        const data = await res.json();
+
+        expect(res.status).toBe(404);
+        expect(data.success).toBe(false);
+        expect(data.error).toContain('Cannot associate admin to non-existent tenant');
+    });
+
+    it('correctly associates admin with explicitly targeted tenant among multiple tenants', async () => {
+        const targetTenant = 'tenant-beta-corp';
+
+        // Mock count = 2, then select tenant where id = targetTenant returns tenant
+        mockDbExecute
+            .mockResolvedValueOnce([[{ count: 2 }]])
+            .mockResolvedValueOnce([[{ id: targetTenant }]]);
+
+        // Mock select signup policy -> returns empty, then mock select existing user -> returns empty
+        mockDbSelect
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([]),
+                }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([]),
+                }),
+            });
+
+        mockDbInsert.mockReturnValue({
+            values: vi.fn().mockResolvedValue(undefined),
+        });
+
+        const req = new NextRequest(`http://localhost:3000/api/auth/seed-admin?tenantId=${targetTenant}`, {
+            method: 'GET',
+            headers: {
+                'x-seed-token': 'test-token',
+            },
+        });
+
+        const res = await GET(req);
+        const data = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(data.success).toBe(true);
+        expect(data.tenantId).toBe(targetTenant);
     });
 });

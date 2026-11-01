@@ -25,14 +25,28 @@ export async function POST(req: NextRequest) {
         return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, 'Missing required parameter: tenantId');
     }
 
+    // Require explicit authorization to load demo/founder catalog fixtures
+    const allowDemoCatalog = req.nextUrl.searchParams.get('allowDemoCatalog') === 'true' ||
+        process.env.ALLOW_DEMO_CATALOG_SEED === 'true';
+
+    if (!allowDemoCatalog) {
+        return errorResponse(
+            ErrorCode.FORBIDDEN,
+            403,
+            requestId,
+            'Loading the demo catalog fixture requires explicit authorization (allowDemoCatalog=true)'
+        );
+    }
+
     try {
+        const db = await getDb();
+
         const validation = validateCatalog(LOJACOND_CATALOG);
         if (!validation.valid) {
             return errorResponse(ErrorCode.VALIDATION_ERROR, 400, requestId, validation.errors.join('; '));
         }
 
         const rows = buildProductRows(targetTenantId, LOJACOND_CATALOG);
-        const db = await getDb();
 
         let inserted = 0;
         let updated = 0;
@@ -44,6 +58,7 @@ export async function POST(req: NextRequest) {
                 .limit(1);
 
             if (existing) {
+                // Ensure UPDATE strictly filters by both products.id and products.tenantId
                 await db.update(products).set({
                     name: row.name,
                     sku: row.sku,
@@ -52,7 +67,7 @@ export async function POST(req: NextRequest) {
                     width: row.width,
                     height: row.height,
                     length: row.length,
-                }).where(eq(products.id, row.id));
+                }).where(and(eq(products.id, row.id), eq(products.tenantId, row.tenantId)));
                 updated++;
             } else {
                 await db.insert(products).values(row);

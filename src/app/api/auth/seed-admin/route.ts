@@ -70,17 +70,47 @@ export const GET = withAuditLog(
                 );
             }
 
-            // Ensure tenant exists
-            let tenantId = 'condstore-admin-tenant';
-            const existingTenants = await db.execute(sql`SELECT id FROM tenants LIMIT 1`);
+            // Resolve explicit tenant
+            const explicitTenantId = request.nextUrl.searchParams.get('tenantId') ||
+                request.headers.get('x-seed-tenant-id') ||
+                process.env.ADMIN_SEED_TENANT_ID;
 
-            if (Array.isArray(existingTenants) && existingTenants.length > 0 && Array.isArray(existingTenants[0]) && existingTenants[0].length > 0) {
-                tenantId = (existingTenants[0][0] as any).id;
-            } else {
+            const [tenantCountRow] = await db.execute(sql`SELECT COUNT(*) as count FROM tenants`);
+            const totalTenants = Number((tenantCountRow as any)?.[0]?.count ?? (tenantCountRow as any)?.count ?? 0);
+
+            let tenantId: string;
+
+            if (totalTenants === 0) {
+                // Empty database bootstrap: require explicit tenant or create standard root tenant
+                tenantId = explicitTenantId || 'condstore-root-tenant';
                 await db.execute(sql`
-                INSERT IGNORE INTO tenants (id, name, twilio_number) 
-                VALUES (${tenantId}, 'Condstore Admin', 'whatsapp:+5511999999999')
-           `);
+                    INSERT INTO tenants (id, name, twilio_number)
+                    VALUES (${tenantId}, 'Condstore Admin', 'whatsapp:+5511999999999')
+                `);
+            } else {
+                // Database already has tenants: MUST provide explicit tenantId and verify it exists
+                if (!explicitTenantId) {
+                    logger.warn('seed_admin.rejected', { reason: 'Explicit tenantId required when database contains existing tenants' });
+                    return NextResponse.json(
+                        { success: false, error: 'tenantId is required when existing tenants are present in the system' },
+                        { status: 400 }
+                    );
+                }
+
+                const existingTenant = await db.execute(sql`SELECT id FROM tenants WHERE id = ${explicitTenantId} LIMIT 1`);
+                const foundRows = Array.isArray(existingTenant) && Array.isArray(existingTenant[0])
+                    ? existingTenant[0]
+                    : (Array.isArray(existingTenant) ? existingTenant : []);
+
+                if (foundRows.length === 0) {
+                    logger.warn('seed_admin.rejected', { reason: 'Specified tenantId not found', tenantId: explicitTenantId });
+                    return NextResponse.json(
+                        { success: false, error: `Tenant '${explicitTenantId}' not found. Cannot associate admin to non-existent tenant.` },
+                        { status: 404 }
+                    );
+                }
+
+                tenantId = explicitTenantId;
             }
 
             // ── Ensure tenant_signup_policies exists ──────────────────────────

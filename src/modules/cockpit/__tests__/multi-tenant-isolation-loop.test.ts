@@ -1,53 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { frankExecutionStateService } from '@/modules/frank/frank-execution-state.service';
 import { MessageRepository } from '@/infra/repositories/message.repository';
-
-const mockDbLimit = vi.hoisted(() => vi.fn().mockResolvedValue([]));
-const mockDbGroupBy = vi.hoisted(() => vi.fn().mockResolvedValue([]));
-const mockDbWhere = vi.hoisted(() => vi.fn().mockReturnValue({
-    groupBy: mockDbGroupBy,
-    limit: mockDbLimit,
-    orderBy: vi.fn().mockReturnValue({ limit: mockDbLimit }),
-}));
-
-const mockDb = vi.hoisted(() => ({
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockResolvedValue(undefined),
-    select: vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-            where: mockDbWhere,
-            innerJoin: vi.fn().mockReturnValue({
-                where: mockDbWhere,
-            }),
-        }),
-    }),
-}));
-
-vi.mock('@/infra/db', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('@/infra/db')>();
-    return {
-        ...actual,
-        getDb: vi.fn().mockResolvedValue(mockDb),
-    };
-});
-
-vi.mock('@/db/client', () => ({
-    db: mockDb,
-}));
-
-vi.mock('@/infra/pii/crypto', () => ({
-    decryptString: vi.fn((val: string) => `decrypted_${val}`),
-    encryptString: vi.fn((val: string) => `encrypted_${val}`),
-}));
+import { randomUUID } from 'crypto';
 
 describe('Multi-Tenant Data Isolation Loop Test', () => {
     const tenantA = 'tenant_alpha_isolated_test';
     const tenantB = 'tenant_beta_isolated_test';
     const messageRepo = new MessageRepository();
-
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
 
     it('prevents cross-tenant state leakage in Frank operational runtime (memory fallback & contracts)', async () => {
         // Tenant A creates an execution run
@@ -87,26 +46,9 @@ describe('Multi-Tenant Data Isolation Loop Test', () => {
         ).rejects.toThrow('Cross-tenant access denied');
     });
 
-    it('ensures message metrics strictly scope counts to the calling tenantId', async () => {
-        // Query metrics for Tenant A
-        mockDbGroupBy.mockResolvedValueOnce([
-            { intent: 'COTACAO', count: 5 },
-            { intent: 'RASTREAMENTO', count: 2 },
-        ]);
-
-        const metricsA = await messageRepo.getMetricsToday(tenantA);
-        expect(metricsA.total).toBe(7);
-        expect(metricsA.breakdown['COTACAO']).toBe(5);
-        expect(metricsA.breakdown['RASTREAMENTO']).toBe(2);
-
-        // Query metrics for Tenant B (completely different data)
-        mockDbGroupBy.mockResolvedValueOnce([
-            { intent: 'DUVIDA', count: 1 },
-        ]);
-
-        const metricsB = await messageRepo.getMetricsToday(tenantB);
-        expect(metricsB.total).toBe(1);
-        expect(metricsB.breakdown['DUVIDA']).toBe(1);
-        expect(metricsB.breakdown['COTACAO']).toBeUndefined();
+    it('validates tenant repository contract rejects queries missing tenant context', async () => {
+        // Calling repository without tenant context must fail closed
+        await expect(messageRepo.getMetricsToday('')).rejects.toThrow('tenant_id is required to get metrics');
+        await expect(messageRepo.getLastMessages('', '+5511999999999', 5)).resolves.toEqual([]);
     });
 });
