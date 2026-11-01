@@ -147,10 +147,18 @@ export const conversationRepository = {
 
     /**
      * Checks if an operator has sent any message in the last N minutes.
+     * If `since` is provided (e.g. from a recent explicit release/handback),
+     * only operator messages sent strictly after the later of `cutoff` and `since` are considered.
      */
-    async hasRecentOperatorMessage(tenantId: string, conversationId: string, minutes: number = 15): Promise<boolean> {
+    async hasRecentOperatorMessage(
+        tenantId: string,
+        conversationId: string,
+        minutes: number = 15,
+        since?: Date | null
+    ): Promise<boolean> {
         const db = await getDb();
-        const cutoff = new Date(Date.now() - minutes * 60 * 1000);
+        const windowCutoff = new Date(Date.now() - minutes * 60 * 1000);
+        const effectiveCutoff = since && since.getTime() > windowCutoff.getTime() ? since : windowCutoff;
 
         const rows = await db.select({ id: conversationMessages.id })
             .from(conversationMessages)
@@ -158,11 +166,30 @@ export const conversationRepository = {
                 eq(conversationMessages.tenantId, tenantId),
                 eq(conversationMessages.conversationId, conversationId),
                 eq(conversationMessages.source, 'OPERATOR'),
-                gt(conversationMessages.createdAt, cutoff)
+                gt(conversationMessages.createdAt, effectiveCutoff)
             ))
             .limit(1);
 
         return rows.length > 0;
+    },
+
+    /**
+     * Retrieves the timestamp of the latest explicit release/handback action
+     * recorded in conversationAssignments for this conversation.
+     */
+    async getLastReleaseTimestamp(tenantId: string, conversationId: string): Promise<Date | null> {
+        const db = await getDb();
+        const [lastRelease] = await db.select({ createdAt: conversationAssignments.createdAt })
+            .from(conversationAssignments)
+            .where(and(
+                eq(conversationAssignments.tenantId, tenantId),
+                eq(conversationAssignments.conversationId, conversationId),
+                eq(conversationAssignments.assignedTo, 'UNASSIGNED')
+            ))
+            .orderBy(desc(conversationAssignments.createdAt))
+            .limit(1);
+
+        return lastRelease?.createdAt ?? null;
     },
 
     async appendInboundMessage(
@@ -277,6 +304,51 @@ export const conversationRepository = {
         await db.update(conversations)
             .set({ assignedTo: null })
             .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
+    },
+
+    /**
+     * Atomically releases a conversation back to automated queue / Frank:
+     * sets assignedTo = null, status = 'triaged' (valid enum value),
+     * and records the unassignment event in conversationAssignments.
+     */
+    async releaseConversation(
+        tenantId: string,
+        conversationId: string,
+        releasedBy?: string
+    ): Promise<boolean> {
+        const db = await getDb();
+        const { randomUUID } = await import('crypto');
+
+        // Execute in database transaction when supported, or sequential update with affected row check
+        const executeAtomicRelease = async (tx: any) => {
+            const result = await tx.update(conversations)
+                .set({
+                    assignedTo: null,
+                    status: 'triaged' as ConversationStatusType,
+                })
+                .where(and(eq(conversations.tenantId, tenantId), eq(conversations.id, conversationId)));
+
+            const affected = extractAffectedRows(result);
+            if (affected === 0) {
+                return false;
+            }
+
+            await tx.insert(conversationAssignments).values({
+                id: randomUUID(),
+                tenantId,
+                conversationId,
+                assignedTo: 'UNASSIGNED',
+                assignedBy: releasedBy || null,
+            });
+
+            return true;
+        };
+
+        if (typeof (db as any).transaction === 'function') {
+            return (db as any).transaction(executeAtomicRelease);
+        }
+
+        return executeAtomicRelease(db);
     },
 
     async updateConversationStatus(

@@ -41,8 +41,17 @@ export const conversationService = {
         return conversationRepository.getConversationMessageByProviderMessageId(messageSid);
     },
 
-    async hasRecentOperatorMessage(tenantId: string, conversationId: string, minutes: number = 15): Promise<boolean> {
-        return conversationRepository.hasRecentOperatorMessage(tenantId, conversationId, minutes);
+    async hasRecentOperatorMessage(
+        tenantId: string,
+        conversationId: string,
+        minutes: number = 15,
+        since?: Date | null
+    ): Promise<boolean> {
+        return conversationRepository.hasRecentOperatorMessage(tenantId, conversationId, minutes, since);
+    },
+
+    async getLastReleaseTimestamp(tenantId: string, conversationId: string): Promise<Date | null> {
+        return conversationRepository.getLastReleaseTimestamp(tenantId, conversationId);
     },
 
     async loadConversationContext(tenantId: string, conversationId: string) {
@@ -112,6 +121,46 @@ export const conversationService = {
                     conversationId,
                     assignedTo,
                     assignedBy
+                }
+            });
+        }
+    },
+
+    /**
+     * Atomically releases conversation back to Frank / automated triage,
+     * resetting assignedTo and setting status to 'triaged'.
+     * Operational events are only published AFTER successful persistence.
+     */
+    async releaseConversation(
+        tenantId: string,
+        conversationId: string,
+        customerId?: string,
+        releasedBy?: string
+    ): Promise<void> {
+        const released = await conversationRepository.releaseConversation(tenantId, conversationId, releasedBy);
+        if (!released) {
+            throw new Error(`Failed to release conversation ${conversationId}: not found or not modified`);
+        }
+
+        if (customerId) {
+            await publishOperationalEvent({
+                tenantId,
+                eventType: 'conversation_unassigned',
+                eventDomain: 'OPERATIONS',
+                customerId,
+                payload: {
+                    conversationId,
+                }
+            });
+
+            await publishOperationalEvent({
+                tenantId,
+                eventType: 'conversation_status_changed',
+                eventDomain: 'OPERATIONS',
+                customerId,
+                payload: {
+                    conversationId,
+                    status: 'triaged'
                 }
             });
         }

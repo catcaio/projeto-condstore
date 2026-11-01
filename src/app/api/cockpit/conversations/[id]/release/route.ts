@@ -14,6 +14,7 @@ export async function PUT(
     const auth = await requireAdmin(request, { requestId });
     if (!auth.ok) return auth.response;
     const tenantId = auth.session.tenantId;
+    const operatorId = (auth.session as any).userId ?? auth.session.sub;
 
     try {
         const { id: conversationId } = await context.params;
@@ -23,19 +24,28 @@ export async function PUT(
             return errorResponse('NOT_FOUND' as any, 404, requestId, 'Conversation not found');
         }
 
-        // Release the conversation, unassign operator, put it back to OPEN
-        await conversationService.unassignConversation(tenantId, conversationId, conversation.customerId ?? undefined);
-        await conversationService.updateConversationStatus(tenantId, conversationId, 'OPEN' as any, conversation.customerId ?? undefined);
+        // Atomically release the conversation: unassign operator, set status to triaged, record handback
+        await conversationService.releaseConversation(
+            tenantId,
+            conversationId,
+            conversation.customerId ?? undefined,
+            operatorId
+        );
         
         logger.info('cockpit_conversation_released', {
             requestId,
             tenantId,
             conversationId,
+            operatorId,
         });
 
         return NextResponse.json({ ok: true });
     } catch (err: any) {
-        logger.error('Failed to release conversation', err as Error, { requestId });
-        return errorResponse('INTERNAL_ERROR' as any, 500, requestId, err.message);
+        // Safe logging without PII or customer payloads
+        logger.error('Failed to release conversation', err as Error, {
+            requestId,
+            tenantId,
+        });
+        return errorResponse('INTERNAL_ERROR' as any, 500, requestId, 'Failed to release conversation');
     }
 }
