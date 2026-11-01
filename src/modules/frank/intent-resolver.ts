@@ -151,13 +151,29 @@ export function resolveIntent(message: string): IntentResult {
     // Early rule: detect generic informational questions before specific classifiers.
     // These phrases are too ambiguous on their own to safely route to a tool
     // without session context backing them.
-    // Informational support questions
-    if (GENERIC_SUPPORT_KEYWORDS.some(kw => normalizedMessage.includes(normalize(kw)))) {
-        return { intent: 'GENERIC_QUESTION', confidence: 0.70 };
-    }
+    // SENSITIVE keywords check: If the message contains sensitive keywords (payment, boleto, confirm order, complaint, etc.),
+    // it MUST NOT be short-circuited as a generic question or simple greeting.
+    const SENSITIVE_KEYWORDS_LIST = [
+        'pagar', 'pagamento', 'pix', 'cartao', 'cartão', 'boleto', 'nota fiscal', 'nf',
+        'confirmar pedido', 'pode fechar', 'fechar pedido', 'comprar', 'quero comprar',
+        'reclamacao', 'reclamação', 'cancelar', 'estorno', 'desconto', 'negociar'
+    ];
+    const hasSensitiveKeyword = SENSITIVE_KEYWORDS_LIST.some(kw => {
+        const normKw = normalize(kw);
+        return normKw.length <= 3
+            ? new RegExp('(^|[^a-z0-9])' + normKw + '([^a-z0-9]|$)', 'i').test(normalizedMessage)
+            : normalizedMessage.includes(normKw);
+    });
 
-    if (GENERIC_INFORMATIONAL_PATTERNS.some(p => normalizedMessage.includes(normalize(p)))) {
-        return { intent: 'GENERIC_QUESTION', confidence: 0.6 };
+    // Informational support questions (only if NO sensitive action keywords are present)
+    if (!hasSensitiveKeyword) {
+        if (GENERIC_SUPPORT_KEYWORDS.some(kw => normalizedMessage.includes(normalize(kw)))) {
+            return { intent: 'GENERIC_QUESTION', confidence: 0.70 };
+        }
+
+        if (GENERIC_INFORMATIONAL_PATTERNS.some(p => normalizedMessage.includes(normalize(p)))) {
+            return { intent: 'GENERIC_QUESTION', confidence: 0.6 };
+        }
     }
 
     const scores: { intent: Intent; matches: number; total: number; priority: number }[] = [
@@ -184,6 +200,24 @@ export function resolveIntent(message: string): IntentResult {
     const best = scores[0];
     if (best.matches === 0) {
         return { intent: 'OUTRO', confidence: 0.1 };
+    }
+
+    // If message contains sensitive keywords, never classify as pure SAUDACAO
+    if (best.intent === 'SAUDACAO' && hasSensitiveKeyword) {
+        // Find best non-saudacao candidate or fail closed to OUTRO / GENERIC_QUESTION
+        const nonSaudacao = scores.find(s => s.intent !== 'SAUDACAO' && s.matches > 0);
+        if (nonSaudacao) {
+            return {
+                intent: nonSaudacao.intent,
+                confidence: Math.round(Math.min(nonSaudacao.matches / Math.min(nonSaudacao.total, 4), 0.95) * 100) / 100,
+                intentCandidates: scores.filter(s => s.matches > 0).map(s => s.intent)
+            };
+        }
+        return {
+            intent: 'GENERIC_QUESTION',
+            confidence: 0.45,
+            intentCandidates: scores.filter(s => s.matches > 0).map(s => s.intent)
+        };
     }
 
     // Confidence calculation with domain-specific calibration

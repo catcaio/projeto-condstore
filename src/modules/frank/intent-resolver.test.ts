@@ -188,6 +188,10 @@ describe('resolveIntent PT-BR table-driven tests', () => {
         { message: 'quanto fica o frete', expectedIntent: 'GENERIC_QUESTION', minConfidence: 0.4 },
         { message: 'Confirme meu pedido', expectedIntent: 'GENERIC_QUESTION', minConfidence: 0.4 },
         { message: 'Quero falar com atendente', expectedIntent: 'OUTRO', minConfidence: 0.1 },
+        { message: 'Preciso de ajuda para pagar', expectedIntent: 'OUTRO', minConfidence: 0.1 },
+        { message: 'Oi, preciso pagar', expectedIntent: 'GENERIC_QUESTION', minConfidence: 0.4 },
+        { message: 'Oi, quero um produto', expectedIntent: 'GENERIC_QUESTION', minConfidence: 0.4 },
+
     ];
 
     for (const { message, expectedIntent, minConfidence } of tableCases) {

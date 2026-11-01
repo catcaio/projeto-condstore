@@ -1111,7 +1111,8 @@ export async function handleIncomingMessage(
         messageBody: message,
     });
 
-    const newAutoResponsesCount = gateResult.mode === 'SUPERVISED' ? 0 : autoResponsesCount + 1;
+    // Maintain count consistent with actual sent auto-responses; do not increment speculatively before send
+    const newAutoResponsesCount = gateResult.mode === 'SUPERVISED' ? 0 : autoResponsesCount;
 
     // Safe conversational exemption:
     // When isFrankDevAutonomousEnabled is active for dev tenant, allow low-risk conversational

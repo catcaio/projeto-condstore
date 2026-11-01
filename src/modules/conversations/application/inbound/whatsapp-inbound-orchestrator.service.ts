@@ -550,20 +550,37 @@ export const whatsappInboundOrchestrator = {
             Boolean(conversation.assignedTo) ||
             operatorRespondedRecently;
 
-        // Invariant: Do not auto-respond if gate decides SUPERVISED (low confidence, sensitive intent, incomplete entities, etc.)
-        const isSupervisedRequired = gateResult.mode === 'SUPERVISED';
+        // Invariant 1: Policy MUST allow auto-reply (SUPERVISED_NO_REPLY from product/suggestion or operator blocks auto-reply)
+        // Invariant 2: Gate mode must not be SUPERVISED
+        // Invariant 3: Never auto-dispatch commercial suggestions (catalog/freight quotes) created for supervision
+        const isPolicySupervised = policyResolution.type === 'SUPERVISED_NO_REPLY';
+        const isGateSupervised = gateResult.mode === 'SUPERVISED';
 
-        if (devAutonomousActive && !isOperatorEngaged && !guardResult.blocked && !isSupervisedRequired) {
+        if (devAutonomousActive && !isOperatorEngaged && !guardResult.blocked && !isGateSupervised && !isPolicySupervised && !createdSuggestion) {
             try {
                 let replyBody = '';
-                if (createdSuggestion) {
-                    const pendingList = await suggestionService.listPendingSuggestions(tenantId, conversation.id);
-                    replyBody = pendingList?.[0]?.suggestedResponse || '';
-                }
 
-                if (!replyBody) {
-                    const frankResult = await handleIncomingMessage(tenantId, messageText, fromE164);
-                    replyBody = frankResult.reply.replace(/^\[SUGESTÃO FRANK\]\s*/i, '').trim();
+                // Call Frank orchestrator for conversational answer
+                const frankResult = await handleIncomingMessage(tenantId, messageText, fromE164);
+
+                // Both gates must agree: If the Frank orchestrator decided SUPERVISED, respect it!
+                // Never remove [SUGESTÃO FRANK] to bypass supervised review.
+                const isOrchestratorSupervised =
+                    frankResult.conversationMode === 'SUPERVISED' ||
+                    !frankResult.conversationMode ||
+                    frankResult.reply.includes('[SUGESTÃO FRANK]');
+
+                if (!isOrchestratorSupervised) {
+                    replyBody = frankResult.reply.trim();
+                } else {
+                    structuredLogger.info('whatsapp_dev_autonomous_orchestrator_supervised', {
+                        tenantId,
+                        messageSid,
+                        requestId,
+                        conversationId: conversation.id,
+                        orchestratorMode: frankResult.conversationMode,
+                        intent: frankResult.intent,
+                    });
                 }
 
                 if (replyBody) {
@@ -586,10 +603,18 @@ export const whatsappInboundOrchestrator = {
 
                     if (sendRes.ok) {
                         // Increment autoResponsesCount and record lastAutoResponseAt ONLY on successful dispatch
-                        await updateSessionState(tenantId, fromHash, {
-                            autoResponsesCount: autoResponsesCount + 1,
-                            lastAutoResponseAt: new Date(),
-                        }).catch(() => {});
+                        try {
+                            await updateSessionState(tenantId, fromHash, {
+                                autoResponsesCount: autoResponsesCount + 1,
+                                lastAutoResponseAt: new Date(),
+                            });
+                        } catch (persistErr) {
+                            structuredLogger.warn('whatsapp_session_counter_persist_failed', {
+                                tenantId,
+                                fromHash,
+                                error: persistErr instanceof Error ? persistErr.message : String(persistErr)
+                            });
+                        }
 
                         void webhookEventRepository.markProcessed('twilio_frank', messageSid);
 
@@ -637,6 +662,10 @@ export const whatsappInboundOrchestrator = {
                             modelInvoked: Boolean(replyBody),
                             sent: false,
                         });
+
+                        // Safe fail-closed: Fallback to supervised no reply to avoid duplicate static TwiML
+                        void webhookEventRepository.markProcessed('twilio_frank', messageSid);
+                        return { type: 'SUPERVISED_NO_REPLY' };
                     }
                 }
             } catch (err) {
@@ -646,6 +675,10 @@ export const whatsappInboundOrchestrator = {
                     requestId,
                     error: err instanceof Error ? err.message : String(err),
                 });
+
+                // Fail-closed on exception after or during dispatch attempt
+                void webhookEventRepository.markProcessed('twilio_frank', messageSid);
+                return { type: 'SUPERVISED_NO_REPLY' };
             }
         }
 
