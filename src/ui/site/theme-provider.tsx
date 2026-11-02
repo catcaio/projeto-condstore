@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useSyncExternalStore } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -10,7 +10,7 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-    theme: 'dark',
+    theme: 'light',
     toggle: () => {},
 });
 
@@ -20,44 +20,81 @@ export function useTheme() {
 
 const STORAGE_KEY = 'condstore-site-theme';
 
-function getInitialTheme(): Theme {
-    if (typeof window === 'undefined') return 'dark';
-
-    // 1. Stored preference
+function readStoredTheme(): Theme {
+    if (typeof window === 'undefined') return 'light';
     try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored === 'light' || stored === 'dark') return stored;
-    } catch { /* SSR / blocked storage */ }
+        const stored = window.localStorage.getItem(STORAGE_KEY);
+        if (stored === 'dark') return 'dark';
+        if (stored === 'light') return 'light';
+    } catch {
+        /* storage blocked or disabled */
+    }
+    // Natural default is 'light', regardless of OS setting
+    return 'light';
+}
 
-    // 2. System preference
-    if (window.matchMedia?.('(prefers-color-scheme: light)').matches) return 'light';
+function subscribe(callback: () => void) {
+    if (typeof window === 'undefined') return () => {};
+    window.addEventListener('storage', callback);
+    return () => window.removeEventListener('storage', callback);
+}
 
-    // 3. Fallback
-    return 'dark';
+export function SiteThemeScript() {
+    const script = `(() => {
+        try {
+            var stored = localStorage.getItem('${STORAGE_KEY}');
+            var theme = stored === 'dark' ? 'dark' : 'light';
+            var root = document.documentElement;
+            root.classList.remove('site-light', 'site-dark');
+            root.classList.add(theme === 'dark' ? 'site-dark' : 'site-light');
+            root.style.colorScheme = theme;
+        } catch (e) {}
+    })();`;
+    return <script dangerouslySetInnerHTML={{ __html: script }} />;
 }
 
 export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setTheme] = useState<Theme>('dark'); // SSR-safe default
-    const [mounted, setMounted] = useState(false);
+    // Synchronous external store reading to guarantee zero-flash and correct initial state
+    const clientTheme = useSyncExternalStore(subscribe, readStoredTheme, () => 'light' as Theme);
+    const [theme, setTheme] = useState<Theme>(clientTheme);
+    const [hasInteracted, setHasInteracted] = useState(false);
 
     useEffect(() => {
-        setTheme(getInitialTheme());
-        setMounted(true);
-    }, []);
+        setTheme(clientTheme);
+    }, [clientTheme]);
+
+    useEffect(() => {
+        try {
+            const root = document.documentElement;
+            root.classList.remove('site-light', 'site-dark');
+            root.classList.add(theme === 'dark' ? 'site-dark' : 'site-light');
+            root.style.colorScheme = theme;
+        } catch {
+            /* noop */
+        }
+    }, [theme]);
 
     const toggle = useCallback(() => {
+        setHasInteracted(true);
         setTheme((prev) => {
             const next = prev === 'dark' ? 'light' : 'dark';
-            try { localStorage.setItem(STORAGE_KEY, next); } catch { /* noop */ }
+            try {
+                window.localStorage.setItem(STORAGE_KEY, next);
+            } catch {
+                /* noop */
+            }
             return next;
         });
     }, []);
 
     return (
         <ThemeContext.Provider value={{ theme, toggle }}>
+            <SiteThemeScript />
             <div
                 className={`${theme === 'dark' ? 'site-dark' : 'site-light'} min-h-screen flex flex-col bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))]`}
-                style={{ transition: mounted ? 'background-color 0.3s ease, color 0.3s ease' : 'none' }}
+                style={{
+                    transition: hasInteracted ? 'background-color 0.3s ease, color 0.3s ease' : 'none',
+                }}
             >
                 {children}
             </div>

@@ -8,6 +8,9 @@ export const metadata: Metadata = {
     title: 'Contato — CONDSTORE OS',
     description:
         'Entre em contato com o time do CONDSTORE OS. Demonstração guiada pelo contexto real da sua operação logística B2B.',
+    alternates: {
+        canonical: '/contato',
+    },
 };
 
 const qualificationPoints = [

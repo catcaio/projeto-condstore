@@ -21,6 +21,9 @@ import {
 export const metadata = {
     title: 'CONDSTORE OS — O Cockpit Operacional do WhatsApp à Logística B2B',
     description: 'Cockpit operacional para PMEs B2B. Mantenha o contexto da negociação do WhatsApp ao caminhão com cotação de frete, pedido e supervisão sem perder o fio.',
+    alternates: {
+        canonical: '/',
+    },
 };
 
 export const revalidate = 86400;
@@ -31,52 +34,39 @@ export default function HomePage() {
             {/* 01. RECONHECIMENTO & HERO — ECOSSISTEMA OPERACIONAL (Preserva public-hero-title e public-primary-cta) */}
             <InteractiveHero />
 
-            <OperationalThread variant="vertical" />
-
-            {/* 02. A DOR DA FRAGMENTAÇÃO — O FIO DA OPERAÇÃO ROMPIDO */}
-            <ScrollReveal>
-                <ContextBreakdownSection />
-            </ScrollReveal>
-
-            <OperationalThread variant="vertical" />
-
-            {/* 03. O FLUXO UNIFICADO — DA CONVERSA AO CAMINHÃO SEM RUÍDO */}
+            {/* 02. O FIO DA OPERAÇÃO: DEMONSTRAÇÃO & FLUXO UNIFICADO */}
             <ScrollReveal>
                 <ContinuousFlowTransformation />
             </ScrollReveal>
 
-            {/* 04. OS 5 MOMENTOS & REALIDADE OPERACIONAL BRASILEIRA */}
+            {/* 03. OS 5 MOMENTOS & REALIDADE OPERACIONAL */}
             <ScrollReveal>
                 <FiveMomentsSection />
             </ScrollReveal>
 
+            {/* 04. GOVERNANÇA, TRILHA DE AUDITORIA & SEGURANÇA */}
             <ScrollReveal>
-                <BrazilOperationalRealismSection />
-            </ScrollReveal>
-
-            {/* 05. GOVERNANÇA, TRILHA DE AUDITORIA & FAQ */}
-            <ScrollReveal>
-                <section className="py-16 md:py-24 border-b border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface))]">
+                <section className="py-12 md:py-16 border-b border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface))]">
                     <PageContainer>
-                        <div className="rounded-2xl border border-[hsl(var(--ui-border)/0.7)] bg-[hsl(var(--ui-surface-elevated))] p-6 sm:p-12 text-center max-w-4xl mx-auto space-y-6">
+                        <div className="rounded-2xl border border-[hsl(var(--ui-border)/0.7)] bg-[hsl(var(--ui-surface-elevated))] p-6 sm:p-10 text-center max-w-4xl mx-auto space-y-5">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[hsl(var(--ui-border-strong))] bg-[hsl(var(--ui-surface)/0.6)] text-xs font-semibold text-[hsl(var(--ui-text))]">
                                 <ShieldCheck className="h-4 w-4 text-[hsl(var(--ui-success))]" />
                                 <span>Garantia de Governança & Rastreabilidade</span>
                             </div>
-                            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[hsl(var(--ui-text))]">
+                            <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-[hsl(var(--ui-text))]">
                                 Operação Supervisionada com Trilha de Auditoria Real
                             </h2>
                             <p className="text-xs sm:text-base text-[hsl(var(--ui-text-muted))] leading-relaxed max-w-2xl mx-auto">
                                 No CONDSTORE OS, cada aprovação de pedido, envio de cotação e troca de status é gravada com usuário, timestamp e contexto comercial. Sem números maquiados ou promessas irreais.
                             </p>
                             <div className="pt-2 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-[hsl(var(--ui-text-muted))]">
-                                <span className="bg-[hsl(var(--ui-surface))] px-3.5 py-1.5 rounded-xl border border-[hsl(var(--ui-border)/0.5)]">
+                                <span className="bg-[hsl(var(--ui-surface))] px-3 py-1 rounded-lg border border-[hsl(var(--ui-border)/0.5)]">
                                     Auditoria de decisões
                                 </span>
-                                <span className="bg-[hsl(var(--ui-surface))] px-3.5 py-1.5 rounded-xl border border-[hsl(var(--ui-border)/0.5)]">
+                                <span className="bg-[hsl(var(--ui-surface))] px-3 py-1 rounded-lg border border-[hsl(var(--ui-border)/0.5)]">
                                     Isolamento de dados por Tenant
                                 </span>
-                                <span className="bg-[hsl(var(--ui-surface))] px-3.5 py-1.5 rounded-xl border border-[hsl(var(--ui-border)/0.5)]">
+                                <span className="bg-[hsl(var(--ui-surface))] px-3 py-1 rounded-lg border border-[hsl(var(--ui-border)/0.5)]">
                                     Frank Copiloto Supervisionado
                                 </span>
                             </div>
@@ -85,12 +75,13 @@ export default function HomePage() {
                 </section>
             </ScrollReveal>
 
+            {/* 05. FAQ SELECIONADO — 4 PERGUNTAS DE DECISÃO */}
             <ScrollReveal>
-                <FaqSection />
+                <FaqSection limit={4} showLinkToAll />
             </ScrollReveal>
 
             {/* 06. AÇÃO — CTA FINAL NARRATIVO */}
-            <section className="py-16 md:py-24 border-b border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface))] relative overflow-hidden">
+            <section className="py-12 md:py-20 border-b border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface))] relative overflow-hidden">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[hsl(var(--ui-border)/0.2)] blur-[120px] rounded-full pointer-events-none" />
 
                 <PageContainer narrow>

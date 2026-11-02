@@ -5,6 +5,9 @@ import { CTASection } from '@/ui/site/cta-section';
 export const metadata: Metadata = {
     title: 'FAQ — CONDSTORE OS',
     description: 'Respostas para as principais dúvidas sobre o CONDSTORE OS, integração com ERP, WhatsApp CRM e logística operacional.',
+    alternates: {
+        canonical: '/faq',
+    },
 };
 
 export default function FAQPage() {

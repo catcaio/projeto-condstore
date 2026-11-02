@@ -28,6 +28,9 @@ import {
 export const metadata: Metadata = {
     title: 'Como funciona — CONDSTORE OS',
     description: 'Entenda o fluxo operacional: do WhatsApp ao cockpit, com cotação de frete, pedidos e logística em um sistema único supervisionado.',
+    alternates: {
+        canonical: '/como-funciona',
+    },
 };
 
 interface StageCard {

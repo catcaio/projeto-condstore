@@ -28,6 +28,9 @@ import {
 export const metadata: Metadata = {
     title: 'Produto — CONDSTORE OS',
     description: 'Conheça o CONDSTORE OS: o sistema operacional que centraliza atendimento via WhatsApp, cotação de frete, pedidos e logística em um cockpit unificado.',
+    alternates: {
+        canonical: '/produto',
+    },
     robots: { index: true, follow: true },
 };
 
