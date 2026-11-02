@@ -4,11 +4,19 @@ import { describe, expect, it } from 'vitest';
 import { CondstoreLogo, CondstoreSymbol } from '../Logo';
 
 describe('CondstoreLogo & CondstoreSymbol', () => {
-    it('renders default V1 symbol and wordmark correctly', () => {
+    it('renders default legacy symbol and wordmark correctly in production/default', () => {
         const html = renderToStaticMarkup(<CondstoreLogo />);
         expect(html).toContain('CONDSTORE');
         expect(html).toContain('OS');
         expect(html).toContain('Um complexo sem complexidade.');
+        expect(html).toContain('aria-label="Símbolo CONDSTORE OS"');
+        expect(html).toContain('bluGrad'); // confirma símbolo em produção/legado preservado
+    });
+
+    it('renders candidate V1 symbol when explicitly specified', () => {
+        const html = renderToStaticMarkup(<CondstoreLogo variant="v1" />);
+        expect(html).toContain('CONDSTORE');
+        expect(html).toContain('OS');
         expect(html).toContain('aria-label="Símbolo CONDSTORE OS"');
     });
 

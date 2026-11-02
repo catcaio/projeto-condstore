@@ -72,18 +72,29 @@ A assinatura institucional estabelece contraste tipográfico deliberado entre o 
 
 ## 5. Auditoria de Contraste e Cores (WCAG 2.1)
 
-A paleta de marca utiliza exclusivamente os tokens do Design System público (`docs/frontend-public-design-system.md`). Abaixo estão os contrastes **reais e calculados**:
+A paleta de marca utiliza exclusivamente os tokens do Design System público (`docs/frontend-public-design-system.md`). Abaixo estão os contrastes **objetivamente medidos e calculados**:
 
-| Superfície | Elemento | Token | Valor Hex Aprox. | Ratio Calculado | Nível WCAG |
+| Superfície de Teste | Elemento Testado | Cor / Token | Ratio Calculado | Nível WCAG 2.1 | Status |
 |---|---|---|---|---|---|
-| **Light** (`#F4F6F8`) | Texto Principal | `ui-text` | `#181D26` | **13.8:1** | AAA (Pass) |
-| **Light** (`#F4F6F8`) | Texto Secundário | `ui-text-muted` | `#575F6E` | **5.4:1** | AA (Pass) |
-| **Light** (`#F4F6F8`) | Acento Azul | `ui-accent-blue` | `#0077FF` | **4.6:1** | AA (Pass em texto grande/UI) |
-| **Dark** (`#0E1117`) | Texto Principal | `ui-text` | `#F3F5F8` | **15.2:1** | AAA (Pass) |
-| **Dark** (`#0E1117`) | Texto Secundário | `ui-text-muted` | `#A5ADB9` | **8.6:1** | AAA (Pass) |
-| **Dark** (`#0E1117`) | Acento Azul Dark | `ui-accent-blue` | `#3395FF` | **7.1:1** | AAA (Pass) |
+| **Página Clara** (`#F8F9FA`) | Texto Primário | `#0E1117` (`--ui-text`) | **17.93:1** | WCAG AAA (> 7:1) | Aprovado |
+| **Card Claro** (`#FFFFFF`) | Texto Primário | `#0E1117` (`--ui-text`) | **18.90:1** | WCAG AAA (> 7:1) | Aprovado |
+| **Página Clara** (`#F8F9FA`) | Texto Suave / Metadados | `#64748B` (`--ui-text-muted`) | **4.51:1** | WCAG AA (> 4.5:1) | Aprovado |
+| **Página Clara** (`#F8F9FA`) | Acento Azul Elétrico | `#0066FF` (`--ui-accent-blue`) | **4.59:1** | WCAG AA (> 4.5:1) | Aprovado |
+| **Card Claro** (`#FFFFFF`) | Acento Azul Elétrico | `#0066FF` (`--ui-accent-blue`) | **4.83:1** | WCAG AA (> 4.5:1) | Aprovado |
+| **Página Escura / Cockpit** (`#12151E`) | Texto Primário | `#F3F5F8` (`--ui-text`) | **16.69:1** | WCAG AAA (> 7:1) | Aprovado |
+| **Card Escuro / Cockpit** (`#1A1F2C`) | Texto Primário | `#F3F5F8` (`--ui-text`) | **15.07:1** | WCAG AAA (> 7:1) | Aprovado |
+| **Página Escura / Cockpit** (`#12151E`) | Texto Suave / Metadados | `#94A3B8` (`--ui-text-muted`) | **7.11:1** | WCAG AAA (> 7:1) | Aprovado |
+| **Página Escura / Cockpit** (`#12151E`) | Acento Azul Elétrico | `#3395FF` (`--ui-accent-blue`) | **5.98:1** | WCAG AA (> 4.5:1) | Aprovado |
+| **Card Escuro / Cockpit** (`#1A1F2C`) | Acento Azul Elétrico | `#3395FF` (`--ui-accent-blue`) | **5.39:1** | WCAG AA (> 4.5:1) | Aprovado |
 
-*Nota:* Em fundos brancos puros (`#FFFFFF` em cards light), o contraste do acento `#0077FF` é de **4.52:1** (conforme AA para texto normal e componentes de UI). Quando usado em texto de leitura contínua, recomenda-se `ui-accent-blue-ink` (`#005ecc` / ratio **7.2:1**).
+### 5.1 Matriz de Legibilidade Ótica em Reduções Extremas (16px e 32px)
+
+| Variante | Comportamento em 32×32px (Dock / Barra de Ferramentas) | Comportamento em 16×16px (Favicon / Aba do Navegador) | Avaliação Objetiva de Legibilidade |
+|---|---|---|---|
+| **V1 (Matriz Conectada 2×2)** | 4 superelipses nítidas com fresta ortogonal visível; núcleo azul elétrico perfeitamente diferenciado. | Silhueta em bloco 2×2 robusta e reconhecível de imediato. O ponto interno de 1.5px sofre fusão subpixel em telas 1x, pelo que o favicon dedicado (`public/favicon.svg`) utiliza dimensões compensadas para manter o ponto visível. | **Excelente em 32px e 16px**. Variante com maior estabilidade formal em baixa resolução. |
+| **V2 (Constelação Tri-módulo)** | Geometria de 3 nós complementares com módulo superior em destaque azul; espaçamentos angulares legíveis. | Os 3 blocos formam uma pirâmide reconhecível; o ponto central diminui para escala subpixel (~1.2px) e tem baixa saliência visual em 16px. | **Muito boa em 32px; moderada em 16px**. |
+| **V3 (Loop / Fio Contínuo)** | Traçado espesso de 14px em vetor renderiza com clareza em 32px (~4.5px de espessura de traço). | Curva contínua em 'C'/'O' mantém traçado legível de ~2.2px de espessura ótica. | **Alta iconicidade visual em 16px** devido à espessura contínua do traço. |
+| **Monocromática Pura (`mono`)** | Recorte circular no quadrante superior direito nítido via máscara vetorial nativa (`mask`), sem depender de cor nem de tokens da aplicação. | Em 16px, o anel vazado exige alta densidade de pixels (display Retina/HiDPI); em telas padrão 1x o furo central sofre leve antialiasing cinza. | **Conformidade técnica estrita** com independência total de temas e fundos. |
 
 ---
 

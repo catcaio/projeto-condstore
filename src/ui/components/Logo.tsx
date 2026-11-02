@@ -1,13 +1,21 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-export type CondstoreLogoVariant = 'v1' | 'v2' | 'v3' | 'mono';
+export type CondstoreLogoVariant = 'legacy' | 'v1' | 'v2' | 'v3' | 'mono';
 export type CondstoreLogoLayout = 'horizontal' | 'vertical' | 'symbol-only';
 
 export interface LogoProps extends React.HTMLAttributes<HTMLDivElement> {
     size?: 'sm' | 'md' | 'lg' | 'xl';
     hideSubtitle?: boolean;
     hideText?: boolean;
+    /**
+     * Variante do símbolo:
+     * - 'legacy': Identidade em produção atual (cubo isométrico 'C' cluster). Padrão enquanto não houver homologação.
+     * - 'v1': Candidata 1 (Matriz Conectada 2x2)
+     * - 'v2': Candidata 2 (Nó Contínuo Tri-módulo)
+     * - 'v3': Candidata 3 (Módulos de Expansão / Fio Contínuo)
+     * - 'mono': Variante monocromática pura (sem cor nem CSS vars)
+     */
     variant?: CondstoreLogoVariant;
     layout?: CondstoreLogoLayout;
     badgeOs?: boolean;
@@ -15,12 +23,36 @@ export interface LogoProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function CondstoreSymbol({
-    variant = 'v1',
+    variant = 'legacy',
     className,
 }: {
     variant?: CondstoreLogoVariant;
     className?: string;
 }) {
+    if (variant === 'legacy') {
+        return (
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={cn('w-full h-full drop-shadow-sm', className)} role="img" aria-label="Símbolo CONDSTORE OS">
+                <defs>
+                    <linearGradient id="bluGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stopColor="hsl(var(--ui-accent-blue))" />
+                        <stop offset="100%" stopColor="#0ea5e9" />
+                    </linearGradient>
+                    <linearGradient id="glowGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stopColor="hsl(var(--ui-accent-blue))" stopOpacity="0.5" />
+                        <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0" />
+                    </linearGradient>
+                </defs>
+                <path d="M 80,30 A 40,40 0 1,0 80,70" stroke="currentColor" strokeWidth="12" strokeLinecap="round" className="text-[hsl(var(--ui-text))]" opacity="0.9" />
+                <circle cx="65" cy="50" r="14" fill="url(#bluGrad)" />
+                <circle cx="65" cy="50" r="24" fill="url(#glowGrad)" />
+                <path d="M 65,50 L 80,30" stroke="url(#bluGrad)" strokeWidth="4" strokeLinecap="round" />
+                <path d="M 65,50 L 80,70" stroke="url(#bluGrad)" strokeWidth="4" strokeLinecap="round" />
+                <circle cx="80" cy="30" r="4" fill="currentColor" className="text-[hsl(var(--ui-text))]" />
+                <circle cx="80" cy="70" r="4" fill="currentColor" className="text-[hsl(var(--ui-text))]" />
+            </svg>
+        );
+    }
+
     if (variant === 'mono') {
         return (
             <svg
@@ -31,11 +63,15 @@ export function CondstoreSymbol({
                 role="img"
                 aria-label="Símbolo CONDSTORE OS Monocromático"
             >
+                <defs>
+                    <mask id="condstore-mono-mask-symbol" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+                        <rect width="100" height="100" fill="white" />
+                        <circle cx="70.5" cy="29.5" r="7" fill="black" />
+                        <circle cx="70.5" cy="29.5" r="3" fill="white" />
+                    </mask>
+                </defs>
                 <rect x="14" y="14" width="31" height="31" rx="9" fill="currentColor" />
-                <rect x="55" y="14" width="31" height="31" rx="9" fill="currentColor" />
-                {/* Diferenciação de alto contraste sem cor */}
-                <circle cx="70.5" cy="29.5" r="7" fill="none" stroke="hsl(var(--ui-surface))" strokeWidth="2.5" />
-                <circle cx="70.5" cy="29.5" r="3" fill="currentColor" />
+                <rect x="55" y="14" width="31" height="31" rx="9" fill="currentColor" mask="url(#condstore-mono-mask-symbol)" />
                 <rect x="14" y="55" width="31" height="31" rx="9" fill="currentColor" />
                 <rect x="55" y="55" width="31" height="31" rx="9" fill="currentColor" />
             </svg>
@@ -107,7 +143,7 @@ export function CondstoreLogo({
     size = 'md',
     hideSubtitle = false,
     hideText = false,
-    variant = 'v1',
+    variant = 'legacy',
     layout = 'horizontal',
     badgeOs = false,
     className,

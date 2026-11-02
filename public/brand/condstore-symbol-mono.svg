@@ -1,11 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" width="100" height="100">
-  <!-- Módulos em Superelipse (Monocromáticos puros, sem depender de cor nem opacidade) -->
+  <defs>
+    <!-- Máscara vetorial pura: independente de qualquer token CSS, cor de fundo ou tema -->
+    <mask id="condstore-mono-cutout-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+      <rect width="100" height="100" fill="#ffffff" />
+      <!-- Recorte em anel/furo para criar o contraste geométrico no espaço negativo -->
+      <circle cx="70.5" cy="29.5" r="7" fill="#000000" />
+      <circle cx="70.5" cy="29.5" r="3" fill="#ffffff" />
+    </mask>
+  </defs>
+
+  <!-- Módulos em Superelipse (Monocromáticos puros: utilizam exclusivamente currentColor) -->
   <rect x="14" y="14" width="31" height="31" rx="9" fill="currentColor" />
 
-  <!-- Módulo Superior Direito com diferenciação geométrica por contraste de corte/anel (sem precisar de cor) -->
-  <rect x="55" y="14" width="31" height="31" rx="9" fill="currentColor" />
-  <circle cx="70.5" cy="29.5" r="7" fill="none" stroke="hsl(var(--ui-page, #ffffff))" stroke-width="2.5" />
-  <circle cx="70.5" cy="29.5" r="3" fill="currentColor" />
+  <!-- Módulo Superior Direito com máscara de recorte puro sem dependência de cor -->
+  <rect x="55" y="14" width="31" height="31" rx="9" fill="currentColor" mask="url(#condstore-mono-cutout-mask)" />
 
   <rect x="14" y="55" width="31" height="31" rx="9" fill="currentColor" />
   <rect x="55" y="55" width="31" height="31" rx="9" fill="currentColor" />
