@@ -22,6 +22,9 @@ import {
 export const metadata: Metadata = {
     title: 'IA Frank: Copiloto Supervisionado | CONDSTORE OS',
     description: 'Conheça o Frank, a inteligência assistiva que atua como copiloto supervisionado do seu time operacional.',
+    alternates: {
+        canonical: '/ia-frank',
+    },
 };
 
 const frankFeatures = [

@@ -240,7 +240,6 @@
 | /casos | TBA | public | none | PUBLIC | live | Use cases page |
 | /clientes | GET | internal | required | clientes | live | Cliente 360 canônico com lista, perfil e contexto operacional |
 | /cockpit | GET | internal | required | cockpit | live | Cockpit operacional canônico com KPIs, alertas, feed, filas e status do sistema |
-| /cockpit-gerencial | Cockpit e Métricas | public | none | PUBLIC | live | Landing page de Cockpit e Métricas |
 | /cockpit/acquisition | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/acquisition/activation | TBA | public | none | PUBLIC | live | Auto-detected |
 | /cockpit/acquisition/drilldown | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -298,7 +297,6 @@
 | /configuracoes | GET | internal | required | configuracoes | live | Governança canônica de usuários, permissões, integrações, AI provider e auditoria |
 | /contato | GET | public | none | PUBLIC | live | Página de contato e agendamento de demonstração |
 | /conversas | GET | internal | required | conversas | live | Inbox operacional canônica com lista, thread e contexto do cliente |
-| /crm-whatsapp | CRM e WhatsApp | public | none | PUBLIC | live | Landing page de CRM e WhatsApp |
 | /dashboard | GET | internal | required | cockpit | deprecated | Legado removido das instruções operacionais; usar /cockpit |
 | /docs | TBA | public | none | PUBLIC | live | Auto-detected |
 | /evolution | TBA | public | none | PUBLIC | live | Auto-detected |
@@ -311,16 +309,12 @@
 | /frank | GET | internal | required | frank | live | Módulo canônico do agente com visão geral, intenções, desempenho e logs estruturados |
 | /freight/simulations | TBA | public | none | PUBLIC | live | Auto-detected |
 | /freight/simulations/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
-| /gargalos-logisticos | TBA | public | none | PUBLIC | live | Auto-detected |
 | /home | GET | internal | required | cockpit | live | Alias legado redirecionado para o cockpit canônico |
 | /ia-frank | IA Frank Supervisionada | public | none | PUBLIC | live | Landing page da IA Frank |
-| /implantacao | TBA | public | none | PUBLIC | live | Implantação page |
 | /inbox | TBA | public | none | PUBLIC | live | Auto-detected |
 | /inbox/conversations/[id] | TBA | public | none | PUBLIC | live | Auto-detected |
-| /integracoes | TBA | public | none | PUBLIC | live | Auto-detected |
 | /login | TBA | public | none | PUBLIC | live | Auto-detected |
 | /logistica | GET | internal | required | logistica | live | Central logística canônica com fila, detalhe operacional e contexto integrado |
-| /logistica-pedidos | Logística e Pedidos | public | none | PUBLIC | live | Landing page de Logística e Pedidos |
 | /logistica/envios | GET | internal | requireAdmin | frete | live | Painel de Envios — tabela enriched com tracking, status, delta financeiro |
 | /logistica/insights | GET | internal | requireAdmin | frete | live | Insights de Frete — CEPs, transportadoras, delta médio, top rotas |
 | /logistica/rastreamento | GET | internal | requireAdmin | frete | live | Rastreamento — timeline de status por envio (posted → delivered) |
@@ -344,31 +338,25 @@
 | /planos/crm | TBA | public | none | PUBLIC | live | Auto-detected |
 | /planos/domine | TBA | public | none | PUBLIC | live | Auto-detected |
 | /planos/envios | TBA | public | none | PUBLIC | live | Auto-detected |
-| /plataforma | TBA | public | none | PUBLIC | live | Auto-detected |
-| /plataforma/cockpit | Redirecionado | public | none | PUBLIC | live | Redirecionado para /cockpit-gerencial |
+| /plataforma/cockpit | Redirecionado | public | none | PUBLIC | live | Redirecionado para /produto |
 | /pricing | Pricing redirect | public | none | PUBLIC | live | Canonical redirect to /planos/envios preserving query string |
 | /privacidade | TBA | public | none | PUBLIC | live | Política de Privacidade |
 | /produto | Página de Produto Canônica | public | none | PUBLIC | live | Added manually to fix CI |
-| /produtos/crm | Redirecionado | public | none | PUBLIC | live | Redirecionado para /crm-whatsapp |
+| /produtos/crm | Redirecionado | public | none | PUBLIC | live | Redirecionado para /produto |
 | /produtos/domine | TBA | public | none | PUBLIC | live | Auto-detected |
-| /produtos/envios | Redirecionado | public | none | PUBLIC | live | Redirecionado para /logistica-pedidos |
-| /proof | GET | public | none | PUBLIC | live | Pagina de prova operacional do Condstore OS |
+| /produtos/envios | Redirecionado | public | none | PUBLIC | live | Redirecionado para /produto |
 | /seguranca | TBA | public | none | PUBLIC | live | Security and governance page |
 | /settings | GET | internal | required | configuracoes | deprecated | Redirect legado para /configuracoes |
-| /showcase | GET | public | none | PUBLIC | live | Product showcase overview page |
 | /brand-preview | GET | public | none | PUBLIC | live | Painel comparativo de avaliação visual da identidade institucional (#442) |
 | /signup | GET | public | none | auth | live | User registration page with role selection |
 | /sistema/dlq | GET | internal | requireAdmin | console | live | Dead Letter Queue (migrado de /cockpit/domine/dlq) |
 | /sistema/health | GET | internal | requireAdmin | console | live | Health & Resiliência (migrado de /cockpit/status) |
 | /sistema/logs | GET | internal | required | console | live | Logs & Auditoria (stub — em breve) |
 | /sistema/security | GET | internal | requireAdmin | console | live | Security Cockpit (migrado de /cockpit/security) |
-| /solucoes | TBA | public | none | PUBLIC | live | Added manually to fix CI |
 | /supreme | TBA | public | none | PUBLIC | live | Auto-detected |
 | /t/[token] | TBA | public | none | PUBLIC | live | Auto-detected |
-| /tecnologias | TBA | public | none | PUBLIC | live | Auto-detected |
 | /tenant | GET | internal | required | tenant | live | Módulo canônico de visão do tenant, branding, canais e status operacional |
 | /termos | TBA | public | none | PUBLIC | live | Termos de Uso |
-| /valores | TBA | public | none | PUBLIC | live | Valores/pricing page |
 | /vendas/clientes | GET | internal | required | clientes | live | Alias legado redirecionado para /clientes |
 | /vendas/cotacao | GET | internal | required | console | live | Nova Cotação (stub — em breve) |
 | /vendas/pedidos | GET | internal | required | pedidos | live | Alias legado redirecionado para /pedidos |

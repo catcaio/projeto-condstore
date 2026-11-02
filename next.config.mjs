@@ -6,19 +6,81 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // Aliases históricos direcionados para o destino canônico final (sem chaining)
       {
         source: '/produtos/crm',
-        destination: '/crm-whatsapp',
+        destination: '/produto',
         permanent: true,
       },
       {
         source: '/produtos/envios',
-        destination: '/logistica-pedidos',
+        destination: '/produto',
         permanent: true,
       },
       {
         source: '/plataforma/cockpit',
-        destination: '/cockpit-gerencial',
+        destination: '/produto',
+        permanent: true,
+      },
+      // Consolidação de rotas públicas legadas redundantes para o ecossistema único
+      {
+        source: '/crm-whatsapp',
+        destination: '/produto',
+        permanent: true,
+      },
+      {
+        source: '/logistica-pedidos',
+        destination: '/produto',
+        permanent: true,
+      },
+      {
+        source: '/cockpit-gerencial',
+        destination: '/produto',
+        permanent: true,
+      },
+      {
+        source: '/plataforma',
+        destination: '/produto',
+        permanent: true,
+      },
+      {
+        source: '/tecnologias',
+        destination: '/produto',
+        permanent: true,
+      },
+      {
+        source: '/solucoes',
+        destination: '/produto',
+        permanent: true,
+      },
+      {
+        source: '/implantacao',
+        destination: '/como-funciona',
+        permanent: true,
+      },
+      {
+        source: '/integracoes',
+        destination: '/produto',
+        permanent: true,
+      },
+      {
+        source: '/showcase',
+        destination: '/produto',
+        permanent: true,
+      },
+      {
+        source: '/valores',
+        destination: '/produto',
+        permanent: true,
+      },
+      {
+        source: '/gargalos-logisticos',
+        destination: '/como-funciona',
+        permanent: true,
+      },
+      {
+        source: '/proof',
+        destination: '/como-funciona',
         permanent: true,
       },
     ];

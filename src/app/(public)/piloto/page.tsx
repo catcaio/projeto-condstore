@@ -21,6 +21,9 @@ import { TrackedLink } from '@/ui/lib/track-client';
 export const metadata: Metadata = {
     title: 'Piloto Operacional — CONDSTORE OS',
     description: 'Solicite uma avaliação operacional e inicie seu piloto assistido no CONDSTORE OS.',
+    alternates: {
+        canonical: '/piloto',
+    },
 };
 
 export default function PilotoPage() {

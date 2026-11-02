@@ -12,6 +12,9 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
     title: 'Segurança e LGPD — CONDSTORE OS',
     description: 'Conheça a arquitetura de segurança e governança do CONDSTORE OS: multi-tenant, rastro de decisões, humano no loop e conformidade LGPD.',
+    alternates: {
+        canonical: '/seguranca',
+    },
 };
 
 export default function SegurancaPage() {

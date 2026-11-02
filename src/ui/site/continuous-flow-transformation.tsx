@@ -63,7 +63,7 @@ export function ContinuousFlowTransformation() {
 
                         <div className="pt-4">
                             <Link
-                                href="/solucoes"
+                                href="/como-funciona"
                                 className="inline-flex items-center gap-2 text-sm font-bold text-[hsl(var(--ui-text))] hover:underline underline-offset-4"
                             >
                                 Entender o fluxo operacional na prática

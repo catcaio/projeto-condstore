@@ -8,6 +8,9 @@ export const metadata: Metadata = {
     title: 'Contato — CONDSTORE OS',
     description:
         'Entre em contato com o time do CONDSTORE OS. Demonstração guiada pelo contexto real da sua operação logística B2B.',
+    alternates: {
+        canonical: '/contato',
+    },
 };
 
 const qualificationPoints = [
@@ -30,9 +33,9 @@ const qualificationPoints = [
 ];
 
 const continuityLinks = [
-    { label: 'Prova operacional', href: '/casos', desc: 'Veja como funciona na prática' },
+    { label: 'Ecossistema', href: '/produto', desc: 'Conheça o CONDSTORE OS' },
     { label: 'Como funciona', href: '/como-funciona', desc: 'Fluxo do pedido à entrega' },
-    { label: 'Soluções', href: '/solucoes', desc: 'Módulos e responsabilidades' },
+    { label: 'Frank IA', href: '/ia-frank', desc: 'Copiloto supervisionado' },
     { label: 'Entrar na plataforma', href: '/login', desc: 'Acessar sua conta' },
 ];
 

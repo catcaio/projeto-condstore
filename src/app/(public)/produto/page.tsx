@@ -28,6 +28,9 @@ import {
 export const metadata: Metadata = {
     title: 'Produto — CONDSTORE OS',
     description: 'Conheça o CONDSTORE OS: o sistema operacional que centraliza atendimento via WhatsApp, cotação de frete, pedidos e logística em um cockpit unificado.',
+    alternates: {
+        canonical: '/produto',
+    },
     robots: { index: true, follow: true },
 };
 
@@ -75,7 +78,7 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
         handoff: 'Contexto preservado para a fase de cotação.',
         connectsTo: 'Cotações',
         icon: MessageCircle,
-        href: '/crm-whatsapp',
+        href: '/como-funciona',
     },
     {
         title: 'Cotações',
@@ -83,7 +86,7 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
         handoff: 'Cotação aprovada vira pedido automaticamente.',
         connectsTo: 'Pedidos',
         icon: Calculator,
-        href: '/logistica-pedidos',
+        href: '/como-funciona',
     },
     {
         title: 'Pedidos',
@@ -91,7 +94,7 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
         handoff: 'Dispara a execução logística e shipments.',
         connectsTo: 'Logística',
         icon: Package,
-        href: '/logistica-pedidos',
+        href: '/como-funciona',
     },
     {
         title: 'Logística',
@@ -99,7 +102,7 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
         handoff: 'Alimenta o cockpit com dados de execução.',
         connectsTo: 'Cockpit',
         icon: Truck,
-        href: '/logistica-pedidos',
+        href: '/como-funciona',
     },
     {
         title: 'Cockpit',
@@ -107,7 +110,7 @@ const consolidatedBlocks: ConsolidatedBlock[] = [
         handoff: 'Gera visibilidade para novas decisões.',
         connectsTo: 'Gestão',
         icon: Gauge,
-        href: '/cockpit-gerencial',
+        href: '/como-funciona',
     },
 ];
 
@@ -145,7 +148,7 @@ const moduleCards: ModuleCard[] = [
         description: 'Evita a perda de informação entre o atendimento e a execução logística.',
         connections: ['WhatsApp', 'Cotações', 'Frank'],
         icon: MessageCircle,
-        href: '/crm-whatsapp',
+        href: '/como-funciona',
     },
     {
         name: 'Logística e Cotação',
@@ -153,7 +156,7 @@ const moduleCards: ModuleCard[] = [
         description: 'Transforma a demanda em opção viável sem depender de planilhas paralelas.',
         connections: ['Inbox', 'Pedidos', 'Transportadoras'],
         icon: Calculator,
-        href: '/logistica-pedidos',
+        href: '/como-funciona',
     },
     {
         name: 'Gestão de Pedidos',
@@ -161,7 +164,7 @@ const moduleCards: ModuleCard[] = [
         description: 'Cada pedido nasce com rastro total desde a primeira mensagem do cliente.',
         connections: ['Cotações', 'Logística', 'Cockpit'],
         icon: Package,
-        href: '/logistica-pedidos',
+        href: '/como-funciona',
     },
     {
         name: 'Cockpit Diário',
@@ -169,7 +172,7 @@ const moduleCards: ModuleCard[] = [
         description: 'Painel que destaca o que precisa de ação imediata para proteger o SLA.',
         connections: ['Atendimento', 'Pedidos', 'Métricas'],
         icon: Gauge,
-        href: '/cockpit-gerencial',
+        href: '/como-funciona',
     },
     {
         name: 'IA Frank Supervisionada',
@@ -437,8 +440,8 @@ export default function ProdutoPage() {
                                 <SiteButton href="/piloto" variant="accent">
                                     Solicitar avaliação
                                 </SiteButton>
-                                <SiteButton href="/proof" variant="secondary">
-                                    Ver prova operacional
+                                <SiteButton href="/contato" variant="secondary">
+                                    Agendar demonstração
                                 </SiteButton>
                             </div>
                         </SiteCard>
