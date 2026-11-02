@@ -234,6 +234,7 @@
 | `/billing` | Page |
 | `/billing/manage` | Page |
 | `/billing/success` | Page |
+| `/brand-preview` | Page |
 | `/career` | Page |
 | `/clientes` | Page |
 | `/cockpit` | Page |

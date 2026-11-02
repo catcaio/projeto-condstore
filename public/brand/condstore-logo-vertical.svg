@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none" width="160" height="160">
+  <!-- Símbolo Centralizado -->
+  <g transform="translate(48, 16)">
+    <rect x="5" y="5" width="23" height="23" rx="7" fill="currentColor" opacity="0.95" />
+    <rect x="36" y="5" width="23" height="23" rx="7" fill="#0077FF" />
+    <circle cx="47.5" cy="16.5" r="3.5" fill="#FFFFFF" opacity="0.9" />
+    <rect x="5" y="36" width="23" height="23" rx="7" fill="currentColor" opacity="0.95" />
+    <rect x="36" y="36" width="23" height="23" rx="7" fill="currentColor" opacity="0.75" />
+  </g>
+
+  <!-- Assinatura Tipográfica Centralizada -->
+  <g transform="translate(80, 114)" text-anchor="middle">
+    <text font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-weight="700" font-size="16" letter-spacing="-0.01em" fill="currentColor">
+      CONDSTORE <tspan font-weight="500" letter-spacing="0.05em" fill="#0077FF">OS</tspan>
+    </text>
+    <text y="18" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-weight="600" font-size="7" letter-spacing="0.12em" fill="currentColor" opacity="0.5">
+      SISTEMA OPERACIONAL
+    </text>
+  </g>
+</svg>

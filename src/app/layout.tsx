@@ -32,7 +32,11 @@ export const metadata: Metadata = {
         description: 'Cotações inteligentes, automação e logística ágil.',
     },
     icons: {
-        icon: '/favicon.ico',
+        icon: [
+            { url: '/favicon.svg', type: 'image/svg+xml' },
+            { url: '/favicon.ico', sizes: 'any' }
+        ],
+        apple: '/icon-512.svg',
     },
 };
 

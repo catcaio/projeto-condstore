@@ -356,6 +356,7 @@
 | /seguranca | TBA | public | none | PUBLIC | live | Security and governance page |
 | /settings | GET | internal | required | configuracoes | deprecated | Redirect legado para /configuracoes |
 | /showcase | GET | public | none | PUBLIC | live | Product showcase overview page |
+| /brand-preview | GET | public | none | PUBLIC | live | Painel comparativo de avaliação visual da identidade institucional (#442) |
 | /signup | GET | public | none | auth | live | User registration page with role selection |
 | /sistema/dlq | GET | internal | requireAdmin | console | live | Dead Letter Queue (migrado de /cockpit/domine/dlq) |
 | /sistema/health | GET | internal | requireAdmin | console | live | Health & Resiliência (migrado de /cockpit/status) |
