@@ -4,20 +4,19 @@ import { CondstoreLogo } from '@/ui/components/Logo';
 const primaryCta = { label: 'Avaliação Operacional', href: '/piloto' } as const;
 const secondaryCta = { label: 'Entrar no sistema', href: '/login' } as const;
 
-const mvpLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'CRM WhatsApp', href: '/crm-whatsapp' },
-    { label: 'Logística e Pedidos', href: '/logistica-pedidos' },
-    { label: 'Cockpit e Métricas', href: '/cockpit-gerencial' },
+const ecosystemLinks = [
+    { label: 'Ecossistema CONDSTORE OS', href: '/produto' },
+    { label: 'Como Funciona', href: '/como-funciona' },
     { label: 'IA Frank Supervisionada', href: '/ia-frank' },
-    { label: 'Prova Operacional', href: '/proof' },
+    { label: 'Piloto Operacional', href: '/piloto' },
+    { label: 'FAQ', href: '/faq' },
 ];
 
 const companyLinks = [
-    { label: 'Piloto Operacional', href: '/piloto' },
-    { label: 'FAQ', href: '/faq' },
     { label: 'Contato', href: '/contato' },
-    { label: 'Entrar', href: '/login' },
+    { label: 'Documentação', href: '/docs' },
+    { label: 'Planos e Preços', href: '/planos/envios' },
+    { label: 'Entrar no Sistema', href: '/login' },
 ];
 
 export function PublicFooter() {
@@ -52,10 +51,10 @@ export function PublicFooter() {
                     {/* MVP */}
                     <div>
                         <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[hsl(var(--ui-text-subtle))] mb-4">
-                            MVP oficial
+                            Ecossistema
                         </h4>
                         <ul className="space-y-2.5">
-                            {mvpLinks.map((link) => (
+                            {ecosystemLinks.map((link) => (
                                 <li key={link.href}>
                                     <Link href={link.href} className="text-sm text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors">
                                         {link.label}
@@ -68,7 +67,7 @@ export function PublicFooter() {
                     {/* Empresa */}
                     <div>
                         <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[hsl(var(--ui-text-subtle))] mb-4">
-                            Acesso e legal
+                            Empresa & Acesso
                         </h4>
                         <ul className="space-y-2.5">
                             {companyLinks.map((link) => (

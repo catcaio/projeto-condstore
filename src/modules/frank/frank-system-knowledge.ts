@@ -40,7 +40,7 @@ export const CONDSTORE_SYSTEM_KNOWLEDGE: Record<string, SystemDomainKnowledge> =
     pedidos: {
         domain: 'Gestão de Pedidos (Orders)',
         description: 'Criação, confirmação, controle de status, transição comercial e transição para logística.',
-        routes: ['/logistica-pedidos', '/api/pedidos', '/api/atendimento/pedidos'],
+        routes: ['/produto', '/api/pedidos', '/api/atendimento/pedidos'],
         tables: ['orders', 'order_items', 'order_status_history'],
         keyServices: ['order.service.ts'],
         businessRules: [
@@ -51,7 +51,7 @@ export const CONDSTORE_SYSTEM_KNOWLEDGE: Record<string, SystemDomainKnowledge> =
     logistica: {
         domain: 'Shipments e Rastreamento Logístico',
         description: 'Emissão e rastreamento de fretes/shipments, despacho e ocorrências.',
-        routes: ['/logistica-pedidos', '/api/shipments'],
+        routes: ['/produto', '/api/shipments'],
         tables: ['shipments', 'deliveries', 'delivery_location_events'],
         keyServices: ['shipment.service.ts'],
         businessRules: [
@@ -62,7 +62,7 @@ export const CONDSTORE_SYSTEM_KNOWLEDGE: Record<string, SystemDomainKnowledge> =
     cockpit: {
         domain: 'Cockpit e Métrica Operacional',
         description: 'Painel unificado de operação diária, filas de atenção, timeline e métricas em tempo real/7 dias.',
-        routes: ['/cockpit-gerencial', '/cockpit/frank', '/api/cockpit/metrics', '/api/cockpit/queues'],
+        routes: ['/cockpit', '/cockpit/frank', '/api/cockpit/metrics', '/api/cockpit/queues'],
         tables: ['operational_events', 'metrics_daily', 'ai_decision_logs', 'frank_execution_runs'],
         keyServices: ['cockpit-metrics-engine.ts', 'get-cockpit-queues.ts'],
         businessRules: [

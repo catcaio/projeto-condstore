@@ -10,13 +10,10 @@ const primaryCta = { label: 'Avaliação Operacional', href: '/piloto' } as cons
 const secondaryCta = { label: 'Entrar', href: '/login' } as const;
 
 const navLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'Produto', href: '/produto' },
-    { label: 'CRM', href: '/crm-whatsapp' },
-    { label: 'Logística', href: '/logistica-pedidos' },
-    { label: 'Cockpit', href: '/cockpit-gerencial' },
-    { label: 'IA Frank', href: '/ia-frank' },
-    { label: 'FAQ', href: '/faq' },
+    { label: 'Ecossistema', href: '/produto' },
+    { label: 'Como Funciona', href: '/como-funciona' },
+    { label: 'Frank IA', href: '/ia-frank' },
+    { label: 'Segurança', href: '/seguranca' },
 ] as const;
 
 export function PublicHeader() {

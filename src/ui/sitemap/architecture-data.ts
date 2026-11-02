@@ -4722,44 +4722,6 @@ export const ARCHITECTURE_DATA: {
     "y": 1020
   },
   {
-    "id": "route-page-cockpit-gerencial",
-    "name": "Página: /cockpit-gerencial",
-    "category": "page",
-    "domain": "Cockpit",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/cockpit-gerencial/page.tsx",
-    "directory": "src/app/(public)/cockpit-gerencial/",
-    "url": "/cockpit-gerencial",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /cockpit-gerencial\nTipo: Página\nAcesso: Público\nDomínio: Cockpit\nStatus: Live\nDescrição: Landing page de Cockpit e Métricas",
-    "responsibilities": [
-      "Interface UI para a rota /cockpit-gerencial",
-      "Controle de acesso Público",
-      "Domínio Cockpit"
-    ],
-    "dependencies": [
-      "cockpit-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/cockpit-gerencial/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/cockpit-gerencial/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/cockpit-gerencial/page.tsx em src/app/(public)/cockpit-gerencial/.",
-    "level": 3,
-    "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3120
-  },
-  {
     "id": "route-page-como-funciona",
     "name": "Página: /como-funciona",
     "category": "page",
@@ -4836,44 +4798,6 @@ export const ARCHITECTURE_DATA: {
     "y": 1020
   },
   {
-    "id": "route-page-crm-whatsapp",
-    "name": "Página: /crm-whatsapp",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/crm-whatsapp/page.tsx",
-    "directory": "src/app/(public)/crm-whatsapp/",
-    "url": "/crm-whatsapp",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /crm-whatsapp\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Landing page de CRM e WhatsApp",
-    "responsibilities": [
-      "Interface UI para a rota /crm-whatsapp",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/crm-whatsapp/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/crm-whatsapp/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/crm-whatsapp/page.tsx em src/app/(public)/crm-whatsapp/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 7750,
-    "y": 1160
-  },
-  {
     "id": "route-page-docs",
     "name": "Página: /docs",
     "category": "page",
@@ -4908,7 +4832,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/docs/page.tsx em src/app/(public)/docs/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
+    "x": 7750,
     "y": 1160
   },
   {
@@ -4946,46 +4870,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/faq/page.tsx em src/app/(public)/faq/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
+    "x": 8010,
     "y": 1160
-  },
-  {
-    "id": "route-page-gargalos-logisticos",
-    "name": "Página: /gargalos-logisticos",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/gargalos-logisticos/page.tsx",
-    "directory": "src/app/(public)/gargalos-logisticos/",
-    "url": "/gargalos-logisticos",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /gargalos-logisticos\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Interface UI para a rota /gargalos-logisticos",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/gargalos-logisticos/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/gargalos-logisticos/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/gargalos-logisticos/page.tsx em src/app/(public)/gargalos-logisticos/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 7750,
-    "y": 1300
   },
   {
     "id": "route-page-ia-frank",
@@ -5022,122 +4908,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/ia-frank/page.tsx em src/app/(public)/ia-frank/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 1300
-  },
-  {
-    "id": "route-page-implantacao",
-    "name": "Página: /implantacao",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/implantacao/page.tsx",
-    "directory": "src/app/(public)/implantacao/",
-    "url": "/implantacao",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /implantacao\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Implantação page",
-    "responsibilities": [
-      "Interface UI para a rota /implantacao",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/implantacao/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/implantacao/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/implantacao/page.tsx em src/app/(public)/implantacao/.",
-    "level": 3,
-    "parent": "condstore-root",
     "x": 8270,
-    "y": 1300
-  },
-  {
-    "id": "route-page-integracoes",
-    "name": "Página: /integracoes",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/integracoes/page.tsx",
-    "directory": "src/app/(public)/integracoes/",
-    "url": "/integracoes",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /integracoes\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Interface UI para a rota /integracoes",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/integracoes/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/integracoes/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/integracoes/page.tsx em src/app/(public)/integracoes/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 7750,
-    "y": 1440
-  },
-  {
-    "id": "route-page-logistica-pedidos",
-    "name": "Página: /logistica-pedidos",
-    "category": "page",
-    "domain": "Logística",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/logistica-pedidos/page.tsx",
-    "directory": "src/app/(public)/logistica-pedidos/",
-    "url": "/logistica-pedidos",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /logistica-pedidos\nTipo: Página\nAcesso: Público\nDomínio: Logística\nStatus: Live\nDescrição: Landing page de Logística e Pedidos",
-    "responsibilities": [
-      "Interface UI para a rota /logistica-pedidos",
-      "Controle de acesso Público",
-      "Domínio Logística"
-    ],
-    "dependencies": [
-      "fulfillment-module"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/logistica-pedidos/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/logistica-pedidos/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/logistica-pedidos/page.tsx em src/app/(public)/logistica-pedidos/.",
-    "level": 3,
-    "parent": "fulfillment-module",
-    "x": 1210,
-    "y": 880
+    "y": 1160
   },
   {
     "id": "route-page-root",
@@ -5174,8 +4946,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/page.tsx em src/app/(public)/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 1440
+    "x": 7750,
+    "y": 1300
   },
   {
     "id": "route-page-piloto",
@@ -5212,8 +4984,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/piloto/page.tsx em src/app/(public)/piloto/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 1440
+    "x": 8010,
+    "y": 1300
   },
   {
     "id": "route-page-planos-crm",
@@ -5250,8 +5022,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/planos/crm/page.tsx em src/app/(public)/planos/crm/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 1580
+    "x": 8270,
+    "y": 1300
   },
   {
     "id": "route-page-planos-domine",
@@ -5288,8 +5060,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/planos/domine/page.tsx em src/app/(public)/planos/domine/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 1580
+    "x": 7750,
+    "y": 1440
   },
   {
     "id": "route-page-planos-envios",
@@ -5326,46 +5098,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/planos/envios/page.tsx em src/app/(public)/planos/envios/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 1580
-  },
-  {
-    "id": "route-page-plataforma",
-    "name": "Página: /plataforma",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/plataforma/page.tsx",
-    "directory": "src/app/(public)/plataforma/",
-    "url": "/plataforma",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /plataforma\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Interface UI para a rota /plataforma",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/plataforma/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/plataforma/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/plataforma/page.tsx em src/app/(public)/plataforma/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 7750,
-    "y": 1720
+    "x": 8010,
+    "y": 1440
   },
   {
     "id": "route-page-privacidade",
@@ -5402,8 +5136,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/privacidade/page.tsx em src/app/(public)/privacidade/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 1720
+    "x": 8270,
+    "y": 1440
   },
   {
     "id": "route-page-produto",
@@ -5440,8 +5174,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/produto/page.tsx em src/app/(public)/produto/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 1720
+    "x": 7750,
+    "y": 1580
   },
   {
     "id": "route-page-produtos-domine",
@@ -5478,46 +5212,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/produtos/domine/page.tsx em src/app/(public)/produtos/domine/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 1860
-  },
-  {
-    "id": "route-page-proof",
-    "name": "Página: /proof",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/proof/page.tsx",
-    "directory": "src/app/(public)/proof/",
-    "url": "/proof",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /proof\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Pagina de prova operacional do Condstore OS",
-    "responsibilities": [
-      "Interface UI para a rota /proof",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/proof/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/proof/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/proof/page.tsx em src/app/(public)/proof/.",
-    "level": 3,
-    "parent": "condstore-root",
     "x": 8010,
-    "y": 1860
+    "y": 1580
   },
   {
     "id": "route-page-seguranca",
@@ -5555,45 +5251,7 @@ export const ARCHITECTURE_DATA: {
     "level": 3,
     "parent": "condstore-root",
     "x": 8270,
-    "y": 1860
-  },
-  {
-    "id": "route-page-showcase",
-    "name": "Página: /showcase",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/showcase/page.tsx",
-    "directory": "src/app/(public)/showcase/",
-    "url": "/showcase",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /showcase\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Product showcase overview page",
-    "responsibilities": [
-      "Interface UI para a rota /showcase",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/showcase/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/showcase/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/showcase/page.tsx em src/app/(public)/showcase/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 7750,
-    "y": 2000
+    "y": 1580
   },
   {
     "id": "route-page-sitemap",
@@ -5630,84 +5288,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/(public)/sitemap/page.tsx em src/app/(public)/sitemap/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 2000
-  },
-  {
-    "id": "route-page-solucoes",
-    "name": "Página: /solucoes",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/solucoes/page.tsx",
-    "directory": "src/app/(public)/solucoes/",
-    "url": "/solucoes",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /solucoes\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Added manually to fix CI",
-    "responsibilities": [
-      "Interface UI para a rota /solucoes",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/solucoes/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/solucoes/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/solucoes/page.tsx em src/app/(public)/solucoes/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 8270,
-    "y": 2000
-  },
-  {
-    "id": "route-page-tecnologias",
-    "name": "Página: /tecnologias",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/tecnologias/page.tsx",
-    "directory": "src/app/(public)/tecnologias/",
-    "url": "/tecnologias",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /tecnologias\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Auto-detected",
-    "responsibilities": [
-      "Interface UI para a rota /tecnologias",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/tecnologias/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/tecnologias/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/tecnologias/page.tsx em src/app/(public)/tecnologias/.",
-    "level": 3,
-    "parent": "condstore-root",
     "x": 7750,
-    "y": 2140
+    "y": 1720
   },
   {
     "id": "route-page-termos",
@@ -5745,45 +5327,7 @@ export const ARCHITECTURE_DATA: {
     "level": 3,
     "parent": "condstore-root",
     "x": 8010,
-    "y": 2140
-  },
-  {
-    "id": "route-page-valores",
-    "name": "Página: /valores",
-    "category": "page",
-    "domain": "Public / Marketing",
-    "layer": "UI",
-    "status": "production",
-    "isMvp": false,
-    "path": "src/app/(public)/valores/page.tsx",
-    "directory": "src/app/(public)/valores/",
-    "url": "/valores",
-    "access": "Público",
-    "nodeType": "Página",
-    "description": "URL: /valores\nTipo: Página\nAcesso: Público\nDomínio: Public / Marketing\nStatus: Live\nDescrição: Valores/pricing page",
-    "responsibilities": [
-      "Interface UI para a rota /valores",
-      "Controle de acesso Público",
-      "Domínio Public / Marketing"
-    ],
-    "dependencies": [
-      "condstore-root"
-    ],
-    "dependents": [],
-    "technologies": [
-      "Next.js 16 App Router",
-      "TypeScript",
-      "React 19"
-    ],
-    "relatedFiles": [
-      "src/app/(public)/valores/page.tsx"
-    ],
-    "githubUrl": "https://github.com/catcaio/projeto-condstore/tree/main/src/app/(public)/valores/page.tsx",
-    "evidence": "Arquivo de rota real src/app/(public)/valores/page.tsx em src/app/(public)/valores/.",
-    "level": 3,
-    "parent": "condstore-root",
-    "x": 8270,
-    "y": 2140
+    "y": 1720
   },
   {
     "id": "route-api-api-app-events",
@@ -5820,8 +5364,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/app/events/route.ts em src/app/api/app/events/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 2280
+    "x": 8270,
+    "y": 1720
   },
   {
     "id": "route-api-api-auth-email-send-verify",
@@ -6048,8 +5592,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/auth/login/route.ts em src/app/api/auth/login/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 2280
+    "x": 7750,
+    "y": 1860
   },
   {
     "id": "route-api-api-auth-logout",
@@ -6086,8 +5630,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/auth/logout/route.ts em src/app/api/auth/logout/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 2280
+    "x": 8010,
+    "y": 1860
   },
   {
     "id": "route-api-api-auth-me",
@@ -6124,8 +5668,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/auth/me/route.ts em src/app/api/auth/me/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 2420
+    "x": 8270,
+    "y": 1860
   },
   {
     "id": "route-api-api-auth-seed-admin",
@@ -6162,8 +5706,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/auth/seed-admin/route.ts em src/app/api/auth/seed-admin/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 2420
+    "x": 7750,
+    "y": 2000
   },
   {
     "id": "route-api-api-auth-signup",
@@ -6238,8 +5782,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/billing/subscription/route.ts em src/app/api/billing/subscription/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 2420
+    "x": 8010,
+    "y": 2000
   },
   {
     "id": "route-api-api-checkout",
@@ -6276,8 +5820,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/checkout/route.ts em src/app/api/checkout/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 2560
+    "x": 8270,
+    "y": 2000
   },
   {
     "id": "route-api-api-cockpit-analytics-events",
@@ -6314,8 +5858,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/analytics/events/route.ts em src/app/api/cockpit/analytics/events/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 2560
+    "x": 7750,
+    "y": 2140
   },
   {
     "id": "route-api-api-cockpit-analytics-summary",
@@ -6352,8 +5896,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/analytics/summary/route.ts em src/app/api/cockpit/analytics/summary/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 2560
+    "x": 8010,
+    "y": 2140
   },
   {
     "id": "route-api-api-cockpit-attribution-tokens",
@@ -6390,8 +5934,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/attribution/tokens/route.ts em src/app/api/cockpit/attribution/tokens/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 2700
+    "x": 8270,
+    "y": 2140
   },
   {
     "id": "route-api-api-cockpit-audit",
@@ -6428,8 +5972,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/audit/route.ts em src/app/api/cockpit/audit/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 2700
+    "x": 7750,
+    "y": 2280
   },
   {
     "id": "route-api-api-cockpit-billing-checkout",
@@ -6466,8 +6010,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/billing/checkout/route.ts em src/app/api/cockpit/billing/checkout/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 2700
+    "x": 8010,
+    "y": 2280
   },
   {
     "id": "route-api-api-cockpit-billing-upgrade",
@@ -6504,8 +6048,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/billing/upgrade/route.ts em src/app/api/cockpit/billing/upgrade/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 2840
+    "x": 8270,
+    "y": 2280
   },
   {
     "id": "route-api-api-cockpit-config-key",
@@ -6542,7 +6086,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/config/[key]/route.ts em src/app/api/cockpit/config/[key]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 3120
   },
   {
@@ -6580,7 +6124,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/config/route.ts em src/app/api/cockpit/config/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 3120
   },
   {
@@ -6618,8 +6162,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/assign/route.ts em src/app/api/cockpit/conversations/[id]/assign/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3260
+    "x": 3170,
+    "y": 3120
   },
   {
     "id": "route-api-api-cockpit-conversations-id-customer",
@@ -6656,7 +6200,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/customer/route.ts em src/app/api/cockpit/conversations/[id]/customer/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 3260
   },
   {
@@ -6694,7 +6238,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/message/route.ts em src/app/api/cockpit/conversations/[id]/message/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 3260
   },
   {
@@ -6732,8 +6276,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/notes/route.ts em src/app/api/cockpit/conversations/[id]/notes/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3400
+    "x": 3170,
+    "y": 3260
   },
   {
     "id": "route-api-api-cockpit-conversations-id-owner",
@@ -6770,7 +6314,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/owner/route.ts em src/app/api/cockpit/conversations/[id]/owner/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 3400
   },
   {
@@ -6808,7 +6352,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/accept/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/accept/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 3400
   },
   {
@@ -6846,8 +6390,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/order/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/order/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3540
+    "x": 3170,
+    "y": 3400
   },
   {
     "id": "route-api-api-cockpit-conversations-id-quotes-quoteId",
@@ -6884,7 +6428,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 3540
   },
   {
@@ -6922,7 +6466,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/send/route.ts em src/app/api/cockpit/conversations/[id]/quotes/[quoteId]/send/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 3540
   },
   {
@@ -6960,8 +6504,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/quotes/route.ts em src/app/api/cockpit/conversations/[id]/quotes/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3680
+    "x": 3170,
+    "y": 3540
   },
   {
     "id": "route-api-api-cockpit-conversations-id-release",
@@ -6998,7 +6542,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/release/route.ts em src/app/api/cockpit/conversations/[id]/release/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 3680
   },
   {
@@ -7036,7 +6580,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/route.ts em src/app/api/cockpit/conversations/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 3680
   },
   {
@@ -7074,8 +6618,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/stage/route.ts em src/app/api/cockpit/conversations/[id]/stage/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3820
+    "x": 3170,
+    "y": 3680
   },
   {
     "id": "route-api-api-cockpit-conversations-id-tasks-taskId-status",
@@ -7112,7 +6656,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/route.ts em src/app/api/cockpit/conversations/[id]/tasks/[taskId]/status/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 3820
   },
   {
@@ -7150,7 +6694,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/[id]/tasks/route.ts em src/app/api/cockpit/conversations/[id]/tasks/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 3820
   },
   {
@@ -7188,8 +6732,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/conversations/route.ts em src/app/api/cockpit/conversations/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 3960
+    "x": 3170,
+    "y": 3820
   },
   {
     "id": "route-api-api-cockpit-custom-fields-id",
@@ -7226,7 +6770,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/custom-fields/[id]/route.ts em src/app/api/cockpit/custom-fields/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 3960
   },
   {
@@ -7264,7 +6808,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/custom-fields/route.ts em src/app/api/cockpit/custom-fields/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 3960
   },
   {
@@ -7302,8 +6846,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/custom-fields/values/route.ts em src/app/api/cockpit/custom-fields/values/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 4100
+    "x": 3170,
+    "y": 3960
   },
   {
     "id": "route-api-api-cockpit-domine-connectors",
@@ -7340,8 +6884,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/domine/connectors/route.ts em src/app/api/cockpit/domine/connectors/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 2840
+    "x": 7750,
+    "y": 2420
   },
   {
     "id": "route-api-api-cockpit-domine-summary",
@@ -7378,8 +6922,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/domine/summary/route.ts em src/app/api/cockpit/domine/summary/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 2840
+    "x": 8010,
+    "y": 2420
   },
   {
     "id": "route-api-api-cockpit-finops-alerts",
@@ -7416,8 +6960,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/finops/alerts/route.ts em src/app/api/cockpit/finops/alerts/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 2980
+    "x": 8270,
+    "y": 2420
   },
   {
     "id": "route-api-api-cockpit-finops",
@@ -7454,8 +6998,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/finops/route.ts em src/app/api/cockpit/finops/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 2980
+    "x": 7750,
+    "y": 2560
   },
   {
     "id": "route-api-api-cockpit-finops-unlock",
@@ -7492,8 +7036,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/finops/unlock/route.ts em src/app/api/cockpit/finops/unlock/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 2980
+    "x": 8010,
+    "y": 2560
   },
   {
     "id": "route-api-api-cockpit-frank-chat",
@@ -7530,7 +7074,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/chat/route.ts em src/app/api/cockpit/frank/chat/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 4100
   },
   {
@@ -7568,7 +7112,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/feed/route.ts em src/app/api/cockpit/frank/feed/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 4100
   },
   {
@@ -7606,8 +7150,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/create-playbook/route.ts em src/app/api/cockpit/frank/intents/[id]/create-playbook/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 4240
+    "x": 3170,
+    "y": 4100
   },
   {
     "id": "route-api-api-cockpit-frank-intents-id-ignore",
@@ -7644,7 +7188,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/ignore/route.ts em src/app/api/cockpit/frank/intents/[id]/ignore/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 4240
   },
   {
@@ -7682,7 +7226,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/link-playbook/route.ts em src/app/api/cockpit/frank/intents/[id]/link-playbook/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 4240
   },
   {
@@ -7720,8 +7264,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/[id]/validate/route.ts em src/app/api/cockpit/frank/intents/[id]/validate/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 4380
+    "x": 3170,
+    "y": 4240
   },
   {
     "id": "route-api-api-cockpit-frank-intents",
@@ -7758,7 +7302,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/intents/route.ts em src/app/api/cockpit/frank/intents/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 4380
   },
   {
@@ -7796,7 +7340,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/knowledge/[id]/route.ts em src/app/api/cockpit/frank/knowledge/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 4380
   },
   {
@@ -7834,8 +7378,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/knowledge/route.ts em src/app/api/cockpit/frank/knowledge/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 4520
+    "x": 3170,
+    "y": 4380
   },
   {
     "id": "route-api-api-cockpit-frank-playbooks",
@@ -7872,7 +7416,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/playbooks/route.ts em src/app/api/cockpit/frank/playbooks/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 4520
   },
   {
@@ -7910,7 +7454,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/approve/route.ts em src/app/api/cockpit/frank/suggestions/[id]/approve/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 4520
   },
   {
@@ -7948,8 +7492,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/approve-draft/route.ts em src/app/api/cockpit/frank/suggestions/[id]/approve-draft/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 4660
+    "x": 3170,
+    "y": 4520
   },
   {
     "id": "route-api-api-cockpit-frank-suggestions-id-draft",
@@ -7986,7 +7530,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/draft/route.ts em src/app/api/cockpit/frank/suggestions/[id]/draft/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 4660
   },
   {
@@ -8024,7 +7568,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/[id]/reject/route.ts em src/app/api/cockpit/frank/suggestions/[id]/reject/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 4660
   },
   {
@@ -8062,8 +7606,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/suggestions/route.ts em src/app/api/cockpit/frank/suggestions/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 4800
+    "x": 3170,
+    "y": 4660
   },
   {
     "id": "route-api-api-cockpit-frank-supervisor",
@@ -8100,7 +7644,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/frank/supervisor/route.ts em src/app/api/cockpit/frank/supervisor/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 4800
   },
   {
@@ -8138,7 +7682,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/gestao-ecommerce/route.ts em src/app/api/cockpit/gestao-ecommerce/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 4800
   },
   {
@@ -8176,8 +7720,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/governance/playbooks/[playbookId]/apply/route.ts em src/app/api/cockpit/governance/playbooks/[playbookId]/apply/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 4940
+    "x": 3170,
+    "y": 4800
   },
   {
     "id": "route-api-api-cockpit-governance-playbooks-metrics",
@@ -8214,7 +7758,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/governance/playbooks/metrics/route.ts em src/app/api/cockpit/governance/playbooks/metrics/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 4940
   },
   {
@@ -8252,7 +7796,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/governance/playbooks/route.ts em src/app/api/cockpit/governance/playbooks/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 4940
   },
   {
@@ -8290,8 +7834,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/metrics/acquisition/drilldown/route.ts em src/app/api/cockpit/metrics/acquisition/drilldown/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 3120
+    "x": 8270,
+    "y": 2560
   },
   {
     "id": "route-api-api-cockpit-metrics-acquisition",
@@ -8328,8 +7872,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/metrics/acquisition/route.ts em src/app/api/cockpit/metrics/acquisition/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 3120
+    "x": 7750,
+    "y": 2700
   },
   {
     "id": "route-api-api-cockpit-metrics-frank",
@@ -8366,8 +7910,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/metrics/frank/route.ts em src/app/api/cockpit/metrics/frank/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 5080
+    "x": 3170,
+    "y": 4940
   },
   {
     "id": "route-api-api-cockpit-metrics-freight",
@@ -8404,8 +7948,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/metrics/freight/route.ts em src/app/api/cockpit/metrics/freight/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 3120
+    "x": 8010,
+    "y": 2700
   },
   {
     "id": "route-api-api-cockpit-metrics-funnel",
@@ -8442,8 +7986,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/metrics/funnel/route.ts em src/app/api/cockpit/metrics/funnel/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 3260
+    "x": 8270,
+    "y": 2700
   },
   {
     "id": "route-api-api-cockpit-metrics",
@@ -8480,8 +8024,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/metrics/route.ts em src/app/api/cockpit/metrics/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 3260
+    "x": 7750,
+    "y": 2840
   },
   {
     "id": "route-api-api-cockpit-metrics-summary",
@@ -8518,7 +8062,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/metrics/summary/route.ts em src/app/api/cockpit/metrics/summary/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 5080
   },
   {
@@ -8556,8 +8100,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/ops/run-rollup/route.ts em src/app/api/cockpit/ops/run-rollup/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 3260
+    "x": 8010,
+    "y": 2840
   },
   {
     "id": "route-api-api-cockpit-ops-status",
@@ -8594,8 +8138,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/ops/status/route.ts em src/app/api/cockpit/ops/status/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 3400
+    "x": 8270,
+    "y": 2840
   },
   {
     "id": "route-api-api-cockpit-orders-id",
@@ -8632,7 +8176,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/[id]/route.ts em src/app/api/cockpit/orders/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 5080
   },
   {
@@ -8670,8 +8214,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/[id]/shipment/route.ts em src/app/api/cockpit/orders/[id]/shipment/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 5220
+    "x": 3170,
+    "y": 5080
   },
   {
     "id": "route-api-api-cockpit-orders-id-status",
@@ -8708,7 +8252,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/[id]/status/route.ts em src/app/api/cockpit/orders/[id]/status/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 5220
   },
   {
@@ -8746,7 +8290,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/orders/route.ts em src/app/api/cockpit/orders/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 5220
   },
   {
@@ -8784,8 +8328,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/organizations/[id]/route.ts em src/app/api/cockpit/organizations/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 5360
+    "x": 3170,
+    "y": 5220
   },
   {
     "id": "route-api-api-cockpit-pipeline-metrics",
@@ -8822,7 +8366,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/pipeline/metrics/route.ts em src/app/api/cockpit/pipeline/metrics/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 5360
   },
   {
@@ -8860,7 +8404,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/pipeline/route.ts em src/app/api/cockpit/pipeline/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 5360
   },
   {
@@ -8898,8 +8442,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/playbooks/[id]/route.ts em src/app/api/cockpit/playbooks/[id]/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 5500
+    "x": 3170,
+    "y": 5360
   },
   {
     "id": "route-api-api-cockpit-playbooks",
@@ -8936,7 +8480,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/playbooks/route.ts em src/app/api/cockpit/playbooks/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 5500
   },
   {
@@ -8974,7 +8518,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/products/search/route.ts em src/app/api/cockpit/products/search/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 5500
   },
   {
@@ -9012,8 +8556,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/saved-views/route.ts em src/app/api/cockpit/saved-views/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 3400
+    "x": 7750,
+    "y": 2980
   },
   {
     "id": "route-api-api-cockpit-status",
@@ -9050,8 +8594,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/status/route.ts em src/app/api/cockpit/status/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 5640
+    "x": 3170,
+    "y": 5500
   },
   {
     "id": "route-api-api-cockpit-timeline",
@@ -9088,7 +8632,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cockpit/timeline/route.ts em src/app/api/cockpit/timeline/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2910,
+    "x": 2650,
     "y": 5640
   },
   {
@@ -9126,8 +8670,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/cron/cleanup/route.ts em src/app/api/cron/cleanup/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 3400
+    "x": 8010,
+    "y": 2980
   },
   {
     "id": "route-api-api-db-migrate",
@@ -9164,8 +8708,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/db/migrate/route.ts em src/app/api/db/migrate/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 3540
+    "x": 8270,
+    "y": 2980
   },
   {
     "id": "route-api-api-debug-tenants",
@@ -9202,8 +8746,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/debug/tenants/route.ts em src/app/api/debug/tenants/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 3540
+    "x": 7750,
+    "y": 3120
   },
   {
     "id": "route-api-api-domine-intake",
@@ -9316,8 +8860,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/events/route.ts em src/app/api/events/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 3540
+    "x": 8010,
+    "y": 3120
   },
   {
     "id": "route-api-api-freight-create-shipment",
@@ -9354,7 +8898,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/freight/create-shipment/route.ts em src/app/api/freight/create-shipment/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1470,
+    "x": 1210,
     "y": 880
   },
   {
@@ -9392,8 +8936,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/freight/insights/route.ts em src/app/api/freight/insights/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 950,
-    "y": 1020
+    "x": 1470,
+    "y": 880
   },
   {
     "id": "route-api-api-freight-shipments",
@@ -9430,7 +8974,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/freight/shipments/route.ts em src/app/api/freight/shipments/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1210,
+    "x": 950,
     "y": 1020
   },
   {
@@ -9468,8 +9012,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/health/route.ts em src/app/api/health/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 3680
+    "x": 8270,
+    "y": 3120
   },
   {
     "id": "route-api-api-history",
@@ -9506,8 +9050,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/history/route.ts em src/app/api/history/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 3680
+    "x": 7750,
+    "y": 3260
   },
   {
     "id": "route-api-api-internal-auth-reset-admin",
@@ -9544,8 +9088,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/auth/reset-admin/route.ts em src/app/api/internal/auth/reset-admin/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 3680
+    "x": 8010,
+    "y": 3260
   },
   {
     "id": "route-api-api-internal-billing-reconcile-stripe",
@@ -9582,8 +9126,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/billing/reconcile-stripe/route.ts em src/app/api/internal/billing/reconcile-stripe/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 3820
+    "x": 8270,
+    "y": 3260
   },
   {
     "id": "route-api-api-internal-bootstrap-admin",
@@ -9658,8 +9202,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/dev/session/route.ts em src/app/api/internal/dev/session/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 3820
+    "x": 7750,
+    "y": 3400
   },
   {
     "id": "route-api-api-internal-diag-recovery",
@@ -9734,8 +9278,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/diag/route.ts em src/app/api/internal/diag/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 3820
+    "x": 8010,
+    "y": 3400
   },
   {
     "id": "route-api-api-internal-events-dlq",
@@ -9772,8 +9316,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/events/dlq/route.ts em src/app/api/internal/events/dlq/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 3960
+    "x": 8270,
+    "y": 3400
   },
   {
     "id": "route-api-api-internal-events-metrics",
@@ -9810,8 +9354,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/events/metrics/route.ts em src/app/api/internal/events/metrics/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 3960
+    "x": 7750,
+    "y": 3540
   },
   {
     "id": "route-api-api-internal-exports-frank-events",
@@ -9848,8 +9392,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/exports/frank-events/route.ts em src/app/api/internal/exports/frank-events/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 3960
+    "x": 8010,
+    "y": 3540
   },
   {
     "id": "route-api-api-internal-frank-apply-rollback",
@@ -9886,8 +9430,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/frank/apply-rollback/route.ts em src/app/api/internal/frank/apply-rollback/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 4100
+    "x": 8270,
+    "y": 3540
   },
   {
     "id": "route-api-api-internal-frank-gate",
@@ -9924,8 +9468,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/frank/gate/route.ts em src/app/api/internal/frank/gate/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 4100
+    "x": 7750,
+    "y": 3680
   },
   {
     "id": "route-api-api-internal-frank-metrics",
@@ -9962,8 +9506,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/frank/metrics/route.ts em src/app/api/internal/frank/metrics/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 4100
+    "x": 8010,
+    "y": 3680
   },
   {
     "id": "route-api-api-internal-frank-scheduler-run",
@@ -10000,8 +9544,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/frank/scheduler/run/route.ts em src/app/api/internal/frank/scheduler/run/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 4240
+    "x": 8270,
+    "y": 3680
   },
   {
     "id": "route-api-api-internal-freight-audit",
@@ -10038,7 +9582,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/audit/route.ts em src/app/api/internal/freight/audit/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1470,
+    "x": 1210,
     "y": 1020
   },
   {
@@ -10076,8 +9620,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/carrier-tables/route.ts em src/app/api/internal/freight/carrier-tables/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 950,
-    "y": 1160
+    "x": 1470,
+    "y": 1020
   },
   {
     "id": "route-api-api-internal-freight-confirm",
@@ -10114,7 +9658,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/confirm/route.ts em src/app/api/internal/freight/confirm/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1210,
+    "x": 950,
     "y": 1160
   },
   {
@@ -10152,7 +9696,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/insights/route.ts em src/app/api/internal/freight/insights/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1470,
+    "x": 1210,
     "y": 1160
   },
   {
@@ -10190,8 +9734,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/memory/route.ts em src/app/api/internal/freight/memory/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 950,
-    "y": 1300
+    "x": 1470,
+    "y": 1160
   },
   {
     "id": "route-api-api-internal-freight-operational-settings",
@@ -10228,7 +9772,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/operational-settings/route.ts em src/app/api/internal/freight/operational-settings/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1210,
+    "x": 950,
     "y": 1300
   },
   {
@@ -10266,7 +9810,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/packing-profiles/[id]/review-status/route.ts em src/app/api/internal/freight/packing-profiles/[id]/review-status/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1470,
+    "x": 1210,
     "y": 1300
   },
   {
@@ -10304,8 +9848,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/packing-profiles/[id]/route.ts em src/app/api/internal/freight/packing-profiles/[id]/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 950,
-    "y": 1440
+    "x": 1470,
+    "y": 1300
   },
   {
     "id": "route-api-api-internal-freight-packing-profiles-id-toggle",
@@ -10342,7 +9886,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/packing-profiles/[id]/toggle/route.ts em src/app/api/internal/freight/packing-profiles/[id]/toggle/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1210,
+    "x": 950,
     "y": 1440
   },
   {
@@ -10380,7 +9924,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/packing-profiles/route.ts em src/app/api/internal/freight/packing-profiles/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1470,
+    "x": 1210,
     "y": 1440
   },
   {
@@ -10418,8 +9962,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/shipments/route.ts em src/app/api/internal/freight/shipments/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 950,
-    "y": 1580
+    "x": 1470,
+    "y": 1440
   },
   {
     "id": "route-api-api-internal-freight-simulate",
@@ -10456,7 +10000,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/freight/simulate/route.ts em src/app/api/internal/freight/simulate/.",
     "level": 3,
     "parent": "fulfillment-module",
-    "x": 1210,
+    "x": 950,
     "y": 1580
   },
   {
@@ -10494,8 +10038,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/health/ai/route.ts em src/app/api/internal/health/ai/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 4240
+    "x": 7750,
+    "y": 3820
   },
   {
     "id": "route-api-api-internal-health-db",
@@ -10532,8 +10076,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/health/db/route.ts em src/app/api/internal/health/db/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 4240
+    "x": 8010,
+    "y": 3820
   },
   {
     "id": "route-api-api-internal-health-qdrant",
@@ -10570,8 +10114,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/health/qdrant/route.ts em src/app/api/internal/health/qdrant/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 4380
+    "x": 8270,
+    "y": 3820
   },
   {
     "id": "route-api-api-internal-health-redis",
@@ -10608,8 +10152,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/health/redis/route.ts em src/app/api/internal/health/redis/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 4380
+    "x": 7750,
+    "y": 3960
   },
   {
     "id": "route-api-api-internal-health-webhook",
@@ -10646,8 +10190,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/health/webhook/route.ts em src/app/api/internal/health/webhook/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 4380
+    "x": 8010,
+    "y": 3960
   },
   {
     "id": "route-api-api-internal-jobs-backfill-phone",
@@ -10684,8 +10228,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/jobs/backfill-phone/route.ts em src/app/api/internal/jobs/backfill-phone/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 4520
+    "x": 8270,
+    "y": 3960
   },
   {
     "id": "route-api-api-internal-jobs-cleanup-retention",
@@ -10722,8 +10266,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/jobs/cleanup-retention/route.ts em src/app/api/internal/jobs/cleanup-retention/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 4520
+    "x": 7750,
+    "y": 4100
   },
   {
     "id": "route-api-api-internal-jobs-data-contract-scan",
@@ -10836,8 +10380,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/jobs/domine-process/route.ts em src/app/api/internal/jobs/domine-process/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 4520
+    "x": 8010,
+    "y": 4100
   },
   {
     "id": "route-api-api-internal-jobs-finops-reconciliation",
@@ -10874,8 +10418,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/jobs/finops-reconciliation/route.ts em src/app/api/internal/jobs/finops-reconciliation/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 4660
+    "x": 8270,
+    "y": 4100
   },
   {
     "id": "route-api-api-internal-jobs-rollup-backfill",
@@ -10912,8 +10456,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/jobs/rollup-backfill/route.ts em src/app/api/internal/jobs/rollup-backfill/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 4660
+    "x": 7750,
+    "y": 4240
   },
   {
     "id": "route-api-api-internal-jobs-rollup-daily",
@@ -10950,8 +10494,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/jobs/rollup-daily/route.ts em src/app/api/internal/jobs/rollup-daily/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 4660
+    "x": 8010,
+    "y": 4240
   },
   {
     "id": "route-api-api-internal-jobs-security-anomaly-scan",
@@ -11102,8 +10646,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/ops/route.ts em src/app/api/internal/ops/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 4800
+    "x": 8270,
+    "y": 4240
   },
   {
     "id": "route-api-api-internal-playbooks-playbookId-toggle",
@@ -11216,8 +10760,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/qa/bootstrap-session/route.ts em src/app/api/internal/qa/bootstrap-session/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 4800
+    "x": 7750,
+    "y": 4380
   },
   {
     "id": "route-api-api-internal-qa-setup",
@@ -11254,8 +10798,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/qa/setup/route.ts em src/app/api/internal/qa/setup/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 4800
+    "x": 8010,
+    "y": 4380
   },
   {
     "id": "route-api-api-internal-qdrant-reindex",
@@ -11292,8 +10836,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/qdrant/reindex/route.ts em src/app/api/internal/qdrant/reindex/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 4940
+    "x": 8270,
+    "y": 4380
   },
   {
     "id": "route-api-api-internal-rag-stats",
@@ -11330,8 +10874,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/internal/rag/stats/route.ts em src/app/api/internal/rag/stats/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 4940
+    "x": 7750,
+    "y": 4520
   },
   {
     "id": "route-api-api-internal-security-events",
@@ -11976,8 +11520,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/ask/route.ts em src/app/api/knowledge/ask/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 4940
+    "x": 8010,
+    "y": 4520
   },
   {
     "id": "route-api-api-knowledge-collections-id-sync",
@@ -12014,8 +11558,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/collections/[id]/sync/route.ts em src/app/api/knowledge/collections/[id]/sync/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 5080
+    "x": 8270,
+    "y": 4520
   },
   {
     "id": "route-api-api-knowledge-collections",
@@ -12052,8 +11596,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/collections/route.ts em src/app/api/knowledge/collections/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 5080
+    "x": 7750,
+    "y": 4660
   },
   {
     "id": "route-api-api-knowledge-documents-id-mark-sensitive",
@@ -12090,8 +11634,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/documents/[id]/mark-sensitive/route.ts em src/app/api/knowledge/documents/[id]/mark-sensitive/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 5080
+    "x": 8010,
+    "y": 4660
   },
   {
     "id": "route-api-api-knowledge-documents-id-reprocess",
@@ -12128,8 +11672,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/documents/[id]/reprocess/route.ts em src/app/api/knowledge/documents/[id]/reprocess/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 5220
+    "x": 8270,
+    "y": 4660
   },
   {
     "id": "route-api-api-knowledge-documents-id",
@@ -12166,8 +11710,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/documents/[id]/route.ts em src/app/api/knowledge/documents/[id]/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 5220
+    "x": 7750,
+    "y": 4800
   },
   {
     "id": "route-api-api-knowledge-documents",
@@ -12204,8 +11748,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/documents/route.ts em src/app/api/knowledge/documents/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 5220
+    "x": 8010,
+    "y": 4800
   },
   {
     "id": "route-api-api-knowledge-upload-complete",
@@ -12242,8 +11786,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/upload/complete/route.ts em src/app/api/knowledge/upload/complete/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 5360
+    "x": 8270,
+    "y": 4800
   },
   {
     "id": "route-api-api-knowledge-upload-init",
@@ -12280,8 +11824,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/knowledge/upload/init/route.ts em src/app/api/knowledge/upload/init/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 5360
+    "x": 7750,
+    "y": 4940
   },
   {
     "id": "route-api-api-metrics-freight",
@@ -12318,8 +11862,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/metrics/freight/route.ts em src/app/api/metrics/freight/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 5360
+    "x": 8010,
+    "y": 4940
   },
   {
     "id": "route-api-api-metrics-freight-timeseries",
@@ -12356,8 +11900,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/metrics/freight/timeseries/route.ts em src/app/api/metrics/freight/timeseries/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 5500
+    "x": 8270,
+    "y": 4940
   },
   {
     "id": "route-api-api-metrics-overview",
@@ -12394,8 +11938,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/metrics/overview/route.ts em src/app/api/metrics/overview/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 5500
+    "x": 7750,
+    "y": 5080
   },
   {
     "id": "route-api-api-metrics-rate-limit",
@@ -12432,8 +11976,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/metrics/rate-limit/route.ts em src/app/api/metrics/rate-limit/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 5500
+    "x": 8010,
+    "y": 5080
   },
   {
     "id": "route-api-api-metrics-rate-limit-alerts",
@@ -12470,8 +12014,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/metrics/rate-limit-alerts/route.ts em src/app/api/metrics/rate-limit-alerts/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 5640
+    "x": 8270,
+    "y": 5080
   },
   {
     "id": "route-api-api-notifications",
@@ -12584,8 +12128,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/painel-logistico/route.ts em src/app/api/painel-logistico/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 5640
+    "x": 7750,
+    "y": 5220
   },
   {
     "id": "route-api-api-public-contato",
@@ -12622,8 +12166,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/public/contato/route.ts em src/app/api/public/contato/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 5640
+    "x": 8010,
+    "y": 5220
   },
   {
     "id": "route-api-api-public-delivery-token-location",
@@ -12660,8 +12204,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/public/delivery/[token]/location/route.ts em src/app/api/public/delivery/[token]/location/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 5780
+    "x": 8270,
+    "y": 5220
   },
   {
     "id": "route-api-api-public-events",
@@ -12698,8 +12242,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/public/events/route.ts em src/app/api/public/events/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 5780
+    "x": 7750,
+    "y": 5360
   },
   {
     "id": "route-api-api-reports-ingest",
@@ -12736,8 +12280,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/reports/ingest/route.ts em src/app/api/reports/ingest/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 5780
+    "x": 8010,
+    "y": 5360
   },
   {
     "id": "route-api-api-reports-seed",
@@ -12774,8 +12318,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/reports/seed/route.ts em src/app/api/reports/seed/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 5920
+    "x": 8270,
+    "y": 5360
   },
   {
     "id": "route-api-api-sales-quote",
@@ -12888,8 +12432,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/simulate/route.ts em src/app/api/simulate/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 5920
+    "x": 7750,
+    "y": 5500
   },
   {
     "id": "route-api-api-supreme-ecosystem",
@@ -12926,8 +12470,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/supreme/ecosystem/route.ts em src/app/api/supreme/ecosystem/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 5920
+    "x": 8010,
+    "y": 5500
   },
   {
     "id": "route-api-api-tenants-tenantId-ai-provider-rotate-key",
@@ -12964,8 +12508,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/ai-provider/rotate-key/route.ts em src/app/api/tenants/[tenantId]/ai-provider/rotate-key/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 6060
+    "x": 8270,
+    "y": 5500
   },
   {
     "id": "route-api-api-tenants-tenantId-ai-provider",
@@ -13002,8 +12546,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/ai-provider/route.ts em src/app/api/tenants/[tenantId]/ai-provider/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 6060
+    "x": 7750,
+    "y": 5640
   },
   {
     "id": "route-api-api-tenants-tenantId-audit",
@@ -13040,8 +12584,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/audit/route.ts em src/app/api/tenants/[tenantId]/audit/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 6060
+    "x": 8010,
+    "y": 5640
   },
   {
     "id": "route-api-api-tenants-tenantId-deliveries-id",
@@ -13078,8 +12622,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/deliveries/[id]/route.ts em src/app/api/tenants/[tenantId]/deliveries/[id]/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 6200
+    "x": 8270,
+    "y": 5640
   },
   {
     "id": "route-api-api-tenants-tenantId-deliveries",
@@ -13116,8 +12660,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/deliveries/route.ts em src/app/api/tenants/[tenantId]/deliveries/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 6200
+    "x": 7750,
+    "y": 5780
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-actions",
@@ -13154,8 +12698,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/actions/route.ts em src/app/api/tenants/[tenantId]/domine/actions/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 6200
+    "x": 8010,
+    "y": 5780
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-connectors-orders-event",
@@ -13192,8 +12736,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/connectors/orders/event/route.ts em src/app/api/tenants/[tenantId]/domine/connectors/orders/event/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 6340
+    "x": 8270,
+    "y": 5780
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-dlq-retry",
@@ -13230,8 +12774,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/dlq/retry/route.ts em src/app/api/tenants/[tenantId]/domine/dlq/retry/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 6340
+    "x": 7750,
+    "y": 5920
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-dlq",
@@ -13268,8 +12812,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/dlq/route.ts em src/app/api/tenants/[tenantId]/domine/dlq/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 6340
+    "x": 8010,
+    "y": 5920
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-events-id",
@@ -13306,8 +12850,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/events/[id]/route.ts em src/app/api/tenants/[tenantId]/domine/events/[id]/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 6480
+    "x": 8270,
+    "y": 5920
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-events-publish",
@@ -13344,8 +12888,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/events/publish/route.ts em src/app/api/tenants/[tenantId]/domine/events/publish/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 6480
+    "x": 7750,
+    "y": 6060
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-events",
@@ -13382,8 +12926,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/events/route.ts em src/app/api/tenants/[tenantId]/domine/events/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 6480
+    "x": 8010,
+    "y": 6060
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-freight-latest",
@@ -13420,8 +12964,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/freight/latest/route.ts em src/app/api/tenants/[tenantId]/domine/freight/latest/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 6620
+    "x": 8270,
+    "y": 6060
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-orders-orderId",
@@ -13458,8 +13002,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/orders/[orderId]/route.ts em src/app/api/tenants/[tenantId]/domine/orders/[orderId]/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 6620
+    "x": 7750,
+    "y": 6200
   },
   {
     "id": "route-api-api-tenants-tenantId-domine-orders",
@@ -13496,8 +13040,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/domine/orders/route.ts em src/app/api/tenants/[tenantId]/domine/orders/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 6620
+    "x": 8010,
+    "y": 6200
   },
   {
     "id": "route-api-api-tenants-tenantId-health",
@@ -13534,8 +13078,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/health/route.ts em src/app/api/tenants/[tenantId]/health/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 6760
+    "x": 8270,
+    "y": 6200
   },
   {
     "id": "route-api-api-tenants-tenantId-knowledge-sources-sourceId-ready",
@@ -13572,8 +13116,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/knowledge/sources/[sourceId]/ready/route.ts em src/app/api/tenants/[tenantId]/knowledge/sources/[sourceId]/ready/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 6760
+    "x": 7750,
+    "y": 6340
   },
   {
     "id": "route-api-api-tenants-tenantId-knowledge-sources",
@@ -13610,8 +13154,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/knowledge/sources/route.ts em src/app/api/tenants/[tenantId]/knowledge/sources/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 6760
+    "x": 8010,
+    "y": 6340
   },
   {
     "id": "route-api-api-tenants-tenantId-privacy-action",
@@ -13648,8 +13192,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/privacy/[action]/route.ts em src/app/api/tenants/[tenantId]/privacy/[action]/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 6900
+    "x": 8270,
+    "y": 6340
   },
   {
     "id": "route-api-api-tenants-tenantId-privacy-export-user",
@@ -13686,8 +13230,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/privacy/export-user/route.ts em src/app/api/tenants/[tenantId]/privacy/export-user/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 6900
+    "x": 7750,
+    "y": 6480
   },
   {
     "id": "route-api-api-tenants-tenantId-privacy-purge-user",
@@ -13724,8 +13268,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/privacy/purge-user/route.ts em src/app/api/tenants/[tenantId]/privacy/purge-user/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 6900
+    "x": 8010,
+    "y": 6480
   },
   {
     "id": "route-api-api-tenants-tenantId-secrets-rotate",
@@ -13762,8 +13306,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/secrets/rotate/route.ts em src/app/api/tenants/[tenantId]/secrets/rotate/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 7040
+    "x": 8270,
+    "y": 6480
   },
   {
     "id": "route-api-api-tenants-tenantId-secrets",
@@ -13800,8 +13344,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/secrets/route.ts em src/app/api/tenants/[tenantId]/secrets/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 7040
+    "x": 7750,
+    "y": 6620
   },
   {
     "id": "route-api-api-tenants-tenantId-secrets-test",
@@ -13838,8 +13382,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/secrets/test/route.ts em src/app/api/tenants/[tenantId]/secrets/test/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 7040
+    "x": 8010,
+    "y": 6620
   },
   {
     "id": "route-api-api-tenants-tenantId-settings",
@@ -13876,8 +13420,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/tenants/[tenantId]/settings/route.ts em src/app/api/tenants/[tenantId]/settings/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 7180
+    "x": 8270,
+    "y": 6620
   },
   {
     "id": "route-api-api-webhook-fallback",
@@ -13914,8 +13458,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/webhook/fallback/route.ts em src/app/api/webhook/fallback/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 7180
+    "x": 7750,
+    "y": 6760
   },
   {
     "id": "route-api-api-webhook",
@@ -13952,8 +13496,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/webhook/route.ts em src/app/api/webhook/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 7180
+    "x": 8010,
+    "y": 6760
   },
   {
     "id": "route-api-api-webhook-stripe",
@@ -13990,8 +13534,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/webhook/stripe/route.ts em src/app/api/webhook/stripe/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 7320
+    "x": 8270,
+    "y": 6760
   },
   {
     "id": "route-api-api-webhooks-melhor-envio",
@@ -14028,8 +13572,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/webhooks/melhor-envio/route.ts em src/app/api/webhooks/melhor-envio/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 7320
+    "x": 7750,
+    "y": 6900
   },
   {
     "id": "route-api-api-webhooks-stripe",
@@ -14066,8 +13610,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/webhooks/stripe/route.ts em src/app/api/webhooks/stripe/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 7320
+    "x": 8010,
+    "y": 6900
   },
   {
     "id": "route-api-api-webhooks-whatsapp-fallback",
@@ -14104,8 +13648,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/webhooks/whatsapp/fallback/route.ts em src/app/api/webhooks/whatsapp/fallback/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 7460
+    "x": 8270,
+    "y": 6900
   },
   {
     "id": "route-api-api-webhooks-whatsapp-incoming",
@@ -14142,8 +13686,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/webhooks/whatsapp/incoming/route.ts em src/app/api/webhooks/whatsapp/incoming/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 7460
+    "x": 7750,
+    "y": 7040
   },
   {
     "id": "route-api-api-webhooks-whatsapp-status",
@@ -14180,8 +13724,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/webhooks/whatsapp/status/route.ts em src/app/api/webhooks/whatsapp/status/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 7460
+    "x": 8010,
+    "y": 7040
   },
   {
     "id": "route-api-api-whatsapp-status",
@@ -14218,8 +13762,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/api/whatsapp/status/route.ts em src/app/api/whatsapp/status/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 7600
+    "x": 8270,
+    "y": 7040
   },
   {
     "id": "route-page-billing-manage",
@@ -14256,8 +13800,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/billing/manage/page.tsx em src/app/billing/manage/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 7600
+    "x": 7750,
+    "y": 7180
   },
   {
     "id": "route-page-billing",
@@ -14294,8 +13838,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/billing/page.tsx em src/app/billing/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 7600
+    "x": 8010,
+    "y": 7180
   },
   {
     "id": "route-page-billing-success",
@@ -14332,8 +13876,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/billing/success/page.tsx em src/app/billing/success/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 7740
+    "x": 8270,
+    "y": 7180
   },
   {
     "id": "route-page-dashboard",
@@ -14370,7 +13914,7 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/dashboard/page.tsx em src/app/dashboard/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 3170,
+    "x": 2910,
     "y": 5640
   },
   {
@@ -14408,8 +13952,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/dashboard1/page.tsx em src/app/dashboard1/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 7740
+    "x": 7750,
+    "y": 7320
   },
   {
     "id": "route-page-evolution-id",
@@ -14446,8 +13990,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/evolution/[id]/page.tsx em src/app/evolution/[id]/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 7740
+    "x": 8010,
+    "y": 7320
   },
   {
     "id": "route-page-evolution",
@@ -14484,8 +14028,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/evolution/page.tsx em src/app/evolution/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 7880
+    "x": 8270,
+    "y": 7320
   },
   {
     "id": "route-page-evolution-roadmap",
@@ -14522,8 +14066,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/evolution/roadmap/page.tsx em src/app/evolution/roadmap/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 7880
+    "x": 7750,
+    "y": 7460
   },
   {
     "id": "route-page-executive-dashboard",
@@ -14560,8 +14104,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/executive-dashboard/page.tsx em src/app/executive-dashboard/.",
     "level": 3,
     "parent": "cockpit-module",
-    "x": 2650,
-    "y": 5780
+    "x": 3170,
+    "y": 5640
   },
   {
     "id": "route-page-mvp-app-freight",
@@ -14864,8 +14408,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/painel-logistico/page.tsx em src/app/painel-logistico/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8270,
-    "y": 7880
+    "x": 8010,
+    "y": 7460
   },
   {
     "id": "route-api-pricing",
@@ -14902,8 +14446,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/pricing/route.ts em src/app/pricing/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 7750,
-    "y": 8020
+    "x": 8270,
+    "y": 7460
   },
   {
     "id": "route-api-t-token",
@@ -14940,8 +14484,8 @@ export const ARCHITECTURE_DATA: {
     "evidence": "Arquivo de rota real src/app/t/[token]/route.ts em src/app/t/[token]/.",
     "level": 3,
     "parent": "condstore-root",
-    "x": 8010,
-    "y": 8020
+    "x": 7750,
+    "y": 7600
   }
 ],
   edges: [
@@ -15793,13 +15337,6 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /brand-preview"
   },
   {
-    "id": "edge-cockpit-module-route-page-cockpit-gerencial",
-    "source": "cockpit-module",
-    "target": "route-page-cockpit-gerencial",
-    "type": "contains",
-    "description": "Contém página /cockpit-gerencial"
-  },
-  {
     "id": "edge-condstore-root-route-page-como-funciona",
     "source": "condstore-root",
     "target": "route-page-como-funciona",
@@ -15812,13 +15349,6 @@ export const ARCHITECTURE_DATA: {
     "target": "route-page-contato",
     "type": "contains",
     "description": "Contém página /contato"
-  },
-  {
-    "id": "edge-condstore-root-route-page-crm-whatsapp",
-    "source": "condstore-root",
-    "target": "route-page-crm-whatsapp",
-    "type": "contains",
-    "description": "Contém página /crm-whatsapp"
   },
   {
     "id": "edge-condstore-root-route-page-docs",
@@ -15835,39 +15365,11 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /faq"
   },
   {
-    "id": "edge-condstore-root-route-page-gargalos-logisticos",
-    "source": "condstore-root",
-    "target": "route-page-gargalos-logisticos",
-    "type": "contains",
-    "description": "Contém página /gargalos-logisticos"
-  },
-  {
     "id": "edge-condstore-root-route-page-ia-frank",
     "source": "condstore-root",
     "target": "route-page-ia-frank",
     "type": "contains",
     "description": "Contém página /ia-frank"
-  },
-  {
-    "id": "edge-condstore-root-route-page-implantacao",
-    "source": "condstore-root",
-    "target": "route-page-implantacao",
-    "type": "contains",
-    "description": "Contém página /implantacao"
-  },
-  {
-    "id": "edge-condstore-root-route-page-integracoes",
-    "source": "condstore-root",
-    "target": "route-page-integracoes",
-    "type": "contains",
-    "description": "Contém página /integracoes"
-  },
-  {
-    "id": "edge-fulfillment-module-route-page-logistica-pedidos",
-    "source": "fulfillment-module",
-    "target": "route-page-logistica-pedidos",
-    "type": "contains",
-    "description": "Contém página /logistica-pedidos"
   },
   {
     "id": "edge-condstore-root-route-page-root",
@@ -15905,13 +15407,6 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /planos/envios"
   },
   {
-    "id": "edge-condstore-root-route-page-plataforma",
-    "source": "condstore-root",
-    "target": "route-page-plataforma",
-    "type": "contains",
-    "description": "Contém página /plataforma"
-  },
-  {
     "id": "edge-condstore-root-route-page-privacidade",
     "source": "condstore-root",
     "target": "route-page-privacidade",
@@ -15933,25 +15428,11 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /produtos/domine"
   },
   {
-    "id": "edge-condstore-root-route-page-proof",
-    "source": "condstore-root",
-    "target": "route-page-proof",
-    "type": "contains",
-    "description": "Contém página /proof"
-  },
-  {
     "id": "edge-condstore-root-route-page-seguranca",
     "source": "condstore-root",
     "target": "route-page-seguranca",
     "type": "contains",
     "description": "Contém página /seguranca"
-  },
-  {
-    "id": "edge-condstore-root-route-page-showcase",
-    "source": "condstore-root",
-    "target": "route-page-showcase",
-    "type": "contains",
-    "description": "Contém página /showcase"
   },
   {
     "id": "edge-condstore-root-route-page-sitemap",
@@ -15961,32 +15442,11 @@ export const ARCHITECTURE_DATA: {
     "description": "Contém página /sitemap"
   },
   {
-    "id": "edge-condstore-root-route-page-solucoes",
-    "source": "condstore-root",
-    "target": "route-page-solucoes",
-    "type": "contains",
-    "description": "Contém página /solucoes"
-  },
-  {
-    "id": "edge-condstore-root-route-page-tecnologias",
-    "source": "condstore-root",
-    "target": "route-page-tecnologias",
-    "type": "contains",
-    "description": "Contém página /tecnologias"
-  },
-  {
     "id": "edge-condstore-root-route-page-termos",
     "source": "condstore-root",
     "target": "route-page-termos",
     "type": "contains",
     "description": "Contém página /termos"
-  },
-  {
-    "id": "edge-condstore-root-route-page-valores",
-    "source": "condstore-root",
-    "target": "route-page-valores",
-    "type": "contains",
-    "description": "Contém página /valores"
   },
   {
     "id": "edge-condstore-root-route-api-api-app-events",

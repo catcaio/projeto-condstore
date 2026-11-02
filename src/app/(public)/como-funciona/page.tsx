@@ -51,28 +51,28 @@ const overviewStages: StageCard[] = [
         summary: 'WhatsApp centralizado com contexto',
         detail: 'Conversas são organizadas em uma fila única, preservando o histórico e a intenção do cliente.',
         icon: MessageCircle,
-        href: '/crm-whatsapp',
+        href: '/produto',
     },
     {
         title: 'Cotação de Frete',
         summary: 'Cálculo multicarrier ágil',
         detail: 'A equipe compara opções de frete com critérios operacionais e comerciais sem sair do fluxo.',
         icon: Route,
-        href: '/logistica-pedidos',
+        href: '/produto',
     },
     {
         title: 'Pedido e Logística',
         summary: 'Transição fluida para execução',
         detail: 'Aprovação vira pedido com responsável definido, rastro de decisão e acompanhamento de entrega.',
         icon: Truck,
-        href: '/logistica-pedidos',
+        href: '/produto',
     },
     {
         title: 'Cockpit',
         summary: 'Visibilidade real da operação',
         detail: 'Gestores e operadores acompanham SLAs, exceções e prioridades em um painel vivo.',
         icon: Gauge,
-        href: '/cockpit-gerencial',
+        href: '/produto',
     },
 ];
 
@@ -105,44 +105,44 @@ const operatorCards: StageCard[] = [
         summary: 'Decisão humana com dados prontos',
         detail: 'O operador atua por exceção com visibilidade de histórico, risco e impacto comercial.',
         icon: UserCheck,
-        href: '/cockpit-gerencial',
+        href: '/produto',
     },
     {
         title: 'Velocidade com critério',
         summary: 'Menos troca de tela e mais execução',
         detail: 'O sistema encurta o ciclo de resposta, mas a aprovação crítica permanece na operação.',
         icon: Zap,
-        href: '/crm-whatsapp',
+        href: '/produto',
     },
     {
         title: 'Governança real',
         summary: 'Histórico rastreável por tenant',
         detail: 'Cada ação é vinculada a um responsável, garantindo auditoria e continuidade operacional.',
         icon: Workflow,
-        href: '/cockpit-gerencial',
+        href: '/seguranca',
     },
 ];
 
 const productConnections = [
     {
-        href: '/proof',
-        title: 'Prova operacional',
-        description: 'Veja evidências de operação real e maturidade de execução.',
-    },
-    {
         href: '/produto',
-        title: 'Produto',
-        description: 'Entenda os módulos que sustentam o fluxo operacional.',
+        title: 'Ecossistema CONDSTORE OS',
+        description: 'Entenda como os pilares operacionais se integram sem silos.',
     },
     {
-        href: '/crm-whatsapp',
-        title: 'CRM WhatsApp',
-        description: 'Detalhamento do atendimento centralizado.',
+        href: '/ia-frank',
+        title: 'Frank IA Supervisionada',
+        description: 'Copiloto de inteligência com limites operacionais claros.',
     },
     {
-        href: '/logistica-pedidos',
-        title: 'Logística',
-        description: 'Foco em frete, pedidos e shipments.',
+        href: '/seguranca',
+        title: 'Segurança & Governança',
+        description: 'Isolamento por tenant, LGPD e trilha de auditoria completa.',
+    },
+    {
+        href: '/piloto',
+        title: 'Avaliação Operacional',
+        description: 'Avaliação assistida no contexto da sua distribuidora.',
     },
 ] as const;
 
@@ -163,11 +163,11 @@ export default function ComoFuncionaPage() {
                                 O CONDSTORE OS conecta atendimento, cotação, pedidos e logística em um fluxo único. IA supervisionada auxilia o operador, garantindo controle real e decisão humana.
                             </p>
                             <div className="mt-8 flex flex-wrap items-center gap-3">
-                                <SiteButton href="/proof" variant="secondary">
-                                    Ver prova operacional
+                                <SiteButton href="/piloto" variant="accent">
+                                    Solicitar avaliação
                                 </SiteButton>
                                 <SiteButton href="/produto" variant="ghost">
-                                    Explorar produto
+                                    Explorar ecossistema
                                     <ArrowRight className="h-4 w-4" />
                                 </SiteButton>
                             </div>
@@ -409,8 +409,8 @@ export default function ComoFuncionaPage() {
                                 <SiteButton href="/piloto" variant="accent">
                                     Solicitar avaliação operacional
                                 </SiteButton>
-                                <SiteButton href="/proof" variant="secondary">
-                                    Ver prova operacional
+                                <SiteButton href="/contato" variant="secondary">
+                                    Falar com o time
                                 </SiteButton>
                             </div>
                         </SiteCard>

@@ -70,8 +70,8 @@ export default function AppPage() {
                 }
                 subtitle="Do gestor ao entregador, do cliente ao operador — contexto, status e ações para quem precisa agir, sem expor mais do que deve."
                 ctas={[
-                    { label: 'Explorar a plataforma', href: '/plataforma' },
-                    { label: 'Ver soluções', href: '/solucoes', variant: 'secondary' },
+                    { label: 'Conhecer o ecossistema', href: '/produto' },
+                    { label: 'Como funciona', href: '/como-funciona', variant: 'secondary' },
                 ]}
             />
 
@@ -264,7 +264,7 @@ export default function AppPage() {
                 title="Leve a operação até quem precisa agir, acompanhar ou decidir."
                 subtitle="O app do ecossistema é parte da implantação do CONDSTORE OS."
                 ctas={[
-                    { label: 'Explorar soluções', href: '/solucoes' },
+                    { label: 'Conhecer o ecossistema', href: '/produto' },
                     { label: 'Solicitar demonstração', href: '/contato', variant: 'secondary' },
                 ]}
             />

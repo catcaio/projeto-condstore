@@ -28,68 +28,33 @@ export const revalidate = 86400;
 export default function HomePage() {
     return (
         <main className="bg-[hsl(var(--ui-page))] text-[hsl(var(--ui-text))] min-h-screen selection:bg-[hsl(var(--ui-text))] selection:text-[hsl(var(--ui-page))] overflow-x-hidden">
-            {/* 01. RECONHECIMENTO — HERO INTERATIVO MOBILE-FIRST */}
+            {/* 01. RECONHECIMENTO & HERO — ECOSSISTEMA OPERACIONAL (Preserva public-hero-title e public-primary-cta) */}
             <InteractiveHero />
 
             <OperationalThread variant="vertical" />
 
-            {/* 02. CURIOSIDADE — A DOR DA FRAGMENTAÇÃO */}
+            {/* 02. A DOR DA FRAGMENTAÇÃO — O FIO DA OPERAÇÃO ROMPIDO */}
             <ScrollReveal>
                 <ContextBreakdownSection />
             </ScrollReveal>
 
             <OperationalThread variant="vertical" />
 
-            {/* 03. DEMONSTRAÇÃO — O FLUXO UNIFICADO (SEM RUÍDO) */}
+            {/* 03. O FLUXO UNIFICADO — DA CONVERSA AO CAMINHÃO SEM RUÍDO */}
             <ScrollReveal>
                 <ContinuousFlowTransformation />
             </ScrollReveal>
 
-            {/* 04. POSSIBILIDADE — OS 5 MOMENTOS OPERACIONAIS */}
+            {/* 04. OS 5 MOMENTOS & REALIDADE OPERACIONAL BRASILEIRA */}
             <ScrollReveal>
                 <FiveMomentsSection />
             </ScrollReveal>
 
-            <OperationalThread variant="branching" />
-
-            {/* 05. EXPANSÃO DE ESCOPO — PLATAFORMA QUE EVOLUI */}
-            <ScrollReveal>
-                <ExpandedPlatformScopeSection />
-            </ScrollReveal>
-
-            {/* 06. INTEGRAÇÕES SEM REFAZER TECNOLOGIA */}
-            <ScrollReveal>
-                <IntegrationsSection />
-            </ScrollReveal>
-
-            <OperationalThread variant="vertical" />
-
-            {/* 07. EVOLUÇÃO GRADUAL DA OPERAÇÃO */}
-            <ScrollReveal>
-                <OperationEvolutionSection />
-            </ScrollReveal>
-
-            {/* 08. HUMANO NO CENTRO DO PROCESSO */}
-            <ScrollReveal>
-                <HumanCentricSection />
-            </ScrollReveal>
-
-            {/* 09. REALIDADE DO MERCADO BRASILEIRO */}
             <ScrollReveal>
                 <BrazilOperationalRealismSection />
             </ScrollReveal>
 
-            {/* 10. DIFERENCIAÇÃO ESTRATÉGICA (ESPAÇO ÚNICO) */}
-            <ScrollReveal>
-                <BrandDifferentiationSection />
-            </ScrollReveal>
-
-            {/* 11. PARA QUEM É (ICP B2B) */}
-            <ScrollReveal>
-                <ICPSection />
-            </ScrollReveal>
-
-            {/* 12. PROVA DE GOVERNANÇA & RASTREABILIDADE REAL */}
+            {/* 05. GOVERNANÇA, TRILHA DE AUDITORIA & FAQ */}
             <ScrollReveal>
                 <section className="py-16 md:py-24 border-b border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface))]">
                     <PageContainer>
@@ -120,12 +85,11 @@ export default function HomePage() {
                 </section>
             </ScrollReveal>
 
-            {/* 13. PERGUNTAS FREQUENTES (FAQ) */}
             <ScrollReveal>
                 <FaqSection />
             </ScrollReveal>
 
-            {/* 14. AÇÃO — CTA FINAL NARRATIVO */}
+            {/* 06. AÇÃO — CTA FINAL NARRATIVO */}
             <section className="py-16 md:py-24 border-b border-[hsl(var(--ui-border)/0.4)] bg-[hsl(var(--ui-surface))] relative overflow-hidden">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[hsl(var(--ui-border)/0.2)] blur-[120px] rounded-full pointer-events-none" />
 
