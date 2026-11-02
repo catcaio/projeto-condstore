@@ -33,9 +33,11 @@ export function CondstoreSymbol({
             >
                 <rect x="14" y="14" width="31" height="31" rx="9" fill="currentColor" />
                 <rect x="55" y="14" width="31" height="31" rx="9" fill="currentColor" />
+                {/* Diferenciação de alto contraste sem cor */}
+                <circle cx="70.5" cy="29.5" r="7" fill="none" stroke="hsl(var(--ui-surface))" strokeWidth="2.5" />
+                <circle cx="70.5" cy="29.5" r="3" fill="currentColor" />
                 <rect x="14" y="55" width="31" height="31" rx="9" fill="currentColor" />
                 <rect x="55" y="55" width="31" height="31" rx="9" fill="currentColor" />
-                <circle cx="70.5" cy="29.5" r="4.5" fill="none" stroke="currentColor" strokeWidth="2.5" />
             </svg>
         );
     }
@@ -75,7 +77,7 @@ export function CondstoreSymbol({
         );
     }
 
-    // Default V1 — Nó Modular Contínuo (4 Quadrantes em Superelipse)
+    // Candidata 1 (V1) — Nó Modular 2×2 (Harmonizada milimetricamente com SVG estático)
     return (
         <svg
             viewBox="0 0 100 100"
@@ -157,7 +159,7 @@ export function CondstoreLogo({
                         <span
                             className={cn('font-bold tracking-tight', textSizeMap[size])}
                             style={{
-                                fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif",
+                                fontFamily: "var(--font-family-brand, 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif)",
                                 letterSpacing: '-0.01em',
                             }}
                         >
@@ -177,7 +179,7 @@ export function CondstoreLogo({
                             <span
                                 className={cn('font-medium text-[hsl(var(--ui-accent-blue))] ml-1.5', textSizeMap[size])}
                                 style={{
-                                    fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif",
+                                    fontFamily: "var(--font-family-brand, 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif)",
                                     letterSpacing: '0.05em',
                                 }}
                             >
